@@ -1,0 +1,243 @@
+-- Based on EBNF grammar for OCL 1.4
+-- with some help from the grammar from the Dresden OCL compiler.
+--
+-- problems with lexer: OCL strings are delimited by single quotes, not double. 
+--   Also, for floating point numbers, OCL allows both 3e7 as well as 3E7.  
+
+
+comment "--";
+
+--
+-- overall file structure
+--
+
+OCLfile. OCLfile ::= [Package];
+
+(:[]). [Package] ::= Package ;
+(:). [Package] ::= Package [Package];
+Pack. Package ::= "package" PackageName OCLExpressions "endpackage";
+
+
+
+PackName. PackageName ::= PathName;
+
+
+--
+-- constraints
+--
+
+Constraints. OCLExpressions ::= [Constraint];
+
+[]. [Constraint] ::=  ;
+(:). [Constraint] ::= Constraint [Constraint];
+
+
+
+
+
+
+Constr. Constraint ::= ContextDeclaration [ConstrBody];
+
+(:[]). [ConstrBody] ::= ConstrBody ;
+(:). [ConstrBody] ::= ConstrBody [ConstrBody];
+
+CBDefNamed. ConstrBody ::= "def" Name ":" [LetExpression];
+CBDef. ConstrBody ::= "def" ":" [LetExpression];
+
+CBNamed. ConstrBody ::= Stereotype Name ":" OCLExpression;
+CB. ConstrBody ::= Stereotype ":" OCLExpression;
+
+CDOper. ContextDeclaration ::= "context" OperationContext;
+CDClassif. ContextDeclaration ::= "context" ClassifierContext;
+
+CCTyped. ClassifierContext ::= Name ":" Name;
+CC. ClassifierContext ::= Name;
+
+OpC. OperationContext ::= Name "::" OperationName "(" FormalParameterList ")";
+OpCRT. OperationContext ::= Name "::" OperationName "(" FormalParameterList ")" ":" ReturnType;
+
+Pre. Stereotype ::= "pre";
+Post. Stereotype ::= "post";
+Inv. Stereotype ::= "inv";
+
+OpName . OperationName ::= Name;
+Eq. OperationName ::= "=";
+Add. OperationName ::= "+";
+Sub. OperationName ::= "-";
+LST. OperationName ::= "<";
+LSTE. OperationName ::= "<=";
+GRT. OperationName ::= ">";
+GRTE. OperationName ::= ">=";
+Div. OperationName ::= "/";
+Mult. OperationName ::= "*";
+NEq. OperationName ::= "<>";
+Impl. OperationName ::= "implies";
+Not. OperationName ::= "not";
+Or. OperationName ::= "or";
+Xor. OperationName ::= "xor";
+And. OperationName ::= "and";
+
+
+NoParam. FormalParameterList ::= ;
+FPL. FormalParameterList ::= [FormalParameter];
+(:[]). [FormalParameter] ::= FormalParameter;
+(:). [FormalParameter] ::=  FormalParameter "," [FormalParameter] ;
+FP. FormalParameter ::= Name ":" TypeSpecifier;
+
+TSsimple. TypeSpecifier ::= SimpleTypeSpecifier;
+TScoll. TypeSpecifier ::= CollectionType;
+
+CT. CollectionType ::= CollectionKind "(" SimpleTypeSpecifier ")";
+
+RT. ReturnType ::= TypeSpecifier;
+
+OCLExp. OCLExpression ::= Expression;
+OCLExpLet. OCLExpression ::= LetExpression "in" Expression;
+
+LENoParam. LetExpression ::= "let" Name "=" Expression;
+LENoParamType. LetExpression ::= "let" Name ":" TypeSpecifier "=" Expression;
+LE. LetExpression ::= "let" Name "(" FormalParameterList ")" "=" Expression;
+LEType. LetExpression ::= "let" Name "(" FormalParameterList ")" ":" TypeSpecifier "=" Expression;
+[]. [LetExpression] ::=;
+(:). [LetExpression] ::= LetExpression [LetExpression];
+
+IfExp. IfExpression ::= "if" Expression "then" Expression "else" Expression "endif";
+
+
+EOpImpl. Expression ::= Expression0 Implies Expression;  -- make implication right-associative
+EOpLog. Expression0 ::= Expression0 LogicalOperator Expression1;
+EOpEq. Expression1 ::= Expression1 EqualityOperator Expression2;
+EORel. Expression2 ::= Expression2 RelationalOperator Expression3;
+EOpAdd. Expression3 ::= Expression3 AddOperator Expression4;
+EOpMul. Expression4 ::= Expression4 MultiplyOperator Expression5;
+EOpUn. Expression5 ::= UnaryOperator Expression6 ; -- this requires paren. for -(-3), not (not true), ...
+
+-- some Dresden influence for the postfix expressions:
+EPostfixOp. Expression6 ::= Expression7 [PostfixTail];
+PFTail. PostfixTail ::= PostfixOperator PropertyCall;
+(:[]). [PostfixTail] ::= PostfixTail; -- empty list here gives a lot of reduce/reduce conflicts  
+(:). [PostfixTail] ::= PostfixTail [PostfixTail];
+
+ELitColl. Expression7 ::= LiteralCollection;
+ELit. Expression7 ::= OCLLiteral;
+EPropCall. Expression7 ::= PropertyCall;
+EIfExp. Expression7 ::= IfExpression;
+
+_. Expression ::= Expression0;
+_. Expression0 ::= Expression1;
+_. Expression1 ::= Expression2;
+_. Expression2 ::= Expression3;
+_. Expression3 ::= Expression4;
+_. Expression4 ::= Expression5;
+_. Expression5 ::= Expression6;
+_. Expression6 ::= Expression7;
+_. Expression7 ::= "(" Expression ")";
+
+--
+-- introduce changes in line with the Dresden OCL grammar
+-- the first three rules (from the original OCL grammar) below are 'abstract' 
+internal PCP. PropertyCallParameters  ::= "(" Declarator ActualParameterList ")";
+internal PCPNoDecl. PropertyCallParameters ::=  "(" ActualParameterList ")";
+internal PCPNoParam. PropertyCallParameters ::=  "(" Declarator ")";
+PCPNoDeclNoParam. PropertyCallParameters ::= "(" ")";
+PCPConcrete. PropertyCallParameters ::= "(" Expression [PCPHelper] ")";
+
+PCPComma. PCPHelper ::= "," Expression;
+PCPColon. PCPHelper ::= ":" SimpleTypeSpecifier;
+PCPIterate. PCPHelper ::= ";" Name ":" TypeSpecifier "=" Expression;
+PCPBar. PCPHelper ::= "|" Expression;
+
+[]. [PCPHelper] ::= ;
+(:). [PCPHelper] ::= PCPHelper [PCPHelper];
+
+LitStr. OCLLiteral ::=  String;  -- ***NB: OCL uses single quotes for strings, fix this in lexer?
+LitNum. OCLLiteral ::= Number;
+LitEnum. OCLLiteral ::= EnumLiteral;
+
+EnumLit. EnumLiteral ::= Name "::" [EnumElem] ;
+EnumElem. EnumElem ::= Name;
+(:[]). [EnumElem] ::= EnumElem;
+(:). [EnumElem] ::= EnumElem "::" [EnumElem];
+
+STSpec. SimpleTypeSpecifier ::= PathName;
+
+LCollection. LiteralCollection ::= CollectionKind "{" [CollectionItem] "}";
+LCollectionEmpty. LiteralCollection ::= CollectionKind "{" "}";
+
+(:[]). [CollectionItem] ::= CollectionItem;
+(:). [CollectionItem] ::= CollectionItem "," [CollectionItem]  ;
+
+CI. CollectionItem ::= Expression;
+CIRange. CollectionItem ::= Expression ".." Expression;
+
+PCall. PropertyCall ::=  PathName PossTimeExpression PossQualifiers PossPropCallParam;
+
+NoQual. PossQualifiers ::=;
+Qual. PossQualifiers ::= Qualifiers;
+Quals. Qualifiers ::= "[" ActualParameterList "]";
+
+NoTE. PossTimeExpression ::= ;
+TE. PossTimeExpression ::= TimeExpression;
+AtPre. TimeExpression ::= "@" "pre";
+
+NoPCP. PossPropCallParam ::= ;
+PCPs. PossPropCallParam ::= PropertyCallParameters;
+
+DeclSTSNTS. Declarator ::= Name [DName] ":" SimpleTypeSpecifier ";" Name ":" TypeSpecifier "=" Expression "|";
+DeclNoSTS. Declarator ::= Name [DName]  ";" Name ":" TypeSpecifier "=" Expression "|" ;
+DeclNoNTS. Declarator ::= Name [DName] ":" SimpleTypeSpecifier  "|";
+Decl. Declarator ::= Name [DName] "|";
+
+DName. DName ::= Name;
+[]. [DName] ::= ;
+(:). [DName] ::= "," DName [DName];
+
+PathName. PathName ::= [PName];
+PName. PName ::= Name;
+(:[]). [PName] ::= PName;
+(:). [PName] ::= PName "::" [PName];
+
+NoActualPL. ActualParameterList ::= ;
+ActualPL. ActualParameterList ::= [Expression];
+(:[]). [Expression] ::= Expression;
+(:). [Expression]  ::= Expression "," [Expression];
+
+Implies. Implies ::= "implies";
+
+LAnd. LogicalOperator ::= "and";
+LOr. LogicalOperator ::= "or";
+LXor. LogicalOperator ::= "xor";
+
+Set. CollectionKind ::= "Set";
+Bag. CollectionKind ::= "Bag";
+Sequence. CollectionKind ::= "Sequence";
+Collection. CollectionKind ::= "Collection";
+
+EEq. EqualityOperator ::= "=";
+ENEq. EqualityOperator ::= "<>";
+
+RGT. RelationalOperator ::= ">";
+RGTE. RelationalOperator ::= ">=";
+RLT. RelationalOperator ::= "<";
+RLTE. RelationalOperator ::= "<=";
+
+AAdd. AddOperator ::= "+";
+ASub. AddOperator ::= "-";
+
+MMult. MultiplyOperator ::= "*";
+MDiv. MultiplyOperator ::= "/";
+
+UMin. UnaryOperator ::= "-";
+UNot. UnaryOperator ::= "not";
+
+PDot. PostfixOperator ::= ".";
+PArrow. PostfixOperator ::= "->";
+
+-----------------------------
+
+
+TypeName. TypeName ::= Ident;
+Name. Name ::= Ident;
+
+NumInt. Number ::= Integer;
+NumDouble. Number ::= Double; -- *** lexer does not handle capital 'E' (just 'e')

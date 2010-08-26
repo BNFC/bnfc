@@ -1,0 +1,28 @@
+/* Body settings */
+
+body {background: white}
+
+/* Heading settings */
+
+h1 {color: green; font-family: "times"; font-size: 200%}
+
+h2,h3,h4,h5,h6 {color: green; font-family: "times"; font-size: 150%;
+	margin-left: 4cm;}
+
+/* paragraph settings */
+
+p {font-family: "times"; margin-left: 4cm; margin-right: 6cm}
+pre {margin-left: 4cm; margin-right: 6cm}
+
+ul {margin-left: 4cm;font-family: "times"}
+
+/* Link settings */
+a:active {color: black}
+a:link {color: red; text-decoration: none}
+a:visited {color: red; text-decoration: none}
+a:hover {color: blue; text-decoration: none}
+
+/* table settings */
+
+table{border= 0; width = 85%}
+

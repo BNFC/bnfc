@@ -1,0 +1,5 @@
+%module Main
+  Main.main :: PrelGHC.Statezh PrelGHC.RealWorld ->
+	       PrelGHC.Z2H (PrelGHC.Statezh PrelGHC.RealWorld) PrelBase.Z0T =
+    PrelIO.putStrLn
+    (PrelBase.unpackCStringzh ("hello world"::PrelGHC.Addrzh));

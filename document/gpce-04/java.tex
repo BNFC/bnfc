@@ -1,0 +1,160 @@
+\begin{figure}
+\begin{boxedminipage}[t]{\textwidth}
+\begin{minipage}[l]{0.5\textwidth}
+\normalsize
+\textbf{A. Abstract Syntax}
+\scriptsize
+\begin{verbatim}
+public class PROGRAM {
+  public ListEXP listexp_;
+  public PROGRAM(ListEXP p1) 
+            { listexp_ = p1; }
+}
+public abstract class EXP {}
+public class EAnd extends EXP {
+  public EXP exp_1, exp_2;
+  public EAnd(EXP p1, EXP p2) 
+     { exp_1 = p1; exp_2 = p2; }
+}
+public class EOr extends EXP {
+  public EXP exp_1, exp_2;
+  public EOr(EXP p1, EXP p2) 
+     { exp_1 = p1; exp_2 = p2; }
+}
+public class ETrue extends EXP {
+  public ETrue() { }
+}
+public class EFalse extends EXP {
+  public EFalse() { }
+}
+public class EVar extends EXP {
+  public String ident_;
+  public EVar(String p1) 
+               { ident_ = p1; }
+}
+public class ListEXP {
+  public EXP exp_;
+  public ListEXP listexp_; 
+  public ListEXP(EXP p1, ListEXP p2)
+    { exp_ = p1; listexp_ = p2; }
+}
+\end{verbatim}
+\normalsize
+\textbf{B. CUP Parser}
+\scriptsize
+\begin{verbatim}
+terminal _SYMB_0;    //   ||
+terminal _SYMB_1;    //   &&
+terminal _SYMB_2;    //   ;
+terminal _SYMB_3;    //   (
+terminal _SYMB_4;    //   )
+terminal _SYMB_5;    //   false
+terminal _SYMB_6;    //   true
+terminal String _IDENT_;
+PROGRAM ::= ListEXP:p_1  {: 
+    if (p_1 != null) p_1 = p_1.reverse();
+      RESULT = new Absyn.PROGRAM(p_1); :} 
+;
+EXP ::= EXP:p_1 _SYMB_0 EXP1:p_3  {: 
+     RESULT = new Absyn.EOr(p_1, p_3); :} 
+  | EXP1:p_1  {:  RESULT = (p_1); :}
+;
+EXP1 ::= EXP1:p_1 _SYMB_1 EXP2:p_3  {:
+    RESULT = new Absyn.EAnd(p_1, p_3); :} 
+  | EXP2:p_1  {:  RESULT = (p_1); :}
+;
+EXP2 ::= _SYMB_6 {:
+           RESULT = new Absyn.ETrue(); :} 
+  | _SYMB_5 {:
+          RESULT = new Absyn.EFalse(); :}
+  | _IDENT_:p_1 {: 
+         RESULT = new Absyn.EVar(p_1); :}
+\end{verbatim}
+\normalsize
+\end{minipage}
+\hfill
+\begin{minipage}[r]{0.5\textwidth}
+\normalsize
+\textbf{CUP Parser (continued)}
+\scriptsize
+\begin{verbatim}
+  | _SYMB_3 EXP:p_2 _SYMB_4 {:
+                       RESULT = (p_2); :}
+;
+ListEXP ::= /*empty*/{: RESULT = null; :}
+  | ListEXP:p_1 EXP:p_2 _SYMB_2  {:
+ RESULT = new Absyn.ListEXP(p_2, p_1); :}
+;
+\end{verbatim}
+\normalsize
+\textbf{C. Pretty Printer}
+\scriptsize
+\begin{verbatim}
+  private static void 
+  pp(Absyn.EXP exp, int _i_) {
+    if (exp instanceof Absyn.EOr) {
+       Absyn.EOr eor = (Absyn.EOr) exp;
+       if (_i_ > 0) render(_L_PAREN);
+       pp(eor.exp_1, 0);
+       render("||");
+       pp(eor.exp_2, 1);
+       if (_i_ > 0) render(_R_PAREN);
+    }
+    if (exp instanceof Absyn.EAnd) {
+       Absyn.EAnd eand = (Absyn.EAnd) exp;
+       if (_i_ > 1) render(_L_PAREN);
+       pp(eand.exp_1, 1);
+       render("&&");
+    ...
+\end{verbatim}
+\normalsize
+\textbf{D. Abstract Syntax Viewer}
+\scriptsize
+\begin{verbatim}
+  private static void sh(Absyn.EXP exp)
+  {
+    if (exp instanceof Absyn.EOr) {
+       Absyn.EOr eor = (Absyn.EOr) exp;
+       render("(");
+       render("EOr");
+       sh(eor.exp_1);
+       sh(eor.exp_2);
+       render(")");
+    }
+    if (exp instanceof Absyn.EAnd) {
+       Absyn.EAnd eand = (Absyn.EAnd) exp;
+       render("(");
+       render("EAnd");
+    ...
+\end{verbatim}
+\normalsize
+
+\textbf{E. Visitor Design Pattern}
+
+\scriptsize
+\begin{verbatim}
+  public void visitEOr(Absyn.EOr eor) {
+    /* Code For EOr Goes Here */
+    eor.exp_1.accept(this);
+    eor.exp_2.accept(this);
+  }
+  public void visitEAnd(Absyn.EAnd eand) {
+    /* Code For EAnd Goes Here */
+    ...
+  public void 
+  visitListEXP(Absyn.ListEXP listexp) {
+    while(listexp!= null) {
+      /* Code For ListEXP Goes Here */
+      listexp.listexp_.accept(this);
+      listexp = listexp.listexp_;
+      ...
+\end{verbatim}
+\normalsize
+
+\hfill
+\end{minipage}
+\end{boxedminipage}
+\caption{Java source code fragments generated from Figure \ref{fig:source}}
+\label{fig:java}
+\end{figure}
+

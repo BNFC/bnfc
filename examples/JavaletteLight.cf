@@ -1,0 +1,39 @@
+-- Javalette Light: a simple subset of C, covering
+-- programs with a single zero-argument function.
+-- example: koe.jll
+
+-- ordinary rules
+
+Fun.      Prog     ::= Typ Ident "(" ")" "{" [Stm] "}" ;
+
+SDecl.    Stm      ::= Typ Ident ";"  ;
+SAss.     Stm      ::= Ident "=" Exp ";"  ;
+SIncr.    Stm      ::= Ident "++" ";"  ;
+SWhile.   Stm      ::= "while" "(" Exp ")" "{" [Stm] "}" ;
+
+ELt.      Exp      ::= Exp1 "<" Exp1 ;
+EPlus.    Exp1     ::= Exp1 "+" Exp2 ;
+ETimes.   Exp2     ::= Exp2 "*" Exp3 ;
+EVar.     Exp3     ::= Ident ;
+EInt.     Exp3     ::= Integer ;
+EDouble.  Exp3     ::= Double ;
+
+terminator Stm "" ;
+
+-- coercions
+
+_.        Stm      ::= Stm ";" ;
+
+coercions Exp 3 ;
+
+TInt.     Typ  ::= "int" ;
+TDouble.  Typ  ::= "double" ;
+
+-- pragmas
+
+internal ExpT. Exp ::= Typ "(" Exp ")" ;
+
+comment "/*" "*/" ;
+comment "//" ;
+
+entrypoints Prog, Stm, Exp ;

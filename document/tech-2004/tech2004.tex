@@ -1,0 +1,88 @@
+\documentclass[titlepage,twoside,a4paper,11pt,english]{article}
+
+\usepackage{babel}
+\usepackage{boxedminipage}
+% \usepackage{graphicx}
+\usepackage{epsfig}
+\usepackage{alltt}
+\usepackage{boxedminipage}
+\usepackage{chapterbib}
+
+\newcommand{\epspicture}[1]{\begin{figure}\centerline{\epsfig{figure={#1},width=0.70\textwidth}}\end{figure}}
+
+\begin{document}
+
+\pagenumbering{roman}
+
+\begin{titlepage}
+  \title{{\Large Technical Report no. 2004-09}
+  \\ ~
+  \\ ~
+  \\ ~
+  \\ ~
+  {\LARGE \bf BNF Converter
+    \\ \bf Multilingual Front-End Generation
+    \\ \bf from Labelled BNF Grammars}
+  \\ ~
+  \\ ~
+}
+
+\author{\Large \bf Michael Pellauer, Markus Forsberg and Aarne Ranta}
+
+\date{
+  \vspace{\stretch{1}}
+  \enlargethispage{2.1\baselineskip}
+  \includegraphics{ChalmGUtextsvEng.eps} \\
+  \vspace{5mm}
+  \includegraphics{ChalmGUmarke.eps} \\
+  \vspace{12mm}
+  Department of Computing Science \\
+  Chalmers University of Technology
+  and G\"{o}teborg University \\
+  SE-412 96 G\"{o}teborg, Sweden \\
+   \vspace{12mm}
+   G{\"o}teborg, 2004
+}
+\end{titlepage}
+
+\maketitle
+
+\newpage{}
+\thispagestyle{empty}
+\mbox{}
+\vspace{\stretch{1}}
+
+\noindent
+
+
+\enlargethispage{2.1\baselineskip}
+\includegraphics{ChalmGUmarke.eps} \\ \\
+\hspace{20mm}
+\begin{tabular}{l}
+Technical Report in Computing Science at \\
+Chalmers University of Technology and G{\"o}teborg University \\
+~ \\
+%\copyright{} Markus Forsberg, 2004\\
+%~ \\
+%A dissertation for the Licentiate Degree in Computing Science at \\
+%Chalmers University of Technology and G\"oteborg University
+\vspace{2ex} \\
+Technical Report no. 2004-09 \\
+ISSN 1650-3023 \\
+\vspace{3ex} \\
+Department of Computing Science\\
+Chalmers University of Technology and G{\"o}teborg University\\
+SE-412 96 G{\"o}teborg, Sweden \\
+Telephone + 46 (0)31-772 1000 \\
+~ \\
+G{\"o}teborg, Sweden, 2004
+\end{tabular}
+\cleardoublepage
+%%%
+\pagestyle{plain}
+
+\pagenumbering{arabic}
+
+\input{BNFC_tech_2004}
+
+\end{document}

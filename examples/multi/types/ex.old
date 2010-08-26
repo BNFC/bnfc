@@ -1,0 +1,18 @@
+Nat : Set ;
+
+Zero : Nat ;
+
+Succ : (Nat)Nat ;
+
+plus : (Nat)(Nat)Nat ;
+plus(x,Zero) = x ;
+plus(x,Succ(y)) = Succ(plus(x,y)) ;
+
+Pi : (X : Set)((X)Set)Set ;
+
+double : (Nat)Nat ;
+double = (x)plus(x,x) ;
+
+K : (X : Set)(Y : Set)(X)(Y)X ;
+K = (X)(Y)(x)(y)x ;
+

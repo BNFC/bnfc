@@ -1,0 +1,379 @@
+\documentclass{llncs}
+
+\usepackage{boxedminipage}
+ 
+\renewcommand\floatpagefraction{.9}
+\renewcommand\topfraction{.9}
+\renewcommand\bottomfraction{.9}
+\renewcommand\textfraction{.1}   
+\setcounter{totalnumber}{50}
+\setcounter{topnumber}{50}
+\setcounter{bottomnumber}{50}
+
+%\setlength{\leftmargin}{30mm}
+%\setlength{\oddsidemargin}{0mm}
+%\setlength{\evensidemargin}{0mm}
+%\setlength{\evensidemargin}{-2mm}
+%\setlength{\topmargin}{-16mm}
+%\setlength{\textheight}{240mm}
+%\setlength{\textwidth}{158mm}
+
+\newcommand{\bequ}{\begin{quote}}
+\newcommand{\enqu}{\end{quote}}
+\newcommand{\begit}{\begin{itemize}}
+\newcommand{\enit}{\end{itemize}}
+\newcommand{\LBNF}{LBNF}
+
+
+% commands from LBNF documentation
+\newcommand{\emptyP}{\mbox{$\epsilon$}}
+\newcommand{\terminal}[1]{\mbox{{\texttt {#1}}}}
+\newcommand{\nonterminal}[1]{\mbox{$\langle \mbox{{\sl #1 }} \! \rangle$}}
+\newcommand{\arrow}{\mbox{::=}}
+\newcommand{\delimit}{\mbox{$|$}}
+\newcommand{\reserved}[1]{\mbox{{\texttt {#1}}}}
+\newcommand{\literal}[1]{\mbox{{\texttt {#1}}}}
+\newcommand{\symb}[1]{\mbox{{\texttt {#1}}}}
+
+\newcommand{\lbr}{\symbol{'173}}
+\newcommand{\rbr}{\symbol{'175}}
+
+\newcommand{\shortsection}[1]{\subsubsection*{#1.}} %\subsection
+
+
+\title{{\Large \bf BNF Converter: \\ One Grammar, Multiple Front Ends}}
+
+\author{Michael Pellauer, Markus Forsberg, and Aarne Ranta}
+\institute{%
+  Chalmers University of Technology,\\
+  Department of Computing Science\\
+  SE-412 96 Gothenburg, Sweden,\\
+  \texttt{\lbr{}pellauer, markus, aarne\rbr{}@cs.chalmers.se}}
+\begin{document}
+
+\maketitle
+
+
+\begin{abstract}
+With the advent of multi-phase compilers and advances in language design, the focus of the compiler front end has begun to shift from parsing to the definition of a complex abstract-syntax-tree data structure. BNF Converter is a compiler-construction tool that uses a Labelled BNF grammar as the single source of definition for the abstract syntax, lexer, parser and pretty printer. The added layer of abstraction allows it to generate front ends in Haskell, Java, C and C++. This results in new possibilities for the user, and allows us to make observations about constructing a compiler across different implementation languages.
+\end{abstract}
+
+\section{Introduction}
+
+Programming languages of the past often contained features that seem awkward today. For example, Aycock \cite{horspool} reports that in PL/I it was possible to write statements such as this:
+\begin{center}
+{\tt IF IF = THEN THEN THEN = IF}
+\end{center}
+This is legal code because after the keyword {\tt IF}
+an identifier was expected, and the strings {\tt IF} and {\tt THEN} 
+were also legal as identifier names. 
+
+As programming languages became more and more widespread, language developers began to realize
+that these features not only created numerous problems implementing parsers,
+but were rarely used and often led to confusion when they were. Because of this, programming languages have become more and more regular over time. Today, no Java programmer would expect the ability to use \texttt{if} or any other language keyword as a variable name.
+
+Over time the focus of the compiler front end has shifted from parsing difficult languages to constructing and transforming complex abstract syntax trees. 
+The BNF Converter\footnote{
+Available from the BNF Converter website \cite{bnfcsite}
+}  
+is a compiler-construction tool based on the idea that from a single source grammar it is possible to extract both an abstract syntax tree definition (including a traversal function) and a concrete syntax (including lexer, parser, and pretty printer).
+
+The decoupling of the grammar description from the implementation language  continues the tradition of Andrew Appel \cite{AppelC,AppelJ,appel}, whose textbooks apply the same compiler methodology across three very different programming languages. Similarly, the BNF Converter as of version 2.0 is able to use a single methodology to generate a front end in Haskell, Java, C++, and C.
+
+\shortsection{The BNF Converter Approach}
+
+Compiler construction courses often use tools in the tradition of 
+Lex \cite{lesk-lex} and 
+YACC \cite{johnson-yacc}. 
+This requires learning two separate configuration syntaxes as well as getting the lexer and the parser to communicate correctly, which novices often find tricky. 
+Finally, besides implementing both the lexer and the parser the user must  hand-write data types to represent abstract syntax trees, create some kind of test bench to verify that the parser is performing correctly, and document the language so that it may be used by others.
+
+The BNF Converter takes a different approach to the task of front-end
+generation. The user specifies the language grammar in an enhanced
+version of BNF called Labelled BNF (LBNF), described in Section \ref{lbnf}. This grammar gives the
+tool all the information it needs to generate an abstract syntax, traversal template, pretty printer, and test bench. Additionally, while it may be often hard to write correct code for tools like YACC, it is straightforward to {\em generate} correct code for them. Hence the BNF Converter also generates specifications for a lexer and parser.
+
+This approach offers many advantages. First of all, the front end is defined in a
+single source file based on the well-known Backus Naur Form. This increases maintainability. Secondly this higher level of abstraction makes it easy for our tool to check the grammar for problems, rather than attempting to check code written directly in an implementation language like C.
+
+Finally, this approach decouples the language-definition grammar from the implementation-language syntax, allowing the programmer to
+experiment with implementing the same methodology over multiple languages. This opens up new possibilities, such as using a server application written in C++ to pretty-print output that will be parsed by a Java application running on a PDA. It also gives the opportunity to create a prototype language implementation in Haskell, then switch to C for development once the language definition has been finalized.
+
+This paper gives an overview of the LBNF grammar formalism. We then compare the methodology the BNF Converter uses to generate code in Haskell, Java, C++, and C, highlighting some of the differences of implementing a compiler in these languages. Finally, we conclude with a discussion of our experiences using the tool in education and language prototyping.
+
+
+\shortsection{Language Describability}
+
+The requirements that the BNF Converter puts on a language in order to
+describe it are simple and widely accepted: the syntax must be definable
+by a context-free grammar and the lexical structure by a regular expression.
+The parser's semantic actions are only used for constructing abstract 
+syntax trees and they can therefore not contribute to the definition of 
+the language. 
+Toy languages in compiler text books are usually designed to meet these
+criteria, and the trend in real languages is to become closer to this ideal.
+
+Often it is straightforward to use preprocessing to turn a language that almost
+meets the criteria into one that meets them completely.
+For example, the maintainers of C have long known that they can describe 
+the language through a BNF grammar with the removal of a single production 
+via preprocessing \cite{Kern88}; we have indeed used the same idea to
+implement ANSI C by the BNF Converter (Section~\ref{real}). 
+Other features, such as layout syntax, can be handled by adding a 
+processing level between the lexer and the parser.
+
+\input{LBNF}
+
+
+\input{haskell}
+
+\section{Java Code Generation}
+
+Translating an LBNF grammar into an object-oriented language is less straightforward. Appel outlines two possible approaches to abstract syntax representation in \textit{Modern Compiler Implementation in Java} \cite{AppelJ}. 
+
+In the first method, which Appel refers to as the ``Object-Oriented method,''
+there is one Java class for each rule in the language grammar. Each class
+inherits from a single superclass, and each class defines operations on itself.
+For instance, if our compiler were to translate to SPARC and Intel assembly code
+each class would have a method \texttt{toSPARC()} and \texttt{toIntel()} that would translate itself to the appropriate representation. The advantage of this method is that
+it is easy to add new language categories. The user may add
+new classes containing the appropriate methods without altering existing definitions. The
+disadvantage is that it can be hard to add new syntax tree traversals.
+Adding a function \texttt{toAlpha()} for instance, could result in editing hundreds of classes.
+
+In the second ``syntax separate from interpretations'' method, there is still one Java class for each grammar rule, but now classes are simply empty data structures with no methods aside from a constructor. Translation functions are removed from the data structure, and traverse the tree by straightforward manner. With this method it is easy to add new traversals, and these functions can make better use of context information than single objects' methods. The disadvantage is that adding new language constructs requires editing all existing traversal functions to handle the new cases.
+
+However, the BNF Converter, which makes the grammar the central point of all language changes, lessens this disadvantage.  Additionally, since translation functions are now traversals, it is easy for our tool to generate skeleton functions as we do in Haskell and for the user to reuse the template in all transformations.\footnote{Of course, if the user implements a translation and then modifies the language definition they must still change the implemented code to reflect the modifications. However, they can refer to the template function in order to locate the differences.} Therefore the BNF Converter uses this method in generating Java (and C++) abstract syntax.
+
+\shortsection{Java Abstract Syntax Generation}
+
+Let us return to our example of Boolean Expressions from earlier (Section \ref{example}). Given this grammar, the BNF Converter will generate the abstract syntax found in Figure \ref{fig:java}A, following Appel's method.
+
+There are several differences between this transformation and the Haskell version that should be highlighted. First, experienced Java programmers will quickly notice that all the generated classes are public, and in Java public classes must go into their own \texttt{.java} file, with class name matching the file name. Since it common to have hundreds of productions in an LBNF grammar, the user's source directory can quickly become cluttered, so Abstract Syntax classes are placed into a sub-package called {\tt Absyn}, and thus must be kept in a file-system subdirectory of the same name, which the tool creates.
+
+There is a second difference in the code in Figure \ref{fig:java}A: names. Classes in Java have instance variables and parameters, and all of these require unique names (whereas in Haskell data structures the names are only optional). First, we realize that parameter names generally are not important---we can simply give them the name ``p'' plus a unique number. The names of instance variables, on the other hand, do matter. The BNF Converter converts the type name to lowercase and adds an underscore to prevent conflicts with reserved words. If there is more than one variable of a type then they are numbered. Thus, the classes \texttt{EPlus} and \texttt{ETimes} have members \texttt{exp\_1} and \texttt{exp\_2}.
+
+Notice that Appel's method uses public instance variables, which may be regarded as bad style by object-oriented programmers today. We have chosen to remain with the original method, both to keep a higher correspondence to the textbook, 
+and to ease the generation of the pretty printer and other traversals.
+
+Finally recall that Java does not yet support polymorphic lists. Generic types will be supported in the upcoming Java 2 Platform, Standard Edition 1.5 release. However, until the new platform is widely adapted, the BNF Converter simply generates simple null-terminated linked lists for each list that the grammar uses. These special classes are prefixed with ``List,'' such as the class \texttt{ListEXP} above, which takes the place of Haskell's [EXP].
+
+\shortsection{The Lexer and Parser}
+
+The BNF Converter generates specification files for the JLex \cite{jlex} and CUP \cite{cup} tools which create a lexer and parser in a manner similar to the Haskell version. The difference between the tools is mainly a matter of syntax. For example, CUP cannot work with strings directly but requires terminal symbols be defined for each language symbol or reserved word. Also, CUP does not refer to variables with \$ variables like Bison, but rather by assigning names to all possibly-used values. Specifications equivalent to the Happy code in Figure \ref{fig:haskell}B is shown in Figures \ref{fig:java}B.
+
+\shortsection{The Java Pretty Printer and Skeleton Function}
+\label{javapp}
+
+Similar to the Haskell version, the Java pretty printer linearizes the abstract syntax tree using some easily-modifiable heuristics. It follows the method Appel outlines, using Java's \texttt{instanceof} operator to determine which subclass it is dealing with, then down-casting and working with the public variables. For example, the code to pretty-print an EXP is found in Figure \ref{fig:java}D.
+
+However, the pretty printer alone is not enough to test the correctness of a parse. In the Haskell version the built-in \texttt{show} function is used to print out the abstract syntax tree so that the programmer can confirm its correctness. We could use Java's \texttt{toString()} method in a similar role, but this is not satisfying, as it is generally used for debugging purposes. Instead, the BNF Converter adds a second method to the pretty printer, similar to Haskell's \texttt{show} function, shown in Figure \ref{fig:java}E.
+
+Throughout both methods the generated code makes use of Java's \texttt{StringBuffer} class to efficiently build the result of the linearization.
+
+This \texttt{instanceof} method is also used to generate a code skeleton. However, this method may seem awkward to many object-oriented programmers, who are often taught to avoid \texttt{instanceof} wherever possible.
+
+Much more familiar is the \textit{Visitor Design Pattern} \cite{visitor}. In it each member of the abstract syntax tree implements an \texttt{accept} method, which then calls the appropriate method in the visiting class (double-dispatch).
+
+There is no reason that these two methods cannot live side by side. Therefore the BNF Converter generates code skeletons using both Appel's method and a Visitor interface and skeleton (Figure \ref{fig:java}F).
+
+Most familiar Visitor Design Patterns use a Visitee-traversal algorithm. That is to say, visiting the top member of a list will automatically visit all the members of the list. However, the BNF Converter-generated pattern uses Visitor-traversal. This means that it is the Visitor's responsibility, when visiting a list, to visit all the members in turn. This is because certain algorithms that compilers want to implement are not compositional, so performing a transformation on a single member may be quite different than performing that transformation on a certain pattern of nodes. For example, during peephole analysis a compiler may wish to merge to subsequent additions into a single operation, but may want to leave single additions unchanged. In our experience, these types of algorithms are easier to implement if the Visitor itself is in control of the traversal.
+
+\shortsection{The Test Bench and Makefile}
+
+With the pretty printer defined it is trivial to define a test bench and makefile to compile the code. However, the lack of an interactive environment such as Haskell's \texttt{hugs} means that the user is not able to specify which parser is used. Instead the first-defined entry-point of the grammar is used by default. However it is easy for the user to specify another entry point directly in the test bench source code.
+
+\shortsection{Translation Summary}
+
+Overall, translating from a declarative grammar to an object-oriented 
+abstract syntax definition is possible, however the translation introduces a number of new complications such as the names of instance variables. A comparison of Figure \ref{fig:haskell}A and Figure \ref{fig:java}A emphasizes the challenges of implementing a compiler in Java.
+ 
+The BNF Converter tries to deal with these complications in a consistent way to ease the implementation of the rest of the compiler. Appel's syntax-separate-from-interpretations method introduces several conventions that object-oriented programmers may find confusing at first. However, in practice the ease of using the generated transformation templates should help users to quickly overcome these difficulties.
+
+\input{java}
+
+\section{C++ Code Generation}
+
+With the Java version implemented it was straightforward to add support for C++ generation, using Flex \cite{flex} and Bison \cite{bison}. This translation is similar to the Java version---the main difference being the additional complications of destructors and the separation of interface (.H) and implementation (.cpp) files. The details of this translation have been omitted for space considerations but may be found on the BNF Converter homepage \cite{bnfcsite}.
+
+\section{C Code Generation}
+
+\shortsection{The Abstract Syntax}
+
+The translation to C code is quite different than the other languages. It follows the methodology used by Appel in the C Version of his textbook \cite{AppelC}.
+
+In this methodology, each grammar category is represented by a C \texttt{struct}. Each struct has an enumerated type indicating which LBNF label it represents, and a \texttt{union} of pointers to all corresponding non-terminal categories. Our boolean-expressions example generates the structs shown in Figure \ref{fig:c}A. Structs are originally named with an underscore, and \texttt{typdef} declarations clean up the code by making the original grammar name refer to a pointer to that struct.
+
+Data structure instances are created by using constructor functions, which are generated for each struct (Figure \ref{fig:c}B). These functions are straightforward to generate and take the place of the \texttt{new} operator and constructors in an object-oriented language.
+
+\shortsection{The Lexer and Parser}
+
+The BNF Converter also generates a lexer specification file for Flex and a parser specification file for Bison. Figure \ref{fig:c}C shows specification code equivalent to the examples in Figures \ref{fig:haskell}B and \ref{fig:java}B.
+
+One complication is that there is no way to access the result of the parse without storing a global pointer to it. This means that every potential entry point production must store a pointer to the parse (the \texttt{YY\_RESULT} variables in Figure \ref{fig:c}C),
+in case they are the final successful category. Users can limit the performance impact of this by using the \texttt{entrypoints} pragma.
+
+\shortsection{The Pretty Printer and Case Skeleton}
+
+Any algorithm that wishes to traverse the tree must switch on the \texttt{kind} field of each node, then recurse to the appropriate members. For example, Figure \ref{fig:c}E shows the pretty-printer traversal. The abstract syntax tree viewer and skeleton template are similar traversals.
+
+\shortsection{Translation Summary}
+
+While it is straightforward to generate a parser and a data structure to represent the results of a parse in C, the combination of pointers and unions (seen in Figures \ref{fig:c}B and \ref{fig:c}D) results in code that can be sometimes hard for the user to work with. We are currently looking into ways to make the generated code more friendly through the use of macros or other methods.
+
+\input{c}
+
+
+\section{Discussion}
+
+\shortsection{Productivity Gains}
+
+The source code of the Boolean expression grammar in Section~\ref{example} is
+8 lines. The size of the generated code varies from 425 lines of 
+Haskell/Happy/Alex to 
+1112 lines of C++/Bison/Flex. The generated code is not superfluously verbose, but
+similar to what would be written by hand by a programmer following
+Appel's methodology \cite{AppelC,AppelJ,appel}. 
+This amounts to a gain of coding effort by
+a factor of 50--100, which is comparable to the effort saved by,
+for instance, writing an LR parser in Bison instead of directly in C.\footnote{
+In the present example, the Flex and Bison code generated by the BNF Converter 
+is 172 lines, from which these tools generate 2600 line of C.
+}
+In addition to decreasing the number of lines, the single-source
+approach alleviates synchronization problems, both when creating and 
+when maintaining a language.
+
+
+
+\shortsection{The BNF Converter as a Teaching Tool}
+
+\label{results}
+
+The BNF Converter was tested as a teaching tool at the 
+fourth-year compiler course in Spring 2003 at Chalmers University.
+The goal was, on the one hand, to advocate the use of declarative
+and portable language definitions, and on the other hand, to
+leave more time for back-end construction in a compiler course.
+The results were encouraging: the lexer/parser part of the compiler 
+was estimated only to be 25 \% of the work at the lowest grade, 
+and 10 \% at the highest grade---at which point the student compiler had to 
+include several back ends. This was far from the times 
+when the parser was more than 50 \% of a student compiler.
+
+In Autumn 2003, the BNF Converter is being used in a second-year Chalmers course
+on Programming Languages. It is replacing the previously-used parser 
+combinator libraries in Haskell.
+The main motivation at this level is to teach the correspondence
+between parsers and grammars, and to
+provide a high-level parser tool also for programmers who do not know Haskell.
+
+One concern about using the BNF Converter 
+was that students would not really learn parsing, but just to write grammars. 
+However, students writing their parsers in YACC 
+are equally isolated from the internals of LR parsing as 
+those writing in LBNF. In fact, as learning
+the formalism takes less time in the case of LBNF, 
+the teacher can allocate more
+time for explaining how an LR parser works. 
+
+
+
+\shortsection{Real-World Languages}
+
+\label{real}
+
+Students in a compiler class usually implement toy languages.
+What about real-world languages?
+As an experiment, a complete LBNF definition of
+ANSI C, with \cite{Kern88} as reference, was 
+written.\footnote{
+BSc thesis of Ulf Persson at Chalmers.}
+ The result was a complete front-end processor for ANSI C, 
+with the exception, mentioned in \cite{Kern88} of type definitions,
+which have to be treated with a preprocessor. The grammar has 229
+LBNF rules and 15 token pragmas (to deal with different numeral
+literals, such as octals and hexadecimals).
+
+Another real-world example is the
+object-oriented specification language OCL
+\cite{WarmerKleppe99}.\footnote{
+Work by Kristofer Johannisson at Chalmers (private communication).} 
+Finally, the BNF Converter itself is implemented by 
+using modules generated from an LBNF grammar of the LBNF formalism.
+
+
+\input{prototyping}
+
+\shortsection{Related Work}
+
+The BNF Converter adds a level of abstraction to the YACC \cite{johnson-yacc} 
+tradition of compiler compilers,
+since it compiles a yet higher-level notation into
+notations on the level of YACC.
+Another system on this 
+level up from YACC is Cactus \cite{Cactus},
+which uses an EBNF-like notation to 
+generate front ends in Haskell and C.
+Unlike the BNF Converter, Cactus aims for completeness,
+and the notation is therefore more complex than LBNF. 
+It is not possible to extract a pretty printer from a Cactus grammar, 
+and Cactus does not generate documentation.
+
+The Zephyr definition language 
+\cite{zephyr}\ defines a portable format for abstract syntax
+and translates it into SML, Haskell, C, C++,
+Java, and SGML, together with functions for displaying syntax trees. It does not support the definition of concrete syntax.
+
+In general, compiler tools almost invariably opt for expressive power 
+rather than declarativity and simplicity.
+The situation is different in linguistics, where
+the declarativity and \textit{reversibility} (i.e.\ usability for both
+parsing and generation) of grammar formalisms are highly valued. A major 
+example of this philosophy are Definite Clause Grammars (DCG) 
+\cite{dcg}. Since DCGs are usually implemented as an embedded 
+language in Prolog, 
+features of full Prolog are sometimes smuggled into DCG grammars;
+but this is usually considered harmful since it destroys
+declarativity.
+
+
+
+\section{Conclusions and Future Work}
+
+BNF Converter is a tool implementing the Labelled BNF grammar formalism
+(LBNF). Given that a programming language is
+``well-behaved'', in a rather intuitive sense, an
+LBNF grammar is the only source that is needed to implement
+a front end for the language, together with matching
+LaTeX documentation. Since LBNF is purely declarative, 
+the implementation can be generated in different languages:
+these currently include Haskell, Java, C++, and C, each with
+their standard parser and lexer tools. Depending on
+the tools, the size of the generated code is typically 
+50--100 times the size of the LBNF source.
+
+The approach has proven to be useful both in teaching and
+in language prototyping. As for legacy real-world languages, 
+complete definitions have so far been written for C and OCL.
+Often a language is almost definable, but has some
+exotic features that would require stronger tools.
+We have, however, opted to keep LBNF simple, at the expense
+of expressivity; and we believe that there are many good reasons
+behind a trend toward
+more and more well-behaved programming languages.
+
+The LBNF formalism itself does not seem to require much
+elaboration. As for the implementation, support for generic types in Java's upcoming release and C++ Standard Template Library should be added. Finally, the most frequent wish has been
+to make it possible to retain position information
+in the abstract syntax tree, so that error messages from later
+compiler phases can be linked to the source code.
+
+
+
+\bibliographystyle{plain}
+\bibliography{CC-2004}
+
+\input{lbnf_spec}
+
+\end{document}

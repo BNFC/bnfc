@@ -1,0 +1,40 @@
+views Old, New ;
+
+entrypoints Theory ;
+
+Th. Theory ::= [Jmt] ;
+
+terminator Jmt ";" ;
+
+New: JTyp. Jmt ::= Ident "::" Typ ;
+Old: JTyp. Jmt ::= Ident ":" Typ ;
+
+JDef. Jmt ::= Exp "=" Exp ;
+
+EIdent. Exp2 ::= Ident ;
+TIdent. Typ2 ::= Ident ;
+
+New: EApp. Exp1 ::= Exp2 [Exp2] ;
+Old: EApp. Exp1 ::= Exp2 "(" [Exp] ")" ;
+
+New: TApp. Typ1 ::= Typ1 [Exp2] ;
+Old: TApp. Typ1 ::= Typ2 "(" [Exp] ")" ;
+
+New: EAbs. Exp ::= "\\" Ident "->" Exp ;
+Old: EAbs. Exp ::= "(" Ident ")" Exp ;
+
+New: TPro. Typ ::= "(" Ident "::" Typ ")" "->" Typ ;
+Old: TPro. Typ ::= "(" Ident ":" Typ ")" Typ ;
+
+New: TArr. Typ ::= Typ1 "->" Typ ;
+Old: TArr. Typ ::= "(" Typ ")" Typ ;
+
+New: separator nonempty Exp2 "" ;
+Old: separator nonempty Exp "," ;
+
+coercions Exp 2 ;
+coercions Typ 2 ;
+
+Old: comment "(*" "*)" ;
+New: comment "{-" "-}" ;
+

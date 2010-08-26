@@ -1,0 +1,267 @@
+\section{The LBNF Grammar Formalism}
+
+\label{lbnf}
+
+The input to the BNF Converter is a specification file written in the 
+LBNF grammar formalism. LBNF is an entirely declarative 
+language designed to combine the simplicity and readability of 
+Backus Naur Form with a handful of features to hasten the development of 
+a compiler front-end.
+
+Besides declarativity, we find it important that LBNF has its
+own semantics, instead of only getting its meaning through
+translations to Haskell, Java, C, etc. This means, among other
+things, that LBNF grammars are type checked on the source,
+so that semantic errors do not appear unexpectedly in the generated
+code. Full details on LBNF syntax and semantics are given in \cite{bnfc},
+as well as on the BNF Converter homepage \cite{bnfcsite}.
+
+
+
+\subsection{Rules and Labels}
+
+At the most basic level, an LBNF grammar is a BNF grammar where 
+every rule is given a {\em label}. The label is an identifier 
+used as the constructor of syntax trees whose subtrees are 
+given by the non-terminals of the rule; the terminals are just ignored.
+As a first example, 
+consider a rule defining assignment statements in C-like languages:
+\begin{verbatim}
+  SAssign. STM ::= Ident "=" EXP ;
+\end{verbatim}
+Apart from the label {\tt SAssign},
+the rule is an ordinary BNF rule, with terminal symbols enclosed in
+double quotes and non-terminals written without quotes. A small, though 
+complete example of a grammar is given in Section \ref{example}.
+
+Some aspects of the language belong to its lexical
+structure rather than its grammar, and are described by
+regular expressions rather than by BNF rules. We have therefore
+added to LBNF two rule formats to define the lexical structure: 
+{\em tokens} and {\em comments} (Section~\ref{lexer}).
+
+Creating an abstract syntax by adding a node type for every BNF rule
+may sometimes become too detailed, 
+or cluttered with extra structures. 
+To remedy this, we have identified the most common problem cases, 
+and added to LBNF
+some extra conventions to handle them (Section~\ref{conventions}).
+
+Finally, we have added some {\em macros}, 
+which are syntactic sugar for potentially 
+large groups of rules and help to write grammars 
+concisely, and some {\em pragmas}, such as the possibility
+to limit the entrypoints of the parser to a subset of nonterminals.
+
+\subsection{Lexer Definitions}
+\label{lexer}
+
+\shortsection{The {\tt token} definition format}
+
+\label{reg}
+
+The {\tt token} definition form enables the LBNF programmer
+to define new lexical types using
+a simple regular expression notation.
+For instance, the following defines the type of
+identifiers beginning with upper-case letters.
+\begin{verbatim}
+  token UIdent (upper (letter | digit | '\_')*) ;
+\end{verbatim}
+The type {\tt UIdent} becomes usable
+as an LBNF nonterminal and as a type in the abstract syntax.
+Each token type is implemented by a {\tt newtype} in Haskell, as
+a {\tt String} in Java, and as a {\tt typedef} to {\tt char*} in C/C++.
+
+
+\shortsection{Predefined token types}
+
+To cover the most common cases, LBNF provides
+five predefined token types:
+\bequ
+{\tt Integer}, 
+{\tt Double}, 
+{\tt Char}, 
+{\tt String}, 
+{\tt Ident} 
+\enqu
+These types have predefined lexer rules, but could also be defined
+using the regular expressions of LBNF (see \cite{bnfc}).
+In the abstract syntax, the types are represented as corresponding
+types in the implementation language; {\tt Ident} is treated like
+user-defined token types.
+Only those predefined types that are actually used in
+the grammar are included in the lexer and the
+abstract syntax. 
+
+\shortsection{The {\tt comment} definition format}
+
+\textit{Comments} are segments of source code that include free
+text and are not passed to the parser. The natural place
+to deal with them is in the lexer. A {\tt comment} definition instructs the
+lexer generator to treat certain pieces of text as comments. 
+
+The comment definition takes one or two string arguments. The first
+string defines how a comment begins.
+The second, optional string marks the end of a comment;
+if it is not given then the comment is ended by a newline.
+For instance, the Java comment convention is defined as follows:
+\begin{verbatim}
+  comment "//" ;
+  comment "/*" "*/" ; 
+\end{verbatim}
+
+\subsection{Abstract Syntax Conventions}
+
+\label{conventions}
+
+\shortsection{Semantic dummies}
+
+Sometimes the concrete syntax of a language includes rules that make
+no semantic difference. For instance, the C language 
+accepts extra semicolons after statements.
+We do not want to represent these extra semicolons in the abstract syntax.
+Instead, we use the following convention:
+\begin{quote}
+If a rule has only one non-terminal on the right-hand-side, and this
+non-terminal is the same as the value type, then it can have as its label
+an underscore ({\tt \_}), which 
+does not add anything to the syntax tree.
+\end{quote}
+Thus, we can write the following rule in LBNF:
+\begin{verbatim}
+  _ . STM ::= STM ";" ;
+\end{verbatim}
+
+
+
+\shortsection{Precedence levels}
+
+A common idiom in (ordinary) BNF is to use indexed variants of categories
+to express precedence levels, e.g. {\tt EXP, EXP2, EXP3}.
+The precedence level regulates the order of parsing, including
+associativity. An expression belonging to a level $n$ can be used
+on any level $<n$ as well. Parentheses lift an expression of any level
+to the highest level.
+
+Distinctions between precedence levels and moving expressions between them
+can be defined by BNF rules, but we do not want these rules
+to clutter the abstract syntax. Therefore, we can use
+semantic dummies (\verb6_6) for the transitions, together with the
+following convention:
+\begin{quote}
+A category symbol indexed with a sequence of digits
+is treated as a type
+synonym of the corresponding non-indexed symbol.
+\end{quote}
+A non-indexed symbol is treated as having the level $0$.
+The following grammar shows how the convention works in
+a familiar example with arithmetic sums and products:
+\begin{verbatim}
+  EPlus.  EXP  ::= EXP  "+" EXP2 ;
+  ETimes. EXP2 ::= EXP2 "*" EXP3 ;
+  EInt.   EXP3 ::= Integer ;
+  _.      EXP  ::= EXP2 ;
+  _.      EXP2 ::= EXP3 ;
+  _.      EXP3 ::= "(" EXP ")" ;
+\end{verbatim}
+The indices also guide the pretty-printer to 
+generate a correct, minimal number of parentheses.
+
+The {\tt coercions} macro provides a shorthand for 
+generating the dummy transition rules concisely. It takes as its
+arguments the unindexed category and the highest precedence level. So the final three rules in the above example could be replaced with:
+\begin{verbatim}
+  coercions EXP 3 ;
+\end{verbatim}
+
+\shortsection{Polymorphic lists}
+
+It is easy to define monomorphic list types in LBNF:
+\begin{verbatim}
+  NilDEF.  ListDEF ::= ;
+  ConsDEF. ListDEF ::= DEF ";" ListDEF ;
+\end{verbatim}
+But LBNF also has a \textit{polymorphic list notation}. It follows the
+Haskell syntax but is automatically translated to native representations
+in Java, C++, and C.
+\begin{verbatim}
+  [].  [DEF] ::= ;
+  (:). [DEF] ::= DEF ";" [DEF] ;
+\end{verbatim}
+The basic ingredients of this notation are
+\bequ
+{\tt[}$C${\tt ]}, the category of lists of type $C$,
+ 
+{\tt []} and {\tt (:)}, the Nil and Cons rule labels,
+
+{\tt (:[])}, the rule label for one-element lists. 
+\enqu
+The list notation can also be seen as a variant of the 
+Kleene star and plus, and hence as an ingredient from \textit{Extended BNF} in LBNF.
+
+\label{leftrec}
+
+Using the polymorphic list type makes BNF Converter perform
+an automatic optimization: \textit{left-recursive lists}. 
+Standard lists in
+languages like Haskell are right-recursive, but
+LR parsers favor left-recursive lists because they save 
+stack space. 
+BNF Converter allows programmers to define familiar 
+right-recursive lists, but translates them into 
+left-recursive variants in parser generation.
+When used in another construction, the list is automatically 
+reversed. The code examples below, generated from the grammar in
+Section~\ref{example}, show how this works in the different parser tools.
+
+
+\shortsection{The {\tt terminator} and {\tt separator} macros}
+\label{lists}
+
+The {\tt terminator} macro defines a pair of list rules by what
+token terminates each element in the list. For instance,
+\begin{verbatim}
+  terminator STM ";" ;
+\end{verbatim}
+is shorthand for the pair of rules
+\begin{verbatim}
+  [].  [STM] ::= ;
+  (:). [STM] ::= STM ";" [STM] ;
+\end{verbatim}
+The {\tt separator} macro is similar,
+except that the separating token is not expected after the last
+element of the list. 
+The qualifier {\tt nonempty} can be used in both macros to 
+make the one-element list the base case. 
+
+
+
+
+\subsection{Example Grammar}
+\label{example}
+
+
+A small example LBNF grammar is given in Figure \ref{fig:source}. It describes a language of boolean expressions, perhaps written as part of a larger grammar. In this small language a PROGRAM is simply a list of expressions terminated by semicolons. The expressions themselves are just logical AND and OR of true, false, or variable names represented by the LBNF built-in type \texttt{Ident}.
+
+This example, though small, is representative because it uses both polymorphic lists and precedence levels (the AND operator having higher precedence than OR). We will use this single source example to explore BNF Converter's generation methodology across multiple implementation languages.
+
+\begin{figure}
+\begin{center}
+\begin{boxedminipage}[t]{6.3cm}
+\begin{verbatim}
+PROGRAM. PROGRAM ::= [EXP] ;
+
+EOr.    EXP  ::= EXP "||" EXP1 ;
+EAnd.   EXP1 ::= EXP1 "&&" EXP2 ;
+ETrue.  EXP2 ::= "true" ;
+EFalse. EXP2 ::= "false" ;
+EVar.   EXP2 ::= Ident ;
+terminator EXP ";" ;
+coercions EXP 2 ;
+\end{verbatim}
+\end{boxedminipage}
+\end{center}
+\caption{LBNF Source code for all examples}
+\label{fig:source}
+\end{figure}

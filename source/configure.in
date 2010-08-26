@@ -1,0 +1,36 @@
+AC_PREREQ(2.61)
+
+# CHANGE THIS!
+AC_INIT(extract,1.0, name@host.com)
+
+AC_CONFIG_FILES([config.mk])
+AC_CONFIG_SRCDIR([src/Main.hs])
+
+AC_PROG_CC
+
+AC_PROG_MAKE_SET
+
+AC_ARG_WITH(ghc,
+   AC_HELP_STRING([--with-ghc=<ghc command>],
+   [Use a different command instead of 'ghc' for the Haskell compiler.]),
+   [AC_CHECK_FILE("$withval",GHC="$withval",[AC_PATH_PROG(GHC,"$withval")])],
+   [AC_PATH_PROG(GHC,ghc)])
+
+GHC_VERSION=`$GHC --version | sed -e 's/.*version //'`
+
+AC_MSG_CHECKING([GHC version])
+AC_MSG_RESULT($GHC_VERSION)
+
+AC_CHECK_PROGS(TAR, gtar tar)
+
+AC_PROG_INSTALL
+
+AC_SUBST(GHC)
+AC_SUBST(GHCI)
+AC_SUBST(GHCFLAGS)
+AC_SUBST(CPPFLAGS)
+AC_SUBST(LDFLAGS)
+
+AC_CONFIG_FILES([Makefile src/Makefile])
+AC_OUTPUT
+

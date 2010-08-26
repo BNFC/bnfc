@@ -1,0 +1,615 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+  <meta http-equiv="content-type"
+ content="text/html; charset=ISO-8859-1">
+  <title>BNF Converter Java Mode</title>
+</head>
+<body>
+<div style="text-align: center;">
+<h2>BNF Converter</h2>
+<h2>Java Mode</h2>
+</div>
+<br>
+<h3>By Michael Pellauer</h3>
+<h3>2003</h3>
+One of the best features of the LBNF file format is that it is
+completely independent of the target programming language. The new Java
+mode allows the BNF Converter to output a compiler front end in Java
+using JLex and CUP.<br>
+<br>
+BNFC Java-mode was developed for JLex version 1.2.6 and CUP version
+0.10k. The generated Java code requires JDK version 1.2 or greater.<br>
+<br>
+BNF Converter Homepage:<br>
+<a href="http://www.cs.chalmers.se/~markus/BNFC/">http://www.cs.chalmers.se/~markus/BNFC/</a><br>
+<br>
+JLex Homepage:<br>
+<a href="http://www.cs.princeton.edu/~appel/modern/java/JLex/">http://www.cs.princeton.edu/~appel/modern/java/JLex/</a><br>
+<br>
+CUP Homepage:<br>
+<a href="http://www.cs.princeton.edu/~appel/modern/java/CUP/">http://www.cs.princeton.edu/~appel/modern/java/CUP/</a><br>
+<br>
+<h3>USAGE<br>
+</h3>
+<div style="margin-left: 40px;"><big><span
+ style="font-family: monospace;">bnfc [-m] -java FILENAME.cf</span></big><br
+ style="font-family: monospace;">
+</div>
+<br>
+To access the java mode simply pass the -java command to bnfc. It uses <big><span
+ style="font-family: monospace;">FILENAME</span></big> as the package
+name of the generated Java code. The result will be the following files:<br>
+<br>
+<table cellpadding="2" cellspacing="2" border="0"
+ style="text-align: left; width: 100%;">
+  <tbody>
+    <tr>
+      <td style="vertical-align: top; text-decoration: underline;"><big><span
+ style="font-family: monospace;">Filename:</span></big></td>
+      <td style="vertical-align: top; text-decoration: underline;"><big><span
+ style="font-family: monospace;">Description:</span></big></td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;"><big><span
+ style="font-family: monospace;">Absyn/*.java<br>
+      </span></big><big><span style="font-family: monospace;">Visitor.java<br>
+      </span></big><big><span style="font-family: monospace;">Visitable.java<br>
+      </span></big><big><span style="font-family: monospace;">FILENAME.lex<br>
+      </span></big><big><span style="font-family: monospace;">FILENAME.cup<br>
+      </span></big><big><span style="font-family: monospace;">PrettyPrinter.java<br>
+      </span></big><big><span style="font-family: monospace;">Skeleton.java<br>
+VisitSkel.java<br>
+      </span></big><big><span style="font-family: monospace;">Test.java<br>
+      </span></big><big><span style="font-family: monospace;">Makefile</span></big><br>
+      </td>
+      <td style="vertical-align: top;"><big><span
+ style="font-family: monospace;">Abstract Syntax tree package (in
+subdirectory Absyn).<br>
+      </span></big><big><span style="font-family: monospace;">Visitor
+interface<br>
+      </span></big><big><span style="font-family: monospace;">Visitable
+interface</span></big><br>
+      <big><span style="font-family: monospace;">JLex file (lexer
+specification)<br>
+      </span></big><big><span style="font-family: monospace;">CUP file
+(parser specification)<br>
+      </span></big><big><span style="font-family: monospace;">A Pretty
+Printer for the abstract syntax tree.<br>
+      </span></big><big><span style="font-family: monospace;">A code
+skeleton for traversing the syntax tree.<br>
+A skeleton that uses the Visitor Design Pattern.<br>
+      </span></big><big><span style="font-family: monospace;">A
+testbench to test the final result.<br>
+      </span></big><big><span style="font-family: monospace;">A
+Makefile (generated only with the -m flag).</span></big><br>
+      </td>
+    </tr>
+  </tbody>
+</table>
+<br>
+Please ensure that your <span
+ style="font-family: monospace; font-weight: bold;">$CLASSPATH</span>
+correctly points to <span
+ style="font-family: monospace; font-weight: bold;">JLex.Main</span> and<span
+ style="font-family: monospace; font-weight: bold;"> java_cup.Main</span>.
+It may also be useful to include the current working directory in the <span
+ style="font-family: monospace; font-weight: bold;">$CLASSPATH</span>.<br>
+<h3>Compiling the Compiler Front End</h3>
+You can use the generated Makefile to compile the generated Java Code
+with "make" ("gmake" on some systems).<br>
+<br>
+If all goes well the following files should be generated:<br>
+<br>
+<table cellpadding="2" cellspacing="2" border="0"
+ style="text-align: left; width: 100%;">
+  <tbody>
+    <tr>
+      <td
+ style="vertical-align: top; font-family: monospace; text-decoration: underline;"><big>File:</big></td>
+      <td
+ style="vertical-align: top; font-family: monospace; text-decoration: underline;"><big>Description:</big></td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top; font-family: monospace;"><big>Absyn/*.class<br>
+FILENAME.lex.java<br>
+Yylex.class<br>
+parser.java<br>
+sym.java<br>
+parser.class, sym.class, <br>
+&nbsp; CUP$parser$actions.class<br>
+PrettyPrinter.class<br>
+Test.class<br>
+      </big></td>
+      <td style="vertical-align: top; font-family: monospace;"><big>
+Abstract Syntax class files<br>
+Lexer generated by JLex<br>
+Compiled Lexer class<br>
+Parser generated by CUP<br>
+CUP token symbols<br>
+      <br>
+Compiled parser classes<br>
+Compiled Pretty Printer<br>
+Compiled Test Bench<br>
+      </big></td>
+    </tr>
+  </tbody>
+</table>
+<h3>Testing the Compiler Front End<br>
+</h3>
+The Java class <span style="font-family: monospace; font-weight: bold;">Test.java</span>
+may be used to test the result of the generation. To use it simply give
+it the name of a file written in the target language. If parsing is
+correct, the abstract syntax tree (in Haskell-like syntax) and
+linearized pretty-printed result will be shown.<br>
+<br>
+For example, if we had created a subset of Java called Javalette, in <span
+ style="font-family: monospace; font-weight: bold;">Javalette.cf</span>:<br>
+<br>
+<big><span style="font-family: monospace; font-weight: bold;">&gt; java
+Javalette.Test helloworld.jl</span><br style="font-family: monospace;">
+<br style="font-family: monospace;">
+<span style="font-family: monospace;">Parse Succesful!</span><br
+ style="font-family: monospace;">
+<br style="font-family: monospace;">
+<span style="font-family: monospace;">[Abstract Syntax]</span><br
+ style="font-family: monospace;">
+<br style="font-family: monospace;">
+<span style="font-family: monospace;">(PDefList [(FuncDef
+TInt(FFuncName "main")[][(SPrintString "Hello World"),</span><span
+ style="font-family: monospace;"> (SReturn NoExpression)]NoSemicolon)])</span><br
+ style="font-family: monospace;">
+<br style="font-family: monospace;">
+<span style="font-family: monospace;">[Linearized Tree]</span><br
+ style="font-family: monospace;">
+<br style="font-family: monospace;">
+<span style="font-family: monospace;">int main () </span><br
+ style="font-family: monospace;">
+<span style="font-family: monospace;">{</span><br
+ style="font-family: monospace;">
+<span style="font-family: monospace;">&nbsp; printString ("Hello
+World") ;</span><br style="font-family: monospace;">
+<span style="font-family: monospace;">&nbsp; return ;</span><br
+ style="font-family: monospace;">
+<span style="font-family: monospace;">&nbsp; </span><br
+ style="font-family: monospace;">
+<span style="font-family: monospace;">}</span><br
+ style="font-family: monospace;">
+</big><br>
+If no argument is given then it attempts to read from stdin.<br>
+<br>
+Note that the current directory may need to be included in your <span
+ style="font-family: monospace; font-weight: bold;">$CLASSPATH</span>.<br>
+<br>
+<h3>Packages in the Generated Code</h3>
+The BNF Converter generates code that makes use of Java packages. For
+example, if your file name was <span
+ style="font-family: monospace; font-weight: bold;">Javalette.cf</span>,
+then it will generate code with a package name of "Javalette". Because
+of this your Java compiler may expect that the current directory name
+matches the package name. So in our example above the Java compiler
+probably will expect the current directory to be named "Javalette" and
+be included in the <span
+ style="font-family: monospace; font-weight: bold;">$CLASSPATH</span>
+somehow.<br>
+<br>
+Generation of the Abstract Syntax tree can result in hundreds of
+classes (one for each rule in your LBNF file). Therefore they are placed
+in a subpackage called "Absyn". A subdirectory will be created if one
+does not already exist.<br>
+<br>
+<h3>The Abstract Syntax Tree</h3>
+The Abstract Syntax tree is generated following the method Andrew Appel
+outlines in<br>
+"Modern Compiler Construction in Java"<br>
+<a href="http://www.cs.princeton.edu/~appel/modern/java/">http://www.cs.princeton.edu/~appel/modern/java/</a><br>
+<br>
+The generated code follows Appel's "non-Object Oriented method." In
+addition they implement the Visitor Design Pattern.<br>
+<br>
+Here is an example. Let us say that we have made a simple LBNF file to
+describe lists of boolean expressions, called <span
+ style="font-family: monospace; font-weight: bold;">BoolExp.cf</span>:<br>
+<br>
+<big><span style="font-family: monospace;">--Begin LBNF file</span><br
+ style="font-family: monospace;">
+<br style="font-family: monospace;">
+<span style="font-family: monospace;">PROG.&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+PROG&nbsp;&nbsp; ::= [EXP] ;</span><br style="font-family: monospace;">
+<br style="font-family: monospace;">
+<span style="font-family: monospace;">OrExp.&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+EXP&nbsp;&nbsp;&nbsp;&nbsp; ::= EXP "||" EXP1 ;</span><br
+ style="font-family: monospace;">
+<span style="font-family: monospace;">AndExp.&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+EXP1&nbsp;&nbsp;&nbsp; ::= EXP1 "&amp;&amp;" EXP2 ;</span><br
+ style="font-family: monospace;">
+<span style="font-family: monospace;">TVal.&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+EXP2&nbsp;&nbsp;&nbsp; ::= "true" ;</span><br
+ style="font-family: monospace;">
+<span style="font-family: monospace;">FVal.&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+EXP2&nbsp;&nbsp;&nbsp; ::= "false" ;<br>
+</span><br style="font-family: monospace;">
+<span style="font-family: monospace;">separator EXP ";" ;</span><br
+ style="font-family: monospace;">
+<span style="font-family: monospace;">coercions EXP 2 ;</span><br
+ style="font-family: monospace;">
+<br style="font-family: monospace;">
+<span style="font-family: monospace;">--LBNF file ends here</span></big><br>
+<br>
+The Absyn package will contain the following files:<br>
+<br style="font-family: monospace; font-weight: bold;">
+<span style="font-family: monospace; font-weight: bold;">AndExp.java&nbsp;&nbsp;
+FVal.java&nbsp;&nbsp;&nbsp;&nbsp; OrExp.java&nbsp;&nbsp;&nbsp; TVal.java</span><br
+ style="font-family: monospace; font-weight: bold;">
+<span style="font-family: monospace; font-weight: bold;">EXP.java&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+ListEXP.java&nbsp; PROG.java</span><br>
+<br>
+Note that there is one Java class for each Label in the LBNF file. The
+top of the tree is <big><span style="font-family: monospace;">PROG</span></big>,
+which is just a pointer to the top of a list:<br>
+<br>
+<big><span style="font-family: monospace;"><span
+ style="color: rgb(51, 51, 255);">package</span> BoolExp.Absyn; <span
+ style="color: rgb(204, 0, 0);">//Java Package generated by BNF
+converter</span></span><br style="font-family: monospace;">
+<br style="font-family: monospace;">
+<span style="font-family: monospace;"><span
+ style="color: rgb(51, 51, 255);">public class</span> PROG <span
+ style="color: rgb(51, 51, 255);">implements</span> BoolExp.Visitable</span><br
+ style="font-family: monospace;">
+<span style="font-family: monospace;">{</span><br
+ style="font-family: monospace;">
+<span style="font-family: monospace;">&nbsp; <span
+ style="color: rgb(51, 51, 255);">public</span> ListEXP listexp_;</span><br
+ style="font-family: monospace;">
+<span style="font-family: monospace;">&nbsp; <span
+ style="color: rgb(51, 51, 255);">public</span> PROG(ListEXP p1) {
+listexp_ = p1; }</span><br style="font-family: monospace;">
+<span style="font-family: monospace;">&nbsp; <span
+ style="color: rgb(51, 51, 255);">public</span> <span
+ style="color: rgb(51, 51, 255);">void</span> accept(BoolExp.Visitor v)
+{ v.visitPROG(this); }</span><br style="font-family: monospace;">
+<span style="font-family: monospace;">}</span></big><br>
+<br>
+The class <big><span style="font-family: monospace;">ListEXP</span></big>
+is automatically generated to represent the list of <big><span
+ style="font-family: monospace;">EXP</span></big>. This is
+significantly different than the standard BNF Haskell mode, which
+usesHaskell's built-in lists. Currently for each class <span
+ style="font-style: italic;">NAME</span> that can be held in a list, a
+class List<span style="font-style: italic;">NAME</span> is generated.
+These are straightforward null-terminated linked lists and should be
+familiar to all Java programmers. In the future this feature could be
+extended to use Java generic types.<br>
+<br>
+For example, here is <big><span style="font-family: monospace;">ListEXP</span></big>:<br>
+<br>
+<big><span style="font-family: monospace;"><span
+ style="color: rgb(51, 51, 255);">package</span> BoolExp.Absyn; <span
+ style="color: rgb(204, 0, 0);">//Java Package generated by BNF
+converter</span></span><br style="font-family: monospace;">
+<br style="font-family: monospace;">
+<span style="font-family: monospace;"><span
+ style="color: rgb(51, 51, 255);">public</span> <span
+ style="color: rgb(51, 51, 255);">class</span> ListEXP <span
+ style="color: rgb(51, 51, 255);">implements</span> BoolExp.Visitable</span><br
+ style="font-family: monospace;">
+<span style="font-family: monospace;">{</span><br
+ style="font-family: monospace;">
+<span style="font-family: monospace;">&nbsp; <span
+ style="color: rgb(51, 51, 255);">public</span> EXP exp_;</span><br
+ style="font-family: monospace;">
+<span style="font-family: monospace;">&nbsp; <span
+ style="color: rgb(51, 51, 255);">public</span> ListEXP listexp_;</span><br
+ style="font-family: monospace;">
+<br style="font-family: monospace;">
+<span style="font-family: monospace;">&nbsp; <span
+ style="color: rgb(51, 51, 255);">public</span> ListEXP(EXP p1, ListEXP
+p2) { exp_ = p1; listexp_ = p2; }</span><br
+ style="font-family: monospace;">
+<span style="font-family: monospace;">&nbsp; <span
+ style="color: rgb(51, 51, 255);">public</span> <span
+ style="color: rgb(51, 51, 255);">void</span> accept(BoolExp.Visitor v)
+{ v.visitListEXP(this); }</span><br style="font-family: monospace;">
+<span style="font-family: monospace;">&nbsp; <span
+ style="color: rgb(51, 51, 255);">public</span> ListEXP reverse()</span><br
+ style="font-family: monospace;">
+<span style="font-family: monospace;">&nbsp; {</span><br
+ style="font-family: monospace;">
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp; ...</span><br
+ style="font-family: monospace;">
+<span style="font-family: monospace;">&nbsp; }</span><br
+ style="font-family: monospace;">
+<span style="font-family: monospace;">&nbsp; <span
+ style="color: rgb(51, 51, 255);">public</span> ListEXP reverse(ListEXP
+prev)</span><br style="font-family: monospace;">
+<span style="font-family: monospace;">&nbsp; {</span><br
+ style="font-family: monospace;">
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp; ...</span><br
+ style="font-family: monospace;">
+<span style="font-family: monospace;">&nbsp; }</span><br
+ style="font-family: monospace;">
+<span style="font-family: monospace;">}</span></big><br>
+<br>
+Note that all Lists include a generated "reverse" function used during
+BNFC's optimization of Left-recursive lists. If there is sufficient
+programmer demand more standard generated functions (such as delete,
+lookup, etc) could be added.<br>
+<br>
+It is interesting to note that <big><span
+ style="font-family: monospace;">ListEXP</span></big> has a pointer to <big><span
+ style="font-family: monospace;">EXP</span></big>. But <big><span
+ style="font-family: monospace;">EXP</span></big> is an abstract class:<br>
+<br>
+<big><span style="font-family: monospace;"><span
+ style="color: rgb(51, 51, 255);">package</span> SimpleTest.Absyn; <span
+ style="color: rgb(204, 0, 0);">//Java Package generated by BNF
+converter</span></span><br style="font-family: monospace;">
+<br style="font-family: monospace;">
+<span style="font-family: monospace;"><span
+ style="color: rgb(51, 51, 255);">public abstract class</span> EXP {}</span><br
+ style="font-family: monospace;">
+</big><br>
+Abstract classes represent LBNF Categories, such as <big><span
+ style="font-family: monospace;">EXP</span></big>. If a category does
+not have a label with the same name (as <big><span
+ style="font-family: monospace;">PROG</span></big> did in our example)
+then it is declared abstract. All Labels of a category are represented
+as a subclass of the abstract category. Label names should not match
+category names if that category has more than one label.<br>
+<br>
+Here are <big><span style="font-family: monospace;">EXP</span></big>'s
+subtypes in our example:<br>
+<br>
+<big><span style="font-family: monospace;"><span
+ style="color: rgb(51, 51, 255);">public class</span> AndExp <span
+ style="color: rgb(51, 51, 255);">extends</span> EXP</span><br
+ style="font-family: monospace;">
+<span style="font-family: monospace;">{</span><br
+ style="font-family: monospace;">
+<span style="font-family: monospace;">&nbsp; <span
+ style="color: rgb(51, 51, 255);">public</span> EXP exp_1, exp_2;</span><br
+ style="font-family: monospace;">
+<span style="font-family: monospace;">&nbsp; <span
+ style="color: rgb(51, 51, 255);">public</span> AndExp(EXP p1, EXP p2) {
+exp_1 = p1; exp_2 = p2; }</span><br style="font-family: monospace;">
+<span style="font-family: monospace;">}</span><br
+ style="font-family: monospace;">
+<br style="font-family: monospace;">
+<span style="font-family: monospace;"><span
+ style="color: rgb(51, 51, 255);">public class</span> OrExp <span
+ style="color: rgb(51, 51, 255);">extends</span> EXP</span><br
+ style="font-family: monospace;">
+<span style="font-family: monospace;">{</span><br
+ style="font-family: monospace;">
+<span style="font-family: monospace;">&nbsp; <span
+ style="color: rgb(51, 51, 255);">public</span> EXP exp_1, exp_2;</span><br
+ style="font-family: monospace;">
+<span style="font-family: monospace;">&nbsp; <span
+ style="color: rgb(51, 51, 255);">public</span> OrExp(EXP p1, EXP p2) {
+exp_1 = p1; exp_2 = p2; }</span><br style="font-family: monospace;">
+<span style="font-family: monospace;">}</span><br
+ style="font-family: monospace;">
+<br style="font-family: monospace;">
+<span style="font-family: monospace;"><span
+ style="color: rgb(51, 51, 255);">public class</span> TVal <span
+ style="color: rgb(51, 51, 255);">extends</span> EXP</span><br
+ style="font-family: monospace;">
+<span style="font-family: monospace;">{</span><br
+ style="font-family: monospace;">
+<span style="font-family: monospace;">&nbsp; <span
+ style="color: rgb(51, 51, 255);">public</span> TVal() { }</span><br
+ style="font-family: monospace;">
+<span style="font-family: monospace;">}</span><br
+ style="font-family: monospace;">
+<br style="font-family: monospace;">
+<span style="font-family: monospace;"><span
+ style="color: rgb(51, 51, 255);">public class</span> FVal <span
+ style="color: rgb(51, 51, 255);">extends</span> EXP</span><br
+ style="font-family: monospace;">
+<span style="font-family: monospace;">{</span><br
+ style="font-family: monospace;">
+<span style="font-family: monospace;">&nbsp; <span
+ style="color: rgb(51, 51, 255);">public</span> FVal() { }</span><br
+ style="font-family: monospace;">
+<span style="font-family: monospace;">}</span><br
+ style="font-family: monospace;">
+</big><br>
+The programmer can then traverse through the tree using the generated
+Skeleton file (see below). The PrettyPrinter is an example of this. It
+contains twostatic methods that traverse the tree and return Strings.
+The "show" functionprints a Haskell-like view of the data type names.
+The other function "print" is a pretty-printer that uses simple
+heuristics (easily changed in the function "render") to linearize the
+syntax tree.<br>
+<br>
+We can see the PrettyPrinter class at work in the automatically
+generated class Test.java. Continuing our early example, let us write a
+simple input file in our language of boolean expressions:<br>
+<br>
+<big><span style="font-family: monospace;">true &amp;&amp; (false ||
+true);</span><br style="font-family: monospace;">
+<span style="font-family: monospace;">true;</span><br
+ style="font-family: monospace;">
+<span style="font-family: monospace;">false || false</span><br
+ style="font-family: monospace;">
+</big><br>
+We can now test our parser using the Test class:<br>
+<br style="font-weight: bold;">
+<big><span style="font-family: monospace; font-weight: bold;">&gt; java
+BoolExp.Test testfile</span><br style="font-family: monospace;">
+<br style="font-family: monospace;">
+<span style="font-family: monospace;">Parse Succesful!</span><br
+ style="font-family: monospace;">
+<br style="font-family: monospace;">
+<span style="font-family: monospace;">[Abstract Syntax]</span><br
+ style="font-family: monospace;">
+<br style="font-family: monospace;">
+<span style="font-family: monospace;">(PROG [(AndExp TVal(OrExp
+FValTVal)), TVal, (OrExp FValFVal)])</span><br
+ style="font-family: monospace;">
+<br style="font-family: monospace;">
+<span style="font-family: monospace;">[Linearized Tree]</span><br
+ style="font-family: monospace;">
+<br style="font-family: monospace;">
+<span style="font-family: monospace;">true &amp;&amp; (false || true) ;</span><br
+ style="font-family: monospace;">
+<span style="font-family: monospace;">true ;</span><br
+ style="font-family: monospace;">
+<span style="font-family: monospace;">false || false </span></big><br>
+<br>
+<h3>Using the Skeleton File</h3>
+Now that we have sucessfully constructed a parser, it's time to do
+something useful with it. This generally involves traversing the
+Abstract Syntax tree and producing a new data structure, such as
+translating from a high-level language to assembly code. To assist the
+programmer with this process the BNF Converter's Java Mode provides two
+alternative methods, found in the files <span
+ style="font-family: monospace; font-weight: bold;">Skeleton.java</span>,
+and <span style="font-family: monospace; font-weight: bold;">VisitSkel.java</span>.<br>
+<br>
+<span style="font-family: monospace; font-weight: bold;">Skeleton.java</span>
+is an empty skeleton that traverses the abstract syntax tree (currently
+doing nothing interesting). It uses the general algorithm outlined by <a
+ href="http://www.cs.princeton.edu/%7Eappel/modern/java/">Appel</a>.
+That is to say, it generates functions for each major abstract class
+(categories in the LBNF file). It then uses Java's <span
+ style="font-family: monospace; font-weight: bold;">instanceof</span>
+operator to determine which non-abstract subclass it is dealing with,
+then recurses onto that subclass's members.<br>
+<br>
+To use <span style="font-family: monospace; font-weight: bold;">Skeleton.java</span>
+the programmer must generally do the following:<br>
+<ul>
+  <li>Copy <span style="font-family: monospace; font-weight: bold;">Skeleton.java</span>
+to a new file</li>
+  <li>Change the name of the class from <big><span
+ style="font-family: monospace;">Skeleton</span></big> to something
+meaningful.</li>
+  <li>Do a search and replace from "skel" to the actual desired name of
+the function.</li>
+  <li>Do a search and replace from <big><span
+ style="font-family: monospace;">Object</span></big> to an actual return
+type.</li>
+</ul>
+From this point it should be fairly straightforward to implement the
+desired algorithm.<br>
+<br>
+Appel's method is very efficient in practice, but it may not be
+familiar to all Java programmers. More familiar is the Visitor Design
+Pattern. A Visitor interface specific to the language is generated in
+the file <span style="font-family: monospace; font-weight: bold;">Visitor.java</span>.
+The class <span style="font-family: monospace; font-weight: bold;">VisitSkel.java</span>
+implements the interface and gives the programmer a template skeleton of
+all classes in the Abstract Syntax. The <big><span
+ style="font-family: monospace;">VisitSkel</span></big> class is not
+static, and must be instantiated to be used.<br>
+<br>
+To use <span style="font-family: monospace; font-weight: bold;">VisitSkel.java</span>:<br>
+<ul>
+  <li>Copy <span style="font-family: monospace; font-weight: bold;">VisitSkel.java</span>
+to a new file</li>
+  <li>Change the name of the class from <big><span
+ style="font-family: monospace;">VisitSkel</span></big> to something
+more meaningful.</li>
+  <li>Add a function which takes a <big><span
+ style="font-family: monospace;">Visitable</span></big> object as a
+parameter, to begin the traversal.</li>
+</ul>
+<br>
+Many Visitor Design Patterns use a Visitee-traversal algorithm. That is
+to say, visiting the top member of a List will automatically visit all
+the members of the List. However, the BNFC-generated pattern uses
+Visitor-traversal. This means that it is the Visitor's responsibility,
+when visiting a list, to visit all the members in turn. This is because
+certain algorithms that compilers want to implement are not
+compositional. That is to say, that performing a transformation on a
+single member may be quite different than performing that transformation
+on a certain pattern of nodes. For example, during peephole analysis a
+compiler may wish to merge to subsequent additions into a single
+operation, but may want to leave single additions unchanged. This is
+easier to implement if it is the Visitor doing the traversal itself.<br>
+<br>
+<h3>Known Issues<br>
+</h3>
+Here is a list of known issues with the BNF Converter's Java Mode.<br>
+<br>
+<span style="font-weight: bold; text-decoration: underline;">Keywords</span><br>
+<br>
+Java contains many more keywords than Haskell, and currently there is
+nothing to prevent a programmer from using these keywords in their LBNF
+grammar. For example:<br>
+<br>
+<big><span style="font-family: monospace;">Static.&nbsp;&nbsp;
+Package&nbsp;&nbsp; ::= Sychronized "." Switch ;</span></big><br>
+<br>
+While this will be accepted by BNF it might result in un-compilable
+code, as the Java occaisionally uses lowercase names for instance
+variables. As such programmers should generally avoid matching Label
+names with Java keywords, or the name of already existing packages.<br>
+<br>
+<span style="font-weight: bold; text-decoration: underline;">Reuse of
+Label Names</span><br>
+<br>
+Reusing label names currently results in a warning from BNFC. However,
+for Java this is a much more serious issue, as they are used for class
+names. For example:<br>
+<br>
+<big><span style="font-family: monospace;"><span
+ style="color: rgb(51, 51, 255);">public</span> <span
+ style="color: rgb(51, 51, 255);">class</span> FOO <span
+ style="color: rgb(51, 51, 255);">extends</span> BAR</span><br
+ style="font-family: monospace;">
+<span style="font-family: monospace;">{</span><br
+ style="font-family: monospace;">
+<span style="font-family: monospace;">&nbsp;...</span><br
+ style="font-family: monospace;">
+<span style="font-family: monospace;">}</span><br
+ style="font-family: monospace;">
+<br style="font-family: monospace;">
+<span style="font-family: monospace;"><span
+ style="color: rgb(51, 51, 255);">public class</span> FOO <span
+ style="color: rgb(51, 51, 255);">extends</span> BAZ <span
+ style="color: rgb(204, 0, 0);">//OOPS! That's two classes named FOO</span></span><br
+ style="font-family: monospace;">
+<span style="font-family: monospace;">{</span><br
+ style="font-family: monospace;">
+<span style="font-family: monospace;">&nbsp;...</span><br
+ style="font-family: monospace;">
+<span style="font-family: monospace;">}</span></big><br>
+<br>
+The best solution is for the programmer to ensure that all label names
+are unique and not ignore the BNFC warning.<br>
+<br style="font-weight: bold; text-decoration: underline;">
+<span style="font-weight: bold; text-decoration: underline;">JLex
+Regular Expressions</span><br
+ style="font-weight: bold; text-decoration: underline;">
+<br>
+BNFC's regular expressions (for user-defined token types) are exactly
+isomorphic to those of Alex for Haskell. Unfortunately JLex regular
+expressions are not as expressive as those of Alex. Specifically the
+following operators are not supported:<br>
+<br>
+-Set subtraction (-)<br>
+-Epsillon (eps)<br>
+<br>
+Currently using those operators in a regular expression will cause
+generation of the lexer by JLex to fail. In the future a solution might
+be found to this by transforming the regular expression, but currently
+the programmer should avoid those operators if they wish to generate
+Java code.<br>
+<br>
+<span style="font-weight: bold; text-decoration: underline;">Shift-Reduce
+Conflicts in CUP</span><br>
+<br>
+Certain grammar constructs result in shift-reduce conflicts in CUP that
+do not result in them in Happy. We are currently investigating exactly
+what these differences are and how to resolve them, however initial
+investigations seem to indicate that CUP's default policy of Shifting is
+sufficient. In the meantime, the generated Makefile is currently set to
+tell CUP to expect 100 conflicts before it aborts parser generation.
+Depending on the needs of your project this number could be made bigger
+or smaller.<br>
+<br>
+</body>
+</html>

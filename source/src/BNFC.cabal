@@ -1,0 +1,138 @@
+Name: BNFC
+Version: 2.3
+Copyright: 
+   2002 - 2007 Bjorn Bringert, Johan Broberg, Paul Callaghan, Markus Forsberg,
+   Peter Gammie, Patrik Jansson, Kristofer Johannisson, Antti-Juhani Kaijanaho, 
+    Ulf Norell, Michael Pellauer, Aarne Ranta
+Build-Depends: haskell98, base, mtl, directory, array, process
+License: GPL
+License-File: COPYING
+Maintainer: Markus Forsberg <markus@cs.chalmers.se> Aarne Ranta <aarne@cs.chalmers.se>
+Homepage: http://www.cs.chalmers.se/~markus/BNFC/
+Synopsis: A compiler front-end generator.
+Description:
+  The BNF Converter is a compiler construction tool generating a compiler front-end 
+  from a Labelled BNF grammar. It was originally written to generate Haskell, 
+  but starting from Version 2.0, it can also be used for generating Java, C++, and C.
+  .
+  Given a Labelled BNF grammar the tool produces:
+  an abstract syntax as a Haskell/C++/C module or Java directory,
+  a case skeleton for the abstract syntax in the same language,
+  an Alex, JLex, or Flex lexer generator file,
+  a Happy, CUP, or Bison parser generator file,
+  a pretty-printer as a Haskell/Java/C++/C module,
+  a Latex file containing a readable specification of the language.
+Extra-source-files: BNF.cf 
+
+Executable: bnfc
+Main-is: CFTop.hs
+HS-source-dirs: . formats
+  formats/haskell2
+  formats/haskell-gadt
+  formats/xml
+  formats/profile
+  formats/java
+  formats/java1.5
+  formats/cpp
+  formats/c
+  formats/ocaml
+  formats/cpp_stl
+  formats/c-sharp
+  formats/f-sharp
+Other-modules:
+  LexBNF,
+  ParBNF,
+  AbsBNF,
+  PrintBNF,
+  Utils,
+  CF,
+  ErrM,
+  MultiView,
+  TypeChecker,
+  GetCF,
+  NamedVariables,
+  OOAbstract,
+  CFtoLatex,
+  CFtoXML,
+  -- Haskell
+  HaskellTop,
+  RegToAlex,
+  CFtoTemplate,
+  CFtoAlex2,
+  CFtoAlex,
+  CFtoHappy,
+  CFtoPrinter,
+  CFtoAbstract,
+  CFtoLayout,
+  MkErrM,
+  MkSharedString,
+  -- Profile
+  ProfileTop,
+  CFtoHappyProfile,
+  -- Haskell GADT
+  HaskellTopGADT,
+  HaskellGADTCommon,
+  CFtoPrinterGADT,
+  CFtoTemplateGADT,
+  CFtoAbstractGADT,
+  -- O'Caml
+  OCamlTop,
+  OCamlUtil,
+  CFtoOCamlTest,
+  CFtoOCamlShow,
+  CFtoOCamlPrinter,
+  CFtoOCamlTemplate,
+  CFtoOCamlAbs,
+  CFtoOCamlYacc,
+  CFtoOCamlLex,
+  -- C
+  CTop,
+  CFtoCPrinter,
+  CFtoCSkel,
+  CFtoBisonC,
+  CFtoFlexC,
+  CFtoCAbs,
+  CFtoCVisitSkel,
+  -- C++
+  CPPTop,
+  RegToFlex,
+  CFtoFlex,
+  CFtoBison,
+  CFtoCPPPrinter,
+  CFtoCPPAbs,
+  -- C++ STL
+  STLTop,
+  CFtoSTLPrinter,
+  CFtoCVisitSkelSTL,
+  CFtoBisonSTL,
+  CFtoSTLAbs,
+  -- C#
+  CSharpTop,
+  RegToGPLEX,
+  CFtoGPLEX,
+  CSharpUtils,
+  CFtoCSharpPrinter,
+  CAbstoCSharpAbs,
+  CAbstoCSharpAbstractVisitSkeleton,
+  CAbstoCSharpVisitSkeleton,
+  CFtoGPPG,
+  -- Java
+  JavaTop,
+  RegToJLex,
+  CFtoCup,
+  CFtoVisitSkel,
+  CFtoJavaSkeleton,
+  CFtoJavaPrinter,
+  CFtoJavaAbs,
+  CFtoJLex,
+  -- Java 1.5
+  JavaTop15,
+  CFtoJavaAbs15,
+  CFtoAllVisitor,
+  CFtoFoldVisitor,
+  CFtoAbstractVisitor,
+  CFtoComposVisitor,
+  CFtoVisitSkel15,
+  CFtoJavaPrinter15,
+  CFtoJLex15,
+  CFtoCup15

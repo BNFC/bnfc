@@ -1,0 +1,195 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<html>
+<head>
+  <title>XML Representations of LBNF Grammars</title>
+</head>
+  <body bgcolor="#ffffff" text="#000000">
+    
+<center> 
+   
+
+<h1>Representing data types and their objects in XML</h1>
+
+  <a href="http://www.cs.chalmers.se/~aarne">Aarne Ranta</a>
+  <p>
+  27 August 2004
+</center>
+
+The eXtended Markup Language, XML, is not just a document structuring
+language, but also a way to represent data. Having an XML
+representation of data objects is useful for the exchange of
+data because many systems can read in data written in this form.
+
+<p>
+
+Therefore we have extended the BNF Converter with two flags,
+<tt>-xml</tt> and <tt>-xmlt</tt>, which represent grammars 
+and abstract syntax trees in XML. For a given grammar <tt>Foo.cf</tt>,
+the following files are generated:
+<ul>
+<li> <tt>Foo.dtd</tt>, Document Type Declaration
+<li> <tt>XMLFoo.hs</tt>, a printer of trees into XML objects that are
+     valid w.r.t. <tt>Foo.dtd</tt>
+</ul>
+The test bench <tt>TestFoo.hs</tt> then also displays the XML
+representation of each tree.
+For the time being, the flags are only available in combination of
+the Haskell back end.
+
+
+
+
+<h2>Goals</h2>
+
+The purpose of the XML generator of BNFC is to use XML as yet
+another representation of abstract syntax, in addition to
+Haskell's algebraic data types, Java's classes, and C's
+unions of structures. Since algebraic datatypes are conceptually
+the semantics of all these, we will briefly discuss how algebraic
+datatype definitions and encoded in XML.
+
+<p>
+
+Two kinds of XML documents are to be generated:
+<ul>
+<li> DTDs = Document Type Declarations, from the algebraic datatype
+     definitions themselves
+<li> XML elements, from trees built by constructors.
+</ul>
+Checking the <b>validity</b> of an element with respect to
+a DTD is a central notion of XML. What we want to achieve is that
+<ul>
+<il> validity checking = type checking
+</ul>
+To encode a type system with a DTD makes it slightly more complicated
+than would be needed otherwise, but we find this goal worth pursuing.
+We are still left with several alternative encodings.
+
+
+
+<h2>Alternative encodings</h2>
+
+The following examples are used to illustrate the alternative encodings.
+<pre>
+  data Prop = Falsum | Verum | Conj Prop Prop | Disj Prop Prop
+
+  Disj Verum Falsum
+</pre>
+
+
+<h4>Constructors as tags, no types</h4>
+
+This gives nice elements, but the DTD is clumsy, since every argument
+type of a constructor must be represented with the disjunction of all
+constructors. Moreover, there is no natural "top level" tag unless
+the type system explicitly includes a top type with just one "wrapper"
+constructor.
+<pre>
+&lt;!ELEMENT Verum EMPTY>
+&lt;!ELEMENT Falsum EMPTY>
+&lt;!ELEMENT Conj ((Verum|Falsum|Disj|Conj),(Verum|Falsum|Disj|Conj))>
+&lt;!ELEMENT Disj ((Verum|Falsum|Disj|Conj),(Verum|Falsum|Disj|Conj))>
+
+&lt;Disj>
+  &lt;Verum/>
+  &lt;Falsum/>
+&lt;/Disj>
+</pre>
+tags(f xs) = 2 + sum (tags xs)
+
+
+<h4>Constructors and types as tags</h4>
+
+This gives a natural-looking DTD, but the trees become bulky.
+<pre>
+&lt;!ELEMENT Verum EMPTY>
+&lt;!ELEMENT Falsum EMPTY>
+&lt;!ELEMENT Conj (Prop,Prop)>
+&lt;!ELEMENT Disj (Prop,Prop)>
+&lt;!ELEMENT Prop (Verum | Falsum | Disj | Conj)>
+
+&lt;Prop>
+  &lt;Disj>
+    &lt;Prop>
+      &lt;Verum/>
+    &lt;/Prop>
+    &lt;Prop>
+      &lt;Falsum/>
+    &lt;/Prop>
+  &lt;/Disj>
+&lt;/Prop>
+</pre>
+tags (f xs) = 4 + sum (tags xs)
+
+
+<h4>Types as tags, constructors as attributes</h4>
+
+The trees look deceptively natural, but this is a non-starter since
+validation does not guarantee type correctness! The dual approach has
+the same problem.
+<pre>
+&lt;!ELEMENT Prop (() | (Prop, Prop))>
+&lt;!ATTLIST Prop name CDATA #required>
+
+&lt;Prop name="Disj">
+  &lt;Prop name = "Verum" />
+  &lt;Prop name = "Falsum" />
+&lt;/Prop>
+</pre>
+tags (f xs) = 2 + sum (tags xs) 
+
+
+<h4>Types as tags, constructors as empty elements</h4>
+
+This has a good balance between natural DTD and tree size, but
+the introduction of empty elements to encode constructors feels
+like a hack and certainly not very XML-like.
+<pre>
+&lt;!ELEMENT Prop ((Verum) | (Falsum) | (Conj,Prop,Prop) | (Disj,Prop,Prop)>
+&lt;!ELEMENT Verum EMPTY>
+&lt;!ELEMENT Falsum EMPTY>
+&lt;!ELEMENT Conj EMPTY>
+&lt;!ELEMENT Disj EMPTY>
+
+&lt;Prop> &lt;Disj/>
+  &lt;Prop> &lt;Verum/> 
+  &lt;/Prop>
+  &lt;Prop> &lt;Falsum/> 
+  &lt;/Prop>
+&lt;/Prop>
+</pre>
+tags (f xs) = 3 + sum (tags xs)
+
+
+<h2>Alternatives chosen</h2>
+
+We chose to provide two encodings in the BNFC-XML generator. 
+They can be chosen by different flags:
+<ul>
+<li> <tt>-xml</tt>, constructors as tags, no types
+<li> <tt>-xmlt</tt>, types as tags, constructors as empty elements
+</ul>
+The first encoding gives nice trees for exchange, but a horrible
+DTD. The second encoding gives a nice DTD, but bulky trees.
+Both encodings support type checking by validation.
+ 
+
+<h2>Literals and token types</h2>
+
+For literals and token types, both encodings use empty elements
+with type as tag and the content as value of the attribute
+<tt>value</tt>:
+<pre>
+  &lt;Integer value="123" />
+  &lt;Ident   value="x" />
+  &lt;String  value="aatu osaa soutaa" />
+</pre>
+The corresponding DTD needs two clauses per type <tt>Foo</tt>.
+<pre>
+  &lt;!ELEMENT Foo EMPTY>
+  &lt;!ATTLIST Foo value CDATA #required>
+</pre>
+
+
+</body>
+</html>

@@ -1,0 +1,173 @@
+\begin{figure}
+\begin{boxedminipage}[t]{\textwidth}
+\begin{minipage}[l]{0.5\textwidth}
+\textbf{A. Abstract Syntax Interface}
+\scriptsize
+\begin{verbatim}
+typedef int Integer;
+typedef char Char;
+typedef double Double;
+typedef char* String;
+typedef char* Ident;
+...
+class PROG : public Visitable {
+ public:
+  ListEXP *listexp_;
+  PROG(ListEXP *p1);
+  ~PROG();
+  virtual void accept(Visitor *v);
+};
+class EXP : public Visitable { };
+class EOr : public EXP {
+ public:
+  EXP *exp_1, *exp_2;
+  EOr(EXP *p1, EXP *p2);
+  ~EOr();
+  virtual void accept(Visitor *v);
+};
+...
+class EFalse : public EXP {
+ public:
+  EFalse();
+  ~EFalse();
+  virtual void accept(Visitor *v);
+};
+class EVar : public EXP {
+ public:
+  Ident ident_;
+  EVar(Ident p1);
+  ~EVar();
+  virtual void accept(Visitor *v);
+};
+class ListEXP : public Visitable {
+ public:
+  EXP *exp_;
+  ListEXP *listexp_;
+  ListEXP(EXP *p1, ListEXP *p2);
+  ListEXP(EXP *p);
+  ~ListEXP();
+  virtual void accept(Visitor *v);
+};
+\end{verbatim}
+\normalsize
+\textbf{B. Abstract Syntax Implementation}
+
+\scriptsize
+\begin{verbatim}
+PROG::PROG(ListEXP *p1) { listexp_ = p1; }
+PROG::~PROG() { delete(listexp_); }
+void PROG::accept(Visitor *v) { v->visitPROG(this); }
+
+EOr::EOr(EXP *p1, EXP *p2) { exp_1 = p1; exp_2 = p2; }
+EOr::~EOr() { delete(exp_1); delete(exp_2); }
+void EOr::accept(Visitor *v) { v->visitEOr(this); }
+...
+\end{verbatim}
+\normalsize
+\textbf{C. Flex Lexer}
+\scriptsize
+\begin{verbatim}
+<YYINITIAL>"||"          return _SYMB_0;
+<YYINITIAL>"&&"          return _SYMB_1;
+<YYINITIAL>";"           return _SYMB_2;
+<YYINITIAL>"("           return _SYMB_3;
+<YYINITIAL>")"           return _SYMB_4;
+<YYINITIAL>"false"       return _SYMB_5;
+<YYINITIAL>"true"        return _SYMB_6;
+<YYINITIAL>{LETTER}{IDENT}*
+   yylval.string_ = strdup(yytext); return _IDENT_;
+<YYINITIAL>[ \t\r\n\f]   /* ignore white space. */;
+<YYINITIAL>.             return _ERROR_;
+\end{verbatim}
+\normalsize
+\end{minipage}
+\hfill
+\begin{minipage}[r]{0.5\textwidth}
+\textbf{D. Bison Parser}
+\scriptsize
+\begin{verbatim}
+PROG* pPROG(FILE *inp) {
+  initialize_lexer(inp);
+  if (yyparse()) /* Failure */
+    return 0;
+  else /* Success */
+    return YY_RESULT_PROG_;
+}
+...
+%token _ERROR_    //   Original terminal:
+%token _SYMB_0    //   ||
+%token _SYMB_1    //   &&
+%token _SYMB_2    //   ;
+%token _SYMB_3    //   (
+%token _SYMB_4    //   )
+%token _SYMB_5    //   false
+%token _SYMB_6    //   true
+...
+PROG : ListEXP { $$ = new PROG(reverseListEXP($1));
+                 YY_RESULT_PROG_= $$; } 
+;
+EXP : EXP _SYMB_0 EXP1 { $$ = new EOr($1, $3);
+                         YY_RESULT_EXP_= $$; } 
+  | EXP1 { $$ = $1; YY_RESULT_EXP_= $$; }
+;
+EXP1 : EXP1 _SYMB_1 EXP2 { $$ = new EAnd($1, $3);
+                           YY_RESULT_EXP_= $$; } 
+  | EXP2 { $$ = $1; YY_RESULT_EXP_= $$; }
+;
+EXP2 : _SYMB_6 { $$ = new ETrue(); YY_RESULT_EXP_= $$; } 
+  | _SYMB_5 { $$ = new EFalse(); YY_RESULT_EXP_= $$; }
+  | _IDENT_ { $$ = new EVar($1); YY_RESULT_EXP_= $$; }
+  | _SYMB_3 EXP _SYMB_4 { $$ = $2; YY_RESULT_EXP_= $$; }
+;
+ListEXP : /* empty */ { $$ = 0; YY_RESULT_ListEXP_= $$; } 
+  | ListEXP EXP _SYMB_2 { $$ = new ListEXP($2, $1);
+                               YY_RESULT_ListEXP_= $$; }
+;
+\end{verbatim}
+\normalsize
+\textbf{E. Pretty Printer}
+\scriptsize
+\begin{verbatim}
+void PrintAbsyn::visitEOr(EOr* p) {
+  int oldi = _i_;
+  if (oldi > 0) render(_L_PAREN);
+  _i_ = 0; p->exp_1->accept(this);
+  render("||");
+  _i_ = 1; p->exp_2->accept(this);
+  if (oldi > 0) render(_R_PAREN);
+  _i_ = oldi;
+}
+void PrintAbsyn::visitEAnd(EAnd* p) {
+  int oldi = _i_;
+  if (oldi > 1) render(_L_PAREN);
+  _i_ = 1; p->exp_1->accept(this);
+  render("&&");
+  ...
+\end{verbatim}
+\normalsize
+\textbf{F. Word Counts}
+\scriptsize
+\begin{verbatim}
+   Lines   Words   Bytes
+     133     287    2206 Absyn.H
+      77     217    1869 Absyn.C
+      47     145    1314 BoolExp.l
+     126     347    2247 BoolExp.y
+      43     117     973 Makefile
+      35      69     536 Parser.H
+     176     460    3565 Printer.H
+     334     592    5200 Printer.C
+      26      65     571 Skeleton.H
+      75     166    1376 Skeleton.C
+      40     123    1218 Test.C
+    1112    2588   21075 total
+
+\end{verbatim}
+\normalsize
+\hfill
+\end{minipage}
+\end{boxedminipage}
+\caption{C++ source code fragments generated from Figure \ref{fig:source}}
+\label{fig:cpp}
+\end{figure}
+

@@ -1,0 +1,133 @@
+{-
+    BNF Converter: Alfa with layout support
+    Copyright (C) 2004  Author: Aarne Ranta
+
+    This program is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 2 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program; if not, write to the Free Software
+    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+-}
+
+-- layout rules
+
+layout "of", "let", "where", "sig", "struct" ;
+layout stop "in" ;
+layout toplevel ;
+
+--- identifiers, including infix in parentheses
+
+token Infix ([".:-^*+=<>&%$!#%|/\\"]+) ;
+
+I. AIdent ::= "(" Infix ")" ;
+F. AIdent ::= Ident ;
+
+-- top level
+
+Module.  Module ::= [Decl] ;
+
+separator  Decl ";" ;
+separator  Def ";" ;
+
+-- declarations/definitions
+
+DDef.    Decl ::= [DefAttr] Def ;
+DImp.    Decl ::= Import ;
+
+Value.   Def  ::= AIdent [VarDecl] "::" Exp "=" Exp ;
+Binding. Def  ::= AIdent "=" Exp ;
+Package. Def  ::= "package" AIdent [Typing] "where" PackageBody ;
+Open.    Def  ::= "open" Exp "use" [OpenArg] ;
+Data.    Def  ::= "data" AIdent [Typing] "=" [Constructor] ;
+Type.    Def  ::= "type" AIdent [Typing] "=" Exp ;
+Axiom.   Def  ::= "postulate" AIdent [Typing] "::" Exp ;
+Mutual.  Def  ::= "mutual" "where" "{" [Def] "}" ; ----
+
+
+-- expressions
+
+EVar.    Exp4 ::= AIdent ;
+ECon.    Exp4 ::= AIdent "@_" ;
+ESet.    Exp4 ::= "Set" ;
+EType.   Exp4 ::= "Type" ;
+EMeta.   Exp4 ::= "?" ;
+EString. Exp4 ::= String ;
+EChar.   Exp4 ::= Char ;
+EInt.    Exp4 ::= Integer ;
+EDouble. Exp4 ::= Double ;
+EProj.   Exp3 ::= Exp3 "." AIdent ;
+EApp.    Exp1 ::= Exp1 Exp2 ;
+EInfix.  Exp  ::= Exp1 Infix Exp1 ;
+ESig.    Exp1 ::= "sig" "{" [FieldDecl] "}" ;
+EStr.    Exp1 ::= "struct" "{" [Binding] "}" ;
+ESum.    Exp  ::= "data" [Constructor] ;
+EPi.     Exp  ::= VarDecl "->" Exp ;
+EFun.    Exp  ::= Exp1 "->" Exp ;
+EAbs.    Exp  ::= "\\" VarDecl "->" Exp ;
+ELet.    Exp  ::= "let" "{" [Decl] "}" "in" Exp ;
+ECase.   Exp  ::= "case" Exp "of" "{" [Branch] "}" ;
+
+coercions Exp 4 ;
+
+-- typings/hypotheses
+
+TDecl. Typing  ::= VarDecl ;
+TExp.  Typing  ::= Exp2 ;
+
+terminator Typing "" ;  
+
+VDecl. VarDecl ::= "(" AIdent "::" Exp ")" ;
+
+terminator VarDecl "" ;
+
+FDecl. FieldDecl ::= AIdent "::" Exp ;
+
+separator FieldDecl ";" ;
+
+-- case branches
+
+BranchCon . Branch ::= "(" AIdent [AIdent] ")" "->" Exp ; --- no deeper patterns?
+BranchInf . Branch ::= "(" AIdent Infix AIdent ")" "->" Exp ;
+BranchVar . Branch ::= AIdent "->" Exp ;
+
+separator Branch   ";" ;
+
+-- constructions in data definitions
+
+Cnstr . Constructor ::= AIdent [Typing] ;
+separator  Constructor "|" ;
+
+-- bindings in structures
+
+Bind . Binding ::= AIdent "=" Exp ;
+separator Binding  ";" ;
+
+
+PackageDef .  PackageBody ::= "{" [Decl] "}" ;
+PackageInst . PackageBody ::= Exp ;
+
+OpenArg . OpenArg ::= [DefAttr] AIdent ;
+
+Private  . DefAttr ::= "private" ;
+Public   . DefAttr ::= "public" ;
+Abstract . DefAttr ::= "abstract" ;
+Concrete . DefAttr ::= "concrete" ;
+
+Import  .  Import  ::= "import" String ";" ;
+
+separator  DefAttr     "" ;
+separator  AIdent      "" ;
+separator  OpenArg     "," ; 
+
+-- two kinds of comments
+
+comment "--" ;
+comment "{-" "-}" ;

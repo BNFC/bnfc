@@ -1,0 +1,62 @@
+-- C like language.
+
+comment "#" ;
+comment "//" ;
+comment "/*" "*/" ;
+
+Program.  Progr    ::= "int" "main" "(" ")" "{" [Dec] [Stm] "}" ;
+
+[].       [Dec]    ::= ;
+(:).      [Dec]    ::= Dec ";" [Dec] ;
+
+[].       [Stm]    ::= ;
+(:).      [Stm]    ::= Stm [Stm] ;
+
+Decl.     Dec      ::= Typ [Ident] ;
+
+(:[]).    [Ident]  ::= Ident ;
+(:).      [Ident]  ::= Ident "," [Ident] ;
+
+SBlock.   Stm      ::= "{" [Dec] [Stm] "}" ;
+SAss.     Stm      ::= Ident "=" Exp ";" ;
+SIncr.    Stm      ::= Ident "++" ";" ;
+SDecr.    Stm      ::= Ident "--" ";" ;
+SPrint.   Stm      ::= "printInt" "(" Exp ")" ";" ;
+SIf.      Stm      ::= "if" "(" Exp ")" Stm "else" Stm ;
+SWhile.   Stm      ::= "while" "(" Exp ")" Stm ;
+SReturn.  Stm      ::= "return" Exp ";" ;
+_.        Stm      ::= Stm ";" ;
+
+internal SDec.     Stm      ::= Dec ;
+internal SAssT.    Stm      ::= Typ Ident Exp ;
+internal SReturnT. Stm      ::= Typ Exp ;
+
+EOpA.     Exp      ::= Exp0 Op  Exp0 ;
+EOpB.     Exp0     ::= Exp1 Op0 Exp1 ;
+EOpC.     Exp1     ::= Exp1 Op1 Exp2 ;
+EOpD.     Exp2     ::= Exp2 Op2 Exp3 ;
+EOpE.     Exp      ::= Exp1 Op  Exp1 ;
+
+EVar.     Exp3     ::= Ident ;
+EInt.     Exp3     ::= Integer ;
+EString.  Exp3     ::= String ;
+EChar.    Exp3     ::= Char ;
+EDouble.  Exp3     ::= Double ;
+
+_.        Exp      ::= Exp0 ;
+_.        Exp0     ::= Exp1 ;
+_.        Exp1     ::= Exp2 ;
+_.        Exp2     ::= Exp3 ;
+_.        Exp3     ::= "(" Exp ")" ;
+
+OPlus.    Op1      ::= "+" ;
+OTimes.   Op2      ::= "*" ;
+OMinus.   Op1      ::= "-" ;
+OLt.      Op0      ::= "<" ;
+OGt.      Op0      ::= ">" ;
+OEq.      Op0      ::= "==" ;
+OAnd.     Op       ::= "&&" ;
+OOr.      Op       ::= "||" ;
+
+TInt.     Typ      ::= "int" ;
+TDouble.  Typ      ::= "double" ;

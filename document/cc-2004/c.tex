@@ -1,0 +1,119 @@
+\begin{figure}
+\begin{boxedminipage}[t]{\textwidth}
+\begin{minipage}[l]{0.5\textwidth}
+\normalsize
+\textbf{A. Abstract Syntax}
+\scriptsize
+\begin{verbatim}
+struct PROG_ {
+  enum {is_PROG} kind;
+  union {
+    struct { ListEXP listexp_; } prog_;
+  } u;
+};
+typedef struct PROG_ *PROG;
+struct EXP_ {
+  enum { is_EOr, is_EAnd, is_ETrue, 
+         is_EFalse, is_EVar } kind;
+  union {
+    struct { EXP exp_1, exp_2; } eor_;
+    struct { EXP exp_1, exp_2; } eand_;
+    struct { Ident ident_; } evar_;
+  } u;
+};
+typedef struct EXP_ *EXP;
+struct ListEXP_ {
+  EXP exp_;
+  ListEXP listexp_;
+};
+typedef struct ListEXP_ *ListEXP;
+\end{verbatim}
+\normalsize
+\textbf{B. Constructor Functions}
+\scriptsize
+\begin{verbatim}
+EXP make_EOr(EXP p1, EXP p2) {
+  EXP tmp = (EXP) malloc(sizeof(*tmp));
+  if (!tmp) {
+    fprintf(stderr, "Error: out of memory!\n");
+    exit(1);
+  }
+  tmp->kind = is_EOr;
+  tmp->u.eor_.exp_1 = p1;
+  tmp->u.eor_.exp_2 = p2;
+  return tmp;
+}
+EXP make_EAnd(EXP p1, EXP p2)
+{
+...
+\end{verbatim}
+\normalsize
+\end{minipage}
+\hfill
+\begin{minipage}[r]{0.5\textwidth}
+
+\textbf{C. Pretty Printer}
+
+\scriptsize
+\begin{verbatim}
+char* printPROGRAM(PROGRAM p) {
+  _n_ = 0;
+  bufReset();
+  ppPROGRAM(p, 0);
+  return buf_;
+}
+...
+void ppEXP(EXP _p_, int _i_) {
+  switch(_p_->kind) {
+  case is_EOr:
+    if (_i_ > 0) renderC(_L_PAREN);
+    ppEXP(_p_->u.eor_.exp_1, 0);
+    renderS("||");
+    ppEXP(_p_->u.eor_.exp_2, 1);
+    if (_i_ > 0) renderC(_R_PAREN);
+    break;
+  case is_EAnd:
+    if (_i_ > 1) renderC(_L_PAREN);
+    ppEXP(_p_->u.eand_.exp_1, 1);
+    renderS("&&");
+    ...
+void ppListEXP(ListEXP listexp, int i) {
+  while(listexp!= 0) {
+    if (listexp->listexp_ == 0) {
+      ppEXP(listexp->exp_, 0);
+      renderC(';');
+      listexp = 0;
+    } else {
+      ppEXP(listexp->exp_, 0);
+      renderC(';');
+      listexp = listexp->listexp_;
+    }
+  }
+}
+\end{verbatim}
+\normalsize
+\textbf{D. Word Counts}
+\scriptsize
+\begin{verbatim}
+   Lines   Words   Bytes
+      63     160    1211 Absyn.h
+     116     257    2196 Absyn.c
+      46     140    1287 BoolExp.l
+     126     350    2297 BoolExp.y
+      43     117     973 Makefile
+      33      65     508 Parser.h
+      52     160    1191 Printer.h
+     443     769    6427 Printer.c
+      15      37     317 Skeleton.h
+      88     161    1383 Skeleton.c
+      39     114    1165 Test.c
+    1064    2330   18955 total
+\end{verbatim}
+\normalsize
+\hfill
+\end{minipage}
+\end{boxedminipage}
+\caption{C source code fragments generated from Figure \ref{fig:source}}
+\label{fig:c}
+\end{figure}
+

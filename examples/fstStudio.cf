@@ -1,0 +1,59 @@
+-- This is the labelled bnf of fstStudio.
+-- Two things that exists in XFST are not added:
+-- * parallel replacement.
+-- * substitution.
+
+Prog . Program ::= [Def] ;
+
+Declaration . Def ::= "<" Ident [Ident] ">" "::=" Exp ;
+Main        . Def ::= "<" "main" ">" "::=" Exp ;
+Import      . Def ::= "import" [Ident] ;
+
+LongReplace   . Exp  ::= Exp "@->" Exp1 ;  
+Restriction   . Exp  ::= Exp "=>" Exp1 "_" Exp1 ;
+Replacement   . Exp  ::= Exp "->" Exp1 ;
+CReplacement  . Exp  ::= Exp "->" Exp1 "||" Exp1 "_" Exp1 ;
+CSReplacement . Exp  ::= Exp "->" Exp1 "//" Exp1 "_" Exp1 ;
+Composition   . Exp  ::= Exp ".o." Exp1 ;
+CrossProduct  . Exp  ::= Exp ".x." Exp1 ;
+_             . Exp  ::= Exp1 ;
+
+Markup      . Exp1 ::= Exp2 "..." Exp2 ; -- for replacement
+Minus       . Exp1 ::= Exp1 "-" Exp2 ;
+Intersect   . Exp1 ::= Exp1 "&" Exp2 ;
+Union       . Exp1 ::= Exp1 "|" Exp2 ;
+_           . Exp1 ::= Exp2 ;
+
+Concat      . Exp2 ::= Exp2 Exp3 ;
+_           . Exp2 ::= Exp3 ;
+
+Containment . Exp3 ::= "$" Exp4 ;
+TComplement . Exp3 ::= "\\" Exp4 ;
+Complement  . Exp3 ::= "~" Exp4 ;
+_           . Exp3 ::= Exp4 ;
+
+NConcat     . Exp4 ::= Exp4 "^" Integer ;
+AppDecl     . Exp4 ::= "<" Ident [Exp] ">" ;
+Star        . Exp4 ::= Exp4 "*" ;
+Plus        . Exp4 ::= Exp4 "+" ;
+Symbol      . Exp4 ::= String ;
+Variable    . Exp4 ::= Ident;
+Concats     . Exp4 ::= "{" String "}" ;
+Any         . Exp4 ::= "?" ;
+Epsilon     . Exp4 ::= "0" ;
+Relation    . Exp4 ::= String ":" String ;
+Boundary    . Exp4 ::= ".#." ;
+_           . Exp4 ::= "(" Exp ")" ; 
+
+[]  . [Def] ::= ;
+(:) . [Def] ::= Def ";" [Def] ;
+
+[]  . [Exp] ::= ;
+(:) . [Exp] ::= "," Exp [Exp] ;
+
+[]  . [Ident] ::= ;
+(:) . [Ident] ::= "," Ident [Ident] ;
+
+comment "--" ;
+
+comment "{-" "-}" ;

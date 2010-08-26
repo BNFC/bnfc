@@ -1,0 +1,11 @@
+int main () {
+  int i ;
+  double d ;
+  i = 0 ;
+  d = 1.0 ;
+  while (i < 10) {
+    d = d * 0.5 ;
+    i++ ;
+  } ;
+}
+  

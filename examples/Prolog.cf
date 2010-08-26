@@ -1,0 +1,36 @@
+Db        . Database ::= [Clause] ;
+
+Fact      . Clause ::= Predicate ;
+Rule      . Clause ::= Predicate ":-" [Predicate] ;
+Directive . Clause ::= ":-" [Predicate] ;
+
+APred    . Predicate ::= Atom ;
+CPred    . Predicate ::= Atom "(" [Term] ")" ;
+
+TAtom    . Term ::= Atom ;
+VarT     . Term ::= Var ;
+Complex  . Term ::= Atom "(" [Term] ")" ;
+TList    . Term ::= List ;
+
+Atm      . Atom ::=  LIdent ;
+EAtm     . Atom ::=  "\'" Ident "\'";
+
+V        . Var ::= UIdent ;
+A        . Var ::= Wild ;
+
+Empty . List ::= "[" "]";
+Enum  . List ::= "[" [Term] "]" ;
+Cons  . List ::= "[" [Term] "|" List "]" ;
+ConsV . List ::= "[" [Term] "|" Var "]" ;
+
+-- List definitions
+
+terminator Clause "." ;
+separator nonempty Predicate "," ;
+separator nonempty Term "," ;
+
+-- Token definitions
+
+token UIdent (upper (letter | digit | '_')*) ;
+token LIdent (lower (letter | digit | '_')*) ;
+token Wild   '_' char* ;

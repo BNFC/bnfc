@@ -1,0 +1,88 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<html>
+<head>
+  <title>The BNF Converter User Manual</title>
+</head>
+  <body bgcolor="#ffffff" text="#000000">
+    
+<center> <img align="center" src="BNF.jpg" border="0" width="475" height="54" alt="[BNF Converter]" /="">
+  <br /="">
+  <a href="http://www.cs.chalmers.se/~aarne">Aarne Ranta</a>
+  and <a href="http://www.cs.chalmers.se/~markus">Markus Forsberg</a>
+ , <br /="">
+   February 1, 2002 - March 08, 2004. </center>
+   
+<hr /="">  
+<h1>Introduction</h1>
+   
+<p> This page describes how to run the system in original Haskell mode. There 
+is also information available on <a href="BNF_Converter_Java_Mode.html">Java 
+Mode</a>
+  and <a href="BNF_Converter_CPP_Mode.html">C++ Mode</a>. If you want more detailed information, please read <a href="BNFConv.ps">
+ the BNF Converter report</a>.</p>
+    
+<h1>Requirements</h1>
+   To be able to use the full functionality of the BNF Converter, you need 
+the following programs installed on your system:  
+<ul>
+  <li> <a href="http://haskell.cs.yale.edu/ghc/">GHC: The Glasgow Haskell 
+  Compiler </a>
+   </li>
+   <li> <a href="http://haskell.cs.yale.edu/happy/">Happy: Parser generator</a>
+  </li>
+  <li> <a href="http://www.haskell.org/libraries/">Alex: Lexical Analyser Generator</a> (Note: Alex v2.0 is now the default.)
+   </li>
+  <li> <a href="http://www.latex-project.org/">LaTeX:       A document preparation 
+system</a>
+   </li>
+   
+</ul>
+If you want to use Hugs, use the Alex v1.1 and give the flag <tt>-alex1</tt> to
+bnfc.
+    
+<h1>Install the BNF Converter</h1>
+    
+<p> Download source files: <a href="bnfc_2.1.tgz">
+ bnfc_2.1.tar</a>
+.<br /="">
+  extract the files with: <tt>tar -xvfz bnfc_2.1.tgz </tt><br /="">
+  change directory: <tt>cd ./BNFC/</tt> <br /="">
+  type: <tt>make</tt> <br /="">
+  </p>
+    
+<p> You should now have a binary named <tt>bnfc</tt>.   </p>
+ 
+<h1>Running the BNF Converter</h1>
+   Example file <a href="JavaletteLight.cf">
+ JavaletteLight.cf</a>.  
+<p> Producing the output files without compiling them is done by typing <tt>
+  bnfc file</tt>. </p>
+  If this is run on the example file, the output looks like this:  
+<pre>$ bnfc JavaletteLight.cf <br>The BNF Converter (v.2.1) (c) Markus Forsberg, Peter Gammie,  Michael Pellauer &amp; Aarne Ranta 2003.<br>Free software under GNU General Public License (GPL).<br>Bug reports to {markus, aarne}@cs.chalmers.se.<br><br>Reading grammar from JavaletteLight<br><br>18 rules accepted<br><br>wrote file AbsJavaletteLight.hs<br>wrote file LexJavaletteLight.x<br>wrote file ParJavaletteLight.y<br>wrote file DocJavaletteLight.tex<br>wrote file SkelJavaletteLight.hs<br>wrote file PrintJavaletteLight.hs<br>wrote file TestJavaletteLight.hs<br>Done!<br></pre>
+   
+<p> You could now compile LexJavaletteLight.x, ParJavaletteLight.y and DocJavaletteLight.tex 
+by hand, using alex, happy and latex. </p>
+   
+<p> </p>
+ 
+<p> You can also produce a makefile, named <tt>makefile</tt>, by typing <tt>
+ bnfc -m JavaletteLight.cf</tt>. </p>
+   
+<p> The contents of JavaletteLight's <tt>makefile</tt>: </p>
+ 
+<pre>all:<br>        happy ParJavaletteLight.y<br>        alex LexJavaletteLight.x<br>        latex DocJavaletteLight.tex<br>        dvips DocJavaletteLight.dvi -o DocJavaletteLight.ps<br>clean:<br>        rm -f JavaletteLight.*.gf DocJavaletteLight* LexJavaletteLight* ParJavaletteLight* SkelJavaletteLight.hs PrintJavaletteLight.hs TestJavaletteLight.hs AbsJavaletteLight.hs<br></pre>
+  When you have produced the makefile, you can:  
+<ul>
+    <li> type <tt>make</tt> to compile the parser, the lexer, the documentation and a test program.
+   </li>
+   <li> type <tt>make vclean</tt>, to delete all generated files (except 
+     the makefile). </li>
+ 
+</ul>
+   
+  Then you can test it by parsing a JavaletteLight source file:  
+<pre>TestJavaletteLight&gt; testJavalette  "koe.jll"<br><br>Parse Successful!<br><br>[Abstract Syntax]<br><br>Fun TInt (Ident "main") [SDecl TInt (Ident "i"),SDecl TDouble (Ident "d"),<br>SAss (Ident "i") (EInt 0),SAss (Ident "d") (EDouble 1.0),SWhile (ELt (EVar <br>(Ident "i")) (EInt 10)) [SAss (Ident "d") (ETimes (EVar (Ident "d")) <br>(EDouble 0.5)),SIncr (Ident "i")]]<br><br>[Linearized tree]<br><br>int main () {<br>  int i ;<br>  double d ;<br>  i = 0 ;<br>  d = 1.0 ;<br>  while (i &lt; 10){<br>    d = d * 0.5 ;<br>    i ++ ;<br>    }<br>  }<br></pre>
+  To make this test yourself, just copy the linearization result into a file 
+<tt>koe.jll</tt>.   
+</body>
+</html>

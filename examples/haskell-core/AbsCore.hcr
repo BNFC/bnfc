@@ -1,0 +1,3860 @@
+%module AbsCore
+  %newtype AbsCore.Ident = PrelBase.ZMZN PrelBase.Char;
+  %data AbsCore.Module =
+    {AbsCore.ZdwModule (PrelBase.ZMZN PrelBase.Char)
+		       (PrelBase.ZMZN AbsCore.Tdef)
+		       (PrelBase.ZMZN AbsCore.Vdefg)};
+  %data AbsCore.Tdef =
+    {AbsCore.ZdwData AbsCore.QualIdent
+		     AbsCore.Tbinds
+		     (PrelBase.ZMZN AbsCore.Cdef)};
+  %data AbsCore.TDef =
+    {AbsCore.ZdwNewtype AbsCore.QualIdent
+			AbsCore.Tbinds
+			AbsCore.MaybeTy};
+  %data AbsCore.MaybeTy =
+    {AbsCore.ZdwJustTy AbsCore.Ty;
+     AbsCore.ZdwNoTy};
+  %data AbsCore.Cdef =
+    {AbsCore.ZdwConstr (PrelBase.ZMZN PrelBase.Char)
+		       (PrelBase.ZMZN AbsCore.Tbind)
+		       (PrelBase.ZMZN AbsCore.Ty)};
+  %data AbsCore.Vdefg =
+    {AbsCore.ZdwRec (PrelBase.ZMZN AbsCore.Vdef);
+     AbsCore.ZdwNonrec AbsCore.Vdef};
+  %data AbsCore.Vdef =
+    {AbsCore.ZdwVdef (PrelBase.ZMZN PrelBase.Char)
+		     AbsCore.Ty
+		     AbsCore.Exp};
+  %data AbsCore.Exp =
+    {AbsCore.ZdwVar (PrelBase.ZMZN PrelBase.Char);
+     AbsCore.ZdwDcon AbsCore.QualIdent;
+     AbsCore.ZdwLit AbsCore.Lit;
+     AbsCore.ZdwApp AbsCore.Exp AbsCore.Exp;
+     AbsCore.ZdwAppt AbsCore.Exp AbsCore.Ty;
+     AbsCore.ZdwLams (PrelBase.ZMZN AbsCore.Bind) AbsCore.Exp;
+     AbsCore.ZdwLet AbsCore.Vdefg AbsCore.Exp;
+     AbsCore.ZdwCase AbsCore.Exp
+		     AbsCore.Vbind
+		     (PrelBase.ZMZN AbsCore.Alt);
+     AbsCore.ZdwCoerce AbsCore.Ty AbsCore.Exp;
+     AbsCore.ZdwNote (PrelBase.ZMZN PrelBase.Char) AbsCore.Exp;
+     AbsCore.ZdwExternal (PrelBase.ZMZN PrelBase.Char) AbsCore.Ty};
+  %data AbsCore.Bind =
+    {AbsCore.ZdwVb AbsCore.Vbind;
+     AbsCore.ZdwTb AbsCore.Tbind};
+  %data AbsCore.Alt =
+    {AbsCore.ZdwAcon AbsCore.QualIdent
+		     AbsCore.Tbinds
+		     (PrelBase.ZMZN AbsCore.Vbind)
+		     AbsCore.Exp;
+     AbsCore.ZdwAlit AbsCore.Lit AbsCore.Exp;
+     AbsCore.ZdwAdefault AbsCore.Exp};
+  %data AbsCore.Vbind =
+    {AbsCore.ZdwVbind (PrelBase.ZMZN PrelBase.Char) AbsCore.Ty};
+  %data AbsCore.Tbind =
+    {AbsCore.ZdwTbindPair (PrelBase.ZMZN PrelBase.Char) AbsCore.Kind;
+     AbsCore.ZdwTbindLift (PrelBase.ZMZN PrelBase.Char)};
+  %data AbsCore.Tbinds =
+    {AbsCore.ZdwTbindsNo;
+     AbsCore.ZdwTbindsList (PrelBase.ZMZN AbsCore.Tbind)};
+  %data AbsCore.Ty =
+    {AbsCore.ZdwTvar (PrelBase.ZMZN PrelBase.Char);
+     AbsCore.ZdwTcon AbsCore.QualIdent;
+     AbsCore.ZdwTapp AbsCore.Ty AbsCore.Ty;
+     AbsCore.ZdwTArrow AbsCore.Ty AbsCore.Ty;
+     AbsCore.ZdwTforalls (PrelBase.ZMZN AbsCore.Tbind) AbsCore.Ty};
+  %data AbsCore.Kind =
+    {AbsCore.ZdwKlifted;
+     AbsCore.ZdwKunlifted;
+     AbsCore.ZdwKopen;
+     AbsCore.ZdwKarrow AbsCore.Kind AbsCore.Kind};
+  %data AbsCore.Lit =
+    {AbsCore.ZdwLint PrelNum.Integer AbsCore.Ty;
+     AbsCore.ZdwLrational PrelFloat.Double AbsCore.Ty;
+     AbsCore.ZdwLchar PrelBase.Char AbsCore.Ty;
+     AbsCore.ZdwLstring (PrelBase.ZMZN PrelBase.Char) AbsCore.Ty};
+  %data AbsCore.QualIdent =
+    {AbsCore.ZdwQual (PrelBase.ZMZN PrelBase.Char)
+		     (PrelBase.ZMZN PrelBase.Char)};
+  AbsCore.zdQual :: PrelBase.ZMZN PrelBase.Char ->
+		    PrelBase.ZMZN PrelBase.Char -> AbsCore.QualIdent =
+    \ (eta::PrelBase.ZMZN PrelBase.Char)
+      (eta1::PrelBase.ZMZN PrelBase.Char) ->
+	AbsCore.ZdwQual eta eta1;
+  AbsCore.zdLint :: PrelNum.Integer -> AbsCore.Ty -> AbsCore.Lit =
+    \ (eta::PrelNum.Integer) (eta1::AbsCore.Ty) ->
+	AbsCore.ZdwLint eta eta1;
+  AbsCore.zdLrational :: PrelFloat.Double ->
+			 AbsCore.Ty -> AbsCore.Lit =
+    \ (eta::PrelFloat.Double) (eta1::AbsCore.Ty) ->
+	AbsCore.ZdwLrational eta eta1;
+  AbsCore.zdLchar :: PrelBase.Char -> AbsCore.Ty -> AbsCore.Lit =
+    \ (eta::PrelBase.Char) (eta1::AbsCore.Ty) ->
+	AbsCore.ZdwLchar eta eta1;
+  AbsCore.zdLstring :: PrelBase.ZMZN PrelBase.Char ->
+		       AbsCore.Ty -> AbsCore.Lit =
+    \ (eta::PrelBase.ZMZN PrelBase.Char) (eta1::AbsCore.Ty) ->
+	AbsCore.ZdwLstring eta eta1;
+  AbsCore.zdKlifted :: AbsCore.Kind = AbsCore.ZdwKlifted;
+  AbsCore.zdKunlifted :: AbsCore.Kind = AbsCore.ZdwKunlifted;
+  AbsCore.zdKopen :: AbsCore.Kind = AbsCore.ZdwKopen;
+  AbsCore.zdKarrow :: AbsCore.Kind -> AbsCore.Kind -> AbsCore.Kind =
+    \ (eta::AbsCore.Kind) (eta1::AbsCore.Kind) ->
+	AbsCore.ZdwKarrow eta eta1;
+  AbsCore.zdTvar :: PrelBase.ZMZN PrelBase.Char -> AbsCore.Ty =
+    \ (eta::PrelBase.ZMZN PrelBase.Char) -> AbsCore.ZdwTvar eta;
+  AbsCore.zdTcon :: AbsCore.QualIdent -> AbsCore.Ty =
+    \ (eta::AbsCore.QualIdent) -> AbsCore.ZdwTcon eta;
+  AbsCore.zdTapp :: AbsCore.Ty -> AbsCore.Ty -> AbsCore.Ty =
+    \ (eta::AbsCore.Ty) (eta1::AbsCore.Ty) -> AbsCore.ZdwTapp eta eta1;
+  AbsCore.zdTArrow :: AbsCore.Ty -> AbsCore.Ty -> AbsCore.Ty =
+    \ (eta::AbsCore.Ty) (eta1::AbsCore.Ty) ->
+	AbsCore.ZdwTArrow eta eta1;
+  AbsCore.zdTforalls :: PrelBase.ZMZN AbsCore.Tbind ->
+			AbsCore.Ty -> AbsCore.Ty =
+    \ (eta::PrelBase.ZMZN AbsCore.Tbind) (eta1::AbsCore.Ty) ->
+	AbsCore.ZdwTforalls eta eta1;
+  AbsCore.zdTbindsNo :: AbsCore.Tbinds = AbsCore.ZdwTbindsNo;
+  AbsCore.zdTbindsList :: PrelBase.ZMZN AbsCore.Tbind ->
+			  AbsCore.Tbinds =
+    \ (eta::PrelBase.ZMZN AbsCore.Tbind) -> AbsCore.ZdwTbindsList eta;
+  AbsCore.zdTbindPair :: PrelBase.ZMZN PrelBase.Char ->
+			 AbsCore.Kind -> AbsCore.Tbind =
+    \ (eta::PrelBase.ZMZN PrelBase.Char) (eta1::AbsCore.Kind) ->
+	AbsCore.ZdwTbindPair eta eta1;
+  AbsCore.zdTbindLift :: PrelBase.ZMZN PrelBase.Char ->
+			 AbsCore.Tbind =
+    \ (eta::PrelBase.ZMZN PrelBase.Char) -> AbsCore.ZdwTbindLift eta;
+  AbsCore.zdVbind :: PrelBase.ZMZN PrelBase.Char ->
+		     AbsCore.Ty -> AbsCore.Vbind =
+    \ (eta::PrelBase.ZMZN PrelBase.Char) (eta1::AbsCore.Ty) ->
+	AbsCore.ZdwVbind eta eta1;
+  AbsCore.zdAcon :: AbsCore.QualIdent ->
+		    AbsCore.Tbinds ->
+		    PrelBase.ZMZN AbsCore.Vbind -> AbsCore.Exp -> AbsCore.Alt =
+    \ (eta::AbsCore.QualIdent)
+      (eta1::AbsCore.Tbinds)
+      (eta2::PrelBase.ZMZN AbsCore.Vbind)
+      (eta3::AbsCore.Exp) ->
+	AbsCore.ZdwAcon eta eta1 eta2 eta3;
+  AbsCore.zdAlit :: AbsCore.Lit -> AbsCore.Exp -> AbsCore.Alt =
+    \ (eta::AbsCore.Lit) (eta1::AbsCore.Exp) ->
+	AbsCore.ZdwAlit eta eta1;
+  AbsCore.zdAdefault :: AbsCore.Exp -> AbsCore.Alt =
+    \ (eta::AbsCore.Exp) -> AbsCore.ZdwAdefault eta;
+  AbsCore.zdVb :: AbsCore.Vbind -> AbsCore.Bind =
+    \ (eta::AbsCore.Vbind) -> AbsCore.ZdwVb eta;
+  AbsCore.zdTb :: AbsCore.Tbind -> AbsCore.Bind =
+    \ (eta::AbsCore.Tbind) -> AbsCore.ZdwTb eta;
+  AbsCore.zdVar :: PrelBase.ZMZN PrelBase.Char -> AbsCore.Exp =
+    \ (eta::PrelBase.ZMZN PrelBase.Char) -> AbsCore.ZdwVar eta;
+  AbsCore.zdDcon :: AbsCore.QualIdent -> AbsCore.Exp =
+    \ (eta::AbsCore.QualIdent) -> AbsCore.ZdwDcon eta;
+  AbsCore.zdLit :: AbsCore.Lit -> AbsCore.Exp =
+    \ (eta::AbsCore.Lit) -> AbsCore.ZdwLit eta;
+  AbsCore.zdApp :: AbsCore.Exp -> AbsCore.Exp -> AbsCore.Exp =
+    \ (eta::AbsCore.Exp) (eta1::AbsCore.Exp) ->
+	AbsCore.ZdwApp eta eta1;
+  AbsCore.zdAppt :: AbsCore.Exp -> AbsCore.Ty -> AbsCore.Exp =
+    \ (eta::AbsCore.Exp) (eta1::AbsCore.Ty) ->
+	AbsCore.ZdwAppt eta eta1;
+  AbsCore.zdLams :: PrelBase.ZMZN AbsCore.Bind ->
+		    AbsCore.Exp -> AbsCore.Exp =
+    \ (eta::PrelBase.ZMZN AbsCore.Bind) (eta1::AbsCore.Exp) ->
+	AbsCore.ZdwLams eta eta1;
+  AbsCore.zdLet :: AbsCore.Vdefg -> AbsCore.Exp -> AbsCore.Exp =
+    \ (eta::AbsCore.Vdefg) (eta1::AbsCore.Exp) ->
+	AbsCore.ZdwLet eta eta1;
+  AbsCore.zdCase :: AbsCore.Exp ->
+		    AbsCore.Vbind -> PrelBase.ZMZN AbsCore.Alt -> AbsCore.Exp =
+    \ (eta::AbsCore.Exp)
+      (eta1::AbsCore.Vbind)
+      (eta2::PrelBase.ZMZN AbsCore.Alt) ->
+	AbsCore.ZdwCase eta eta1 eta2;
+  AbsCore.zdCoerce :: AbsCore.Ty -> AbsCore.Exp -> AbsCore.Exp =
+    \ (eta::AbsCore.Ty) (eta1::AbsCore.Exp) ->
+	AbsCore.ZdwCoerce eta eta1;
+  AbsCore.zdNote :: PrelBase.ZMZN PrelBase.Char ->
+		    AbsCore.Exp -> AbsCore.Exp =
+    \ (eta::PrelBase.ZMZN PrelBase.Char) (eta1::AbsCore.Exp) ->
+	AbsCore.ZdwNote eta eta1;
+  AbsCore.zdExternal :: PrelBase.ZMZN PrelBase.Char ->
+			AbsCore.Ty -> AbsCore.Exp =
+    \ (eta::PrelBase.ZMZN PrelBase.Char) (eta1::AbsCore.Ty) ->
+	AbsCore.ZdwExternal eta eta1;
+  AbsCore.zdVdef :: PrelBase.ZMZN PrelBase.Char ->
+		    AbsCore.Ty -> AbsCore.Exp -> AbsCore.Vdef =
+    \ (eta::PrelBase.ZMZN PrelBase.Char)
+      (eta1::AbsCore.Ty)
+      (eta2::AbsCore.Exp) ->
+	AbsCore.ZdwVdef eta eta1 eta2;
+  AbsCore.zdRec :: PrelBase.ZMZN AbsCore.Vdef -> AbsCore.Vdefg =
+    \ (eta::PrelBase.ZMZN AbsCore.Vdef) -> AbsCore.ZdwRec eta;
+  AbsCore.zdNonrec :: AbsCore.Vdef -> AbsCore.Vdefg =
+    \ (eta::AbsCore.Vdef) -> AbsCore.ZdwNonrec eta;
+  AbsCore.zdConstr :: PrelBase.ZMZN PrelBase.Char ->
+		      PrelBase.ZMZN AbsCore.Tbind ->
+		      PrelBase.ZMZN AbsCore.Ty -> AbsCore.Cdef =
+    \ (eta::PrelBase.ZMZN PrelBase.Char)
+      (eta1::PrelBase.ZMZN AbsCore.Tbind)
+      (eta2::PrelBase.ZMZN AbsCore.Ty) ->
+	AbsCore.ZdwConstr eta eta1 eta2;
+  AbsCore.zdJustTy :: AbsCore.Ty -> AbsCore.MaybeTy =
+    \ (eta::AbsCore.Ty) -> AbsCore.ZdwJustTy eta;
+  AbsCore.zdNoTy :: AbsCore.MaybeTy = AbsCore.ZdwNoTy;
+  AbsCore.zdNewtype :: AbsCore.QualIdent ->
+		       AbsCore.Tbinds -> AbsCore.MaybeTy -> AbsCore.TDef =
+    \ (eta::AbsCore.QualIdent)
+      (eta1::AbsCore.Tbinds)
+      (eta2::AbsCore.MaybeTy) ->
+	AbsCore.ZdwNewtype eta eta1 eta2;
+  AbsCore.zdData :: AbsCore.QualIdent ->
+		    AbsCore.Tbinds -> PrelBase.ZMZN AbsCore.Cdef -> AbsCore.Tdef =
+    \ (eta::AbsCore.QualIdent)
+      (eta1::AbsCore.Tbinds)
+      (eta2::PrelBase.ZMZN AbsCore.Cdef) ->
+	AbsCore.ZdwData eta eta1 eta2;
+  AbsCore.zdModule :: PrelBase.ZMZN PrelBase.Char ->
+		      PrelBase.ZMZN AbsCore.Tdef ->
+		      PrelBase.ZMZN AbsCore.Vdefg -> AbsCore.Module =
+    \ (eta::PrelBase.ZMZN PrelBase.Char)
+      (eta1::PrelBase.ZMZN AbsCore.Tdef)
+      (eta2::PrelBase.ZMZN AbsCore.Vdefg) ->
+	AbsCore.ZdwModule eta eta1 eta2;
+  AbsCore.zdIdent :: PrelBase.ZMZN PrelBase.Char ->
+		     PrelBase.ZMZN PrelBase.Char =
+    %note "InlineMe"
+    \ (tpl::PrelBase.ZMZN PrelBase.Char) -> tpl;
+  showsPrec :: PrelBase.Int ->
+	       PrelBase.ZMZN PrelBase.Char ->
+	       PrelBase.ZMZN PrelBase.Char -> PrelBase.ZMZN PrelBase.Char =
+    %case (PrelShow.zdfShowZMZN @ PrelBase.Char PrelShow.zdfShowChar)
+    %of (tpl::PrelShow.ZCTShow (PrelBase.ZMZN PrelBase.Char))
+      {PrelShow.ZdwZCDShow
+       (tpl1::PrelBase.Int ->
+	      PrelBase.ZMZN PrelBase.Char ->
+	      PrelBase.ZMZN PrelBase.Char -> PrelBase.ZMZN PrelBase.Char)
+       (tpl2::PrelBase.ZMZN PrelBase.Char -> PrelBase.ZMZN PrelBase.Char)
+       (tpl3::PrelBase.ZMZN (PrelBase.ZMZN PrelBase.Char) ->
+	      PrelBase.ZMZN PrelBase.Char -> PrelBase.ZMZN PrelBase.Char) ->
+	 tpl1};
+  compare :: PrelBase.ZMZN PrelBase.Char ->
+	     PrelBase.ZMZN PrelBase.Char -> PrelBase.Ordering =
+    %case (PrelBase.zdfOrdZMZN @ PrelBase.Char PrelBase.zdfOrdChar)
+    %of (tpl::PrelBase.ZCTOrd (PrelBase.ZMZN PrelBase.Char))
+      {PrelBase.ZdwZCDOrd
+       (tpl1::PrelBase.ZCTEq (PrelBase.ZMZN PrelBase.Char))
+       (tpl2::PrelBase.ZMZN PrelBase.Char ->
+	      PrelBase.ZMZN PrelBase.Char -> PrelBase.Ordering)
+       (tpl3::PrelBase.ZMZN PrelBase.Char ->
+	      PrelBase.ZMZN PrelBase.Char -> PrelBase.Bool)
+       (tpl4::PrelBase.ZMZN PrelBase.Char ->
+	      PrelBase.ZMZN PrelBase.Char -> PrelBase.Bool)
+       (tpl5::PrelBase.ZMZN PrelBase.Char ->
+	      PrelBase.ZMZN PrelBase.Char -> PrelBase.Bool)
+       (tpl6::PrelBase.ZMZN PrelBase.Char ->
+	      PrelBase.ZMZN PrelBase.Char -> PrelBase.Bool)
+       (tpl7::PrelBase.ZMZN PrelBase.Char ->
+	      PrelBase.ZMZN PrelBase.Char -> PrelBase.ZMZN PrelBase.Char)
+       (tpl8::PrelBase.ZMZN PrelBase.Char ->
+	      PrelBase.ZMZN PrelBase.Char -> PrelBase.ZMZN PrelBase.Char) ->
+	 tpl2};
+  compare1 :: PrelBase.ZMZN PrelBase.Char ->
+	      PrelBase.ZMZN PrelBase.Char -> PrelBase.Ordering =
+    \ (a::PrelBase.ZMZN PrelBase.Char)
+      (b::PrelBase.ZMZN PrelBase.Char) ->
+	compare a b;
+  zeze :: PrelBase.ZMZN PrelBase.Char ->
+	  PrelBase.ZMZN PrelBase.Char -> PrelBase.Bool =
+    %case (PrelBase.zdfEqZMZN @ PrelBase.Char PrelBase.zdfEqChar)
+    %of (tpl::PrelBase.ZCTEq (PrelBase.ZMZN PrelBase.Char))
+      {PrelBase.ZdwZCDEq
+       (tpl1::PrelBase.ZMZN PrelBase.Char ->
+	      PrelBase.ZMZN PrelBase.Char -> PrelBase.Bool)
+       (tpl2::PrelBase.ZMZN PrelBase.Char ->
+	      PrelBase.ZMZN PrelBase.Char -> PrelBase.Bool) ->
+	 tpl2};
+  zeze1 :: PrelBase.ZMZN PrelBase.Char ->
+	   PrelBase.ZMZN PrelBase.Char -> PrelBase.Bool =
+    \ (ds::PrelBase.ZMZN PrelBase.Char)
+      (ds1::PrelBase.ZMZN PrelBase.Char) ->
+	zeze ds ds1;
+  zsze :: PrelBase.ZMZN PrelBase.Char ->
+	  PrelBase.ZMZN PrelBase.Char -> PrelBase.Bool =
+    \ (a::PrelBase.ZMZN PrelBase.Char)
+      (b::PrelBase.ZMZN PrelBase.Char) ->
+	PrelBase.not (zeze a b);
+  %rec
+  {showsPrec1 :: PrelBase.Int ->
+		 AbsCore.Kind ->
+		 PrelBase.ZMZN PrelBase.Char -> PrelBase.ZMZN PrelBase.Char =
+     \ (ds::PrelBase.Int) (ds1::AbsCore.Kind) ->
+	 %case ds1 %of (wild::AbsCore.Kind)
+	   {AbsCore.ZdwKarrow (b1::AbsCore.Kind) (b2::AbsCore.Kind) ->
+	      PrelShow.showParen
+	      (%case PrelBase.zdfOrdInt %of (tpl::PrelBase.ZCTOrd PrelBase.Int)
+		 {PrelBase.ZdwZCDOrd
+		  (tpl1::PrelBase.ZCTEq PrelBase.Int)
+		  (tpl2::PrelBase.Int -> PrelBase.Int -> PrelBase.Ordering)
+		  (tpl3::PrelBase.Int -> PrelBase.Int -> PrelBase.Bool)
+		  (tpl4::PrelBase.Int -> PrelBase.Int -> PrelBase.Bool)
+		  (tpl5::PrelBase.Int -> PrelBase.Int -> PrelBase.Bool)
+		  (tpl6::PrelBase.Int -> PrelBase.Int -> PrelBase.Bool)
+		  (tpl7::PrelBase.Int -> PrelBase.Int -> PrelBase.Int)
+		  (tpl8::PrelBase.Int -> PrelBase.Int -> PrelBase.Int) ->
+		    tpl5 ds (PrelBase.ZdwIzh (10::PrelGHC.Intzh))})
+	      (PrelBase.zi @ (PrelBase.ZMZN PrelBase.Char)
+	       @ (PrelBase.ZMZN PrelBase.Char) @ (PrelBase.ZMZN PrelBase.Char)
+	       (PrelShow.showString
+		(PrelBase.unpackCStringzh ("Karrow "::PrelGHC.Addrzh)))
+	       (PrelBase.zi @ (PrelBase.ZMZN PrelBase.Char)
+		@ (PrelBase.ZMZN PrelBase.Char) @ (PrelBase.ZMZN PrelBase.Char)
+		(showsPrec1 (PrelBase.ZdwIzh (10::PrelGHC.Intzh)) b1)
+		(PrelBase.zi @ (PrelBase.ZMZN PrelBase.Char)
+		 @ (PrelBase.ZMZN PrelBase.Char) @ (PrelBase.ZMZN PrelBase.Char)
+		 PrelShow.showSpace
+		 (showsPrec1 (PrelBase.ZdwIzh (10::PrelGHC.Intzh)) b2))));
+	    AbsCore.ZdwKopen ->
+	      PrelShow.showString
+	      (PrelBase.unpackCStringzh ("Kopen"::PrelGHC.Addrzh));
+	    AbsCore.ZdwKunlifted ->
+	      PrelShow.showString
+	      (PrelBase.unpackCStringzh ("Kunlifted"::PrelGHC.Addrzh));
+	    AbsCore.ZdwKlifted ->
+	      PrelShow.showString
+	      (PrelBase.unpackCStringzh ("Klifted"::PrelGHC.Addrzh))}};
+  zz :: PrelBase.Int = PrelBase.ZdwIzh (0::PrelGHC.Intzh);
+  showList :: PrelBase.ZMZN AbsCore.Kind ->
+	      PrelBase.ZMZN PrelBase.Char -> PrelBase.ZMZN PrelBase.Char =
+    PrelShow.showListzuzu @ AbsCore.Kind
+    (\ (eta::AbsCore.Kind) -> showsPrec1 zz eta);
+  showsPrec2 :: PrelBase.Int ->
+		PrelBase.ZMZN PrelBase.Char ->
+		PrelBase.ZMZN PrelBase.Char -> PrelBase.ZMZN PrelBase.Char =
+    \ (a::PrelBase.Int) (ds::PrelBase.ZMZN PrelBase.Char) ->
+	PrelShow.showParen
+	(%case PrelBase.zdfOrdInt %of (tpl::PrelBase.ZCTOrd PrelBase.Int)
+	   {PrelBase.ZdwZCDOrd
+	    (tpl1::PrelBase.ZCTEq PrelBase.Int)
+	    (tpl2::PrelBase.Int -> PrelBase.Int -> PrelBase.Ordering)
+	    (tpl3::PrelBase.Int -> PrelBase.Int -> PrelBase.Bool)
+	    (tpl4::PrelBase.Int -> PrelBase.Int -> PrelBase.Bool)
+	    (tpl5::PrelBase.Int -> PrelBase.Int -> PrelBase.Bool)
+	    (tpl6::PrelBase.Int -> PrelBase.Int -> PrelBase.Bool)
+	    (tpl7::PrelBase.Int -> PrelBase.Int -> PrelBase.Int)
+	    (tpl8::PrelBase.Int -> PrelBase.Int -> PrelBase.Int) ->
+	      tpl5 a (PrelBase.ZdwIzh (10::PrelGHC.Intzh))})
+	(PrelBase.zi @ (PrelBase.ZMZN PrelBase.Char)
+	 @ (PrelBase.ZMZN PrelBase.Char) @ (PrelBase.ZMZN PrelBase.Char)
+	 (PrelShow.showString
+	  (PrelBase.unpackCStringzh ("Ident "::PrelGHC.Addrzh)))
+	 (showsPrec (PrelBase.ZdwIzh (10::PrelGHC.Intzh)) ds));
+  zz1 :: PrelBase.Int = PrelBase.ZdwIzh (0::PrelGHC.Intzh);
+  showList1 :: PrelBase.ZMZN (PrelBase.ZMZN PrelBase.Char) ->
+	       PrelBase.ZMZN PrelBase.Char -> PrelBase.ZMZN PrelBase.Char =
+    PrelShow.showListzuzu @ (PrelBase.ZMZN PrelBase.Char)
+    (\ (eta::PrelBase.ZMZN PrelBase.Char) -> showsPrec2 zz1 eta);
+  %rec
+  {zeze2 :: AbsCore.Kind -> AbsCore.Kind -> PrelBase.Bool =
+     \ (ds::AbsCore.Kind) (ds1::AbsCore.Kind) ->
+	 %let fail :: PrelBase.Bool =
+		%case ds %of (wild::AbsCore.Kind)
+		  {AbsCore.ZdwKarrow (ds2::AbsCore.Kind) (ds3::AbsCore.Kind) ->
+		     %case ds1 %of (wild1::AbsCore.Kind)
+		       {AbsCore.ZdwKarrow (ds4::AbsCore.Kind) (ds5::AbsCore.Kind) ->
+			  PrelBase.ZdwTrue;
+			AbsCore.ZdwKopen ->
+			  PrelBase.ZdwFalse;
+			AbsCore.ZdwKunlifted ->
+			  PrelBase.ZdwFalse;
+			AbsCore.ZdwKlifted ->
+			  PrelBase.ZdwFalse};
+		   AbsCore.ZdwKopen ->
+		     %case ds1 %of (wild1::AbsCore.Kind)
+		       {AbsCore.ZdwKarrow (ds2::AbsCore.Kind) (ds3::AbsCore.Kind) ->
+			  PrelBase.ZdwFalse;
+			AbsCore.ZdwKopen ->
+			  PrelBase.ZdwTrue;
+			AbsCore.ZdwKunlifted ->
+			  PrelBase.ZdwFalse;
+			AbsCore.ZdwKlifted ->
+			  PrelBase.ZdwFalse};
+		   AbsCore.ZdwKunlifted ->
+		     %case ds1 %of (wild1::AbsCore.Kind)
+		       {AbsCore.ZdwKarrow (ds2::AbsCore.Kind) (ds3::AbsCore.Kind) ->
+			  PrelBase.ZdwFalse;
+			AbsCore.ZdwKopen ->
+			  PrelBase.ZdwFalse;
+			AbsCore.ZdwKunlifted ->
+			  PrelBase.ZdwTrue;
+			AbsCore.ZdwKlifted ->
+			  PrelBase.ZdwFalse};
+		   AbsCore.ZdwKlifted ->
+		     %case ds1 %of (wild1::AbsCore.Kind)
+		       {AbsCore.ZdwKarrow (ds2::AbsCore.Kind) (ds3::AbsCore.Kind) ->
+			  PrelBase.ZdwFalse;
+			AbsCore.ZdwKopen ->
+			  PrelBase.ZdwFalse;
+			AbsCore.ZdwKunlifted ->
+			  PrelBase.ZdwFalse;
+			AbsCore.ZdwKlifted ->
+			  PrelBase.ZdwTrue}}
+	 %in %case ds %of (wild::AbsCore.Kind)
+	       {%_ ->
+		  fail;
+		AbsCore.ZdwKarrow (a1::AbsCore.Kind) (a2::AbsCore.Kind) ->
+		  %case ds1 %of (wild1::AbsCore.Kind)
+		    {%_ ->
+		       fail;
+		     AbsCore.ZdwKarrow (b1::AbsCore.Kind) (b2::AbsCore.Kind) ->
+		       PrelBase.zaza (zeze2 a1 b1) (zeze2 a2 b2)}}};
+  zsze1 :: AbsCore.Kind -> AbsCore.Kind -> PrelBase.Bool =
+    \ (a::AbsCore.Kind) (b::AbsCore.Kind) -> PrelBase.not (zeze2 a b);
+  %rec
+  {compare2 :: AbsCore.Kind -> AbsCore.Kind -> PrelBase.Ordering =
+     \ (a::AbsCore.Kind) (b::AbsCore.Kind) ->
+	 %let zdj :: PrelGHC.Intzh -> PrelBase.Ordering =
+		\ (azh::PrelGHC.Intzh) ->
+		    %let zdj1 :: PrelGHC.Intzh -> PrelBase.Ordering =
+			   \ (bzh::PrelGHC.Intzh) ->
+			       %case (PrelGHC.zezezh azh bzh) %of (wild::PrelBase.Bool)
+				 {PrelBase.ZdwTrue ->
+				    %case a %of (wild1::AbsCore.Kind)
+				      {%_ ->
+					 PrelBase.ZdwEQ;
+				       AbsCore.ZdwKarrow (a1::AbsCore.Kind) (a2::AbsCore.Kind) ->
+					 %case b %of (wild2::AbsCore.Kind)
+					   {%_ ->
+					      PrelBase.ZdwEQ;
+					    AbsCore.ZdwKarrow
+					    (b1::AbsCore.Kind) (b2::AbsCore.Kind) ->
+					      %case (compare2 a1 b1) %of (wild3::PrelBase.Ordering)
+						{PrelBase.ZdwEQ ->
+						   compare2 a2 b2;
+						 PrelBase.ZdwGT ->
+						   PrelBase.ZdwGT;
+						 PrelBase.ZdwLT ->
+						   PrelBase.ZdwLT}}};
+				  PrelBase.ZdwFalse ->
+				    %case (PrelGHC.zlzh azh bzh) %of (wild1::PrelBase.Bool)
+				      {PrelBase.ZdwTrue ->
+					 PrelBase.ZdwLT;
+				       PrelBase.ZdwFalse ->
+					 PrelBase.ZdwGT}}
+		    %in %case b %of (wild::AbsCore.Kind)
+			  {AbsCore.ZdwKarrow (ds::AbsCore.Kind) (ds1::AbsCore.Kind) ->
+			     zdj1 (3::PrelGHC.Intzh);
+			   AbsCore.ZdwKopen ->
+			     zdj1 (2::PrelGHC.Intzh);
+			   AbsCore.ZdwKunlifted ->
+			     zdj1 (1::PrelGHC.Intzh);
+			   AbsCore.ZdwKlifted ->
+			     zdj1 (0::PrelGHC.Intzh)}
+	 %in %case a %of (wild::AbsCore.Kind)
+	       {AbsCore.ZdwKarrow (ds::AbsCore.Kind) (ds1::AbsCore.Kind) ->
+		  zdj (3::PrelGHC.Intzh);
+		AbsCore.ZdwKopen ->
+		  zdj (2::PrelGHC.Intzh);
+		AbsCore.ZdwKunlifted ->
+		  zdj (1::PrelGHC.Intzh);
+		AbsCore.ZdwKlifted ->
+		  zdj (0::PrelGHC.Intzh)}};
+  %rec
+  {AbsCore.zdfShowIdent :: PrelShow.ZCTShow
+			   (PrelBase.ZMZN PrelBase.Char) =
+     %note "InlineMe"
+     PrelShow.ZdwZCDShow @ (PrelBase.ZMZN PrelBase.Char) showsPrec2
+     zddmshow showList1;
+   zddmshow :: PrelBase.ZMZN PrelBase.Char ->
+	       PrelBase.ZMZN PrelBase.Char =
+     PrelShow.zddmshow @ (PrelBase.ZMZN PrelBase.Char)
+     AbsCore.zdfShowIdent};
+  showsPrec3 :: PrelBase.Int ->
+		AbsCore.QualIdent ->
+		PrelBase.ZMZN PrelBase.Char -> PrelBase.ZMZN PrelBase.Char =
+    \ (a::PrelBase.Int) (ds::AbsCore.QualIdent) ->
+	%case ds %of (wild::AbsCore.QualIdent)
+	  {AbsCore.ZdwQual
+	   (b1::PrelBase.ZMZN PrelBase.Char)
+	   (b2::PrelBase.ZMZN PrelBase.Char) ->
+	     PrelShow.showParen
+	     (%case PrelBase.zdfOrdInt %of (tpl::PrelBase.ZCTOrd PrelBase.Int)
+		{PrelBase.ZdwZCDOrd
+		 (tpl1::PrelBase.ZCTEq PrelBase.Int)
+		 (tpl2::PrelBase.Int -> PrelBase.Int -> PrelBase.Ordering)
+		 (tpl3::PrelBase.Int -> PrelBase.Int -> PrelBase.Bool)
+		 (tpl4::PrelBase.Int -> PrelBase.Int -> PrelBase.Bool)
+		 (tpl5::PrelBase.Int -> PrelBase.Int -> PrelBase.Bool)
+		 (tpl6::PrelBase.Int -> PrelBase.Int -> PrelBase.Bool)
+		 (tpl7::PrelBase.Int -> PrelBase.Int -> PrelBase.Int)
+		 (tpl8::PrelBase.Int -> PrelBase.Int -> PrelBase.Int) ->
+		   tpl5 a (PrelBase.ZdwIzh (10::PrelGHC.Intzh))})
+	     (PrelBase.zi @ (PrelBase.ZMZN PrelBase.Char)
+	      @ (PrelBase.ZMZN PrelBase.Char) @ (PrelBase.ZMZN PrelBase.Char)
+	      (PrelShow.showString
+	       (PrelBase.unpackCStringzh ("Qual "::PrelGHC.Addrzh)))
+	      (PrelBase.zi @ (PrelBase.ZMZN PrelBase.Char)
+	       @ (PrelBase.ZMZN PrelBase.Char) @ (PrelBase.ZMZN PrelBase.Char)
+	       (showsPrec2 (PrelBase.ZdwIzh (10::PrelGHC.Intzh)) b1)
+	       (PrelBase.zi @ (PrelBase.ZMZN PrelBase.Char)
+		@ (PrelBase.ZMZN PrelBase.Char) @ (PrelBase.ZMZN PrelBase.Char)
+		PrelShow.showSpace
+		(showsPrec2 (PrelBase.ZdwIzh (10::PrelGHC.Intzh)) b2))))};
+  zz2 :: PrelBase.Int = PrelBase.ZdwIzh (0::PrelGHC.Intzh);
+  showList2 :: PrelBase.ZMZN AbsCore.QualIdent ->
+	       PrelBase.ZMZN PrelBase.Char -> PrelBase.ZMZN PrelBase.Char =
+    PrelShow.showListzuzu @ AbsCore.QualIdent
+    (\ (eta::AbsCore.QualIdent) -> showsPrec3 zz2 eta);
+  AbsCore.zdfEqIdent :: PrelBase.ZCTEq
+			(PrelBase.ZMZN PrelBase.Char) =
+    %note "InlineMe"
+    PrelBase.ZdwZCDEq @ (PrelBase.ZMZN PrelBase.Char) zsze zeze1;
+  %rec
+  {AbsCore.zdfOrdIdent :: PrelBase.ZCTOrd
+			  (PrelBase.ZMZN PrelBase.Char) =
+     %note "InlineMe"
+     PrelBase.ZdwZCDOrd @ (PrelBase.ZMZN PrelBase.Char)
+     AbsCore.zdfEqIdent compare1 zddmzlze zddmzg zddmzgze zddmzl zddmmin
+     zddmmax;
+   zddmmax :: PrelBase.ZMZN PrelBase.Char ->
+	      PrelBase.ZMZN PrelBase.Char -> PrelBase.ZMZN PrelBase.Char =
+     PrelBase.zddmmax @ (PrelBase.ZMZN PrelBase.Char)
+     AbsCore.zdfOrdIdent;
+   zddmmin :: PrelBase.ZMZN PrelBase.Char ->
+	      PrelBase.ZMZN PrelBase.Char -> PrelBase.ZMZN PrelBase.Char =
+     PrelBase.zddmmin @ (PrelBase.ZMZN PrelBase.Char)
+     AbsCore.zdfOrdIdent;
+   zddmzl :: PrelBase.ZMZN PrelBase.Char ->
+	     PrelBase.ZMZN PrelBase.Char -> PrelBase.Bool =
+     PrelBase.zddmzl @ (PrelBase.ZMZN PrelBase.Char)
+     AbsCore.zdfOrdIdent;
+   zddmzgze :: PrelBase.ZMZN PrelBase.Char ->
+	       PrelBase.ZMZN PrelBase.Char -> PrelBase.Bool =
+     PrelBase.zddmzgze @ (PrelBase.ZMZN PrelBase.Char)
+     AbsCore.zdfOrdIdent;
+   zddmzg :: PrelBase.ZMZN PrelBase.Char ->
+	     PrelBase.ZMZN PrelBase.Char -> PrelBase.Bool =
+     PrelBase.zddmzg @ (PrelBase.ZMZN PrelBase.Char)
+     AbsCore.zdfOrdIdent;
+   zddmzlze :: PrelBase.ZMZN PrelBase.Char ->
+	       PrelBase.ZMZN PrelBase.Char -> PrelBase.Bool =
+     PrelBase.zddmzlze @ (PrelBase.ZMZN PrelBase.Char)
+     AbsCore.zdfOrdIdent};
+  compare3 :: AbsCore.QualIdent ->
+	      AbsCore.QualIdent -> PrelBase.Ordering =
+    \ (a::AbsCore.QualIdent) (b::AbsCore.QualIdent) ->
+	%case a %of (wild::AbsCore.QualIdent)
+	  {AbsCore.ZdwQual
+	   (a1::PrelBase.ZMZN PrelBase.Char)
+	   (a2::PrelBase.ZMZN PrelBase.Char) ->
+	     %case b %of (wild1::AbsCore.QualIdent)
+	       {AbsCore.ZdwQual
+		(b1::PrelBase.ZMZN PrelBase.Char)
+		(b2::PrelBase.ZMZN PrelBase.Char) ->
+		  %case (compare a1 b1) %of (wild2::PrelBase.Ordering)
+		    {PrelBase.ZdwEQ ->
+		       compare a2 b2;
+		     PrelBase.ZdwGT ->
+		       PrelBase.ZdwGT;
+		     PrelBase.ZdwLT ->
+		       PrelBase.ZdwLT}}};
+  zeze3 :: AbsCore.QualIdent -> AbsCore.QualIdent -> PrelBase.Bool =
+    \ (ds::AbsCore.QualIdent) (ds1::AbsCore.QualIdent) ->
+	%case ds %of (wild::AbsCore.QualIdent)
+	  {AbsCore.ZdwQual
+	   (a1::PrelBase.ZMZN PrelBase.Char)
+	   (a2::PrelBase.ZMZN PrelBase.Char) ->
+	     %case ds1 %of (wild1::AbsCore.QualIdent)
+	       {AbsCore.ZdwQual
+		(b1::PrelBase.ZMZN PrelBase.Char)
+		(b2::PrelBase.ZMZN PrelBase.Char) ->
+		  PrelBase.zaza (zeze a1 b1) (zeze a2 b2)}};
+  zsze2 :: AbsCore.QualIdent -> AbsCore.QualIdent -> PrelBase.Bool =
+    \ (a::AbsCore.QualIdent) (b::AbsCore.QualIdent) ->
+	PrelBase.not (zeze3 a b);
+  %rec
+  {AbsCore.zdfShowKind :: PrelShow.ZCTShow AbsCore.Kind =
+     %note "InlineMe"
+     PrelShow.ZdwZCDShow @ AbsCore.Kind showsPrec1 zddmshow1 showList;
+   zddmshow1 :: AbsCore.Kind -> PrelBase.ZMZN PrelBase.Char =
+     PrelShow.zddmshow @ AbsCore.Kind AbsCore.zdfShowKind};
+  showsPrec4 :: PrelBase.Int ->
+		AbsCore.Tbind ->
+		PrelBase.ZMZN PrelBase.Char -> PrelBase.ZMZN PrelBase.Char =
+    \ (a::PrelBase.Int) (ds::AbsCore.Tbind) ->
+	%case ds %of (wild::AbsCore.Tbind)
+	  {AbsCore.ZdwTbindLift (b1::PrelBase.ZMZN PrelBase.Char) ->
+	     PrelShow.showParen
+	     (%case PrelBase.zdfOrdInt %of (tpl::PrelBase.ZCTOrd PrelBase.Int)
+		{PrelBase.ZdwZCDOrd
+		 (tpl1::PrelBase.ZCTEq PrelBase.Int)
+		 (tpl2::PrelBase.Int -> PrelBase.Int -> PrelBase.Ordering)
+		 (tpl3::PrelBase.Int -> PrelBase.Int -> PrelBase.Bool)
+		 (tpl4::PrelBase.Int -> PrelBase.Int -> PrelBase.Bool)
+		 (tpl5::PrelBase.Int -> PrelBase.Int -> PrelBase.Bool)
+		 (tpl6::PrelBase.Int -> PrelBase.Int -> PrelBase.Bool)
+		 (tpl7::PrelBase.Int -> PrelBase.Int -> PrelBase.Int)
+		 (tpl8::PrelBase.Int -> PrelBase.Int -> PrelBase.Int) ->
+		   tpl5 a (PrelBase.ZdwIzh (10::PrelGHC.Intzh))})
+	     (PrelBase.zi @ (PrelBase.ZMZN PrelBase.Char)
+	      @ (PrelBase.ZMZN PrelBase.Char) @ (PrelBase.ZMZN PrelBase.Char)
+	      (PrelShow.showString
+	       (PrelBase.unpackCStringzh ("TbindLift "::PrelGHC.Addrzh)))
+	      (showsPrec2 (PrelBase.ZdwIzh (10::PrelGHC.Intzh)) b1));
+	   AbsCore.ZdwTbindPair
+	   (b1::PrelBase.ZMZN PrelBase.Char) (b2::AbsCore.Kind) ->
+	     PrelShow.showParen
+	     (%case PrelBase.zdfOrdInt %of (tpl::PrelBase.ZCTOrd PrelBase.Int)
+		{PrelBase.ZdwZCDOrd
+		 (tpl1::PrelBase.ZCTEq PrelBase.Int)
+		 (tpl2::PrelBase.Int -> PrelBase.Int -> PrelBase.Ordering)
+		 (tpl3::PrelBase.Int -> PrelBase.Int -> PrelBase.Bool)
+		 (tpl4::PrelBase.Int -> PrelBase.Int -> PrelBase.Bool)
+		 (tpl5::PrelBase.Int -> PrelBase.Int -> PrelBase.Bool)
+		 (tpl6::PrelBase.Int -> PrelBase.Int -> PrelBase.Bool)
+		 (tpl7::PrelBase.Int -> PrelBase.Int -> PrelBase.Int)
+		 (tpl8::PrelBase.Int -> PrelBase.Int -> PrelBase.Int) ->
+		   tpl5 a (PrelBase.ZdwIzh (10::PrelGHC.Intzh))})
+	     (PrelBase.zi @ (PrelBase.ZMZN PrelBase.Char)
+	      @ (PrelBase.ZMZN PrelBase.Char) @ (PrelBase.ZMZN PrelBase.Char)
+	      (PrelShow.showString
+	       (PrelBase.unpackCStringzh ("TbindPair "::PrelGHC.Addrzh)))
+	      (PrelBase.zi @ (PrelBase.ZMZN PrelBase.Char)
+	       @ (PrelBase.ZMZN PrelBase.Char) @ (PrelBase.ZMZN PrelBase.Char)
+	       (showsPrec2 (PrelBase.ZdwIzh (10::PrelGHC.Intzh)) b1)
+	       (PrelBase.zi @ (PrelBase.ZMZN PrelBase.Char)
+		@ (PrelBase.ZMZN PrelBase.Char) @ (PrelBase.ZMZN PrelBase.Char)
+		PrelShow.showSpace
+		(showsPrec1 (PrelBase.ZdwIzh (10::PrelGHC.Intzh)) b2))))};
+  zz3 :: PrelBase.Int = PrelBase.ZdwIzh (0::PrelGHC.Intzh);
+  showList3 :: PrelBase.ZMZN AbsCore.Tbind ->
+	       PrelBase.ZMZN PrelBase.Char -> PrelBase.ZMZN PrelBase.Char =
+    PrelShow.showListzuzu @ AbsCore.Tbind
+    (\ (eta::AbsCore.Tbind) -> showsPrec4 zz3 eta);
+  %rec
+  {AbsCore.zdfShowTbind :: PrelShow.ZCTShow AbsCore.Tbind =
+     %note "InlineMe"
+     PrelShow.ZdwZCDShow @ AbsCore.Tbind showsPrec4 zddmshow2 showList3;
+   zddmshow2 :: AbsCore.Tbind -> PrelBase.ZMZN PrelBase.Char =
+     PrelShow.zddmshow @ AbsCore.Tbind AbsCore.zdfShowTbind};
+  showsPrec5 :: PrelBase.Int ->
+		PrelBase.ZMZN AbsCore.Tbind ->
+		PrelBase.ZMZN PrelBase.Char -> PrelBase.ZMZN PrelBase.Char =
+    %case (PrelShow.zdfShowZMZN @ AbsCore.Tbind AbsCore.zdfShowTbind)
+    %of (tpl::PrelShow.ZCTShow (PrelBase.ZMZN AbsCore.Tbind))
+      {PrelShow.ZdwZCDShow
+       (tpl1::PrelBase.Int ->
+	      PrelBase.ZMZN AbsCore.Tbind ->
+	      PrelBase.ZMZN PrelBase.Char -> PrelBase.ZMZN PrelBase.Char)
+       (tpl2::PrelBase.ZMZN AbsCore.Tbind -> PrelBase.ZMZN PrelBase.Char)
+       (tpl3::PrelBase.ZMZN (PrelBase.ZMZN AbsCore.Tbind) ->
+	      PrelBase.ZMZN PrelBase.Char -> PrelBase.ZMZN PrelBase.Char) ->
+	 tpl1};
+  showsPrec6 :: PrelBase.Int ->
+		AbsCore.Tbinds ->
+		PrelBase.ZMZN PrelBase.Char -> PrelBase.ZMZN PrelBase.Char =
+    \ (ds::PrelBase.Int) (ds1::AbsCore.Tbinds) ->
+	%case ds1 %of (wild::AbsCore.Tbinds)
+	  {AbsCore.ZdwTbindsList (b1::PrelBase.ZMZN AbsCore.Tbind) ->
+	     PrelShow.showParen
+	     (%case PrelBase.zdfOrdInt %of (tpl::PrelBase.ZCTOrd PrelBase.Int)
+		{PrelBase.ZdwZCDOrd
+		 (tpl1::PrelBase.ZCTEq PrelBase.Int)
+		 (tpl2::PrelBase.Int -> PrelBase.Int -> PrelBase.Ordering)
+		 (tpl3::PrelBase.Int -> PrelBase.Int -> PrelBase.Bool)
+		 (tpl4::PrelBase.Int -> PrelBase.Int -> PrelBase.Bool)
+		 (tpl5::PrelBase.Int -> PrelBase.Int -> PrelBase.Bool)
+		 (tpl6::PrelBase.Int -> PrelBase.Int -> PrelBase.Bool)
+		 (tpl7::PrelBase.Int -> PrelBase.Int -> PrelBase.Int)
+		 (tpl8::PrelBase.Int -> PrelBase.Int -> PrelBase.Int) ->
+		   tpl5 ds (PrelBase.ZdwIzh (10::PrelGHC.Intzh))})
+	     (PrelBase.zi @ (PrelBase.ZMZN PrelBase.Char)
+	      @ (PrelBase.ZMZN PrelBase.Char) @ (PrelBase.ZMZN PrelBase.Char)
+	      (PrelShow.showString
+	       (PrelBase.unpackCStringzh ("TbindsList "::PrelGHC.Addrzh)))
+	      (showsPrec5 (PrelBase.ZdwIzh (10::PrelGHC.Intzh)) b1));
+	   AbsCore.ZdwTbindsNo ->
+	     PrelShow.showString
+	     (PrelBase.unpackCStringzh ("TbindsNo"::PrelGHC.Addrzh))};
+  zz4 :: PrelBase.Int = PrelBase.ZdwIzh (0::PrelGHC.Intzh);
+  showList4 :: PrelBase.ZMZN AbsCore.Tbinds ->
+	       PrelBase.ZMZN PrelBase.Char -> PrelBase.ZMZN PrelBase.Char =
+    PrelShow.showListzuzu @ AbsCore.Tbinds
+    (\ (eta::AbsCore.Tbinds) -> showsPrec6 zz4 eta);
+  %rec
+  {AbsCore.zdfShowTbinds :: PrelShow.ZCTShow AbsCore.Tbinds =
+     %note "InlineMe"
+     PrelShow.ZdwZCDShow @ AbsCore.Tbinds showsPrec6 zddmshow3
+     showList4;
+   zddmshow3 :: AbsCore.Tbinds -> PrelBase.ZMZN PrelBase.Char =
+     PrelShow.zddmshow @ AbsCore.Tbinds AbsCore.zdfShowTbinds};
+  AbsCore.zdfEqKind :: PrelBase.ZCTEq AbsCore.Kind =
+    %note "InlineMe"
+    PrelBase.ZdwZCDEq @ AbsCore.Kind zsze1 zeze2;
+  %rec
+  {AbsCore.zdfOrdKind :: PrelBase.ZCTOrd AbsCore.Kind =
+     %note "InlineMe"
+     PrelBase.ZdwZCDOrd @ AbsCore.Kind AbsCore.zdfEqKind compare2
+     zddmzlze1 zddmzg1 zddmzgze1 zddmzl1 zddmmin1 zddmmax1;
+   zddmmax1 :: AbsCore.Kind -> AbsCore.Kind -> AbsCore.Kind =
+     PrelBase.zddmmax @ AbsCore.Kind AbsCore.zdfOrdKind;
+   zddmmin1 :: AbsCore.Kind -> AbsCore.Kind -> AbsCore.Kind =
+     PrelBase.zddmmin @ AbsCore.Kind AbsCore.zdfOrdKind;
+   zddmzl1 :: AbsCore.Kind -> AbsCore.Kind -> PrelBase.Bool =
+     PrelBase.zddmzl @ AbsCore.Kind AbsCore.zdfOrdKind;
+   zddmzgze1 :: AbsCore.Kind -> AbsCore.Kind -> PrelBase.Bool =
+     PrelBase.zddmzgze @ AbsCore.Kind AbsCore.zdfOrdKind;
+   zddmzg1 :: AbsCore.Kind -> AbsCore.Kind -> PrelBase.Bool =
+     PrelBase.zddmzg @ AbsCore.Kind AbsCore.zdfOrdKind;
+   zddmzlze1 :: AbsCore.Kind -> AbsCore.Kind -> PrelBase.Bool =
+     PrelBase.zddmzlze @ AbsCore.Kind AbsCore.zdfOrdKind};
+  compare4 :: AbsCore.Tbind -> AbsCore.Tbind -> PrelBase.Ordering =
+    \ (a::AbsCore.Tbind) (b::AbsCore.Tbind) ->
+	%let zdj :: PrelGHC.Intzh -> PrelBase.Ordering =
+	       \ (azh::PrelGHC.Intzh) ->
+		   %let zdj1 :: PrelGHC.Intzh -> PrelBase.Ordering =
+			  \ (bzh::PrelGHC.Intzh) ->
+			      %case (PrelGHC.zezezh azh bzh) %of (wild::PrelBase.Bool)
+				{PrelBase.ZdwTrue ->
+				   %case a %of (wild1::AbsCore.Tbind)
+				     {AbsCore.ZdwTbindLift (a1::PrelBase.ZMZN PrelBase.Char) ->
+					%case b %of (wild2::AbsCore.Tbind)
+					  {AbsCore.ZdwTbindPair
+					   (a11::PrelBase.ZMZN PrelBase.Char) (a2::AbsCore.Kind) ->
+					     PrelErr.error @ PrelBase.Ordering
+					     (PrelBase.unpackCStringzh
+					      ("Urk! in TcGenDeriv"::PrelGHC.Addrzh));
+					   AbsCore.ZdwTbindLift (b1::PrelBase.ZMZN PrelBase.Char) ->
+					     compare a1 b1};
+				      AbsCore.ZdwTbindPair
+				      (a1::PrelBase.ZMZN PrelBase.Char) (a2::AbsCore.Kind) ->
+					%case b %of (wild2::AbsCore.Tbind)
+					  {AbsCore.ZdwTbindLift
+					   (a11::PrelBase.ZMZN PrelBase.Char) ->
+					     PrelErr.error @ PrelBase.Ordering
+					     (PrelBase.unpackCStringzh
+					      ("Urk! in TcGenDeriv"::PrelGHC.Addrzh));
+					   AbsCore.ZdwTbindPair
+					   (b1::PrelBase.ZMZN PrelBase.Char) (b2::AbsCore.Kind) ->
+					     %case (compare a1 b1) %of (wild3::PrelBase.Ordering)
+					       {PrelBase.ZdwEQ ->
+						  compare2 a2 b2;
+						PrelBase.ZdwGT ->
+						  PrelBase.ZdwGT;
+						PrelBase.ZdwLT ->
+						  PrelBase.ZdwLT}}};
+				 PrelBase.ZdwFalse ->
+				   %case (PrelGHC.zlzh azh bzh) %of (wild1::PrelBase.Bool)
+				     {PrelBase.ZdwTrue ->
+					PrelBase.ZdwLT;
+				      PrelBase.ZdwFalse ->
+					PrelBase.ZdwGT}}
+		   %in %case b %of (wild::AbsCore.Tbind)
+			 {AbsCore.ZdwTbindLift (ds::PrelBase.ZMZN PrelBase.Char) ->
+			    zdj1 (1::PrelGHC.Intzh);
+			  AbsCore.ZdwTbindPair
+			  (ds::PrelBase.ZMZN PrelBase.Char) (ds1::AbsCore.Kind) ->
+			    zdj1 (0::PrelGHC.Intzh)}
+	%in %case a %of (wild::AbsCore.Tbind)
+	      {AbsCore.ZdwTbindLift (ds::PrelBase.ZMZN PrelBase.Char) ->
+		 zdj (1::PrelGHC.Intzh);
+	       AbsCore.ZdwTbindPair
+	       (ds::PrelBase.ZMZN PrelBase.Char) (ds1::AbsCore.Kind) ->
+		 zdj (0::PrelGHC.Intzh)};
+  zeze4 :: AbsCore.Tbind -> AbsCore.Tbind -> PrelBase.Bool =
+    \ (ds::AbsCore.Tbind) (ds1::AbsCore.Tbind) ->
+	%case ds %of (wild::AbsCore.Tbind)
+	  {AbsCore.ZdwTbindLift (a1::PrelBase.ZMZN PrelBase.Char) ->
+	     %case ds1 %of (wild1::AbsCore.Tbind)
+	       {AbsCore.ZdwTbindPair
+		(a::PrelBase.ZMZN PrelBase.Char) (a11::AbsCore.Kind) ->
+		  PrelBase.ZdwFalse;
+		AbsCore.ZdwTbindLift (b1::PrelBase.ZMZN PrelBase.Char) ->
+		  zeze a1 b1};
+	   AbsCore.ZdwTbindPair
+	   (a1::PrelBase.ZMZN PrelBase.Char) (a2::AbsCore.Kind) ->
+	     %case ds1 %of (wild1::AbsCore.Tbind)
+	       {AbsCore.ZdwTbindLift (a::PrelBase.ZMZN PrelBase.Char) ->
+		  PrelBase.ZdwFalse;
+		AbsCore.ZdwTbindPair
+		(b1::PrelBase.ZMZN PrelBase.Char) (b2::AbsCore.Kind) ->
+		  PrelBase.zaza (zeze a1 b1) (zeze2 a2 b2)}};
+  zsze3 :: AbsCore.Tbind -> AbsCore.Tbind -> PrelBase.Bool =
+    \ (a::AbsCore.Tbind) (b::AbsCore.Tbind) ->
+	PrelBase.not (zeze4 a b);
+  AbsCore.zdfEqTbind :: PrelBase.ZCTEq AbsCore.Tbind =
+    %note "InlineMe"
+    PrelBase.ZdwZCDEq @ AbsCore.Tbind zsze3 zeze4;
+  %rec
+  {AbsCore.zdfOrdTbind :: PrelBase.ZCTOrd AbsCore.Tbind =
+     %note "InlineMe"
+     PrelBase.ZdwZCDOrd @ AbsCore.Tbind AbsCore.zdfEqTbind compare4
+     zddmzlze2 zddmzg2 zddmzgze2 zddmzl2 zddmmin2 zddmmax2;
+   zddmmax2 :: AbsCore.Tbind -> AbsCore.Tbind -> AbsCore.Tbind =
+     PrelBase.zddmmax @ AbsCore.Tbind AbsCore.zdfOrdTbind;
+   zddmmin2 :: AbsCore.Tbind -> AbsCore.Tbind -> AbsCore.Tbind =
+     PrelBase.zddmmin @ AbsCore.Tbind AbsCore.zdfOrdTbind;
+   zddmzl2 :: AbsCore.Tbind -> AbsCore.Tbind -> PrelBase.Bool =
+     PrelBase.zddmzl @ AbsCore.Tbind AbsCore.zdfOrdTbind;
+   zddmzgze2 :: AbsCore.Tbind -> AbsCore.Tbind -> PrelBase.Bool =
+     PrelBase.zddmzgze @ AbsCore.Tbind AbsCore.zdfOrdTbind;
+   zddmzg2 :: AbsCore.Tbind -> AbsCore.Tbind -> PrelBase.Bool =
+     PrelBase.zddmzg @ AbsCore.Tbind AbsCore.zdfOrdTbind;
+   zddmzlze2 :: AbsCore.Tbind -> AbsCore.Tbind -> PrelBase.Bool =
+     PrelBase.zddmzlze @ AbsCore.Tbind AbsCore.zdfOrdTbind};
+  compare5 :: PrelBase.ZMZN AbsCore.Tbind ->
+	      PrelBase.ZMZN AbsCore.Tbind -> PrelBase.Ordering =
+    %case (PrelBase.zdfOrdZMZN @ AbsCore.Tbind AbsCore.zdfOrdTbind)
+    %of (tpl::PrelBase.ZCTOrd (PrelBase.ZMZN AbsCore.Tbind))
+      {PrelBase.ZdwZCDOrd
+       (tpl1::PrelBase.ZCTEq (PrelBase.ZMZN AbsCore.Tbind))
+       (tpl2::PrelBase.ZMZN AbsCore.Tbind ->
+	      PrelBase.ZMZN AbsCore.Tbind -> PrelBase.Ordering)
+       (tpl3::PrelBase.ZMZN AbsCore.Tbind ->
+	      PrelBase.ZMZN AbsCore.Tbind -> PrelBase.Bool)
+       (tpl4::PrelBase.ZMZN AbsCore.Tbind ->
+	      PrelBase.ZMZN AbsCore.Tbind -> PrelBase.Bool)
+       (tpl5::PrelBase.ZMZN AbsCore.Tbind ->
+	      PrelBase.ZMZN AbsCore.Tbind -> PrelBase.Bool)
+       (tpl6::PrelBase.ZMZN AbsCore.Tbind ->
+	      PrelBase.ZMZN AbsCore.Tbind -> PrelBase.Bool)
+       (tpl7::PrelBase.ZMZN AbsCore.Tbind ->
+	      PrelBase.ZMZN AbsCore.Tbind -> PrelBase.ZMZN AbsCore.Tbind)
+       (tpl8::PrelBase.ZMZN AbsCore.Tbind ->
+	      PrelBase.ZMZN AbsCore.Tbind -> PrelBase.ZMZN AbsCore.Tbind) ->
+	 tpl2};
+  compare6 :: AbsCore.Tbinds -> AbsCore.Tbinds -> PrelBase.Ordering =
+    \ (a::AbsCore.Tbinds) (b::AbsCore.Tbinds) ->
+	%let zdj :: PrelGHC.Intzh -> PrelBase.Ordering =
+	       \ (azh::PrelGHC.Intzh) ->
+		   %let zdj1 :: PrelGHC.Intzh -> PrelBase.Ordering =
+			  \ (bzh::PrelGHC.Intzh) ->
+			      %case (PrelGHC.zezezh azh bzh) %of (wild::PrelBase.Bool)
+				{PrelBase.ZdwTrue ->
+				   %case a %of (wild1::AbsCore.Tbinds)
+				     {AbsCore.ZdwTbindsNo ->
+					PrelBase.ZdwEQ;
+				      AbsCore.ZdwTbindsList (a1::PrelBase.ZMZN AbsCore.Tbind) ->
+					%case b %of (wild2::AbsCore.Tbinds)
+					  {AbsCore.ZdwTbindsNo ->
+					     PrelBase.ZdwEQ;
+					   AbsCore.ZdwTbindsList
+					   (b1::PrelBase.ZMZN AbsCore.Tbind) ->
+					     compare5 a1 b1}};
+				 PrelBase.ZdwFalse ->
+				   %case (PrelGHC.zlzh azh bzh) %of (wild1::PrelBase.Bool)
+				     {PrelBase.ZdwTrue ->
+					PrelBase.ZdwLT;
+				      PrelBase.ZdwFalse ->
+					PrelBase.ZdwGT}}
+		   %in %case b %of (wild::AbsCore.Tbinds)
+			 {AbsCore.ZdwTbindsList (ds::PrelBase.ZMZN AbsCore.Tbind) ->
+			    zdj1 (1::PrelGHC.Intzh);
+			  AbsCore.ZdwTbindsNo ->
+			    zdj1 (0::PrelGHC.Intzh)}
+	%in %case a %of (wild::AbsCore.Tbinds)
+	      {AbsCore.ZdwTbindsList (ds::PrelBase.ZMZN AbsCore.Tbind) ->
+		 zdj (1::PrelGHC.Intzh);
+	       AbsCore.ZdwTbindsNo ->
+		 zdj (0::PrelGHC.Intzh)};
+  zeze5 :: PrelBase.ZMZN AbsCore.Tbind ->
+	   PrelBase.ZMZN AbsCore.Tbind -> PrelBase.Bool =
+    %case (PrelBase.zdfEqZMZN @ AbsCore.Tbind AbsCore.zdfEqTbind)
+    %of (tpl::PrelBase.ZCTEq (PrelBase.ZMZN AbsCore.Tbind))
+      {PrelBase.ZdwZCDEq
+       (tpl1::PrelBase.ZMZN AbsCore.Tbind ->
+	      PrelBase.ZMZN AbsCore.Tbind -> PrelBase.Bool)
+       (tpl2::PrelBase.ZMZN AbsCore.Tbind ->
+	      PrelBase.ZMZN AbsCore.Tbind -> PrelBase.Bool) ->
+	 tpl2};
+  zeze6 :: AbsCore.Tbinds -> AbsCore.Tbinds -> PrelBase.Bool =
+    \ (ds::AbsCore.Tbinds) (ds1::AbsCore.Tbinds) ->
+	%case ds %of (wild::AbsCore.Tbinds)
+	  {AbsCore.ZdwTbindsNo ->
+	     %case ds1 %of (wild1::AbsCore.Tbinds)
+	       {AbsCore.ZdwTbindsList (ds2::PrelBase.ZMZN AbsCore.Tbind) ->
+		  PrelBase.ZdwFalse;
+		AbsCore.ZdwTbindsNo ->
+		  PrelBase.ZdwTrue};
+	   AbsCore.ZdwTbindsList (a1::PrelBase.ZMZN AbsCore.Tbind) ->
+	     %case ds1 %of (wild1::AbsCore.Tbinds)
+	       {AbsCore.ZdwTbindsNo ->
+		  PrelBase.ZdwFalse;
+		AbsCore.ZdwTbindsList (b1::PrelBase.ZMZN AbsCore.Tbind) ->
+		  zeze5 a1 b1}};
+  zsze4 :: AbsCore.Tbinds -> AbsCore.Tbinds -> PrelBase.Bool =
+    \ (a::AbsCore.Tbinds) (b::AbsCore.Tbinds) ->
+	PrelBase.not (zeze6 a b);
+  AbsCore.zdfEqTbinds :: PrelBase.ZCTEq AbsCore.Tbinds =
+    %note "InlineMe"
+    PrelBase.ZdwZCDEq @ AbsCore.Tbinds zsze4 zeze6;
+  %rec
+  {AbsCore.zdfOrdTbinds :: PrelBase.ZCTOrd AbsCore.Tbinds =
+     %note "InlineMe"
+     PrelBase.ZdwZCDOrd @ AbsCore.Tbinds AbsCore.zdfEqTbinds compare6
+     zddmzlze3 zddmzg3 zddmzgze3 zddmzl3 zddmmin3 zddmmax3;
+   zddmmax3 :: AbsCore.Tbinds -> AbsCore.Tbinds -> AbsCore.Tbinds =
+     PrelBase.zddmmax @ AbsCore.Tbinds AbsCore.zdfOrdTbinds;
+   zddmmin3 :: AbsCore.Tbinds -> AbsCore.Tbinds -> AbsCore.Tbinds =
+     PrelBase.zddmmin @ AbsCore.Tbinds AbsCore.zdfOrdTbinds;
+   zddmzl3 :: AbsCore.Tbinds -> AbsCore.Tbinds -> PrelBase.Bool =
+     PrelBase.zddmzl @ AbsCore.Tbinds AbsCore.zdfOrdTbinds;
+   zddmzgze3 :: AbsCore.Tbinds -> AbsCore.Tbinds -> PrelBase.Bool =
+     PrelBase.zddmzgze @ AbsCore.Tbinds AbsCore.zdfOrdTbinds;
+   zddmzg3 :: AbsCore.Tbinds -> AbsCore.Tbinds -> PrelBase.Bool =
+     PrelBase.zddmzg @ AbsCore.Tbinds AbsCore.zdfOrdTbinds;
+   zddmzlze3 :: AbsCore.Tbinds -> AbsCore.Tbinds -> PrelBase.Bool =
+     PrelBase.zddmzlze @ AbsCore.Tbinds AbsCore.zdfOrdTbinds};
+  %rec
+  {AbsCore.zdfShowQualIdent :: PrelShow.ZCTShow AbsCore.QualIdent =
+     %note "InlineMe"
+     PrelShow.ZdwZCDShow @ AbsCore.QualIdent showsPrec3 zddmshow4
+     showList2;
+   zddmshow4 :: AbsCore.QualIdent -> PrelBase.ZMZN PrelBase.Char =
+     PrelShow.zddmshow @ AbsCore.QualIdent AbsCore.zdfShowQualIdent};
+  %rec
+  {showsPrec7 :: PrelBase.Int ->
+		 AbsCore.Ty ->
+		 PrelBase.ZMZN PrelBase.Char -> PrelBase.ZMZN PrelBase.Char =
+     \ (a::PrelBase.Int) (ds::AbsCore.Ty) ->
+	 %case ds %of (wild::AbsCore.Ty)
+	   {AbsCore.ZdwTforalls
+	    (b1::PrelBase.ZMZN AbsCore.Tbind) (b2::AbsCore.Ty) ->
+	      PrelShow.showParen
+	      (%case PrelBase.zdfOrdInt %of (tpl::PrelBase.ZCTOrd PrelBase.Int)
+		 {PrelBase.ZdwZCDOrd
+		  (tpl1::PrelBase.ZCTEq PrelBase.Int)
+		  (tpl2::PrelBase.Int -> PrelBase.Int -> PrelBase.Ordering)
+		  (tpl3::PrelBase.Int -> PrelBase.Int -> PrelBase.Bool)
+		  (tpl4::PrelBase.Int -> PrelBase.Int -> PrelBase.Bool)
+		  (tpl5::PrelBase.Int -> PrelBase.Int -> PrelBase.Bool)
+		  (tpl6::PrelBase.Int -> PrelBase.Int -> PrelBase.Bool)
+		  (tpl7::PrelBase.Int -> PrelBase.Int -> PrelBase.Int)
+		  (tpl8::PrelBase.Int -> PrelBase.Int -> PrelBase.Int) ->
+		    tpl5 a (PrelBase.ZdwIzh (10::PrelGHC.Intzh))})
+	      (PrelBase.zi @ (PrelBase.ZMZN PrelBase.Char)
+	       @ (PrelBase.ZMZN PrelBase.Char) @ (PrelBase.ZMZN PrelBase.Char)
+	       (PrelShow.showString
+		(PrelBase.unpackCStringzh ("Tforalls "::PrelGHC.Addrzh)))
+	       (PrelBase.zi @ (PrelBase.ZMZN PrelBase.Char)
+		@ (PrelBase.ZMZN PrelBase.Char) @ (PrelBase.ZMZN PrelBase.Char)
+		(showsPrec5 (PrelBase.ZdwIzh (10::PrelGHC.Intzh)) b1)
+		(PrelBase.zi @ (PrelBase.ZMZN PrelBase.Char)
+		 @ (PrelBase.ZMZN PrelBase.Char) @ (PrelBase.ZMZN PrelBase.Char)
+		 PrelShow.showSpace
+		 (showsPrec7 (PrelBase.ZdwIzh (10::PrelGHC.Intzh)) b2))));
+	    AbsCore.ZdwTArrow (b1::AbsCore.Ty) (b2::AbsCore.Ty) ->
+	      PrelShow.showParen
+	      (%case PrelBase.zdfOrdInt %of (tpl::PrelBase.ZCTOrd PrelBase.Int)
+		 {PrelBase.ZdwZCDOrd
+		  (tpl1::PrelBase.ZCTEq PrelBase.Int)
+		  (tpl2::PrelBase.Int -> PrelBase.Int -> PrelBase.Ordering)
+		  (tpl3::PrelBase.Int -> PrelBase.Int -> PrelBase.Bool)
+		  (tpl4::PrelBase.Int -> PrelBase.Int -> PrelBase.Bool)
+		  (tpl5::PrelBase.Int -> PrelBase.Int -> PrelBase.Bool)
+		  (tpl6::PrelBase.Int -> PrelBase.Int -> PrelBase.Bool)
+		  (tpl7::PrelBase.Int -> PrelBase.Int -> PrelBase.Int)
+		  (tpl8::PrelBase.Int -> PrelBase.Int -> PrelBase.Int) ->
+		    tpl5 a (PrelBase.ZdwIzh (10::PrelGHC.Intzh))})
+	      (PrelBase.zi @ (PrelBase.ZMZN PrelBase.Char)
+	       @ (PrelBase.ZMZN PrelBase.Char) @ (PrelBase.ZMZN PrelBase.Char)
+	       (PrelShow.showString
+		(PrelBase.unpackCStringzh ("TArrow "::PrelGHC.Addrzh)))
+	       (PrelBase.zi @ (PrelBase.ZMZN PrelBase.Char)
+		@ (PrelBase.ZMZN PrelBase.Char) @ (PrelBase.ZMZN PrelBase.Char)
+		(showsPrec7 (PrelBase.ZdwIzh (10::PrelGHC.Intzh)) b1)
+		(PrelBase.zi @ (PrelBase.ZMZN PrelBase.Char)
+		 @ (PrelBase.ZMZN PrelBase.Char) @ (PrelBase.ZMZN PrelBase.Char)
+		 PrelShow.showSpace
+		 (showsPrec7 (PrelBase.ZdwIzh (10::PrelGHC.Intzh)) b2))));
+	    AbsCore.ZdwTapp (b1::AbsCore.Ty) (b2::AbsCore.Ty) ->
+	      PrelShow.showParen
+	      (%case PrelBase.zdfOrdInt %of (tpl::PrelBase.ZCTOrd PrelBase.Int)
+		 {PrelBase.ZdwZCDOrd
+		  (tpl1::PrelBase.ZCTEq PrelBase.Int)
+		  (tpl2::PrelBase.Int -> PrelBase.Int -> PrelBase.Ordering)
+		  (tpl3::PrelBase.Int -> PrelBase.Int -> PrelBase.Bool)
+		  (tpl4::PrelBase.Int -> PrelBase.Int -> PrelBase.Bool)
+		  (tpl5::PrelBase.Int -> PrelBase.Int -> PrelBase.Bool)
+		  (tpl6::PrelBase.Int -> PrelBase.Int -> PrelBase.Bool)
+		  (tpl7::PrelBase.Int -> PrelBase.Int -> PrelBase.Int)
+		  (tpl8::PrelBase.Int -> PrelBase.Int -> PrelBase.Int) ->
+		    tpl5 a (PrelBase.ZdwIzh (10::PrelGHC.Intzh))})
+	      (PrelBase.zi @ (PrelBase.ZMZN PrelBase.Char)
+	       @ (PrelBase.ZMZN PrelBase.Char) @ (PrelBase.ZMZN PrelBase.Char)
+	       (PrelShow.showString
+		(PrelBase.unpackCStringzh ("Tapp "::PrelGHC.Addrzh)))
+	       (PrelBase.zi @ (PrelBase.ZMZN PrelBase.Char)
+		@ (PrelBase.ZMZN PrelBase.Char) @ (PrelBase.ZMZN PrelBase.Char)
+		(showsPrec7 (PrelBase.ZdwIzh (10::PrelGHC.Intzh)) b1)
+		(PrelBase.zi @ (PrelBase.ZMZN PrelBase.Char)
+		 @ (PrelBase.ZMZN PrelBase.Char) @ (PrelBase.ZMZN PrelBase.Char)
+		 PrelShow.showSpace
+		 (showsPrec7 (PrelBase.ZdwIzh (10::PrelGHC.Intzh)) b2))));
+	    AbsCore.ZdwTcon (b1::AbsCore.QualIdent) ->
+	      PrelShow.showParen
+	      (%case PrelBase.zdfOrdInt %of (tpl::PrelBase.ZCTOrd PrelBase.Int)
+		 {PrelBase.ZdwZCDOrd
+		  (tpl1::PrelBase.ZCTEq PrelBase.Int)
+		  (tpl2::PrelBase.Int -> PrelBase.Int -> PrelBase.Ordering)
+		  (tpl3::PrelBase.Int -> PrelBase.Int -> PrelBase.Bool)
+		  (tpl4::PrelBase.Int -> PrelBase.Int -> PrelBase.Bool)
+		  (tpl5::PrelBase.Int -> PrelBase.Int -> PrelBase.Bool)
+		  (tpl6::PrelBase.Int -> PrelBase.Int -> PrelBase.Bool)
+		  (tpl7::PrelBase.Int -> PrelBase.Int -> PrelBase.Int)
+		  (tpl8::PrelBase.Int -> PrelBase.Int -> PrelBase.Int) ->
+		    tpl5 a (PrelBase.ZdwIzh (10::PrelGHC.Intzh))})
+	      (PrelBase.zi @ (PrelBase.ZMZN PrelBase.Char)
+	       @ (PrelBase.ZMZN PrelBase.Char) @ (PrelBase.ZMZN PrelBase.Char)
+	       (PrelShow.showString
+		(PrelBase.unpackCStringzh ("Tcon "::PrelGHC.Addrzh)))
+	       (showsPrec3 (PrelBase.ZdwIzh (10::PrelGHC.Intzh)) b1));
+	    AbsCore.ZdwTvar (b1::PrelBase.ZMZN PrelBase.Char) ->
+	      PrelShow.showParen
+	      (%case PrelBase.zdfOrdInt %of (tpl::PrelBase.ZCTOrd PrelBase.Int)
+		 {PrelBase.ZdwZCDOrd
+		  (tpl1::PrelBase.ZCTEq PrelBase.Int)
+		  (tpl2::PrelBase.Int -> PrelBase.Int -> PrelBase.Ordering)
+		  (tpl3::PrelBase.Int -> PrelBase.Int -> PrelBase.Bool)
+		  (tpl4::PrelBase.Int -> PrelBase.Int -> PrelBase.Bool)
+		  (tpl5::PrelBase.Int -> PrelBase.Int -> PrelBase.Bool)
+		  (tpl6::PrelBase.Int -> PrelBase.Int -> PrelBase.Bool)
+		  (tpl7::PrelBase.Int -> PrelBase.Int -> PrelBase.Int)
+		  (tpl8::PrelBase.Int -> PrelBase.Int -> PrelBase.Int) ->
+		    tpl5 a (PrelBase.ZdwIzh (10::PrelGHC.Intzh))})
+	      (PrelBase.zi @ (PrelBase.ZMZN PrelBase.Char)
+	       @ (PrelBase.ZMZN PrelBase.Char) @ (PrelBase.ZMZN PrelBase.Char)
+	       (PrelShow.showString
+		(PrelBase.unpackCStringzh ("Tvar "::PrelGHC.Addrzh)))
+	       (showsPrec2 (PrelBase.ZdwIzh (10::PrelGHC.Intzh)) b1))}};
+  zz5 :: PrelBase.Int = PrelBase.ZdwIzh (0::PrelGHC.Intzh);
+  showList5 :: PrelBase.ZMZN AbsCore.Ty ->
+	       PrelBase.ZMZN PrelBase.Char -> PrelBase.ZMZN PrelBase.Char =
+    PrelShow.showListzuzu @ AbsCore.Ty
+    (\ (eta::AbsCore.Ty) -> showsPrec7 zz5 eta);
+  %rec
+  {AbsCore.zdfShowTy :: PrelShow.ZCTShow AbsCore.Ty =
+     %note "InlineMe"
+     PrelShow.ZdwZCDShow @ AbsCore.Ty showsPrec7 zddmshow5 showList5;
+   zddmshow5 :: AbsCore.Ty -> PrelBase.ZMZN PrelBase.Char =
+     PrelShow.zddmshow @ AbsCore.Ty AbsCore.zdfShowTy};
+  showsPrec8 :: PrelBase.Int ->
+		AbsCore.Lit ->
+		PrelBase.ZMZN PrelBase.Char -> PrelBase.ZMZN PrelBase.Char =
+    \ (a::PrelBase.Int) (ds::AbsCore.Lit) ->
+	%case ds %of (wild::AbsCore.Lit)
+	  {AbsCore.ZdwLstring
+	   (b1::PrelBase.ZMZN PrelBase.Char) (b2::AbsCore.Ty) ->
+	     PrelShow.showParen
+	     (%case PrelBase.zdfOrdInt %of (tpl::PrelBase.ZCTOrd PrelBase.Int)
+		{PrelBase.ZdwZCDOrd
+		 (tpl1::PrelBase.ZCTEq PrelBase.Int)
+		 (tpl2::PrelBase.Int -> PrelBase.Int -> PrelBase.Ordering)
+		 (tpl3::PrelBase.Int -> PrelBase.Int -> PrelBase.Bool)
+		 (tpl4::PrelBase.Int -> PrelBase.Int -> PrelBase.Bool)
+		 (tpl5::PrelBase.Int -> PrelBase.Int -> PrelBase.Bool)
+		 (tpl6::PrelBase.Int -> PrelBase.Int -> PrelBase.Bool)
+		 (tpl7::PrelBase.Int -> PrelBase.Int -> PrelBase.Int)
+		 (tpl8::PrelBase.Int -> PrelBase.Int -> PrelBase.Int) ->
+		   tpl5 a (PrelBase.ZdwIzh (10::PrelGHC.Intzh))})
+	     (PrelBase.zi @ (PrelBase.ZMZN PrelBase.Char)
+	      @ (PrelBase.ZMZN PrelBase.Char) @ (PrelBase.ZMZN PrelBase.Char)
+	      (PrelShow.showString
+	       (PrelBase.unpackCStringzh ("Lstring "::PrelGHC.Addrzh)))
+	      (PrelBase.zi @ (PrelBase.ZMZN PrelBase.Char)
+	       @ (PrelBase.ZMZN PrelBase.Char) @ (PrelBase.ZMZN PrelBase.Char)
+	       (showsPrec (PrelBase.ZdwIzh (10::PrelGHC.Intzh)) b1)
+	       (PrelBase.zi @ (PrelBase.ZMZN PrelBase.Char)
+		@ (PrelBase.ZMZN PrelBase.Char) @ (PrelBase.ZMZN PrelBase.Char)
+		PrelShow.showSpace
+		(showsPrec7 (PrelBase.ZdwIzh (10::PrelGHC.Intzh)) b2))));
+	   AbsCore.ZdwLchar (b1::PrelBase.Char) (b2::AbsCore.Ty) ->
+	     PrelShow.showParen
+	     (%case PrelBase.zdfOrdInt %of (tpl::PrelBase.ZCTOrd PrelBase.Int)
+		{PrelBase.ZdwZCDOrd
+		 (tpl1::PrelBase.ZCTEq PrelBase.Int)
+		 (tpl2::PrelBase.Int -> PrelBase.Int -> PrelBase.Ordering)
+		 (tpl3::PrelBase.Int -> PrelBase.Int -> PrelBase.Bool)
+		 (tpl4::PrelBase.Int -> PrelBase.Int -> PrelBase.Bool)
+		 (tpl5::PrelBase.Int -> PrelBase.Int -> PrelBase.Bool)
+		 (tpl6::PrelBase.Int -> PrelBase.Int -> PrelBase.Bool)
+		 (tpl7::PrelBase.Int -> PrelBase.Int -> PrelBase.Int)
+		 (tpl8::PrelBase.Int -> PrelBase.Int -> PrelBase.Int) ->
+		   tpl5 a (PrelBase.ZdwIzh (10::PrelGHC.Intzh))})
+	     (PrelBase.zi @ (PrelBase.ZMZN PrelBase.Char)
+	      @ (PrelBase.ZMZN PrelBase.Char) @ (PrelBase.ZMZN PrelBase.Char)
+	      (PrelShow.showString
+	       (PrelBase.unpackCStringzh ("Lchar "::PrelGHC.Addrzh)))
+	      (PrelBase.zi @ (PrelBase.ZMZN PrelBase.Char)
+	       @ (PrelBase.ZMZN PrelBase.Char) @ (PrelBase.ZMZN PrelBase.Char)
+	       (%case PrelShow.zdfShowChar
+		%of (tpl::PrelShow.ZCTShow PrelBase.Char)
+		  {PrelShow.ZdwZCDShow
+		   (tpl1::PrelBase.Int ->
+			  PrelBase.Char ->
+			  PrelBase.ZMZN PrelBase.Char -> PrelBase.ZMZN PrelBase.Char)
+		   (tpl2::PrelBase.Char -> PrelBase.ZMZN PrelBase.Char)
+		   (tpl3::PrelBase.ZMZN PrelBase.Char ->
+			  PrelBase.ZMZN PrelBase.Char -> PrelBase.ZMZN PrelBase.Char) ->
+		     tpl1 (PrelBase.ZdwIzh (10::PrelGHC.Intzh)) b1})
+	       (PrelBase.zi @ (PrelBase.ZMZN PrelBase.Char)
+		@ (PrelBase.ZMZN PrelBase.Char) @ (PrelBase.ZMZN PrelBase.Char)
+		PrelShow.showSpace
+		(showsPrec7 (PrelBase.ZdwIzh (10::PrelGHC.Intzh)) b2))));
+	   AbsCore.ZdwLrational (b1::PrelFloat.Double) (b2::AbsCore.Ty) ->
+	     PrelShow.showParen
+	     (%case PrelBase.zdfOrdInt %of (tpl::PrelBase.ZCTOrd PrelBase.Int)
+		{PrelBase.ZdwZCDOrd
+		 (tpl1::PrelBase.ZCTEq PrelBase.Int)
+		 (tpl2::PrelBase.Int -> PrelBase.Int -> PrelBase.Ordering)
+		 (tpl3::PrelBase.Int -> PrelBase.Int -> PrelBase.Bool)
+		 (tpl4::PrelBase.Int -> PrelBase.Int -> PrelBase.Bool)
+		 (tpl5::PrelBase.Int -> PrelBase.Int -> PrelBase.Bool)
+		 (tpl6::PrelBase.Int -> PrelBase.Int -> PrelBase.Bool)
+		 (tpl7::PrelBase.Int -> PrelBase.Int -> PrelBase.Int)
+		 (tpl8::PrelBase.Int -> PrelBase.Int -> PrelBase.Int) ->
+		   tpl5 a (PrelBase.ZdwIzh (10::PrelGHC.Intzh))})
+	     (PrelBase.zi @ (PrelBase.ZMZN PrelBase.Char)
+	      @ (PrelBase.ZMZN PrelBase.Char) @ (PrelBase.ZMZN PrelBase.Char)
+	      (PrelShow.showString
+	       (PrelBase.unpackCStringzh ("Lrational "::PrelGHC.Addrzh)))
+	      (PrelBase.zi @ (PrelBase.ZMZN PrelBase.Char)
+	       @ (PrelBase.ZMZN PrelBase.Char) @ (PrelBase.ZMZN PrelBase.Char)
+	       (%case PrelFloat.zdfShowDouble
+		%of (tpl::PrelShow.ZCTShow PrelFloat.Double)
+		  {PrelShow.ZdwZCDShow
+		   (tpl1::PrelBase.Int ->
+			  PrelFloat.Double ->
+			  PrelBase.ZMZN PrelBase.Char -> PrelBase.ZMZN PrelBase.Char)
+		   (tpl2::PrelFloat.Double -> PrelBase.ZMZN PrelBase.Char)
+		   (tpl3::PrelBase.ZMZN PrelFloat.Double ->
+			  PrelBase.ZMZN PrelBase.Char -> PrelBase.ZMZN PrelBase.Char) ->
+		     tpl1 (PrelBase.ZdwIzh (10::PrelGHC.Intzh)) b1})
+	       (PrelBase.zi @ (PrelBase.ZMZN PrelBase.Char)
+		@ (PrelBase.ZMZN PrelBase.Char) @ (PrelBase.ZMZN PrelBase.Char)
+		PrelShow.showSpace
+		(showsPrec7 (PrelBase.ZdwIzh (10::PrelGHC.Intzh)) b2))));
+	   AbsCore.ZdwLint (b1::PrelNum.Integer) (b2::AbsCore.Ty) ->
+	     PrelShow.showParen
+	     (%case PrelBase.zdfOrdInt %of (tpl::PrelBase.ZCTOrd PrelBase.Int)
+		{PrelBase.ZdwZCDOrd
+		 (tpl1::PrelBase.ZCTEq PrelBase.Int)
+		 (tpl2::PrelBase.Int -> PrelBase.Int -> PrelBase.Ordering)
+		 (tpl3::PrelBase.Int -> PrelBase.Int -> PrelBase.Bool)
+		 (tpl4::PrelBase.Int -> PrelBase.Int -> PrelBase.Bool)
+		 (tpl5::PrelBase.Int -> PrelBase.Int -> PrelBase.Bool)
+		 (tpl6::PrelBase.Int -> PrelBase.Int -> PrelBase.Bool)
+		 (tpl7::PrelBase.Int -> PrelBase.Int -> PrelBase.Int)
+		 (tpl8::PrelBase.Int -> PrelBase.Int -> PrelBase.Int) ->
+		   tpl5 a (PrelBase.ZdwIzh (10::PrelGHC.Intzh))})
+	     (PrelBase.zi @ (PrelBase.ZMZN PrelBase.Char)
+	      @ (PrelBase.ZMZN PrelBase.Char) @ (PrelBase.ZMZN PrelBase.Char)
+	      (PrelShow.showString
+	       (PrelBase.unpackCStringzh ("Lint "::PrelGHC.Addrzh)))
+	      (PrelBase.zi @ (PrelBase.ZMZN PrelBase.Char)
+	       @ (PrelBase.ZMZN PrelBase.Char) @ (PrelBase.ZMZN PrelBase.Char)
+	       (%case PrelNum.zdfShowInteger
+		%of (tpl::PrelShow.ZCTShow PrelNum.Integer)
+		  {PrelShow.ZdwZCDShow
+		   (tpl1::PrelBase.Int ->
+			  PrelNum.Integer ->
+			  PrelBase.ZMZN PrelBase.Char -> PrelBase.ZMZN PrelBase.Char)
+		   (tpl2::PrelNum.Integer -> PrelBase.ZMZN PrelBase.Char)
+		   (tpl3::PrelBase.ZMZN PrelNum.Integer ->
+			  PrelBase.ZMZN PrelBase.Char -> PrelBase.ZMZN PrelBase.Char) ->
+		     tpl1 (PrelBase.ZdwIzh (10::PrelGHC.Intzh)) b1})
+	       (PrelBase.zi @ (PrelBase.ZMZN PrelBase.Char)
+		@ (PrelBase.ZMZN PrelBase.Char) @ (PrelBase.ZMZN PrelBase.Char)
+		PrelShow.showSpace
+		(showsPrec7 (PrelBase.ZdwIzh (10::PrelGHC.Intzh)) b2))))};
+  zz6 :: PrelBase.Int = PrelBase.ZdwIzh (0::PrelGHC.Intzh);
+  showList6 :: PrelBase.ZMZN AbsCore.Lit ->
+	       PrelBase.ZMZN PrelBase.Char -> PrelBase.ZMZN PrelBase.Char =
+    PrelShow.showListzuzu @ AbsCore.Lit
+    (\ (eta::AbsCore.Lit) -> showsPrec8 zz6 eta);
+  %rec
+  {AbsCore.zdfShowLit :: PrelShow.ZCTShow AbsCore.Lit =
+     %note "InlineMe"
+     PrelShow.ZdwZCDShow @ AbsCore.Lit showsPrec8 zddmshow6 showList6;
+   zddmshow6 :: AbsCore.Lit -> PrelBase.ZMZN PrelBase.Char =
+     PrelShow.zddmshow @ AbsCore.Lit AbsCore.zdfShowLit};
+  showsPrec9 :: PrelBase.Int ->
+		AbsCore.Vbind ->
+		PrelBase.ZMZN PrelBase.Char -> PrelBase.ZMZN PrelBase.Char =
+    \ (a::PrelBase.Int) (ds::AbsCore.Vbind) ->
+	%case ds %of (wild::AbsCore.Vbind)
+	  {AbsCore.ZdwVbind
+	   (b1::PrelBase.ZMZN PrelBase.Char) (b2::AbsCore.Ty) ->
+	     PrelShow.showParen
+	     (%case PrelBase.zdfOrdInt %of (tpl::PrelBase.ZCTOrd PrelBase.Int)
+		{PrelBase.ZdwZCDOrd
+		 (tpl1::PrelBase.ZCTEq PrelBase.Int)
+		 (tpl2::PrelBase.Int -> PrelBase.Int -> PrelBase.Ordering)
+		 (tpl3::PrelBase.Int -> PrelBase.Int -> PrelBase.Bool)
+		 (tpl4::PrelBase.Int -> PrelBase.Int -> PrelBase.Bool)
+		 (tpl5::PrelBase.Int -> PrelBase.Int -> PrelBase.Bool)
+		 (tpl6::PrelBase.Int -> PrelBase.Int -> PrelBase.Bool)
+		 (tpl7::PrelBase.Int -> PrelBase.Int -> PrelBase.Int)
+		 (tpl8::PrelBase.Int -> PrelBase.Int -> PrelBase.Int) ->
+		   tpl5 a (PrelBase.ZdwIzh (10::PrelGHC.Intzh))})
+	     (PrelBase.zi @ (PrelBase.ZMZN PrelBase.Char)
+	      @ (PrelBase.ZMZN PrelBase.Char) @ (PrelBase.ZMZN PrelBase.Char)
+	      (PrelShow.showString
+	       (PrelBase.unpackCStringzh ("Vbind "::PrelGHC.Addrzh)))
+	      (PrelBase.zi @ (PrelBase.ZMZN PrelBase.Char)
+	       @ (PrelBase.ZMZN PrelBase.Char) @ (PrelBase.ZMZN PrelBase.Char)
+	       (showsPrec2 (PrelBase.ZdwIzh (10::PrelGHC.Intzh)) b1)
+	       (PrelBase.zi @ (PrelBase.ZMZN PrelBase.Char)
+		@ (PrelBase.ZMZN PrelBase.Char) @ (PrelBase.ZMZN PrelBase.Char)
+		PrelShow.showSpace
+		(showsPrec7 (PrelBase.ZdwIzh (10::PrelGHC.Intzh)) b2))))};
+  zz7 :: PrelBase.Int = PrelBase.ZdwIzh (0::PrelGHC.Intzh);
+  showList7 :: PrelBase.ZMZN AbsCore.Vbind ->
+	       PrelBase.ZMZN PrelBase.Char -> PrelBase.ZMZN PrelBase.Char =
+    PrelShow.showListzuzu @ AbsCore.Vbind
+    (\ (eta::AbsCore.Vbind) -> showsPrec9 zz7 eta);
+  %rec
+  {AbsCore.zdfShowVbind :: PrelShow.ZCTShow AbsCore.Vbind =
+     %note "InlineMe"
+     PrelShow.ZdwZCDShow @ AbsCore.Vbind showsPrec9 zddmshow7 showList7;
+   zddmshow7 :: AbsCore.Vbind -> PrelBase.ZMZN PrelBase.Char =
+     PrelShow.zddmshow @ AbsCore.Vbind AbsCore.zdfShowVbind};
+  showsPrec10 :: PrelBase.Int ->
+		 PrelBase.ZMZN AbsCore.Vbind ->
+		 PrelBase.ZMZN PrelBase.Char -> PrelBase.ZMZN PrelBase.Char =
+    %case (PrelShow.zdfShowZMZN @ AbsCore.Vbind AbsCore.zdfShowVbind)
+    %of (tpl::PrelShow.ZCTShow (PrelBase.ZMZN AbsCore.Vbind))
+      {PrelShow.ZdwZCDShow
+       (tpl1::PrelBase.Int ->
+	      PrelBase.ZMZN AbsCore.Vbind ->
+	      PrelBase.ZMZN PrelBase.Char -> PrelBase.ZMZN PrelBase.Char)
+       (tpl2::PrelBase.ZMZN AbsCore.Vbind -> PrelBase.ZMZN PrelBase.Char)
+       (tpl3::PrelBase.ZMZN (PrelBase.ZMZN AbsCore.Vbind) ->
+	      PrelBase.ZMZN PrelBase.Char -> PrelBase.ZMZN PrelBase.Char) ->
+	 tpl1};
+  showsPrec11 :: PrelBase.Int ->
+		 AbsCore.Bind ->
+		 PrelBase.ZMZN PrelBase.Char -> PrelBase.ZMZN PrelBase.Char =
+    \ (a::PrelBase.Int) (ds::AbsCore.Bind) ->
+	%case ds %of (wild::AbsCore.Bind)
+	  {AbsCore.ZdwTb (b1::AbsCore.Tbind) ->
+	     PrelShow.showParen
+	     (%case PrelBase.zdfOrdInt %of (tpl::PrelBase.ZCTOrd PrelBase.Int)
+		{PrelBase.ZdwZCDOrd
+		 (tpl1::PrelBase.ZCTEq PrelBase.Int)
+		 (tpl2::PrelBase.Int -> PrelBase.Int -> PrelBase.Ordering)
+		 (tpl3::PrelBase.Int -> PrelBase.Int -> PrelBase.Bool)
+		 (tpl4::PrelBase.Int -> PrelBase.Int -> PrelBase.Bool)
+		 (tpl5::PrelBase.Int -> PrelBase.Int -> PrelBase.Bool)
+		 (tpl6::PrelBase.Int -> PrelBase.Int -> PrelBase.Bool)
+		 (tpl7::PrelBase.Int -> PrelBase.Int -> PrelBase.Int)
+		 (tpl8::PrelBase.Int -> PrelBase.Int -> PrelBase.Int) ->
+		   tpl5 a (PrelBase.ZdwIzh (10::PrelGHC.Intzh))})
+	     (PrelBase.zi @ (PrelBase.ZMZN PrelBase.Char)
+	      @ (PrelBase.ZMZN PrelBase.Char) @ (PrelBase.ZMZN PrelBase.Char)
+	      (PrelShow.showString
+	       (PrelBase.unpackCStringzh ("Tb "::PrelGHC.Addrzh)))
+	      (showsPrec4 (PrelBase.ZdwIzh (10::PrelGHC.Intzh)) b1));
+	   AbsCore.ZdwVb (b1::AbsCore.Vbind) ->
+	     PrelShow.showParen
+	     (%case PrelBase.zdfOrdInt %of (tpl::PrelBase.ZCTOrd PrelBase.Int)
+		{PrelBase.ZdwZCDOrd
+		 (tpl1::PrelBase.ZCTEq PrelBase.Int)
+		 (tpl2::PrelBase.Int -> PrelBase.Int -> PrelBase.Ordering)
+		 (tpl3::PrelBase.Int -> PrelBase.Int -> PrelBase.Bool)
+		 (tpl4::PrelBase.Int -> PrelBase.Int -> PrelBase.Bool)
+		 (tpl5::PrelBase.Int -> PrelBase.Int -> PrelBase.Bool)
+		 (tpl6::PrelBase.Int -> PrelBase.Int -> PrelBase.Bool)
+		 (tpl7::PrelBase.Int -> PrelBase.Int -> PrelBase.Int)
+		 (tpl8::PrelBase.Int -> PrelBase.Int -> PrelBase.Int) ->
+		   tpl5 a (PrelBase.ZdwIzh (10::PrelGHC.Intzh))})
+	     (PrelBase.zi @ (PrelBase.ZMZN PrelBase.Char)
+	      @ (PrelBase.ZMZN PrelBase.Char) @ (PrelBase.ZMZN PrelBase.Char)
+	      (PrelShow.showString
+	       (PrelBase.unpackCStringzh ("Vb "::PrelGHC.Addrzh)))
+	      (showsPrec9 (PrelBase.ZdwIzh (10::PrelGHC.Intzh)) b1))};
+  zz8 :: PrelBase.Int = PrelBase.ZdwIzh (0::PrelGHC.Intzh);
+  showList8 :: PrelBase.ZMZN AbsCore.Bind ->
+	       PrelBase.ZMZN PrelBase.Char -> PrelBase.ZMZN PrelBase.Char =
+    PrelShow.showListzuzu @ AbsCore.Bind
+    (\ (eta::AbsCore.Bind) -> showsPrec11 zz8 eta);
+  %rec
+  {AbsCore.zdfShowBind :: PrelShow.ZCTShow AbsCore.Bind =
+     %note "InlineMe"
+     PrelShow.ZdwZCDShow @ AbsCore.Bind showsPrec11 zddmshow8 showList8;
+   zddmshow8 :: AbsCore.Bind -> PrelBase.ZMZN PrelBase.Char =
+     PrelShow.zddmshow @ AbsCore.Bind AbsCore.zdfShowBind};
+  showsPrec12 :: PrelBase.Int ->
+		 PrelBase.ZMZN AbsCore.Bind ->
+		 PrelBase.ZMZN PrelBase.Char -> PrelBase.ZMZN PrelBase.Char =
+    %case (PrelShow.zdfShowZMZN @ AbsCore.Bind AbsCore.zdfShowBind)
+    %of (tpl::PrelShow.ZCTShow (PrelBase.ZMZN AbsCore.Bind))
+      {PrelShow.ZdwZCDShow
+       (tpl1::PrelBase.Int ->
+	      PrelBase.ZMZN AbsCore.Bind ->
+	      PrelBase.ZMZN PrelBase.Char -> PrelBase.ZMZN PrelBase.Char)
+       (tpl2::PrelBase.ZMZN AbsCore.Bind -> PrelBase.ZMZN PrelBase.Char)
+       (tpl3::PrelBase.ZMZN (PrelBase.ZMZN AbsCore.Bind) ->
+	      PrelBase.ZMZN PrelBase.Char -> PrelBase.ZMZN PrelBase.Char) ->
+	 tpl1};
+  showsPrec13 :: PrelBase.Int ->
+		 AbsCore.MaybeTy ->
+		 PrelBase.ZMZN PrelBase.Char -> PrelBase.ZMZN PrelBase.Char =
+    \ (a::PrelBase.Int) (ds::AbsCore.MaybeTy) ->
+	%case ds %of (wild::AbsCore.MaybeTy)
+	  {AbsCore.ZdwNoTy ->
+	     PrelShow.showString
+	     (PrelBase.unpackCStringzh ("NoTy"::PrelGHC.Addrzh));
+	   AbsCore.ZdwJustTy (b1::AbsCore.Ty) ->
+	     PrelShow.showParen
+	     (%case PrelBase.zdfOrdInt %of (tpl::PrelBase.ZCTOrd PrelBase.Int)
+		{PrelBase.ZdwZCDOrd
+		 (tpl1::PrelBase.ZCTEq PrelBase.Int)
+		 (tpl2::PrelBase.Int -> PrelBase.Int -> PrelBase.Ordering)
+		 (tpl3::PrelBase.Int -> PrelBase.Int -> PrelBase.Bool)
+		 (tpl4::PrelBase.Int -> PrelBase.Int -> PrelBase.Bool)
+		 (tpl5::PrelBase.Int -> PrelBase.Int -> PrelBase.Bool)
+		 (tpl6::PrelBase.Int -> PrelBase.Int -> PrelBase.Bool)
+		 (tpl7::PrelBase.Int -> PrelBase.Int -> PrelBase.Int)
+		 (tpl8::PrelBase.Int -> PrelBase.Int -> PrelBase.Int) ->
+		   tpl5 a (PrelBase.ZdwIzh (10::PrelGHC.Intzh))})
+	     (PrelBase.zi @ (PrelBase.ZMZN PrelBase.Char)
+	      @ (PrelBase.ZMZN PrelBase.Char) @ (PrelBase.ZMZN PrelBase.Char)
+	      (PrelShow.showString
+	       (PrelBase.unpackCStringzh ("JustTy "::PrelGHC.Addrzh)))
+	      (showsPrec7 (PrelBase.ZdwIzh (10::PrelGHC.Intzh)) b1))};
+  zz9 :: PrelBase.Int = PrelBase.ZdwIzh (0::PrelGHC.Intzh);
+  showList9 :: PrelBase.ZMZN AbsCore.MaybeTy ->
+	       PrelBase.ZMZN PrelBase.Char -> PrelBase.ZMZN PrelBase.Char =
+    PrelShow.showListzuzu @ AbsCore.MaybeTy
+    (\ (eta::AbsCore.MaybeTy) -> showsPrec13 zz9 eta);
+  %rec
+  {AbsCore.zdfShowMaybeTy :: PrelShow.ZCTShow AbsCore.MaybeTy =
+     %note "InlineMe"
+     PrelShow.ZdwZCDShow @ AbsCore.MaybeTy showsPrec13 zddmshow9
+     showList9;
+   zddmshow9 :: AbsCore.MaybeTy -> PrelBase.ZMZN PrelBase.Char =
+     PrelShow.zddmshow @ AbsCore.MaybeTy AbsCore.zdfShowMaybeTy};
+  showsPrec14 :: PrelBase.Int ->
+		 PrelBase.ZMZN AbsCore.Ty ->
+		 PrelBase.ZMZN PrelBase.Char -> PrelBase.ZMZN PrelBase.Char =
+    %case (PrelShow.zdfShowZMZN @ AbsCore.Ty AbsCore.zdfShowTy)
+    %of (tpl::PrelShow.ZCTShow (PrelBase.ZMZN AbsCore.Ty))
+      {PrelShow.ZdwZCDShow
+       (tpl1::PrelBase.Int ->
+	      PrelBase.ZMZN AbsCore.Ty ->
+	      PrelBase.ZMZN PrelBase.Char -> PrelBase.ZMZN PrelBase.Char)
+       (tpl2::PrelBase.ZMZN AbsCore.Ty -> PrelBase.ZMZN PrelBase.Char)
+       (tpl3::PrelBase.ZMZN (PrelBase.ZMZN AbsCore.Ty) ->
+	      PrelBase.ZMZN PrelBase.Char -> PrelBase.ZMZN PrelBase.Char) ->
+	 tpl1};
+  showsPrec15 :: PrelBase.Int ->
+		 AbsCore.Cdef ->
+		 PrelBase.ZMZN PrelBase.Char -> PrelBase.ZMZN PrelBase.Char =
+    \ (a::PrelBase.Int) (ds::AbsCore.Cdef) ->
+	%case ds %of (wild::AbsCore.Cdef)
+	  {AbsCore.ZdwConstr
+	   (b1::PrelBase.ZMZN PrelBase.Char)
+	   (b2::PrelBase.ZMZN AbsCore.Tbind)
+	   (b3::PrelBase.ZMZN AbsCore.Ty) ->
+	     PrelShow.showParen
+	     (%case PrelBase.zdfOrdInt %of (tpl::PrelBase.ZCTOrd PrelBase.Int)
+		{PrelBase.ZdwZCDOrd
+		 (tpl1::PrelBase.ZCTEq PrelBase.Int)
+		 (tpl2::PrelBase.Int -> PrelBase.Int -> PrelBase.Ordering)
+		 (tpl3::PrelBase.Int -> PrelBase.Int -> PrelBase.Bool)
+		 (tpl4::PrelBase.Int -> PrelBase.Int -> PrelBase.Bool)
+		 (tpl5::PrelBase.Int -> PrelBase.Int -> PrelBase.Bool)
+		 (tpl6::PrelBase.Int -> PrelBase.Int -> PrelBase.Bool)
+		 (tpl7::PrelBase.Int -> PrelBase.Int -> PrelBase.Int)
+		 (tpl8::PrelBase.Int -> PrelBase.Int -> PrelBase.Int) ->
+		   tpl5 a (PrelBase.ZdwIzh (10::PrelGHC.Intzh))})
+	     (PrelBase.zi @ (PrelBase.ZMZN PrelBase.Char)
+	      @ (PrelBase.ZMZN PrelBase.Char) @ (PrelBase.ZMZN PrelBase.Char)
+	      (PrelShow.showString
+	       (PrelBase.unpackCStringzh ("Constr "::PrelGHC.Addrzh)))
+	      (PrelBase.zi @ (PrelBase.ZMZN PrelBase.Char)
+	       @ (PrelBase.ZMZN PrelBase.Char) @ (PrelBase.ZMZN PrelBase.Char)
+	       (showsPrec2 (PrelBase.ZdwIzh (10::PrelGHC.Intzh)) b1)
+	       (PrelBase.zi @ (PrelBase.ZMZN PrelBase.Char)
+		@ (PrelBase.ZMZN PrelBase.Char) @ (PrelBase.ZMZN PrelBase.Char)
+		PrelShow.showSpace
+		(PrelBase.zi @ (PrelBase.ZMZN PrelBase.Char)
+		 @ (PrelBase.ZMZN PrelBase.Char) @ (PrelBase.ZMZN PrelBase.Char)
+		 (showsPrec5 (PrelBase.ZdwIzh (10::PrelGHC.Intzh)) b2)
+		 (PrelBase.zi @ (PrelBase.ZMZN PrelBase.Char)
+		  @ (PrelBase.ZMZN PrelBase.Char) @ (PrelBase.ZMZN PrelBase.Char)
+		  PrelShow.showSpace
+		  (showsPrec14 (PrelBase.ZdwIzh (10::PrelGHC.Intzh)) b3))))))};
+  zz10 :: PrelBase.Int = PrelBase.ZdwIzh (0::PrelGHC.Intzh);
+  showList10 :: PrelBase.ZMZN AbsCore.Cdef ->
+		PrelBase.ZMZN PrelBase.Char -> PrelBase.ZMZN PrelBase.Char =
+    PrelShow.showListzuzu @ AbsCore.Cdef
+    (\ (eta::AbsCore.Cdef) -> showsPrec15 zz10 eta);
+  %rec
+  {AbsCore.zdfShowCdef :: PrelShow.ZCTShow AbsCore.Cdef =
+     %note "InlineMe"
+     PrelShow.ZdwZCDShow @ AbsCore.Cdef showsPrec15 zddmshow10
+     showList10;
+   zddmshow10 :: AbsCore.Cdef -> PrelBase.ZMZN PrelBase.Char =
+     PrelShow.zddmshow @ AbsCore.Cdef AbsCore.zdfShowCdef};
+  showsPrec16 :: PrelBase.Int ->
+		 PrelBase.ZMZN AbsCore.Cdef ->
+		 PrelBase.ZMZN PrelBase.Char -> PrelBase.ZMZN PrelBase.Char =
+    %case (PrelShow.zdfShowZMZN @ AbsCore.Cdef AbsCore.zdfShowCdef)
+    %of (tpl::PrelShow.ZCTShow (PrelBase.ZMZN AbsCore.Cdef))
+      {PrelShow.ZdwZCDShow
+       (tpl1::PrelBase.Int ->
+	      PrelBase.ZMZN AbsCore.Cdef ->
+	      PrelBase.ZMZN PrelBase.Char -> PrelBase.ZMZN PrelBase.Char)
+       (tpl2::PrelBase.ZMZN AbsCore.Cdef -> PrelBase.ZMZN PrelBase.Char)
+       (tpl3::PrelBase.ZMZN (PrelBase.ZMZN AbsCore.Cdef) ->
+	      PrelBase.ZMZN PrelBase.Char -> PrelBase.ZMZN PrelBase.Char) ->
+	 tpl1};
+  zz11 :: PrelBase.Int = PrelBase.ZdwIzh (0::PrelGHC.Intzh);
+  zz12 :: PrelBase.Int = PrelBase.ZdwIzh (0::PrelGHC.Intzh);
+  zz13 :: PrelBase.Int = PrelBase.ZdwIzh (0::PrelGHC.Intzh);
+  zz14 :: PrelBase.Int = PrelBase.ZdwIzh (0::PrelGHC.Intzh);
+  %rec
+  {showList11 :: PrelBase.ZMZN AbsCore.Alt ->
+		 PrelBase.ZMZN PrelBase.Char -> PrelBase.ZMZN PrelBase.Char =
+     PrelShow.showListzuzu @ AbsCore.Alt
+     (\ (eta::AbsCore.Alt) -> showsPrec22 zz13 eta);
+   AbsCore.zdfShowAlt :: PrelShow.ZCTShow AbsCore.Alt =
+     %note "InlineMe"
+     PrelShow.ZdwZCDShow @ AbsCore.Alt showsPrec22 zddmshow11
+     showList11;
+   zddmshow11 :: AbsCore.Alt -> PrelBase.ZMZN PrelBase.Char =
+     PrelShow.zddmshow @ AbsCore.Alt AbsCore.zdfShowAlt;
+   showsPrec17 :: PrelBase.Int ->
+		  PrelBase.ZMZN AbsCore.Alt ->
+		  PrelBase.ZMZN PrelBase.Char -> PrelBase.ZMZN PrelBase.Char =
+     %case (PrelShow.zdfShowZMZN @ AbsCore.Alt AbsCore.zdfShowAlt)
+     %of (tpl::PrelShow.ZCTShow (PrelBase.ZMZN AbsCore.Alt))
+       {PrelShow.ZdwZCDShow
+	(tpl1::PrelBase.Int ->
+	       PrelBase.ZMZN AbsCore.Alt ->
+	       PrelBase.ZMZN PrelBase.Char -> PrelBase.ZMZN PrelBase.Char)
+	(tpl2::PrelBase.ZMZN AbsCore.Alt -> PrelBase.ZMZN PrelBase.Char)
+	(tpl3::PrelBase.ZMZN (PrelBase.ZMZN AbsCore.Alt) ->
+	       PrelBase.ZMZN PrelBase.Char -> PrelBase.ZMZN PrelBase.Char) ->
+	  tpl1};
+   showsPrec18 :: PrelBase.Int ->
+		  AbsCore.Vdef ->
+		  PrelBase.ZMZN PrelBase.Char -> PrelBase.ZMZN PrelBase.Char =
+     \ (a::PrelBase.Int) (ds::AbsCore.Vdef) ->
+	 %case ds %of (wild::AbsCore.Vdef)
+	   {AbsCore.ZdwVdef
+	    (b1::PrelBase.ZMZN PrelBase.Char)
+	    (b2::AbsCore.Ty)
+	    (b3::AbsCore.Exp) ->
+	      PrelShow.showParen
+	      (%case PrelBase.zdfOrdInt %of (tpl::PrelBase.ZCTOrd PrelBase.Int)
+		 {PrelBase.ZdwZCDOrd
+		  (tpl1::PrelBase.ZCTEq PrelBase.Int)
+		  (tpl2::PrelBase.Int -> PrelBase.Int -> PrelBase.Ordering)
+		  (tpl3::PrelBase.Int -> PrelBase.Int -> PrelBase.Bool)
+		  (tpl4::PrelBase.Int -> PrelBase.Int -> PrelBase.Bool)
+		  (tpl5::PrelBase.Int -> PrelBase.Int -> PrelBase.Bool)
+		  (tpl6::PrelBase.Int -> PrelBase.Int -> PrelBase.Bool)
+		  (tpl7::PrelBase.Int -> PrelBase.Int -> PrelBase.Int)
+		  (tpl8::PrelBase.Int -> PrelBase.Int -> PrelBase.Int) ->
+		    tpl5 a (PrelBase.ZdwIzh (10::PrelGHC.Intzh))})
+	      (PrelBase.zi @ (PrelBase.ZMZN PrelBase.Char)
+	       @ (PrelBase.ZMZN PrelBase.Char) @ (PrelBase.ZMZN PrelBase.Char)
+	       (PrelShow.showString
+		(PrelBase.unpackCStringzh ("Vdef "::PrelGHC.Addrzh)))
+	       (PrelBase.zi @ (PrelBase.ZMZN PrelBase.Char)
+		@ (PrelBase.ZMZN PrelBase.Char) @ (PrelBase.ZMZN PrelBase.Char)
+		(showsPrec2 (PrelBase.ZdwIzh (10::PrelGHC.Intzh)) b1)
+		(PrelBase.zi @ (PrelBase.ZMZN PrelBase.Char)
+		 @ (PrelBase.ZMZN PrelBase.Char) @ (PrelBase.ZMZN PrelBase.Char)
+		 PrelShow.showSpace
+		 (PrelBase.zi @ (PrelBase.ZMZN PrelBase.Char)
+		  @ (PrelBase.ZMZN PrelBase.Char) @ (PrelBase.ZMZN PrelBase.Char)
+		  (showsPrec7 (PrelBase.ZdwIzh (10::PrelGHC.Intzh)) b2)
+		  (PrelBase.zi @ (PrelBase.ZMZN PrelBase.Char)
+		   @ (PrelBase.ZMZN PrelBase.Char) @ (PrelBase.ZMZN PrelBase.Char)
+		   PrelShow.showSpace
+		   (showsPrec21 (PrelBase.ZdwIzh (10::PrelGHC.Intzh)) b3))))))};
+   showList12 :: PrelBase.ZMZN AbsCore.Vdef ->
+		 PrelBase.ZMZN PrelBase.Char -> PrelBase.ZMZN PrelBase.Char =
+     PrelShow.showListzuzu @ AbsCore.Vdef
+     (\ (eta::AbsCore.Vdef) -> showsPrec18 zz14 eta);
+   AbsCore.zdfShowVdef :: PrelShow.ZCTShow AbsCore.Vdef =
+     %note "InlineMe"
+     PrelShow.ZdwZCDShow @ AbsCore.Vdef showsPrec18 zddmshow12
+     showList12;
+   zddmshow12 :: AbsCore.Vdef -> PrelBase.ZMZN PrelBase.Char =
+     PrelShow.zddmshow @ AbsCore.Vdef AbsCore.zdfShowVdef;
+   showsPrec19 :: PrelBase.Int ->
+		  PrelBase.ZMZN AbsCore.Vdef ->
+		  PrelBase.ZMZN PrelBase.Char -> PrelBase.ZMZN PrelBase.Char =
+     %case (PrelShow.zdfShowZMZN @ AbsCore.Vdef AbsCore.zdfShowVdef)
+     %of (tpl::PrelShow.ZCTShow (PrelBase.ZMZN AbsCore.Vdef))
+       {PrelShow.ZdwZCDShow
+	(tpl1::PrelBase.Int ->
+	       PrelBase.ZMZN AbsCore.Vdef ->
+	       PrelBase.ZMZN PrelBase.Char -> PrelBase.ZMZN PrelBase.Char)
+	(tpl2::PrelBase.ZMZN AbsCore.Vdef -> PrelBase.ZMZN PrelBase.Char)
+	(tpl3::PrelBase.ZMZN (PrelBase.ZMZN AbsCore.Vdef) ->
+	       PrelBase.ZMZN PrelBase.Char -> PrelBase.ZMZN PrelBase.Char) ->
+	  tpl1};
+   showsPrec20 :: PrelBase.Int ->
+		  AbsCore.Vdefg ->
+		  PrelBase.ZMZN PrelBase.Char -> PrelBase.ZMZN PrelBase.Char =
+     \ (a::PrelBase.Int) (ds::AbsCore.Vdefg) ->
+	 %case ds %of (wild::AbsCore.Vdefg)
+	   {AbsCore.ZdwNonrec (b1::AbsCore.Vdef) ->
+	      PrelShow.showParen
+	      (%case PrelBase.zdfOrdInt %of (tpl::PrelBase.ZCTOrd PrelBase.Int)
+		 {PrelBase.ZdwZCDOrd
+		  (tpl1::PrelBase.ZCTEq PrelBase.Int)
+		  (tpl2::PrelBase.Int -> PrelBase.Int -> PrelBase.Ordering)
+		  (tpl3::PrelBase.Int -> PrelBase.Int -> PrelBase.Bool)
+		  (tpl4::PrelBase.Int -> PrelBase.Int -> PrelBase.Bool)
+		  (tpl5::PrelBase.Int -> PrelBase.Int -> PrelBase.Bool)
+		  (tpl6::PrelBase.Int -> PrelBase.Int -> PrelBase.Bool)
+		  (tpl7::PrelBase.Int -> PrelBase.Int -> PrelBase.Int)
+		  (tpl8::PrelBase.Int -> PrelBase.Int -> PrelBase.Int) ->
+		    tpl5 a (PrelBase.ZdwIzh (10::PrelGHC.Intzh))})
+	      (PrelBase.zi @ (PrelBase.ZMZN PrelBase.Char)
+	       @ (PrelBase.ZMZN PrelBase.Char) @ (PrelBase.ZMZN PrelBase.Char)
+	       (PrelShow.showString
+		(PrelBase.unpackCStringzh ("Nonrec "::PrelGHC.Addrzh)))
+	       (showsPrec18 (PrelBase.ZdwIzh (10::PrelGHC.Intzh)) b1));
+	    AbsCore.ZdwRec (b1::PrelBase.ZMZN AbsCore.Vdef) ->
+	      PrelShow.showParen
+	      (%case PrelBase.zdfOrdInt %of (tpl::PrelBase.ZCTOrd PrelBase.Int)
+		 {PrelBase.ZdwZCDOrd
+		  (tpl1::PrelBase.ZCTEq PrelBase.Int)
+		  (tpl2::PrelBase.Int -> PrelBase.Int -> PrelBase.Ordering)
+		  (tpl3::PrelBase.Int -> PrelBase.Int -> PrelBase.Bool)
+		  (tpl4::PrelBase.Int -> PrelBase.Int -> PrelBase.Bool)
+		  (tpl5::PrelBase.Int -> PrelBase.Int -> PrelBase.Bool)
+		  (tpl6::PrelBase.Int -> PrelBase.Int -> PrelBase.Bool)
+		  (tpl7::PrelBase.Int -> PrelBase.Int -> PrelBase.Int)
+		  (tpl8::PrelBase.Int -> PrelBase.Int -> PrelBase.Int) ->
+		    tpl5 a (PrelBase.ZdwIzh (10::PrelGHC.Intzh))})
+	      (PrelBase.zi @ (PrelBase.ZMZN PrelBase.Char)
+	       @ (PrelBase.ZMZN PrelBase.Char) @ (PrelBase.ZMZN PrelBase.Char)
+	       (PrelShow.showString
+		(PrelBase.unpackCStringzh ("Rec "::PrelGHC.Addrzh)))
+	       (showsPrec19 (PrelBase.ZdwIzh (10::PrelGHC.Intzh)) b1))};
+   showsPrec21 :: PrelBase.Int ->
+		  AbsCore.Exp ->
+		  PrelBase.ZMZN PrelBase.Char -> PrelBase.ZMZN PrelBase.Char =
+     \ (a::PrelBase.Int) (ds::AbsCore.Exp) ->
+	 %case ds %of (wild::AbsCore.Exp)
+	   {AbsCore.ZdwExternal
+	    (b1::PrelBase.ZMZN PrelBase.Char) (b2::AbsCore.Ty) ->
+	      PrelShow.showParen
+	      (%case PrelBase.zdfOrdInt %of (tpl::PrelBase.ZCTOrd PrelBase.Int)
+		 {PrelBase.ZdwZCDOrd
+		  (tpl1::PrelBase.ZCTEq PrelBase.Int)
+		  (tpl2::PrelBase.Int -> PrelBase.Int -> PrelBase.Ordering)
+		  (tpl3::PrelBase.Int -> PrelBase.Int -> PrelBase.Bool)
+		  (tpl4::PrelBase.Int -> PrelBase.Int -> PrelBase.Bool)
+		  (tpl5::PrelBase.Int -> PrelBase.Int -> PrelBase.Bool)
+		  (tpl6::PrelBase.Int -> PrelBase.Int -> PrelBase.Bool)
+		  (tpl7::PrelBase.Int -> PrelBase.Int -> PrelBase.Int)
+		  (tpl8::PrelBase.Int -> PrelBase.Int -> PrelBase.Int) ->
+		    tpl5 a (PrelBase.ZdwIzh (10::PrelGHC.Intzh))})
+	      (PrelBase.zi @ (PrelBase.ZMZN PrelBase.Char)
+	       @ (PrelBase.ZMZN PrelBase.Char) @ (PrelBase.ZMZN PrelBase.Char)
+	       (PrelShow.showString
+		(PrelBase.unpackCStringzh ("External "::PrelGHC.Addrzh)))
+	       (PrelBase.zi @ (PrelBase.ZMZN PrelBase.Char)
+		@ (PrelBase.ZMZN PrelBase.Char) @ (PrelBase.ZMZN PrelBase.Char)
+		(showsPrec (PrelBase.ZdwIzh (10::PrelGHC.Intzh)) b1)
+		(PrelBase.zi @ (PrelBase.ZMZN PrelBase.Char)
+		 @ (PrelBase.ZMZN PrelBase.Char) @ (PrelBase.ZMZN PrelBase.Char)
+		 PrelShow.showSpace
+		 (showsPrec7 (PrelBase.ZdwIzh (10::PrelGHC.Intzh)) b2))));
+	    AbsCore.ZdwNote
+	    (b1::PrelBase.ZMZN PrelBase.Char) (b2::AbsCore.Exp) ->
+	      PrelShow.showParen
+	      (%case PrelBase.zdfOrdInt %of (tpl::PrelBase.ZCTOrd PrelBase.Int)
+		 {PrelBase.ZdwZCDOrd
+		  (tpl1::PrelBase.ZCTEq PrelBase.Int)
+		  (tpl2::PrelBase.Int -> PrelBase.Int -> PrelBase.Ordering)
+		  (tpl3::PrelBase.Int -> PrelBase.Int -> PrelBase.Bool)
+		  (tpl4::PrelBase.Int -> PrelBase.Int -> PrelBase.Bool)
+		  (tpl5::PrelBase.Int -> PrelBase.Int -> PrelBase.Bool)
+		  (tpl6::PrelBase.Int -> PrelBase.Int -> PrelBase.Bool)
+		  (tpl7::PrelBase.Int -> PrelBase.Int -> PrelBase.Int)
+		  (tpl8::PrelBase.Int -> PrelBase.Int -> PrelBase.Int) ->
+		    tpl5 a (PrelBase.ZdwIzh (10::PrelGHC.Intzh))})
+	      (PrelBase.zi @ (PrelBase.ZMZN PrelBase.Char)
+	       @ (PrelBase.ZMZN PrelBase.Char) @ (PrelBase.ZMZN PrelBase.Char)
+	       (PrelShow.showString
+		(PrelBase.unpackCStringzh ("Note "::PrelGHC.Addrzh)))
+	       (PrelBase.zi @ (PrelBase.ZMZN PrelBase.Char)
+		@ (PrelBase.ZMZN PrelBase.Char) @ (PrelBase.ZMZN PrelBase.Char)
+		(showsPrec (PrelBase.ZdwIzh (10::PrelGHC.Intzh)) b1)
+		(PrelBase.zi @ (PrelBase.ZMZN PrelBase.Char)
+		 @ (PrelBase.ZMZN PrelBase.Char) @ (PrelBase.ZMZN PrelBase.Char)
+		 PrelShow.showSpace
+		 (showsPrec21 (PrelBase.ZdwIzh (10::PrelGHC.Intzh)) b2))));
+	    AbsCore.ZdwCoerce (b1::AbsCore.Ty) (b2::AbsCore.Exp) ->
+	      PrelShow.showParen
+	      (%case PrelBase.zdfOrdInt %of (tpl::PrelBase.ZCTOrd PrelBase.Int)
+		 {PrelBase.ZdwZCDOrd
+		  (tpl1::PrelBase.ZCTEq PrelBase.Int)
+		  (tpl2::PrelBase.Int -> PrelBase.Int -> PrelBase.Ordering)
+		  (tpl3::PrelBase.Int -> PrelBase.Int -> PrelBase.Bool)
+		  (tpl4::PrelBase.Int -> PrelBase.Int -> PrelBase.Bool)
+		  (tpl5::PrelBase.Int -> PrelBase.Int -> PrelBase.Bool)
+		  (tpl6::PrelBase.Int -> PrelBase.Int -> PrelBase.Bool)
+		  (tpl7::PrelBase.Int -> PrelBase.Int -> PrelBase.Int)
+		  (tpl8::PrelBase.Int -> PrelBase.Int -> PrelBase.Int) ->
+		    tpl5 a (PrelBase.ZdwIzh (10::PrelGHC.Intzh))})
+	      (PrelBase.zi @ (PrelBase.ZMZN PrelBase.Char)
+	       @ (PrelBase.ZMZN PrelBase.Char) @ (PrelBase.ZMZN PrelBase.Char)
+	       (PrelShow.showString
+		(PrelBase.unpackCStringzh ("Coerce "::PrelGHC.Addrzh)))
+	       (PrelBase.zi @ (PrelBase.ZMZN PrelBase.Char)
+		@ (PrelBase.ZMZN PrelBase.Char) @ (PrelBase.ZMZN PrelBase.Char)
+		(showsPrec7 (PrelBase.ZdwIzh (10::PrelGHC.Intzh)) b1)
+		(PrelBase.zi @ (PrelBase.ZMZN PrelBase.Char)
+		 @ (PrelBase.ZMZN PrelBase.Char) @ (PrelBase.ZMZN PrelBase.Char)
+		 PrelShow.showSpace
+		 (showsPrec21 (PrelBase.ZdwIzh (10::PrelGHC.Intzh)) b2))));
+	    AbsCore.ZdwCase
+	    (b1::AbsCore.Exp)
+	    (b2::AbsCore.Vbind)
+	    (b3::PrelBase.ZMZN AbsCore.Alt) ->
+	      PrelShow.showParen
+	      (%case PrelBase.zdfOrdInt %of (tpl::PrelBase.ZCTOrd PrelBase.Int)
+		 {PrelBase.ZdwZCDOrd
+		  (tpl1::PrelBase.ZCTEq PrelBase.Int)
+		  (tpl2::PrelBase.Int -> PrelBase.Int -> PrelBase.Ordering)
+		  (tpl3::PrelBase.Int -> PrelBase.Int -> PrelBase.Bool)
+		  (tpl4::PrelBase.Int -> PrelBase.Int -> PrelBase.Bool)
+		  (tpl5::PrelBase.Int -> PrelBase.Int -> PrelBase.Bool)
+		  (tpl6::PrelBase.Int -> PrelBase.Int -> PrelBase.Bool)
+		  (tpl7::PrelBase.Int -> PrelBase.Int -> PrelBase.Int)
+		  (tpl8::PrelBase.Int -> PrelBase.Int -> PrelBase.Int) ->
+		    tpl5 a (PrelBase.ZdwIzh (10::PrelGHC.Intzh))})
+	      (PrelBase.zi @ (PrelBase.ZMZN PrelBase.Char)
+	       @ (PrelBase.ZMZN PrelBase.Char) @ (PrelBase.ZMZN PrelBase.Char)
+	       (PrelShow.showString
+		(PrelBase.unpackCStringzh ("Case "::PrelGHC.Addrzh)))
+	       (PrelBase.zi @ (PrelBase.ZMZN PrelBase.Char)
+		@ (PrelBase.ZMZN PrelBase.Char) @ (PrelBase.ZMZN PrelBase.Char)
+		(showsPrec21 (PrelBase.ZdwIzh (10::PrelGHC.Intzh)) b1)
+		(PrelBase.zi @ (PrelBase.ZMZN PrelBase.Char)
+		 @ (PrelBase.ZMZN PrelBase.Char) @ (PrelBase.ZMZN PrelBase.Char)
+		 PrelShow.showSpace
+		 (PrelBase.zi @ (PrelBase.ZMZN PrelBase.Char)
+		  @ (PrelBase.ZMZN PrelBase.Char) @ (PrelBase.ZMZN PrelBase.Char)
+		  (showsPrec9 (PrelBase.ZdwIzh (10::PrelGHC.Intzh)) b2)
+		  (PrelBase.zi @ (PrelBase.ZMZN PrelBase.Char)
+		   @ (PrelBase.ZMZN PrelBase.Char) @ (PrelBase.ZMZN PrelBase.Char)
+		   PrelShow.showSpace
+		   (showsPrec17 (PrelBase.ZdwIzh (10::PrelGHC.Intzh)) b3))))));
+	    AbsCore.ZdwLet (b1::AbsCore.Vdefg) (b2::AbsCore.Exp) ->
+	      PrelShow.showParen
+	      (%case PrelBase.zdfOrdInt %of (tpl::PrelBase.ZCTOrd PrelBase.Int)
+		 {PrelBase.ZdwZCDOrd
+		  (tpl1::PrelBase.ZCTEq PrelBase.Int)
+		  (tpl2::PrelBase.Int -> PrelBase.Int -> PrelBase.Ordering)
+		  (tpl3::PrelBase.Int -> PrelBase.Int -> PrelBase.Bool)
+		  (tpl4::PrelBase.Int -> PrelBase.Int -> PrelBase.Bool)
+		  (tpl5::PrelBase.Int -> PrelBase.Int -> PrelBase.Bool)
+		  (tpl6::PrelBase.Int -> PrelBase.Int -> PrelBase.Bool)
+		  (tpl7::PrelBase.Int -> PrelBase.Int -> PrelBase.Int)
+		  (tpl8::PrelBase.Int -> PrelBase.Int -> PrelBase.Int) ->
+		    tpl5 a (PrelBase.ZdwIzh (10::PrelGHC.Intzh))})
+	      (PrelBase.zi @ (PrelBase.ZMZN PrelBase.Char)
+	       @ (PrelBase.ZMZN PrelBase.Char) @ (PrelBase.ZMZN PrelBase.Char)
+	       (PrelShow.showString
+		(PrelBase.unpackCStringzh ("Let "::PrelGHC.Addrzh)))
+	       (PrelBase.zi @ (PrelBase.ZMZN PrelBase.Char)
+		@ (PrelBase.ZMZN PrelBase.Char) @ (PrelBase.ZMZN PrelBase.Char)
+		(showsPrec20 (PrelBase.ZdwIzh (10::PrelGHC.Intzh)) b1)
+		(PrelBase.zi @ (PrelBase.ZMZN PrelBase.Char)
+		 @ (PrelBase.ZMZN PrelBase.Char) @ (PrelBase.ZMZN PrelBase.Char)
+		 PrelShow.showSpace
+		 (showsPrec21 (PrelBase.ZdwIzh (10::PrelGHC.Intzh)) b2))));
+	    AbsCore.ZdwLams
+	    (b1::PrelBase.ZMZN AbsCore.Bind) (b2::AbsCore.Exp) ->
+	      PrelShow.showParen
+	      (%case PrelBase.zdfOrdInt %of (tpl::PrelBase.ZCTOrd PrelBase.Int)
+		 {PrelBase.ZdwZCDOrd
+		  (tpl1::PrelBase.ZCTEq PrelBase.Int)
+		  (tpl2::PrelBase.Int -> PrelBase.Int -> PrelBase.Ordering)
+		  (tpl3::PrelBase.Int -> PrelBase.Int -> PrelBase.Bool)
+		  (tpl4::PrelBase.Int -> PrelBase.Int -> PrelBase.Bool)
+		  (tpl5::PrelBase.Int -> PrelBase.Int -> PrelBase.Bool)
+		  (tpl6::PrelBase.Int -> PrelBase.Int -> PrelBase.Bool)
+		  (tpl7::PrelBase.Int -> PrelBase.Int -> PrelBase.Int)
+		  (tpl8::PrelBase.Int -> PrelBase.Int -> PrelBase.Int) ->
+		    tpl5 a (PrelBase.ZdwIzh (10::PrelGHC.Intzh))})
+	      (PrelBase.zi @ (PrelBase.ZMZN PrelBase.Char)
+	       @ (PrelBase.ZMZN PrelBase.Char) @ (PrelBase.ZMZN PrelBase.Char)
+	       (PrelShow.showString
+		(PrelBase.unpackCStringzh ("Lams "::PrelGHC.Addrzh)))
+	       (PrelBase.zi @ (PrelBase.ZMZN PrelBase.Char)
+		@ (PrelBase.ZMZN PrelBase.Char) @ (PrelBase.ZMZN PrelBase.Char)
+		(showsPrec12 (PrelBase.ZdwIzh (10::PrelGHC.Intzh)) b1)
+		(PrelBase.zi @ (PrelBase.ZMZN PrelBase.Char)
+		 @ (PrelBase.ZMZN PrelBase.Char) @ (PrelBase.ZMZN PrelBase.Char)
+		 PrelShow.showSpace
+		 (showsPrec21 (PrelBase.ZdwIzh (10::PrelGHC.Intzh)) b2))));
+	    AbsCore.ZdwAppt (b1::AbsCore.Exp) (b2::AbsCore.Ty) ->
+	      PrelShow.showParen
+	      (%case PrelBase.zdfOrdInt %of (tpl::PrelBase.ZCTOrd PrelBase.Int)
+		 {PrelBase.ZdwZCDOrd
+		  (tpl1::PrelBase.ZCTEq PrelBase.Int)
+		  (tpl2::PrelBase.Int -> PrelBase.Int -> PrelBase.Ordering)
+		  (tpl3::PrelBase.Int -> PrelBase.Int -> PrelBase.Bool)
+		  (tpl4::PrelBase.Int -> PrelBase.Int -> PrelBase.Bool)
+		  (tpl5::PrelBase.Int -> PrelBase.Int -> PrelBase.Bool)
+		  (tpl6::PrelBase.Int -> PrelBase.Int -> PrelBase.Bool)
+		  (tpl7::PrelBase.Int -> PrelBase.Int -> PrelBase.Int)
+		  (tpl8::PrelBase.Int -> PrelBase.Int -> PrelBase.Int) ->
+		    tpl5 a (PrelBase.ZdwIzh (10::PrelGHC.Intzh))})
+	      (PrelBase.zi @ (PrelBase.ZMZN PrelBase.Char)
+	       @ (PrelBase.ZMZN PrelBase.Char) @ (PrelBase.ZMZN PrelBase.Char)
+	       (PrelShow.showString
+		(PrelBase.unpackCStringzh ("Appt "::PrelGHC.Addrzh)))
+	       (PrelBase.zi @ (PrelBase.ZMZN PrelBase.Char)
+		@ (PrelBase.ZMZN PrelBase.Char) @ (PrelBase.ZMZN PrelBase.Char)
+		(showsPrec21 (PrelBase.ZdwIzh (10::PrelGHC.Intzh)) b1)
+		(PrelBase.zi @ (PrelBase.ZMZN PrelBase.Char)
+		 @ (PrelBase.ZMZN PrelBase.Char) @ (PrelBase.ZMZN PrelBase.Char)
+		 PrelShow.showSpace
+		 (showsPrec7 (PrelBase.ZdwIzh (10::PrelGHC.Intzh)) b2))));
+	    AbsCore.ZdwApp (b1::AbsCore.Exp) (b2::AbsCore.Exp) ->
+	      PrelShow.showParen
+	      (%case PrelBase.zdfOrdInt %of (tpl::PrelBase.ZCTOrd PrelBase.Int)
+		 {PrelBase.ZdwZCDOrd
+		  (tpl1::PrelBase.ZCTEq PrelBase.Int)
+		  (tpl2::PrelBase.Int -> PrelBase.Int -> PrelBase.Ordering)
+		  (tpl3::PrelBase.Int -> PrelBase.Int -> PrelBase.Bool)
+		  (tpl4::PrelBase.Int -> PrelBase.Int -> PrelBase.Bool)
+		  (tpl5::PrelBase.Int -> PrelBase.Int -> PrelBase.Bool)
+		  (tpl6::PrelBase.Int -> PrelBase.Int -> PrelBase.Bool)
+		  (tpl7::PrelBase.Int -> PrelBase.Int -> PrelBase.Int)
+		  (tpl8::PrelBase.Int -> PrelBase.Int -> PrelBase.Int) ->
+		    tpl5 a (PrelBase.ZdwIzh (10::PrelGHC.Intzh))})
+	      (PrelBase.zi @ (PrelBase.ZMZN PrelBase.Char)
+	       @ (PrelBase.ZMZN PrelBase.Char) @ (PrelBase.ZMZN PrelBase.Char)
+	       (PrelShow.showString
+		(PrelBase.unpackCStringzh ("App "::PrelGHC.Addrzh)))
+	       (PrelBase.zi @ (PrelBase.ZMZN PrelBase.Char)
+		@ (PrelBase.ZMZN PrelBase.Char) @ (PrelBase.ZMZN PrelBase.Char)
+		(showsPrec21 (PrelBase.ZdwIzh (10::PrelGHC.Intzh)) b1)
+		(PrelBase.zi @ (PrelBase.ZMZN PrelBase.Char)
+		 @ (PrelBase.ZMZN PrelBase.Char) @ (PrelBase.ZMZN PrelBase.Char)
+		 PrelShow.showSpace
+		 (showsPrec21 (PrelBase.ZdwIzh (10::PrelGHC.Intzh)) b2))));
+	    AbsCore.ZdwLit (b1::AbsCore.Lit) ->
+	      PrelShow.showParen
+	      (%case PrelBase.zdfOrdInt %of (tpl::PrelBase.ZCTOrd PrelBase.Int)
+		 {PrelBase.ZdwZCDOrd
+		  (tpl1::PrelBase.ZCTEq PrelBase.Int)
+		  (tpl2::PrelBase.Int -> PrelBase.Int -> PrelBase.Ordering)
+		  (tpl3::PrelBase.Int -> PrelBase.Int -> PrelBase.Bool)
+		  (tpl4::PrelBase.Int -> PrelBase.Int -> PrelBase.Bool)
+		  (tpl5::PrelBase.Int -> PrelBase.Int -> PrelBase.Bool)
+		  (tpl6::PrelBase.Int -> PrelBase.Int -> PrelBase.Bool)
+		  (tpl7::PrelBase.Int -> PrelBase.Int -> PrelBase.Int)
+		  (tpl8::PrelBase.Int -> PrelBase.Int -> PrelBase.Int) ->
+		    tpl5 a (PrelBase.ZdwIzh (10::PrelGHC.Intzh))})
+	      (PrelBase.zi @ (PrelBase.ZMZN PrelBase.Char)
+	       @ (PrelBase.ZMZN PrelBase.Char) @ (PrelBase.ZMZN PrelBase.Char)
+	       (PrelShow.showString
+		(PrelBase.unpackCStringzh ("Lit "::PrelGHC.Addrzh)))
+	       (showsPrec8 (PrelBase.ZdwIzh (10::PrelGHC.Intzh)) b1));
+	    AbsCore.ZdwDcon (b1::AbsCore.QualIdent) ->
+	      PrelShow.showParen
+	      (%case PrelBase.zdfOrdInt %of (tpl::PrelBase.ZCTOrd PrelBase.Int)
+		 {PrelBase.ZdwZCDOrd
+		  (tpl1::PrelBase.ZCTEq PrelBase.Int)
+		  (tpl2::PrelBase.Int -> PrelBase.Int -> PrelBase.Ordering)
+		  (tpl3::PrelBase.Int -> PrelBase.Int -> PrelBase.Bool)
+		  (tpl4::PrelBase.Int -> PrelBase.Int -> PrelBase.Bool)
+		  (tpl5::PrelBase.Int -> PrelBase.Int -> PrelBase.Bool)
+		  (tpl6::PrelBase.Int -> PrelBase.Int -> PrelBase.Bool)
+		  (tpl7::PrelBase.Int -> PrelBase.Int -> PrelBase.Int)
+		  (tpl8::PrelBase.Int -> PrelBase.Int -> PrelBase.Int) ->
+		    tpl5 a (PrelBase.ZdwIzh (10::PrelGHC.Intzh))})
+	      (PrelBase.zi @ (PrelBase.ZMZN PrelBase.Char)
+	       @ (PrelBase.ZMZN PrelBase.Char) @ (PrelBase.ZMZN PrelBase.Char)
+	       (PrelShow.showString
+		(PrelBase.unpackCStringzh ("Dcon "::PrelGHC.Addrzh)))
+	       (showsPrec3 (PrelBase.ZdwIzh (10::PrelGHC.Intzh)) b1));
+	    AbsCore.ZdwVar (b1::PrelBase.ZMZN PrelBase.Char) ->
+	      PrelShow.showParen
+	      (%case PrelBase.zdfOrdInt %of (tpl::PrelBase.ZCTOrd PrelBase.Int)
+		 {PrelBase.ZdwZCDOrd
+		  (tpl1::PrelBase.ZCTEq PrelBase.Int)
+		  (tpl2::PrelBase.Int -> PrelBase.Int -> PrelBase.Ordering)
+		  (tpl3::PrelBase.Int -> PrelBase.Int -> PrelBase.Bool)
+		  (tpl4::PrelBase.Int -> PrelBase.Int -> PrelBase.Bool)
+		  (tpl5::PrelBase.Int -> PrelBase.Int -> PrelBase.Bool)
+		  (tpl6::PrelBase.Int -> PrelBase.Int -> PrelBase.Bool)
+		  (tpl7::PrelBase.Int -> PrelBase.Int -> PrelBase.Int)
+		  (tpl8::PrelBase.Int -> PrelBase.Int -> PrelBase.Int) ->
+		    tpl5 a (PrelBase.ZdwIzh (10::PrelGHC.Intzh))})
+	      (PrelBase.zi @ (PrelBase.ZMZN PrelBase.Char)
+	       @ (PrelBase.ZMZN PrelBase.Char) @ (PrelBase.ZMZN PrelBase.Char)
+	       (PrelShow.showString
+		(PrelBase.unpackCStringzh ("Var "::PrelGHC.Addrzh)))
+	       (showsPrec2 (PrelBase.ZdwIzh (10::PrelGHC.Intzh)) b1))};
+   showsPrec22 :: PrelBase.Int ->
+		  AbsCore.Alt ->
+		  PrelBase.ZMZN PrelBase.Char -> PrelBase.ZMZN PrelBase.Char =
+     \ (a::PrelBase.Int) (ds::AbsCore.Alt) ->
+	 %case ds %of (wild::AbsCore.Alt)
+	   {AbsCore.ZdwAdefault (b1::AbsCore.Exp) ->
+	      PrelShow.showParen
+	      (%case PrelBase.zdfOrdInt %of (tpl::PrelBase.ZCTOrd PrelBase.Int)
+		 {PrelBase.ZdwZCDOrd
+		  (tpl1::PrelBase.ZCTEq PrelBase.Int)
+		  (tpl2::PrelBase.Int -> PrelBase.Int -> PrelBase.Ordering)
+		  (tpl3::PrelBase.Int -> PrelBase.Int -> PrelBase.Bool)
+		  (tpl4::PrelBase.Int -> PrelBase.Int -> PrelBase.Bool)
+		  (tpl5::PrelBase.Int -> PrelBase.Int -> PrelBase.Bool)
+		  (tpl6::PrelBase.Int -> PrelBase.Int -> PrelBase.Bool)
+		  (tpl7::PrelBase.Int -> PrelBase.Int -> PrelBase.Int)
+		  (tpl8::PrelBase.Int -> PrelBase.Int -> PrelBase.Int) ->
+		    tpl5 a (PrelBase.ZdwIzh (10::PrelGHC.Intzh))})
+	      (PrelBase.zi @ (PrelBase.ZMZN PrelBase.Char)
+	       @ (PrelBase.ZMZN PrelBase.Char) @ (PrelBase.ZMZN PrelBase.Char)
+	       (PrelShow.showString
+		(PrelBase.unpackCStringzh ("Adefault "::PrelGHC.Addrzh)))
+	       (showsPrec21 (PrelBase.ZdwIzh (10::PrelGHC.Intzh)) b1));
+	    AbsCore.ZdwAlit (b1::AbsCore.Lit) (b2::AbsCore.Exp) ->
+	      PrelShow.showParen
+	      (%case PrelBase.zdfOrdInt %of (tpl::PrelBase.ZCTOrd PrelBase.Int)
+		 {PrelBase.ZdwZCDOrd
+		  (tpl1::PrelBase.ZCTEq PrelBase.Int)
+		  (tpl2::PrelBase.Int -> PrelBase.Int -> PrelBase.Ordering)
+		  (tpl3::PrelBase.Int -> PrelBase.Int -> PrelBase.Bool)
+		  (tpl4::PrelBase.Int -> PrelBase.Int -> PrelBase.Bool)
+		  (tpl5::PrelBase.Int -> PrelBase.Int -> PrelBase.Bool)
+		  (tpl6::PrelBase.Int -> PrelBase.Int -> PrelBase.Bool)
+		  (tpl7::PrelBase.Int -> PrelBase.Int -> PrelBase.Int)
+		  (tpl8::PrelBase.Int -> PrelBase.Int -> PrelBase.Int) ->
+		    tpl5 a (PrelBase.ZdwIzh (10::PrelGHC.Intzh))})
+	      (PrelBase.zi @ (PrelBase.ZMZN PrelBase.Char)
+	       @ (PrelBase.ZMZN PrelBase.Char) @ (PrelBase.ZMZN PrelBase.Char)
+	       (PrelShow.showString
+		(PrelBase.unpackCStringzh ("Alit "::PrelGHC.Addrzh)))
+	       (PrelBase.zi @ (PrelBase.ZMZN PrelBase.Char)
+		@ (PrelBase.ZMZN PrelBase.Char) @ (PrelBase.ZMZN PrelBase.Char)
+		(showsPrec8 (PrelBase.ZdwIzh (10::PrelGHC.Intzh)) b1)
+		(PrelBase.zi @ (PrelBase.ZMZN PrelBase.Char)
+		 @ (PrelBase.ZMZN PrelBase.Char) @ (PrelBase.ZMZN PrelBase.Char)
+		 PrelShow.showSpace
+		 (showsPrec21 (PrelBase.ZdwIzh (10::PrelGHC.Intzh)) b2))));
+	    AbsCore.ZdwAcon
+	    (b1::AbsCore.QualIdent)
+	    (b2::AbsCore.Tbinds)
+	    (b3::PrelBase.ZMZN AbsCore.Vbind)
+	    (b4::AbsCore.Exp) ->
+	      PrelShow.showParen
+	      (%case PrelBase.zdfOrdInt %of (tpl::PrelBase.ZCTOrd PrelBase.Int)
+		 {PrelBase.ZdwZCDOrd
+		  (tpl1::PrelBase.ZCTEq PrelBase.Int)
+		  (tpl2::PrelBase.Int -> PrelBase.Int -> PrelBase.Ordering)
+		  (tpl3::PrelBase.Int -> PrelBase.Int -> PrelBase.Bool)
+		  (tpl4::PrelBase.Int -> PrelBase.Int -> PrelBase.Bool)
+		  (tpl5::PrelBase.Int -> PrelBase.Int -> PrelBase.Bool)
+		  (tpl6::PrelBase.Int -> PrelBase.Int -> PrelBase.Bool)
+		  (tpl7::PrelBase.Int -> PrelBase.Int -> PrelBase.Int)
+		  (tpl8::PrelBase.Int -> PrelBase.Int -> PrelBase.Int) ->
+		    tpl5 a (PrelBase.ZdwIzh (10::PrelGHC.Intzh))})
+	      (PrelBase.zi @ (PrelBase.ZMZN PrelBase.Char)
+	       @ (PrelBase.ZMZN PrelBase.Char) @ (PrelBase.ZMZN PrelBase.Char)
+	       (PrelShow.showString
+		(PrelBase.unpackCStringzh ("Acon "::PrelGHC.Addrzh)))
+	       (PrelBase.zi @ (PrelBase.ZMZN PrelBase.Char)
+		@ (PrelBase.ZMZN PrelBase.Char) @ (PrelBase.ZMZN PrelBase.Char)
+		(showsPrec3 (PrelBase.ZdwIzh (10::PrelGHC.Intzh)) b1)
+		(PrelBase.zi @ (PrelBase.ZMZN PrelBase.Char)
+		 @ (PrelBase.ZMZN PrelBase.Char) @ (PrelBase.ZMZN PrelBase.Char)
+		 PrelShow.showSpace
+		 (PrelBase.zi @ (PrelBase.ZMZN PrelBase.Char)
+		  @ (PrelBase.ZMZN PrelBase.Char) @ (PrelBase.ZMZN PrelBase.Char)
+		  (showsPrec6 (PrelBase.ZdwIzh (10::PrelGHC.Intzh)) b2)
+		  (PrelBase.zi @ (PrelBase.ZMZN PrelBase.Char)
+		   @ (PrelBase.ZMZN PrelBase.Char) @ (PrelBase.ZMZN PrelBase.Char)
+		   PrelShow.showSpace
+		   (PrelBase.zi @ (PrelBase.ZMZN PrelBase.Char)
+		    @ (PrelBase.ZMZN PrelBase.Char) @ (PrelBase.ZMZN PrelBase.Char)
+		    (showsPrec10 (PrelBase.ZdwIzh (10::PrelGHC.Intzh)) b3)
+		    (PrelBase.zi @ (PrelBase.ZMZN PrelBase.Char)
+		     @ (PrelBase.ZMZN PrelBase.Char) @ (PrelBase.ZMZN PrelBase.Char)
+		     PrelShow.showSpace
+		     (showsPrec21 (PrelBase.ZdwIzh (10::PrelGHC.Intzh)) b4))))))))}};
+  showList13 :: PrelBase.ZMZN AbsCore.Vdefg ->
+		PrelBase.ZMZN PrelBase.Char -> PrelBase.ZMZN PrelBase.Char =
+    PrelShow.showListzuzu @ AbsCore.Vdefg
+    (\ (eta::AbsCore.Vdefg) -> showsPrec20 zz12 eta);
+  %rec
+  {AbsCore.zdfShowVdefg :: PrelShow.ZCTShow AbsCore.Vdefg =
+     %note "InlineMe"
+     PrelShow.ZdwZCDShow @ AbsCore.Vdefg showsPrec20 zddmshow13
+     showList13;
+   zddmshow13 :: AbsCore.Vdefg -> PrelBase.ZMZN PrelBase.Char =
+     PrelShow.zddmshow @ AbsCore.Vdefg AbsCore.zdfShowVdefg};
+  showList14 :: PrelBase.ZMZN AbsCore.Exp ->
+		PrelBase.ZMZN PrelBase.Char -> PrelBase.ZMZN PrelBase.Char =
+    PrelShow.showListzuzu @ AbsCore.Exp
+    (\ (eta::AbsCore.Exp) -> showsPrec21 zz11 eta);
+  %rec
+  {AbsCore.zdfShowExp :: PrelShow.ZCTShow AbsCore.Exp =
+     %note "InlineMe"
+     PrelShow.ZdwZCDShow @ AbsCore.Exp showsPrec21 zddmshow14
+     showList14;
+   zddmshow14 :: AbsCore.Exp -> PrelBase.ZMZN PrelBase.Char =
+     PrelShow.zddmshow @ AbsCore.Exp AbsCore.zdfShowExp};
+  showsPrec23 :: PrelBase.Int ->
+		 PrelBase.ZMZN AbsCore.Vdefg ->
+		 PrelBase.ZMZN PrelBase.Char -> PrelBase.ZMZN PrelBase.Char =
+    %case (PrelShow.zdfShowZMZN @ AbsCore.Vdefg AbsCore.zdfShowVdefg)
+    %of (tpl::PrelShow.ZCTShow (PrelBase.ZMZN AbsCore.Vdefg))
+      {PrelShow.ZdwZCDShow
+       (tpl1::PrelBase.Int ->
+	      PrelBase.ZMZN AbsCore.Vdefg ->
+	      PrelBase.ZMZN PrelBase.Char -> PrelBase.ZMZN PrelBase.Char)
+       (tpl2::PrelBase.ZMZN AbsCore.Vdefg -> PrelBase.ZMZN PrelBase.Char)
+       (tpl3::PrelBase.ZMZN (PrelBase.ZMZN AbsCore.Vdefg) ->
+	      PrelBase.ZMZN PrelBase.Char -> PrelBase.ZMZN PrelBase.Char) ->
+	 tpl1};
+  showsPrec24 :: PrelBase.Int ->
+		 AbsCore.TDef ->
+		 PrelBase.ZMZN PrelBase.Char -> PrelBase.ZMZN PrelBase.Char =
+    \ (a::PrelBase.Int) (ds::AbsCore.TDef) ->
+	%case ds %of (wild::AbsCore.TDef)
+	  {AbsCore.ZdwNewtype
+	   (b1::AbsCore.QualIdent)
+	   (b2::AbsCore.Tbinds)
+	   (b3::AbsCore.MaybeTy) ->
+	     PrelShow.showParen
+	     (%case PrelBase.zdfOrdInt %of (tpl::PrelBase.ZCTOrd PrelBase.Int)
+		{PrelBase.ZdwZCDOrd
+		 (tpl1::PrelBase.ZCTEq PrelBase.Int)
+		 (tpl2::PrelBase.Int -> PrelBase.Int -> PrelBase.Ordering)
+		 (tpl3::PrelBase.Int -> PrelBase.Int -> PrelBase.Bool)
+		 (tpl4::PrelBase.Int -> PrelBase.Int -> PrelBase.Bool)
+		 (tpl5::PrelBase.Int -> PrelBase.Int -> PrelBase.Bool)
+		 (tpl6::PrelBase.Int -> PrelBase.Int -> PrelBase.Bool)
+		 (tpl7::PrelBase.Int -> PrelBase.Int -> PrelBase.Int)
+		 (tpl8::PrelBase.Int -> PrelBase.Int -> PrelBase.Int) ->
+		   tpl5 a (PrelBase.ZdwIzh (10::PrelGHC.Intzh))})
+	     (PrelBase.zi @ (PrelBase.ZMZN PrelBase.Char)
+	      @ (PrelBase.ZMZN PrelBase.Char) @ (PrelBase.ZMZN PrelBase.Char)
+	      (PrelShow.showString
+	       (PrelBase.unpackCStringzh ("Newtype "::PrelGHC.Addrzh)))
+	      (PrelBase.zi @ (PrelBase.ZMZN PrelBase.Char)
+	       @ (PrelBase.ZMZN PrelBase.Char) @ (PrelBase.ZMZN PrelBase.Char)
+	       (showsPrec3 (PrelBase.ZdwIzh (10::PrelGHC.Intzh)) b1)
+	       (PrelBase.zi @ (PrelBase.ZMZN PrelBase.Char)
+		@ (PrelBase.ZMZN PrelBase.Char) @ (PrelBase.ZMZN PrelBase.Char)
+		PrelShow.showSpace
+		(PrelBase.zi @ (PrelBase.ZMZN PrelBase.Char)
+		 @ (PrelBase.ZMZN PrelBase.Char) @ (PrelBase.ZMZN PrelBase.Char)
+		 (showsPrec6 (PrelBase.ZdwIzh (10::PrelGHC.Intzh)) b2)
+		 (PrelBase.zi @ (PrelBase.ZMZN PrelBase.Char)
+		  @ (PrelBase.ZMZN PrelBase.Char) @ (PrelBase.ZMZN PrelBase.Char)
+		  PrelShow.showSpace
+		  (showsPrec13 (PrelBase.ZdwIzh (10::PrelGHC.Intzh)) b3))))))};
+  zz15 :: PrelBase.Int = PrelBase.ZdwIzh (0::PrelGHC.Intzh);
+  showList15 :: PrelBase.ZMZN AbsCore.TDef ->
+		PrelBase.ZMZN PrelBase.Char -> PrelBase.ZMZN PrelBase.Char =
+    PrelShow.showListzuzu @ AbsCore.TDef
+    (\ (eta::AbsCore.TDef) -> showsPrec24 zz15 eta);
+  %rec
+  {AbsCore.zdfShowTDef :: PrelShow.ZCTShow AbsCore.TDef =
+     %note "InlineMe"
+     PrelShow.ZdwZCDShow @ AbsCore.TDef showsPrec24 zddmshow15
+     showList15;
+   zddmshow15 :: AbsCore.TDef -> PrelBase.ZMZN PrelBase.Char =
+     PrelShow.zddmshow @ AbsCore.TDef AbsCore.zdfShowTDef};
+  showsPrec25 :: PrelBase.Int ->
+		 AbsCore.Tdef ->
+		 PrelBase.ZMZN PrelBase.Char -> PrelBase.ZMZN PrelBase.Char =
+    \ (a::PrelBase.Int) (ds::AbsCore.Tdef) ->
+	%case ds %of (wild::AbsCore.Tdef)
+	  {AbsCore.ZdwData
+	   (b1::AbsCore.QualIdent)
+	   (b2::AbsCore.Tbinds)
+	   (b3::PrelBase.ZMZN AbsCore.Cdef) ->
+	     PrelShow.showParen
+	     (%case PrelBase.zdfOrdInt %of (tpl::PrelBase.ZCTOrd PrelBase.Int)
+		{PrelBase.ZdwZCDOrd
+		 (tpl1::PrelBase.ZCTEq PrelBase.Int)
+		 (tpl2::PrelBase.Int -> PrelBase.Int -> PrelBase.Ordering)
+		 (tpl3::PrelBase.Int -> PrelBase.Int -> PrelBase.Bool)
+		 (tpl4::PrelBase.Int -> PrelBase.Int -> PrelBase.Bool)
+		 (tpl5::PrelBase.Int -> PrelBase.Int -> PrelBase.Bool)
+		 (tpl6::PrelBase.Int -> PrelBase.Int -> PrelBase.Bool)
+		 (tpl7::PrelBase.Int -> PrelBase.Int -> PrelBase.Int)
+		 (tpl8::PrelBase.Int -> PrelBase.Int -> PrelBase.Int) ->
+		   tpl5 a (PrelBase.ZdwIzh (10::PrelGHC.Intzh))})
+	     (PrelBase.zi @ (PrelBase.ZMZN PrelBase.Char)
+	      @ (PrelBase.ZMZN PrelBase.Char) @ (PrelBase.ZMZN PrelBase.Char)
+	      (PrelShow.showString
+	       (PrelBase.unpackCStringzh ("Data "::PrelGHC.Addrzh)))
+	      (PrelBase.zi @ (PrelBase.ZMZN PrelBase.Char)
+	       @ (PrelBase.ZMZN PrelBase.Char) @ (PrelBase.ZMZN PrelBase.Char)
+	       (showsPrec3 (PrelBase.ZdwIzh (10::PrelGHC.Intzh)) b1)
+	       (PrelBase.zi @ (PrelBase.ZMZN PrelBase.Char)
+		@ (PrelBase.ZMZN PrelBase.Char) @ (PrelBase.ZMZN PrelBase.Char)
+		PrelShow.showSpace
+		(PrelBase.zi @ (PrelBase.ZMZN PrelBase.Char)
+		 @ (PrelBase.ZMZN PrelBase.Char) @ (PrelBase.ZMZN PrelBase.Char)
+		 (showsPrec6 (PrelBase.ZdwIzh (10::PrelGHC.Intzh)) b2)
+		 (PrelBase.zi @ (PrelBase.ZMZN PrelBase.Char)
+		  @ (PrelBase.ZMZN PrelBase.Char) @ (PrelBase.ZMZN PrelBase.Char)
+		  PrelShow.showSpace
+		  (showsPrec16 (PrelBase.ZdwIzh (10::PrelGHC.Intzh)) b3))))))};
+  zz16 :: PrelBase.Int = PrelBase.ZdwIzh (0::PrelGHC.Intzh);
+  showList16 :: PrelBase.ZMZN AbsCore.Tdef ->
+		PrelBase.ZMZN PrelBase.Char -> PrelBase.ZMZN PrelBase.Char =
+    PrelShow.showListzuzu @ AbsCore.Tdef
+    (\ (eta::AbsCore.Tdef) -> showsPrec25 zz16 eta);
+  %rec
+  {AbsCore.zdfShowTdef :: PrelShow.ZCTShow AbsCore.Tdef =
+     %note "InlineMe"
+     PrelShow.ZdwZCDShow @ AbsCore.Tdef showsPrec25 zddmshow16
+     showList16;
+   zddmshow16 :: AbsCore.Tdef -> PrelBase.ZMZN PrelBase.Char =
+     PrelShow.zddmshow @ AbsCore.Tdef AbsCore.zdfShowTdef};
+  showsPrec26 :: PrelBase.Int ->
+		 PrelBase.ZMZN AbsCore.Tdef ->
+		 PrelBase.ZMZN PrelBase.Char -> PrelBase.ZMZN PrelBase.Char =
+    %case (PrelShow.zdfShowZMZN @ AbsCore.Tdef AbsCore.zdfShowTdef)
+    %of (tpl::PrelShow.ZCTShow (PrelBase.ZMZN AbsCore.Tdef))
+      {PrelShow.ZdwZCDShow
+       (tpl1::PrelBase.Int ->
+	      PrelBase.ZMZN AbsCore.Tdef ->
+	      PrelBase.ZMZN PrelBase.Char -> PrelBase.ZMZN PrelBase.Char)
+       (tpl2::PrelBase.ZMZN AbsCore.Tdef -> PrelBase.ZMZN PrelBase.Char)
+       (tpl3::PrelBase.ZMZN (PrelBase.ZMZN AbsCore.Tdef) ->
+	      PrelBase.ZMZN PrelBase.Char -> PrelBase.ZMZN PrelBase.Char) ->
+	 tpl1};
+  showsPrec27 :: PrelBase.Int ->
+		 AbsCore.Module ->
+		 PrelBase.ZMZN PrelBase.Char -> PrelBase.ZMZN PrelBase.Char =
+    \ (a::PrelBase.Int) (ds::AbsCore.Module) ->
+	%case ds %of (wild::AbsCore.Module)
+	  {AbsCore.ZdwModule
+	   (b1::PrelBase.ZMZN PrelBase.Char)
+	   (b2::PrelBase.ZMZN AbsCore.Tdef)
+	   (b3::PrelBase.ZMZN AbsCore.Vdefg) ->
+	     PrelShow.showParen
+	     (%case PrelBase.zdfOrdInt %of (tpl::PrelBase.ZCTOrd PrelBase.Int)
+		{PrelBase.ZdwZCDOrd
+		 (tpl1::PrelBase.ZCTEq PrelBase.Int)
+		 (tpl2::PrelBase.Int -> PrelBase.Int -> PrelBase.Ordering)
+		 (tpl3::PrelBase.Int -> PrelBase.Int -> PrelBase.Bool)
+		 (tpl4::PrelBase.Int -> PrelBase.Int -> PrelBase.Bool)
+		 (tpl5::PrelBase.Int -> PrelBase.Int -> PrelBase.Bool)
+		 (tpl6::PrelBase.Int -> PrelBase.Int -> PrelBase.Bool)
+		 (tpl7::PrelBase.Int -> PrelBase.Int -> PrelBase.Int)
+		 (tpl8::PrelBase.Int -> PrelBase.Int -> PrelBase.Int) ->
+		   tpl5 a (PrelBase.ZdwIzh (10::PrelGHC.Intzh))})
+	     (PrelBase.zi @ (PrelBase.ZMZN PrelBase.Char)
+	      @ (PrelBase.ZMZN PrelBase.Char) @ (PrelBase.ZMZN PrelBase.Char)
+	      (PrelShow.showString
+	       (PrelBase.unpackCStringzh ("Module "::PrelGHC.Addrzh)))
+	      (PrelBase.zi @ (PrelBase.ZMZN PrelBase.Char)
+	       @ (PrelBase.ZMZN PrelBase.Char) @ (PrelBase.ZMZN PrelBase.Char)
+	       (showsPrec2 (PrelBase.ZdwIzh (10::PrelGHC.Intzh)) b1)
+	       (PrelBase.zi @ (PrelBase.ZMZN PrelBase.Char)
+		@ (PrelBase.ZMZN PrelBase.Char) @ (PrelBase.ZMZN PrelBase.Char)
+		PrelShow.showSpace
+		(PrelBase.zi @ (PrelBase.ZMZN PrelBase.Char)
+		 @ (PrelBase.ZMZN PrelBase.Char) @ (PrelBase.ZMZN PrelBase.Char)
+		 (showsPrec26 (PrelBase.ZdwIzh (10::PrelGHC.Intzh)) b2)
+		 (PrelBase.zi @ (PrelBase.ZMZN PrelBase.Char)
+		  @ (PrelBase.ZMZN PrelBase.Char) @ (PrelBase.ZMZN PrelBase.Char)
+		  PrelShow.showSpace
+		  (showsPrec23 (PrelBase.ZdwIzh (10::PrelGHC.Intzh)) b3))))))};
+  zz17 :: PrelBase.Int = PrelBase.ZdwIzh (0::PrelGHC.Intzh);
+  showList17 :: PrelBase.ZMZN AbsCore.Module ->
+		PrelBase.ZMZN PrelBase.Char -> PrelBase.ZMZN PrelBase.Char =
+    PrelShow.showListzuzu @ AbsCore.Module
+    (\ (eta::AbsCore.Module) -> showsPrec27 zz17 eta);
+  %rec
+  {AbsCore.zdfShowModule :: PrelShow.ZCTShow AbsCore.Module =
+     %note "InlineMe"
+     PrelShow.ZdwZCDShow @ AbsCore.Module showsPrec27 zddmshow17
+     showList17;
+   zddmshow17 :: AbsCore.Module -> PrelBase.ZMZN PrelBase.Char =
+     PrelShow.zddmshow @ AbsCore.Module AbsCore.zdfShowModule};
+  AbsCore.zdfEqQualIdent :: PrelBase.ZCTEq AbsCore.QualIdent =
+    %note "InlineMe"
+    PrelBase.ZdwZCDEq @ AbsCore.QualIdent zsze2 zeze3;
+  %rec
+  {AbsCore.zdfOrdQualIdent :: PrelBase.ZCTOrd AbsCore.QualIdent =
+     %note "InlineMe"
+     PrelBase.ZdwZCDOrd @ AbsCore.QualIdent AbsCore.zdfEqQualIdent
+     compare3 zddmzlze4 zddmzg4 zddmzgze4 zddmzl4 zddmmin4 zddmmax4;
+   zddmmax4 :: AbsCore.QualIdent ->
+	       AbsCore.QualIdent -> AbsCore.QualIdent =
+     PrelBase.zddmmax @ AbsCore.QualIdent AbsCore.zdfOrdQualIdent;
+   zddmmin4 :: AbsCore.QualIdent ->
+	       AbsCore.QualIdent -> AbsCore.QualIdent =
+     PrelBase.zddmmin @ AbsCore.QualIdent AbsCore.zdfOrdQualIdent;
+   zddmzl4 :: AbsCore.QualIdent ->
+	      AbsCore.QualIdent -> PrelBase.Bool =
+     PrelBase.zddmzl @ AbsCore.QualIdent AbsCore.zdfOrdQualIdent;
+   zddmzgze4 :: AbsCore.QualIdent ->
+		AbsCore.QualIdent -> PrelBase.Bool =
+     PrelBase.zddmzgze @ AbsCore.QualIdent AbsCore.zdfOrdQualIdent;
+   zddmzg4 :: AbsCore.QualIdent ->
+	      AbsCore.QualIdent -> PrelBase.Bool =
+     PrelBase.zddmzg @ AbsCore.QualIdent AbsCore.zdfOrdQualIdent;
+   zddmzlze4 :: AbsCore.QualIdent ->
+		AbsCore.QualIdent -> PrelBase.Bool =
+     PrelBase.zddmzlze @ AbsCore.QualIdent AbsCore.zdfOrdQualIdent};
+  %rec
+  {compare7 :: AbsCore.Ty -> AbsCore.Ty -> PrelBase.Ordering =
+     \ (a::AbsCore.Ty) (b::AbsCore.Ty) ->
+	 %let zdj :: PrelGHC.Intzh -> PrelBase.Ordering =
+		\ (azh::PrelGHC.Intzh) ->
+		    %let zdj1 :: PrelGHC.Intzh -> PrelBase.Ordering =
+			   \ (bzh::PrelGHC.Intzh) ->
+			       %case (PrelGHC.zezezh azh bzh) %of (wild::PrelBase.Bool)
+				 {PrelBase.ZdwTrue ->
+				    %case a %of (wild1::AbsCore.Ty)
+				      {AbsCore.ZdwTforalls
+				       (a1::PrelBase.ZMZN AbsCore.Tbind) (a2::AbsCore.Ty) ->
+					 %case b %of (wild2::AbsCore.Ty)
+					   {%_ ->
+					      PrelErr.error @ PrelBase.Ordering
+					      (PrelBase.unpackCStringzh
+					       ("Urk! in TcGenDeriv"::PrelGHC.Addrzh));
+					    AbsCore.ZdwTforalls
+					    (b1::PrelBase.ZMZN AbsCore.Tbind) (b2::AbsCore.Ty) ->
+					      %case (compare5 a1 b1) %of (wild3::PrelBase.Ordering)
+						{PrelBase.ZdwEQ ->
+						   compare7 a2 b2;
+						 PrelBase.ZdwGT ->
+						   PrelBase.ZdwGT;
+						 PrelBase.ZdwLT ->
+						   PrelBase.ZdwLT}};
+				       AbsCore.ZdwTArrow (a1::AbsCore.Ty) (a2::AbsCore.Ty) ->
+					 %case b %of (wild2::AbsCore.Ty)
+					   {%_ ->
+					      PrelErr.error @ PrelBase.Ordering
+					      (PrelBase.unpackCStringzh
+					       ("Urk! in TcGenDeriv"::PrelGHC.Addrzh));
+					    AbsCore.ZdwTArrow (b1::AbsCore.Ty) (b2::AbsCore.Ty) ->
+					      %case (compare7 a1 b1) %of (wild3::PrelBase.Ordering)
+						{PrelBase.ZdwEQ ->
+						   compare7 a2 b2;
+						 PrelBase.ZdwGT ->
+						   PrelBase.ZdwGT;
+						 PrelBase.ZdwLT ->
+						   PrelBase.ZdwLT}};
+				       AbsCore.ZdwTapp (a1::AbsCore.Ty) (a2::AbsCore.Ty) ->
+					 %case b %of (wild2::AbsCore.Ty)
+					   {%_ ->
+					      PrelErr.error @ PrelBase.Ordering
+					      (PrelBase.unpackCStringzh
+					       ("Urk! in TcGenDeriv"::PrelGHC.Addrzh));
+					    AbsCore.ZdwTapp (b1::AbsCore.Ty) (b2::AbsCore.Ty) ->
+					      %case (compare7 a1 b1) %of (wild3::PrelBase.Ordering)
+						{PrelBase.ZdwEQ ->
+						   compare7 a2 b2;
+						 PrelBase.ZdwGT ->
+						   PrelBase.ZdwGT;
+						 PrelBase.ZdwLT ->
+						   PrelBase.ZdwLT}};
+				       AbsCore.ZdwTcon (a1::AbsCore.QualIdent) ->
+					 %case b %of (wild2::AbsCore.Ty)
+					   {%_ ->
+					      PrelErr.error @ PrelBase.Ordering
+					      (PrelBase.unpackCStringzh
+					       ("Urk! in TcGenDeriv"::PrelGHC.Addrzh));
+					    AbsCore.ZdwTcon (b1::AbsCore.QualIdent) ->
+					      %case a1 %of (wild3::AbsCore.QualIdent)
+						{AbsCore.ZdwQual
+						 (a11::PrelBase.ZMZN PrelBase.Char)
+						 (a2::PrelBase.ZMZN PrelBase.Char) ->
+						   %case b1 %of (wild4::AbsCore.QualIdent)
+						     {AbsCore.ZdwQual
+						      (b11::PrelBase.ZMZN PrelBase.Char)
+						      (b2::PrelBase.ZMZN PrelBase.Char) ->
+							%case (compare a11 b11)
+							%of (wild5::PrelBase.Ordering)
+							  {PrelBase.ZdwEQ ->
+							     compare a2 b2;
+							   PrelBase.ZdwGT ->
+							     PrelBase.ZdwGT;
+							   PrelBase.ZdwLT ->
+							     PrelBase.ZdwLT}}}};
+				       AbsCore.ZdwTvar (a1::PrelBase.ZMZN PrelBase.Char) ->
+					 %case b %of (wild2::AbsCore.Ty)
+					   {%_ ->
+					      PrelErr.error @ PrelBase.Ordering
+					      (PrelBase.unpackCStringzh
+					       ("Urk! in TcGenDeriv"::PrelGHC.Addrzh));
+					    AbsCore.ZdwTvar (b1::PrelBase.ZMZN PrelBase.Char) ->
+					      compare a1 b1}};
+				  PrelBase.ZdwFalse ->
+				    %case (PrelGHC.zlzh azh bzh) %of (wild1::PrelBase.Bool)
+				      {PrelBase.ZdwTrue ->
+					 PrelBase.ZdwLT;
+				       PrelBase.ZdwFalse ->
+					 PrelBase.ZdwGT}}
+		    %in %case b %of (wild::AbsCore.Ty)
+			  {AbsCore.ZdwTforalls
+			   (ds::PrelBase.ZMZN AbsCore.Tbind) (ds1::AbsCore.Ty) ->
+			     zdj1 (4::PrelGHC.Intzh);
+			   AbsCore.ZdwTArrow (ds::AbsCore.Ty) (ds1::AbsCore.Ty) ->
+			     zdj1 (3::PrelGHC.Intzh);
+			   AbsCore.ZdwTapp (ds::AbsCore.Ty) (ds1::AbsCore.Ty) ->
+			     zdj1 (2::PrelGHC.Intzh);
+			   AbsCore.ZdwTcon (ds::AbsCore.QualIdent) ->
+			     zdj1 (1::PrelGHC.Intzh);
+			   AbsCore.ZdwTvar (ds::PrelBase.ZMZN PrelBase.Char) ->
+			     zdj1 (0::PrelGHC.Intzh)}
+	 %in %case a %of (wild::AbsCore.Ty)
+	       {AbsCore.ZdwTforalls
+		(ds::PrelBase.ZMZN AbsCore.Tbind) (ds1::AbsCore.Ty) ->
+		  zdj (4::PrelGHC.Intzh);
+		AbsCore.ZdwTArrow (ds::AbsCore.Ty) (ds1::AbsCore.Ty) ->
+		  zdj (3::PrelGHC.Intzh);
+		AbsCore.ZdwTapp (ds::AbsCore.Ty) (ds1::AbsCore.Ty) ->
+		  zdj (2::PrelGHC.Intzh);
+		AbsCore.ZdwTcon (ds::AbsCore.QualIdent) ->
+		  zdj (1::PrelGHC.Intzh);
+		AbsCore.ZdwTvar (ds::PrelBase.ZMZN PrelBase.Char) ->
+		  zdj (0::PrelGHC.Intzh)}};
+  %rec
+  {zeze7 :: AbsCore.Ty -> AbsCore.Ty -> PrelBase.Bool =
+     \ (ds::AbsCore.Ty) (ds1::AbsCore.Ty) ->
+	 %case ds %of (wild::AbsCore.Ty)
+	   {AbsCore.ZdwTforalls
+	    (a1::PrelBase.ZMZN AbsCore.Tbind) (a2::AbsCore.Ty) ->
+	      %case ds1 %of (wild1::AbsCore.Ty)
+		{%_ ->
+		   PrelBase.ZdwFalse;
+		 AbsCore.ZdwTforalls
+		 (b1::PrelBase.ZMZN AbsCore.Tbind) (b2::AbsCore.Ty) ->
+		   PrelBase.zaza (zeze5 a1 b1) (zeze7 a2 b2)};
+	    AbsCore.ZdwTArrow (a1::AbsCore.Ty) (a2::AbsCore.Ty) ->
+	      %case ds1 %of (wild1::AbsCore.Ty)
+		{%_ ->
+		   PrelBase.ZdwFalse;
+		 AbsCore.ZdwTArrow (b1::AbsCore.Ty) (b2::AbsCore.Ty) ->
+		   PrelBase.zaza (zeze7 a1 b1) (zeze7 a2 b2)};
+	    AbsCore.ZdwTapp (a1::AbsCore.Ty) (a2::AbsCore.Ty) ->
+	      %case ds1 %of (wild1::AbsCore.Ty)
+		{%_ ->
+		   PrelBase.ZdwFalse;
+		 AbsCore.ZdwTapp (b1::AbsCore.Ty) (b2::AbsCore.Ty) ->
+		   PrelBase.zaza (zeze7 a1 b1) (zeze7 a2 b2)};
+	    AbsCore.ZdwTcon (a1::AbsCore.QualIdent) ->
+	      %case ds1 %of (wild1::AbsCore.Ty)
+		{%_ ->
+		   PrelBase.ZdwFalse;
+		 AbsCore.ZdwTcon (b1::AbsCore.QualIdent) ->
+		   zeze3 a1 b1};
+	    AbsCore.ZdwTvar (a1::PrelBase.ZMZN PrelBase.Char) ->
+	      %case ds1 %of (wild1::AbsCore.Ty)
+		{%_ ->
+		   PrelBase.ZdwFalse;
+		 AbsCore.ZdwTvar (b1::PrelBase.ZMZN PrelBase.Char) ->
+		   zeze a1 b1}}};
+  zsze5 :: AbsCore.Ty -> AbsCore.Ty -> PrelBase.Bool =
+    \ (a::AbsCore.Ty) (b::AbsCore.Ty) -> PrelBase.not (zeze7 a b);
+  AbsCore.zdfEqTy :: PrelBase.ZCTEq AbsCore.Ty =
+    %note "InlineMe"
+    PrelBase.ZdwZCDEq @ AbsCore.Ty zsze5 zeze7;
+  %rec
+  {AbsCore.zdfOrdTy :: PrelBase.ZCTOrd AbsCore.Ty =
+     %note "InlineMe"
+     PrelBase.ZdwZCDOrd @ AbsCore.Ty AbsCore.zdfEqTy compare7 zddmzlze5
+     zddmzg5 zddmzgze5 zddmzl5 zddmmin5 zddmmax5;
+   zddmmax5 :: AbsCore.Ty -> AbsCore.Ty -> AbsCore.Ty =
+     PrelBase.zddmmax @ AbsCore.Ty AbsCore.zdfOrdTy;
+   zddmmin5 :: AbsCore.Ty -> AbsCore.Ty -> AbsCore.Ty =
+     PrelBase.zddmmin @ AbsCore.Ty AbsCore.zdfOrdTy;
+   zddmzl5 :: AbsCore.Ty -> AbsCore.Ty -> PrelBase.Bool =
+     PrelBase.zddmzl @ AbsCore.Ty AbsCore.zdfOrdTy;
+   zddmzgze5 :: AbsCore.Ty -> AbsCore.Ty -> PrelBase.Bool =
+     PrelBase.zddmzgze @ AbsCore.Ty AbsCore.zdfOrdTy;
+   zddmzg5 :: AbsCore.Ty -> AbsCore.Ty -> PrelBase.Bool =
+     PrelBase.zddmzg @ AbsCore.Ty AbsCore.zdfOrdTy;
+   zddmzlze5 :: AbsCore.Ty -> AbsCore.Ty -> PrelBase.Bool =
+     PrelBase.zddmzlze @ AbsCore.Ty AbsCore.zdfOrdTy};
+  compare8 :: AbsCore.Lit -> AbsCore.Lit -> PrelBase.Ordering =
+    \ (a::AbsCore.Lit) (b::AbsCore.Lit) ->
+	%let zdj :: PrelGHC.Intzh -> PrelBase.Ordering =
+	       \ (azh::PrelGHC.Intzh) ->
+		   %let zdj1 :: PrelGHC.Intzh -> PrelBase.Ordering =
+			  \ (bzh::PrelGHC.Intzh) ->
+			      %case (PrelGHC.zezezh azh bzh) %of (wild::PrelBase.Bool)
+				{PrelBase.ZdwTrue ->
+				   %case a %of (wild1::AbsCore.Lit)
+				     {AbsCore.ZdwLstring
+				      (a1::PrelBase.ZMZN PrelBase.Char) (a2::AbsCore.Ty) ->
+					%case b %of (wild2::AbsCore.Lit)
+					  {%_ ->
+					     PrelErr.error @ PrelBase.Ordering
+					     (PrelBase.unpackCStringzh
+					      ("Urk! in TcGenDeriv"::PrelGHC.Addrzh));
+					   AbsCore.ZdwLstring
+					   (b1::PrelBase.ZMZN PrelBase.Char) (b2::AbsCore.Ty) ->
+					     %case (compare a1 b1) %of (wild3::PrelBase.Ordering)
+					       {PrelBase.ZdwEQ ->
+						  compare7 a2 b2;
+						PrelBase.ZdwGT ->
+						  PrelBase.ZdwGT;
+						PrelBase.ZdwLT ->
+						  PrelBase.ZdwLT}};
+				      AbsCore.ZdwLchar (a1::PrelBase.Char) (a2::AbsCore.Ty) ->
+					%case b %of (wild2::AbsCore.Lit)
+					  {%_ ->
+					     PrelErr.error @ PrelBase.Ordering
+					     (PrelBase.unpackCStringzh
+					      ("Urk! in TcGenDeriv"::PrelGHC.Addrzh));
+					   AbsCore.ZdwLchar (b1::PrelBase.Char) (b2::AbsCore.Ty) ->
+					     %case PrelBase.zdfOrdChar
+					     %of (tpl::PrelBase.ZCTOrd PrelBase.Char)
+					       {PrelBase.ZdwZCDOrd
+						(tpl1::PrelBase.ZCTEq PrelBase.Char)
+						(tpl2::PrelBase.Char ->
+						       PrelBase.Char -> PrelBase.Ordering)
+						(tpl3::PrelBase.Char ->
+						       PrelBase.Char -> PrelBase.Bool)
+						(tpl4::PrelBase.Char ->
+						       PrelBase.Char -> PrelBase.Bool)
+						(tpl5::PrelBase.Char ->
+						       PrelBase.Char -> PrelBase.Bool)
+						(tpl6::PrelBase.Char ->
+						       PrelBase.Char -> PrelBase.Bool)
+						(tpl7::PrelBase.Char ->
+						       PrelBase.Char -> PrelBase.Char)
+						(tpl8::PrelBase.Char ->
+						       PrelBase.Char -> PrelBase.Char) ->
+						  %case (tpl2 a1 b1) %of (wild3::PrelBase.Ordering)
+						    {PrelBase.ZdwEQ ->
+						       compare7 a2 b2;
+						     PrelBase.ZdwGT ->
+						       PrelBase.ZdwGT;
+						     PrelBase.ZdwLT ->
+						       PrelBase.ZdwLT}}};
+				      AbsCore.ZdwLrational
+				      (a1::PrelFloat.Double) (a2::AbsCore.Ty) ->
+					%case b %of (wild2::AbsCore.Lit)
+					  {%_ ->
+					     PrelErr.error @ PrelBase.Ordering
+					     (PrelBase.unpackCStringzh
+					      ("Urk! in TcGenDeriv"::PrelGHC.Addrzh));
+					   AbsCore.ZdwLrational
+					   (b1::PrelFloat.Double) (b2::AbsCore.Ty) ->
+					     %case PrelFloat.zdfOrdDouble
+					     %of (tpl::PrelBase.ZCTOrd PrelFloat.Double)
+					       {PrelBase.ZdwZCDOrd
+						(tpl1::PrelBase.ZCTEq PrelFloat.Double)
+						(tpl2::PrelFloat.Double ->
+						       PrelFloat.Double -> PrelBase.Ordering)
+						(tpl3::PrelFloat.Double ->
+						       PrelFloat.Double -> PrelBase.Bool)
+						(tpl4::PrelFloat.Double ->
+						       PrelFloat.Double -> PrelBase.Bool)
+						(tpl5::PrelFloat.Double ->
+						       PrelFloat.Double -> PrelBase.Bool)
+						(tpl6::PrelFloat.Double ->
+						       PrelFloat.Double -> PrelBase.Bool)
+						(tpl7::PrelFloat.Double ->
+						       PrelFloat.Double -> PrelFloat.Double)
+						(tpl8::PrelFloat.Double ->
+						       PrelFloat.Double -> PrelFloat.Double) ->
+						  %case (tpl2 a1 b1) %of (wild3::PrelBase.Ordering)
+						    {PrelBase.ZdwEQ ->
+						       compare7 a2 b2;
+						     PrelBase.ZdwGT ->
+						       PrelBase.ZdwGT;
+						     PrelBase.ZdwLT ->
+						       PrelBase.ZdwLT}}};
+				      AbsCore.ZdwLint (a1::PrelNum.Integer) (a2::AbsCore.Ty) ->
+					%case b %of (wild2::AbsCore.Lit)
+					  {%_ ->
+					     PrelErr.error @ PrelBase.Ordering
+					     (PrelBase.unpackCStringzh
+					      ("Urk! in TcGenDeriv"::PrelGHC.Addrzh));
+					   AbsCore.ZdwLint (b1::PrelNum.Integer) (b2::AbsCore.Ty) ->
+					     %case PrelNum.zdfOrdInteger
+					     %of (tpl::PrelBase.ZCTOrd PrelNum.Integer)
+					       {PrelBase.ZdwZCDOrd
+						(tpl1::PrelBase.ZCTEq PrelNum.Integer)
+						(tpl2::PrelNum.Integer ->
+						       PrelNum.Integer -> PrelBase.Ordering)
+						(tpl3::PrelNum.Integer ->
+						       PrelNum.Integer -> PrelBase.Bool)
+						(tpl4::PrelNum.Integer ->
+						       PrelNum.Integer -> PrelBase.Bool)
+						(tpl5::PrelNum.Integer ->
+						       PrelNum.Integer -> PrelBase.Bool)
+						(tpl6::PrelNum.Integer ->
+						       PrelNum.Integer -> PrelBase.Bool)
+						(tpl7::PrelNum.Integer ->
+						       PrelNum.Integer -> PrelNum.Integer)
+						(tpl8::PrelNum.Integer ->
+						       PrelNum.Integer -> PrelNum.Integer) ->
+						  %case (tpl2 a1 b1) %of (wild3::PrelBase.Ordering)
+						    {PrelBase.ZdwEQ ->
+						       compare7 a2 b2;
+						     PrelBase.ZdwGT ->
+						       PrelBase.ZdwGT;
+						     PrelBase.ZdwLT ->
+						       PrelBase.ZdwLT}}}};
+				 PrelBase.ZdwFalse ->
+				   %case (PrelGHC.zlzh azh bzh) %of (wild1::PrelBase.Bool)
+				     {PrelBase.ZdwTrue ->
+					PrelBase.ZdwLT;
+				      PrelBase.ZdwFalse ->
+					PrelBase.ZdwGT}}
+		   %in %case b %of (wild::AbsCore.Lit)
+			 {AbsCore.ZdwLstring
+			  (ds::PrelBase.ZMZN PrelBase.Char) (ds1::AbsCore.Ty) ->
+			    zdj1 (3::PrelGHC.Intzh);
+			  AbsCore.ZdwLchar (ds::PrelBase.Char) (ds1::AbsCore.Ty) ->
+			    zdj1 (2::PrelGHC.Intzh);
+			  AbsCore.ZdwLrational (ds::PrelFloat.Double) (ds1::AbsCore.Ty) ->
+			    zdj1 (1::PrelGHC.Intzh);
+			  AbsCore.ZdwLint (ds::PrelNum.Integer) (ds1::AbsCore.Ty) ->
+			    zdj1 (0::PrelGHC.Intzh)}
+	%in %case a %of (wild::AbsCore.Lit)
+	      {AbsCore.ZdwLstring
+	       (ds::PrelBase.ZMZN PrelBase.Char) (ds1::AbsCore.Ty) ->
+		 zdj (3::PrelGHC.Intzh);
+	       AbsCore.ZdwLchar (ds::PrelBase.Char) (ds1::AbsCore.Ty) ->
+		 zdj (2::PrelGHC.Intzh);
+	       AbsCore.ZdwLrational (ds::PrelFloat.Double) (ds1::AbsCore.Ty) ->
+		 zdj (1::PrelGHC.Intzh);
+	       AbsCore.ZdwLint (ds::PrelNum.Integer) (ds1::AbsCore.Ty) ->
+		 zdj (0::PrelGHC.Intzh)};
+  compare9 :: AbsCore.Vbind -> AbsCore.Vbind -> PrelBase.Ordering =
+    \ (a::AbsCore.Vbind) (b::AbsCore.Vbind) ->
+	%case a %of (wild::AbsCore.Vbind)
+	  {AbsCore.ZdwVbind
+	   (a1::PrelBase.ZMZN PrelBase.Char) (a2::AbsCore.Ty) ->
+	     %case b %of (wild1::AbsCore.Vbind)
+	       {AbsCore.ZdwVbind
+		(b1::PrelBase.ZMZN PrelBase.Char) (b2::AbsCore.Ty) ->
+		  %case (compare a1 b1) %of (wild2::PrelBase.Ordering)
+		    {PrelBase.ZdwEQ ->
+		       compare7 a2 b2;
+		     PrelBase.ZdwGT ->
+		       PrelBase.ZdwGT;
+		     PrelBase.ZdwLT ->
+		       PrelBase.ZdwLT}}};
+  compare10 :: AbsCore.MaybeTy ->
+	       AbsCore.MaybeTy -> PrelBase.Ordering =
+    \ (a::AbsCore.MaybeTy) (b::AbsCore.MaybeTy) ->
+	%let zdj :: PrelGHC.Intzh -> PrelBase.Ordering =
+	       \ (azh::PrelGHC.Intzh) ->
+		   %let zdj1 :: PrelGHC.Intzh -> PrelBase.Ordering =
+			  \ (bzh::PrelGHC.Intzh) ->
+			      %case (PrelGHC.zezezh azh bzh) %of (wild::PrelBase.Bool)
+				{PrelBase.ZdwTrue ->
+				   %case a %of (wild1::AbsCore.MaybeTy)
+				     {AbsCore.ZdwNoTy ->
+					PrelBase.ZdwEQ;
+				      AbsCore.ZdwJustTy (a1::AbsCore.Ty) ->
+					%case b %of (wild2::AbsCore.MaybeTy)
+					  {AbsCore.ZdwNoTy ->
+					     PrelBase.ZdwEQ;
+					   AbsCore.ZdwJustTy (b1::AbsCore.Ty) ->
+					     compare7 a1 b1}};
+				 PrelBase.ZdwFalse ->
+				   %case (PrelGHC.zlzh azh bzh) %of (wild1::PrelBase.Bool)
+				     {PrelBase.ZdwTrue ->
+					PrelBase.ZdwLT;
+				      PrelBase.ZdwFalse ->
+					PrelBase.ZdwGT}}
+		   %in %case b %of (wild::AbsCore.MaybeTy)
+			 {AbsCore.ZdwNoTy ->
+			    zdj1 (1::PrelGHC.Intzh);
+			  AbsCore.ZdwJustTy (ds::AbsCore.Ty) ->
+			    zdj1 (0::PrelGHC.Intzh)}
+	%in %case a %of (wild::AbsCore.MaybeTy)
+	      {AbsCore.ZdwNoTy ->
+		 zdj (1::PrelGHC.Intzh);
+	       AbsCore.ZdwJustTy (ds::AbsCore.Ty) ->
+		 zdj (0::PrelGHC.Intzh)};
+  compare11 :: PrelBase.ZMZN AbsCore.Ty ->
+	       PrelBase.ZMZN AbsCore.Ty -> PrelBase.Ordering =
+    %case (PrelBase.zdfOrdZMZN @ AbsCore.Ty AbsCore.zdfOrdTy)
+    %of (tpl::PrelBase.ZCTOrd (PrelBase.ZMZN AbsCore.Ty))
+      {PrelBase.ZdwZCDOrd
+       (tpl1::PrelBase.ZCTEq (PrelBase.ZMZN AbsCore.Ty))
+       (tpl2::PrelBase.ZMZN AbsCore.Ty ->
+	      PrelBase.ZMZN AbsCore.Ty -> PrelBase.Ordering)
+       (tpl3::PrelBase.ZMZN AbsCore.Ty ->
+	      PrelBase.ZMZN AbsCore.Ty -> PrelBase.Bool)
+       (tpl4::PrelBase.ZMZN AbsCore.Ty ->
+	      PrelBase.ZMZN AbsCore.Ty -> PrelBase.Bool)
+       (tpl5::PrelBase.ZMZN AbsCore.Ty ->
+	      PrelBase.ZMZN AbsCore.Ty -> PrelBase.Bool)
+       (tpl6::PrelBase.ZMZN AbsCore.Ty ->
+	      PrelBase.ZMZN AbsCore.Ty -> PrelBase.Bool)
+       (tpl7::PrelBase.ZMZN AbsCore.Ty ->
+	      PrelBase.ZMZN AbsCore.Ty -> PrelBase.ZMZN AbsCore.Ty)
+       (tpl8::PrelBase.ZMZN AbsCore.Ty ->
+	      PrelBase.ZMZN AbsCore.Ty -> PrelBase.ZMZN AbsCore.Ty) ->
+	 tpl2};
+  compare12 :: AbsCore.Cdef -> AbsCore.Cdef -> PrelBase.Ordering =
+    \ (a::AbsCore.Cdef) (b::AbsCore.Cdef) ->
+	%case a %of (wild::AbsCore.Cdef)
+	  {AbsCore.ZdwConstr
+	   (a1::PrelBase.ZMZN PrelBase.Char)
+	   (a2::PrelBase.ZMZN AbsCore.Tbind)
+	   (a3::PrelBase.ZMZN AbsCore.Ty) ->
+	     %case b %of (wild1::AbsCore.Cdef)
+	       {AbsCore.ZdwConstr
+		(b1::PrelBase.ZMZN PrelBase.Char)
+		(b2::PrelBase.ZMZN AbsCore.Tbind)
+		(b3::PrelBase.ZMZN AbsCore.Ty) ->
+		  %case (compare a1 b1) %of (wild2::PrelBase.Ordering)
+		    {PrelBase.ZdwEQ ->
+		       %case (compare5 a2 b2) %of (wild3::PrelBase.Ordering)
+			 {PrelBase.ZdwEQ ->
+			    compare11 a3 b3;
+			  PrelBase.ZdwGT ->
+			    PrelBase.ZdwGT;
+			  PrelBase.ZdwLT ->
+			    PrelBase.ZdwLT};
+		     PrelBase.ZdwGT ->
+		       PrelBase.ZdwGT;
+		     PrelBase.ZdwLT ->
+		       PrelBase.ZdwLT}}};
+  zeze8 :: AbsCore.Lit -> AbsCore.Lit -> PrelBase.Bool =
+    \ (ds::AbsCore.Lit) (ds1::AbsCore.Lit) ->
+	%case ds %of (wild::AbsCore.Lit)
+	  {AbsCore.ZdwLstring
+	   (a1::PrelBase.ZMZN PrelBase.Char) (a2::AbsCore.Ty) ->
+	     %case ds1 %of (wild1::AbsCore.Lit)
+	       {%_ ->
+		  PrelBase.ZdwFalse;
+		AbsCore.ZdwLstring
+		(b1::PrelBase.ZMZN PrelBase.Char) (b2::AbsCore.Ty) ->
+		  PrelBase.zaza (zeze a1 b1) (zeze7 a2 b2)};
+	   AbsCore.ZdwLchar (a1::PrelBase.Char) (a2::AbsCore.Ty) ->
+	     %case ds1 %of (wild1::AbsCore.Lit)
+	       {%_ ->
+		  PrelBase.ZdwFalse;
+		AbsCore.ZdwLchar (b1::PrelBase.Char) (b2::AbsCore.Ty) ->
+		  PrelBase.zaza
+		  (%case PrelBase.zdfEqChar %of (tpl::PrelBase.ZCTEq PrelBase.Char)
+		     {PrelBase.ZdwZCDEq
+		      (tpl1::PrelBase.Char -> PrelBase.Char -> PrelBase.Bool)
+		      (tpl2::PrelBase.Char -> PrelBase.Char -> PrelBase.Bool) ->
+			tpl2 a1 b1})
+		  (zeze7 a2 b2)};
+	   AbsCore.ZdwLrational (a1::PrelFloat.Double) (a2::AbsCore.Ty) ->
+	     %case ds1 %of (wild1::AbsCore.Lit)
+	       {%_ ->
+		  PrelBase.ZdwFalse;
+		AbsCore.ZdwLrational (b1::PrelFloat.Double) (b2::AbsCore.Ty) ->
+		  PrelBase.zaza
+		  (%case PrelFloat.zdfEqDouble
+		   %of (tpl::PrelBase.ZCTEq PrelFloat.Double)
+		     {PrelBase.ZdwZCDEq
+		      (tpl1::PrelFloat.Double -> PrelFloat.Double -> PrelBase.Bool)
+		      (tpl2::PrelFloat.Double -> PrelFloat.Double -> PrelBase.Bool) ->
+			tpl2 a1 b1})
+		  (zeze7 a2 b2)};
+	   AbsCore.ZdwLint (a1::PrelNum.Integer) (a2::AbsCore.Ty) ->
+	     %case ds1 %of (wild1::AbsCore.Lit)
+	       {%_ ->
+		  PrelBase.ZdwFalse;
+		AbsCore.ZdwLint (b1::PrelNum.Integer) (b2::AbsCore.Ty) ->
+		  PrelBase.zaza
+		  (%case PrelNum.zdfEqInteger
+		   %of (tpl::PrelBase.ZCTEq PrelNum.Integer)
+		     {PrelBase.ZdwZCDEq
+		      (tpl1::PrelNum.Integer -> PrelNum.Integer -> PrelBase.Bool)
+		      (tpl2::PrelNum.Integer -> PrelNum.Integer -> PrelBase.Bool) ->
+			tpl2 a1 b1})
+		  (zeze7 a2 b2)}};
+  zsze6 :: AbsCore.Lit -> AbsCore.Lit -> PrelBase.Bool =
+    \ (a::AbsCore.Lit) (b::AbsCore.Lit) -> PrelBase.not (zeze8 a b);
+  AbsCore.zdfEqLit :: PrelBase.ZCTEq AbsCore.Lit =
+    %note "InlineMe"
+    PrelBase.ZdwZCDEq @ AbsCore.Lit zsze6 zeze8;
+  %rec
+  {AbsCore.zdfOrdLit :: PrelBase.ZCTOrd AbsCore.Lit =
+     %note "InlineMe"
+     PrelBase.ZdwZCDOrd @ AbsCore.Lit AbsCore.zdfEqLit compare8
+     zddmzlze6 zddmzg6 zddmzgze6 zddmzl6 zddmmin6 zddmmax6;
+   zddmmax6 :: AbsCore.Lit -> AbsCore.Lit -> AbsCore.Lit =
+     PrelBase.zddmmax @ AbsCore.Lit AbsCore.zdfOrdLit;
+   zddmmin6 :: AbsCore.Lit -> AbsCore.Lit -> AbsCore.Lit =
+     PrelBase.zddmmin @ AbsCore.Lit AbsCore.zdfOrdLit;
+   zddmzl6 :: AbsCore.Lit -> AbsCore.Lit -> PrelBase.Bool =
+     PrelBase.zddmzl @ AbsCore.Lit AbsCore.zdfOrdLit;
+   zddmzgze6 :: AbsCore.Lit -> AbsCore.Lit -> PrelBase.Bool =
+     PrelBase.zddmzgze @ AbsCore.Lit AbsCore.zdfOrdLit;
+   zddmzg6 :: AbsCore.Lit -> AbsCore.Lit -> PrelBase.Bool =
+     PrelBase.zddmzg @ AbsCore.Lit AbsCore.zdfOrdLit;
+   zddmzlze6 :: AbsCore.Lit -> AbsCore.Lit -> PrelBase.Bool =
+     PrelBase.zddmzlze @ AbsCore.Lit AbsCore.zdfOrdLit};
+  zeze9 :: AbsCore.Vbind -> AbsCore.Vbind -> PrelBase.Bool =
+    \ (ds::AbsCore.Vbind) (ds1::AbsCore.Vbind) ->
+	%case ds %of (wild::AbsCore.Vbind)
+	  {AbsCore.ZdwVbind
+	   (a1::PrelBase.ZMZN PrelBase.Char) (a2::AbsCore.Ty) ->
+	     %case ds1 %of (wild1::AbsCore.Vbind)
+	       {AbsCore.ZdwVbind
+		(b1::PrelBase.ZMZN PrelBase.Char) (b2::AbsCore.Ty) ->
+		  PrelBase.zaza (zeze a1 b1) (zeze7 a2 b2)}};
+  zsze7 :: AbsCore.Vbind -> AbsCore.Vbind -> PrelBase.Bool =
+    \ (a::AbsCore.Vbind) (b::AbsCore.Vbind) ->
+	PrelBase.not (zeze9 a b);
+  AbsCore.zdfEqVbind :: PrelBase.ZCTEq AbsCore.Vbind =
+    %note "InlineMe"
+    PrelBase.ZdwZCDEq @ AbsCore.Vbind zsze7 zeze9;
+  %rec
+  {AbsCore.zdfOrdVbind :: PrelBase.ZCTOrd AbsCore.Vbind =
+     %note "InlineMe"
+     PrelBase.ZdwZCDOrd @ AbsCore.Vbind AbsCore.zdfEqVbind compare9
+     zddmzlze7 zddmzg7 zddmzgze7 zddmzl7 zddmmin7 zddmmax7;
+   zddmmax7 :: AbsCore.Vbind -> AbsCore.Vbind -> AbsCore.Vbind =
+     PrelBase.zddmmax @ AbsCore.Vbind AbsCore.zdfOrdVbind;
+   zddmmin7 :: AbsCore.Vbind -> AbsCore.Vbind -> AbsCore.Vbind =
+     PrelBase.zddmmin @ AbsCore.Vbind AbsCore.zdfOrdVbind;
+   zddmzl7 :: AbsCore.Vbind -> AbsCore.Vbind -> PrelBase.Bool =
+     PrelBase.zddmzl @ AbsCore.Vbind AbsCore.zdfOrdVbind;
+   zddmzgze7 :: AbsCore.Vbind -> AbsCore.Vbind -> PrelBase.Bool =
+     PrelBase.zddmzgze @ AbsCore.Vbind AbsCore.zdfOrdVbind;
+   zddmzg7 :: AbsCore.Vbind -> AbsCore.Vbind -> PrelBase.Bool =
+     PrelBase.zddmzg @ AbsCore.Vbind AbsCore.zdfOrdVbind;
+   zddmzlze7 :: AbsCore.Vbind -> AbsCore.Vbind -> PrelBase.Bool =
+     PrelBase.zddmzlze @ AbsCore.Vbind AbsCore.zdfOrdVbind};
+  compare13 :: PrelBase.ZMZN AbsCore.Vbind ->
+	       PrelBase.ZMZN AbsCore.Vbind -> PrelBase.Ordering =
+    %case (PrelBase.zdfOrdZMZN @ AbsCore.Vbind AbsCore.zdfOrdVbind)
+    %of (tpl::PrelBase.ZCTOrd (PrelBase.ZMZN AbsCore.Vbind))
+      {PrelBase.ZdwZCDOrd
+       (tpl1::PrelBase.ZCTEq (PrelBase.ZMZN AbsCore.Vbind))
+       (tpl2::PrelBase.ZMZN AbsCore.Vbind ->
+	      PrelBase.ZMZN AbsCore.Vbind -> PrelBase.Ordering)
+       (tpl3::PrelBase.ZMZN AbsCore.Vbind ->
+	      PrelBase.ZMZN AbsCore.Vbind -> PrelBase.Bool)
+       (tpl4::PrelBase.ZMZN AbsCore.Vbind ->
+	      PrelBase.ZMZN AbsCore.Vbind -> PrelBase.Bool)
+       (tpl5::PrelBase.ZMZN AbsCore.Vbind ->
+	      PrelBase.ZMZN AbsCore.Vbind -> PrelBase.Bool)
+       (tpl6::PrelBase.ZMZN AbsCore.Vbind ->
+	      PrelBase.ZMZN AbsCore.Vbind -> PrelBase.Bool)
+       (tpl7::PrelBase.ZMZN AbsCore.Vbind ->
+	      PrelBase.ZMZN AbsCore.Vbind -> PrelBase.ZMZN AbsCore.Vbind)
+       (tpl8::PrelBase.ZMZN AbsCore.Vbind ->
+	      PrelBase.ZMZN AbsCore.Vbind -> PrelBase.ZMZN AbsCore.Vbind) ->
+	 tpl2};
+  compare14 :: AbsCore.Bind -> AbsCore.Bind -> PrelBase.Ordering =
+    \ (a::AbsCore.Bind) (b::AbsCore.Bind) ->
+	%let zdj :: PrelGHC.Intzh -> PrelBase.Ordering =
+	       \ (azh::PrelGHC.Intzh) ->
+		   %let zdj1 :: PrelGHC.Intzh -> PrelBase.Ordering =
+			  \ (bzh::PrelGHC.Intzh) ->
+			      %case (PrelGHC.zezezh azh bzh) %of (wild::PrelBase.Bool)
+				{PrelBase.ZdwTrue ->
+				   %case a %of (wild1::AbsCore.Bind)
+				     {AbsCore.ZdwTb (a1::AbsCore.Tbind) ->
+					%case b %of (wild2::AbsCore.Bind)
+					  {AbsCore.ZdwVb (a11::AbsCore.Vbind) ->
+					     PrelErr.error @ PrelBase.Ordering
+					     (PrelBase.unpackCStringzh
+					      ("Urk! in TcGenDeriv"::PrelGHC.Addrzh));
+					   AbsCore.ZdwTb (b1::AbsCore.Tbind) ->
+					     compare4 a1 b1};
+				      AbsCore.ZdwVb (a1::AbsCore.Vbind) ->
+					%case b %of (wild2::AbsCore.Bind)
+					  {AbsCore.ZdwTb (a11::AbsCore.Tbind) ->
+					     PrelErr.error @ PrelBase.Ordering
+					     (PrelBase.unpackCStringzh
+					      ("Urk! in TcGenDeriv"::PrelGHC.Addrzh));
+					   AbsCore.ZdwVb (b1::AbsCore.Vbind) ->
+					     %case a1 %of (wild3::AbsCore.Vbind)
+					       {AbsCore.ZdwVbind
+						(a11::PrelBase.ZMZN PrelBase.Char)
+						(a2::AbsCore.Ty) ->
+						  %case b1 %of (wild4::AbsCore.Vbind)
+						    {AbsCore.ZdwVbind
+						     (b11::PrelBase.ZMZN PrelBase.Char)
+						     (b2::AbsCore.Ty) ->
+						       %case (compare a11 b11)
+						       %of (wild5::PrelBase.Ordering)
+							 {PrelBase.ZdwEQ ->
+							    compare7 a2 b2;
+							  PrelBase.ZdwGT ->
+							    PrelBase.ZdwGT;
+							  PrelBase.ZdwLT ->
+							    PrelBase.ZdwLT}}}}};
+				 PrelBase.ZdwFalse ->
+				   %case (PrelGHC.zlzh azh bzh) %of (wild1::PrelBase.Bool)
+				     {PrelBase.ZdwTrue ->
+					PrelBase.ZdwLT;
+				      PrelBase.ZdwFalse ->
+					PrelBase.ZdwGT}}
+		   %in %case b %of (wild::AbsCore.Bind)
+			 {AbsCore.ZdwTb (ds::AbsCore.Tbind) ->
+			    zdj1 (1::PrelGHC.Intzh);
+			  AbsCore.ZdwVb (ds::AbsCore.Vbind) ->
+			    zdj1 (0::PrelGHC.Intzh)}
+	%in %case a %of (wild::AbsCore.Bind)
+	      {AbsCore.ZdwTb (ds::AbsCore.Tbind) ->
+		 zdj (1::PrelGHC.Intzh);
+	       AbsCore.ZdwVb (ds::AbsCore.Vbind) ->
+		 zdj (0::PrelGHC.Intzh)};
+  zeze10 :: PrelBase.ZMZN AbsCore.Vbind ->
+	    PrelBase.ZMZN AbsCore.Vbind -> PrelBase.Bool =
+    %case (PrelBase.zdfEqZMZN @ AbsCore.Vbind AbsCore.zdfEqVbind)
+    %of (tpl::PrelBase.ZCTEq (PrelBase.ZMZN AbsCore.Vbind))
+      {PrelBase.ZdwZCDEq
+       (tpl1::PrelBase.ZMZN AbsCore.Vbind ->
+	      PrelBase.ZMZN AbsCore.Vbind -> PrelBase.Bool)
+       (tpl2::PrelBase.ZMZN AbsCore.Vbind ->
+	      PrelBase.ZMZN AbsCore.Vbind -> PrelBase.Bool) ->
+	 tpl2};
+  zeze11 :: AbsCore.Bind -> AbsCore.Bind -> PrelBase.Bool =
+    \ (ds::AbsCore.Bind) (ds1::AbsCore.Bind) ->
+	%case ds %of (wild::AbsCore.Bind)
+	  {AbsCore.ZdwTb (a1::AbsCore.Tbind) ->
+	     %case ds1 %of (wild1::AbsCore.Bind)
+	       {AbsCore.ZdwVb (a::AbsCore.Vbind) ->
+		  PrelBase.ZdwFalse;
+		AbsCore.ZdwTb (b1::AbsCore.Tbind) ->
+		  zeze4 a1 b1};
+	   AbsCore.ZdwVb (a1::AbsCore.Vbind) ->
+	     %case ds1 %of (wild1::AbsCore.Bind)
+	       {AbsCore.ZdwTb (a::AbsCore.Tbind) ->
+		  PrelBase.ZdwFalse;
+		AbsCore.ZdwVb (b1::AbsCore.Vbind) ->
+		  zeze9 a1 b1}};
+  zsze8 :: AbsCore.Bind -> AbsCore.Bind -> PrelBase.Bool =
+    \ (a::AbsCore.Bind) (b::AbsCore.Bind) -> PrelBase.not (zeze11 a b);
+  AbsCore.zdfEqBind :: PrelBase.ZCTEq AbsCore.Bind =
+    %note "InlineMe"
+    PrelBase.ZdwZCDEq @ AbsCore.Bind zsze8 zeze11;
+  %rec
+  {AbsCore.zdfOrdBind :: PrelBase.ZCTOrd AbsCore.Bind =
+     %note "InlineMe"
+     PrelBase.ZdwZCDOrd @ AbsCore.Bind AbsCore.zdfEqBind compare14
+     zddmzlze8 zddmzg8 zddmzgze8 zddmzl8 zddmmin8 zddmmax8;
+   zddmmax8 :: AbsCore.Bind -> AbsCore.Bind -> AbsCore.Bind =
+     PrelBase.zddmmax @ AbsCore.Bind AbsCore.zdfOrdBind;
+   zddmmin8 :: AbsCore.Bind -> AbsCore.Bind -> AbsCore.Bind =
+     PrelBase.zddmmin @ AbsCore.Bind AbsCore.zdfOrdBind;
+   zddmzl8 :: AbsCore.Bind -> AbsCore.Bind -> PrelBase.Bool =
+     PrelBase.zddmzl @ AbsCore.Bind AbsCore.zdfOrdBind;
+   zddmzgze8 :: AbsCore.Bind -> AbsCore.Bind -> PrelBase.Bool =
+     PrelBase.zddmzgze @ AbsCore.Bind AbsCore.zdfOrdBind;
+   zddmzg8 :: AbsCore.Bind -> AbsCore.Bind -> PrelBase.Bool =
+     PrelBase.zddmzg @ AbsCore.Bind AbsCore.zdfOrdBind;
+   zddmzlze8 :: AbsCore.Bind -> AbsCore.Bind -> PrelBase.Bool =
+     PrelBase.zddmzlze @ AbsCore.Bind AbsCore.zdfOrdBind};
+  compare15 :: PrelBase.ZMZN AbsCore.Bind ->
+	       PrelBase.ZMZN AbsCore.Bind -> PrelBase.Ordering =
+    %case (PrelBase.zdfOrdZMZN @ AbsCore.Bind AbsCore.zdfOrdBind)
+    %of (tpl::PrelBase.ZCTOrd (PrelBase.ZMZN AbsCore.Bind))
+      {PrelBase.ZdwZCDOrd
+       (tpl1::PrelBase.ZCTEq (PrelBase.ZMZN AbsCore.Bind))
+       (tpl2::PrelBase.ZMZN AbsCore.Bind ->
+	      PrelBase.ZMZN AbsCore.Bind -> PrelBase.Ordering)
+       (tpl3::PrelBase.ZMZN AbsCore.Bind ->
+	      PrelBase.ZMZN AbsCore.Bind -> PrelBase.Bool)
+       (tpl4::PrelBase.ZMZN AbsCore.Bind ->
+	      PrelBase.ZMZN AbsCore.Bind -> PrelBase.Bool)
+       (tpl5::PrelBase.ZMZN AbsCore.Bind ->
+	      PrelBase.ZMZN AbsCore.Bind -> PrelBase.Bool)
+       (tpl6::PrelBase.ZMZN AbsCore.Bind ->
+	      PrelBase.ZMZN AbsCore.Bind -> PrelBase.Bool)
+       (tpl7::PrelBase.ZMZN AbsCore.Bind ->
+	      PrelBase.ZMZN AbsCore.Bind -> PrelBase.ZMZN AbsCore.Bind)
+       (tpl8::PrelBase.ZMZN AbsCore.Bind ->
+	      PrelBase.ZMZN AbsCore.Bind -> PrelBase.ZMZN AbsCore.Bind) ->
+	 tpl2};
+  zeze12 :: PrelBase.ZMZN AbsCore.Bind ->
+	    PrelBase.ZMZN AbsCore.Bind -> PrelBase.Bool =
+    %case (PrelBase.zdfEqZMZN @ AbsCore.Bind AbsCore.zdfEqBind)
+    %of (tpl::PrelBase.ZCTEq (PrelBase.ZMZN AbsCore.Bind))
+      {PrelBase.ZdwZCDEq
+       (tpl1::PrelBase.ZMZN AbsCore.Bind ->
+	      PrelBase.ZMZN AbsCore.Bind -> PrelBase.Bool)
+       (tpl2::PrelBase.ZMZN AbsCore.Bind ->
+	      PrelBase.ZMZN AbsCore.Bind -> PrelBase.Bool) ->
+	 tpl2};
+  zeze13 :: AbsCore.MaybeTy -> AbsCore.MaybeTy -> PrelBase.Bool =
+    \ (ds::AbsCore.MaybeTy) (ds1::AbsCore.MaybeTy) ->
+	%case ds %of (wild::AbsCore.MaybeTy)
+	  {AbsCore.ZdwNoTy ->
+	     %case ds1 %of (wild1::AbsCore.MaybeTy)
+	       {AbsCore.ZdwNoTy ->
+		  PrelBase.ZdwTrue;
+		AbsCore.ZdwJustTy (ds2::AbsCore.Ty) ->
+		  PrelBase.ZdwFalse};
+	   AbsCore.ZdwJustTy (a1::AbsCore.Ty) ->
+	     %case ds1 %of (wild1::AbsCore.MaybeTy)
+	       {AbsCore.ZdwNoTy ->
+		  PrelBase.ZdwFalse;
+		AbsCore.ZdwJustTy (b1::AbsCore.Ty) ->
+		  zeze7 a1 b1}};
+  zsze9 :: AbsCore.MaybeTy -> AbsCore.MaybeTy -> PrelBase.Bool =
+    \ (a::AbsCore.MaybeTy) (b::AbsCore.MaybeTy) ->
+	PrelBase.not (zeze13 a b);
+  AbsCore.zdfEqMaybeTy :: PrelBase.ZCTEq AbsCore.MaybeTy =
+    %note "InlineMe"
+    PrelBase.ZdwZCDEq @ AbsCore.MaybeTy zsze9 zeze13;
+  %rec
+  {AbsCore.zdfOrdMaybeTy :: PrelBase.ZCTOrd AbsCore.MaybeTy =
+     %note "InlineMe"
+     PrelBase.ZdwZCDOrd @ AbsCore.MaybeTy AbsCore.zdfEqMaybeTy compare10
+     zddmzlze9 zddmzg9 zddmzgze9 zddmzl9 zddmmin9 zddmmax9;
+   zddmmax9 :: AbsCore.MaybeTy -> AbsCore.MaybeTy -> AbsCore.MaybeTy =
+     PrelBase.zddmmax @ AbsCore.MaybeTy AbsCore.zdfOrdMaybeTy;
+   zddmmin9 :: AbsCore.MaybeTy -> AbsCore.MaybeTy -> AbsCore.MaybeTy =
+     PrelBase.zddmmin @ AbsCore.MaybeTy AbsCore.zdfOrdMaybeTy;
+   zddmzl9 :: AbsCore.MaybeTy -> AbsCore.MaybeTy -> PrelBase.Bool =
+     PrelBase.zddmzl @ AbsCore.MaybeTy AbsCore.zdfOrdMaybeTy;
+   zddmzgze9 :: AbsCore.MaybeTy -> AbsCore.MaybeTy -> PrelBase.Bool =
+     PrelBase.zddmzgze @ AbsCore.MaybeTy AbsCore.zdfOrdMaybeTy;
+   zddmzg9 :: AbsCore.MaybeTy -> AbsCore.MaybeTy -> PrelBase.Bool =
+     PrelBase.zddmzg @ AbsCore.MaybeTy AbsCore.zdfOrdMaybeTy;
+   zddmzlze9 :: AbsCore.MaybeTy -> AbsCore.MaybeTy -> PrelBase.Bool =
+     PrelBase.zddmzlze @ AbsCore.MaybeTy AbsCore.zdfOrdMaybeTy};
+  compare16 :: AbsCore.TDef -> AbsCore.TDef -> PrelBase.Ordering =
+    \ (a::AbsCore.TDef) (b::AbsCore.TDef) ->
+	%case a %of (wild::AbsCore.TDef)
+	  {AbsCore.ZdwNewtype
+	   (a1::AbsCore.QualIdent)
+	   (a2::AbsCore.Tbinds)
+	   (a3::AbsCore.MaybeTy) ->
+	     %case b %of (wild1::AbsCore.TDef)
+	       {AbsCore.ZdwNewtype
+		(b1::AbsCore.QualIdent)
+		(b2::AbsCore.Tbinds)
+		(b3::AbsCore.MaybeTy) ->
+		  %case a1 %of (wild2::AbsCore.QualIdent)
+		    {AbsCore.ZdwQual
+		     (a11::PrelBase.ZMZN PrelBase.Char)
+		     (a21::PrelBase.ZMZN PrelBase.Char) ->
+		       %case b1 %of (wild3::AbsCore.QualIdent)
+			 {AbsCore.ZdwQual
+			  (b11::PrelBase.ZMZN PrelBase.Char)
+			  (b21::PrelBase.ZMZN PrelBase.Char) ->
+			    %case (compare a11 b11) %of (wild4::PrelBase.Ordering)
+			      {PrelBase.ZdwEQ ->
+				 %case (compare a21 b21) %of (wild5::PrelBase.Ordering)
+				   {PrelBase.ZdwEQ ->
+				      %case (compare6 a2 b2) %of (wild6::PrelBase.Ordering)
+					{PrelBase.ZdwEQ ->
+					   compare10 a3 b3;
+					 PrelBase.ZdwGT ->
+					   PrelBase.ZdwGT;
+					 PrelBase.ZdwLT ->
+					   PrelBase.ZdwLT};
+				    PrelBase.ZdwGT ->
+				      PrelBase.ZdwGT;
+				    PrelBase.ZdwLT ->
+				      PrelBase.ZdwLT};
+			       PrelBase.ZdwGT ->
+				 PrelBase.ZdwGT;
+			       PrelBase.ZdwLT ->
+				 PrelBase.ZdwLT}}}}};
+  zeze14 :: PrelBase.ZMZN AbsCore.Ty ->
+	    PrelBase.ZMZN AbsCore.Ty -> PrelBase.Bool =
+    %case (PrelBase.zdfEqZMZN @ AbsCore.Ty AbsCore.zdfEqTy)
+    %of (tpl::PrelBase.ZCTEq (PrelBase.ZMZN AbsCore.Ty))
+      {PrelBase.ZdwZCDEq
+       (tpl1::PrelBase.ZMZN AbsCore.Ty ->
+	      PrelBase.ZMZN AbsCore.Ty -> PrelBase.Bool)
+       (tpl2::PrelBase.ZMZN AbsCore.Ty ->
+	      PrelBase.ZMZN AbsCore.Ty -> PrelBase.Bool) ->
+	 tpl2};
+  zeze15 :: AbsCore.Cdef -> AbsCore.Cdef -> PrelBase.Bool =
+    \ (ds::AbsCore.Cdef) (ds1::AbsCore.Cdef) ->
+	%case ds %of (wild::AbsCore.Cdef)
+	  {AbsCore.ZdwConstr
+	   (a1::PrelBase.ZMZN PrelBase.Char)
+	   (a2::PrelBase.ZMZN AbsCore.Tbind)
+	   (a3::PrelBase.ZMZN AbsCore.Ty) ->
+	     %case ds1 %of (wild1::AbsCore.Cdef)
+	       {AbsCore.ZdwConstr
+		(b1::PrelBase.ZMZN PrelBase.Char)
+		(b2::PrelBase.ZMZN AbsCore.Tbind)
+		(b3::PrelBase.ZMZN AbsCore.Ty) ->
+		  PrelBase.zaza (PrelBase.zaza (zeze a1 b1) (zeze5 a2 b2))
+		  (zeze14 a3 b3)}};
+  zsze10 :: AbsCore.Cdef -> AbsCore.Cdef -> PrelBase.Bool =
+    \ (a::AbsCore.Cdef) (b::AbsCore.Cdef) -> PrelBase.not (zeze15 a b);
+  AbsCore.zdfEqCdef :: PrelBase.ZCTEq AbsCore.Cdef =
+    %note "InlineMe"
+    PrelBase.ZdwZCDEq @ AbsCore.Cdef zsze10 zeze15;
+  %rec
+  {AbsCore.zdfOrdCdef :: PrelBase.ZCTOrd AbsCore.Cdef =
+     %note "InlineMe"
+     PrelBase.ZdwZCDOrd @ AbsCore.Cdef AbsCore.zdfEqCdef compare12
+     zddmzlze10 zddmzg10 zddmzgze10 zddmzl10 zddmmin10 zddmmax10;
+   zddmmax10 :: AbsCore.Cdef -> AbsCore.Cdef -> AbsCore.Cdef =
+     PrelBase.zddmmax @ AbsCore.Cdef AbsCore.zdfOrdCdef;
+   zddmmin10 :: AbsCore.Cdef -> AbsCore.Cdef -> AbsCore.Cdef =
+     PrelBase.zddmmin @ AbsCore.Cdef AbsCore.zdfOrdCdef;
+   zddmzl10 :: AbsCore.Cdef -> AbsCore.Cdef -> PrelBase.Bool =
+     PrelBase.zddmzl @ AbsCore.Cdef AbsCore.zdfOrdCdef;
+   zddmzgze10 :: AbsCore.Cdef -> AbsCore.Cdef -> PrelBase.Bool =
+     PrelBase.zddmzgze @ AbsCore.Cdef AbsCore.zdfOrdCdef;
+   zddmzg10 :: AbsCore.Cdef -> AbsCore.Cdef -> PrelBase.Bool =
+     PrelBase.zddmzg @ AbsCore.Cdef AbsCore.zdfOrdCdef;
+   zddmzlze10 :: AbsCore.Cdef -> AbsCore.Cdef -> PrelBase.Bool =
+     PrelBase.zddmzlze @ AbsCore.Cdef AbsCore.zdfOrdCdef};
+  compare17 :: PrelBase.ZMZN AbsCore.Cdef ->
+	       PrelBase.ZMZN AbsCore.Cdef -> PrelBase.Ordering =
+    %case (PrelBase.zdfOrdZMZN @ AbsCore.Cdef AbsCore.zdfOrdCdef)
+    %of (tpl::PrelBase.ZCTOrd (PrelBase.ZMZN AbsCore.Cdef))
+      {PrelBase.ZdwZCDOrd
+       (tpl1::PrelBase.ZCTEq (PrelBase.ZMZN AbsCore.Cdef))
+       (tpl2::PrelBase.ZMZN AbsCore.Cdef ->
+	      PrelBase.ZMZN AbsCore.Cdef -> PrelBase.Ordering)
+       (tpl3::PrelBase.ZMZN AbsCore.Cdef ->
+	      PrelBase.ZMZN AbsCore.Cdef -> PrelBase.Bool)
+       (tpl4::PrelBase.ZMZN AbsCore.Cdef ->
+	      PrelBase.ZMZN AbsCore.Cdef -> PrelBase.Bool)
+       (tpl5::PrelBase.ZMZN AbsCore.Cdef ->
+	      PrelBase.ZMZN AbsCore.Cdef -> PrelBase.Bool)
+       (tpl6::PrelBase.ZMZN AbsCore.Cdef ->
+	      PrelBase.ZMZN AbsCore.Cdef -> PrelBase.Bool)
+       (tpl7::PrelBase.ZMZN AbsCore.Cdef ->
+	      PrelBase.ZMZN AbsCore.Cdef -> PrelBase.ZMZN AbsCore.Cdef)
+       (tpl8::PrelBase.ZMZN AbsCore.Cdef ->
+	      PrelBase.ZMZN AbsCore.Cdef -> PrelBase.ZMZN AbsCore.Cdef) ->
+	 tpl2};
+  compare18 :: AbsCore.Tdef -> AbsCore.Tdef -> PrelBase.Ordering =
+    \ (a::AbsCore.Tdef) (b::AbsCore.Tdef) ->
+	%case a %of (wild::AbsCore.Tdef)
+	  {AbsCore.ZdwData
+	   (a1::AbsCore.QualIdent)
+	   (a2::AbsCore.Tbinds)
+	   (a3::PrelBase.ZMZN AbsCore.Cdef) ->
+	     %case b %of (wild1::AbsCore.Tdef)
+	       {AbsCore.ZdwData
+		(b1::AbsCore.QualIdent)
+		(b2::AbsCore.Tbinds)
+		(b3::PrelBase.ZMZN AbsCore.Cdef) ->
+		  %case a1 %of (wild2::AbsCore.QualIdent)
+		    {AbsCore.ZdwQual
+		     (a11::PrelBase.ZMZN PrelBase.Char)
+		     (a21::PrelBase.ZMZN PrelBase.Char) ->
+		       %case b1 %of (wild3::AbsCore.QualIdent)
+			 {AbsCore.ZdwQual
+			  (b11::PrelBase.ZMZN PrelBase.Char)
+			  (b21::PrelBase.ZMZN PrelBase.Char) ->
+			    %case (compare a11 b11) %of (wild4::PrelBase.Ordering)
+			      {PrelBase.ZdwEQ ->
+				 %case (compare a21 b21) %of (wild5::PrelBase.Ordering)
+				   {PrelBase.ZdwEQ ->
+				      %case (compare6 a2 b2) %of (wild6::PrelBase.Ordering)
+					{PrelBase.ZdwEQ ->
+					   compare17 a3 b3;
+					 PrelBase.ZdwGT ->
+					   PrelBase.ZdwGT;
+					 PrelBase.ZdwLT ->
+					   PrelBase.ZdwLT};
+				    PrelBase.ZdwGT ->
+				      PrelBase.ZdwGT;
+				    PrelBase.ZdwLT ->
+				      PrelBase.ZdwLT};
+			       PrelBase.ZdwGT ->
+				 PrelBase.ZdwGT;
+			       PrelBase.ZdwLT ->
+				 PrelBase.ZdwLT}}}}};
+  zeze16 :: PrelBase.ZMZN AbsCore.Cdef ->
+	    PrelBase.ZMZN AbsCore.Cdef -> PrelBase.Bool =
+    %case (PrelBase.zdfEqZMZN @ AbsCore.Cdef AbsCore.zdfEqCdef)
+    %of (tpl::PrelBase.ZCTEq (PrelBase.ZMZN AbsCore.Cdef))
+      {PrelBase.ZdwZCDEq
+       (tpl1::PrelBase.ZMZN AbsCore.Cdef ->
+	      PrelBase.ZMZN AbsCore.Cdef -> PrelBase.Bool)
+       (tpl2::PrelBase.ZMZN AbsCore.Cdef ->
+	      PrelBase.ZMZN AbsCore.Cdef -> PrelBase.Bool) ->
+	 tpl2};
+  %rec
+  {AbsCore.zdfEqAlt :: PrelBase.ZCTEq AbsCore.Alt =
+     %note "InlineMe"
+     PrelBase.ZdwZCDEq @ AbsCore.Alt zsze12 zeze22;
+   zeze17 :: PrelBase.ZMZN AbsCore.Alt ->
+	     PrelBase.ZMZN AbsCore.Alt -> PrelBase.Bool =
+     %case (PrelBase.zdfEqZMZN @ AbsCore.Alt AbsCore.zdfEqAlt)
+     %of (tpl::PrelBase.ZCTEq (PrelBase.ZMZN AbsCore.Alt))
+       {PrelBase.ZdwZCDEq
+	(tpl1::PrelBase.ZMZN AbsCore.Alt ->
+	       PrelBase.ZMZN AbsCore.Alt -> PrelBase.Bool)
+	(tpl2::PrelBase.ZMZN AbsCore.Alt ->
+	       PrelBase.ZMZN AbsCore.Alt -> PrelBase.Bool) ->
+	  tpl2};
+   zeze18 :: AbsCore.Vdef -> AbsCore.Vdef -> PrelBase.Bool =
+     \ (ds::AbsCore.Vdef) (ds1::AbsCore.Vdef) ->
+	 %case ds %of (wild::AbsCore.Vdef)
+	   {AbsCore.ZdwVdef
+	    (a1::PrelBase.ZMZN PrelBase.Char)
+	    (a2::AbsCore.Ty)
+	    (a3::AbsCore.Exp) ->
+	      %case ds1 %of (wild1::AbsCore.Vdef)
+		{AbsCore.ZdwVdef
+		 (b1::PrelBase.ZMZN PrelBase.Char)
+		 (b2::AbsCore.Ty)
+		 (b3::AbsCore.Exp) ->
+		   PrelBase.zaza (PrelBase.zaza (zeze a1 b1) (zeze7 a2 b2))
+		   (zeze21 a3 b3)}};
+   zsze11 :: AbsCore.Vdef -> AbsCore.Vdef -> PrelBase.Bool =
+     \ (a::AbsCore.Vdef) (b::AbsCore.Vdef) -> PrelBase.not (zeze18 a b);
+   AbsCore.zdfEqVdef :: PrelBase.ZCTEq AbsCore.Vdef =
+     %note "InlineMe"
+     PrelBase.ZdwZCDEq @ AbsCore.Vdef zsze11 zeze18;
+   zeze19 :: PrelBase.ZMZN AbsCore.Vdef ->
+	     PrelBase.ZMZN AbsCore.Vdef -> PrelBase.Bool =
+     %case (PrelBase.zdfEqZMZN @ AbsCore.Vdef AbsCore.zdfEqVdef)
+     %of (tpl::PrelBase.ZCTEq (PrelBase.ZMZN AbsCore.Vdef))
+       {PrelBase.ZdwZCDEq
+	(tpl1::PrelBase.ZMZN AbsCore.Vdef ->
+	       PrelBase.ZMZN AbsCore.Vdef -> PrelBase.Bool)
+	(tpl2::PrelBase.ZMZN AbsCore.Vdef ->
+	       PrelBase.ZMZN AbsCore.Vdef -> PrelBase.Bool) ->
+	  tpl2};
+   zeze20 :: AbsCore.Vdefg -> AbsCore.Vdefg -> PrelBase.Bool =
+     \ (ds::AbsCore.Vdefg) (ds1::AbsCore.Vdefg) ->
+	 %case ds %of (wild::AbsCore.Vdefg)
+	   {AbsCore.ZdwNonrec (a1::AbsCore.Vdef) ->
+	      %case ds1 %of (wild1::AbsCore.Vdefg)
+		{AbsCore.ZdwRec (a::PrelBase.ZMZN AbsCore.Vdef) ->
+		   PrelBase.ZdwFalse;
+		 AbsCore.ZdwNonrec (b1::AbsCore.Vdef) ->
+		   zeze18 a1 b1};
+	    AbsCore.ZdwRec (a1::PrelBase.ZMZN AbsCore.Vdef) ->
+	      %case ds1 %of (wild1::AbsCore.Vdefg)
+		{AbsCore.ZdwNonrec (a::AbsCore.Vdef) ->
+		   PrelBase.ZdwFalse;
+		 AbsCore.ZdwRec (b1::PrelBase.ZMZN AbsCore.Vdef) ->
+		   zeze19 a1 b1}};
+   zeze21 :: AbsCore.Exp -> AbsCore.Exp -> PrelBase.Bool =
+     \ (ds::AbsCore.Exp) (ds1::AbsCore.Exp) ->
+	 %case ds %of (wild::AbsCore.Exp)
+	   {AbsCore.ZdwExternal
+	    (a1::PrelBase.ZMZN PrelBase.Char) (a2::AbsCore.Ty) ->
+	      %case ds1 %of (wild1::AbsCore.Exp)
+		{%_ ->
+		   PrelBase.ZdwFalse;
+		 AbsCore.ZdwExternal
+		 (b1::PrelBase.ZMZN PrelBase.Char) (b2::AbsCore.Ty) ->
+		   PrelBase.zaza (zeze a1 b1) (zeze7 a2 b2)};
+	    AbsCore.ZdwNote
+	    (a1::PrelBase.ZMZN PrelBase.Char) (a2::AbsCore.Exp) ->
+	      %case ds1 %of (wild1::AbsCore.Exp)
+		{%_ ->
+		   PrelBase.ZdwFalse;
+		 AbsCore.ZdwNote
+		 (b1::PrelBase.ZMZN PrelBase.Char) (b2::AbsCore.Exp) ->
+		   PrelBase.zaza (zeze a1 b1) (zeze21 a2 b2)};
+	    AbsCore.ZdwCoerce (a1::AbsCore.Ty) (a2::AbsCore.Exp) ->
+	      %case ds1 %of (wild1::AbsCore.Exp)
+		{%_ ->
+		   PrelBase.ZdwFalse;
+		 AbsCore.ZdwCoerce (b1::AbsCore.Ty) (b2::AbsCore.Exp) ->
+		   PrelBase.zaza (zeze7 a1 b1) (zeze21 a2 b2)};
+	    AbsCore.ZdwCase
+	    (a1::AbsCore.Exp)
+	    (a2::AbsCore.Vbind)
+	    (a3::PrelBase.ZMZN AbsCore.Alt) ->
+	      %case ds1 %of (wild1::AbsCore.Exp)
+		{%_ ->
+		   PrelBase.ZdwFalse;
+		 AbsCore.ZdwCase
+		 (b1::AbsCore.Exp)
+		 (b2::AbsCore.Vbind)
+		 (b3::PrelBase.ZMZN AbsCore.Alt) ->
+		   PrelBase.zaza (PrelBase.zaza (zeze21 a1 b1) (zeze9 a2 b2))
+		   (zeze17 a3 b3)};
+	    AbsCore.ZdwLet (a1::AbsCore.Vdefg) (a2::AbsCore.Exp) ->
+	      %case ds1 %of (wild1::AbsCore.Exp)
+		{%_ ->
+		   PrelBase.ZdwFalse;
+		 AbsCore.ZdwLet (b1::AbsCore.Vdefg) (b2::AbsCore.Exp) ->
+		   PrelBase.zaza (zeze20 a1 b1) (zeze21 a2 b2)};
+	    AbsCore.ZdwLams
+	    (a1::PrelBase.ZMZN AbsCore.Bind) (a2::AbsCore.Exp) ->
+	      %case ds1 %of (wild1::AbsCore.Exp)
+		{%_ ->
+		   PrelBase.ZdwFalse;
+		 AbsCore.ZdwLams
+		 (b1::PrelBase.ZMZN AbsCore.Bind) (b2::AbsCore.Exp) ->
+		   PrelBase.zaza (zeze12 a1 b1) (zeze21 a2 b2)};
+	    AbsCore.ZdwAppt (a1::AbsCore.Exp) (a2::AbsCore.Ty) ->
+	      %case ds1 %of (wild1::AbsCore.Exp)
+		{%_ ->
+		   PrelBase.ZdwFalse;
+		 AbsCore.ZdwAppt (b1::AbsCore.Exp) (b2::AbsCore.Ty) ->
+		   PrelBase.zaza (zeze21 a1 b1) (zeze7 a2 b2)};
+	    AbsCore.ZdwApp (a1::AbsCore.Exp) (a2::AbsCore.Exp) ->
+	      %case ds1 %of (wild1::AbsCore.Exp)
+		{%_ ->
+		   PrelBase.ZdwFalse;
+		 AbsCore.ZdwApp (b1::AbsCore.Exp) (b2::AbsCore.Exp) ->
+		   PrelBase.zaza (zeze21 a1 b1) (zeze21 a2 b2)};
+	    AbsCore.ZdwLit (a1::AbsCore.Lit) ->
+	      %case ds1 %of (wild1::AbsCore.Exp)
+		{%_ ->
+		   PrelBase.ZdwFalse;
+		 AbsCore.ZdwLit (b1::AbsCore.Lit) ->
+		   zeze8 a1 b1};
+	    AbsCore.ZdwDcon (a1::AbsCore.QualIdent) ->
+	      %case ds1 %of (wild1::AbsCore.Exp)
+		{%_ ->
+		   PrelBase.ZdwFalse;
+		 AbsCore.ZdwDcon (b1::AbsCore.QualIdent) ->
+		   zeze3 a1 b1};
+	    AbsCore.ZdwVar (a1::PrelBase.ZMZN PrelBase.Char) ->
+	      %case ds1 %of (wild1::AbsCore.Exp)
+		{%_ ->
+		   PrelBase.ZdwFalse;
+		 AbsCore.ZdwVar (b1::PrelBase.ZMZN PrelBase.Char) ->
+		   zeze a1 b1}};
+   zeze22 :: AbsCore.Alt -> AbsCore.Alt -> PrelBase.Bool =
+     \ (ds::AbsCore.Alt) (ds1::AbsCore.Alt) ->
+	 %case ds %of (wild::AbsCore.Alt)
+	   {AbsCore.ZdwAdefault (a1::AbsCore.Exp) ->
+	      %case ds1 %of (wild1::AbsCore.Alt)
+		{%_ ->
+		   PrelBase.ZdwFalse;
+		 AbsCore.ZdwAdefault (b1::AbsCore.Exp) ->
+		   zeze21 a1 b1};
+	    AbsCore.ZdwAlit (a1::AbsCore.Lit) (a2::AbsCore.Exp) ->
+	      %case ds1 %of (wild1::AbsCore.Alt)
+		{%_ ->
+		   PrelBase.ZdwFalse;
+		 AbsCore.ZdwAlit (b1::AbsCore.Lit) (b2::AbsCore.Exp) ->
+		   PrelBase.zaza (zeze8 a1 b1) (zeze21 a2 b2)};
+	    AbsCore.ZdwAcon
+	    (a1::AbsCore.QualIdent)
+	    (a2::AbsCore.Tbinds)
+	    (a3::PrelBase.ZMZN AbsCore.Vbind)
+	    (a4::AbsCore.Exp) ->
+	      %case ds1 %of (wild1::AbsCore.Alt)
+		{%_ ->
+		   PrelBase.ZdwFalse;
+		 AbsCore.ZdwAcon
+		 (b1::AbsCore.QualIdent)
+		 (b2::AbsCore.Tbinds)
+		 (b3::PrelBase.ZMZN AbsCore.Vbind)
+		 (b4::AbsCore.Exp) ->
+		   PrelBase.zaza
+		   (PrelBase.zaza (PrelBase.zaza (zeze3 a1 b1) (zeze6 a2 b2))
+		    (zeze10 a3 b3))
+		   (zeze21 a4 b4)}};
+   zsze12 :: AbsCore.Alt -> AbsCore.Alt -> PrelBase.Bool =
+     \ (a::AbsCore.Alt) (b::AbsCore.Alt) -> PrelBase.not (zeze22 a b)};
+  zsze13 :: AbsCore.Vdefg -> AbsCore.Vdefg -> PrelBase.Bool =
+    \ (a::AbsCore.Vdefg) (b::AbsCore.Vdefg) ->
+	PrelBase.not (zeze20 a b);
+  AbsCore.zdfEqVdefg :: PrelBase.ZCTEq AbsCore.Vdefg =
+    %note "InlineMe"
+    PrelBase.ZdwZCDEq @ AbsCore.Vdefg zsze13 zeze20;
+  zsze14 :: AbsCore.Exp -> AbsCore.Exp -> PrelBase.Bool =
+    \ (a::AbsCore.Exp) (b::AbsCore.Exp) -> PrelBase.not (zeze21 a b);
+  AbsCore.zdfEqExp :: PrelBase.ZCTEq AbsCore.Exp =
+    %note "InlineMe"
+    PrelBase.ZdwZCDEq @ AbsCore.Exp zsze14 zeze21;
+  %rec
+  {AbsCore.zdfOrdAlt :: PrelBase.ZCTOrd AbsCore.Alt =
+     %note "InlineMe"
+     PrelBase.ZdwZCDOrd @ AbsCore.Alt AbsCore.zdfEqAlt compare24
+     zddmzlze11 zddmzg11 zddmzgze11 zddmzl11 zddmmin11 zddmmax11;
+   zddmmax11 :: AbsCore.Alt -> AbsCore.Alt -> AbsCore.Alt =
+     PrelBase.zddmmax @ AbsCore.Alt AbsCore.zdfOrdAlt;
+   zddmmin11 :: AbsCore.Alt -> AbsCore.Alt -> AbsCore.Alt =
+     PrelBase.zddmmin @ AbsCore.Alt AbsCore.zdfOrdAlt;
+   zddmzl11 :: AbsCore.Alt -> AbsCore.Alt -> PrelBase.Bool =
+     PrelBase.zddmzl @ AbsCore.Alt AbsCore.zdfOrdAlt;
+   zddmzgze11 :: AbsCore.Alt -> AbsCore.Alt -> PrelBase.Bool =
+     PrelBase.zddmzgze @ AbsCore.Alt AbsCore.zdfOrdAlt;
+   zddmzg11 :: AbsCore.Alt -> AbsCore.Alt -> PrelBase.Bool =
+     PrelBase.zddmzg @ AbsCore.Alt AbsCore.zdfOrdAlt;
+   zddmzlze11 :: AbsCore.Alt -> AbsCore.Alt -> PrelBase.Bool =
+     PrelBase.zddmzlze @ AbsCore.Alt AbsCore.zdfOrdAlt;
+   compare19 :: PrelBase.ZMZN AbsCore.Alt ->
+		PrelBase.ZMZN AbsCore.Alt -> PrelBase.Ordering =
+     %case (PrelBase.zdfOrdZMZN @ AbsCore.Alt AbsCore.zdfOrdAlt)
+     %of (tpl::PrelBase.ZCTOrd (PrelBase.ZMZN AbsCore.Alt))
+       {PrelBase.ZdwZCDOrd
+	(tpl1::PrelBase.ZCTEq (PrelBase.ZMZN AbsCore.Alt))
+	(tpl2::PrelBase.ZMZN AbsCore.Alt ->
+	       PrelBase.ZMZN AbsCore.Alt -> PrelBase.Ordering)
+	(tpl3::PrelBase.ZMZN AbsCore.Alt ->
+	       PrelBase.ZMZN AbsCore.Alt -> PrelBase.Bool)
+	(tpl4::PrelBase.ZMZN AbsCore.Alt ->
+	       PrelBase.ZMZN AbsCore.Alt -> PrelBase.Bool)
+	(tpl5::PrelBase.ZMZN AbsCore.Alt ->
+	       PrelBase.ZMZN AbsCore.Alt -> PrelBase.Bool)
+	(tpl6::PrelBase.ZMZN AbsCore.Alt ->
+	       PrelBase.ZMZN AbsCore.Alt -> PrelBase.Bool)
+	(tpl7::PrelBase.ZMZN AbsCore.Alt ->
+	       PrelBase.ZMZN AbsCore.Alt -> PrelBase.ZMZN AbsCore.Alt)
+	(tpl8::PrelBase.ZMZN AbsCore.Alt ->
+	       PrelBase.ZMZN AbsCore.Alt -> PrelBase.ZMZN AbsCore.Alt) ->
+	  tpl2};
+   compare20 :: AbsCore.Vdef -> AbsCore.Vdef -> PrelBase.Ordering =
+     \ (a::AbsCore.Vdef) (b::AbsCore.Vdef) ->
+	 %case a %of (wild::AbsCore.Vdef)
+	   {AbsCore.ZdwVdef
+	    (a1::PrelBase.ZMZN PrelBase.Char)
+	    (a2::AbsCore.Ty)
+	    (a3::AbsCore.Exp) ->
+	      %case b %of (wild1::AbsCore.Vdef)
+		{AbsCore.ZdwVdef
+		 (b1::PrelBase.ZMZN PrelBase.Char)
+		 (b2::AbsCore.Ty)
+		 (b3::AbsCore.Exp) ->
+		   %case (compare a1 b1) %of (wild2::PrelBase.Ordering)
+		     {PrelBase.ZdwEQ ->
+			%case (compare7 a2 b2) %of (wild3::PrelBase.Ordering)
+			  {PrelBase.ZdwEQ ->
+			     compare23 a3 b3;
+			   PrelBase.ZdwGT ->
+			     PrelBase.ZdwGT;
+			   PrelBase.ZdwLT ->
+			     PrelBase.ZdwLT};
+		      PrelBase.ZdwGT ->
+			PrelBase.ZdwGT;
+		      PrelBase.ZdwLT ->
+			PrelBase.ZdwLT}}};
+   AbsCore.zdfOrdVdef :: PrelBase.ZCTOrd AbsCore.Vdef =
+     %note "InlineMe"
+     PrelBase.ZdwZCDOrd @ AbsCore.Vdef AbsCore.zdfEqVdef compare20
+     zddmzlze12 zddmzg12 zddmzgze12 zddmzl12 zddmmin12 zddmmax12;
+   zddmmax12 :: AbsCore.Vdef -> AbsCore.Vdef -> AbsCore.Vdef =
+     PrelBase.zddmmax @ AbsCore.Vdef AbsCore.zdfOrdVdef;
+   zddmmin12 :: AbsCore.Vdef -> AbsCore.Vdef -> AbsCore.Vdef =
+     PrelBase.zddmmin @ AbsCore.Vdef AbsCore.zdfOrdVdef;
+   zddmzl12 :: AbsCore.Vdef -> AbsCore.Vdef -> PrelBase.Bool =
+     PrelBase.zddmzl @ AbsCore.Vdef AbsCore.zdfOrdVdef;
+   zddmzgze12 :: AbsCore.Vdef -> AbsCore.Vdef -> PrelBase.Bool =
+     PrelBase.zddmzgze @ AbsCore.Vdef AbsCore.zdfOrdVdef;
+   zddmzg12 :: AbsCore.Vdef -> AbsCore.Vdef -> PrelBase.Bool =
+     PrelBase.zddmzg @ AbsCore.Vdef AbsCore.zdfOrdVdef;
+   zddmzlze12 :: AbsCore.Vdef -> AbsCore.Vdef -> PrelBase.Bool =
+     PrelBase.zddmzlze @ AbsCore.Vdef AbsCore.zdfOrdVdef;
+   compare21 :: PrelBase.ZMZN AbsCore.Vdef ->
+		PrelBase.ZMZN AbsCore.Vdef -> PrelBase.Ordering =
+     %case (PrelBase.zdfOrdZMZN @ AbsCore.Vdef AbsCore.zdfOrdVdef)
+     %of (tpl::PrelBase.ZCTOrd (PrelBase.ZMZN AbsCore.Vdef))
+       {PrelBase.ZdwZCDOrd
+	(tpl1::PrelBase.ZCTEq (PrelBase.ZMZN AbsCore.Vdef))
+	(tpl2::PrelBase.ZMZN AbsCore.Vdef ->
+	       PrelBase.ZMZN AbsCore.Vdef -> PrelBase.Ordering)
+	(tpl3::PrelBase.ZMZN AbsCore.Vdef ->
+	       PrelBase.ZMZN AbsCore.Vdef -> PrelBase.Bool)
+	(tpl4::PrelBase.ZMZN AbsCore.Vdef ->
+	       PrelBase.ZMZN AbsCore.Vdef -> PrelBase.Bool)
+	(tpl5::PrelBase.ZMZN AbsCore.Vdef ->
+	       PrelBase.ZMZN AbsCore.Vdef -> PrelBase.Bool)
+	(tpl6::PrelBase.ZMZN AbsCore.Vdef ->
+	       PrelBase.ZMZN AbsCore.Vdef -> PrelBase.Bool)
+	(tpl7::PrelBase.ZMZN AbsCore.Vdef ->
+	       PrelBase.ZMZN AbsCore.Vdef -> PrelBase.ZMZN AbsCore.Vdef)
+	(tpl8::PrelBase.ZMZN AbsCore.Vdef ->
+	       PrelBase.ZMZN AbsCore.Vdef -> PrelBase.ZMZN AbsCore.Vdef) ->
+	  tpl2};
+   compare22 :: AbsCore.Vdefg -> AbsCore.Vdefg -> PrelBase.Ordering =
+     \ (a::AbsCore.Vdefg) (b::AbsCore.Vdefg) ->
+	 %let zdj :: PrelGHC.Intzh -> PrelBase.Ordering =
+		\ (azh::PrelGHC.Intzh) ->
+		    %let zdj1 :: PrelGHC.Intzh -> PrelBase.Ordering =
+			   \ (bzh::PrelGHC.Intzh) ->
+			       %case (PrelGHC.zezezh azh bzh) %of (wild::PrelBase.Bool)
+				 {PrelBase.ZdwTrue ->
+				    %case a %of (wild1::AbsCore.Vdefg)
+				      {AbsCore.ZdwNonrec (a1::AbsCore.Vdef) ->
+					 %case b %of (wild2::AbsCore.Vdefg)
+					   {AbsCore.ZdwRec (a11::PrelBase.ZMZN AbsCore.Vdef) ->
+					      PrelErr.error @ PrelBase.Ordering
+					      (PrelBase.unpackCStringzh
+					       ("Urk! in TcGenDeriv"::PrelGHC.Addrzh));
+					    AbsCore.ZdwNonrec (b1::AbsCore.Vdef) ->
+					      compare20 a1 b1};
+				       AbsCore.ZdwRec (a1::PrelBase.ZMZN AbsCore.Vdef) ->
+					 %case b %of (wild2::AbsCore.Vdefg)
+					   {AbsCore.ZdwNonrec (a11::AbsCore.Vdef) ->
+					      PrelErr.error @ PrelBase.Ordering
+					      (PrelBase.unpackCStringzh
+					       ("Urk! in TcGenDeriv"::PrelGHC.Addrzh));
+					    AbsCore.ZdwRec (b1::PrelBase.ZMZN AbsCore.Vdef) ->
+					      compare21 a1 b1}};
+				  PrelBase.ZdwFalse ->
+				    %case (PrelGHC.zlzh azh bzh) %of (wild1::PrelBase.Bool)
+				      {PrelBase.ZdwTrue ->
+					 PrelBase.ZdwLT;
+				       PrelBase.ZdwFalse ->
+					 PrelBase.ZdwGT}}
+		    %in %case b %of (wild::AbsCore.Vdefg)
+			  {AbsCore.ZdwNonrec (ds::AbsCore.Vdef) ->
+			     zdj1 (1::PrelGHC.Intzh);
+			   AbsCore.ZdwRec (ds::PrelBase.ZMZN AbsCore.Vdef) ->
+			     zdj1 (0::PrelGHC.Intzh)}
+	 %in %case a %of (wild::AbsCore.Vdefg)
+	       {AbsCore.ZdwNonrec (ds::AbsCore.Vdef) ->
+		  zdj (1::PrelGHC.Intzh);
+		AbsCore.ZdwRec (ds::PrelBase.ZMZN AbsCore.Vdef) ->
+		  zdj (0::PrelGHC.Intzh)};
+   compare23 :: AbsCore.Exp -> AbsCore.Exp -> PrelBase.Ordering =
+     \ (a::AbsCore.Exp) (b::AbsCore.Exp) ->
+	 %case a %of (tpl::AbsCore.Exp)
+	   {%_ ->
+	      %case (PrelGHC.dataToTagzh @ AbsCore.Exp tpl)
+	      %of (azh::PrelGHC.Intzh)
+		{%_ ->
+		   %case b %of (tpl1::AbsCore.Exp)
+		     {%_ ->
+			%case (PrelGHC.dataToTagzh @ AbsCore.Exp tpl1)
+			%of (bzh::PrelGHC.Intzh)
+			  {%_ ->
+			     %case (PrelGHC.zezezh azh bzh) %of (wild::PrelBase.Bool)
+			       {PrelBase.ZdwTrue ->
+				  %case tpl %of (wild1::AbsCore.Exp)
+				    {AbsCore.ZdwExternal
+				     (a1::PrelBase.ZMZN PrelBase.Char) (a2::AbsCore.Ty) ->
+				       %case tpl1 %of (wild2::AbsCore.Exp)
+					 {%_ ->
+					    PrelErr.error @ PrelBase.Ordering
+					    (PrelBase.unpackCStringzh
+					     ("Urk! in TcGenDeriv"::PrelGHC.Addrzh));
+					  AbsCore.ZdwExternal
+					  (b1::PrelBase.ZMZN PrelBase.Char) (b2::AbsCore.Ty) ->
+					    %case (compare a1 b1) %of (wild3::PrelBase.Ordering)
+					      {PrelBase.ZdwEQ ->
+						 compare7 a2 b2;
+					       PrelBase.ZdwGT ->
+						 PrelBase.ZdwGT;
+					       PrelBase.ZdwLT ->
+						 PrelBase.ZdwLT}};
+				     AbsCore.ZdwNote
+				     (a1::PrelBase.ZMZN PrelBase.Char) (a2::AbsCore.Exp) ->
+				       %case tpl1 %of (wild2::AbsCore.Exp)
+					 {%_ ->
+					    PrelErr.error @ PrelBase.Ordering
+					    (PrelBase.unpackCStringzh
+					     ("Urk! in TcGenDeriv"::PrelGHC.Addrzh));
+					  AbsCore.ZdwNote
+					  (b1::PrelBase.ZMZN PrelBase.Char) (b2::AbsCore.Exp) ->
+					    %case (compare a1 b1) %of (wild3::PrelBase.Ordering)
+					      {PrelBase.ZdwEQ ->
+						 compare23 a2 b2;
+					       PrelBase.ZdwGT ->
+						 PrelBase.ZdwGT;
+					       PrelBase.ZdwLT ->
+						 PrelBase.ZdwLT}};
+				     AbsCore.ZdwCoerce (a1::AbsCore.Ty) (a2::AbsCore.Exp) ->
+				       %case tpl1 %of (wild2::AbsCore.Exp)
+					 {%_ ->
+					    PrelErr.error @ PrelBase.Ordering
+					    (PrelBase.unpackCStringzh
+					     ("Urk! in TcGenDeriv"::PrelGHC.Addrzh));
+					  AbsCore.ZdwCoerce (b1::AbsCore.Ty) (b2::AbsCore.Exp) ->
+					    %case (compare7 a1 b1) %of (wild3::PrelBase.Ordering)
+					      {PrelBase.ZdwEQ ->
+						 compare23 a2 b2;
+					       PrelBase.ZdwGT ->
+						 PrelBase.ZdwGT;
+					       PrelBase.ZdwLT ->
+						 PrelBase.ZdwLT}};
+				     AbsCore.ZdwCase
+				     (a1::AbsCore.Exp)
+				     (a2::AbsCore.Vbind)
+				     (a3::PrelBase.ZMZN AbsCore.Alt) ->
+				       %case tpl1 %of (wild2::AbsCore.Exp)
+					 {%_ ->
+					    PrelErr.error @ PrelBase.Ordering
+					    (PrelBase.unpackCStringzh
+					     ("Urk! in TcGenDeriv"::PrelGHC.Addrzh));
+					  AbsCore.ZdwCase
+					  (b1::AbsCore.Exp)
+					  (b2::AbsCore.Vbind)
+					  (b3::PrelBase.ZMZN AbsCore.Alt) ->
+					    %case (compare23 a1 b1) %of (wild3::PrelBase.Ordering)
+					      {PrelBase.ZdwEQ ->
+						 %case a2 %of (wild4::AbsCore.Vbind)
+						   {AbsCore.ZdwVbind
+						    (a11::PrelBase.ZMZN PrelBase.Char)
+						    (a21::AbsCore.Ty) ->
+						      %case b2 %of (wild5::AbsCore.Vbind)
+							{AbsCore.ZdwVbind
+							 (b11::PrelBase.ZMZN PrelBase.Char)
+							 (b21::AbsCore.Ty) ->
+							   %case (compare a11 b11)
+							   %of (wild6::PrelBase.Ordering)
+							     {PrelBase.ZdwEQ ->
+								%case (compare7 a21 b21)
+								%of (wild7::PrelBase.Ordering)
+								  {PrelBase.ZdwEQ ->
+								     compare19 a3 b3;
+								   PrelBase.ZdwGT ->
+								     PrelBase.ZdwGT;
+								   PrelBase.ZdwLT ->
+								     PrelBase.ZdwLT};
+							      PrelBase.ZdwGT ->
+								PrelBase.ZdwGT;
+							      PrelBase.ZdwLT ->
+								PrelBase.ZdwLT}}};
+					       PrelBase.ZdwGT ->
+						 PrelBase.ZdwGT;
+					       PrelBase.ZdwLT ->
+						 PrelBase.ZdwLT}};
+				     AbsCore.ZdwLet (a1::AbsCore.Vdefg) (a2::AbsCore.Exp) ->
+				       %case tpl1 %of (wild2::AbsCore.Exp)
+					 {%_ ->
+					    PrelErr.error @ PrelBase.Ordering
+					    (PrelBase.unpackCStringzh
+					     ("Urk! in TcGenDeriv"::PrelGHC.Addrzh));
+					  AbsCore.ZdwLet (b1::AbsCore.Vdefg) (b2::AbsCore.Exp) ->
+					    %case (compare22 a1 b1) %of (wild3::PrelBase.Ordering)
+					      {PrelBase.ZdwEQ ->
+						 compare23 a2 b2;
+					       PrelBase.ZdwGT ->
+						 PrelBase.ZdwGT;
+					       PrelBase.ZdwLT ->
+						 PrelBase.ZdwLT}};
+				     AbsCore.ZdwLams
+				     (a1::PrelBase.ZMZN AbsCore.Bind) (a2::AbsCore.Exp) ->
+				       %case tpl1 %of (wild2::AbsCore.Exp)
+					 {%_ ->
+					    PrelErr.error @ PrelBase.Ordering
+					    (PrelBase.unpackCStringzh
+					     ("Urk! in TcGenDeriv"::PrelGHC.Addrzh));
+					  AbsCore.ZdwLams
+					  (b1::PrelBase.ZMZN AbsCore.Bind) (b2::AbsCore.Exp) ->
+					    %case (compare15 a1 b1) %of (wild3::PrelBase.Ordering)
+					      {PrelBase.ZdwEQ ->
+						 compare23 a2 b2;
+					       PrelBase.ZdwGT ->
+						 PrelBase.ZdwGT;
+					       PrelBase.ZdwLT ->
+						 PrelBase.ZdwLT}};
+				     AbsCore.ZdwAppt (a1::AbsCore.Exp) (a2::AbsCore.Ty) ->
+				       %case tpl1 %of (wild2::AbsCore.Exp)
+					 {%_ ->
+					    PrelErr.error @ PrelBase.Ordering
+					    (PrelBase.unpackCStringzh
+					     ("Urk! in TcGenDeriv"::PrelGHC.Addrzh));
+					  AbsCore.ZdwAppt (b1::AbsCore.Exp) (b2::AbsCore.Ty) ->
+					    %case (compare23 a1 b1) %of (wild3::PrelBase.Ordering)
+					      {PrelBase.ZdwEQ ->
+						 compare7 a2 b2;
+					       PrelBase.ZdwGT ->
+						 PrelBase.ZdwGT;
+					       PrelBase.ZdwLT ->
+						 PrelBase.ZdwLT}};
+				     AbsCore.ZdwApp (a1::AbsCore.Exp) (a2::AbsCore.Exp) ->
+				       %case tpl1 %of (wild2::AbsCore.Exp)
+					 {%_ ->
+					    PrelErr.error @ PrelBase.Ordering
+					    (PrelBase.unpackCStringzh
+					     ("Urk! in TcGenDeriv"::PrelGHC.Addrzh));
+					  AbsCore.ZdwApp (b1::AbsCore.Exp) (b2::AbsCore.Exp) ->
+					    %case (compare23 a1 b1) %of (wild3::PrelBase.Ordering)
+					      {PrelBase.ZdwEQ ->
+						 compare23 a2 b2;
+					       PrelBase.ZdwGT ->
+						 PrelBase.ZdwGT;
+					       PrelBase.ZdwLT ->
+						 PrelBase.ZdwLT}};
+				     AbsCore.ZdwLit (a1::AbsCore.Lit) ->
+				       %case tpl1 %of (wild2::AbsCore.Exp)
+					 {%_ ->
+					    PrelErr.error @ PrelBase.Ordering
+					    (PrelBase.unpackCStringzh
+					     ("Urk! in TcGenDeriv"::PrelGHC.Addrzh));
+					  AbsCore.ZdwLit (b1::AbsCore.Lit) ->
+					    compare8 a1 b1};
+				     AbsCore.ZdwDcon (a1::AbsCore.QualIdent) ->
+				       %case tpl1 %of (wild2::AbsCore.Exp)
+					 {%_ ->
+					    PrelErr.error @ PrelBase.Ordering
+					    (PrelBase.unpackCStringzh
+					     ("Urk! in TcGenDeriv"::PrelGHC.Addrzh));
+					  AbsCore.ZdwDcon (b1::AbsCore.QualIdent) ->
+					    %case a1 %of (wild3::AbsCore.QualIdent)
+					      {AbsCore.ZdwQual
+					       (a11::PrelBase.ZMZN PrelBase.Char)
+					       (a2::PrelBase.ZMZN PrelBase.Char) ->
+						 %case b1 %of (wild4::AbsCore.QualIdent)
+						   {AbsCore.ZdwQual
+						    (b11::PrelBase.ZMZN PrelBase.Char)
+						    (b2::PrelBase.ZMZN PrelBase.Char) ->
+						      %case (compare a11 b11)
+						      %of (wild5::PrelBase.Ordering)
+							{PrelBase.ZdwEQ ->
+							   compare a2 b2;
+							 PrelBase.ZdwGT ->
+							   PrelBase.ZdwGT;
+							 PrelBase.ZdwLT ->
+							   PrelBase.ZdwLT}}}};
+				     AbsCore.ZdwVar (a1::PrelBase.ZMZN PrelBase.Char) ->
+				       %case tpl1 %of (wild2::AbsCore.Exp)
+					 {%_ ->
+					    PrelErr.error @ PrelBase.Ordering
+					    (PrelBase.unpackCStringzh
+					     ("Urk! in TcGenDeriv"::PrelGHC.Addrzh));
+					  AbsCore.ZdwVar (b1::PrelBase.ZMZN PrelBase.Char) ->
+					    compare a1 b1}};
+				PrelBase.ZdwFalse ->
+				  %case (PrelGHC.zlzh azh bzh) %of (wild1::PrelBase.Bool)
+				    {PrelBase.ZdwTrue ->
+				       PrelBase.ZdwLT;
+				     PrelBase.ZdwFalse ->
+				       PrelBase.ZdwGT}}}}}};
+   compare24 :: AbsCore.Alt -> AbsCore.Alt -> PrelBase.Ordering =
+     \ (a::AbsCore.Alt) (b::AbsCore.Alt) ->
+	 %let zdj :: PrelGHC.Intzh -> PrelBase.Ordering =
+		\ (azh::PrelGHC.Intzh) ->
+		    %let zdj1 :: PrelGHC.Intzh -> PrelBase.Ordering =
+			   \ (bzh::PrelGHC.Intzh) ->
+			       %case (PrelGHC.zezezh azh bzh) %of (wild::PrelBase.Bool)
+				 {PrelBase.ZdwTrue ->
+				    %case a %of (wild1::AbsCore.Alt)
+				      {AbsCore.ZdwAdefault (a1::AbsCore.Exp) ->
+					 %case b %of (wild2::AbsCore.Alt)
+					   {%_ ->
+					      PrelErr.error @ PrelBase.Ordering
+					      (PrelBase.unpackCStringzh
+					       ("Urk! in TcGenDeriv"::PrelGHC.Addrzh));
+					    AbsCore.ZdwAdefault (b1::AbsCore.Exp) ->
+					      compare23 a1 b1};
+				       AbsCore.ZdwAlit (a1::AbsCore.Lit) (a2::AbsCore.Exp) ->
+					 %case b %of (wild2::AbsCore.Alt)
+					   {%_ ->
+					      PrelErr.error @ PrelBase.Ordering
+					      (PrelBase.unpackCStringzh
+					       ("Urk! in TcGenDeriv"::PrelGHC.Addrzh));
+					    AbsCore.ZdwAlit (b1::AbsCore.Lit) (b2::AbsCore.Exp) ->
+					      %case (compare8 a1 b1) %of (wild3::PrelBase.Ordering)
+						{PrelBase.ZdwEQ ->
+						   compare23 a2 b2;
+						 PrelBase.ZdwGT ->
+						   PrelBase.ZdwGT;
+						 PrelBase.ZdwLT ->
+						   PrelBase.ZdwLT}};
+				       AbsCore.ZdwAcon
+				       (a1::AbsCore.QualIdent)
+				       (a2::AbsCore.Tbinds)
+				       (a3::PrelBase.ZMZN AbsCore.Vbind)
+				       (a4::AbsCore.Exp) ->
+					 %case b %of (wild2::AbsCore.Alt)
+					   {%_ ->
+					      PrelErr.error @ PrelBase.Ordering
+					      (PrelBase.unpackCStringzh
+					       ("Urk! in TcGenDeriv"::PrelGHC.Addrzh));
+					    AbsCore.ZdwAcon
+					    (b1::AbsCore.QualIdent)
+					    (b2::AbsCore.Tbinds)
+					    (b3::PrelBase.ZMZN AbsCore.Vbind)
+					    (b4::AbsCore.Exp) ->
+					      %case a1 %of (wild3::AbsCore.QualIdent)
+						{AbsCore.ZdwQual
+						 (a11::PrelBase.ZMZN PrelBase.Char)
+						 (a21::PrelBase.ZMZN PrelBase.Char) ->
+						   %case b1 %of (wild4::AbsCore.QualIdent)
+						     {AbsCore.ZdwQual
+						      (b11::PrelBase.ZMZN PrelBase.Char)
+						      (b21::PrelBase.ZMZN PrelBase.Char) ->
+							%case (compare a11 b11)
+							%of (wild5::PrelBase.Ordering)
+							  {PrelBase.ZdwEQ ->
+							     %case (compare a21 b21)
+							     %of (wild6::PrelBase.Ordering)
+							       {PrelBase.ZdwEQ ->
+								  %case (compare6 a2 b2)
+								  %of (wild7::PrelBase.Ordering)
+								    {PrelBase.ZdwEQ ->
+								       %case (compare13 a3 b3)
+								       %of (wild8::PrelBase.Ordering)
+									 {PrelBase.ZdwEQ ->
+									    compare23 a4 b4;
+									  PrelBase.ZdwGT ->
+									    PrelBase.ZdwGT;
+									  PrelBase.ZdwLT ->
+									    PrelBase.ZdwLT};
+								     PrelBase.ZdwGT ->
+								       PrelBase.ZdwGT;
+								     PrelBase.ZdwLT ->
+								       PrelBase.ZdwLT};
+								PrelBase.ZdwGT ->
+								  PrelBase.ZdwGT;
+								PrelBase.ZdwLT ->
+								  PrelBase.ZdwLT};
+							   PrelBase.ZdwGT ->
+							     PrelBase.ZdwGT;
+							   PrelBase.ZdwLT ->
+							     PrelBase.ZdwLT}}}}};
+				  PrelBase.ZdwFalse ->
+				    %case (PrelGHC.zlzh azh bzh) %of (wild1::PrelBase.Bool)
+				      {PrelBase.ZdwTrue ->
+					 PrelBase.ZdwLT;
+				       PrelBase.ZdwFalse ->
+					 PrelBase.ZdwGT}}
+		    %in %case b %of (wild::AbsCore.Alt)
+			  {AbsCore.ZdwAdefault (ds::AbsCore.Exp) ->
+			     zdj1 (2::PrelGHC.Intzh);
+			   AbsCore.ZdwAlit (ds::AbsCore.Lit) (ds1::AbsCore.Exp) ->
+			     zdj1 (1::PrelGHC.Intzh);
+			   AbsCore.ZdwAcon
+			   (ds::AbsCore.QualIdent)
+			   (ds1::AbsCore.Tbinds)
+			   (ds2::PrelBase.ZMZN AbsCore.Vbind)
+			   (ds3::AbsCore.Exp) ->
+			     zdj1 (0::PrelGHC.Intzh)}
+	 %in %case a %of (wild::AbsCore.Alt)
+	       {AbsCore.ZdwAdefault (ds::AbsCore.Exp) ->
+		  zdj (2::PrelGHC.Intzh);
+		AbsCore.ZdwAlit (ds::AbsCore.Lit) (ds1::AbsCore.Exp) ->
+		  zdj (1::PrelGHC.Intzh);
+		AbsCore.ZdwAcon
+		(ds::AbsCore.QualIdent)
+		(ds1::AbsCore.Tbinds)
+		(ds2::PrelBase.ZMZN AbsCore.Vbind)
+		(ds3::AbsCore.Exp) ->
+		  zdj (0::PrelGHC.Intzh)}};
+  %rec
+  {AbsCore.zdfOrdExp :: PrelBase.ZCTOrd AbsCore.Exp =
+     %note "InlineMe"
+     PrelBase.ZdwZCDOrd @ AbsCore.Exp AbsCore.zdfEqExp compare23
+     zddmzlze13 zddmzg13 zddmzgze13 zddmzl13 zddmmin13 zddmmax13;
+   zddmmax13 :: AbsCore.Exp -> AbsCore.Exp -> AbsCore.Exp =
+     PrelBase.zddmmax @ AbsCore.Exp AbsCore.zdfOrdExp;
+   zddmmin13 :: AbsCore.Exp -> AbsCore.Exp -> AbsCore.Exp =
+     PrelBase.zddmmin @ AbsCore.Exp AbsCore.zdfOrdExp;
+   zddmzl13 :: AbsCore.Exp -> AbsCore.Exp -> PrelBase.Bool =
+     PrelBase.zddmzl @ AbsCore.Exp AbsCore.zdfOrdExp;
+   zddmzgze13 :: AbsCore.Exp -> AbsCore.Exp -> PrelBase.Bool =
+     PrelBase.zddmzgze @ AbsCore.Exp AbsCore.zdfOrdExp;
+   zddmzg13 :: AbsCore.Exp -> AbsCore.Exp -> PrelBase.Bool =
+     PrelBase.zddmzg @ AbsCore.Exp AbsCore.zdfOrdExp;
+   zddmzlze13 :: AbsCore.Exp -> AbsCore.Exp -> PrelBase.Bool =
+     PrelBase.zddmzlze @ AbsCore.Exp AbsCore.zdfOrdExp};
+  %rec
+  {AbsCore.zdfOrdVdefg :: PrelBase.ZCTOrd AbsCore.Vdefg =
+     %note "InlineMe"
+     PrelBase.ZdwZCDOrd @ AbsCore.Vdefg AbsCore.zdfEqVdefg compare22
+     zddmzlze14 zddmzg14 zddmzgze14 zddmzl14 zddmmin14 zddmmax14;
+   zddmmax14 :: AbsCore.Vdefg -> AbsCore.Vdefg -> AbsCore.Vdefg =
+     PrelBase.zddmmax @ AbsCore.Vdefg AbsCore.zdfOrdVdefg;
+   zddmmin14 :: AbsCore.Vdefg -> AbsCore.Vdefg -> AbsCore.Vdefg =
+     PrelBase.zddmmin @ AbsCore.Vdefg AbsCore.zdfOrdVdefg;
+   zddmzl14 :: AbsCore.Vdefg -> AbsCore.Vdefg -> PrelBase.Bool =
+     PrelBase.zddmzl @ AbsCore.Vdefg AbsCore.zdfOrdVdefg;
+   zddmzgze14 :: AbsCore.Vdefg -> AbsCore.Vdefg -> PrelBase.Bool =
+     PrelBase.zddmzgze @ AbsCore.Vdefg AbsCore.zdfOrdVdefg;
+   zddmzg14 :: AbsCore.Vdefg -> AbsCore.Vdefg -> PrelBase.Bool =
+     PrelBase.zddmzg @ AbsCore.Vdefg AbsCore.zdfOrdVdefg;
+   zddmzlze14 :: AbsCore.Vdefg -> AbsCore.Vdefg -> PrelBase.Bool =
+     PrelBase.zddmzlze @ AbsCore.Vdefg AbsCore.zdfOrdVdefg};
+  compare25 :: PrelBase.ZMZN AbsCore.Vdefg ->
+	       PrelBase.ZMZN AbsCore.Vdefg -> PrelBase.Ordering =
+    %case (PrelBase.zdfOrdZMZN @ AbsCore.Vdefg AbsCore.zdfOrdVdefg)
+    %of (tpl::PrelBase.ZCTOrd (PrelBase.ZMZN AbsCore.Vdefg))
+      {PrelBase.ZdwZCDOrd
+       (tpl1::PrelBase.ZCTEq (PrelBase.ZMZN AbsCore.Vdefg))
+       (tpl2::PrelBase.ZMZN AbsCore.Vdefg ->
+	      PrelBase.ZMZN AbsCore.Vdefg -> PrelBase.Ordering)
+       (tpl3::PrelBase.ZMZN AbsCore.Vdefg ->
+	      PrelBase.ZMZN AbsCore.Vdefg -> PrelBase.Bool)
+       (tpl4::PrelBase.ZMZN AbsCore.Vdefg ->
+	      PrelBase.ZMZN AbsCore.Vdefg -> PrelBase.Bool)
+       (tpl5::PrelBase.ZMZN AbsCore.Vdefg ->
+	      PrelBase.ZMZN AbsCore.Vdefg -> PrelBase.Bool)
+       (tpl6::PrelBase.ZMZN AbsCore.Vdefg ->
+	      PrelBase.ZMZN AbsCore.Vdefg -> PrelBase.Bool)
+       (tpl7::PrelBase.ZMZN AbsCore.Vdefg ->
+	      PrelBase.ZMZN AbsCore.Vdefg -> PrelBase.ZMZN AbsCore.Vdefg)
+       (tpl8::PrelBase.ZMZN AbsCore.Vdefg ->
+	      PrelBase.ZMZN AbsCore.Vdefg -> PrelBase.ZMZN AbsCore.Vdefg) ->
+	 tpl2};
+  zeze23 :: PrelBase.ZMZN AbsCore.Vdefg ->
+	    PrelBase.ZMZN AbsCore.Vdefg -> PrelBase.Bool =
+    %case (PrelBase.zdfEqZMZN @ AbsCore.Vdefg AbsCore.zdfEqVdefg)
+    %of (tpl::PrelBase.ZCTEq (PrelBase.ZMZN AbsCore.Vdefg))
+      {PrelBase.ZdwZCDEq
+       (tpl1::PrelBase.ZMZN AbsCore.Vdefg ->
+	      PrelBase.ZMZN AbsCore.Vdefg -> PrelBase.Bool)
+       (tpl2::PrelBase.ZMZN AbsCore.Vdefg ->
+	      PrelBase.ZMZN AbsCore.Vdefg -> PrelBase.Bool) ->
+	 tpl2};
+  zeze24 :: AbsCore.TDef -> AbsCore.TDef -> PrelBase.Bool =
+    \ (ds::AbsCore.TDef) (ds1::AbsCore.TDef) ->
+	%case ds %of (wild::AbsCore.TDef)
+	  {AbsCore.ZdwNewtype
+	   (a1::AbsCore.QualIdent)
+	   (a2::AbsCore.Tbinds)
+	   (a3::AbsCore.MaybeTy) ->
+	     %case ds1 %of (wild1::AbsCore.TDef)
+	       {AbsCore.ZdwNewtype
+		(b1::AbsCore.QualIdent)
+		(b2::AbsCore.Tbinds)
+		(b3::AbsCore.MaybeTy) ->
+		  PrelBase.zaza (PrelBase.zaza (zeze3 a1 b1) (zeze6 a2 b2))
+		  (zeze13 a3 b3)}};
+  zsze15 :: AbsCore.TDef -> AbsCore.TDef -> PrelBase.Bool =
+    \ (a::AbsCore.TDef) (b::AbsCore.TDef) -> PrelBase.not (zeze24 a b);
+  AbsCore.zdfEqTDef :: PrelBase.ZCTEq AbsCore.TDef =
+    %note "InlineMe"
+    PrelBase.ZdwZCDEq @ AbsCore.TDef zsze15 zeze24;
+  %rec
+  {AbsCore.zdfOrdTDef :: PrelBase.ZCTOrd AbsCore.TDef =
+     %note "InlineMe"
+     PrelBase.ZdwZCDOrd @ AbsCore.TDef AbsCore.zdfEqTDef compare16
+     zddmzlze15 zddmzg15 zddmzgze15 zddmzl15 zddmmin15 zddmmax15;
+   zddmmax15 :: AbsCore.TDef -> AbsCore.TDef -> AbsCore.TDef =
+     PrelBase.zddmmax @ AbsCore.TDef AbsCore.zdfOrdTDef;
+   zddmmin15 :: AbsCore.TDef -> AbsCore.TDef -> AbsCore.TDef =
+     PrelBase.zddmmin @ AbsCore.TDef AbsCore.zdfOrdTDef;
+   zddmzl15 :: AbsCore.TDef -> AbsCore.TDef -> PrelBase.Bool =
+     PrelBase.zddmzl @ AbsCore.TDef AbsCore.zdfOrdTDef;
+   zddmzgze15 :: AbsCore.TDef -> AbsCore.TDef -> PrelBase.Bool =
+     PrelBase.zddmzgze @ AbsCore.TDef AbsCore.zdfOrdTDef;
+   zddmzg15 :: AbsCore.TDef -> AbsCore.TDef -> PrelBase.Bool =
+     PrelBase.zddmzg @ AbsCore.TDef AbsCore.zdfOrdTDef;
+   zddmzlze15 :: AbsCore.TDef -> AbsCore.TDef -> PrelBase.Bool =
+     PrelBase.zddmzlze @ AbsCore.TDef AbsCore.zdfOrdTDef};
+  zeze25 :: AbsCore.Tdef -> AbsCore.Tdef -> PrelBase.Bool =
+    \ (ds::AbsCore.Tdef) (ds1::AbsCore.Tdef) ->
+	%case ds %of (wild::AbsCore.Tdef)
+	  {AbsCore.ZdwData
+	   (a1::AbsCore.QualIdent)
+	   (a2::AbsCore.Tbinds)
+	   (a3::PrelBase.ZMZN AbsCore.Cdef) ->
+	     %case ds1 %of (wild1::AbsCore.Tdef)
+	       {AbsCore.ZdwData
+		(b1::AbsCore.QualIdent)
+		(b2::AbsCore.Tbinds)
+		(b3::PrelBase.ZMZN AbsCore.Cdef) ->
+		  PrelBase.zaza (PrelBase.zaza (zeze3 a1 b1) (zeze6 a2 b2))
+		  (zeze16 a3 b3)}};
+  zsze16 :: AbsCore.Tdef -> AbsCore.Tdef -> PrelBase.Bool =
+    \ (a::AbsCore.Tdef) (b::AbsCore.Tdef) -> PrelBase.not (zeze25 a b);
+  AbsCore.zdfEqTdef :: PrelBase.ZCTEq AbsCore.Tdef =
+    %note "InlineMe"
+    PrelBase.ZdwZCDEq @ AbsCore.Tdef zsze16 zeze25;
+  %rec
+  {AbsCore.zdfOrdTdef :: PrelBase.ZCTOrd AbsCore.Tdef =
+     %note "InlineMe"
+     PrelBase.ZdwZCDOrd @ AbsCore.Tdef AbsCore.zdfEqTdef compare18
+     zddmzlze16 zddmzg16 zddmzgze16 zddmzl16 zddmmin16 zddmmax16;
+   zddmmax16 :: AbsCore.Tdef -> AbsCore.Tdef -> AbsCore.Tdef =
+     PrelBase.zddmmax @ AbsCore.Tdef AbsCore.zdfOrdTdef;
+   zddmmin16 :: AbsCore.Tdef -> AbsCore.Tdef -> AbsCore.Tdef =
+     PrelBase.zddmmin @ AbsCore.Tdef AbsCore.zdfOrdTdef;
+   zddmzl16 :: AbsCore.Tdef -> AbsCore.Tdef -> PrelBase.Bool =
+     PrelBase.zddmzl @ AbsCore.Tdef AbsCore.zdfOrdTdef;
+   zddmzgze16 :: AbsCore.Tdef -> AbsCore.Tdef -> PrelBase.Bool =
+     PrelBase.zddmzgze @ AbsCore.Tdef AbsCore.zdfOrdTdef;
+   zddmzg16 :: AbsCore.Tdef -> AbsCore.Tdef -> PrelBase.Bool =
+     PrelBase.zddmzg @ AbsCore.Tdef AbsCore.zdfOrdTdef;
+   zddmzlze16 :: AbsCore.Tdef -> AbsCore.Tdef -> PrelBase.Bool =
+     PrelBase.zddmzlze @ AbsCore.Tdef AbsCore.zdfOrdTdef};
+  compare26 :: PrelBase.ZMZN AbsCore.Tdef ->
+	       PrelBase.ZMZN AbsCore.Tdef -> PrelBase.Ordering =
+    %case (PrelBase.zdfOrdZMZN @ AbsCore.Tdef AbsCore.zdfOrdTdef)
+    %of (tpl::PrelBase.ZCTOrd (PrelBase.ZMZN AbsCore.Tdef))
+      {PrelBase.ZdwZCDOrd
+       (tpl1::PrelBase.ZCTEq (PrelBase.ZMZN AbsCore.Tdef))
+       (tpl2::PrelBase.ZMZN AbsCore.Tdef ->
+	      PrelBase.ZMZN AbsCore.Tdef -> PrelBase.Ordering)
+       (tpl3::PrelBase.ZMZN AbsCore.Tdef ->
+	      PrelBase.ZMZN AbsCore.Tdef -> PrelBase.Bool)
+       (tpl4::PrelBase.ZMZN AbsCore.Tdef ->
+	      PrelBase.ZMZN AbsCore.Tdef -> PrelBase.Bool)
+       (tpl5::PrelBase.ZMZN AbsCore.Tdef ->
+	      PrelBase.ZMZN AbsCore.Tdef -> PrelBase.Bool)
+       (tpl6::PrelBase.ZMZN AbsCore.Tdef ->
+	      PrelBase.ZMZN AbsCore.Tdef -> PrelBase.Bool)
+       (tpl7::PrelBase.ZMZN AbsCore.Tdef ->
+	      PrelBase.ZMZN AbsCore.Tdef -> PrelBase.ZMZN AbsCore.Tdef)
+       (tpl8::PrelBase.ZMZN AbsCore.Tdef ->
+	      PrelBase.ZMZN AbsCore.Tdef -> PrelBase.ZMZN AbsCore.Tdef) ->
+	 tpl2};
+  compare27 :: AbsCore.Module ->
+	       AbsCore.Module -> PrelBase.Ordering =
+    \ (a::AbsCore.Module) (b::AbsCore.Module) ->
+	%case a %of (wild::AbsCore.Module)
+	  {AbsCore.ZdwModule
+	   (a1::PrelBase.ZMZN PrelBase.Char)
+	   (a2::PrelBase.ZMZN AbsCore.Tdef)
+	   (a3::PrelBase.ZMZN AbsCore.Vdefg) ->
+	     %case b %of (wild1::AbsCore.Module)
+	       {AbsCore.ZdwModule
+		(b1::PrelBase.ZMZN PrelBase.Char)
+		(b2::PrelBase.ZMZN AbsCore.Tdef)
+		(b3::PrelBase.ZMZN AbsCore.Vdefg) ->
+		  %case (compare a1 b1) %of (wild2::PrelBase.Ordering)
+		    {PrelBase.ZdwEQ ->
+		       %case (compare26 a2 b2) %of (wild3::PrelBase.Ordering)
+			 {PrelBase.ZdwEQ ->
+			    compare25 a3 b3;
+			  PrelBase.ZdwGT ->
+			    PrelBase.ZdwGT;
+			  PrelBase.ZdwLT ->
+			    PrelBase.ZdwLT};
+		     PrelBase.ZdwGT ->
+		       PrelBase.ZdwGT;
+		     PrelBase.ZdwLT ->
+		       PrelBase.ZdwLT}}};
+  zeze26 :: PrelBase.ZMZN AbsCore.Tdef ->
+	    PrelBase.ZMZN AbsCore.Tdef -> PrelBase.Bool =
+    %case (PrelBase.zdfEqZMZN @ AbsCore.Tdef AbsCore.zdfEqTdef)
+    %of (tpl::PrelBase.ZCTEq (PrelBase.ZMZN AbsCore.Tdef))
+      {PrelBase.ZdwZCDEq
+       (tpl1::PrelBase.ZMZN AbsCore.Tdef ->
+	      PrelBase.ZMZN AbsCore.Tdef -> PrelBase.Bool)
+       (tpl2::PrelBase.ZMZN AbsCore.Tdef ->
+	      PrelBase.ZMZN AbsCore.Tdef -> PrelBase.Bool) ->
+	 tpl2};
+  zeze27 :: AbsCore.Module -> AbsCore.Module -> PrelBase.Bool =
+    \ (ds::AbsCore.Module) (ds1::AbsCore.Module) ->
+	%case ds %of (wild::AbsCore.Module)
+	  {AbsCore.ZdwModule
+	   (a1::PrelBase.ZMZN PrelBase.Char)
+	   (a2::PrelBase.ZMZN AbsCore.Tdef)
+	   (a3::PrelBase.ZMZN AbsCore.Vdefg) ->
+	     %case ds1 %of (wild1::AbsCore.Module)
+	       {AbsCore.ZdwModule
+		(b1::PrelBase.ZMZN PrelBase.Char)
+		(b2::PrelBase.ZMZN AbsCore.Tdef)
+		(b3::PrelBase.ZMZN AbsCore.Vdefg) ->
+		  PrelBase.zaza (PrelBase.zaza (zeze a1 b1) (zeze26 a2 b2))
+		  (zeze23 a3 b3)}};
+  zsze17 :: AbsCore.Module -> AbsCore.Module -> PrelBase.Bool =
+    \ (a::AbsCore.Module) (b::AbsCore.Module) ->
+	PrelBase.not (zeze27 a b);
+  AbsCore.zdfEqModule :: PrelBase.ZCTEq AbsCore.Module =
+    %note "InlineMe"
+    PrelBase.ZdwZCDEq @ AbsCore.Module zsze17 zeze27;
+  %rec
+  {AbsCore.zdfOrdModule :: PrelBase.ZCTOrd AbsCore.Module =
+     %note "InlineMe"
+     PrelBase.ZdwZCDOrd @ AbsCore.Module AbsCore.zdfEqModule compare27
+     zddmzlze17 zddmzg17 zddmzgze17 zddmzl17 zddmmin17 zddmmax17;
+   zddmmax17 :: AbsCore.Module -> AbsCore.Module -> AbsCore.Module =
+     PrelBase.zddmmax @ AbsCore.Module AbsCore.zdfOrdModule;
+   zddmmin17 :: AbsCore.Module -> AbsCore.Module -> AbsCore.Module =
+     PrelBase.zddmmin @ AbsCore.Module AbsCore.zdfOrdModule;
+   zddmzl17 :: AbsCore.Module -> AbsCore.Module -> PrelBase.Bool =
+     PrelBase.zddmzl @ AbsCore.Module AbsCore.zdfOrdModule;
+   zddmzgze17 :: AbsCore.Module -> AbsCore.Module -> PrelBase.Bool =
+     PrelBase.zddmzgze @ AbsCore.Module AbsCore.zdfOrdModule;
+   zddmzg17 :: AbsCore.Module -> AbsCore.Module -> PrelBase.Bool =
+     PrelBase.zddmzg @ AbsCore.Module AbsCore.zdfOrdModule;
+   zddmzlze17 :: AbsCore.Module -> AbsCore.Module -> PrelBase.Bool =
+     PrelBase.zddmzlze @ AbsCore.Module AbsCore.zdfOrdModule};

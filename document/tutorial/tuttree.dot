@@ -1,0 +1,20 @@
+graph{
+
+"[]" [label = "EAdd", style = "solid", shape = "plaintext"] ;
+"[]" -- "[0]" [style = "solid"];
+"[0]" -- "[0,0]" [style = "solid"];
+"[]" -- "[1]" [style = "solid"];
+"[0]" [label = "EInt", style = "solid", shape = "plaintext"] ;
+"[0,0]" [label = "23", style = "solid", shape = "plaintext"] ;
+"[1]" [label = "EMul", style = "solid", shape = "plaintext"] ;
+"[1]" -- "[0,1]" [style = "solid"];
+"[1]" -- "[1,1]" [style = "solid"];
+"[0,1]" [label = "EInt", style = "solid", shape = "plaintext"] ;
+"[1,1]" [label = "EInt", style = "solid", shape = "plaintext"] ;
+"[0,1]" -- "[0,0,1]" [style = "solid"];
+"[1,1]" -- "[0,1,1]" [style = "solid"];
+"[0,0,1]" [label = "4", style = "solid", shape = "plaintext"] ;
+"[0,1,1]" [label = "70", style = "solid", shape = "plaintext"] ;
+
+}
+

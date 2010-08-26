@@ -1,0 +1,97 @@
+\documentclass{seminar}
+
+\usepackage{alltt}
+\usepackage{epsfig}
+
+\newcommand{\slideheading}[1]{\begin{center}\large\bf{#1}\end{center}\bigskip}
+\newcommand{\epspicture}[1]{\begin{figure}\centerline{\epsfig{figure={#1}}}\end{figure}}
+
+\begin{document}
+
+\begin{slide}
+  
+  \begin{center} 
+    {\large \bf BNF Converter Demo \\ 
+      \vspace*{0.5cm} 
+      Haskell Workshop 2004\\}
+    {\normalsize
+      \vspace*{1.5cm}
+      Markus Forsberg (markus@cs.chalmers.se)\\
+      2004-09-22}
+  \end{center}
+\end{slide}
+
+\begin{slide}
+  \slideheading{BNF Converter}
+  \begin{itemize}
+  \item BNF Converter is a tool for generating multi-lingual 
+    compiler front-ends 
+    (lexers, parsers, pretty-printers, documentations etc) for 
+    formal languages, in particular programming languages.
+  \item The BNFC language is a highly declarative language called
+    LBNF, which is essentially BNF.
+  \end{itemize}
+\end{slide}
+
+\begin{slide}
+  \slideheading{BNF Converter Restrictions}
+  \begin{itemize}
+  \item The lexical tokens must be describable with a regular
+  expression.
+  \item The syntax must be context-free, i.e. describable by a 
+    BNF grammar.
+  \item The comments should also be describable by a regular
+  expressions, i.e. nested comments are not allowed.
+  \end{itemize}
+\end{slide}
+
+
+\begin{slide}
+  \slideheading{Language Designer}
+  \begin{itemize}
+  \item BNF Converter has been proven to be a valuable tool for
+    language designers.
+  \item A language designer can focus on the definition of the language, not at tedious
+    and repetitive coding. 
+  \item Due to the multi-linguality, the language designer 
+    don't have to choose an
+    implementation language when she develops her language. She may
+    prefer to prototype her language in Haskell, and have her final
+    system in C, or the other way around.
+  \end{itemize}
+\end{slide}
+
+\begin{slide}
+  \slideheading{Data Exchange Format}
+  \begin{itemize}
+  \item Yet another use of BNF Converter is as a \textbf{Data exchange
+  format}. 
+ \item BNF Converter's multi-linguality provides a convenient way
+  of communicating data between different programming languages. 
+  \end{itemize}
+\end{slide}
+
+
+
+\begin{slide}
+  \slideheading{Demo Overview: The LBNF Format}
+  \begin{itemize}
+  \item A brief going-through of the BNFC source format LBNF.
+  \item A demo on how to run BNFC and how the generate code looks like.
+  \end{itemize}
+\end{slide}
+
+\begin{slide}
+  \slideheading{The People behind BNF Converter \\ (in alphabetical order)}
+  \begin{itemize}
+  \item Bj{\"o}rn Bringert
+  \item Markus Forsberg
+  \item Peter Gammie
+  \item Patrik Jansson
+  \item Antti-Juhani Kaijanaho
+  \item Michael Pellauer
+  \item Aarne Ranta
+  \end{itemize}
+\end{slide}
+
+\end{document}

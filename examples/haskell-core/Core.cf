@@ -1,0 +1,105 @@
+-- BNF Converter grammar for GHC External Core. 
+-- (c) Aarne Ranta (aarne@cs.chalmers.se) 6/11/2003 under GNU GPL
+-- on the basis of ExternalCore.lhs and ParserExternalCore.y
+-- from the University of Glasgow (2001)
+-- Differences from source abstract syntax are marked with ---
+
+Module. Module ::= "%module" Ident [Tdef] [Vdefg] ;
+
+Data.    Tdef ::= "%data"    QualIdent [Tbind] "=" "{" [Cdef] "}" ;
+Newtype. Tdef ::= "%newtype" QualIdent [Tbind] MaybeTy ;
+
+terminator Tdef ";" ;
+
+JustTy. MaybeTy ::= "=" Ty ; --- Maybe Ty
+NoTy.   MaybeTy ::= ;
+
+---- Constr. Cdef ::= QualIdent [ATbind] [Ty2] ; --- Ident
+---- terminator Ty2 "" ;
+Constr. Cdef ::= QualIdent [ATbind] [Tyt] ; ---- hack for C
+terminator Tyt "" ; ----
+TT. Tyt ::= Ty2 ;   ----
+
+
+
+separator nonempty Cdef ";" ;
+
+Rec.    Vdefg ::= "%rec" "{" [Vdef] "}" ;
+Nonrec. Vdefg ::= Vdef ;
+
+terminator Vdefg ";" ;
+
+VdefQ.  Vdef ::= QualIdent "::" Ty "=" Exp ; --- (,,)
+VdefU.  Vdef ::= Ident "::" Ty "=" Exp ; --- added, since also occurs
+
+separator nonempty Vdef ";" ;
+
+Var.      Exp2 ::= Ident ;  --- QualIdent in abs; Ident in parser
+Dcon.     Exp2 ::= QualIdent ;
+Litc.     Exp2 ::= Lit ;
+App.      Exp1 ::= Exp1 Exp2 ;
+Appt.     Exp1 ::= Exp1 "@" Ty2 ;
+Lams.     Exp  ::= "\\" [Bind] "->" Exp ; --- foldr Lam  
+Let.      Exp  ::= "%let" Vdefg "%in" Exp ;
+Case.     Exp  ::= "%case" Exp2 "%of" Vbind "{" [Alt] "}" ; 
+Coerce.   Exp  ::= "%coerce" Ty2 Exp ;
+Note.     Exp  ::= "%note" String Exp ;   --- STRING
+External. Exp  ::= "%external" String Ty ;
+
+coercions Exp 2 ;
+
+Vb. Bind ::= Vbind ;
+Tb. Bind ::= "@" Tbind ;
+
+terminator nonempty Bind "" ;
+
+Acon.     Alt ::= QualIdent [ATbind] [Vbind] "->" Exp ;
+Alit.     Alt ::= Lit "->" Exp ;
+Adefault. Alt ::= "%_" "->" Exp ;
+
+separator nonempty Alt ";" ;
+
+Vbind. Vbind ::= "(" Ident "::" Ty ")" ; --- (,)
+
+terminator Vbind "" ;
+
+TbindPair. Tbind ::= "(" Ident "::" Kind1 ")" ;  --- (,)
+TbindLift. Tbind ::= Ident ;                     --- (,Klifted)
+
+separator Tbind "" ;
+
+ATbind. ATbind ::= "@" Tbind ; --- added, for a different list separator
+
+separator ATbind "" ;
+
+Tvar.     Ty2  ::= Ident ;        -- aty
+Tcon.     Ty2  ::= QualIdent ;
+Tapp.     Ty1  ::= Ty1 Ty2 ;      -- bty
+TArrow.   Ty   ::= Ty1 "->" Ty ;  -- ty       --- tArrow 
+Tforalls. Ty   ::= "%forall" [Tbind] "." Ty ; --- foldr Tforall
+
+coercions Ty 2 ;
+
+Klifted.   Kind1 ::= "*" ;
+Kunlifted. Kind1 ::= "#" ;
+Kopen.     Kind1 ::= "?" ;
+Karrow.    Kind  ::= Kind1 "->" Kind ;
+
+coercions Kind 1 ;
+
+--- remains to check if the literal definitions are the same as in GHC
+Lint.      Lit ::= "(" Integer  "::" Ty2 ")" ;
+Lrational. Lit ::= "(" Double   "::" Ty2 ")" ;  --- Rational
+Lchar.     Lit ::= "(" Char     "::" Ty2 ")" ;
+Lstring.   Lit ::= "(" String      "::" Ty2 ")" ;
+
+Qual.   QualIdent ::= Ident "." Ident ;  --- (,)
+
+{-
+---- token Str '"'  ((char - ["\"\\"]) | ('\\' ["\"\\ntx"]))* '"' ;
+token Chr '\'' ((char - ["'\\"]) | 
+                ('\\' ["'\\nt"]) | 
+                ('\\' 'x' (letter|digit) (letter|digit))) 
+          '\'' ;
+
+-}

@@ -1,0 +1,112 @@
+Build:
+- autoconf
+  - verify Alex version.
+- tidy up Makefiles a bit
+  - and the generated ones too.
+    - Use "Makefile" everywhere.
+  - follow UNIX conventions...
+
+Functionality:
+
+- Add Bool type.
+
+Bugs:
+- Strange unicode space.
+- Bison only supports 1 parser per input file.
+- Write some clear docs on the Java backend.
+- Java backend (and probably others)
+  - Need to munge Java keywords like "abstract" "private"
+    - Alfa.cf, C.cf fail to compile for this reason.
+  - I think I fixed this, but it should be verified (peteg)
+  - Add a message on how to run the test file (after a succesful compliation), 
+    e.g. :
+    "to run the test, type : java JavaletteLight/Test <filename>"
+Compilers:
+
+- write a JavaCup script
+
+Bug Reports:
+
+--------------
+> Fail: formats/java/CFtoJavaPrinter.hs:269: Non-exhaustive patterns in function> getCons
+  on Prolog.cf
+  Reason: No separator for a list. The same happens in C and C++.
+
+> In Skeleton.c the visit-functions for lists has the wrong variable for
+> visiting the
+> list elements. It says "visitNAME(LISTNAME->LISTNAME)" but it should be
+> "visitNAME(LISTNAME->NAME)".
+>
+> The parse tree printer and pretty printer writes a newline instead of "\n"
+> for
+> strings.
+--------------
+Java backend
+
+If a terminal and non-terminal have the same name, there is a name clash in
+the generarted .java files.
+
+Solution: don't do this.
+See C.cf for an example. Alfa.cf doesn't work either.
+
+- "separator", etc. decs don't play nice.
+  - the list stuff is emitted before the top-level non-terminal.
+- need to specify which non-terminal is the top-level one.
+  - i.e. a "start with" line must be present.
+  - BNFC now crashes if you don't specify an "entrypoint" pragma,
+    or use more than one.
+
+Somewhere along the line of BNFC/jlex/jcup the BNFC comment-instruction
+(comment "/*" "*/" ;) seems to fail. A file containing only an opening
+of a comment manages to pass the parser without any trouble.
+
+--------------
+Aarne, Java:
+
+  to get "parse successful" is fast, but then it takes
+  quite some time to pretty-print
+
+  the parser gets confused with isolatin characters included
+  in string literals
+
+Michael:
+
+http://www.cs.princeton.edu/~appel/modern/java/JLex/current/manual.html#SECTION2.2.14
+
+--------------
+
+Antti-Juhani Kaijanaho:
+
+- A token UIdent declaration (see report) causes a mysterious parse
+  error at end of file / perhaps conflicts with predefined Ident?
+- If I use "\\/" in a production, Happy is unhappy (you use \/ as the
+  Happy token)
+- You generate Alex 1.x source.  Could you make it (optionally?)
+  generate Alex 2.x source? <peteg: fixed>
+
+Oh, and bnfc returns an exit code indicating success even when there is
+an error.
+
+--------------
+
+Bjorn Bringert:
+
+- Specifying coercions etc. for non-existing categories should
+  probably be an error.
+- Repeated identical rules should be an error.
+- Java CUP back end does not support multiple entrypoints.
+
+--------------
+
+Software versions:
+
+ghc 5.04.x
+
+bison 1.875a
+flex 2.5.31
+
+alex 2.0
+happy 1.13
+
+
+--------------

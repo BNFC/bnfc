@@ -1,0 +1,240 @@
+\documentclass{sig-alt}
+
+\title{Demonstration Abstract: BNF Converter}
+
+\author{Markus Forsberg and Aarne Ranta \\
+  Department of Computing Science \\
+  Chalmers University of Technology and the University of Gothenburg \\
+  SE-412 96 Gothenburg, Sweden\\
+  \{markus, aarne\}@cs.chalmers.se
+  }
+
+\begin{document}
+
+\conferenceinfo{Haskell'04,} {September 22, 2004, Snowbird, Utah, USA.}
+
+\CopyrightYear{2004}
+
+\crdata{1-58113-850-4/04/0009}
+
+\maketitle
+
+
+\category{D.1.1}{Programming Techniques}{Applicative (Functional) Programming}
+
+\terms{Languages, Design}
+
+
+\keywords{Compiler Construction, Parser Generator, Grammar, BNF, 
+        Abstract Syntax, Pretty Printer, Document Automation}
+
+\section*{Abstract}
+We will demonstrate BNFC (the BNF Converter) \cite{bnfc,bnfcsite}, a
+multi-lingual compiler tool.
+BNFC takes as its input a grammar written in
+LBNF (Labelled BNF) notation, and
+generates a compiler front-end  
+(an abstract syntax, a lexer, and a parser).
+%% for the language defined by the grammar. 
+Furthermore, it
+generates a case skeleton usable as the starting point of back-end
+construction, a pretty printer, a test
+bench, and a \LaTeX\ document usable as language specification.
+
+The program components can be generated in Haskell, Java, C and C$++$
+and their standard parser and lexer tools.
+% (e.g.\ Alex and Happy, in the case of Haskell). 
+BNFC itself was written in Haskell.
+ 
+The methodology used for the generated front-end is based on 
+Appel's books on compiler construction \cite{appel,AppelC,AppelJ}.
+BNFC has been used as a teaching tool in
+compiler construction courses at Chalmers. 
+It has also been applied to research-related programming language
+development, and in an industrial application producing a compiler for a
+telecommunications protocol description language \cite{asn1}. 
+
+BNFC is freely available under the GPL license
+at its website and  in the testing distribution of Debian Linux.
+
+
+\section{Demo overview}
+
+The demo will consists of a brief explanation of the LBNF source format, 
+followed by instructions on how to compile LBNF source format into a 
+front-end in Haskell, Java, C, and C++. The rest of the demonstration will 
+consist of explaining the generated code for Haskell.
+
+
+\section{Goals and limits}
+
+The central goals of BNFC are
+\begin{itemize}
+\item to minimize the effort needed for compiler front-end construction
+\item to encourage clean and simple language design
+\item to make front-end definitions independent of implementation
+  language and thus portable
+\end{itemize}
+
+The LBNF grammar formalism can be learnt in a few minutes by anyone who knows
+ordinary BNF. The main addition is that each grammar rule has a label, which
+is used as a constructor of a syntax tree. No semantic actions other
+than tree construction are allowed. Therefore the formalism
+is declarative and portable, and a pretty-printer can be
+derived from the same grammar as the parser. In addition to syntactic
+rules, LBNF provides a regular expression notation for defining
+lexical structure, and some pragmatic declarations defining features
+such as comments.
+
+Since semantic actions are banned, BNFC can only describe
+languages that are context-free. The lexer must be
+finite-state and neatly separated from the parser. Even though these 
+requirements are widely propagated in compiler text books,
+many real-world languages have features that do not quite conform to them.
+However, practice has shown that such problems can often be overcome
+by preprocessing. For example, layout syntax can be handled in
+BNFC by adding a processing level between the lexer and the parser. 
+
+
+\section{An example grammar}
+
+We will now give a short example to give a taste of what 
+the language implementer has to supply, 
+and what BNFC generates.
+The example grammar is a subset of Prolog, known as 
+\textit{pure Prolog}.
+
+\scriptsize
+\begin{verbatim}
+  Db       . Database ::= [Clause] ;
+  Fact     . Clause ::= Predicate ;
+  Rule     . Clause ::= Predicate ":-" [Predicate] ;
+  APred    . Predicate ::= Atom ;
+  CPred    . Predicate ::= Atom "(" [Term] ")" ;
+  TAtom    . Term ::= Atom ;
+  VarT     . Term ::= Var ;
+  Complex  . Term ::= Atom "(" [Term] ")" ;
+
+  terminator Clause "." ;
+  separator nonempty Predicate "," ;
+  separator nonempty Term "," ;
+
+  token Var  ((upper | '_') (letter | digit | '_')*) ;
+  token Atom (lower (letter | digit | '_')*) ;
+
+  comment "%" ;
+  comment "/*" "*/" ;
+\end{verbatim}
+\normalsize
+
+The grammar shows a couple of things that go beyond the basic idea of
+labelled BNF rules and regular expressions:
+%%\begin{itemize}
+%%\item 
+a special syntax \verb6[C]6 for polymorphic lists,
+to avoid cluttering the AST:s with monomorphic lists, 
+as well as
+%% \item 
+shorthands for defining the concrete syntax of a list
+in terms of its terminator or separator.
+%%\end{itemize}
+In addition, LBNF has a notion of precedence levels expressed by
+integer indices attached to nonterminals.
+A complete reference of the LBNF language can be found on the
+BNFC website \cite{bnfcsite}.
+
+\section{Compiling a grammar}
+
+Assuming that the grammar of the previous section is contained in a
+file named \texttt{Prolog.cf}, a Haskell front-end
+is compiled by issuing the following command:
+\begin{verbatim}
+  bnfc -m -haskell Prolog.cf
+\end{verbatim}
+This command generates the following file: 
+\begin{itemize}
+\item \texttt{AbsProlog.hs}: Algebraic datatypes for the AST:s 
+\item \texttt{LexProlog.x}: Alex \cite{alex} lexer (v1.1 and v2.0) 
+\item \texttt{ParProlog.y}: Happy \cite{happy} parser 
+\item \texttt{PrintProlog.hs}: pretty printer 
+\item \texttt{SkelProlog.hs}: AST traversal skeleton
+\item \texttt{TestProlog.hs}: test bench (a program that parses a file
+             and displays the AST and the pretty-printed program) 
+\item \texttt{Makefile}: an easy way to compile the test bench 
+\item \texttt{DocProlog.tex}: language documentation in \LaTeX %%%\cite{latex}
+\end{itemize}
+
+For C and C++, similar files are generated but with slightly different
+names. For Java, many more files are generated, because the abstract
+syntax definition consists of separate classes for each nonterminal
+and constructor, following the methodology of Appel 
+\cite{AppelJ}.
+
+Depending on target language, the generated code is 10--100 times the
+size of the LBNF source. Yet it isn't hopelessly ugly or low-level,
+but looks rather similar to hand-written code that follows the
+chosen compiler writing discipline.
+
+\section{Related work}
+
+Cactus \cite{Cactus},
+uses an EBNF-like notation to 
+generate front ends in Haskell and C.
+Cactus is more powerful than BNFC, which makes its notation
+more complex. Cactus does not generate pretty printers and
+language documents.
+
+The Zephyr language 
+\cite{zephyr}\ is portable format for abstract syntax
+translatable into SML, Haskell, C, C++,
+Java, and SGML, together with functions for displaying syntax trees. 
+Zephyr does not support the definition of concrete syntax. 
+
+
+\section{When to use BNFC}
+
+BNFC has proved useful as a compiler teaching tool. It encourages
+clean language design and declarative definitions. But it also lets the
+teacher spend more time on back-end construction and/or the theory
+of parsing than traditional compiler tools, which require learning
+tricky and complicated notations.
+
+BNFC also scales up to full-fledged language definitions.
+Even though real-world languages already have compilers
+generating machine code, it can be difficult to extract abstract
+syntax from them.
+A BNFC-generated parser, case skeleton, and
+pretty printer is a good starting point for programs doing
+some new kind of transformation or translation on an existing
+language.
+
+However, the clearest case for BNFC is the development of new languages.
+It is easy to get started: just write a few lines of LBNF,
+run \texttt{bnfc}, and apply the \texttt{Makefile} to create a
+test bench. 
+Adding or changing a language construct is also easy, since changes
+only need to be done in one file. 
+When the language design is complete, the implementor perhaps wants
+to change the implementation language; no work is lost, since the
+front-end can be generated in a new target language,
+Finally, when the language implementation is ready to be given to
+users, a reliable and human-readable language definition is ready as well.
+
+
+\section{Bio section}
+
+Markus Forsberg is a PhD student at the Swedish Graduate School of Language
+Technology (GSLT) positioned at the department of Computing Science at Chalmers University of
+Technology and the University of Gothenburg. Aarne Ranta is an
+associate professor at the same department.
+
+Forsberg and Ranta started the development of the BNF Converter in
+2002, as a tool generating Haskell. It was retargeted to C, C++, and
+Java in 2003 by Michael Pellauer (at Chalmers). Later contributors 
+are Bj\"orn Bringert, Peter Gammie, and Antti-Juhani Kaijanaho.
+
+
+\bibliographystyle{abbrv}
+\bibliography{CC-2004}
+
+\end{document}

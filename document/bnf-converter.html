@@ -1,0 +1,545 @@
+<html>
+
+<body bgcolor="#FFFFFF" text="#000000">
+
+<center>
+
+<h1>A BNF Grammar Converter</h1>
+
+<a href="http://www.cs.chalmers.se/~aarne">Aarne Ranta</a> and
+<a href="http://www.cs.chalmers.se/~markus">Markus Forsberg</a>, 
+February 1 - March 22, 2002.
+
+</center>
+<p>
+
+<font size=2>
+<b>Versions</b>:
+22/3 improve lexer.
+8/3  remove some obsolete code, improve pretty-printer, add examples.
+21/2 add comment pragma.
+20/2 add comments to BNF files. 
+17/2 generate a pretty-printer (experimental).
+14/2 generate a case skeleton.
+12/2 add grammar checking, simplify coercion and list conventions.
+9/2 add convention about non-parsing rules, filter out non-existing literal types
+from lexer.
+8/2 generate Latex files.
+5/2 generate Alex files, indicate line numbers at parse errors.
+4/2 add support for lists, extend the token type.
+1/2/2002 first version.
+</font>
+
+<h2>What it does</h2>
+
+This is a program that reads a <b>Labelled BNF grammar</b> file <tt>Foo.cf</tt>,
+such as this <a href="C4.cf">example</a>,
+and produces six things:
+<ul>
+<li> the file <tt>AbsFoo.hs</tt>, 
+     an abstract syntax specification as a Haskell module
+     (<a href="AbsC4.hs">example</a>), </li>
+<li> the file <tt> SkelFoo.hs</tt>,
+     a case skeleton for the abstract syntax as a Haskell module
+    (<a href="SkelC4.hs">example</a>). </li>
+    </li>
+<li> the file <tt>LexFoo.x</tt>,
+     an <a href="http://www.haskell.org/libraries/#scannerParser">
+     Alex</a> lexer generator file 
+     (<a href="LexC4.x">example</a>), </li>
+<li> the file <tt>ParFoo.y</tt>, 
+     a <a href="http://www.haskell.org/happy">Happy</a> parser generator file
+     (<a href="ParC4.y">example</a>), </li>
+<li> the file <tt>PrintFoo.y</tt>, 
+     a pretty-printer as a Haskell module
+     (<a href="PrintC4.hs">example</a>), </li>
+<li> the file <tt>LatexFoo.tex</tt>, 
+     a Latex file containing a readable specification of the language 
+     (<a href="LatexC4.ps">example in postscript</a>). </li>
+<li> an interactive parser session. </li>
+</ul>
+The program is implemented in Haskell, 
+and can be used from within the interpreter 
+<a href="http://www.haskell.org/hugs">Hugs</a>, or compiled; the main module is
+<tt>CFTop</tt>. You also need Alex (Version 1.1) and Happy (Version 1.11);
+older versions may work incorrectly with the BNF Converter.
+
+
+<h2>Examples</h2>
+
+<a href="./Alfa.cf">Alfa</a>, 
+a version of constructive type theory
+(<a href="./LatexAlfa.ps.gz">document</a>).
+
+<p>
+
+<a href="./C4.cf">C4</a>, 
+a fragment of C (see "What it does" above).
+
+
+
+<h2>How to get it?</h2>
+
+It's <a href="./bnf-conv.tgz">here</a>! 
+It's a tar ball with all source files and examples,
+including a C program that
+C4.cf manages to parse. 
+As well as this document.
+
+
+
+
+<h2>Why it is there</h2>
+
+The purpose is to enable syntax definitions on a high level,
+so that there is a single source for the abstract syntax, the pretty-printer,
+the parser, and the lexer, 
+as well as for the documentation of the language. 
+In traditional compiler construction,
+these five things require four different sources.
+
+<p>
+
+Moreover, even though Happy does a great job in generating
+parsers LALR(1), writing a Happy parser by hand is
+unnecessarily low-level if all you want the parser to return is
+an abstract syntax tree. Only wanting this is
+part of the modern multi-phase compilation ideology:
+you should <i>not</i> define your compiler back-end in the
+semantic actions of Happy.
+
+<p>
+
+Of course, if you do want to use the semantic actions of Happy
+to do more than just construct abstract syntax trees, you will
+find the BNF converter too restricted. 
+
+<p>
+
+This program is a spin-off of a much larger tool,
+<a href="http://www.cs.chalmers.se/~aarne/GF">GF</a>,
+which has a grammar formalism richer than BNF and was
+particularly designed for natural languages.
+With the addition of a GF-to-Happy
+converter, in combination with
+an earlier BNF-to-GF converter, it turned out that GF
+is almost usable as a compiler tool, as well - but only almost,
+if one wants to create components that fit
+seamlessly into the traditional way of writing compilers
+in Haskell (e.g. use Haskell's lists and integers
+in syntax trees, and to get rid of some concrete syntax clutter).
+Rather that adding such <i>ad hoc</i> things to GF itself,
+we wrote this <i>ad hoc</i> tool where such facilities
+are provided by <i>ad hoc</i> conventions.
+
+
+
+<h2>Converting BNF files</h2>
+
+Start Hugs and load in <tt>CFTop</tt>. Then read in your BNF grammar file,
+convert it to other formats, and automatically process the resulting files.
+<pre>
+  $ hugs
+  ...
+
+  Prelude> :l CFTop
+  ...
+
+  Main> makeAll "C4"
+  34 rules accepted
+  wrote file AbsC4.hs
+  wrote file LexC4.x
+  wrote file ParC4.y
+  wrote file LatexC4.tex
+  wrote file SkelC4.hs
+  wrote file PrintC4.hs
+  Executing alex
+  Executing happy
+  unused terminals: 1
+  Executing latex
+  Executing xdvi
+  to get started, import the parser in hugs by :l ParC4
+
+  Main> :l ParC4
+  ...
+
+  ParC4> readFile "koe2.c" >>= print . pProgr . myLexer
+  Ok (Program [Decl TInt [Ident "i"],Decl TInt [Ident "k"]] 
+  [SAss (Ident "i") (EInt 1),SAss (Ident "k") (EVar (Ident "i")),
+  SWhile (EOp (EVar (Ident "i")) OLt (EInt 13)) (SBlock [SAss (Ident "k") 
+  (EOp (EVar (Ident "k")) OTimes (EVar (Ident "i"))),SIncr (Ident "i"),
+  SPrint (EVar (Ident "k"))]),SReturn (EInt 0)])
+</pre>
+<p>
+Notice that you need <tt>hugs</tt>, 
+<tt>alex</tt>, <tt>happy</tt>, <tt>latex</tt>, and <tt>xdvi</tt>.
+The Alex runtime file <tt>Alex.hs</tt> must be on your Hugs path
+when running the BNF converter.
+
+<p>
+
+When run on the file  <tt>Foo.cf</tt>, <tt>makeAll</tt> writes six files,
+<tt>AbsFoo.hs</tt>, <tt>SkelFoo.hs</tt>, <tt>PrintFoo.hs</tt>, 
+<tt>LexFoo.x</tt>,
+<tt>LatexFoo.tex</tt> and <tt>ParFoo.y</tt>.
+</p>
+<p>
+The files <tt>LexFoo.x</tt> and <tt>ParFoo.y</tt> 
+are compiled into a production-quality lexer and parser by using
+<tt>alex</tt> and <tt>happy</tt>.
+If this goes well, it produces two huge Haskell files, 
+<tt>LexFoo.hs</tt> and <tt>ParFoo.hs</tt>,
+which define a lexer and an LALR(1) parser corresponding to your BNF grammar.
+The file can then be compiled (or hugs-interpreted) in the 
+usual way. The most important functions they define are
+<ul>
+<li> for all categories <tt>X</tt>, a parser <tt>pX :: [Tok] -> Maybe X</tt>
+<li> a lexer <tt>myLexer :: String -> [Tok]</tt>
+</ul>
+</p>
+<p>
+The file <tt>SkelFoo.hs</tt> defines case skeletons for the abstract
+syntax in <tt>AbsFoo.hs</tt>. This file defines a
+function:
+<ul>
+<li> <tt>transX :: X -> Result</tt> </li>
+</ul>
+for every
+category <tt>X</tt>, containing a case expression with a case for
+every constructor of type <tt>X</tt> (in <tt>AbsFoo.hs</tt>).
+Redefine
+<ul>
+<li> <tt>type Result = ..</tt> </li>
+</ul>
+    to match your translation needs.
+</p>
+<p>
+The file <tt>PrintFoo.hs</tt> defines a pretty-printer class
+<tt>Print</tt> and instantiates it for every datatype defined in
+<tt>AbsFoo.hs</tt>. The top-level function is
+<ul>
+<li> <tt>printTree :: Print a => a -> String</tt> </li>
+</ul>
+which uses the lower-level methods <tt>prt</tt> and <tt>prtList</tt>
+of the <tt>Print</tt> class, which produce token lists that are fed
+into the rendering function <tt>render</tt>. The pretty-printer uses the 
+BNF rules, trying to infer the precedence from the numbering of the
+categories (cf.\ the section "Coercion conventions" below).
+It uses ordinary parentheses <tt>()</tt> to express those
+precedences; to change this, change the function <tt>parenth</tt>
+in the printer file. 
+If coercions are used for something else than precedence, 
+the pretty-printer may give strange results.
+This reflects the fact that BNF is not powerful enough simultaneously 
+to express abstract syntax and pretty-printing
+(which is why GF is there).
+
+</p>
+
+<p>
+The documentation, describing the
+language defined by your BNF grammar, is produced by compiling
+<tt>LatexFoo.tex</tt> with <tt>latex</tt>. If everything works fine,
+latex outputs a file <tt>LatexFoo.dvi</tt> that can be viewed with
+<tt>xdvi</tt>. If you prefer postscript, convert the output with the
+command <tt>dvips LatexFoo.dvi -o LatexFoo.ps</tt>.
+
+</p>
+
+<h2>Interactive parsing session</h2>
+
+As an alternative to converting into Alex and Happy (for instance, in the
+development phase, or if you don't have these tools available), 
+you can enter an interactive parsing session:
+<pre>
+  Main> cfTop "Foo.cf"
+  27 rules
+</pre>
+This drops you into a subshell where you can enter
+strings and get them parsed in the value category of the first rule
+of your grammar, in this case <tt>Prog</tt>. 
+<pre>
+  Prog? &lt;koe1.c
+  Program [] []
+
+  Prog? >Exp
+
+  Exp? 2 + 2
+  Sum Two Two
+
+  Exp? .
+
+  Main>
+</pre>
+The example illustrates the four available commands:
+<ul>
+<li> <tt>&lt;file</tt> parses the contents of <tt>file</tt>,
+<li> <tt>&gt;Cat</tt> changes the start category of parsing to <tt>Cat</tt>,
+<li> <tt>.</tt> (a dot) quits the parser,
+<li> any other string is parsed in the current start category.
+</ul>
+The parser is a top-down combinator parser which
+loops with left-recursive grammars (such as the <a href="C4.cf">example</a>).
+Its way of parsing is thus different from Happy's;
+but it has the advantage of also accepting ambiguous grammars and
+showing all different results.
+The lexer is a hand-written Haskell function.
+
+<p>
+
+Within Hugs, it is easy to use the Happy parser interactively, as well,
+since parsers are exported for every category. For example:
+<pre>
+  ParC4> return "2*(x+3)" >>= print . pExp . myLexer
+  Ok (EOp (EInt 2) OTimes (EOp (EVar (Ident "x")) OPlus (EInt 3)))
+</pre>
+
+<h2>The labelled BNF format</h2>
+
+The BNF grammars recognized by the converter consist of
+<b>rules</b>, one per line, which have the following format:
+<pre>
+  Ident"." Ident "::=" (Ident | Quoted)*
+</pre>
+The first identifier is a <b>rule label</b>, which comes out as 
+a constructor in the generated abstract syntax.
+The second identifier is a <b>category symbol</b>, which is any identifier.
+Then comes the symbol <tt>::=</tt>, and finally a list of
+<b>items</b> separated by blanks. An item is either
+a category symbol (nonterminal) or a quoted string (terminal).
+For example, the following rule defines C-like if-else statements.
+<pre>
+  SIf. Stm ::= "if" "(" Exp ")" Stm "else" Stm
+</pre>
+<b>Comments</b> in a BNF grammar are like in Haskell: 
+<tt>--...</tt> for single-line comments and
+<tt>{- ... -}</tt> for possibly multiple-line comments.
+<pre>
+ -- This is a single-line comment.
+ {- This is a multiple-line
+    comment. -}
+</pre>
+<p>
+
+Rule names and category symbols can be chosen <i>ad libitum</i>,
+with the restrictions imposed by Haskell (if you want to use the
+generated Happy and Haskell files), and some other conventions:
+<ul>
+<li> A category symbol is a nonempty sequence of letters, 
+     starting with a capital letter.
+<li> A rule label is a nonempty sequence of letters,
+     starting with a capital letter.
+</ul>
+The program extracts an abstract syntax from the BNF grammar
+by treating categories as data types and rule names as constructors.
+For instance, the <tt>SIf</tt> rule extracts one branch in the definition
+of <tt>Stm</tt>:
+<pre>
+  data Stm = ... | SIf Exp Stm Stm | ...
+</pre>
+Certain identifiers are treated in special ways, as explained
+below: <tt>Char, Double, Int, String, Ident</tt>.
+
+
+<h2>Coercion conventions</h2>
+
+Not to clutter abstract syntax with too much concrete-syntax
+detail, we extend the set of category symbols with numbered variants:
+<ul>
+<li> A category symbol can end with a digit, and is then treated
+     as a type synonym of the corresponding non-digited symbol.
+     E.g. <tt>Exp1, Exp8</tt> are synonyms of <tt>Exp</tt>.
+</ul>
+A typical use of this convention is to distinguish between
+different <b>precedence</b> classes. For instance, the plus operator
+can be defined to connect <tt>Exp1</tt> and the times operator
+<tt>Exp2</tt>. In fact, <b>associativity</b> can be defined with the
+same mechanism, as show in the <a href="C4.cf">example</a>.
+
+<p>
+
+To type-control the usage of coercions, we introduce the notion
+of the <b>category skeleton</b> of a BNF rule. The category skeleton
+is a pair
+<pre>
+  (C, C1...Cn)
+</pre>
+where <tt>C</tt> is the undigited left-hand-side nonterminal and
+<tt>C1...Cn</tt> is the sequence of undigited right-hand-side nonterminals
+of the rule. The category skeleton is the structure that is used
+for producing a constructor in the abstract syntax, with value 
+type <tt>C</tt> and argument types <tt>C1,...,Cn</tt>.
+
+
+<p>
+
+Precedence classes usually require semantically dummy transitions,
+e.g. from <tt>Exp1</tt> to <tt>Exp3</tt> by the addition of parentheses,
+and in the opposite direction for free. Since we don't want to 
+use constructors constructors for such transitions, we introduce the
+following convention:
+<ul>
+<li> A rule label can be replaced with an underscore <tt>_</tt>, 
+     which is treated as a <b>coercion</b> and does not add anything 
+     to the syntax tree.
+</ul> 
+A coercion rule is well-typed only if its category skeleton has the form
+<pre>
+  (C,C).
+</pre>
+
+<p>
+
+Digited variants of categories can be used for other purposes 
+than precedence, provided that the type-skeleton is correct.
+This is OK for the parser, but the pretty-printer may get confused,
+since it asssumes that digits are used for precedence only.
+
+<p>
+
+Sometimes it is necessary to use a constructor in many
+BNF rules, between different precedence classes.
+This is accepted: it is only required that 
+all uses of the constructor have the same category skeleton.
+
+
+<h2>Hidden constructors</h2>
+
+Rules with the hash symbol <tt>#</tt> (unquoted) appearing in the beginning of
+the rhs are not sent to the parser generator, but only to the abstract syntax;
+the hash symbol is suppressed.
+This convention permits the inclusion of abstract syntax that is not
+parsable but used for internal representation, 
+e.g. in a later type checking phase.
+
+
+<h2>Predefined basic types</h2>
+
+The BNF converter provides predefined
+lexers and parsers for integers, floats, characters, and quoted strings,
+and interprets them directly as Haskell data objects. Thus
+<ul>
+<li> The category names <tt>Char, Double, Int, String</tt> 
+     denote corresponding Haskell types.
+     They should not be used as left-hand-side categories,
+     except in coercion rules.
+</ul>
+Moreover, there is a predefined lexer and parser for
+identifiers (unquoted strings that are not reserved words):
+<ul> 
+<li> The category name <tt>Ident</tt> denotes a hard-coded identifier
+     type and should not be used as a left-hand-side category,
+     except in coercion rules.
+     Neither can <tt>Ident</tt> be used as a rule label.
+</ul>
+The abstract syntax automatically includes the datatype definition
+<pre>
+  data Ident = Ident String
+</pre>
+For example, the BNF rules
+<pre>
+  EVar. Exp ::= Ident
+  EInt. Exp ::= Int
+</pre>
+generate the following abstract syntax:
+<pre>
+  data Exp = ... | EVar Ident | EInt Int | ...
+</pre>
+
+
+<h2>List conventions</h2>
+
+While it is possible to define one's own monomorphic
+list types by introducing constructors,
+it is often handy to use Haskell's polymorphic lists.
+The BNF converter supports Haskell's lists by 
+accepting the following category symbols and constructors:
+<ul>
+<li> <tt>[X]</tt>, the category of lists of type <tt>X</tt>.
+<li> <tt>[]</tt> and <tt>(:)</tt>, the Nil and Cons constructors, respectively.
+</ul>
+We also make it possible for a grammar to recognize non-empty lists only:
+<ul>
+<li> <tt>(:[])</tt> is a constructor for one-element lists.
+</ul>
+The list conventions of course only produce type-correct
+Haskell code if the names are used in certain ways:
+<ul>
+<li> A category <tt>[X]</tt> may not have other constructors than
+     <tt>[]</tt>, <tt>(:)</tt>, and <tt>(:[])</tt>.
+<li> The constructor 
+     <tt>[]</tt> must have category skeleton of form <tt>([C],)</tt>.
+<li> The constructor 
+     <tt>(:)</tt> must have category skeleton of form <tt>([C], C [C])</tt>.
+<li> The constructor 
+     <tt>(:[])</tt> must have category skeleton of form <tt>([C], C)</tt>.
+</ul>
+In the Latex document (for stylistic reasons) 
+and in the Happy file (for syntactic reasons), the category name
+<tt>[X]</tt> is replaced by <tt>ListX</tt>. This may cause clashes, if
+<tt>ListX</tt> is at the same time used explicitly in the grammar
+
+
+
+<h2>The lexer</h2>
+
+The lexer uses a token type <tt>Lexer.Tok</tt> with four kinds of tokens:
+<ul>
+<li> <tt>TS String</tt>: reserved words and symbols (inferred from the grammar)
+<li> <tt>TI String</tt>: positive integer literals, parsed as <tt>Int</tt>
+<li> <tt>TL String</tt>: quoted string literals, parsed as <tt>String</tt>
+<li> <tt>TC String</tt>: character literals, parsed as <tt>Char</tt>
+<li> <tt>TD String</tt>: double-precision float literals, parsed as <tt>Double</tt>
+<li> <tt>TV String</tt>: identifiers, parsed as <tt>Ident</tt>
+</ul>
+The writer of a BNF grammar need not know about these token constructors;
+we have listed them to enable hand-tuning of the lexer and the parser.
+
+<p>
+
+The set of <b>reserved words</b> is the set of terminals appearing in the
+grammar. Those reserved words that consist of non-letter characters
+are treated in a different way from those that are similar to identifiers.
+The lexer tries to follow normal rules
+familiar from languages like Haskell, C, and Java, including
+longest match and spacing conventions.
+
+<p>
+
+<b>Comments</b> are like in Haskell: <tt>{- ... -}</tt> and
+<tt>--...</tt> are treated as comments in the lexers produced.
+To change this, you have to define a <tt>comment pragma</tt> in your
+BNF grammar file (currently the only pragma in the system): 
+put anywhere in the code either of
+<ul>
+<li> line-tail comments: <br /><tt># comment (Quoted String)</tt>
+<li> enclosed comments: <br /><tt># comment (Quoted String)
+    (Quoted String) </tt>
+</ul>
+<p>
+The strings in enclosed comments must be, besides the quotes,
+no longer than two character. If this is to restrictive, then edit
+the <tt>LexFoo.x</tt> file.
+</p>
+
+<p>
+So if we would like to make our Haskell comment convention explict, we
+could write: </p>
+<tt># comment "--"</tt> <br /><tt># comment "{-"
+"-}"</tt> <br />
+
+
+<h2>Future work</h2>
+
+Happy's left-recursive lists should be supported.
+
+<p>
+
+Generate XML.
+
+<p> 
+
+Generate syntax editors?
+
+</body>
+</html>

@@ -1,0 +1,101 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<html>
+<head>
+  <title>The BNF Converter: Haskell Mode</title>
+<link rel="stylesheet" type="text/css" href="default.css" />
+</head>
+<body bgcolor="#ffffff" text="#000000">
+<center> 
+<h1>BNF Converter</h1>
+<a href="http://www.cs.chalmers.se/~markus">Markus Forsberg</a> and <a
+ href="http://www.cs.chalmers.se/~aarne">Aarne Ranta</a> <br>
+</center>
+<hr>
+<center>
+<h1>Haskell Mode</h1>
+</center>
+
+<h2>Requirements</h2>
+
+<p>
+You need the following programs installed on your system to be able to
+run BNF Converter in Haskell mode:
+</p>
+<ul>
+  <li> <a href="http://haskell.cs.yale.edu/ghc/">GHC: The Glasgow
+Haskell Compiler </a> </li>
+  <li> <a href="http://haskell.cs.yale.edu/happy/">Happy: Parser
+generator</a> </li>
+  <li> <a href="http://www.haskell.org/alex">Alex: Lexical Analyser
+Generator</a> </li>
+  <li> <a href="http://www.latex-project.org/">LaTeX: A document
+preparation system</a> </li>
+</ul>
+<p>
+To use Hugs: use <a href="http://http://tournesol.cs.chalmers.se/aarne/util/alex.tar.gz">Alex
+v1.1</a>, and give the flag <tt>-alex1</tt> to bnfc.
+
+<h2>Running the BNF Converter in Haskell mode</h2>
+
+<p>
+Example file <a href="http://www.cs.chalmers.se/~markus/BNFC/JavaletteLight.cf">
+JavaletteLight.cf</a>.</p>
+
+<p> Producing the output files without compiling them is done by typing
+<tt> bnfc -haskell file</tt>. </p>
+<p>
+If this is run on the example file, the output looks like this:
+
+<pre>
+$ bnfc -haskell JavaletteLight.cf
+
+The BNF Converter, 2.2
+(c) Bjorn Bringert, Paul Callaghan, Markus Forsberg, Peter Gammie,
+    Patrik Jansson, Antti-Juhani Kaijanaho, Michael Pellauer,
+    and Aarne Ranta 2002 - 2004.
+Free software under GNU General Public License (GPL).
+Bug reports to {markus,aarne}@cs.chalmers.se.
+
+
+Reading grammar from JavaletteLight
+21 rules accepted
+
+wrote file AbsJavaletteLight.hs
+wrote file LexJavaletteLight.x
+   (Use Alex 2.0 to compile.)
+wrote file ParJavaletteLight.y
+   (Tested with Happy 1.15)
+wrote file DocJavaletteLight.tex
+wrote file SkelJavaletteLight.hs
+wrote file PrintJavaletteLight.hs
+wrote file TestJavaletteLight.hs
+wrote file ErrM.hs
+Done!
+</pre>
+
+<p> You could now compile LexJavaletteLight.x, ParJavaletteLight.y and
+DocJavaletteLight.tex by hand, using alex, happy and latex. </p>
+<p> </p>
+<p> You can also produce a makefile, named <tt>Makefile</tt>, by
+typing <tt> bnfc -haskell -m JavaletteLight.cf</tt>. </p>
+<p>
+When you have produced the makefile, you can:
+</p>
+<ul>
+  <li> type <tt>make</tt> to compile the parser, the lexer, the
+documentation and a test program. </li> 
+</li>
+</ul>
+
+<p> You can now test to parse a Javalette
+file: </p> <pre>[shell]$ testJavaletteLight koe.jll<br></pre>
+<pre><br><br>Parse Successful!<br><br>[Abstract Syntax]<br><br>Fun
+TInt (Ident "main") [SDecl TInt (Ident "i"),SDecl TDouble (Ident
+"d"),<br>SAss (Ident "i") (EInt 0),SAss (Ident "d") (EDouble
+1.0),SWhile (ELt (EVar <br>(Ident "i")) (EInt 10)) [SAss (Ident "d")
+(ETimes (EVar (Ident "d")) <br>(EDouble 0.5)),SIncr (Ident
+"i")]]<br><br>[Linearized tree]<br><br>int main () {<br> int i ;<br>
+double d ;<br> i = 0 ;<br> d = 1.0 ;<br> while (i &lt; 10){<br> d = d
+* 0.5 ;<br> i ++ ;<br> }<br> }<br></pre> <p> To make this test
+yourself, just copy the linearization result into a file
+<tt>koe.jll</tt>.  </p> </body> </html>

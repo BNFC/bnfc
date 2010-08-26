@@ -1,0 +1,201 @@
+BNF Converter - from a Small Idea to a Big System
+Björn Bringert, Markus Forsberg, Michael Pellauer, Aarne Ranta,...
+
+% NOTE: this is a txt2tags file.
+% Create an html file from this file using:
+% txt2tags retrospect2006.txt
+
+%!target:latex
+
+
+==Abstract==
+
+The BNF Converter (BNFC) is a high-level compiler tool. The main idea
+is to use a single source file - a BNF grammar - to generate a complete
+compiler front end: lexer, parser, and pretty printer, as well as 
+a language document. The single-source approach reduces the amount
+of manually written code (down to just 1% compared to traditional tools),
+and helps keep the modules in syncrony. Another dimension is the
+multi-platform idea: the compiler components are generated in 
+many different programming languages and their accompanying compiler
+tools (C, C++, Java, Haskell, OCaml).
+
+This paper traces the development of BNFC from the first proof-of-concept
+implementation to the current state. The role of the implementation language
+(Haskell) is discussed, as well as the different design decisions taken.
+A survey is moreover made of the usage of BNFC, which is spread to many
+different projects, partly thanks to the inclusion of BNFC in the Stable
+distribution of Debian Linux.
+
+In addition to a software development chronicle, this papers serves as
+a summary of the different features of BNFC.
+
+
+
+==The initial idea==
+
+From GF: to use a grammar to derive parser, pretty-printer, and abstract syntax.
+
+Purely declarative language implementation
+- no Turing-complete semantic actions
+- guaranteed portability
+
+
+Example (show a grammar).
+
+
+==Why semantic actions are harmful==
+
+They destroy 
+- complexity, since
+linear LALR parsing can become exponential or undecidable.
+- portability, if actions are written as arbitrary code
+in the host language.
+- reversibility, if the source string cannot be computed
+from the resulting tree.
+- inspectability, if grammatical well-formedness can
+depend on decisions taken by the semantic actions.
+
+
+A fundamental design principle has thus been that semantic actions
+are only allowed insofar as they don't imply any of the harmful
+consequences. Thus BNFC allows the following kind of actions:
+- construction of syntax trees via data constructors (original version 2002)
+- identity mappings, a.k.a. semantic dummies (``_``=) (2002)
+- permutations of arguments via profiles (2004)
+- noncanonical functions computed via ``def`` definitions (2006)
+
+
+Of the later additions, profiles and ``def`` definitions may affect
+complexity, and ``def`` definitions may also affect reversibility.
+(How do we defend this?)
+
+
+
+==The challenge of simplity==
+
+The first reaction of almost everyone exposed to BNFC is "This is so simple!"
+The second is either "This is trivial - I could have done this myself" or
+"How impressive that it can be so simple".
+
+Simplicity has been a challenge in at least three ways:
+- to make it work in realistic scale without e.g. cluttering the generated
+abstract syntax too much (see below)
+- to //keep// it simple, avoid making it more powerful/rich/complex
+- to convince potential users that it is still useful (a problem with
+experienced compiler authors rather than newcomers)
+
+
+
+==The first implementation==
+
+Year 2002.
+
+As in GF: the parser was an interpreter of the grammar.
+
+"World's Smallest Compiler Compiler" implemented on 80 lines of Haskell, shown
+in an old lecture
+[WSCC http://www.cs.chalmers.se/Cs/Grundutb/Kurser/komp/2003/lectures/ccc05.html]
+
+First step: generate the code (parser in Happy, using Markus's GF-to-Happy 
+implementation, lexer in Alex, document in Latex, other modules in Haskell).
+
+Example: show the code from the grammar in previous section, give statistics
+on numbers of lines.
+
+One milestone: implement the BNF grammar format in the format itself.
+
+
+
+==Extensions==
+
+We started to write lots of grammars, and found the following extensions
+and shorthands useful:
+- built-in types Int, String, Double, Char, Ident
+- precedence levels and dummy coercions
+- Haskell's list types
+- internal rules
+- separator, terminator, coercions, and rules macros
+
+
+Later extensions and motivating examples (approximative years - to verify)
+- Prolog's upper/lower case identifiers - regular expressions for token types 2003
+- Agda - layout syntax 2003
+- HOAS - profiles 2004
+- Compiler messages - position tokens 2005
+- GADT 2006
+- Limited semantic actions - def clauses (Norell) 2006
+- Alternative concrete syntaxes - multiple views 2006
+
+
+
+==Back ends==
+
+Cashing out the value of abstract grammar definition
+- Java, C, C++ (Pellauer 2003)
+- Java 1.5 (Bringert 2004)
+- OCaml (Johannisson 2006)
+
+
+==Nonstandard back ends==
+
+Using BNFC to other tasks than programming language compilers
+- XML - the use of BNFC as data exchange format (Ranta 2004)
+- GLR in Haskell (Callaghan) - from GF to BNFC (Ranta 2005)
+
+
+==Projects==
+
+C (Persson) 2003
+
+Java
+
+GF and GFC 2003
+
+ASN-1 2004
+
+
+==Spreading==
+
+Teaching
+
+Research projects
+
+Industry
+
+Debian
+
+
+
+
+==Future prospects==
+
+We want to avoid creeping featurism, and making the formalism
+essentially more powerful.
+
+This is what distinguishes BNFC from most other compiler tools
+(examples!) - in them, the users can do "whatever they want",
+but the price is that it gets
+- more complex to learn and to use
+- more difficult to port
+- maybe one loses the printer-parser symmetry
+
+
+
+==Known shortcomings==
+
+Error messages
+
+White space handling
+
+Overlapping ``token`` definitions
+
+
+
+==Evaluation and reflection==
+
+Code maintenance is giving trouble
+
+The role of Haskell?
+
+

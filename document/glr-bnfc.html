@@ -1,0 +1,333 @@
+<HTML>
+<HEAD>
+   <TITLE> Using BNFC with Happy-GLR </TITLE>
+</HEAD>
+<BODY>
+
+
+<HR>
+<H1>Using BNFC with Happy-GLR </H1>
+
+<H3><A href="http://www.dur.ac.uk/p.c.callaghan">Paul Callaghan</A>,
+	University of Durham</H3>
+
+<br><br><HR>
+<H2> Introduction </H2>
+
+The <A href="http://www.cs.chalmers.se/~markus/BNFC/">BNF Converter tool</A>
+provides generation of useful code in various languages from a 
+simple BNF specification of a grammar, including a parser, pretty-printer,
+and abstract syntax. 
+
+<P>
+BNFC can now output parser files compatible with the GLR mode of the 
+<A href="http://haskell.org/happy">Happy parser generator</A>
+for <A href="http://haskell.org/">Haskell</A>.
+This enables ambiguous grammars to be parsed and for all valid parses
+to be examined. 
+
+<P>
+Further information on the GLR mode can be found in Happy's
+<A href="http://www.haskell.org/happy/doc/html/sec-glr.html">
+GLR documentation</A>, supplemented by information on
+Paul Callaghan's <A href="http://www.dur.ac.uk/p.c.callaghan/happy-glr/">
+Happy-GLR information</A> page.
+
+
+<br><br><HR>
+<H2> Basic usage </H2>
+
+<PRE>
+	bnfc -glr [OPTIONS] FILE.cf
+</PRE>
+
+Usage is almost identical to normal Happy mode, except for a new flag
+<TT>-glr</TT> which causes a few minor changes in creation of the Happy
+parser file (mainly additional type annotations) and of the default test code.
+The latter involves changing the way the generated parser is called, and 
+is explained later. 
+
+<P>
+No other aspect of BNFC is affected, so functionality remains as expected.
+For more information, refer to the documentation on the 
+<A href="http://www.cs.chalmers.se/~markus/BNFC/">BNFC page</A>.
+
+
+
+<br><br><HR>
+<H2> Compiling the generated parser </H2>
+
+The Happy parser files must first be converted to Haskell with the following
+command. The <TT>--glr</TT> flag causes a GLR parser to be generated, and 
+the <TT>--decode</TT> causes the GLR parser to generate abstract syntax trees 
+(this flag is required). 
+
+<PRE>
+	happy --glr --decode [--ghc] ParNAME.y
+</PRE>
+
+The optional <TT>--ghc</TT> flag turns on certain optimisations for the 
+GHC compiler. Without this flag, the Happy-generated parsers should be 
+compatible with Hugs in <TT>-98</TT> mode: although large parsers may 
+be rejected by Hugs as "too complex", and other BNFC output code may 
+require conditional compilation (but some hand-editing may suffice here).
+
+<P>
+This invocation of <TT>happy</TT> will generate two files, called
+<TT>ParNAME.hs</TT> and <TT>ParNAMEData.hs</TT>, which are the parser
+driver and parser data respectively. They are in separate files because
+the former needs extensive optimization, but the latter may be large
+and thus too expensive to optimize. These files can be compiled with 
+GHC in the normal way, <EM>although sometimes you may need the 
+<TT>-fglasgow-exts</TT> file to permit certain instance declarations
+created in the parser</EM>. 
+
+
+
+<br><br><HR>
+<H2> Testing the generated GLR parser </H2>
+
+File <TT>TestNAME.hs</TT> contains a simple test harness for the parser,
+which reads from standard input and displays the resulting tree(s) or some 
+error message. 
+
+<P>
+For GLR parsing, there are two possible errors: premature end of input
+or (global) syntax error. The former should be clear, but the second may 
+require explanation. When ambiguity arises, GLR parsers allow several 
+interpretations to continue in parallel. Some of these may be discarded
+when new input is incompatible with the interpretation. This is a syntax
+error for this interpretation, but the only action is to discard the 
+interpretation. No warning or error is generated, because it doesn't 
+necessarily mean the overall parse will fail. However, if all interpretations
+are dropped, then this is a global syntax error - no parses are possible.
+
+<P>
+If the parse succeeds and produces exactly one abstract syntax tree, then 
+this is shown. If more than one tree is produced, these are shown in turn,
+numbering each tree to aid identification and to illustrate how many 
+different parses succeeded.
+
+
+<br><br><HR>
+<H2> Using the generated GLR parser in other applications </H2>
+
+A simplified interface to the Happy-generated GLR parsers is provided 
+for BNFC.  The code for this is currently given at the end of the 
+<TT>TestNAME.hs</TT> files, and summarized here.
+The full, standard interface to is explained elsewhere, in the 
+<A href="http://www.haskell.org/happy/doc/html/sec-glr.html">
+GLR documentation</A>.
+
+<PRE>
+type ParseFun a = [[Token]] -> (GLRResult, GLR_Output (Err a))
+</PRE>
+
+(Simplified) parsers obey the pattern represented by the <TT>ParseFun</TT> 
+synonym above. The input is a list of list of tokens, where the outer 
+list corresponds to input positions and the inner list corresponds to 
+different interpretations of a particular input symbol. In Natural 
+Language terms, the inner list allows representation of morphological 
+ambiguity, for example the noun and verb senses of <EM>run</EM>.
+
+<P>
+The output is the standard parsing result <TT>GLRResult</TT> plus
+a more convenient form <TT>GLR_Output (Err a)</TT>. 
+The <TT>GLR_Output</TT> type allows representation of parse fail 
+(with error message(s)), or a success (with useful results).
+It is polymorphic, in order to support reuse, and the occurrence of
+<TT>Err</TT> reflects use of that monad within BNFC. 
+
+<P>
+The fail case of <TT>GLR_Output</TT> has a main error message plus a 
+second string for supplementary information, e.g. more detailed output.
+The main part of the success case is a list of `semantic' results
+(which are abstract syntax trees in the standard BNFC setting), 
+so this provides convenient access to the parse results.
+Also provided is a function of type <TT>(Forest -> Forest) -> [a]</TT>,
+which allows modification of the parse forest to be done before the
+decoding to semantic results. This is useful if some pruning or reordering
+of results is required before the final trees are produced; an example of
+this is given below. 
+
+<PRE>
+type Forest = FiniteMap ForestId [Branch]
+data GLR_Output a
+ = GLR_Result { pruned_decode     :: (Forest -> Forest) -> [a]
+              , semantic_result   :: [a]
+              }
+ | GLR_Fail   { main_message :: String
+              , extra_info   :: String
+              }
+</PRE>
+
+
+Parsers exported by the GLR driver code can be converted to the simple 
+form with the following lifting operation (the code is provided in the
+<TT>TestNAME.hs</TT> files). 
+
+<PRE>
+lift_parser
+ :: (TreeDecode a, Show a, Print a)
+ => ([[Token]] -> GLRResult) -> ParseFun a
+</PRE>
+
+
+Finally, it is necessary to create the simplified parser object before using 
+it in your code. The following idiom is recommended, where <TT>TOPTYPE</TT>
+is the root type in the abstract syntax trees and <TT>TOPSYMBOL</TT> is the 
+name of the topmost (or main) rule in the BNFC input grammar. 
+This causes the main parser to be lifted appropriately, and via the type
+signature it fixes the type of objects to be produced by decoding.
+(This is required because of the use of type classes.)
+
+<PRE>
+the_parser :: ParseFun TOPTYPE
+the_parser = lift_parser pTOPSYMBOL
+</PRE>
+
+
+
+
+<br><br><HR>
+<H2> Graphical output </H2>
+
+It is possible, and often very useful, to view graphs of the forest.
+For example, you can easily see where and how ambiguity is arising.
+This may also be helpful for debugging your grammars.
+See the page on
+<A href="http://www.dur.ac.uk/p.c.callaghan/happy-glr/#graphs">
+graph conversion information</A>, which contains extra code for
+producing graph output.
+
+
+<br><br><HR>
+<H2> Brief example of pruning or reordering </H2>
+
+In applications where there is moderate ambiguity, for example the parsing
+of sentences of 10-20 words with a reasonably detailed NL grammar, some control 
+over the number and order of resulting trees may be required. This can
+be done by supplying a function of type <TT>Forest -> Forest</TT>
+to the function in the <TT>pruned_decode</TT> slot of <TT>GLR_Output</TT>. 
+Consider the following ambiguous grammar fragment
+
+<PRE>
+Plus . Expr ::= Expr "+" Expr
+Lit  . Expr ::= Integer
+</PRE>
+
+As an artificial example, suppose we wanted to limit the interpretations from
+the first rule to the ones where the left tree covers at least as much input
+as the right tree (which we can tell by inspecting the forest indices).
+This can be achieved with code like the following. 
+
+<PRE>
+remove_light_lefts :: Forest -> Forest
+remove_light_lefts
+ = mapFM foo
+   where
+      foo k bs = [ b
+                 | b <- bs
+                 , case b_nodes b of
+                     [_]                 -> True        -- an Int
+                     [(a,b,_),_,(c,d,_)] -> b - a >= d - c
+                 ]
+</PRE>
+
+In this context, <TT>mapFM</TT> applies a function of type
+<TT>ForestId -> [Branch] -> [Branch]</TT> to each node in the forest,
+where the <TT>ForestId</TT> is the node index and the second argument
+its current value, and the result is the new value. 
+The code above only keeps a branch with three children whose left side is 
+wider or the same as its right side. 
+Note that forest indices contain start and end positions, so width is
+easy to calculate. You can also look at the last item of the index
+3-tuples to get information about grammatical categories.
+
+<P>
+For brief reference, the relevant types are listed below. <TT>GSymbol</TT>
+is an enumeration of names from the grammar, each name prefixed with
+<TT>G_</TT> to avoid name clashes, or it is an embedded token value. 
+Semantic information is held in the <TT>GSem</TT> values but in general
+these are functions and not intended for general use (but see comment 
+below).
+<PRE>
+type Forest   = FiniteMap ForestId [Branch]
+type ForestId = (Int,Int,GSymbol)
+data Branch   = Branch {b_sem :: GSem, b_nodes :: [ForestId]} deriving Show
+data GSymbol  = {automatically generated by Happy-GLR} deriving Show
+data GSem     = {automatically generated by Happy-GLR} deriving Show
+</PRE>
+
+<P>
+Some final comments on deeper technical aspects of this technique:
+<UL>
+
+<LI>Dead sections of the forest are not removed at present, but since 
+	tree decoding is top-down, this won't affect the output. But there 
+	is some overhead for the unused data, whilst the forest is stored in
+	a <TT>FiniteMap</TT> (as opposed to a constant-time array).
+
+<LI>Note that setting one node's value to <TT>[]</TT> will cause failure 
+	to be propagated to all its (non-choice) ancestors. Thus removing
+	the branches at some node will cause all interpretations which 
+	include that node to be removed too. 
+
+<LI>Since the semantic values are currently stored as functions (for 
+	various reasons, as argued elsewhere), it is not easy to access
+	the information. You can use <TT>decode_b</TT> in class 
+	<TT>TreeDecode</TT> can extract some information (if you know 
+	the expected type of the relevant sematic result, in order to 
+	select a concrete instance for decoding), but this will cause
+	traversal of parts of the (original) forest and it can be expensive.
+	In such circumstances, the <EM>label decoding</EM> mode of 
+	Happy-GLR is recommended (see the documentation).
+
+<LI>If you try experiments with this functionality and get interesting 
+	(or strange) results, please email relevant files and comments 
+	to <A HREF="mailto:P.C.Callaghan@durham.ac.uk">Paul Callaghan</A>.
+	Such information may help refine and extend this aspect of Happy-GLR.
+</UL>
+
+
+<br><br><HR>
+<H2> Known issues and deficiencies </H2>
+
+<UL>
+<LI>Multiple grammar entry points not supported yet (currently, a 
+	warning is printed).
+
+<LI>See the Happy-GLR documentation for more details on which features
+	of Happy are supported, and see Paul Callaghan's 
+	<A href="http://www.dur.ac.uk/p.c.callaghan/happy-glr/">
+	Happy-GLR information</A> page for updates or news.
+
+<LI>The decoding from parse forest to trees is inefficient in the sense
+	that subgraphs can be re-visited, although it does avoid the
+	retention of large data structures in memory during decoding. 
+	For small or moderate examples, this is unlikely to be a 
+	significant point. 
+
+<LI>Currently the <TT>Err</TT> monad is not essential for the GLR parsers
+	and could, in principle, be removed. 
+	In particular, <TT>happyError</TT> is bypassed and no semantic rule
+	in the grammar uses the <TT>{% ... }</TT> form. 
+
+<LI>The <TT>GLR_Output</TT> interface may be incorporated into a future 
+	release of Happy, but the interface is not expected to change.
+</UL>
+
+
+<!--
+<br><br><HR>
+<H2>Miscellaneous</H2>
+-->
+
+<br><br><HR>
+
+<I><FONT SIZE=-1>
+    last changed: 21 mar 2005.
+</FONT></I>
+
+</BODY>
+</HTML>

@@ -1,0 +1,113 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+        "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+	<meta http-equiv="content-type" content="text/html; charset=iso-8859-1" />
+  <title>The BNF Converter: OCaml Mode</title>
+<link rel="stylesheet" type="text/css" href="default.css" />
+</head>
+<body>
+<center> 
+<h1>BNF Converter</h1>
+<p>
+<a href="http://www.cs.chalmers.se/~markus">Markus Forsberg</a> and <a
+ href="http://www.cs.chalmers.se/~aarne">Aarne Ranta</a> 
+ </p>
+</center>
+<hr />
+<center>
+<h1>OCaml Mode</h1>
+</center>
+
+<h2>Requirements</h2>
+
+<p>
+You need the following programs installed on your system to be able to
+run BNF Converter in OCaml mode:
+</p>
+<ul>
+  <li> <a href="http://caml.inria.fr/ocaml/index.en.html">The Objective Caml system</a> (includes lexer and parser generators <tt>ocamllex</tt> and <tt>ocamlyacc)</tt> </li>
+  <li> <a href="http://www.latex-project.org/">LaTeX: A document
+preparation system</a> </li>
+</ul>
+
+<h2>Running the BNF Converter in OCaml mode</h2>
+
+<p>
+Example file <a href="http://www.cs.chalmers.se/~markus/BNFC/JavaletteLight.cf">
+JavaletteLight.cf</a>.</p>
+
+<p> Producing the output files without compiling them is done by typing
+<tt> bnfc -ocaml file</tt>. </p>
+<p>
+If this is run on the example file, the output looks like this:
+</p>
+<pre>
+$ bnfc -ocaml JavaletteLight.cf 
+The BNF Converter, 2.2
+(c) Bjorn Bringert, Paul Callaghan, Markus Forsberg, Peter Gammie,
+    Patrik Jansson, Antti-Juhani Kaijanaho, Michael Pellauer,
+    and Aarne Ranta 2002 - 2004.
+Free software under GNU General Public License (GPL).
+Bug reports to {markus,aarne}@cs.chalmers.se.
+
+
+Reading grammar from JavaletteLight.cf
+21 rules accepted
+
+writing file AbsJavaletteLight.ml
+writing file LexJavaletteLight.mll
+writing file ParJavaletteLight.mly
+writing file DocJavaletteLight.tex
+writing file SkelJavaletteLight.ml
+writing file PrintJavaletteLight.ml
+writing file ShowJavaletteLight.ml
+writing file TestJavaletteLight.ml
+writing file BNFC_Util.ml
+Done!
+</pre>
+
+<p> You could now compile LexJavaletteLight.mll, ParJavaletteLight.mly and
+DocJavaletteLight.tex by hand, using ocamllex, ocamlyacc and latex. </p>
+<p> </p>
+<p> You can also produce a makefile, named <tt>Makefile</tt>, by
+typing <tt> bnfc -ocaml -m JavaletteLight.cf</tt>. </p>
+<p>
+When you have produced the makefile, you can:
+</p>
+<ul>
+  <li> type <tt>make</tt> to compile the parser, the lexer, the
+documentation and a test program. 
+</li>
+</ul>
+
+<p> You can now test to parse a Javalette
+file: </p> 
+<pre>$ ./TestJavaletteLight koe.jll
+[Abstract syntax]
+
+Fun (TInt, Ident "main", [SDecl (TInt, Ident "i"); SDecl (TDouble, Ident
+"d"); SAss (Ident "i", EInt (0)); SAss (Ident "d", EDouble (1.)); SWhile
+(ELt (EVar (Ident "i"), EInt (10)), [SAss (Ident "d", ETimes (EVar
+(Ident "d"), EDouble (0.5))); SIncr (Ident "i")])])
+
+
+[Linearized tree]
+
+int main () {
+  int i ;
+  double d ;
+  i = 0 ;
+  d = 1. ;
+  while (i &lt; 10){
+    d = d * 0.5 ;
+    i ++ ;
+    }
+  }
+</pre> 
+
+<p> To make this test
+yourself, just copy the linearization result into a file
+<tt>koe.jll</tt>.  
+</p> 
+</body> </html>

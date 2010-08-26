@@ -1,0 +1,276 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<html>
+<head>
+  <title>New Pragmas in the BNF Converter</title>
+</head>
+  <body bgcolor="#ffffff" text="#000000">
+    
+<h1>New Pragmas in the BNF Converter</h1>
+
+<p>
+By Aarne Ranta, September 19, 2003.
+<p>
+
+This document is a supplement to the BNFC documentation, aimed to explain
+the new pragmas introduced in versions 1.3 and 1.9b. Its content will
+be incorporated in the BNFC report later.
+
+<p>
+
+<h2>New pragmas in BNFC version 1.3</h2>
+    
+These pragmas do not add to the expressive power of BNFC, but are just
+shorthands for groups of rules.
+
+
+<h3>Terminators and separators</h3>
+
+The <tt>terminator</tt> pragma defines a pair of list rules by what
+token terminates each element in the list. For instance,
+<pre>
+  terminator Stm ";" ;
+</pre>
+tells that each statement (<tt>Stm</tt>) is terminated with a semicolon 
+(<tt>;</tt>). It is a shorthand for the pair of rules
+<pre>
+  [].  [Stm] ::= ;
+  (:). [Stm] ::= Stm ";" [Stm] ;
+</pre>
+The qualifier <tt>nonempty</tt> in the pragma makes one-element list
+to be the base case. Thus
+<pre>
+  terminator nonempty Stm ";" ;
+</pre>
+is shorthand for
+<pre>
+  (:[]). [Stm] ::= Stm ";" ;
+  (:).   [Stm] ::= Stm ";" [Stm] ;
+</pre>
+The terminator can be specified as empty <tt>""</tt>. No token is
+introduced then, but e.g.
+<pre>
+  terminator Stm "" ;
+</pre>
+is translated to
+<pre>
+  [].  [Stm] ::= ;
+  (:). [Stm] ::= Stm [Stm] ;
+</pre>
+
+<p>
+
+The <tt>separator</tt> pragma is similar to <tt>terminator</tt>,
+except that the separating token is not attached to the last
+element. Thus
+<pre>
+  separator Stm ";" ;
+</pre>
+means
+<pre>
+  [].    [Stm] ::= ;
+  (:[]). [Stm] ::= Stm ;
+  (:).   [Stm] ::= Stm ";" [Stm] ;
+</pre>
+whereas
+<pre>
+  separator nonempty Stm ";" ;
+</pre>
+means
+<pre>
+  (:[]). [Stm] ::= Stm ;
+  (:).   [Stm] ::= Stm ";" [Stm] ;
+</pre>
+Notice that, if the empty token <tt>""</tt> is used, there
+is no difference between <tt>terminator</tt> and <tt>separator</tt>.
+
+<p>
+
+<b>Problem</b>.
+The grammar generated from
+a <tt>separator</tt> without <tt>nonempty</tt>
+will actually
+also accept a list terminating with a semicolon, whereas 
+the pretty printer "normalizes" it away. This might be considered
+as a bug, but a set of rules 
+forbidding the terminating semicolon would be much more 
+complicated. The <tt>nonempty</tt> case is strict.
+
+
+
+<h3>Coercions</h3>
+
+The <tt>coercions</tt> pragma is a shorthand for a group of rules
+translating between precedence levels. For instance,
+<pre>
+  coercions Exp 3 ;
+</pre>
+is shorthand for
+<pre>
+  _. Exp  ::= Exp1 ;
+  _. Exp1 ::= Exp2 ;
+  _. Exp2 ::= Exp3 ;
+  _. Exp3 ::= "(" Exp ")" ;
+</pre>
+Because of the total coverage of these coercions,
+it does not matter in practice if the integer indicating the highest level
+(here <tt>3</tt>) is bigger than the highest level actually occurring,
+or if there are some other levels without productions in the grammar.
+
+
+
+<h3>Rules</h3>
+
+The <tt>rules</tt> pragma is a shorthand for a set of rules from which
+labels are generated automatically. For instance,
+<pre>
+  rules Type ::= "int" | "float" | "double" | "long" ;
+</pre>
+is shorthand for
+<pre>
+  Type_int.    Type ::= "int" ;
+  Type_float.  Type ::= "float" ; 
+  Type_double. Type ::= "double" ; 
+  Type_long.   Type ::= "long" ;
+</pre>
+The labels are created automatically. If the production has just
+one item, the label looks natural. If it is longer, the type
+name indexed with an integer is used. No global checks are
+performed when generating these labels. Any label name clashes that
+result from them are captured by BNFC type checking on the generated
+rules.
+
+
+<h2>New pragmas in BNFC version 1.9b: layout syntax</h2>
+    
+Those who do not know what layout syntax is or who do not like
+it can skip this section.
+
+<p>
+
+These new pragmas define a <b>layout syntax</b> for a language.
+Before these pragmas were added, layout syntax was not definable in
+BNFC. The layout pragmas are only
+available for the files generated for Haskell-related tools;
+if Java or C++ programmers want to handle layout, they can use
+the Haskell layout resolver as a preprocessor to their
+front end, before the lexer. In Haskell, the layout resolver 
+appears, automatically, in its most natural place, which is between the
+lexer and the parser. The layout pragmas of BNFC are not
+powerful enough to handle the full layout rule of Haskell 98,
+but they suffice for the "regular" cases.
+
+<p>
+
+Here is an example, found in the 
+grammar <tt>layout/Alfa2.cf</tt>.
+<pre>
+  layout "of", "let", "where", "sig", "struct" ;
+</pre>
+The first line says that <tt>"of", "let", "where", "sig", "struct"</tt>
+are <b>layout words</b>, i.e. start a 
+<b>layout list</b>. A layout list is a list of expressions
+normally enclosed in curly brackets and separated by semicolons,
+as shown by the Alfa example
+<pre>
+  ECase. Exp ::= "case" Exp "of" "{" [Branch] "}" ;
+
+  separator Branch ";" ;
+</pre>
+When the layout resolver finds the token <tt>of</tt> in the code
+(i.e. in the sequence of its lexical tokens), it 
+checks if the next token is an opening curly bracket. If it
+is, nothing special is done until a layout word is encountered again.
+The parser will expect the semicolons and the closing bracket 
+to appear as usual.
+
+<p>
+
+But, if the token <i>t</i>
+following <tt>of</tt> is not an opening curly bracket,
+a bracket is inserted, and the start column of <i>t</i>
+is remembered as the position at which the elements of the
+layout list must begin. Semicolons are inserted at those
+positions. When a token is eventually encountered left
+of the position of <i>t</i> (or an end-of-file), a closing bracket
+is inserted at that point.
+
+<p>
+
+Nested layout blocks are allowed, which means that the layout
+resolver maintains a stack of positions. Pushing a position
+on the stack corresponds to inserting a left bracket, and
+popping from the stack corresponds to inserting a right bracket.
+
+<p>
+
+Here is an example of an Alfa source file using layout:
+<pre>
+  c :: Nat = case x of 
+    True -> b
+    False -> case y of
+      False -> b
+      Neither -> d
+
+  d = case x of True -> case y of False -> g
+                                  x -> b
+                y -> h
+</pre>
+Here is what it looks like after layout resolution:
+<pre>
+   c :: Nat = case x of {
+    True -> b
+    ;False -> case y of {
+      False -> b
+    };Neither -> d
+  
+  };d = case x of {True -> case y of {False -> g
+                                  ;x -> b
+                };y -> h} ;
+</pre>
+<b>Hint</b>. It is good practice to start a new line after
+any layout word, to guarantee alpha convertibility.
+For instance, if you change the variable name <tt>x</tt> 
+to <tt>foo</tt>, the second definition above becomes
+syntactically incorrect, whereas the first one remains correct.
+
+<p>
+
+There are two more layout-related pragmas. The <tt>layout stop</tt>
+pragma, as in
+<pre>
+  layout stop "in" ;
+</pre>
+tells the resolver that the layout list can be exited with
+some stop words, like <tt>in</tt>, which exits a
+<tt>let</tt> list. It is no error in the resolver to exit
+some other kind of layout list with <tt>in</tt>, but an error will show up
+in the parser.
+
+<p>
+
+The <tt>layout toplevel</tt> pragma tells that the whole source file
+is a layout list, even though no layout word indicates this.
+The position is the first column, and the resolver adds a semicolon
+after every paragraph whose first token is at this position. No curly
+brackets are added. The Alfa file above is an example of this, with
+two such semicolons added.
+
+<p>
+
+To make layout resolution a stand-alone program, e.g. to serve as a
+preprocessor, the programmer can modify the file
+<tt>layout/ResolveLayoutAlfa.hs</tt> as indicated in the file,
+and either compile it or run it in the Hugs interpreter by
+<pre>
+  runhugs ResolveLayoutX.hs &lt;X-source-file>
+</pre>
+We may add the generation of <tt>ResolveLayoutX.hs</tt>
+to a later version of BNFC.
+
+<p>
+
+<b>Bug</b>. The generated layout resolver does not work correctly
+if a layout word is the first token on a line.
+
+</body>
+</html>

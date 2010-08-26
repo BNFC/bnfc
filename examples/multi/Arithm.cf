@@ -1,0 +1,11 @@
+views C, JVM ;
+
+C: EAdd. Exp  ::= Exp  "+" Exp1 ;
+C: EMul. Exp1 ::= Exp1 "*" Exp2 ;
+C: EInt. Exp2 ::= Integer ;
+C: coercions Exp 2 ;
+
+JVM: EAdd. Exp ::= Exp Exp "iadd" ";" ;
+JVM: EMul. Exp ::= Exp Exp "imul" ";" ;
+JVM: EInt. Exp ::= "bipush" Integer ";" ;
+
