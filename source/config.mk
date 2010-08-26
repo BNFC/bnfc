@@ -1,8 +1,8 @@
 # Set name of binary
-PROGRAM=extract
+PROGRAM=bnfc
 #
 
-PACKAGE_VERSION = 1.0
+PACKAGE_VERSION = 2.4
 prefix = /usr/local
 exec_prefix = ${prefix}
 bindir = ${exec_prefix}/bin

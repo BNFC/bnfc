@@ -1,7 +1,7 @@
 AC_PREREQ(2.61)
 
 # CHANGE THIS!
-AC_INIT(extract,1.0, name@host.com)
+AC_INIT(bnfc,2.4, markus.forsberg@gu.se)
 
 AC_CONFIG_FILES([config.mk])
 AC_CONFIG_SRCDIR([src/Main.hs])

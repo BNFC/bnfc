@@ -57,7 +57,9 @@ import System.IO
 import System.Process
 import Data.Maybe
 import Data.Char
-import Control.Monad.State
+import Control.Monad.ST
+
+-- Control.Monad.State
 
 makeCSharp :: Bool -- Makefile
            -> Bool -- Visual Studio files

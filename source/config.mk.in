@@ -1,5 +1,5 @@
 # Set name of binary
-PROGRAM=extract
+PROGRAM=bnfc
 #
 
 PACKAGE_VERSION = @PACKAGE_VERSION@

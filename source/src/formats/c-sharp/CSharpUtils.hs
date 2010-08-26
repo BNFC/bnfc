@@ -38,7 +38,8 @@
 module CSharpUtils where
 
 import CF
-import Control.Monad.State
+import Control.Monad.ST
+-- Control.Monad.State
 import Char (toLower)
 import Data.Maybe
 import List
