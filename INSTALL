@@ -1,0 +1,4 @@
+cd source
+./configure
+make
+sudo make install
