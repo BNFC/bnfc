@@ -1,5 +1,5 @@
 Name: BNFC
-Version: 2.4.1.1
+Version: 2.4.1.2
 cabal-version: >= 1.2
 build-type: Simple
 category: Development
@@ -54,6 +54,7 @@ Executable bnfc
     OOAbstract,
     CFtoLatex,
     CFtoXML,
+    CFtoTxt,	
     -- Haskell
     HaskellTop,
     RegToAlex,
@@ -100,12 +101,15 @@ Executable bnfc
     CFtoBison,
     CFtoCPPPrinter,
     CFtoCPPAbs,
+
     -- C++ STL
-    STLTop,
-    CFtoSTLPrinter,
-    CFtoCVisitSkelSTL,
     CFtoBisonSTL,
     CFtoSTLAbs,
+    STLUtils,
+    CFtoCVisitSkelSTL,
+    CFtoSTLPrinter,
+    STLTop,
+
     -- C#
     CSharpTop,
     RegToGPLEX,

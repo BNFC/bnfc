@@ -46,7 +46,7 @@ import Char
 import Data.List (elemIndex)
 
 title = unlines [
-  "The BNF Converter, 2.4.1.1", 
+  "The BNF Converter, 2.4.1.2", 
   "(c) Krasimir Angelov, Bjorn Bringert, Johan Broberg, Paul Callaghan, ",
   "    Markus Forsberg, Ola Frid, Peter Gammie, Patrik Jansson, ",
   "    Kristofer Johannisson, Antti-Juhani Kaijanaho, Ulf Norell, ",
