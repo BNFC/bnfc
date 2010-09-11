@@ -1,14 +1,12 @@
 Name: BNFC
-Version: 2.3
+Version: 2.4.1
 cabal-version: >= 1.2
 build-type: Simple
-Copyright: 
-   2002 - 2007 Bjorn Bringert, Johan Broberg, Paul Callaghan, Markus Forsberg,
-   Peter Gammie, Patrik Jansson, Kristofer Johannisson, Antti-Juhani Kaijanaho, 
-    Ulf Norell, Michael Pellauer, Aarne Ranta
+category: Development
+Copyright: (c) Krasimir Angelov, Bjorn Bringert, Johan Broberg, Paul Callaghan, Markus Forsberg, Ola Frid, Peter Gammie, Patrik Jansson, Kristofer Johannisson, Antti-Juhani Kaijanaho, Ulf Norell, Michael Pellauer and Aarne Ranta 2002 - 2010. Free software under GNU General Public License (GPL).
 License: GPL
 License-File: COPYING
-Maintainer: Markus Forsberg <markus@cs.chalmers.se> Aarne Ranta <aarne@cs.chalmers.se>
+Maintainer: Markus Forsberg <markus.forsberg@gu.se> Aarne Ranta <aarne@chalmers.se>
 Homepage: http://www.cse.chalmers.se/research/group/Language-technology/BNFC/
 Synopsis: A compiler front-end generator.
 Description:
@@ -137,4 +135,6 @@ Executable bnfc
     CFtoVisitSkel15,
     CFtoJavaPrinter15,
     CFtoJLex15,
-    CFtoCup15
+    CFtoCup15,
+    -- F-sharp
+    FSharpTop
