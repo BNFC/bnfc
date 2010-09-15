@@ -42,11 +42,14 @@ import Utils
 import MultiView (preprocessMCF, mkTestMulti, mkMakefileMulti)
 
 import System
+import System.Exit
 import Char
 import Data.List (elemIndex)
 
+version = "2.4.2.0"
+
 title = unlines [
-  "The BNF Converter, 2.4.1.2", 
+  "The BNF Converter, "++version, 
   "(c) Krasimir Angelov, Bjorn Bringert, Johan Broberg, Paul Callaghan, ",
   "    Markus Forsberg, Ola Frid, Peter Gammie, Patrik Jansson, ",
   "    Kristofer Johannisson, Antti-Juhani Kaijanaho, Ulf Norell, ",
@@ -60,6 +63,9 @@ main = do
   xx <- getArgs
 	  
   case xx of
+    ["--numeric-version"] -> do
+      putStrLn version
+      exitSuccess
     [] -> printUsage
     _ | elem "-multi" xx -> do
       putStrLn "preprocessing multilingual BNF"
@@ -142,6 +148,9 @@ mkOne xx = do
 printUsage = do 
   putStrLn title
   putStrLn "Usage: bnfc <makeoption>* <language>? <special>* file.cf"
+  putStrLn ""
+  putStrLn "Version options:"
+  putStrLn "  --numeric-version  Print just the version number"
   putStrLn ""
   putStrLn "Make option:"
   putStrLn "  -m             generate Makefile"
