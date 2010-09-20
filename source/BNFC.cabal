@@ -5,7 +5,7 @@ build-type: Simple
 category: Development
 Copyright: (c) Krasimir Angelov, Bjorn Bringert, Johan Broberg, Paul Callaghan, Markus Forsberg, Ola Frid, Peter Gammie, Patrik Jansson, Kristofer Johannisson, Antti-Juhani Kaijanaho, Ulf Norell, Michael Pellauer and Aarne Ranta 2002 - 2010. Free software under GNU General Public License (GPL).
 License: GPL
-License-File: COPYING
+License-File: LICENSE
 Maintainer: Markus Forsberg <markus.forsberg@gu.se> Aarne Ranta <aarne@chalmers.se>
 Homepage: http://www.cse.chalmers.se/research/group/Language-technology/BNFC/
 Synopsis: A compiler front-end generator.
@@ -21,24 +21,24 @@ Description:
   a Happy, CUP, or Bison parser generator file,
   a pretty-printer as a Haskell/Java/C++/C module,
   a Latex file containing a readable specification of the language.
-Extra-source-files: BNF.cf 
+Extra-source-files: src/BNF.cf 
 
 Executable bnfc
   Build-Depends: haskell98, base>=4 && <5, mtl, directory, array, process
   Main-is: Main.hs
-  HS-source-dirs: . formats
-    formats/haskell2
-    formats/haskell-gadt
-    formats/xml
-    formats/profile
-    formats/java
-    formats/java1.5
-    formats/cpp
-    formats/c
-    formats/ocaml
-    formats/cpp_stl
-    formats/c-sharp
-    formats/f-sharp
+  HS-source-dirs: src src/formats
+    src/formats/haskell2
+    src/formats/haskell-gadt
+    src/formats/xml
+    src/formats/profile
+    src/formats/java
+    src/formats/java1.5
+    src/formats/cpp
+    src/formats/c
+    src/formats/ocaml
+    src/formats/cpp_stl
+    src/formats/c-sharp
+    src/formats/f-sharp
   Other-modules:
     LexBNF,
     ParBNF,
