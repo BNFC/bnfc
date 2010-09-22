@@ -18,9 +18,8 @@
 -}
 
 
-module GetCF where
+module GetCF(tryReadCF,tryReadCFP) where
 
-import Directory	( doesFileExist, renameFile )
 import Monad		( when )
 
 import CF
@@ -86,20 +85,6 @@ tryReadCFP file = do
           putStrLn $ "  certainly cause problems in languages other than Haskell.\n"
           return (ret,True)
 
-
--- peteg: FIXME this is racey.
--- want to be a bit smarter about whether we actually generate the file
--- or save it... e.g. ErrM.hs need not be regenerated if it exists.
-writeFileRep :: FilePath -> String -> IO ()
-writeFileRep f s =
-    do exists <- doesFileExist f
-       backedUp <- if exists
-		     then do let fbak = f ++ ".bak"
-		             renameFile f fbak
-			     return $ " (saving old file as " ++ fbak ++ ")"
-		     else return ""
-       putStrLn $ "writing file " ++ f ++ backedUp
-       writeFile f s
 
 getCF :: String -> (CF, [String])
 getCF s = let (cfp,msg) = getCFP s in (cfp2cf cfp, msg)

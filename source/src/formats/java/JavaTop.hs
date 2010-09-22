@@ -50,7 +50,7 @@ import CFtoJavaSkeleton
 import CFtoVisitSkel
 import CFtoLatex
 import System
-import GetCF		( tryReadCF, writeFileRep )
+import GetCF		( tryReadCF )
 import Char
 import List(intersperse)
 

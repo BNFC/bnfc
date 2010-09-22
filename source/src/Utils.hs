@@ -20,7 +20,8 @@
 module Utils where
 
 import Control.Monad (unless)
-import System.Directory (createDirectory, doesDirectoryExist)
+import System.Directory (createDirectory, doesDirectoryExist,
+                         doesFileExist, renameFile)
 
 infixr 5 +++
 infixr 5 ++++
@@ -123,3 +124,21 @@ pathInits xs = let (ys,zs) = split pathSep xs
 -- | Like basename(1), remove all leading directories from a path name.
 basename :: String -> String
 basename = last . splitAll pathSep
+
+
+
+-- peteg: FIXME this is racey.
+-- want to be a bit smarter about whether we actually generate the file
+-- or save it... e.g. ErrM.hs need not be regenerated if it exists.
+
+-- | Write a file, after making a backup of an existing file with the same name.
+writeFileRep :: FilePath -> String -> IO ()
+writeFileRep f s =
+    do exists <- doesFileExist f
+       backedUp <- if exists
+		     then do let fbak = f ++ ".bak"
+		             renameFile f fbak
+			     return $ " (saving old file as " ++ fbak ++ ")"
+		     else return ""
+       putStrLn $ "writing file " ++ f ++ backedUp
+       writeFile f s

@@ -21,7 +21,6 @@ module CFtoXML ---- (cf2DTD, cf2XML)
   where
 
 import CF
-import GetCF (writeFileRep)
 import Utils
 import CFtoTemplate
 import List (intersperse, nub)
