@@ -1,4 +1,4 @@
-{-# OPTIONS -fglasgow-exts #-}
+{-# LANGUAGE PatternGuards #-}
 {-
     BNF Converter: Abstract syntax
     Copyright (C) 2004  Author:  Markus Forberg, Michael Pellauer, Aarne Ranta
