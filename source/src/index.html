@@ -1,24 +1,27 @@
 <!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
-<html><head><title>The BNF Converter</title>
+<html>
+<head>
+<title>The BNF Converter</title>
+</head>
 
-
-  
-  <link rel="stylesheet" type="text/css" href="index_files/default.css"></head><body bgcolor="#ffffff" text="#000000">
+<body>
 <center>
 <h1>BNF Converter<br>
 </h1>
-<a href="http://www.cs.chalmers.se/%7Ebringert">Björn Bringert</a>,
-<a href="http://www.cs.chalmers.se/%7Emarkus">Markus Forsberg</a>, and
-<a href="http://www.cs.chalmers.se/%7Eaarne">Aarne Ranta</a>
+<a href="http://www.cse.chalmers.se/alumni/bringert/">Björn Bringert</a>,
+<a href="http://www.cse.chalmers.se/alumni/markus/">Markus Forsberg</a>, and
+<a href="http://www.cse.chalmers.se/~aarne/">Aarne Ranta</a>
 <br>
-&nbsp; January 2008 </center>
+&nbsp; September 2010</center>
 <hr>
 <h2>News</h2>
 <ul>
-  <li> 23/9/2008 Note the new Darcs repository location.</li>
-  <li> 18/1/2008 Release of a Darcs snapshot of BNFC 2.4 (beta).
+  <li> 23/9/2010: The source repository has moved again (details TBA).
+  You can now <a href="#download">get BNFC from Hackage</a>.
+  <li> 23/9/2008: Note the new Darcs repository location.</li>
+  <li> 18/1/2008: Release of a Darcs snapshot of BNFC 2.4 (beta).
   See Download below.
-  <li> 5/6 2007 Release of the Darcs repository (see under Download below). 
+  <li> 5/6/2007: Release of the Darcs repository (see under Download below). 
 This is currently the main distribution channel of BNFC. 
   </li>
   </li><li>BNF Converter is now part of the stable distribution of Debian. <a href="http://packages.debian.org/stable/devel/bnfc">Link</a><br>
@@ -70,13 +73,16 @@ Report</a><br>
   <li><a href="./doc/BNFC_XML.html">XML Mode</a></li>
 </ul>
 
-<h2>Download</h2>
+<h2 id=download>Download</h2>
 
-<p>Darcs repository (the latest version of BNFC):
-</p><p>
-<tt>
+<p>Install
+   <a href="http://hackage.haskell.org/package/BNFC">BNFC from Hackage</a>:
+<blockquote><code>cabal install bnfc</code></blockquote>
+
+<p>Darcs repository <strong>(old)</strong> :
+<blockquote><tt>
 darcs get --partial http://code.haskell.org/bnfc/
-</tt></p>
+</tt></blockquote>
 <p>Darcs snapshot 18/1/2008:
 <ul>
   <li> <a href="./download/BNFC-2.4b.tgz">BNFC-2.4b.tgz</a> source package
