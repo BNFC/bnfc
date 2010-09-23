@@ -20,8 +20,9 @@
 module Utils where
 
 import Control.Monad (unless)
-import System.Directory (createDirectory, doesDirectoryExist,
-                         doesFileExist, renameFile)
+import IO(try)
+import System.Directory (createDirectory, doesDirectoryExist, renameFile,
+                         removeFile, doesFileExist)
 
 infixr 5 +++
 infixr 5 ++++
@@ -126,14 +127,14 @@ basename :: String -> String
 basename = last . splitAll pathSep
 
 
+-- | Write a file, after making a backup of an existing file with the same name.
+writeFileRep :: FilePath -> String -> IO ()
+writeFileRep = writeFileRep2
 
 -- peteg: FIXME this is racey.
 -- want to be a bit smarter about whether we actually generate the file
 -- or save it... e.g. ErrM.hs need not be regenerated if it exists.
-
--- | Write a file, after making a backup of an existing file with the same name.
-writeFileRep :: FilePath -> String -> IO ()
-writeFileRep f s =
+writeFileRep1 f s =
     do exists <- doesFileExist f
        backedUp <- if exists
 		     then do let fbak = f ++ ".bak"
@@ -142,3 +143,26 @@ writeFileRep f s =
 		     else return ""
        putStrLn $ "writing file " ++ f ++ backedUp
        writeFile f s
+
+-- New version by TH, 2010-09-23
+-- If an old version of the file exist and the new version is the same,
+-- keep the old file and don't create a .bak file.
+writeFileRep2 :: FilePath -> String -> IO ()
+writeFileRep2 path s =
+    either newFile updateFile =<< try (readFile path)
+  where
+    newFile _ =
+        do putStrLn $ "writing new file "++path
+           writeFile path s
+    updateFile old =
+        do let tmp=path++".tmp"
+           writeFile tmp s
+           new <- readFile tmp
+           if new==old  -- test is O(1) space, O(n) time
+              then do putStrLn $ "no change to file "++path
+                      removeFile tmp
+              else do let bak=path++".bak"
+                      putStrLn $ "writing file "++path
+                                   ++" (saving old file as "++bak++")"
+                      renameFile path bak
+                      renameFile tmp path
