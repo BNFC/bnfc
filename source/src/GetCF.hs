@@ -44,12 +44,15 @@ tryReadCFP :: FilePath -> IO (CFP,Bool)
 tryReadCFP file = do
   putStrLn $ "\nReading grammar from " ++ file
   s <- readFile file
-  let (cfp,msg') = getCFP s
+  let (cfp,msgs1) = getCFP s
       cf = cfp2cf cfp
-      msg = case checkDefinitions cf of
-		Bad err	-> msg' ++ [err]
-		Ok ()	-> msg'
+      msgs2 = case checkDefinitions cf of
+		Bad err	-> [err]
+		Ok ()	-> []
+      msgs3 = checkTokens cf
+      msg = msgs1++msgs2 -- ++ msgs3 -- in a future version
       ret = cfp
+  putStrLn $ unlines msgs3
   if not (null msg) then do
     putStrLn $ unlines msg
     return (ret,False)
@@ -84,7 +87,6 @@ tryReadCFP file = do
           putStrLn $ "  Labels has the same name as the Category. This will almost"
           putStrLn $ "  certainly cause problems in languages other than Haskell.\n"
           return (ret,True)
-
 
 getCF :: String -> (CF, [String])
 getCF s = let (cfp,msg) = getCFP s in (cfp2cf cfp, msg)
@@ -225,3 +227,35 @@ transExp e = case e of
     cons e1 e2 = App "(:)" [transExp e1, e2]
     nil	       = App "[]" []
 
+--------------------------------------------------------------------------------
+
+--checkTokens :: CFG f -> [String]
+checkTokens cf =
+    if null ns
+    then []
+    else ["Warning : ", -- change to error in a future version
+          "  The following tokens accept the empty string: ",
+          "    "++unwords ns,
+          "  This is error-prone and will not be supported in the future."]
+  where
+    ns = map fst . filter (nullable.snd) $ tokenPragmas cf
+
+-- | Check if a regular expression is nullable (accepts the empty string)
+nullable :: Abs.Reg -> Bool
+nullable r =
+    case r of
+      Abs.RSeq r1 r2   -> nullable r1 && nullable r2
+      Abs.RAlt r1 r2   -> nullable r1 || nullable r2
+      Abs.RMinus r1 r2 -> nullable r1 && not (nullable r2)
+      Abs.RStar _      -> True
+      Abs.RPlus r1     -> nullable r1
+      Abs.ROpt _       -> True
+      Abs.REps         -> True
+      Abs.RChar _      -> False
+      Abs.RAlts _      -> False
+      Abs.RSeqs s      -> null s
+      Abs.RDigit       -> False
+      Abs.RLetter      -> False
+      Abs.RUpper       -> False
+      Abs.RLower       -> False
+      Abs.RAny         -> False
