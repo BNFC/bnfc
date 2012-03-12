@@ -43,11 +43,19 @@ cf2Template skelName absName errName cf = unlines
   ]
  where toArgs               [] = []
        toArgs ((cons,args):xs) 
+	   = (cons ++ " " ++  names False (map (checkRes . var) args) (1 :: Int)) : toArgs xs
+       names _ [] _ = []
+       names b (x:xs) n
+        | elem x xs = (x ++ show n) ++ " " ++ names True xs (n+1)
+	| otherwise = (x ++ if b then show n else "") ++ " " ++ names b xs (if b then n+1 else n)
+{-
+       toArgs ((cons,args):xs) 
 	   = (cons ++ " " ++  names (map (checkRes . var) args) (0 :: Int)) : toArgs xs
        names [] _ = []
        names (x:xs) n
         | elem x xs = (x ++ show n) ++ " " ++ names xs (n+1)
 	| otherwise = x ++ " " ++ names xs n
+-}
        var ('[':xs)  = var (init xs) ++ "s"
        var "Ident"   = "id"
        var "Integer" = "n"
@@ -77,11 +85,11 @@ cf2Template name cf = unlines
   ]
  where toArgs               [] = []
        toArgs ((cons,args):xs) 
-	   = (cons ++ " " ++  names (map (checkRes . var) args) (0 :: Int)) : toArgs xs
-       names [] _ = []
-       names (x:xs) n
-        | elem x xs = (x ++ show n) ++ " " ++ names xs (n+1)
-	| otherwise = x ++ " " ++ names xs n
+	   = (cons ++ " " ++  names False (map (checkRes . var) args) (1 :: Int)) : toArgs xs
+       names _ [] _ = []
+       names b (x:xs) n
+        | elem x xs = (x ++ show n) ++ " " ++ names True xs (n+1)
+	| otherwise = (x ++ if b then show n else "") ++ " " ++ names b xs (if b then n+1 else n)
        var ('[':xs)  = var (init xs) ++ "s"
        var "Ident"   = "id"
        var "Integer" = "n"

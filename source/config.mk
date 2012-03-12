@@ -16,5 +16,5 @@ CPPFLAGS =
 LDFLAGS = 
 EXEEXT = 
 INSTALL = /usr/bin/install -c
-TAR = gtar
+TAR = tar
 GHC = /usr/bin/ghc

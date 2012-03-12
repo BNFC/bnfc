@@ -438,7 +438,7 @@ Copyright (C) 2009 Free Software Foundation, Inc.
 This config.status script is free software; the Free Software Foundation
 gives unlimited permission to copy, distribute and modify it."
 
-ac_pwd='/home/markus/work/clt/bnfc/source'
+ac_pwd='/Users/aarne/bnfc/source'
 srcdir='.'
 INSTALL='/usr/bin/install -c'
 test -n "$AWK" || AWK=awk
@@ -594,7 +594,7 @@ S["GHCI"]=""
 S["INSTALL_DATA"]="${INSTALL} -m 644"
 S["INSTALL_SCRIPT"]="${INSTALL}"
 S["INSTALL_PROGRAM"]="${INSTALL}"
-S["TAR"]="gtar"
+S["TAR"]="tar"
 S["GHC"]="/usr/bin/ghc"
 S["SET_MAKE"]=""
 S["OBJEXT"]="o"
@@ -609,8 +609,8 @@ S["host_alias"]=""
 S["build_alias"]=""
 S["LIBS"]=""
 S["ECHO_T"]=""
-S["ECHO_N"]="-n"
-S["ECHO_C"]=""
+S["ECHO_N"]=""
+S["ECHO_C"]="\\c"
 S["DEFS"]="-DPACKAGE_NAME=\\\"bnfc\\\" -DPACKAGE_TARNAME=\\\"bnfc\\\" -DPACKAGE_VERSION=\\\"2.4\\\" -DPACKAGE_STRING=\\\"bnfc\\ 2.4\\\" -DPACKAGE_BUGREPORT=\\\"markus.forsberg@gu"\
 ".se\\\" -DPACKAGE_URL=\\\"\\\""
 S["mandir"]="${datarootdir}/man"
