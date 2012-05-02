@@ -109,7 +109,7 @@ testfile cat xx abs cncs = unlines $
   ["import qualified Print" ++ cnc | cnc <- cncs] ++
   ["import Abs" ++ abs,
    "import ErrM",
-   "import System (getArgs)",
+   "import System.Environment (getArgs)",
    "",
    "main :: IO ()",
    "main = do",
