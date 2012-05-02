@@ -10,7 +10,7 @@
 # you do a 'make haskell' or 'make ocaml'.
 
 
-testone = cd $(1); ../../bnfc -m -$(2) $(3).cf; make; ./Test$(3) $(4); cd ..;
+testone = cd $(1); ../../source/bin/bnfc -m -$(2) $(3).cf; make; ./Test$(3) $(4); cd ..;
 
 test-ocl = $(call testone,ocl,$(1),SurfaceOCL,OwnerPIN.ocl)
 test-gf = $(call testone,gf,$(1),GF,SyntaxRomance.gf)
