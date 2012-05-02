@@ -35,10 +35,10 @@ import CFtoXML
 import GetCF
 import Utils
 
-import Char
+import Data.Char
 import Data.Maybe (fromMaybe,maybe)
-import System
-import Monad(when)
+import System.Exit (exitFailure)
+import Control.Monad(when)
 
 -- naming conventions
 

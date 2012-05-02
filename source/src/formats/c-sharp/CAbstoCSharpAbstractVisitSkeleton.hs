@@ -51,7 +51,7 @@ module CAbstoCSharpAbstractVisitSkeleton (cabs2csharpAbstractVisitSkeleton) wher
 import CF
 import Utils ((+++), (++++))
 import NamedVariables
-import List
+import Data.List
 import OOAbstract hiding (basetypes)
 import CSharpUtils
 import CAbstoCSharpAbs

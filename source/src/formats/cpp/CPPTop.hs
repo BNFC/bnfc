@@ -27,10 +27,9 @@ import CFtoBison
 import CFtoCVisitSkel
 import CFtoCPPPrinter
 import CFtoLatex
-import System
 import GetCF
-import Char
-import System
+import Data.Char
+import System.Exit (exitFailure)
 
 makeCPP :: Bool -> String -> FilePath -> IO ()
 makeCPP make name file = do

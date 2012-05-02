@@ -24,8 +24,8 @@ import CF
 import CFtoJavaAbs15 (typename)
 import Utils ((+++), (++++))
 import NamedVariables
-import List
-import Char(toLower, toUpper, isDigit)
+import Data.List
+import Data.Char(toLower, toUpper, isDigit)
 
 cf2AllVisitor :: String -> String -> CF -> String
 cf2AllVisitor packageBase packageAbsyn cf = 

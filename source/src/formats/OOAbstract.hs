@@ -44,8 +44,8 @@ module OOAbstract where
 import CF
 import Utils((+++),(++++))
 import NamedVariables
-import List
-import Char(toLower)
+import Data.List
+import Data.Char(toLower)
 
 -- A datastructure more appropriate than CF
 

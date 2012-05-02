@@ -48,10 +48,10 @@ import CAbstoCSharpAbstractVisitSkeleton
 import CFtoCSharpPrinter
 import CFtoLatex
 import CSharpUtils
-import System
 import GetCF
-import Char
-import System
+import Data.Char
+import System.Exit (exitFailure)
+import System.Environment (getEnv)
 import System.Directory
 import System.IO
 import System.Process

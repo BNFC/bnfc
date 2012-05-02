@@ -21,7 +21,7 @@ module CFtoAbstract (cf2Abstract) where
 
 import CF
 import Utils((+++),(++++))
-import List(intersperse)
+import Data.List(intersperse)
 
 -- to produce a Haskell module
 cf2Abstract :: Bool -> String -> CF -> String

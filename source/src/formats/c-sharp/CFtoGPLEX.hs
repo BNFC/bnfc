@@ -42,7 +42,7 @@ import CF
 import RegToGPLEX
 import Utils((+++), (++++))
 import NamedVariables
-import List
+import Data.List
 import CSharpUtils
 
 --The environment must be returned for the parser to use.

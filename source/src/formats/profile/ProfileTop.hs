@@ -32,13 +32,12 @@ import MkErrM
 ---- import CFtoLayout
 ---- import CFtoXML
 -- import CFtoGF		( cf2AbsGF, cf2ConcGF )
--- import System
 import GetCF
 import Utils
 
-import Char
-import System
-import Monad(when)
+import Data.Char
+import System.Exit(exitFailure)
+import Control.Monad(when)
 
 -- naming conventions
 

@@ -22,7 +22,7 @@ module CFtoAlex (cf2alex) where
 
 import CF
 import RegToAlex
-import List
+import Data.List
 
 cf2alex :: String -> String -> CF -> String
 cf2alex name errMod cf = unlines $ concat $ intersperse [""] [

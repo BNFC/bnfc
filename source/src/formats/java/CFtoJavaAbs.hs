@@ -47,8 +47,8 @@ module CFtoJavaAbs (cf2JavaAbs) where
 import CF
 import Utils((+++),(++++))
 import NamedVariables hiding (IVar, getVars, varName)
-import List
-import Char(toLower)
+import Data.List
+import Data.Char(toLower)
 
 --Produces abstract data types in Java.
 --These follow Appel's "non-object oriented" version.

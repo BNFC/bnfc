@@ -42,8 +42,8 @@ module CFtoVisitSkel (cf2VisitSkel) where
 import CF
 import Utils ((+++), (++++))
 import NamedVariables
-import List
-import Char(toLower, toUpper)
+import Data.List
+import Data.Char(toLower, toUpper)
 
 --Produces a Skeleton using the Visitor Design Pattern.
 --Thus the user can choose which Skeleton to use.

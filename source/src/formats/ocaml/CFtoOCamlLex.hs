@@ -22,8 +22,8 @@
 
 module CFtoOCamlLex (cf2ocamllex) where
 
-import List
-import Char
+import Data.List
+import Data.Char
 
 import CF
 import AbsBNF

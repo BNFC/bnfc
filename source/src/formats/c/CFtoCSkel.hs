@@ -42,8 +42,8 @@ module CFtoCSkel (cf2CSkel) where
 import CF
 import Utils			( (+++) )
 import NamedVariables
-import List			( isPrefixOf )
-import Char			( toLower, toUpper )
+import Data.List		( isPrefixOf )
+import Data.Char		( toLower, toUpper )
 
 --Produces (.H file, .C file)
 cf2CSkel :: CF -> (String, String)

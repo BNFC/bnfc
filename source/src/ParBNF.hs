@@ -4,7 +4,7 @@ module ParBNF where
 import AbsBNF
 import LexBNF
 import ErrM
-import Array
+import Data.Array
 #if __GLASGOW_HASKELL__ >= 503
 import GHC.Exts
 #else

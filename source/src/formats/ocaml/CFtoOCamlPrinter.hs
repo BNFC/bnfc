@@ -24,8 +24,8 @@ module CFtoOCamlPrinter (cf2Printer) where
 import CF
 import Utils
 import CFtoTemplate
-import List (intersperse)
-import Char(toLower,isDigit)
+import Data.List (intersperse)
+import Data.Char(toLower,isDigit)
 import OCamlUtil
 
 -- derive pretty-printer from a BNF grammar. AR 15/2/2002

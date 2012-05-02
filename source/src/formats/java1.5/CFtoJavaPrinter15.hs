@@ -51,8 +51,8 @@ import CFtoJavaAbs15
 import CF
 import NamedVariables
 import Utils		( (+++) )
-import List
-import Char		( toLower, isSpace )
+import Data.List
+import Data.Char	( toLower, isSpace )
 
 --Produces the PrettyPrinter class.
 --It will generate two methods "print" and "show"

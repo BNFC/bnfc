@@ -36,14 +36,13 @@ import CFtoXML
 import MkErrM
 import MkSharedString
 -- import CFtoGF		( cf2AbsGF, cf2ConcGF )
--- import System
 import GetCF
 import Utils
 
-import Char
+import Data.Char
 import Data.Maybe (fromMaybe,maybe)
-import System
-import Monad(when)
+import System.Exit (exitFailure)
+import Control.Monad(when)
 
 -- naming conventions
 

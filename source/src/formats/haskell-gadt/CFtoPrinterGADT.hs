@@ -22,8 +22,8 @@ module CFtoPrinterGADT (cf2Printer) where
 import CF
 import Utils
 import CFtoTemplate
-import List (intersperse)
-import Char(toLower)
+import Data.List (intersperse)
+import Data.Char(toLower)
 
 import HaskellGADTCommon
 

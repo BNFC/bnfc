@@ -22,7 +22,7 @@ module CFtoLatex (cfToLatex)where
 import CF
 import AbsBNF (Reg (..))
 import Utils
-import List (nub,intersperse)
+import Data.List (nub,intersperse)
 
 cfToLatex :: String -> CF -> String
 cfToLatex name cf = unlines [

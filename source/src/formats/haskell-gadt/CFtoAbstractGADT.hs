@@ -21,7 +21,7 @@ module CFtoAbstractGADT (cf2Abstract) where
 
 import CF
 import Utils((+++),(++++))
-import List(intersperse,nub)
+import Data.List(intersperse,nub)
 
 import HaskellGADTCommon
 

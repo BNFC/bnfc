@@ -27,8 +27,8 @@ module CFtoOCamlYacc
         where
 
 import CF
-import List (intersperse,nub)
-import Char
+import Data.List (intersperse,nub)
+import Data.Char
 
 import Utils ((+++))
 import OCamlUtil

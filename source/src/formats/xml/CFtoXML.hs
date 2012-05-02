@@ -23,8 +23,8 @@ module CFtoXML ---- (cf2DTD, cf2XML)
 import CF
 import Utils
 import CFtoTemplate
-import List (intersperse, nub)
-import Char(toLower)
+import Data.List (intersperse, nub)
+import Data.Char(toLower)
 
 type Coding = Bool ---- change to at least three values
 

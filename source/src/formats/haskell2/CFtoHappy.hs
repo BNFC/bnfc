@@ -26,8 +26,8 @@ module CFtoHappy
 
 import CF
 --import Lexer
-import List (intersperse, sort)
-import Char
+import Data.List (intersperse, sort)
+import Data.Char
 
 -- Type declarations
 

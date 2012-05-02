@@ -29,10 +29,9 @@ import CFtoBisonSTL
 import CFtoCVisitSkelSTL
 import CFtoSTLPrinter
 import CFtoLatex
-import System
+import System.Exit (exitFailure)
 import GetCF
-import Char
-import System
+import Data.Char
 import STLUtils
 
 makeSTL :: Bool -> Bool -> Maybe String -> String -> FilePath -> IO ()

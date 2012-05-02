@@ -40,7 +40,7 @@
 module CFtoCup15 ( cf2Cup ) where
 
 import CF
-import List (intersperse, isPrefixOf)
+import Data.List (intersperse, isPrefixOf)
 import NamedVariables
 import Utils ( (+++) )
 import TypeChecker  -- We need to (re-)typecheck to figure out list instances in

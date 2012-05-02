@@ -43,8 +43,8 @@ module CFtoCSharpPrinter (cf2csharpprinter) where
 import CF
 import Utils ((+++), (++++))
 import NamedVariables
-import List
-import Char(toLower, toUpper, isSpace)
+import Data.List
+import Data.Char(toLower, toUpper, isSpace)
 import Data.Maybe
 import CSharpUtils
 

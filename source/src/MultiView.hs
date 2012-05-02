@@ -20,17 +20,17 @@
 
 module MultiView where
 
-import Directory	( doesFileExist, renameFile )
+import System.Directory	( doesFileExist, renameFile )
 
 import qualified CF as CF
 import Utils
 import ParBNF
 import PrintBNF
-import List(nub,partition)
+import Data.List(nub,partition)
 import AbsBNF
 -- import LexBNF
 import ErrM
-import Char
+import Data.Char
 import TypeChecker
 
 preprocessMCF :: FilePath -> IO ([FilePath],String)

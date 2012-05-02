@@ -42,8 +42,8 @@ module CFtoCVisitSkelSTL (cf2CVisitSkel) where
 import CF
 import Utils ((+++), (++++))
 import NamedVariables
-import List
-import Char(toLower, toUpper)
+import Data.List
+import Data.Char(toLower, toUpper)
 import OOAbstract
 import STLUtils
 

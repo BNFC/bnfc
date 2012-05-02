@@ -22,7 +22,7 @@ module CFtoTxt (cfToTxt)where
 import CF
 import AbsBNF (Reg (..))
 import Utils
-import List (nub,intersperse)
+import Data.List (nub,intersperse)
 
 cfToTxt :: String -> CF -> String
 cfToTxt name cf = unlines [

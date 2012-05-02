@@ -38,9 +38,9 @@ module JavaTop15 ( makeJava15 ) where
 -------------------------------------------------------------------
 -- Dependencies.
 -------------------------------------------------------------------
-import Directory	( createDirectory )
-import IO		( try, isAlreadyExistsError )
-
+import System.Directory	( createDirectory )
+import System.IO.Error	( try, isAlreadyExistsError )
+import System.Exit      ( exitFailure )
 import Utils
 import CF
 import CFtoCup15       	( cf2Cup )
@@ -54,10 +54,9 @@ import CFtoAbstractVisitor
 import CFtoFoldVisitor
 import CFtoAllVisitor
 import CFtoLatex
-import System
 import GetCF		( tryReadCF )
-import Char
-import List(intersperse)
+import Data.Char
+import Data.List(intersperse)
 
 -------------------------------------------------------------------
 -- | Build the Java output.

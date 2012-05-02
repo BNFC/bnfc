@@ -101,8 +101,8 @@ module CF (
            ) where
 
 import Utils (prParenth,(+++))
-import List (nub, intersperse, partition, sort,sort,group)
-import Char
+import Data.List (nub, intersperse, partition, sort,sort,group)
+import Data.Char
 import AbsBNF (Reg())
 
 -- A context free grammar consists of a set of rules and some extended 

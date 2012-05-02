@@ -25,8 +25,8 @@ module CFtoOCamlTemplate (
                     ) where
 
 import CF
-import Char
-import List (delete)
+import Data.Char
+import Data.List (delete)
 import Utils((+++))
 import OCamlUtil
 

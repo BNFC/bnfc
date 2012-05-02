@@ -44,8 +44,8 @@ module CFtoCPrinter (cf2CPrinter) where
 import CF
 import Utils ((+++), (++++))
 import NamedVariables
-import List
-import Char(toLower, toUpper)
+import Data.List
+import Data.Char(toLower, toUpper)
 
 --Produces (.h file, .c file)
 cf2CPrinter :: CF -> (String, String)

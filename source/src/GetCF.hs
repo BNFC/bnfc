@@ -20,16 +20,16 @@
 
 module GetCF(tryReadCF,tryReadCFP) where
 
-import Monad		( when )
+import Control.Monad		( when )
 
 import CF
 import Utils
 import ParBNF
-import List(nub,partition)
+import Data.List(nub,partition)
 import qualified AbsBNF as Abs
 -- import LexBNF
 import ErrM
-import Char
+import Data.Char
 import TypeChecker
 
 readCF :: FilePath -> IO CF

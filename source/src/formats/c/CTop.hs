@@ -26,10 +26,9 @@ import CFtoBisonC
 import CFtoCSkel
 import CFtoCPrinter
 import CFtoLatex
--- import System
 import GetCF
-import Char
-import System
+import Data.Char
+import System.Exit (exitFailure)
 
 makeC :: Bool -> String -> FilePath -> IO ()
 makeC make name file = do

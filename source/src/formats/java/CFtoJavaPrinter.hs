@@ -48,8 +48,8 @@ module CFtoJavaPrinter ( cf2JavaPrinter ) where
 import CF
 import NamedVariables
 import Utils		( (+++) )
-import List
-import Char		( toLower )
+import Data.List
+import Data.Char	( toLower )
 
 --Produces the PrettyPrinter class.
 --It will generate two methods "print" and "show"

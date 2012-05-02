@@ -21,7 +21,7 @@ module HaskellGADTCommon (Constructor(..), cf2cons, isTreeType) where
 
 import CF
 
-import Char
+import Data.Char
 
 data Constructor = Constructor {
 				consCat :: Cat,

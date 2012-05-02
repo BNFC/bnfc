@@ -42,9 +42,9 @@
 module CFtoBisonC (cf2Bison) where
 
 import CF
-import List (intersperse, isPrefixOf)
+import Data.List (intersperse, isPrefixOf)
 import NamedVariables hiding (varName)
-import Char (toLower)
+import Data.Char (toLower)
 import Utils ((+++), (++++))
 
 --This follows the basic structure of CFtoHappy.

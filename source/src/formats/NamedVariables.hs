@@ -38,8 +38,8 @@
 module NamedVariables where
 
 import CF
-import Char (toLower)
-import List (nub)
+import Data.Char (toLower)
+import Data.List (nub)
 
 type IVar = (String, Int)
 --The type of an instance variable

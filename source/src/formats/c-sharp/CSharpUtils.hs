@@ -40,9 +40,9 @@ module CSharpUtils where
 import CF
 import Control.Monad.ST
 -- Control.Monad.State
-import Char (toLower)
+import Data.Char (toLower)
 import Data.Maybe
-import List
+import Data.List
 import OOAbstract hiding (basetypes)
 
 type Namespace = String

@@ -20,7 +20,7 @@
 module Utils where
 
 import Control.Monad (unless)
-import IO(try)
+import System.IO.Error (try)
 import System.Directory (createDirectory, doesDirectoryExist, renameFile,
                          removeFile, doesFileExist)
 

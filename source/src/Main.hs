@@ -41,9 +41,10 @@ import Utils
 
 import MultiView (preprocessMCF, mkTestMulti, mkMakefileMulti)
 
-import System
-import System.Exit
-import Char
+import System.Environment (getEnv,getArgs     )
+import System.Exit (exitFailure,exitSuccess)
+import System.Cmd (system)
+import Data.Char
 import Data.List (elemIndex)
 
 version = "2.4.2.0"

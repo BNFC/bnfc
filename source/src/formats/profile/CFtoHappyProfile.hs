@@ -25,8 +25,8 @@ module CFtoHappyProfile
 
 import CF
 --import Lexer
-import List (intersperse)
-import Char
+import Data.List (intersperse)
+import Data.Char
 
 -- Type declarations
 

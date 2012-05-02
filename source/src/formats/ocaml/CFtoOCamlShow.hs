@@ -26,8 +26,8 @@ module CFtoOCamlShow (cf2show) where
 import CF
 import Utils
 import CFtoTemplate
-import List (intersperse)
-import Char(toLower,isDigit)
+import Data.List (intersperse)
+import Data.Char(toLower,isDigit)
 import OCamlUtil
 
 cf2show :: String -> String -> CF -> String

@@ -21,7 +21,7 @@ module OCamlUtil where
 
 import CF
 import Utils
-import Char (toLower, toUpper)
+import Data.Char (toLower, toUpper)
 
 -- Translate Haskell types to OCaml types
 -- Note: OCaml (data-)types start with lowercase letter

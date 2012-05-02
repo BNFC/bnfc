@@ -33,11 +33,11 @@
 module CFtoAlex2 (cf2alex2) where
 
 import CF
-import List
+import Data.List
 
 -- For RegToAlex, see below.
 import AbsBNF
-import Char
+import Data.Char
 
 cf2alex2 :: String -> String -> String -> Bool -> Bool -> CF -> String
 cf2alex2 name errMod shareMod shareStrings byteStrings cf = 

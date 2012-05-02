@@ -45,9 +45,9 @@
 module CFtoBisonSTL (cf2Bison) where
 
 import CF
-import List (intersperse, isPrefixOf)
+import Data.List (intersperse, isPrefixOf)
 import NamedVariables hiding (varName)
-import Char (toLower,isUpper,isDigit)
+import Data.Char (toLower,isUpper,isDigit)
 import Utils ((+++), (++++))
 import TypeChecker
 import ErrM

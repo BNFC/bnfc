@@ -43,7 +43,7 @@ import CF
 import RegToJLex
 import Utils		( (+++) )
 import NamedVariables
-import List
+import Data.List
 
 --The environment must be returned for the parser to use.
 cf2jlex :: String -> String -> CF -> (String, SymEnv)

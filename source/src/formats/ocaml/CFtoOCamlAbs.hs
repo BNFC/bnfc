@@ -23,7 +23,7 @@ module CFtoOCamlAbs (cf2Abstract) where
 
 import CF
 import Utils((+++),(++++))
-import List(intersperse)
+import Data.List(intersperse)
 import OCamlUtil
 
 -- to produce an OCaml module

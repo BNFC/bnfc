@@ -22,8 +22,8 @@ module CFtoPrinter (cf2Printer) where
 import CF
 import Utils
 import CFtoTemplate
-import List (intersperse)
-import Char(toLower)
+import Data.List (intersperse)
+import Data.Char(toLower)
 
 -- derive pretty-printer from a BNF grammar. AR 15/2/2002
 cf2Printer :: Bool -> String -> String -> CF -> String

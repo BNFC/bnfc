@@ -37,8 +37,9 @@ module JavaTop ( makeJava ) where
 -------------------------------------------------------------------
 -- Dependencies.
 -------------------------------------------------------------------
-import Directory	( createDirectory )
-import IO		( try, isAlreadyExistsError )
+import System.Directory	( createDirectory )
+import System.IO.Error	( try, isAlreadyExistsError )
+import System.Exit      ( exitFailure )
 
 import Utils
 import CF
@@ -49,10 +50,9 @@ import CFtoJavaPrinter
 import CFtoJavaSkeleton
 import CFtoVisitSkel
 import CFtoLatex
-import System
 import GetCF		( tryReadCF )
-import Char
-import List(intersperse)
+import Data.Char
+import Data.List(intersperse)
 
 -------------------------------------------------------------------
 -- | Build the Java output.

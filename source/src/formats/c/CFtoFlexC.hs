@@ -41,7 +41,7 @@ import CF
 import RegToFlex
 -- import Utils((+++), (++++))
 import NamedVariables
-import List
+import Data.List
 
 --The environment must be returned for the parser to use.
 cf2flex :: String -> CF -> (String, SymEnv)
