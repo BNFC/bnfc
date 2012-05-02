@@ -7,7 +7,7 @@ Copyright: (c) Krasimir Angelov, Bjorn Bringert, Johan Broberg, Paul Callaghan, 
 License: GPL
 License-File: LICENSE
 Maintainer: Markus Forsberg <markus.forsberg@gu.se> Aarne Ranta <aarne@chalmers.se>
-Homepage: http://www.cse.chalmers.se/research/group/Language-technology/BNFC/
+Homepage: http://bnfc.digitalgrammars.com/
 Synopsis: A compiler front-end generator.
 Description:
   The BNF Converter is a compiler construction tool generating a compiler front-end 
