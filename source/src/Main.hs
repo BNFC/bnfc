@@ -54,9 +54,9 @@ title = unlines [
   "(c) Krasimir Angelov, Bjorn Bringert, Johan Broberg, Paul Callaghan, ",
   "    Markus Forsberg, Ola Frid, Peter Gammie, Patrik Jansson, ",
   "    Kristofer Johannisson, Antti-Juhani Kaijanaho, Ulf Norell, ",
-  "    Michael Pellauer and Aarne Ranta 2002 - 2010.",
+  "    Michael Pellauer and Aarne Ranta 2002 - 2012.",
   "Free software under GNU General Public License (GPL).",
-  "Bug reports to {markus,aarne}@cs.chalmers.se."
+  "Bug reports to bnfc-dev@googlegroups.com."
  ]
  
 main :: IO ()
