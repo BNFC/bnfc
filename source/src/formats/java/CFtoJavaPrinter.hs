@@ -215,7 +215,7 @@ prData packageAbsyn (cat, rules) =
  ]
 
 prRule :: String -> Rule -> String
-prRule packageAbsyn r@(fun, (_c, cats))
+prRule packageAbsyn r@(Rule (fun, (_c, cats)))
     | not (isCoercion fun) && not (isDefinedRule fun) = concat
   [
    "    if (foo instanceof" +++ packageAbsyn ++ "." ++ fun ++ ")\n",
@@ -240,7 +240,7 @@ prRule packageAbsyn r@(fun, (_c, cats))
     getPrec (Right {}) = 0
     getPrec (Left  c)  = precCat c
 
-prRule _nm (_fun, _cats) = ""
+prRule _nm _ = ""
 
 prList :: Cat -> [Rule] -> String
 prList c rules = unlines
@@ -267,7 +267,7 @@ prList c rules = unlines
     optsep = if hasOneFunc rules then "" else ("        render(\"" ++ (escapeChars sep) ++ "\");")
 
 getCons :: [Rule] -> String
-getCons ((f, (_c, cats)):rs) =
+getCons (Rule (f, (_c, cats)):rs) =
  if isConsFun f
    then seper cats
    else getCons rs
@@ -278,7 +278,7 @@ getCons ((f, (_c, cats)):rs) =
 
 hasOneFunc :: [Rule] -> Bool
 hasOneFunc [] = False
-hasOneFunc ((f, (_, _cats)):rs) =
+hasOneFunc (Rule (f, (_, _cats)):rs) =
  if (isOneFun f)
     then True
     else hasOneFunc rs
@@ -311,7 +311,7 @@ shData packageAbsyn (cat, rules) =
  ]
 
 shRule :: String -> Rule -> String
-shRule packageAbsyn (fun, (_c, cats))
+shRule packageAbsyn (Rule (fun, (_c, cats)))
     | not (isCoercion fun) && not (isDefinedRule fun) = unlines
   [
    "    if (foo instanceof" +++ packageAbsyn ++ "." ++ fun ++ ")",
@@ -339,7 +339,7 @@ shRule packageAbsyn (fun, (_c, cats))
     allTerms ((Left {}):_) = False
     allTerms (_:zs) = allTerms zs
     fnm = '_' : map toLower fun
-shRule _nm (_fun, _cats) = ""
+shRule _nm _ = ""
 
 shList :: Cat -> [Rule] -> String
 shList c _rules = unlines

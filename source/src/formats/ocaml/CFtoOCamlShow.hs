@@ -116,7 +116,7 @@ rules cf = unlines $ mutualDefs $
    checkRes s
         | elem s reservedOCaml = s ++ "'"
         | otherwise              = s
-   ruleOf s = maybe undefined id $ lookup s (rulesOfCF cf)
+   ruleOf s = maybe undefined id $ lookupRule s (rulesOfCF cf)
 
 --- case_fun :: Cat -> [(Constructor,Rule)] -> String
 case_fun cat xs = unlines [

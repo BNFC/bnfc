@@ -101,17 +101,17 @@ prDataH (cat, rules) =
  where
    cl = identCat (normCat cat)
    vname = map toLower cl
-   abstract = case lookup cat rules of
+   abstract = case lookupRule cat rules of
     Just x -> ""
     Nothing ->  "  void visit" ++ cl ++ "(" ++ cl ++ "*" +++ vname ++ "); /* abstract class */\n"
 
 --Visit functions for a rule.
 prRuleH :: Rule -> String
-prRuleH (fun, (c, cats)) | not (isCoercion fun) = concat
+prRuleH (Rule (fun, (c, cats))) | not (isCoercion fun) = concat
   ["  void visit", fun, "(", fun, "* ", fnm, ");\n"]
    where
     fnm = map toLower fun
-prRuleH (fun, cats) = ""
+prRuleH _ = ""
 
 
 {- **** Implementation (.C) File Functions **** -}
@@ -197,13 +197,13 @@ prData user (cat, rules) =
    visitMember = if isBasic user member
      then "    visit" ++ (funName member) ++ "(" ++ vname ++ "->" ++ member ++ ");"
      else "    " ++ vname ++ "->" ++ member ++ "->accept(this);"
-   abstract = case lookup cat rules of
+   abstract = case lookupRule cat rules of
     Just x -> ""
     Nothing ->  "void Skeleton::visit" ++ cl ++ "(" ++ cl ++ "*" +++ vname ++ ") {} //abstract class\n\n"
 
 --Visits all the instance variables of a category.
 prRule :: [UserDef] -> Rule -> String
-prRule user (fun, (c, cats)) | not (isCoercion fun) = unlines
+prRule user (Rule (fun, (c, cats))) | not (isCoercion fun) = unlines
   [
    "void Skeleton::visit" ++ fun ++ "(" ++ fun ++ "*" +++ fnm ++ ")",
    "{",
@@ -219,7 +219,7 @@ prRule user (fun, (c, cats)) | not (isCoercion fun) = unlines
     allTerms ((Left z):zs) = False
     allTerms (z:zs) = allTerms zs
     fnm = map toLower fun
-prRule user (fun, cats) = ""
+prRule user _ = ""
 
 --Prints the actual instance-variable visiting.
 prCat user fnm c =

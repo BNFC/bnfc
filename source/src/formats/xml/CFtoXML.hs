@@ -201,7 +201,7 @@ rules cf = unlines $
    reservedHaskell = ["case","class","data","default","deriving","do","else","if",
 			  "import","in","infix","infixl","infixr","instance","let","module",
 			  "newtype","of","then","type","where","as","qualified","hiding"]
-   ruleOf s = maybe undefined id $ lookup s (rulesOfCF cf)
+   ruleOf s = maybe undefined id $ lookupRule s (rulesOfCF cf)
 
 --- case_fun :: Cat -> [(Constructor,Rule)] -> String
 case_fun cat xs = unlines [

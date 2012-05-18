@@ -110,14 +110,14 @@ prData packageAbsyn user (cat, rules) =
    visitMember = if isBasic user member
      then "    visit" ++ (funName member) ++ "(" ++ vname ++ "." ++ member ++ ");"
      else "    " ++ vname ++ "." ++ member ++ ".accept(this);"
-   abstract = case lookup cat rules of
+   abstract = case lookupRule cat rules of
     Just x -> ""
     Nothing ->  "  public void visit" ++ cl ++ "(" ++ packageAbsyn ++ "."
 		  ++ cl +++ vname ++ ") {} //abstract class\n"
 
 --traverses a standard rule.
 prRule :: String -> [UserDef] -> Rule -> String
-prRule packageAbsyn user (fun, (c, cats)) | not (isCoercion fun) = unlines
+prRule packageAbsyn user (Rule (fun, (c, cats))) | not (isCoercion fun) = unlines
   [
    "  public void visit" ++ fun ++ "(" ++ packageAbsyn ++ "." ++ fun +++ fnm ++ ")",
    "  {",
@@ -133,7 +133,7 @@ prRule packageAbsyn user (fun, (c, cats)) | not (isCoercion fun) = unlines
     allTerms ((Left z):zs) = False
     allTerms (z:zs) = allTerms zs
     fnm = map toLower fun
-prRule user nm (fun, cats) = ""
+prRule user nm _ = ""
 
 --Traverses a class's instance variables.
 prCat user fnm c = 

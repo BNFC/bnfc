@@ -190,7 +190,7 @@ prData user (cat, rules) =
 
 -- Visits all the instance variables of a category.
 prPrintRule :: [UserDef] -> Rule -> String
-prPrintRule user (fun, (_c, cats)) | not (isCoercion fun) = unlines
+prPrintRule user (Rule (fun, (_c, cats))) | not (isCoercion fun) = unlines
   [
    "  case is_" ++ fun ++ ":",
    "    /* Code for " ++ fun ++ " Goes Here */",
@@ -198,7 +198,7 @@ prPrintRule user (fun, (_c, cats)) | not (isCoercion fun) = unlines
   ]
    where
     cats' = concatMap (prCat user fun) (zip (fixOnes (numVars [] cats)) cats)
-prPrintRule _user (_fun, _cats) = ""
+prPrintRule _user (Rule (_fun, _cats)) = ""
 
 -- Prints the actual instance-variable visiting.
 prCat :: [UserDef] -> String -> (Either Cat Cat, Either Cat Cat) -> String

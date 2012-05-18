@@ -331,12 +331,12 @@ prData namespace user (cat, rules)
     ]
     where 
       -- Removes the rules at the beginning of the list which won't be used by the prRule function.
-      rules' = dropWhile (\(fun, _) -> isCoercion fun || isDefinedRule fun) rules
+      rules' = dropWhile (\r -> isCoercion (funRule r) || isDefinedRule (funRule r)) rules
       firstRule = head rules'
       otherRules = tail rules'
 
 prRule :: Namespace -> Maybe String -> Rule -> String
-prRule namespace maybeElse r@(fun, (_c, cats)) 
+prRule namespace maybeElse r@(Rule (fun, (_c, cats)))
   | not (isCoercion fun || isDefinedRule fun) = unlinesInline [
     "      " ++ fromMaybe "" maybeElse ++ "if(p is " ++ identifier namespace fun ++ ")",
     "      {",
@@ -355,7 +355,7 @@ prRule namespace maybeElse r@(fun, (_c, cats))
 
       getPrec (Right {}) = 0
       getPrec (Left  c)  = precCat c
-prRule _nm _ (_fun, _cats) = ""
+prRule _nm _ _ = ""
 
 prList :: [UserDef] -> Cat -> [Rule] -> String
 prList user c rules = unlinesInline [
@@ -378,7 +378,7 @@ prList user c rules = unlinesInline [
     optsep = if hasOneFunc rules then "" else escapeChars sep
 
 getCons :: [Rule] -> String
-getCons ((f, (_c, cats)):rs) =
+getCons (Rule (f, (_c, cats)):rs) =
   if isConsFun f
     then seper cats
     else getCons rs
@@ -389,7 +389,7 @@ getCons ((f, (_c, cats)):rs) =
 
 hasOneFunc :: [Rule] -> Bool
 hasOneFunc [] = False
-hasOneFunc ((f, (_, _cats)):rs) =
+hasOneFunc (Rule (f, (_, _cats)):rs) =
   if (isOneFun f)
     then True
     else hasOneFunc rs
@@ -421,7 +421,7 @@ shData namespace user (cat, rules)
     ]
 
 shRule :: Namespace -> Rule -> String
-shRule namespace (fun, (_c, cats)) 
+shRule namespace (Rule (fun, (_c, cats))) 
   | not (isCoercion fun || isDefinedRule fun) = unlinesInline [
     "      if(p is " ++ identifier namespace fun ++ ")",
     "      {",
@@ -443,7 +443,7 @@ shRule namespace (fun, (_c, cats))
     allTerms ((Left {}):_) = False
     allTerms (_:zs) = allTerms zs
     fnm = '_' : map toLower fun
-shRule _nm (_fun, _cats) = ""
+shRule _nm _ = ""
 
 shList :: [UserDef] -> Cat -> [Rule] -> String
 shList user c _rules = unlinesInline [

@@ -357,7 +357,7 @@ prPrintData user (cat, rules) =
     
 --Pretty Printer methods for a rule.
 prPrintRule :: [UserDef] -> Rule -> String
-prPrintRule user r@(fun, (c, cats)) | not (isCoercion fun) = unlines
+prPrintRule user r@(Rule (fun, (c, cats))) | not (isCoercion fun) = unlines
   [
    "  case is_" ++ fun ++ ":",
    lparen,
@@ -373,7 +373,7 @@ prPrintRule user r@(fun, (c, cats)) | not (isCoercion fun) = unlines
     cats' = (concatMap (prPrintCat user fun) (zip3 (fixOnes (numVars [] cats)) cats (map getPrec cats)))
     getPrec (Right s) = (0 :: Int)
     getPrec (Left c) = precCat c
-prPrintRule _ (fun, cats) = ""
+prPrintRule _ _ = ""
 
 --This goes on to recurse to the instance variables.
 prPrintCat :: [UserDef] -> String -> (Either Cat String, Either Cat String, Int) -> String
@@ -459,7 +459,7 @@ prShowData user (cat, rules) =
     
 --Pretty Printer methods for a rule.
 prShowRule :: [UserDef] -> Rule -> String
-prShowRule user r@(fun, (c, cats)) | not (isCoercion fun) = unlines
+prShowRule user r@(Rule (fun, (c, cats))) | not (isCoercion fun) = unlines
   [
    "  case is_" ++ fun ++ ":",
    lparen,
@@ -484,7 +484,7 @@ prShowRule user r@(fun, (c, cats)) | not (isCoercion fun) = unlines
     allTerms [] = True
     allTerms ((Left z):zs) = False
     allTerms (z:zs) = allTerms zs
-prShowRule _ (fun, cats) = ""
+prShowRule _ _ = ""
 
 --This goes on to recurse to the instance variables.
 prShowCat :: [UserDef] -> String -> (Either Cat String, Either Cat String) -> String
@@ -543,7 +543,7 @@ setI n = "_i_ = " ++ (show n) ++ "; "
 --Gets the separator for a list.
 getCons :: [Rule] -> String
 getCons [] = error $ "FIXME: CFtoCPrinter/getCons: No separator for a list."
-getCons ((f, (c, cats)):rs) =
+getCons (Rule (f, (c, cats)):rs) =
  if isConsFun f
    then seper cats
    else getCons rs
@@ -555,7 +555,7 @@ getCons ((f, (c, cats)):rs) =
 --Checks if the list has a non-empty rule.
 hasOneFunc :: [Rule] -> Bool
 hasOneFunc [] = False
-hasOneFunc ((f, (c, cats)):rs) =
+hasOneFunc (Rule (f, (c, cats)):rs) =
  if (isOneFun f)
     then True
     else hasOneFunc rs

@@ -165,15 +165,15 @@ prDataH (cat, rules) =
  else abstract ++ (concatMap prRuleH rules)
  where
    cl = identCat (normCat cat)
-   abstract = case lookup cat rules of
+   abstract = case lookupRule cat rules of
     Just x -> ""
     Nothing ->  "  void visit" ++ cl ++ "(" ++ cl ++ " *p); /* abstract class */\n"
 
 --Prints all the methods to visit a rule.
 prRuleH :: Rule -> String
-prRuleH (fun, (c, cats)) | isProperLabel fun = concat
+prRuleH (Rule (fun, (c, cats))) | isProperLabel fun = concat
   ["  void visit", fun, "(", fun, " *p);\n"]
-prRuleH (fun, cats) = ""
+prRuleH _ = ""
 
 {- **** Implementation (.C) File Methods **** -}
 
@@ -348,13 +348,13 @@ prPrintData user (cat, rules) =
      else "\"" ++ (escapeChars sep') ++ "\""
    sep' = getCons rules
    optsep = if hasOneFunc rules then "" else ("      render(" ++ sep ++ ");")
-   abstract = case lookup cat rules of
+   abstract = case lookupRule cat rules of
     Just x -> ""
     Nothing ->  "void PrintAbsyn::visit" ++ cl ++ "(" ++ cl ++ "*p) {} //abstract class\n\n"
     
 --Pretty Printer methods for a rule.
 prPrintRule :: [UserDef] -> Rule -> String
-prPrintRule user r@(fun, (c, cats)) | isProperLabel fun = unlines
+prPrintRule user r@(Rule (fun, (c, cats))) | isProperLabel fun = unlines
   [
    "void PrintAbsyn::visit" ++ fun ++ "(" ++ fun ++ "*" +++ fnm ++ ")",
    "{",
@@ -374,7 +374,7 @@ prPrintRule user r@(fun, (c, cats)) | isProperLabel fun = unlines
     fnm = "p" --old names could cause conflicts
     getPrec (Right s) = 0
     getPrec (Left c) = precCat c
-prPrintRule _ (fun, cats) = ""
+prPrintRule _ _ = ""
 
 --This goes on to recurse to the instance variables.
 prPrintCat :: [UserDef] -> String -> (Either Cat String, Int) -> String
@@ -430,13 +430,13 @@ prShowData user (cat, rules) =
    visitMember = if isBasic user member
      then "      visit" ++ (funName member) ++ "(" ++ vname ++ "->" ++ member ++ ");"
      else "      " ++ vname ++ "->" ++ member ++ "->accept(this);"
-   abstract = case lookup cat rules of
+   abstract = case lookupRule cat rules of
     Just x -> ""
     Nothing ->  "void ShowAbsyn::visit" ++ cl ++ "(" ++ cl ++ "* p) {} //abstract class\n\n"
 
 --This prints all the methods for Abstract Syntax tree rules.
 prShowRule :: [UserDef] -> Rule -> String
-prShowRule user (fun, (c, cats)) | isProperLabel fun = concat
+prShowRule user (Rule (fun, (c, cats))) | isProperLabel fun = concat
   [
    "void ShowAbsyn::visit" ++ fun ++ "(" ++ fun ++ "*" +++ fnm ++ ")\n",
    "{\n",
@@ -463,7 +463,7 @@ prShowRule user (fun, (c, cats)) | isProperLabel fun = concat
     allTerms ((Left z):zs) = False
     allTerms (z:zs) = allTerms zs
     fnm = "p" --other names could cause conflicts
-prShowRule _ (fun, cats) = ""
+prShowRule _ _ = ""
 
 --This recurses to the instance variables of a class.
 prShowCat :: [UserDef] -> String -> Either Cat String -> String
@@ -520,7 +520,7 @@ setI n = "_i_ = " ++ (show n) ++ "; "
 
 --Gets the separator for a list.
 getCons :: [Rule] -> String
-getCons ((f, (c, cats)):rs) =
+getCons (Rule (f, (c, cats)):rs) =
  if isConsFun f
    then seper cats
    else getCons rs
@@ -532,7 +532,7 @@ getCons ((f, (c, cats)):rs) =
 --Checks if the list has a non-empty rule.
 hasOneFunc :: [Rule] -> Bool
 hasOneFunc [] = False
-hasOneFunc ((f, (c, cats)):rs) =
+hasOneFunc (Rule (f, (c, cats)):rs) =
  if (isOneFun f)
     then True
     else hasOneFunc rs

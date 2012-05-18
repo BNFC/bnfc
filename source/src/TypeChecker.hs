@@ -33,8 +33,8 @@ catchErr (Ok x) _  = Ok x
 buildContext :: CF -> Context
 buildContext cf@(CFG(_,rules)) =
     Ctx
-    [ (f, mkType cat args) | (f,(cat,args)) <- rules
-			   , not (isCoercion f)
+    [ (f, mkType cat args) | Rule (f,(cat,args)) <- rules
+                           , not (isCoercion f)
 			   , not (isNilCons f)
     ]
     ("Ident" : tokenNames cf)

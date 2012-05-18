@@ -123,7 +123,7 @@ constructRule cf rules nt = (nt,[(p,generateAction nt (revF b r) m) |
  where
    ---- left rec optimization does not work yet
    revF b r = ---- if b then ("flip " ++ funRuleP r) else (funRuleP r)
-              fst r
+              fst (unRule r)
    revs = reversibleCats cf
 
 -- Generates a string containing the semantic action.

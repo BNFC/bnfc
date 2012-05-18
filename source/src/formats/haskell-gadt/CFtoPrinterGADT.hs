@@ -145,11 +145,11 @@ prPrtList :: CF -> Cat -> [String]
 prPrtList cf cat = mkListRule (nil ++ one ++ cons)
  where
   nil  = ["   [] -> " ++ mkRhs [] its | 
-                         (f,(_,its)) <- rules, isNilFun f]
+                         Rule (f,(_,its)) <- rules, isNilFun f]
   one  = ["   [x] -> " ++ mkRhs ["x"] its | 
-                         (f,(_,its)) <- rules, isOneFun f]
+                         Rule (f,(_,its)) <- rules, isOneFun f]
   cons = ["   x:xs -> " ++ mkRhs ["x","xs"] its | 
-                         (f,(_,its)) <- rules, isConsFun f]
+                         Rule (f,(_,its)) <- rules, isConsFun f]
   mkListRule [] = []
   mkListRule rs = ["instance Print" +++ cat +++ "where",
 		 "  prt _" +++ "es = case es of"] ++ rs

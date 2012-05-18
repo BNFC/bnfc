@@ -90,7 +90,7 @@ mkHFile cf = unlines
      then getClasses cs
      else c : (getClasses cs)
   
-  testRule (f, (c, r)) = 
+  testRule (Rule (f, (c, r))) = 
    if isList c
    then if isConsFun f 
      then identCat c

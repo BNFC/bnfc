@@ -74,7 +74,7 @@ prData packageAbsyn (cat, rules) =
 
 --traverses a standard rule
 prRule :: String -> Rule -> String
-prRule packageAbsyn (fun, (c, cats)) | not (isCoercion fun) = unlines
+prRule packageAbsyn (Rule (fun, (c, cats))) | not (isCoercion fun) = unlines
   [
    "    if (foo instanceof" +++ packageAbsyn ++ "." ++ fun ++ ")",
    "    {",
@@ -95,7 +95,7 @@ prRule packageAbsyn (fun, (c, cats)) | not (isCoercion fun) = unlines
     allTerms ((Left z):zs) = False
     allTerms (z:zs) = allTerms zs
     fnm = map toLower fun
-prRule nm (fun, cats) = ""
+prRule nm _ = ""
 
 --This traverses list rules.
 prList :: Cat -> [Rule] -> String
