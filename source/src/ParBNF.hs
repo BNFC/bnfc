@@ -8,7 +8,7 @@ import ErrM
 import qualified Data.Array as Happy_Data_Array
 import qualified GHC.Exts as Happy_GHC_Exts
 
--- parser produced by Happy Version 1.18.9
+-- parser produced by Happy Version 1.18.6
 
 newtype HappyAbsSyn  = HappyAbsSyn HappyAny
 #if __GLASGOW_HASKELL__ >= 607
@@ -1268,8 +1268,7 @@ happyNewToken action sts stk (tk:tks) =
 	_ -> happyError' (tk:tks)
 	}
 
-happyError_ 46# tk tks = happyError' tks
-happyError_ _ tk tks = happyError' (tk:tks)
+happyError_ tk tks = happyError' (tk:tks)
 
 happyThen :: () => Err a -> (a -> Err b) -> Err b
 happyThen = (thenM)
@@ -1582,10 +1581,9 @@ happyGoto nt j tk st =
 -- Error recovery (0# is the error token)
 
 -- parse error if we are in recovery and we fail again
-happyFail 0# tk old_st _ stk@(x `HappyStk` _) =
-     let (i) = (case Happy_GHC_Exts.unsafeCoerce# x of { (Happy_GHC_Exts.I# (i)) -> i }) in
+happyFail  0# tk old_st _ stk =
 --	trace "failing" $ 
-        happyError_ i tk
+    	happyError_ tk
 
 {-  We don't need state discarding for our restricted implementation of
     "error".  In fact, it can cause some bogus parses, so I've disabled it

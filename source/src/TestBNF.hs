@@ -2,8 +2,8 @@
 module Main where
 
 
-import IO ( stdin, hGetContents )
-import System ( getArgs, getProgName )
+import System.IO ( stdin, hGetContents )
+import System.Environment ( getArgs, getProgName )
 
 import LexBNF
 import ParBNF
