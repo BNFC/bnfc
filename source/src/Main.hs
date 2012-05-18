@@ -85,11 +85,11 @@ mkOne xx = do
       let make = elem "-m" args
       let multi = elem "-multi" args
       let c = elem "-c" args
-      let cpp = elem "-cpp" args
-      let cpp_stl = elem "-cpp_stl" args
+      let cpp_no_stl = elem "-cpp_no_stl" args 
+      let cpp_stl = elem "-cpp_stl" args || elem "-cpp" args
       let csharp = elem "-csharp" args
-      let java = elem "-java" args
-      let java15 = elem "-java1.5" args
+      let java14 = elem "-java1.4" args
+      let java15 = elem "-java1.5" args || elem "-java" args
       let ocaml = elem "-ocaml" args
       let fsharp = elem "-fsharp" args
       let haskell = elem "-haskell" args
@@ -113,17 +113,17 @@ mkOne xx = do
 			 _ -> do
 			      putStrLn "-p option requires an argument"
 			      printUsage
-      if checkUsage False [c, cpp, cpp_stl, csharp, java, haskell, profile] then
+      if checkUsage False [c, cpp_no_stl, cpp_stl, csharp, java14, haskell, profile] then
        do
        if (isCF (reverse file)) then 
         do 
          putStrLn title
          case () of
            _ | c      -> makeC make name file
-           _ | cpp    -> makeCPP make name file
+           _ | cpp_no_stl    -> makeCPP make name file
            _ | cpp_stl-> makeSTL make linenumbers inPackage name file
            _ | csharp -> makeCSharp make vsfiles wcfSupport inPackage file
-           _ | java   -> makeJava make name file
+           _ | java14 -> makeJava make name file
            _ | java15 -> makeJava15 make inPackage name file
            _ | ocaml  -> makeOCaml make alex1or2 inDir alex2StringSharing glr xml inPackage name file
            _ | fsharp -> makeFSharp make alex1or2 inDir alex2StringSharing glr xml inPackage name file
@@ -157,11 +157,13 @@ printUsage = do
   putStrLn "  -m             generate Makefile"
   putStrLn ""
   putStrLn "Languages (Only one language mode may be selected.)"
-  putStrLn "  -java          Output Java code for use with JLex and CUP"
-  putStrLn "  -java1.5       Output Java 1.5 code for use with JLex and CUP"
+  putStrLn "  -java          Output Java 1.5 code for use with JLex and CUP"
+  putStrLn "  -java1.5       Output Java 1.5 code for use with JLex and CUP (same as -java)"
+  putStrLn "  -java1.4       Output Java 1.4 code for use with JLex and CUP (before 2.5 was: -java)"
   putStrLn "  -c             Output C code for use with FLex and Bison"
-  putStrLn "  -cpp           Output C++ code for use with FLex and Bison"
-  putStrLn "  -cpp_stl       Output C++ code for use with FLex and Bison"
+  putStrLn "  -cpp           Output C++ code for use with FLex and Bison (same as -cpp_stl)"
+  putStrLn "  -cpp_stl       Output C++ code for use with FLex and Bison (same as -cpp)"
+  putStrLn "  -cpp_no_stl    Output C++ code (without STL) for use with FLex and Bison (before 2.5 was: -cpp)"
   putStrLn "                 and the Standard Template Library"
   putStrLn "  -csharp        Output C# code for use with GPLEX and GPPG"
   putStrLn "  -ocaml         Output OCaml code for use with ocamllex and ocamlyacc"
@@ -182,11 +184,11 @@ printUsage = do
   putStrLn "  -xml           Also generate a DTD and an XML printer"
   putStrLn "  -xmlt          DTD and an XML printer, another encoding"
   putStrLn ""
-  putStrLn "Special options for the C++ STL back-end:"
+  putStrLn "Special options for the C++ (with STL) back-end:"
   putStrLn "  -l             Add and set line_number field for all syntax classes"
   putStrLn "  -p <namespace> Use <namespace> as the C++ namespace"
   putStrLn ""
-  putStrLn "Special options for the Java 1.5 back-end:"
+  putStrLn "Special options for the Java (v 1.5) back-end:"
   putStrLn "  -p <package>   Prepend <package> to the Java package name"
   putStrLn ""
   putStrLn "Special options for the C# backend:"

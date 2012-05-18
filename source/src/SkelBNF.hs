@@ -35,7 +35,7 @@ transDef :: Def -> Result
 transDef x = case x of
   Rule label cat items  -> failure x
   Comment str  -> failure x
-  Comments str0 str  -> failure x
+  Comments str1 str2  -> failure x
   Internal label cat items  -> failure x
   Token id reg  -> failure x
   PosToken id reg  -> failure x
@@ -66,8 +66,8 @@ transLabel :: Label -> Result
 transLabel x = case x of
   LabNoP labelid  -> failure x
   LabP labelid profitems  -> failure x
-  LabPF labelid0 labelid profitems  -> failure x
-  LabF labelid0 labelid  -> failure x
+  LabPF labelid1 labelid2 profitems3  -> failure x
+  LabF labelid1 labelid2  -> failure x
 
 
 transLabelId :: LabelId -> Result
@@ -96,7 +96,7 @@ transArg x = case x of
 
 transExp :: Exp -> Result
 transExp x = case x of
-  Cons exp0 exp  -> failure x
+  Cons exp1 exp2  -> failure x
   App id exps  -> failure x
   Var id  -> failure x
   LitInt n  -> failure x
@@ -119,9 +119,9 @@ transMinimumSize x = case x of
 
 transReg :: Reg -> Result
 transReg x = case x of
-  RSeq reg0 reg  -> failure x
-  RAlt reg0 reg  -> failure x
-  RMinus reg0 reg  -> failure x
+  RSeq reg1 reg2  -> failure x
+  RAlt reg1 reg2  -> failure x
+  RMinus reg1 reg2  -> failure x
   RStar reg  -> failure x
   RPlus reg  -> failure x
   ROpt reg  -> failure x

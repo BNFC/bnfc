@@ -15,6 +15,6 @@ GHCFLAGS =
 CPPFLAGS = 
 LDFLAGS = 
 EXEEXT = 
-INSTALL = /opt/local/bin/ginstall -c
+INSTALL = /usr/bin/install -c
 TAR = tar
 GHC = /usr/bin/ghc
