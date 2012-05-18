@@ -1,0 +1,8 @@
+
+
+L. Lam ::= LamT;
+
+-- Lexer error.
+token LamT 'λ';
+
+

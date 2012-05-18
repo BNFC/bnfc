@@ -1,0 +1,5 @@
+
+-- Passes through BNFC but the resulting alex file contains invalid characters.
+L. Lam ::= "λ";
+
+
