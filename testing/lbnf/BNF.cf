@@ -19,10 +19,17 @@
 
 -- A Grammar is a sequence of definitions
 
+LGr.      LGrammar ::= [LDef] ;
+
+DefAll.   LDef ::= Def ;
+DefSome.  LDef ::= [Ident] ":" Def ;
+LDefView. LDef ::= "views" [Ident] ;
+
+separator LDef ";" ;
+
 Grammar . Grammar ::= [Def] ;
 
-[]  . [Def] ::= ;
-(:) . [Def] ::= Def ";" [Def] ;
+separator Def ";" ;
 
 []  . [Item] ::= ;
 (:) . [Item] ::= Item [Item] ;
@@ -71,10 +78,29 @@ Separator.  Def ::= "separator" MinimumSize Cat String ;
 Terminator. Def ::= "terminator" MinimumSize Cat String ;
 Coercions.  Def ::= "coercions" Ident Integer ;
 Rules.      Def ::= "rules" Ident "::=" [RHS] ;
+Function.   Def ::= "define" Ident [Arg] "=" Exp ;
 
 Layout.     Def ::= "layout" [String] ;
 LayoutStop. Def ::= "layout" "stop" [String] ;
 LayoutTop.  Def ::= "layout" "toplevel" ;
+
+Arg. Arg ::= Ident ;
+separator Arg "" ;
+
+-- Expressions
+Cons.	    Exp  ::= Exp1 ":" Exp ;
+App.	    Exp1 ::= Ident [Exp2] ;
+Var.	    Exp2 ::= Ident ;
+LitInt.	    Exp2 ::= Integer ;
+LitChar.    Exp2 ::= Char ;
+LitString.  Exp2 ::= String ;
+LitDouble.  Exp2 ::= Double ;
+List.	    Exp2 ::= "[" [Exp] "]" ;
+
+
+coercions Exp 2;
+separator nonempty Exp2 "" ;
+separator Exp "," ;
 
 separator nonempty String "," ;
 
