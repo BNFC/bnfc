@@ -21,6 +21,7 @@
 module CF (
 	    -- Types.
 	    CF,
+            CFG(..), pragmasOfCF, -- ...
 	    Rule,
 	    Pragma(..),
 	    Exp(..),
@@ -107,7 +108,7 @@ import AbsBNF (Reg())
 
 -- A context free grammar consists of a set of rules and some extended 
 -- information (e.g. pragmas, literals, symbols, keywords)
-type CF = (Exts,[Rule])
+type CF = CFG Fun -- (Exts,[Rule])
 
 -- A rule consists of a function name, a main category and a sequence of
 -- terminals and non-terminals.
@@ -116,7 +117,7 @@ type Rule = (Fun, (Cat, [Either Cat String]))
 
 -- polymorphic types for common type signatures for CF and CFP
 type Rul f = (f, (Cat, [Either Cat String]))
-type CFG f = (Exts,[Rul f])
+newtype CFG f = CFG { unCFG :: (Exts,[Rul f]) }
 
 type Exts = ([Pragma],Info)
 -- Info is information extracted from the CF, for easy access.
@@ -218,8 +219,16 @@ firstEntry cf = case allEntryPoints cf of
 		 (x:_) -> x
 		 _     -> firstCat cf
 
-rulesOfCF :: CF -> [Rule]
-rulesOfCF = snd
+rulesOfCF   :: CF -> [Rule]
+rulesOfCFP  :: CFP -> [RuleP]
+infoOfCF    :: CFG f -> Info
+pragmasOfCF :: CFG f -> [Pragma]
+
+rulesOfCF   = snd . unCFG
+rulesOfCFP  = snd . unCFG
+infoOfCF    = snd . fst . unCFG
+pragmasOfCF = fst . fst . unCFG
+
 
 notUniqueFuns :: CF -> [Fun]
 notUniqueFuns cf = let xss = group $ sort [ f | (f,_) <- rulesOfCF cf,
@@ -234,12 +243,6 @@ badInheritence cf = concatMap checkGroup (ruleGroups cf)
                            else case lookup cat rs of
                              Nothing -> []
                              Just x -> [cat]
-
-infoOfCF :: CFG f -> Info
-infoOfCF = snd . fst
-
-pragmasOfCF :: CFG f -> [Pragma]
-pragmasOfCF = fst . fst
 
 -- extract the comment pragmas.
 commentPragmas :: [Pragma] -> [Pragma]
@@ -527,26 +530,23 @@ isPositionCat cf cat =  or [b | TokenReg name b _ <- pragmasOfCF cf, name == cat
 
 -- grammar with permutation profile à la GF. AR 22/9/2004
 
-type CFP   = (Exts,[RuleP])
+type CFP   = CFG FunP -- (Exts,[RuleP])
 type FunP  = (Fun,Prof)
 type RuleP = (FunP, (Cat, [Either Cat String]))
 
 type Prof  = (Fun, [([[Int]],[Int])]) -- the original function name, profile
 
 cf2cfp :: CF -> CFP
-cf2cfp (es,rs) = (es, map cf2cfpRule rs)
+cf2cfp (CFG (es,rs)) = CFG (es, map cf2cfpRule rs)
 
 cf2cfpRule :: Rule -> RuleP
 cf2cfpRule (f,(c,its))  = ((f, (f, trivialProf its)),(c,its))
 
 cfp2cf :: CFP -> CF
-cfp2cf (es,rs) = (es,[(f,(c,its)) | ((f,_),(c,its)) <- rs])
+cfp2cf (CFG (es,rs)) = CFG (es,[(f,(c,its)) | ((f,_),(c,its)) <- rs])
 
 trivialProf :: [Either Cat String] -> [([[Int]],[Int])]
 trivialProf its = [([],[i]) | (i,_) <- zip [0..] [c | Left c <- its]]
-
-rulesOfCFP :: CFP -> [RuleP]
-rulesOfCFP = snd
 
 funRuleP :: RuleP -> Fun
 funRuleP = fst . snd . fst

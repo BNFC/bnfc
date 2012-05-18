@@ -119,8 +119,8 @@ header inPackage name cf = unlines
    ns = nsString inPackage
 
 definedRules :: CF -> String
-definedRules cf@((pr,_),_) =
-	unlines [ rule f xs e | FunDef f xs e <- pr ]
+definedRules cf =
+	unlines [ rule f xs e | FunDef f xs e <- pragmasOfCF cf ]
     where
 	ctx = buildContext cf
 

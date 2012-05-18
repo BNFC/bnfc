@@ -73,7 +73,7 @@ allNonClasses ca =
   map fst basetypes ++ tokentypes ca
 
 cf2cabs :: CF -> CAbs
-cf2cabs cf@((pragmas,_),_) = CAbs {
+cf2cabs cf = CAbs {
   tokentypes = toks,
   listtypes  = [(c, snd (status (drop 4 c))) | -- remove "List" from "ListC"
                   c <- map (normCat . identCat) lists],
@@ -97,7 +97,7 @@ cf2cabs cf@((pragmas,_),_) = CAbs {
     [("Visitable",  -- to give superclass
      [(c,[("String",False,"string_"),("Integer",False,"integer_")])]) | c<-pos]
   status cat = (cat, notElem cat (map fst basetypes ++ toks))
-  defs = [f | FunDef f _ _ <- pragmas]
+  defs = [f | FunDef f _ _ <- pragmasOfCF cf]
 
   classVars :: [(Cat,Bool)] -> [(Cat,Bool,String)]
   classVars cs = 

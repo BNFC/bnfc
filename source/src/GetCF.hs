@@ -93,12 +93,12 @@ getCF s = let (cfp,msg) = getCFP s in (cfp2cf cfp, msg)
 
 getCFP :: String -> (CFP, [String])
 getCFP s = (cf,msgs ++ msgs1) where
-  (cf,msgs1) = ((exts,ruls2),msgs2)
+  (cf,msgs1) = (CFG (exts,ruls2),msgs2)
   (ruls2,msgs2) = untag $ partition (isRule) $ map (checkRule cf00) $ rulesOfCFP cf0
   untag (ls,rs) = ([c | Left c <- ls], [c | Right c <- rs])
   isRule = either (const True) (const False)
   cf00 = cfp2cf cf0
-  (cf0@(exts,_),msgs) = (revs . srt . conv . pGrammar . myLexer) s
+  (cf0@(CFG(exts,_)),msgs) = (revs . srt . conv . pGrammar . myLexer) s
   srt rs = let rules              = [r | Left (Right r) <- rs]
 	       literals           = nub  [lit | xs <- map (snd . snd) rules,
 					        (Left lit) <- xs,
@@ -110,9 +110,9 @@ getCFP s = (cf,msgs ++ msgs1) where
                isIdentRest c      = isAlphaNum c || c == '_' || c == '\''
 	       reservedWords      = nub [t | (_,(_,its)) <- rules, Right t <- its]
                cats               = []
-	    in (((pragma,(literals,symbols,keywords,cats)),rules),errors)
-  revs (cf@((pragma,(literals,symbols,keywords,_)),rules),errors) =
-    (((pragma,
+	    in (CFG((pragma,(literals,symbols,keywords,cats)),rules),errors)
+  revs (cf@(CFG((pragma,(literals,symbols,keywords,_)),rules)),errors) =
+    (CFG((pragma,
        (literals,symbols,keywords,findAllReversibleCats (cfp2cf cf))),rules),errors)
 
 conv :: Err Abs.Grammar -> [Either (Either Pragma RuleP) String]
