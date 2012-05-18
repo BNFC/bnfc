@@ -47,7 +47,7 @@ import System.Cmd (system)
 import Data.Char
 import Data.List (elemIndex)
 
-version = "2.4.2.0"
+version = "2.5b"
 
 title = unlines [
   "The BNF Converter, "++version, 
