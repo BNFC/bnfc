@@ -101,7 +101,7 @@ mkFiles make inPackage name cf =
        writeFileRep (dirBase ++ "FoldVisitor.java") $ cf2FoldVisitor packageBase packageAbsyn cf
        writeFileRep (dirBase ++ "AllVisitor.java") $ cf2AllVisitor packageBase packageAbsyn cf
        writeFileRep (dirBase ++ "Test.java") $ javaTest packageBase packageAbsyn cf
-       writeFileRep (dirBase ++ "Test" ++ name) $ "java Test $(1)"
+---       writeFileRep ("Test" ++ name) $ "java " ++ dirBase ++ "Test $(1)"
        let (lex, env) = cf2jlex packageBase packageAbsyn cf
        writeFileRep (dirBase ++ "Yylex") lex
        putStrLn "   (Tested with JLex 1.2.6.)"
@@ -199,7 +199,8 @@ makefile name dirBase dirAbsyn absynFileNames =
      "",
      "vclean:",
      "\t rm -f " ++ absynJavaSrc ++ " " ++ absynJavaClass,
-     "\t rm -f " ++ dirAbsyn ++ "*.class " ++ dirBase ++ "Test" ++ name,
+     "\t rm -f " ++ dirAbsyn ++ "*.class", 
+---     "\t rm -f " ++ "Test" ++ name,
      "\t rmdir " ++ dirAbsyn,
      "\t rm -f " ++ name ++ ".tex " ++ name ++ ".dvi " ++ name ++ ".aux " ++ name ++ ".log " ++ name ++ ".ps ",
      "\t rm -f " ++ unwords (map (dirBase ++) [

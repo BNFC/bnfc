@@ -12,6 +12,8 @@
 
 interface SyntaxRomance = TypesRomance ** open Prelude, (CO=Coordination) in {
 
+flags coding = utf8 ;
+
 --2 Common Nouns
 --
 -- Common nouns are defined as number-dependent strings with a gender.
@@ -75,7 +77,7 @@ oper
 
   noNum : Numeral = {s = \\_ => [] ; n = Pl ; isNo = True} ;
 
--- The existence construction "il y a", "c'è / ci sono" is defined separately,
+-- The existence construction "il y a", "c'Ã¨ / ci sono" is defined separately,
 -- and ad hoc, in each language.
 
   existNounPhrase : NounPhrase -> Clause ;
@@ -214,7 +216,7 @@ oper
 
   npGenPossNum : Numeral -> NounPhrase -> CommNounPhrase -> CaseA => Str ;
 
--- Constructions like "l'idée que la terre est ronde" are formed at the
+-- Constructions like "l'idÃ©e que la terre est ronde" are formed at the
 -- first place as common nouns, so that one can also have "la suggestion que...".
 
   nounThatSentence : CommNounPhrase -> Sentence -> CommNounPhrase = \idee,x -> 
@@ -321,7 +323,7 @@ oper
 
 --3 Prepositions and complements
 --
--- Most prepositions are just strings. But "à" and "de" are treated as cases in
+-- Most prepositions are just strings. But "Ã " and "de" are treated as cases in
 -- French. In Italian, there are more prepositions treated in this way:
 -- "a", "di", "da", "in", "su", "con".
 -- An invariant is that, if the preposition is not empty ($[]$), then the case
@@ -375,15 +377,15 @@ oper
 --2 Function expressions
 
 -- A function expression is a common noun together with the
--- preposition prefixed to its argument ("mère de x").
+-- preposition prefixed to its argument ("mÃ¨re de x").
 -- The type is analogous to two-place adjectives and transitive verbs.
 
   Function : Type = CommNounPhrase ** Complement ;
 
 -- The application of a function gives, in the first place, a common noun:
--- "mor/mödrar till Johan". From this, other rules of the resource grammar 
--- give noun phrases, such as "la mère de Jean", "les mères de Jean",
--- "les mères de Jean et de Marie", and "la mère de Jean et de Marie" (the
+-- "mor/mÃ¶drar till Johan". From this, other rules of the resource grammar 
+-- give noun phrases, such as "la mÃ¨re de Jean", "les mÃ¨res de Jean",
+-- "les mÃ¨res de Jean et de Marie", and "la mÃ¨re de Jean et de Marie" (the
 -- latter two corresponding to distributive and collective functions,
 -- respectively). Semantics will eventually tell when each
 -- of the readings is meaningful.
@@ -413,7 +415,7 @@ oper
   funAsCommNounPhrase : Function -> CommNounPhrase = \x -> x ; 
 
 -- The following is an aggregate corresponding to the original function application
--- producing "ma mère" and "la mère de Jean". It does not appear in the
+-- producing "ma mÃ¨re" and "la mÃ¨re de Jean". It does not appear in the
 -- resource grammar API any longer.
 
   appFun : Bool -> Function -> NounPhrase -> NounPhrase = \coll, mere, jean ->
@@ -603,7 +605,7 @@ oper
 -- compared adverbs as separate expressions; this could be done another way).
 --
 -- (We should also take into account clitic ones, like "y",
--- as well as the position: "est toujours heureux" / "est heureux à Paris".) 
+-- as well as the position: "est toujours heureux" / "est heureux Ã  Paris".) 
 
   Adverb : Type = SS ;
 
@@ -624,7 +626,7 @@ oper
   justCase : CaseA -> {s : Preposition ; c : CaseA} = \nom ->
     {s = [] ; c = nom} ;
 
--- This is a source of the "homme avec un téléscope" ambiguity, and may produce
+-- This is a source of the "homme avec un tÃ©lÃ©scope" ambiguity, and may produce
 -- strange things, like "les voitures toujours".
 -- Semantics will have to make finer distinctions among adverbials.
 -- French moreover says "les voitures d'hier" rather than "les voitures hier".
@@ -665,7 +667,7 @@ oper
   useClForm : Tense -> Anteriority -> Mode -> ClForm = 
     \t,a,m -> case t of {
     Present => ClPres a m ;
-    Past    => ClImperf a m ; --- no passé simple
+    Past    => ClImperf a m ; --- no passÃ© simple
     Future  => ClFut a ;      ---- mode
     Condit  => ClCondit a
     } ;
@@ -695,7 +697,7 @@ oper
 --3 Verb-complement verbs
 --
 -- Verb-complement verbs take verb phrases as complements.
--- They can need an oblique case ("à", "de"), but they work like ordinary verbs.
+-- They can need an oblique case ("Ã ", "de"), but they work like ordinary verbs.
 
   VerbVerb : Type = Verb ** {c : CaseA} ;
 
@@ -739,7 +741,7 @@ oper
 -- but this case is 'variable' in the sense that it
 -- is sometimes just mediated from the correlate
 -- ("homme qui est bon"), sometimes inherent to the
--- pronominal phrase itself ("homme dont la mère est bonne").
+-- pronominal phrase itself ("homme dont la mÃ¨re est bonne").
 
 oper
 
@@ -766,7 +768,7 @@ oper
 
   composRelPron : Gender -> Number -> CaseA -> Str ;
 
--- Complex relative pronouns ("dont la mère") do have an inherent gender.
+-- Complex relative pronouns ("dont la mÃ¨re") do have an inherent gender.
 
   funRelPron : Function -> RelPron -> RelPron ;
 
@@ -868,13 +870,13 @@ oper
 
 --3 Yes-no questions 
 --
--- Yes-no questions are used both independently ("Tu es fatigué?")
--- and after interrogative adverbials ("Pourquoi tu es fatigué?").
+-- Yes-no questions are used both independently ("Tu es fatiguÃ©?")
+-- and after interrogative adverbials ("Pourquoi tu es fatiguÃ©?").
 -- It is economical to handle with these two cases by the one
 -- rule, $questVerbPhrase'$. The only difference is if "si" appears
 -- in the indirect form.
 --
--- N.B. the inversion variant ("Es-tu fatigué?") is missing, mainly because our
+-- N.B. the inversion variant ("Es-tu fatiguÃ©?") is missing, mainly because our
 -- verb morphology does not support the intervening "t" ("Marche-t-il?").
 -- The leading "est-ce que" is recognized as a variant, and requires
 -- direct word order.
@@ -903,7 +905,7 @@ oper
 --3 Interrogative adverbials
 --
 -- These adverbials will be defined in the lexicon: they include
--- "quand", "où", "comment", "pourquoi", etc, which are all invariant one-word
+-- "quand", "oÃ¹", "comment", "pourquoi", etc, which are all invariant one-word
 -- expressions. In addition, they can be formed by adding prepositions
 -- to interrogative pronouns, in the same way as adverbials are formed
 -- from noun phrases. 
