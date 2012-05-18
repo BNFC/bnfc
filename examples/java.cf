@@ -1,0 +1,358 @@
+{-
+	Copyright (C) 2004 Mike Rainey, All rights reserved.
+	mrainey@uchicago.edu
+
+	This program is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 2 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program; if not, write to the Free Software
+    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+
+	************************
+	* Java LBNF definition *
+	************************
+
+	This is my first attempt at an LBNF definition of the Java 1.1 syntax.
+   	A good portion of the following code is translated from two sources:
+   	http://www.cs.dartmouth.edu/~mckeeman/cs118/notation/java11.html and
+	http://java.sun.com/docs/books/jls/second_edition/html/syntax.doc.html
+
+	To use this file, download BNF Converter at:
+	http://www.cs.chalmers.se/~markus/BNFC/
+
+	Please send bug reports/fixes to mrainey@uchicago.edu.  Both are greatly
+	encouraged!  If you're enterprising, maybe update this definition to 
+	Java 1.5 ;)
+
+-}
+
+entrypoints ProgramFile;
+
+Prpkg.		ProgramFile ::= "package" [Ident] [Semi] [Import] [TypeDecl];
+ProgF.		ProgramFile ::= [Import] [TypeDecl];
+
+ImportN. 	Import ::= "import" [Ident] [Semi];
+ImportA.	Import ::= "import" [Ident] ".*" [Semi];	
+separator Import "";
+
+TypeDecl.	TypeDecl ::= ClassHeader "{" [FieldDeclaration] "}";
+separator TypeDecl "";
+
+-- class and interface declaration
+ClassDec.	ClassHeader ::= [Modifier] "class" Ident;
+ClassDecE.	ClassHeader ::= [Modifier] "class" Ident "extends" [TypeName];
+ClassDecI.	ClassHeader ::= [Modifier] "class" Ident "implements" [TypeName];
+ClassDecEI.	ClassHeader ::= [Modifier] "class" Ident "extends" [TypeName] "implements" [TypeName];
+InterDec.	ClassHeader ::= [Modifier] "interface" Ident;
+InterDecE.	ClassHeader ::= [Modifier] "interface" Ident "extends" [TypeName];
+InterDecI.	ClassHeader ::= [Modifier] "interface" Ident "implements" [TypeName];
+InterDecEI.	ClassHeader ::= [Modifier] "interface" Ident "extends" [TypeName] "implements" [TypeName];
+
+-- field declaration
+-- note: i'm not sure why it is necessary to have the Dstk rule...enabling it causes conflicts, so it's disabled
+Dvar.			FieldDeclaration ::= [Modifier] TypeSpec [VarDecl] ";";
+Dmth.			FieldDeclaration ::= [Modifier] TypeSpec MethodDecl MethodBody;
+Dmthth.			FieldDeclaration ::= [Modifier] TypeSpec MethodDecl "throws" [TypeName] MethodBody;
+Dconst.			FieldDeclaration ::= [Modifier] Ident "(" [Parameter] ")" Body;
+Dconstt.		FieldDeclaration ::= [Modifier] Ident "(" [Parameter] ")" "throws" [TypeName] Body;
+Dblk.			FieldDeclaration ::= Body;
+Dinnerclass.		FieldDeclaration ::= TypeDecl;
+--Dstk.			FieldDeclaration ::= "static" Body;
+terminator  	FieldDeclaration "";
+
+IBody.	MethodBody ::= ";";
+MBody.	MethodBody ::= Body;
+
+-- variable declarations and statements
+LVar.		LVarStatement ::= TypeSpec [VarDecl] ";";
+LVarf.		LVarStatement ::= "final" TypeSpec [VarDecl] ";";
+Statem.		LVarStatement ::= Stm;
+separator 	LVarStatement "";
+
+Body.	Body ::= "{" [LVarStatement] "}";
+
+-- Statement
+Sem.	Stm ::= ";";
+Lbl.	Stm ::= Ident ":";
+Case.	Stm ::= "case" Exp ":";
+Dflt.	Stm ::= "default" ":";
+Exps.	Stm ::= Exp ";";
+LV.	Stm ::= "{" [LVarStatement] "}";
+Jmp.	Stm ::= JumpStm;
+Grd.	Stm ::= GuardStm;
+Iter.	Stm ::= IterStm;
+Sel.	Stm ::= SelectionStm;
+
+DeclName.	DeclaratorName ::= Ident;
+DeclArray.	DeclaratorName ::= Ident [BracketsOpt];
+VDeclAssign.	VarDecl ::= DeclaratorName "=" VariableInits;
+VDecl.		VarDecl ::= Ident;
+separator nonempty VarDecl ",";
+
+-- static initializers
+IExp.	VariableInits ::= Exp;
+IEmpt.	VariableInits ::= "{" "}";
+IArri.	VariableInits ::= "{" ArrayInits "}";
+
+Vainit.		ArrayInits ::= VariableInits;
+Vai.		ArrayInits ::= ArrayInits "," VariableInits;
+Vais.		ArrayInits ::= ArrayInits ",";
+
+Mth.		MethodDecl ::= DeclaratorName "(" [Parameter] ")";
+MthdArr.	MethodDecl ::= MethodDecl BracketsOpt;
+
+Param.	Parameter ::= TypeSpec DeclaratorName;
+Pfinal.	Parameter ::= "final" TypeSpec DeclaratorName;
+separator Parameter ",";
+
+Ifone.		SelectionStm ::= "if" "(" Exp ")" Stm [Elseif];
+If.		SelectionStm ::= "if" "(" Exp ")" Stm [Elseif] "else" Stm;
+Switch.		SelectionStm ::= "switch" "(" Exp ")" Body;
+
+Elseif.		Elseif ::= "else if" "(" Exp ")" Stm;
+terminator Elseif "";
+
+Break.			JumpStm ::= "break" ";";
+Brlabel.		JumpStm ::= "break" Ident ";";
+Continue.		JumpStm ::= "continue" ";";
+Continuelabel.		JumpStm ::= "continue" Ident ";";
+Return.			JumpStm ::= "return" ";";
+ReturnExp.		JumpStm ::= "return" Exp ";";
+Throw.			JumpStm ::= "throw" Exp ";";
+
+Synchronized.	GuardStm ::= "synchronized" "(" Exp ")" Body;
+Try.		GuardStm ::= "try" Body [Catch];
+Tryfinally.	GuardStm ::= "try" Body [Catch] "finally" Body;
+
+Catch1.		Catch ::= "catch" "(" TypeSpec Ident ")" Body;
+Catch2.		Catch ::= "catch" "(" TypeSpec ")" Body;
+separator Catch "";
+
+While.		IterStm ::= "while" "(" Exp ")" Stm;
+Do.		IterStm ::= "do" Stm "while" "(" Exp ")";
+For.		IterStm ::= "for" "(" ForInit [Exp] ";" [Exp] ")" Stm;
+
+Exprs1.		ForInit ::= [Exp] ";";
+DVar.		ForInit ::= TypeSpec [VarDecl] ";";
+DVarf.		ForInit ::= "final" TypeSpec [VarDecl] ";";
+
+
+-- modifiers
+Mabstract.	  Modifier ::= "abstract";
+Mfinal.		  Modifier ::= "final";
+Mpublic.	  Modifier ::= "public";
+Mprotected.	  Modifier ::= "protected";
+Mprivate.	  Modifier ::= "private";
+Mtransient.	  Modifier ::= "transient";
+Mvolatile.	  Modifier ::= "volatile";
+Mnative.	  Modifier ::= "native";
+Msync.		  Modifier ::= "synchronized";
+Mstatic.	  Modifier ::= "static";
+terminator Modifier "";
+
+-- build-in types
+Tchar.        BasicType ::= "char";
+Tshort.       BasicType ::= "short";
+Tint.         BasicType ::= "int";
+Tlong.        BasicType ::= "long";
+Tfloat.       BasicType ::= "float";
+Tdouble.      BasicType ::= "double";
+Tbyte.        BasicType ::= "byte";
+Tboolean.     BasicType ::= "boolean";
+
+ArrayType. 	  TypeSpec ::= TypeName [BracketsOpt];
+TypeName. 	  TypeSpec ::= TypeName;
+
+BuiltIn.	  TypeName ::= BasicType;
+ClassType.        TypeName ::= [Ident];
+
+separator nonempty TypeName ",";
+
+BracketsOpt.   BracketsOpt ::= "[]";
+
+separator nonempty BracketsOpt "";
+
+-- qualified identifier
+separator nonempty Ident ".";
+
+Eassign.     	Exp   ::= Exp14 Assignment_op Exp;
+Etype. 		Exp   ::= Exp14 "instanceof" TypeName;
+Econdition.  	Exp2  ::= Exp3 "?" Exp ":" Exp2;
+Elor.        	Exp3  ::= Exp3 "||" Exp4;
+Eland.       	Exp4  ::= Exp4 "&&" Exp5;
+Ebitor.      	Exp5  ::= Exp5 "|" Exp6;
+Ebitexor.    	Exp6  ::= Exp6 "^" Exp7;
+Ebitand.     	Exp7  ::= Exp7 "&" Exp8;
+Eeq.         	Exp8  ::= Exp8 "==" Exp9;
+Eneq.        	Exp8  ::= Exp8 "!=" Exp9;
+Elthen.      	Exp9  ::= Exp9 "<" Exp10;
+Egrthen.     	Exp9  ::= Exp9 ">" Exp10;
+Ele.         	Exp9  ::= Exp9 "<=" Exp10;
+Ege.         	Exp9  ::= Exp9 ">=" Exp10;
+Eleft.       	Exp10 ::= Exp10 "<<" Exp11;
+Eright.      	Exp10 ::= Exp10 ">>" Exp11;
+Etrip.       	Exp10 ::= Exp10 ">>>" Exp11;
+Eplus.       	Exp11 ::= Exp11 "+" Exp12;
+Eminus.      	Exp11 ::= Exp11 "-" Exp12;
+Etimes.      	Exp12 ::= Exp12 "*" Exp13;
+Ediv.        	Exp12 ::= Exp12 "/" Exp13;
+Emod.        	Exp12 ::= Exp12 "%" Exp13;
+Ebcoercion.	Exp13 ::= "(" BasicType ")" Exp13;
+Eexpcoercion.  	Exp13 ::= "(" Exp ")" Exp15;
+Earrcoercion.	Exp13 ::= "(" [Ident] [BracketsOpt] ")" Exp13;
+Epreop.      	Exp14 ::= Unary_operator Exp13;
+Epreinc.     	Exp14 ::= "++" Exp14;
+Epredec.     	Exp14 ::= "--" Exp14;
+Epostinc.    	Exp15 ::= Exp15 "++";
+Epostdec.    	Exp15 ::= Exp15 "--";
+Especname.	Exp16 ::= SpecName;
+Earr.		Exp16 ::= ArrAcc;
+Emth.		Exp16 ::= MthCall;
+Efld.		Exp16 ::= FieldAcc;
+Econst.      	Exp16 ::= Constant;
+Estring.     	Exp16 ::= String;
+Enewalloc.	Exp17 ::= NewAlloc;
+Evar.		Exp18 ::= [Ident];
+
+SSsuper.	 SpecName ::= "super";
+SSthis.		 SpecName ::= "this";
+SSnull.		 SpecName ::= "null";
+
+Anewclass.	 NewAlloc ::= "new" TypeName Args;
+Anewinnerclass.	 NewAlloc ::= "new" TypeName Args "{" [FieldDeclaration] "}";
+Anewarray.	 NewAlloc ::= "new" TypeName [DimExpr];
+Anewarriempty.	 NewAlloc ::= "new" TypeName [DimExpr] "{" "}";
+Anewarrinits.	 NewAlloc ::= "new" TypeName [DimExpr] "{" ArrayInits "}";
+
+Aarr.		 ArrAcc ::= [Ident] "[" Exp "]";
+Aarr1.		 ArrAcc ::= SpecExp "[" Exp "]";
+
+Cep.		SpecExp ::= "(" Exp ")";
+Cnp.		SpecExp ::= SpecExpNP;
+Cthis.		SpecExp ::= SpecName;
+
+CNLit.		SpecExpNP ::= Constant;
+CNParr.		SpecExpNP ::= ArrAcc;
+CNPmth.		SpecExpNP ::= MthCall;
+CNPfld.		SpecExpNP ::= FieldAcc;
+
+Mmth.		 MthCall ::= [Ident] Args;
+Mmth1.		 MthCall ::= SpecExpNP Args;
+Mmthspec.	 MthCall ::= SpecName Args;
+
+Ffvar.		 FieldAcc ::= SpecExp "." Ident;
+Ffvar1.		 FieldAcc ::= NewAlloc "." Ident;
+Ffthis.		 FieldAcc ::= [Ident] ".this";
+Fclass.	 	 FieldAcc ::= [Ident] ".class";
+Ffclass2.	 FieldAcc ::= BasicType ".class";
+
+Args.	Args ::= "(" [Exp] ")";
+
+DimExpr. DimExpr ::= "[" Exp "]";
+
+terminator nonempty DimExpr "";
+
+separator Exp ",";
+
+coercions Exp 18;
+
+token Unsigned ["123456789"] digit * ('u'|'U');
+
+token Long ["123456789"] digit * ('l'|'L');
+
+token UnsignedLong ["123456789"] digit * (('u''l')|('U''L'));
+
+token Hexadecimal '0' ('x'|'X') (digit | ["abcdef"] | ["ABCDEF"])+;
+
+token HexUnsigned '0' ('x'|'X') (digit | ["abcdef"] | ["ABCDEF"])+ ('u'|'U');
+
+token HexLong '0' ('x'|'X') (digit | ["abcdef"] | ["ABCDEF"])+ ('l'|'L');
+
+token HexUnsLong '0' ('x'|'X') (digit | ["abcdef"] | ["ABCDEF"])+ (('u''l')|('U''L'));
+
+token Octal '0'["01234567"]*;
+
+token OctalUnsigned '0'["01234567"]*('u'|'U');
+
+token OctalLong '0'["01234567"]* ('l'|'L');
+
+token OctalUnsLong '0'["01234567"]* (('u''l')|('U''L'));
+
+token JDouble (((digit+ '.')|('.' digit+))(('e'|'E') ('-')? digit+)?)|
+              (digit+ ('e'|'E') ('-')? digit+)|(digit+ '.' digit+ 'E' ('-')? digit+);
+
+token JFloat (((digit+ '.' digit+)|(digit+ '.')|('.' digit+))(('e'|'E')('-')? digit+)?
+                               ('f'|'F'))|((digit+ ('e'|'E')('-')? digit+)('f'|'F'));
+
+token JLongDouble (((digit+ '.' digit+)|(digit+ '.')|('.' digit+))(('e'|'E')('-')? 
+                   digit+)?('l'|'L'))|((digit+ ('e'|'E')('-')? digit+)('l'|'L'));
+
+token UnicodeChar '\'' '\\' 'u' (digit | ["abcdef"] | ["ABCDEF"]) (digit | ["abcdef"] | ["ABCDEF"]) (digit | ["abcdef"] | ["ABCDEF"]) (digit | ["abcdef"] | ["ABCDEF"]) '\'';
+
+token JChar '\'' ((char - ["'\\"]) | ('\\' ["'\\ntr"])) '\'';
+
+Efloat.        Constant ::= Double;
+Echar.         Constant ::= JChar;
+Eunicode.      Constant ::= UnicodeChar;
+Eunsigned.     Constant ::= Unsigned;
+Elong.         Constant ::= Long;
+Eunsignlong.   Constant ::= UnsignedLong;
+Ehexadec.      Constant ::= Hexadecimal;
+Ehexaunsign.   Constant ::= HexUnsigned;
+Ehexalong.     Constant ::= HexLong;
+Ehexaunslong.  Constant ::= HexUnsLong;
+Eoctal.        Constant ::= Octal;
+Eoctalunsign.  Constant ::= OctalUnsigned;
+Eoctallong.    Constant ::= OctalLong;
+Eoctalunslong. Constant ::= OctalUnsLong;
+Ecdouble.      Constant ::= JDouble;
+Ecfloat.       Constant ::= JFloat;
+Eclongdouble.  Constant ::= JLongDouble;
+Eint.          Constant ::= Integer;  
+Etrue.	       Constant ::= "true";
+Efalse.	       Constant ::= "false";
+
+internal Elonger. Constant ::= Integer;
+internal Edouble. Constant ::= Double;
+
+Plus.        Unary_operator ::= "+" ;
+Negative.    Unary_operator ::= "-" ;
+Complement.  Unary_operator ::= "~" ;
+Logicalneg.  Unary_operator ::= "!" ;
+
+Assign.       Assignment_op ::= "=" ;
+AssignMul.    Assignment_op ::= "*=" ;
+AssignDiv.    Assignment_op ::= "/=" ;
+AssignMod.    Assignment_op ::= "%=" ;
+AssignAdd.    Assignment_op ::= "+=" ;
+AssignSub.    Assignment_op ::= "-=" ;
+AssignLeft.   Assignment_op ::= "<<=" ;
+AssignRight.  Assignment_op ::= ">>=" ;
+AssignTrip.   Assignment_op ::= ">>>=" ;
+AssignAnd.    Assignment_op ::= "&=" ;
+AssignXor.    Assignment_op ::= "^=" ;
+AssignOr.     Assignment_op ::= "|=" ;
+
+Sem1.	Semi ::=  ";";
+terminator Semi "";
+
+{-
+	there is a problem with comments... 
+	the first 2 commented out directives fail to work.
+	some alex hacking is probably in order to get a full
+	java parser; i've noticed the unbalanced /*'s appear
+	enough to be annoying
+-}   	
+--comment "/**" "*/" ;
+--comment "/*" "**/" ;
+comment "/**" "**/" ;
+comment "/*" "*/" ;
+comment "//";
