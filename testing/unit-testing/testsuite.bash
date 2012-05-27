@@ -1,17 +1,22 @@
 #!/bin/bash 
 
-function bnfct {
- Run=`mkdir -p tmp; cd tmp; cp ../input/$1.* .; bnfc -m $1.cf; make; cat ../input/$1.test | ./Test$1;  cd ..; rm -rf tmp`
+function bnfc_haskell_parse_test {
+ mkdir -p tmp; cd tmp
+ cp ../input/$1.cf .
+ bnfc -m $1.cf > /dev/null
+ make 2>1 > /dev/null
+ Run=`cat ../input/$1.test | ./Test$1`
  ExpectedOutput=`cat ../haskell/output/$1.out`
+ cd .. ; rm -rf tmp
  assertEquals "${ExpectedOutput}" "${Run}"
 }
 
-testBNFC_lbnf(){
-    bnfct lbnf
+test_lbnf_haskell_parse_test(){
+    bnfc_haskell_parse_test lbnf
 }
 
-#testBNFC_lbnf2(){
-#    bnfct lbnf
-#}
+test_gf_haskell_parse_test(){
+    bnfc_haskell_parse_test gf
+}
 
 . ./shunit2
