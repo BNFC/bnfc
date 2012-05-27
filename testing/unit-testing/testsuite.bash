@@ -10,8 +10,8 @@ testBNFC_lbnf(){
     bnfct lbnf
 }
 
-testBNFC_lbnf2(){
-    bnfct lbnf
-}
+#testBNFC_lbnf2(){
+#    bnfct lbnf
+#}
 
 . ./shunit2

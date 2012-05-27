@@ -27,7 +27,9 @@ import CF
 import CFtoHappy
 import CFtoAlex
 import CFtoAlex2
+import CFtoAlex3
 import CFtoLatex
+import HaskellTop(AlexMode(..))
 import CFtoAbstractGADT
 import CFtoTemplateGADT
 import CFtoPrinterGADT
@@ -104,7 +106,7 @@ layoutFile    = mkFile withLang "Layout" "hs"
 data Options = Options 
     { 
      make :: Bool,
-     alex1 :: Bool,
+     alexMode :: AlexMode,
      inDir :: Bool,
      shareStrings :: Bool,
      byteStrings :: Bool,
@@ -114,15 +116,14 @@ data Options = Options
      lang :: String
     }
 
-makeAllGADT :: Bool -> Bool -> Bool -> Bool -> Bool -> Bool -> Int 
+makeAllGADT :: Bool -> AlexMode -> Bool -> Bool -> Bool -> Bool -> Int 
 	   -> Maybe String -- ^ The hierarchical package to put the modules
 	                   --   in, or Nothing.
 	   -> String -> FilePath -> IO ()
-makeAllGADT m a1 d ss bs g x p n file = do
-  let opts = Options { make = m, alex1 = a1, inDir = d, shareStrings = ss, byteStrings = bs,
-		       glr = if g then GLR else Standard, xml = x, 
-		       inPackage = p, lang = n }
-
+makeAllGADT m am d ss bs g x p n file = do
+  let opts = Options { make = m, alexMode = am, inDir = d, shareStrings = ss, byteStrings = bs,
+ 		       glr = if g then GLR else Standard, xml = x, 
+ 		       inPackage = p, lang = n }        
       absMod = absFileM opts
       composOpMod = composOpFileM opts
       lexMod = alexFileM opts
@@ -139,19 +140,23 @@ makeAllGADT m a1 d ss bs g x p n file = do
 			    prepareDir dir
     writeFileRep (absFile opts) $ cf2Abstract (byteStrings opts) absMod cf composOpMod
     writeFileRep (composOpFile opts) $ composOp composOpMod
-    if alex1 opts then do
-		    writeFileRep (alexFile opts) $ cf2alex lexMod errMod cf
-		    putStrLn "   (Use Alex 1.1 to compile.)" 
-	       else do
-		    writeFileRep (alexFile opts) $ cf2alex2 lexMod errMod shareMod (shareStrings opts) (byteStrings opts) cf
-                    putStrLn "   (Use Alex 2.0 to compile.)"
+    case alexMode opts of
+      Alex1 -> do
+        writeFileRep (alexFile opts) $ cf2alex lexMod errMod cf
+        putStrLn "   (Use Alex 1.1 to compile.)" 
+      Alex2 -> do
+        writeFileRep (alexFile opts) $ cf2alex2 lexMod errMod shareMod (shareStrings opts) (byteStrings opts) cf
+        putStrLn "   (Use Alex 2.0 to compile.)"
+      Alex3 -> do
+        writeFileRep (alexFile opts) $ cf2alex3 lexMod errMod shareMod (shareStrings opts) (byteStrings opts) cf
+        putStrLn "   (Use Alex 3.0 to compile.)"
     writeFileRep (happyFile opts) $ 
 		 cf2HappyS parMod absMod lexMod errMod (glr opts) (byteStrings opts) cf
     putStrLn "   (Tested with Happy 1.15)"
     writeFileRep (latexFile opts)    $ cfToLatex (lang opts) cf
     writeFileRep (templateFile opts) $ cf2Template (templateFileM opts) absMod errMod cf
     writeFileRep (printerFile opts)  $ cf2Printer prMod absMod cf
-    when (hasLayout cf) $ writeFileRep (layoutFile opts) $ cf2Layout (alex1 opts) (inDir opts) layMod lexMod cf
+    when (hasLayout cf) $ writeFileRep (layoutFile opts) $ cf2Layout (alexMode opts == Alex1) (inDir opts) layMod lexMod cf
     writeFileRep (tFile opts)        $ testfile opts cf
     writeFileRep (errFile opts)      $ errM errMod cf
     when (shareStrings opts) $ writeFileRep (shareFile opts)    $ sharedString shareMod (byteStrings opts) cf

@@ -45,7 +45,7 @@ import System.Environment (getEnv,getArgs     )
 import System.Exit (exitFailure,exitSuccess)
 import System.Cmd (system)
 import Data.Char
-import Data.List (elemIndex)
+import Data.List (elemIndex, foldl')
 
 version = "2.5b"
 
@@ -95,9 +95,14 @@ mkOne xx = do
       let haskell = elem "-haskell" args
       let haskellGADT = elem "-gadt" args
       let profile = elem "-prof" args
-      let alex1 = "-alex1" `elem` args
-          alex2 = "-alex2" `elem` args
-	  alex1or2 = alex1
+      let alexMode = foldl' (\m arg -> 
+                              case arg of
+                                "-alex1" -> Alex1
+                                "-alex2" -> Alex2
+                                "-alex3" -> Alex3
+                                _        -> m
+                            ) Alex3 args
+          alex1 = alexMode == Alex1
           alex2StringSharing = elem "-sharestrings" args
           alex2ByteString    = elem "-bytestrings" args
           glr = "-glr" `elem` args
@@ -125,18 +130,19 @@ mkOne xx = do
            _ | csharp -> makeCSharp make vsfiles wcfSupport inPackage file
            _ | java14 -> makeJava make name file
            _ | java15 -> makeJava15 make inPackage name file
-           _ | ocaml  -> makeOCaml make alex1or2 inDir alex2StringSharing glr xml inPackage name file
-           _ | fsharp -> makeFSharp make alex1or2 inDir alex2StringSharing glr xml inPackage name file
-           _ | profile-> makeAllProfile make alex1or2 False xml name file
-	   _ | haskellGADT -> makeAllGADT make alex1or2 inDir alex2StringSharing alex2ByteString glr xml inPackage name file
-           _          -> makeAll make alex1or2 inDir alex2StringSharing alex2ByteString glr xml inPackage name multi file
+           _ | ocaml  -> makeOCaml make alex1 inDir alex2StringSharing glr xml inPackage name file
+           _ | fsharp -> makeFSharp make alex1 inDir alex2StringSharing glr xml inPackage name file
+           _ | profile-> makeAllProfile make alex1 False xml name file
+           _ | haskellGADT -> makeAllGADT make alexMode inDir alex2StringSharing alex2ByteString glr xml inPackage name file
+           _  -> makeAll make alexMode inDir alex2StringSharing alex2ByteString glr xml inPackage name multi file
          if (make && multi) 
-            then (system ("cp Makefile Makefile_" ++ name)) >> return ()  
-            else return ()
-	else endFileErr
+           then (system ("cp Makefile Makefile_" ++ name)) >> return ()  
+           else return ()
+         else endFileErr
        else endLanguageErr
- where isCF ('f':'c':'.':_) = True
-       isCF _               = False
+ where isCF ('f':'c':'.':_)     = True
+       isCF ('f':'n':'b':'.':_) = True
+       isCF _                   = False
        endFileErr = do 
                       putStr title
                       putStrLn "Error: the input file must end with .cf"
@@ -177,7 +183,8 @@ printUsage = do
   putStrLn "  -p <name>      Prepend <name> to the Haskell module names."
   putStrLn "                 Dots in the module name create hierarchical modules."
   putStrLn "  -alex1         Use Alex 1.1 as Haskell lexer tool"
-  putStrLn "  -alex2         Use Alex 2 as Haskell lexer tool (default)"
+  putStrLn "  -alex2         Use Alex 2 as Haskell lexer tool"
+  putStrLn "  -alex3         Use Alex 3 as Haskell lexer tool (default)"
   putStrLn "  -sharestrings  Use string sharing in Alex 2 lexer"
   putStrLn "  -bytestrings   Use byte string in Alex 2 lexer"
   putStrLn "  -glr           Output Happy GLR parser"
