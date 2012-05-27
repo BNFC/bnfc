@@ -1,6 +1,6 @@
 #!/bin/bash 
 
-function haskell_parse_test {
+function parse_test {
  mkdir -p tmp; cd tmp
  cp ../input/$1/$1.cf .
  bnfc -m $1.cf > /dev/null
@@ -12,11 +12,11 @@ function haskell_parse_test {
 }
 
 test_haskell_lbnf_parse_test(){
-    haskell_parse_test lbnf
+    parse_test lbnf
 }
 
 test_haskell_gf_parse_test(){
-    haskell_parse_test gf
+    parse_test gf
 }
 
 . ./shunit2

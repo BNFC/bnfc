@@ -78,9 +78,11 @@ main = do
     _ -> mkOne xx
 
 mkOne :: [String] -> IO ()
-mkOne xx = do
-      let args = (map (filter (not . isSpace)) xx)
-      let file = last args
+mkOne xx = do   
+  let args = (map (filter (not . isSpace)) xx)
+  let file = last args  
+  if (head file == '-') then printUsage 
+   else do
       let name = takeWhile (/= '.') $ basename file
       let make = elem "-m" args
       let multi = elem "-multi" args
