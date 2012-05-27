@@ -142,6 +142,8 @@ mkOne xx = do
        else endLanguageErr
  where isCF ('f':'c':'.':_)     = True
        isCF ('f':'n':'b':'.':_) = True
+       isCF ('f':'n':'b':'l':'.':_) = True
+       isCF ('c':'f':'n':'b':'.':_) = True
        isCF _                   = False
        endFileErr = do 
                       putStr title

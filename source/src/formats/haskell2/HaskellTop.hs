@@ -129,7 +129,7 @@ makeAll :: Bool -> AlexMode -> Bool -> Bool -> Bool -> Bool -> Int
 	                   --   in, or Nothing.
 	   -> String -> Bool -> FilePath -> IO ()
 makeAll m am d ss bs g x p n mu file = do
-  let opts = Options { make = m, alexMode = am, inDir = d, shareStrings = ss, byteStrings=bs,
+  let opts = Options { make = m, alex1 = am == Alex1, alexMode = am, inDir = d, shareStrings = ss, byteStrings=bs,
  		       glr = if g then GLR else Standard, xml = x, 
  		       inPackage = p, lang = n, multi = mu}
       absMod = absFileM opts
