@@ -1,0 +1,29 @@
+
+Parse Succesful!
+
+[Abstract Syntax]
+(PDefs [(DFun [Type_int] "main" [] [(SExp [(EApp "printString" [(EString "What string? ")] )] ), (SInit [Type_string] "s" [(EApp "readString" [] )] ), (SExp [(EApp "printString" [(EString "How many times? ")] )] ), (SInit [Type_int] "k" [(EApp "readInt" [] )] ), (SExp [(EApp "printString" [(EApp "replicate" [(EId "k"), (EId "s")] )] )] ), SReturnVoid] ), (DFun [Type_string] "replicate" [(ADecl [Type_int] "k"), (ADecl [Type_string] "s")] [(SInit [Type_int] "i" [(EInt 1)] ), (SInit [Type_string] "r" [(EId "s")] ), (SWhile [(ELt (EId "i") (EId "k"))] [(SBlock [(SExp [(EAss (EId "r") (EPlus (EId "s") (EId "r")))] ), (SExp [(EPIncr [(EId "i")] )] )] )]), (SReturn [(EId "r")] )] )])
+
+[Linearized Tree]
+int main () 
+{
+  printString ("What string? ");
+  string s = readString ();
+  printString ("How many times? ");
+  int k = readInt ();
+  printString (replicate (k, s));
+  return;
+}
+string replicate (int k, string s) 
+{
+  int i = 1;
+  string r = s;
+  while (i < k) 
+  {
+    r = s + r;
+    i ++;
+  }
+  return r;
+}
+
+
