@@ -31,36 +31,24 @@ test_haskell_gf_parse_test(){
     parse_test gf haskell
 }
 
-test_c_lbnf_parse_test(){
-    parse_test lbnf c
-}
-
-test_c_gf_parse_test(){
-    parse_test gf c
-}
-
-# test_cpp_lbnf_parse_test(){
-#    parse_test lbnf cpp
-#}
-
-#test_cpp_gf_parse_test(){
-#    parse_test gf cpp
-#}
-
-test_java_lbnf_parse_test(){
-    parse_test lbnf java
-}
-
-# test_java_gf_parse_test(){
-#    parse_test gf java
-# }
-
 test_ocaml_lbnf_parse_test(){
     parse_test lbnf ocaml
 }
 
 test_ocaml_gf_parse_test(){
     parse_test gf ocaml
+}
+
+test_c_lbnf_parse_test(){
+    parse_test lbnf c
+}
+
+test_cpp_lbnf_parse_test(){
+    parse_test lbnf cpp
+}
+
+test_java_lbnf_parse_test(){
+    parse_test lbnf java
 }
 
 
