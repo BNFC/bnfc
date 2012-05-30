@@ -1,0 +1,71 @@
+[Abstract syntax]
+
+Grammar ([Rule (LabNoP (Id (Ident "Grammar")), IdCat (Ident "Grammar"), [NTerminal (ListCat (IdCat (Ident "Def")))]); Rule (LabNoP (ListE), ListCat (IdCat (Ident "Def")), []); Rule (LabNoP (ListCons), ListCat (IdCat (Ident "Def")), [NTerminal (IdCat (Ident "Def")); Terminal (";"); NTerminal (ListCat (IdCat (Ident "Def")))]); Rule (LabNoP (ListE), ListCat (IdCat (Ident "Item")), []); Rule (LabNoP (ListCons), ListCat (IdCat (Ident "Item")), [NTerminal (IdCat (Ident "Item")); NTerminal (ListCat (IdCat (Ident "Item")))]); Rule (LabNoP (Id (Ident "Rule")), IdCat (Ident "Def"), [NTerminal (IdCat (Ident "Label")); Terminal ("."); NTerminal (IdCat (Ident "Cat")); Terminal ("::="); NTerminal (ListCat (IdCat (Ident "Item")))]); Rule (LabNoP (Id (Ident "Terminal")), IdCat (Ident "Item"), [NTerminal (IdCat (Ident "String"))]); Rule (LabNoP (Id (Ident "NTerminal")), IdCat (Ident "Item"), [NTerminal (IdCat (Ident "Cat"))]); Rule (LabNoP (Id (Ident "ListCat")), IdCat (Ident "Cat"), [Terminal ("["); NTerminal (IdCat (Ident "Cat")); Terminal ("]")]); Rule (LabNoP (Id (Ident "IdCat")), IdCat (Ident "Cat"), [NTerminal (IdCat (Ident "Ident"))]); Rule (LabNoP (Id (Ident "LabNoP")), IdCat (Ident "Label"), [NTerminal (IdCat (Ident "LabelId"))]); Rule (LabNoP (Id (Ident "LabP")), IdCat (Ident "Label"), [NTerminal (IdCat (Ident "LabelId")); NTerminal (ListCat (IdCat (Ident "ProfItem")))]); Rule (LabNoP (Id (Ident "LabPF")), IdCat (Ident "Label"), [NTerminal (IdCat (Ident "LabelId")); NTerminal (IdCat (Ident "LabelId")); NTerminal (ListCat (IdCat (Ident "ProfItem")))]); Rule (LabNoP (Id (Ident "LabF")), IdCat (Ident "Label"), [NTerminal (IdCat (Ident "LabelId")); NTerminal (IdCat (Ident "LabelId"))]); Rule (LabNoP (Id (Ident "Id")), IdCat (Ident "LabelId"), [NTerminal (IdCat (Ident "Ident"))]); Rule (LabNoP (Id (Ident "Wild")), IdCat (Ident "LabelId"), [Terminal ("_")]); Rule (LabNoP (Id (Ident "ListE")), IdCat (Ident "LabelId"), [Terminal ("["); Terminal ("]")]); Rule (LabNoP (Id (Ident "ListCons")), IdCat (Ident "LabelId"), [Terminal ("("); Terminal (":"); Terminal (")")]); Rule (LabNoP (Id (Ident "ListOne")), IdCat (Ident "LabelId"), [Terminal ("("); Terminal (":"); Terminal ("["); Terminal ("]"); Terminal (")")]); Rule (LabNoP (Id (Ident "ProfIt")), IdCat (Ident "ProfItem"), [Terminal ("("); Terminal ("["); NTerminal (ListCat (IdCat (Ident "IntList"))); Terminal ("]"); Terminal (","); Terminal ("["); NTerminal (ListCat (IdCat (Ident "Integer"))); Terminal ("]"); Terminal (")")]); Rule (LabNoP (Id (Ident "Ints")), IdCat (Ident "IntList"), [Terminal ("["); NTerminal (ListCat (IdCat (Ident "Integer"))); Terminal ("]")]); Separator (MEmpty, IdCat (Ident "Integer"), ","); Separator (MEmpty, IdCat (Ident "IntList"), ","); Terminator (MNonempty, IdCat (Ident "ProfItem"), ""); Rule (LabNoP (Id (Ident "Comment")), IdCat (Ident "Def"), [Terminal ("comment"); NTerminal (IdCat (Ident "String"))]); Rule (LabNoP (Id (Ident "Comments")), IdCat (Ident "Def"), [Terminal ("comment"); NTerminal (IdCat (Ident "String")); NTerminal (IdCat (Ident "String"))]); Rule (LabNoP (Id (Ident "Internal")), IdCat (Ident "Def"), [Terminal ("internal"); NTerminal (IdCat (Ident "Label")); Terminal ("."); NTerminal (IdCat (Ident "Cat")); Terminal ("::="); NTerminal (ListCat (IdCat (Ident "Item")))]); Rule (LabNoP (Id (Ident "Token")), IdCat (Ident "Def"), [Terminal ("token"); NTerminal (IdCat (Ident "Ident")); NTerminal (IdCat (Ident "Reg"))]); Rule (LabNoP (Id (Ident "PosToken")), IdCat (Ident "Def"), [Terminal ("position"); Terminal ("token"); NTerminal (IdCat (Ident "Ident")); NTerminal (IdCat (Ident "Reg"))]); Rule (LabNoP (Id (Ident "Entryp")), IdCat (Ident "Def"), [Terminal ("entrypoints"); NTerminal (ListCat (IdCat (Ident "Ident")))]); Rule (LabNoP (Id (Ident "Separator")), IdCat (Ident "Def"), [Terminal ("separator"); NTerminal (IdCat (Ident "MinimumSize")); NTerminal (IdCat (Ident "Cat")); NTerminal (IdCat (Ident "String"))]); Rule (LabNoP (Id (Ident "Terminator")), IdCat (Ident "Def"), [Terminal ("terminator"); NTerminal (IdCat (Ident "MinimumSize")); NTerminal (IdCat (Ident "Cat")); NTerminal (IdCat (Ident "String"))]); Rule (LabNoP (Id (Ident "Coercions")), IdCat (Ident "Def"), [Terminal ("coercions"); NTerminal (IdCat (Ident "Ident")); NTerminal (IdCat (Ident "Integer"))]); Rule (LabNoP (Id (Ident "Rules")), IdCat (Ident "Def"), [Terminal ("rules"); NTerminal (IdCat (Ident "Ident")); Terminal ("::="); NTerminal (ListCat (IdCat (Ident "RHS")))]); Rule (LabNoP (Id (Ident "Layout")), IdCat (Ident "Def"), [Terminal ("layout"); NTerminal (ListCat (IdCat (Ident "String")))]); Rule (LabNoP (Id (Ident "LayoutStop")), IdCat (Ident "Def"), [Terminal ("layout"); Terminal ("stop"); NTerminal (ListCat (IdCat (Ident "String")))]); Rule (LabNoP (Id (Ident "LayoutTop")), IdCat (Ident "Def"), [Terminal ("layout"); Terminal ("toplevel")]); Separator (MNonempty, IdCat (Ident "String"), ","); Separator (MNonempty, IdCat (Ident "RHS"), "|"); Rule (LabNoP (Id (Ident "RHS")), IdCat (Ident "RHS"), [NTerminal (ListCat (IdCat (Ident "Item")))]); Rule (LabNoP (Id (Ident "MNonempty")), IdCat (Ident "MinimumSize"), [Terminal ("nonempty")]); Rule (LabNoP (Id (Ident "MEmpty")), IdCat (Ident "MinimumSize"), []); Rule (LabNoP (Id (Ident "RSeq")), IdCat (Ident "Reg2"), [NTerminal (IdCat (Ident "Reg2")); NTerminal (IdCat (Ident "Reg3"))]); Rule (LabNoP (Id (Ident "RAlt")), IdCat (Ident "Reg1"), [NTerminal (IdCat (Ident "Reg1")); Terminal ("|"); NTerminal (IdCat (Ident "Reg2"))]); Rule (LabNoP (Id (Ident "RMinus")), IdCat (Ident "Reg1"), [NTerminal (IdCat (Ident "Reg2")); Terminal ("-"); NTerminal (IdCat (Ident "Reg2"))]); Rule (LabNoP (Id (Ident "RStar")), IdCat (Ident "Reg3"), [NTerminal (IdCat (Ident "Reg3")); Terminal ("*")]); Rule (LabNoP (Id (Ident "RPlus")), IdCat (Ident "Reg3"), [NTerminal (IdCat (Ident "Reg3")); Terminal ("+")]); Rule (LabNoP (Id (Ident "ROpt")), IdCat (Ident "Reg3"), [NTerminal (IdCat (Ident "Reg3")); Terminal ("?")]); Rule (LabNoP (Id (Ident "REps")), IdCat (Ident "Reg3"), [Terminal ("eps")]); Rule (LabNoP (Id (Ident "RChar")), IdCat (Ident "Reg3"), [NTerminal (IdCat (Ident "Char"))]); Rule (LabNoP (Id (Ident "RAlts")), IdCat (Ident "Reg3"), [Terminal ("["); NTerminal (IdCat (Ident "String")); Terminal ("]")]); Rule (LabNoP (Id (Ident "RSeqs")), IdCat (Ident "Reg3"), [Terminal ("{"); NTerminal (IdCat (Ident "String")); Terminal ("}")]); Rule (LabNoP (Id (Ident "RDigit")), IdCat (Ident "Reg3"), [Terminal ("digit")]); Rule (LabNoP (Id (Ident "RLetter")), IdCat (Ident "Reg3"), [Terminal ("letter")]); Rule (LabNoP (Id (Ident "RUpper")), IdCat (Ident "Reg3"), [Terminal ("upper")]); Rule (LabNoP (Id (Ident "RLower")), IdCat (Ident "Reg3"), [Terminal ("lower")]); Rule (LabNoP (Id (Ident "RAny")), IdCat (Ident "Reg3"), [Terminal ("char")]); Rule (LabNoP (Wild), IdCat (Ident "Reg"), [NTerminal (IdCat (Ident "Reg1"))]); Rule (LabNoP (Wild), IdCat (Ident "Reg1"), [NTerminal (IdCat (Ident "Reg2"))]); Rule (LabNoP (Wild), IdCat (Ident "Reg2"), [NTerminal (IdCat (Ident "Reg3"))]); Rule (LabNoP (Wild), IdCat (Ident "Reg3"), [Terminal ("("); NTerminal (IdCat (Ident "Reg")); Terminal (")")]); Rule (LabNoP (ListOne), ListCat (IdCat (Ident "Ident")), [NTerminal (IdCat (Ident "Ident"))]); Rule (LabNoP (ListCons), ListCat (IdCat (Ident "Ident")), [NTerminal (IdCat (Ident "Ident")); Terminal (","); NTerminal (ListCat (IdCat (Ident "Ident")))]); Comment ("--"); Comments ("{-", "-}")])
+
+[Linearized tree]
+
+Grammar . Grammar ::= [Def] ;
+[] . [Def] ::= ;
+(:) . [Def] ::= Def ";" [Def] ;
+[] . [Item] ::= ;
+(:) . [Item] ::= Item [Item] ;
+Rule . Def ::= Label "." Cat "::=" [Item] ;
+Terminal . Item ::= String ;
+NTerminal . Item ::= Cat ;
+ListCat . Cat ::= "[" Cat "]" ;
+IdCat . Cat ::= Ident ;
+LabNoP . Label ::= LabelId ;
+LabP . Label ::= LabelId [ProfItem] ;
+LabPF . Label ::= LabelId LabelId [ProfItem] ;
+LabF . Label ::= LabelId LabelId ;
+Id . LabelId ::= Ident ;
+Wild . LabelId ::= "_" ;
+ListE . LabelId ::= "[" "]" ;
+ListCons . LabelId ::= "(" ":" ")" ;
+ListOne . LabelId ::= "(" ":" "[" "]" ")" ;
+ProfIt . ProfItem ::= "(" "[" [IntList] "]" "," "[" [Integer] "]" ")" ;
+Ints . IntList ::= "[" [Integer] "]" ;
+separator Integer "," ;
+separator IntList "," ;
+terminator nonempty ProfItem "" ;
+Comment . Def ::= "comment" String ;
+Comments . Def ::= "comment" String String ;
+Internal . Def ::= "internal" Label "." Cat "::=" [Item] ;
+Token . Def ::= "token" Ident Reg ;
+PosToken . Def ::= "position" "token" Ident Reg ;
+Entryp . Def ::= "entrypoints" [Ident] ;
+Separator . Def ::= "separator" MinimumSize Cat String ;
+Terminator . Def ::= "terminator" MinimumSize Cat String ;
+Coercions . Def ::= "coercions" Ident Integer ;
+Rules . Def ::= "rules" Ident "::=" [RHS] ;
+Layout . Def ::= "layout" [String] ;
+LayoutStop . Def ::= "layout" "stop" [String] ;
+LayoutTop . Def ::= "layout" "toplevel" ;
+separator nonempty String "," ;
+separator nonempty RHS "|" ;
+RHS . RHS ::= [Item] ;
+MNonempty . MinimumSize ::= "nonempty" ;
+MEmpty . MinimumSize ::= ;
+RSeq . Reg2 ::= Reg2 Reg3 ;
+RAlt . Reg1 ::= Reg1 "|" Reg2 ;
+RMinus . Reg1 ::= Reg2 "-" Reg2 ;
+RStar . Reg3 ::= Reg3 "*" ;
+RPlus . Reg3 ::= Reg3 "+" ;
+ROpt . Reg3 ::= Reg3 "?" ;
+REps . Reg3 ::= "eps" ;
+RChar . Reg3 ::= Char ;
+RAlts . Reg3 ::= "[" String "]" ;
+RSeqs . Reg3 ::= "{" String "}" ;
+RDigit . Reg3 ::= "digit" ;
+RLetter . Reg3 ::= "letter" ;
+RUpper . Reg3 ::= "upper" ;
+RLower . Reg3 ::= "lower" ;
+RAny . Reg3 ::= "char" ;
+_ . Reg ::= Reg1 ;
+_ . Reg1 ::= Reg2 ;
+_ . Reg2 ::= Reg3 ;
+_ . Reg3 ::= "(" Reg ")" ;
+(: []) . [Ident] ::= Ident ;
+(:) . [Ident] ::= Ident "," [Ident] ;
+comment "--" ;
+comment "{-" "-}" ;
