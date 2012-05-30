@@ -3,13 +3,8 @@
 function parse_test {
     mkdir -p tmp; cd tmp
     cp ../input/$1/$1.cf .
-    if [ $2 == "haskell" ]; then
-	echo " bnfc -m $1.cf"
-	bnfc -m $1.cf > /dev/null
-    else
-	echo " bnfc -$2 -m $1.cf"
-	bnfc -$2 -m $1.cf > /dev/null
-    fi
+    echo " bnfc -$2 -m $1.cf"
+    bnfc -$2 -m $1.cf > /dev/null
     make 2>1 > /dev/null
     if  [ $2 == "java" ]; then
 	echo " cat ../input/$1/$1.test | java $1/Test"
