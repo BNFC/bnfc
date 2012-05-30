@@ -72,4 +72,3 @@ _ . Reg3 ::= "(" Reg ")" ;
 (:). [Ident]::= Ident "," [Ident];
 comment "--" ;
 comment "{-" "-}" ;
-

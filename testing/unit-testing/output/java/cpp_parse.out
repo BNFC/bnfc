@@ -27,4 +27,3 @@ string replicate (int k, string s)
   }
   return r;
 }
-

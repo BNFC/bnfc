@@ -859,4 +859,3 @@ interface SyntaxRomance = TypesRomance ** open Prelude, (CO = Coordination) in
  ;
   predVerb0 : Verb -> Clause = \ rain -> sats2clause (mkSats (pronNounPhrase pronImpers) rain);
   progressiveSats : NounPhrase -> VerbPhrase -> Sats}
-
