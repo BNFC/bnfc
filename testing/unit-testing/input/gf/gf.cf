@@ -18,10 +18,10 @@ _. ModDef ::= ModDef ";" ;
 
 MMain. ModDef ::= "grammar" Ident "=" "{" "abstract" "=" Ident ";" [ConcSpec] "}" ;
 
-ConcSpec. ConcSpec ::= Ident "=" ConcExp ;
+ConcSpecC. ConcSpec ::= Ident "=" ConcExp ;
 separator ConcSpec ";" ;
 
-ConcExp. ConcExp ::= Ident [Transfer] ;
+ConcExpC. ConcExp ::= Ident [Transfer] ;
 
 separator Transfer "" ;
 TransferIn.  Transfer ::= "(" "transfer" "in" OpenDecl ")" ;  
@@ -72,7 +72,7 @@ IMinus. Included ::= Ident "-" "[" [Ident] "]" ;
 
 -- definitions after the $oper$ keywords
 
-DDecl.  Def ::= [Name] ":" Exp ;
+DDeclC. Def ::= [Name] ":" Exp ;
 DDef.   Def ::= [Name] "=" Exp ;
 DPatt.  Def ::= Name [Patt] "=" Exp ;  -- non-empty pattern list
 DFull.  Def ::= [Name] ":" Exp "=" Exp ;
@@ -99,12 +99,12 @@ DefPrintFun. TopDef ::= "printname" "fun" [PrintDef] ;
 DefFlag.     TopDef ::= "flags" [FlagDef] ;
 
 SimpleCatDef.   CatDef ::= Ident [DDecl] ;
-ListCatDef.     CatDef ::= "[" Ident [DDecl] "]" ;
+ListCatDefC.    CatDef ::= "[" Ident [DDecl] "]" ;
 ListSizeCatDef. CatDef ::= "[" Ident [DDecl] "]" "{" Integer "}" ;
 
-FunDef.    FunDef ::= [Ident] ":" Exp ;
+FunDefC.    FunDef ::= [Ident] ":" Exp ;
 
-DataDef.   DataDef    ::= Ident "=" [DataConstr] ;
+DataDefC.   DataDef    ::= Ident "=" [DataConstr] ;
 DataId.    DataConstr ::= Ident ;
 DataQId.   DataConstr ::= Ident "." Ident ;
 separator DataConstr "|" ;
@@ -114,11 +114,11 @@ ParDefDir.   ParDef ::= Ident "=" [ParConstr] ;
 ParDefIndir. ParDef ::= Ident "=" "(" "in" Ident ")" ;
 ParDefAbs.   ParDef ::= Ident ;
 
-ParConstr. ParConstr ::= Ident [DDecl] ;
+ParConstrC. ParConstr ::= Ident [DDecl] ;
 
-PrintDef. PrintDef ::= [Name] "=" Exp ;
+PrintDefC. PrintDef ::= [Name] "=" Exp ;
 
-FlagDef. FlagDef ::= Ident "=" Ident ;
+FlagDefC. FlagDef ::= Ident "=" Ident ;
 
 terminator nonempty Def ";" ;
 terminator nonempty CatDef ";" ;
@@ -136,7 +136,7 @@ separator nonempty Ident "," ;
 -- names of categories and functions in definition LHS
 
 IdentName. Name ::= Ident ;
-ListName.  Name ::= "[" Ident "]" ;
+ListNameC. Name ::= "[" Ident "]" ;
 
 separator nonempty Name "," ;
 
@@ -262,7 +262,7 @@ separator PattTupleComp "," ;
 
 -- case branches
 
-Case. Case ::= [PattAlt] "=>" Exp ;
+CaseC. Case ::= [PattAlt] "=>" Exp ;
 
 separator nonempty Case ";" ;
 
