@@ -116,7 +116,7 @@ makeFSharp m a1 d ss g x p n file = do
       showMod = showFileM opts
 --      layMod = layoutFileM opts
       utilMod = utilFileM opts
-  (cf, isOK) <- tryReadCF file
+  (cf, isOK) <- tryReadCF [formatOptFSharp] file
   if isOK then do
     let dir = codeDir opts
     when (not (null dir)) $ do

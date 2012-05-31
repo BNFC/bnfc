@@ -50,7 +50,7 @@ import CFtoJavaPrinter
 import CFtoJavaSkeleton
 import CFtoVisitSkel
 import CFtoLatex
-import GetCF		( tryReadCF )
+import GetCF		( tryReadCF, formatOptJava )
 import Data.Char
 import Data.List(intersperse)
 
@@ -61,7 +61,7 @@ import Data.List(intersperse)
 -------------------------------------------------------------------
 makeJava :: Bool -> String -> FilePath -> IO ()
 makeJava make name file =
-    do (cf, isOK) <- tryReadCF file
+    do (cf, isOK) <- tryReadCF [formatOptJava] file
        if isOK
          then do mkFiles make name cf
 		 putStrLn $ "Done!"

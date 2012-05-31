@@ -17,4 +17,4 @@ LDFLAGS =
 EXEEXT = 
 INSTALL = /usr/bin/install -c
 TAR = tar
-GHC = /usr/bin/ghc
+GHC = /usr/local/bin/ghc

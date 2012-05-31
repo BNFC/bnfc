@@ -18,7 +18,11 @@
 -}
 
 
-module GetCF(tryReadCF,tryReadCFP) where
+module GetCF(tryReadCF,tryReadCFP,
+  formatOptC,formatOptCPP,formatOptCPP_STL,
+  formatOptCSharp,formatOptFSharp,formatOptHaskell,formatOptHaskellGADT,
+    formatOptJava15,formatOptJava,formatOptOCAML,formatOptProfile
+  ) where
 
 import Control.Monad		( when )
 
@@ -32,16 +36,29 @@ import ErrM
 import Data.Char
 import TypeChecker
 
-readCF :: FilePath -> IO CF
-readCF f = tryReadCF f >>= return . fst
+readCF :: ReadOptions -> FilePath -> IO CF
+readCF opts f = tryReadCF opts f >>= return . fst
 
-tryReadCF :: FilePath -> IO (CF,Bool)
-tryReadCF file = do
-  (cfp,m) <- tryReadCFP file
+type ReadOptions = [String]
+isOpt  opts v  = elem v opts
+anyOpt opts vs = any (isOpt opts) vs
+allOpt opts vs = all (isOpt opts) vs
+
+[formatOptC,formatOptCPP,formatOptCPP_STL,
+  formatOptCSharp,formatOptFSharp,formatOptHaskell,formatOptHaskellGADT,
+    formatOptJava15,formatOptJava,formatOptOCAML,formatOptProfile] =
+  ["formatOptC","formatOptCPP","formatOptCPP_STL",
+    "formatOptCSharp","formatOptFSharp","formatOptHaskell","formatOptHaskellGADT",
+      "formatOptJava15","formatOptJava","formatOptOCAML","formatOptProfile"]
+
+
+tryReadCF :: ReadOptions -> FilePath -> IO (CF,Bool)
+tryReadCF opts file = do
+  (cfp,m) <- tryReadCFP opts file
   return (cfp2cf cfp, m)
 
-tryReadCFP :: FilePath -> IO (CFP,Bool)
-tryReadCFP file = do
+tryReadCFP :: ReadOptions -> FilePath -> IO (CFP,Bool)
+tryReadCFP opts file = do
   putStrLn $ "\nReading grammar from " ++ file
   s <- readFile file
   let (cfp,msgs1) = getCFP s
@@ -52,18 +69,34 @@ tryReadCFP file = do
       msgs3 = checkTokens cf
       msg = msgs1++msgs2 -- ++ msgs3 -- in a future version
       ret = cfp
-  putStrLn $ unlines msgs3
-  if not (null msg) then do
-    putStrLn $ unlines msg
-    return (ret,False)
-   else do
-    putStrLn $ show (length (rulesOfCF cf)) +++ "rules accepted\n"
 
-    let c3s = [(b,e) | (b,e) <- fst (comments cf), length b > 2 || length e > 2]
-    if null c3s then return () else do
-      putStrLn 
-        "Warning: comment delimiters longer than 2 characters ignored in Haskell:"
-      mapM_ putStrLn [b +++ "-" +++ e | (b,e) <- c3s]
+  let reserved = if anyOpt opts [formatOptJava,formatOptJava15] 
+                   then [takeWhile (/='.') file] else []
+  case filter (not . isDefinedRule) $ notUniqueNames reserved cf of
+    ns@(_:_) 
+      | not (anyOpt opts [formatOptHaskell,formatOptHaskellGADT,formatOptOCAML]) -> do
+        putStrLn $ "ERROR: names not unique: " ++ unwords ns
+        return (ret,False)
+    ns -> do
+      case ns of
+        _:_ -> do
+          putStrLn $ "Warning: names not unique: " ++ unwords ns
+          putStrLn "This can be an error in other back ends."
+        _ -> return ()
+      putStrLn $ unlines msgs3
+      if not (null msg) then do
+         putStrLn $ unlines msg
+         return (ret,False)
+       else do
+         putStrLn $ show (length (rulesOfCF cf)) +++ "rules accepted\n"
+         let c3s = [(b,e) | (b,e) <- fst (comments cf), length b > 2 || length e > 2]
+         if null c3s then return () else do
+           putStrLn 
+             "Warning: comment delimiters longer than 2 characters ignored in Haskell:"
+           mapM_ putStrLn [b +++ "-" +++ e | (b,e) <- c3s]
+         return (ret,True)
+
+{-
     case filter (not . isDefinedRule) $ notUniqueFuns cf of
      [] -> case (badInheritence cf) of
        [] -> return (ret,True)
@@ -87,6 +120,7 @@ tryReadCFP file = do
           putStrLn $ "  Labels has the same name as the Category. This will almost"
           putStrLn $ "  certainly cause problems in languages other than Haskell.\n"
           return (ret,True)
+-}
 
 getCF :: String -> (CF, [String])
 getCF s = let (cfp,msg) = getCFP s in (cfp2cf cfp, msg)

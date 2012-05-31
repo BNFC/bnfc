@@ -94,7 +94,7 @@ makeAllProfile make alex1 inDir xml name file = do
       layMod = layoutFileM   inDir name
       tplMod = templateFileM inDir name
       errMod = errFileM      inDir name
-  (cfp, isOK) <- tryReadCFP file
+  (cfp, isOK) <- tryReadCFP [formatOptProfile] file
   let cf = cfp2cf cfp
   if isOK then do
 

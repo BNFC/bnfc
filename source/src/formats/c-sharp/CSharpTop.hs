@@ -68,7 +68,7 @@ makeCSharp :: Bool -- Makefile
            -> FilePath 
            -> IO ()
 makeCSharp make vsfiles wcfSupport maybenamespace file = do
-  (cf, isOK) <- tryReadCF file
+  (cf, isOK) <- tryReadCF [formatOptCSharp] file
   if isOK 
     then do 
       let namespace    = fromMaybe (filepathtonamespace file) maybenamespace

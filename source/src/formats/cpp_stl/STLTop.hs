@@ -36,7 +36,7 @@ import STLUtils
 
 makeSTL :: Bool -> Bool -> Maybe String -> String -> FilePath -> IO ()
 makeSTL make linenumbers inPackage name file = do
-  (cf, isOK) <- tryReadCF file
+  (cf, isOK) <- tryReadCF [formatOptCPP_STL] file
   if isOK then do 
     let (hfile, cfile) = cf2CPPAbs linenumbers inPackage name cf
     writeFileRep "Absyn.H" hfile

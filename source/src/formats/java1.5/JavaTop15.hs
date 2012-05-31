@@ -54,7 +54,7 @@ import CFtoAbstractVisitor
 import CFtoFoldVisitor
 import CFtoAllVisitor
 import CFtoLatex
-import GetCF		( tryReadCF )
+import GetCF		( tryReadCF, formatOptJava15 )
 import Data.Char
 import Data.List(intersperse)
 
@@ -69,7 +69,7 @@ makeJava15 :: Bool
 	  -> FilePath -- ^ Grammar file
 	  -> IO ()
 makeJava15 make inPackage name file =
-    do (cf, isOK) <- tryReadCF file
+    do (cf, isOK) <- tryReadCF [formatOptJava15] file
        if isOK
          then do mkFiles make inPackage name cf
 		 putStrLn $ "Done!"

@@ -60,8 +60,9 @@ module CF (
 	    ruleGroups,     -- Categories are grouped with their rules.
             ruleGroupsInternals, --As above, but includes internal cats.
 	    funRule,        -- The function name of a rule.
-	    notUniqueFuns,   -- Returns a list of function labels that are not unique.
-            badInheritence, -- Returns a list of all function labels that can cause problems in languages with inheritence.
+            notUniqueNames, -- list of not unique names (replaces the following 2)
+--	    notUniqueFuns,   -- Returns a list of function labels that are not unique.
+--            badInheritence, -- Returns a list of all function labels that can cause problems in languages with inheritence.
 	    isList,         -- Checks if a category is a list category.
 	    -- Information functions for list functions.
 	    isNilFun,       -- empty list function? ([])
@@ -201,6 +202,8 @@ type KeyWord = String
 type Cat     = String
 -- Fun is the function name of a rule. 
 type Fun     = String
+-- both cat and fun
+type Name = String
 
 internalCat :: Cat
 internalCat = "#"
@@ -230,6 +233,15 @@ rulesOfCFP  = snd . unCFG
 infoOfCF    = snd . fst . unCFG
 pragmasOfCF = fst . fst . unCFG
 
+-- aggressively ban nonunique names (AR 31/5/2012)
+
+notUniqueNames :: [Name] -> CF -> [Fun]
+notUniqueNames reserved cf = [head xs | xs <- xss, length xs > 1] where
+  xss = group (sort names)
+  names = reserved ++ allCatsIdNorm cf ++ allFuns cf
+  allFuns g = [ f | f <- map funRule (rulesOfCF g), not (isNilCons f || isCoercion f)]
+
+-- obsolete:
 
 notUniqueFuns :: CF -> [Fun]
 notUniqueFuns cf = let xss = group $ sort [ f | f <- map funRule (rulesOfCF cf),
