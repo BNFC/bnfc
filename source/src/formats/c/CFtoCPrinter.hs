@@ -97,7 +97,11 @@ mkHFile cf groups = unlines
     "void backup(void);",
     ""
    ]
-  footer = unlines
+  footer = unlines $
+   ["void pp" ++ t ++ "(String s, int i);" | t <- tokenNames cf]
+    ++
+   ["void sh" ++ t ++ "(String s);" | t <- tokenNames cf]
+    ++
    [
     "void ppInteger(Integer n, int i);",
     "void ppDouble(Double d, int i);",
@@ -141,8 +145,10 @@ mkCFile cf groups = concat
     concatMap prShowFun eps,
     concatMap (prPrintData user) groups,
     printBasics,
+    printTokens,
     concatMap (prShowData user) groups,
     showBasics,
+    showTokens,
     footer
    ]
   where
@@ -195,6 +201,15 @@ mkCFile cf groups = concat
       "}",
       ""
      ]
+    printTokens = unlines 
+     [unlines [
+      "void pp" ++ t ++ "(String s, int i)",
+      "{",
+      "  renderS(s);",
+      "}",
+      ""
+      ] | t <- tokenNames cf
+     ]
     showBasics = unlines 
      [
       "void shInteger(Integer i)",
@@ -228,6 +243,17 @@ mkCFile cf groups = concat
       "  bufAppendC('\\\"');",
       "}",
       ""
+     ]
+    showTokens = unlines 
+     [unlines [
+      "void sh" ++ t ++ "(String s)",
+      "{",
+      "  bufAppendC('\\\"');",
+      "  bufAppendS(s);",
+      "  bufAppendC('\\\"');",
+      "}",
+      ""
+      ] | t <- tokenNames cf
      ]
     footer = unlines
      [
