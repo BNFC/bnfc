@@ -1,6 +1,6 @@
 #!/bin/bash
 
-for LANG in "lbnf" "gf" "cpp"; do 
+for LANG in "lbnf" "gf" "cpp" "ocl" "c" "alfa"; do 
 
     for BACKEND in "haskell" "ocaml" "c" "cpp" "java"; do 
 	echo "bnfc -${BACKEND} -m ${LANG}/${LANG}.cf"
