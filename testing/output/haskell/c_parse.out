@@ -1,1 +1,54 @@
-FAIL
+
+Parse Successful!
+
+[Abstract Syntax]
+
+Progr [Global (Declarators [Type Tchar] [OnlyDecl (NoPointer (InnitArray (Name (Ident "buf")) (Especial (Econst (Eint 128)))))]),Afunc (NewFunc [Type Tvoid] (NoPointer (OldFuncDec (Name (Ident "printError")))) (ScompTwo [ExprS (SexprTwo (Efunkpar (Evar (Ident "printf")) [Estring "Program called error!"])),ExprS (SexprTwo (Efunkpar (Evar (Ident "exit")) [Epreop Negative (Econst (Eint 1))]))])),Afunc (NewFunc [Type Tint] (NoPointer (OldFuncDec (Name (Ident "readInt")))) (ScompTwo [IterS (SiterThree SexprOne SexprOne (CompS (ScompFour [Declarators [Type Tint] [OnlyDecl (NoPointer (Name (Ident "v")))]] [ExprS (SexprTwo (Efunkpar (Evar (Ident "fgets")) [Evar (Ident "buf"),Ebytesexpr (Evar (Ident "buf")),Evar (Ident "stdin")])),SelS (SselTwo (Eeq (Econst (Eint 1)) (Efunkpar (Evar (Ident "sscanf")) [Evar (Ident "buf"),Estring "%d",Epreop Address (Evar (Ident "v"))])) (JumpS (SjumpFive (Evar (Ident "v")))) (CompS (ScompTwo [SelS (SselOne (Eland (Egrthen (Efunkpar (Evar (Ident "strlen")) [Evar (Ident "buf")]) (Econst (Eoctal (Octal "0")))) (Eeq (Earray (Evar (Ident "buf")) (Eminus (Efunkpar (Evar (Ident "strlen")) [Evar (Ident "buf")]) (Econst (Eint 1)))) (Econst (Echar '\n')))) (ExprS (SexprTwo (Eassign (Earray (Evar (Ident "buf")) (Eminus (Efunkpar (Evar (Ident "strlen")) [Evar (Ident "buf")]) (Econst (Eint 1)))) Assign (Econst (Eoctal (Octal "0"))))))),ExprS (SexprTwo (Efunkpar (Evar (Ident "printf")) [Estring "\"%s\" is not an int, try again:",Evar (Ident "buf")]))])))])))])),Afunc (NewFunc [Type Tdouble] (NoPointer (NewFuncDec (Name (Ident "readDouble")) (AllSpec (ParamDec (OnlyType [Type Tvoid]))))) (ScompTwo [IterS (SiterThree SexprOne SexprOne (CompS (ScompFour [Declarators [Type Tdouble] [OnlyDecl (NoPointer (Name (Ident "v")))]] [ExprS (SexprTwo (Efunkpar (Evar (Ident "fgets")) [Evar (Ident "buf"),Ebytesexpr (Evar (Ident "buf")),Evar (Ident "stdin")])),SelS (SselTwo (Eeq (Econst (Eint 1)) (Efunkpar (Evar (Ident "sscanf")) [Evar (Ident "buf"),Estring "%lg",Epreop Address (Evar (Ident "v"))])) (JumpS (SjumpFive (Evar (Ident "v")))) (CompS (ScompTwo [SelS (SselOne (Eland (Egrthen (Efunkpar (Evar (Ident "strlen")) [Evar (Ident "buf")]) (Econst (Eoctal (Octal "0")))) (Eeq (Earray (Evar (Ident "buf")) (Eminus (Efunkpar (Evar (Ident "strlen")) [Evar (Ident "buf")]) (Econst (Eint 1)))) (Econst (Echar '\n')))) (ExprS (SexprTwo (Eassign (Earray (Evar (Ident "buf")) (Eminus (Efunkpar (Evar (Ident "strlen")) [Evar (Ident "buf")]) (Econst (Eint 1)))) Assign (Econst (Eoctal (Octal "0"))))))),ExprS (SexprTwo (Efunkpar (Evar (Ident "printf")) [Estring "\"%s\" is not a double, try again:",Evar (Ident "buf")]))])))])))])),Afunc (NewFunc [Type Tvoid] (NoPointer (NewFuncDec (Name (Ident "printInt")) (AllSpec (ParamDec (TypeAndParam [Type Tint] (NoPointer (Name (Ident "v")))))))) (ScompTwo [ExprS (SexprTwo (Efunkpar (Evar (Ident "printf")) [Estring "%d\n",Evar (Ident "v")]))])),Afunc (NewFunc [Type Tvoid] (NoPointer (NewFuncDec (Name (Ident "printDouble")) (AllSpec (ParamDec (TypeAndParam [Type Tdouble] (NoPointer (Name (Ident "v")))))))) (ScompTwo [ExprS (SexprTwo (Efunkpar (Evar (Ident "printf")) [Estring "%f\n",Evar (Ident "v")]))])),Afunc (NewFunc [Type Tvoid] (NoPointer (NewFuncDec (Name (Ident "printString")) (AllSpec (ParamDec (TypeAndParam [Type Tchar] (BeginPointer Point (Name (Ident "s")))))))) (ScompTwo [ExprS (SexprTwo (Efunkpar (Evar (Ident "printf")) [Estring "%s\n",Evar (Ident "s")]))])),Afunc (NewFunc [Type Tint] (NoPointer (OldFuncDec (Name (Ident "main")))) (ScompTwo [ExprS (SexprTwo (Efunkpar (Evar (Ident "printInt")) [Etimes (Econst (Eint 7)) (Efunk (Evar (Ident "readInt")))])),ExprS (SexprTwo (Efunkpar (Evar (Ident "printDouble")) [Econst (Efloat 3.14)])),ExprS (SexprTwo (Efunkpar (Evar (Ident "printString")) [Estring "hello"]))]))]
+
+[Linearized tree]
+
+char buf [128];
+void printError () {
+  printf ("Program called error!");
+  exit (- 1);
+  }
+int readInt () {
+  for (;
+  ;
+  ) {
+    int v ;
+    fgets (buf, sizeof buf, stdin);
+    if (1 == sscanf (buf, "%d", & v)) return v ;
+    else {
+      if (strlen (buf)> 0 && buf [strlen (buf)- 1]== '\n')buf [strlen (buf)- 1]= 0 ;
+      printf ("\"%s\" is not an int, try again:", buf);
+      }
+    }
+  }
+double readDouble (void){
+  for (;
+  ;
+  ) {
+    double v ;
+    fgets (buf, sizeof buf, stdin);
+    if (1 == sscanf (buf, "%lg", & v)) return v ;
+    else {
+      if (strlen (buf)> 0 && buf [strlen (buf)- 1]== '\n')buf [strlen (buf)- 1]= 0 ;
+      printf ("\"%s\" is not a double, try again:", buf);
+      }
+    }
+  }
+void printInt (int v){
+  printf ("%d\n", v);
+  }
+void printDouble (double v){
+  printf ("%f\n", v);
+  }
+void printString (char * s){
+  printf ("%s\n", s);
+  }
+int main () {
+  printInt (7 * readInt ());
+  printDouble (3.14);
+  printString ("hello");
+  }
