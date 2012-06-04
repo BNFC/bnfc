@@ -20,7 +20,7 @@ comment "/*" "*/" ; -- OCL2
 -- overall file structure
 --
 
-OCLfile. OCLfile ::= [Package];
+OCLf . OCLfile ::= [Package];
 separator nonempty Package "";
 
 Pack. Package ::= "package" PackageName OCLExpressions "endpackage";
@@ -141,8 +141,8 @@ PCall. PropertyCall ::=  PathName PossTimeExpression PossQualifiers PossPropCall
 
 
 
-PathName. PathName ::= [PName];
-PName. PName ::= Ident;
+PathN . PathName ::= [PName];
+PN . PName ::= Ident;
 separator nonempty PName "::";
 
 NoQual. PossQualifiers ::=;
