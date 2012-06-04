@@ -15,7 +15,6 @@ function parse_test {
     fi
     ExpectedOutput=`cat ../output/$2/$1_parse.out`
     cd .. ; rm -rf tmp
-    # TEST=`assertEquals "${ExpectedOutput}" "${Run}"`
     assertEquals "${ExpectedOutput}" "${Run}"
 }
 
