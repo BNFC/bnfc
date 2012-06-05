@@ -40,7 +40,7 @@ SpecProp. Declaration_specifier ::= Type_qualifier;
 (:).     [Init_declarator] ::= Init_declarator "," [Init_declarator] ;
 
 OnlyDecl.  Init_declarator ::= Declarator ;
-InitDecl.  Init_declarator ::= Declarator "=" Initializer;
+InitDecl.  Init_declarator ::= Declarator "=" Initz;
 
 
 Tvoid.        Type_specifier ::= "void";
@@ -139,13 +139,13 @@ Abstract.      Parameter_declaration ::= [Declaration_specifier] Abstract_declar
 (:[]).   [Ident] ::= Ident ;
 (:).     [Ident] ::= Ident "," [Ident] ;
 
-InitExpr.    Initializer ::= Exp2 ;
-InitListOne. Initializer ::= "{" Initializers "}" ;
-InitListTwo. Initializer ::= "{" Initializers "," "}" ;
+InitExpr.    Initz ::= Exp2 ;
+InitListOne. Initz ::= "{" Initializers "}" ;
+InitListTwo. Initz ::= "{" Initializers "," "}" ;
 
 
-AnInit.   Initializers ::= Initializer ;
-MoreInit. Initializers ::= Initializers "," Initializer ;
+AnInit.   Initializers ::= Initz ;
+MoreInit. Initializers ::= Initializers "," Initz ;
 
 
 PlainType.    Type_name ::= [Spec_qual] ;
