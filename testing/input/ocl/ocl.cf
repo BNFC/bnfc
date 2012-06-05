@@ -20,10 +20,10 @@ comment "/*" "*/" ; -- OCL2
 -- overall file structure
 --
 
-OCLf . OCLfile ::= [Package];
-separator nonempty Package "";
+OCLf . OCLfile ::= [OCLPackage];
+separator nonempty OCLPackage "";
 
-Pack. Package ::= "package" PackageName OCLExpressions "endpackage";
+Pack. OCLPackage ::= "package" PackageName OCLExpressions "endpackage";
 
 PackName. PackageName ::= PathName;
 
@@ -187,7 +187,7 @@ separator PCPHelper "";
 --
 
 LitStr. OCLLiteral ::=  String;  -- ***NB: OCL uses single quotes for strings, fix this in lexer?
-LitNum. OCLLiteral ::= Number;
+LitNum. OCLLiteral ::= OCLNumber;
 LitBoolTrue. OCLLiteral ::= "true"; -- boolean literals missing from spec.
 LitBoolFalse. OCLLiteral ::= "false";
 {-------------------
@@ -213,8 +213,8 @@ separator nonempty CollectionItem ",";
 CI. CollectionItem ::= Expression;
 CIRange. CollectionItem ::= Expression ".." Expression;
 
-NumInt. Number ::= Integer;
-NumDouble. Number ::= Double; -- *** lexer does not handle capital 'E' (just 'e')
+NumInt. OCLNumber ::= Integer;
+NumDouble. OCLNumber ::= Double; -- *** lexer does not handle capital 'E' (just 'e')
 
 
 

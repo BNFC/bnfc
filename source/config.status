@@ -438,7 +438,7 @@ Copyright (C) 2009 Free Software Foundation, Inc.
 This config.status script is free software; the Free Software Foundation
 gives unlimited permission to copy, distribute and modify it."
 
-ac_pwd='/home/aarne/bnfc/source'
+ac_pwd='/home/markus/work/clt/bnfc/source'
 srcdir='.'
 INSTALL='/usr/bin/install -c'
 test -n "$AWK" || AWK=awk
@@ -595,7 +595,7 @@ S["INSTALL_DATA"]="${INSTALL} -m 644"
 S["INSTALL_SCRIPT"]="${INSTALL}"
 S["INSTALL_PROGRAM"]="${INSTALL}"
 S["TAR"]="tar"
-S["GHC"]="/usr/local/bin/ghc"
+S["GHC"]="/usr/bin/ghc"
 S["SET_MAKE"]=""
 S["OBJEXT"]="o"
 S["EXEEXT"]=""
