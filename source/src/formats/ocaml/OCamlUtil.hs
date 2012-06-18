@@ -32,7 +32,8 @@ fixType s = case s of
         _ -> s -- should not occur (this means an invariant of the type Cat is broken)
     "Integer" -> "int"
     "Double" -> "float"
-    c:cs -> toLower c : cs
+    c:cs -> let ls = toLower c : cs in
+            if (elem ls reservedOCaml) then (ls ++ "T") else ls
     _ -> s
     
 -- as fixType, but leave first character in upper case
