@@ -54,7 +54,7 @@ module CF (
 	    findAllReversibleCats, -- find all reversible categories
 	    identCat,       -- transforms '[C]' to ListC (others, unchanged).
 	    valCat,         -- The value category of a rule.
-	    isParsable,     -- Checks if the rule is parsable.
+	    isParsable,     
 	    rulesOfCF,      -- All rules of a grammar.
 	    rulesForCat,    -- rules for a given category
 	    ruleGroups,     -- Categories are grouped with their rules.
@@ -107,19 +107,21 @@ import Data.List (nub, intersperse, partition, sort,sort,group)
 import Data.Char
 import AbsBNF (Reg())
 
--- A context free grammar consists of a set of rules and some extended 
+-- | A context free grammar consists of a set of rules and some extended 
 -- information (e.g. pragmas, literals, symbols, keywords)
-type CF = CFG Fun -- (Exts,[Rule])
+type CF = CFG Fun
 
--- A rule consists of a function name, a main category and a sequence of
+-- | A rule consists of a function name, a main category and a sequence of
 -- terminals and non-terminals.
 -- function_name . Main_Cat ::= sequence
 type Rule = Rul Fun -- (Fun, (Cat, [Either Cat String]))
 
--- polymorphic types for common type signatures for CF and CFP
-newtype Rul f = Rule { unRule::(f, (Cat, [Either Cat String])) }
+-- | Polymorphic rule type for common type signatures for CF and CFP
+newtype Rul function = Rule { unRule::(function, (Cat, [Either Cat String])) }
                 deriving Eq
-newtype CFG f = CFG { unCFG :: (Exts,[Rul f]) }
+
+-- | Polymorphic CFG type for common type signatures for CF and CFP
+newtype CFG function = CFG { unCFG :: (Exts,[Rul function]) }
 
 type Exts = ([Pragma],Info)
 -- Info is information extracted from the CF, for easy access.
@@ -164,7 +166,7 @@ instance Show Exp where
 		| Right es <- listView e2   = Right $ e1:es
 	    listView e	= Left e
 
--- pragmas for single line comments and for multiple-line comments.
+-- | Pragmas for single line comments and for multiple-line comments.
 data Pragma = CommentS  String        
             | CommentM (String,String)
             | TokenReg String Bool Reg
@@ -193,28 +195,28 @@ hasLayout :: CF -> Bool
 hasLayout cf = case layoutPragmas cf of
   (t,ws,_) -> t || not (null ws)   -- (True,[],_) means: top-level layout only
 
--- Literal: Char, String, Ident, Integer, Double
+-- | Literal: Char, String, Ident, Integer, Double
 type Literal = Cat
 type Symbol  = String
 type KeyWord = String
 
--- Cat is the Non-terminals of the grammar.
+-- | Cat is the Non-terminals of the grammar.
 type Cat     = String
--- Fun is the function name of a rule. 
+-- | Fun is the function name of a rule. 
 type Fun     = String
--- both cat and fun
+-- | Either Cat or Fun
 type Name = String
 
 internalCat :: Cat
 internalCat = "#"
 
--- Abstract syntax tree.
+-- | Abstract syntax tree.
 newtype Tree = Tree (Fun,[Tree])
 
--- The abstract syntax of a grammar.
+-- | The abstract syntax of a grammar.
 type Data = (Cat, [(Fun,[Cat])])
 
--- firstCat returns the first Category appearing in the grammar.
+-- | firstCat returns the first Category appearing in the grammar.
 firstCat :: CF -> Cat
 firstCat = valCat . head . rulesOfCF
 
@@ -267,40 +269,40 @@ commentPragmas = filter isComment
 lookupRule :: Eq f => f -> [Rul f] -> Maybe (Cat, [Either Cat String])
 lookupRule f = lookup f . map unRule
 
--- returns all normal rules that constructs the given Cat.
+-- | Returns all normal rules that constructs the given Cat.
 rulesForCat :: CF -> Cat -> [Rule]
 rulesForCat cf cat = [normRuleFun r | r <- rulesOfCF cf, isParsable r, valCat r == cat] 
 
---This version doesn't exclude internal rules.
+-- | As rulesForCat, but this version doesn't exclude internal rules.
 rulesForCat' :: CF -> Cat -> [Rule]
 rulesForCat' cf cat = [normRuleFun r | r <- rulesOfCF cf, valCat r == cat] 
 
 valCat :: Rul f -> Cat
 valCat = fst . snd . unRule
 
--- Get all categories of a grammar.
+-- | Get all categories of a grammar.
 allCats :: CF -> [Cat]
 allCats = nub . map valCat . rulesOfCF -- no cats w/o production
 
--- Gets all normalized identified Categories
+-- | Gets all normalized identified Categories
 allCatsIdNorm :: CF -> [Cat]
 allCatsIdNorm = nub . map identCat . map normCat . allCats
 
--- category is used on an rhs
+--  |Is the category is used on an rhs?
 isUsedCat :: CF -> Cat -> Bool
 isUsedCat cf cat = elem cat [c | r <- (rulesOfCF cf), Left c <- rhsRule r]
 
--- entry points to parser ----
+-- | entry points to parser ----
 allEntryPoints :: CF -> [Cat]
 allEntryPoints cf = case concat [cats | EntryPoints cats <- pragmasOfCF cf] of
   [] -> allCats cf
   cs -> cs
 
--- group all categories with their rules.
+-- | Group all categories with their rules.
 ruleGroups :: CF -> [(Cat,[Rule])]
 ruleGroups cf = [(c, rulesForCat cf c) | c <- allCats cf]
 
--- group all categories with their rules including internal rules.
+-- | Group all categories with their rules including internal rules. 
 ruleGroupsInternals :: CF -> [(Cat,[Rule])]
 ruleGroupsInternals cf = [(c, rulesForCat' cf c) | c <- allCats cf]
 
@@ -431,6 +433,7 @@ normRuleFun (Rule (f,p)) = Rule (normFun f, p)
 isNormal :: Cat -> Bool
 isNormal c = not (isList c || isDigit (last c))
 
+-- | Checks if the rule is parsable.
 isParsable :: Rul f -> Bool
 isParsable (Rule (_,(_, Left "#":_))) = False
 isParsable _ = True

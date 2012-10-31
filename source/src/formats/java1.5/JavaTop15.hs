@@ -39,7 +39,7 @@ module JavaTop15 ( makeJava15 ) where
 -- Dependencies.
 -------------------------------------------------------------------
 import System.Directory	( createDirectory )
-import System.IO.Error	( try, isAlreadyExistsError )
+import System.IO.Error	( isAlreadyExistsError )
 import System.Exit      ( exitFailure )
 import Utils
 import CF

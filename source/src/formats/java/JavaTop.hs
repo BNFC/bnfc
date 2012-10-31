@@ -38,7 +38,7 @@ module JavaTop ( makeJava ) where
 -- Dependencies.
 -------------------------------------------------------------------
 import System.Directory	( createDirectory )
-import System.IO.Error	( try, isAlreadyExistsError )
+import System.IO.Error	( tryIOError, isAlreadyExistsError )
 import System.Exit      ( exitFailure )
 
 import Utils
@@ -112,7 +112,7 @@ mkFiles make name cf =
 
       chkExists :: FilePath -> IO ()
       chkExists dir =
-	  do eErr <- try $ createDirectory dir
+	  do eErr <- tryIOError $ createDirectory dir
 	     case eErr of
 	       Left ioerr -> if isAlreadyExistsError ioerr
 			       then return ()

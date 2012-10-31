@@ -54,6 +54,7 @@ import System.Exit (exitFailure)
 import System.Environment (getEnv)
 import System.Directory
 import System.IO
+import System.IO.Error (catchIOError)
 import System.Process
 import Data.Maybe
 import Data.Char
@@ -359,7 +360,7 @@ projectguid = do
       -- This works with Visual Studio 2005. 
       -- We will probably have to be modify this to include another environment variable name for Orcas. 
       -- I doubt there is any need to support VS2003? (I doubt they have patched it up to have 2.0 support?)
-      toolpath <- catch (getEnv "VS80COMNTOOLS") (\_ -> return "C:\\Program Files\\Microsoft Visual Studio 8\\Common7\\Tools")
+      toolpath <- catchIOError (getEnv "VS80COMNTOOLS") (\_ -> return "C:\\Program Files\\Microsoft Visual Studio 8\\Common7\\Tools")
       exists <- doesDirectoryExist toolpath
       if exists 
         then return (Just (toolpath ++ "\\uuidgen.exe"))

@@ -20,7 +20,7 @@
 module Utils where
 
 import Control.Monad (unless)
-import System.IO.Error (try)
+import System.IO.Error (tryIOError)
 import System.Directory (createDirectory, doesDirectoryExist, renameFile,
                          removeFile, doesFileExist)
 
@@ -149,7 +149,7 @@ writeFileRep1 f s =
 -- keep the old file and don't create a .bak file.
 writeFileRep2 :: FilePath -> String -> IO ()
 writeFileRep2 path s =
-    either newFile updateFile =<< try (readFile path)
+    either newFile updateFile =<< tryIOError (readFile path)
   where
     newFile _ =
         do putStrLn $ "writing new file "++path
