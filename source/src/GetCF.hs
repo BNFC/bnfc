@@ -252,8 +252,8 @@ transArg (Abs.Arg x) = transIdent x
 
 transExp :: Abs.Exp -> Exp
 transExp e = case e of
-    Abs.App x es    -> App (transIdent x) (map transExp es)
-    Abs.Var x	    -> App (transIdent x) []
+    Abs.App x es    -> App (Const (transIdent x)) (map transExp es)
+    Abs.Var x	    -> Const (transIdent x)
     Abs.Cons e1 e2  -> cons e1 (transExp e2)
     Abs.List es	    -> foldr cons nil es
     Abs.LitInt x    -> LitInt x
@@ -261,8 +261,8 @@ transExp e = case e of
     Abs.LitChar x   -> LitChar x
     Abs.LitString x -> LitString x
   where
-    cons e1 e2 = App "(:)" [transExp e1, e2]
-    nil	       = App "[]" []
+    cons e1 e2 = App (Const "(:)") [transExp e1, e2]
+    nil	       = Const "[]" 
 
 --------------------------------------------------------------------------------
 

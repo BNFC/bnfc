@@ -24,7 +24,7 @@ Description:
 Extra-source-files: src/BNF.cf 
 
 Executable bnfc
-  Build-Depends: base>=4.4 && <5, mtl, directory, array, process
+  Build-Depends: base>=4.4 && <5, mtl, directory, array, process, containers
   Main-is: Main.hs
   HS-source-dirs: src src/formats
     src/formats/haskell2

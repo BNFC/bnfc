@@ -25,6 +25,7 @@ module Main where
 
 -- import Utils
 -- import CF
+import CNFTop
 import HaskellTop
 import HaskellTopGADT
 import ProfileTop
@@ -87,6 +88,7 @@ mkOne xx = do
       let make = elem "-m" args
       let multi = elem "-multi" args
       let c = elem "-c" args
+      let cnf = elem "-cnf" args 
       let cpp_no_stl = elem "-cpp_no_stl" args 
       let cpp_stl = elem "-cpp_stl" args || elem "-cpp" args
       let csharp = elem "-csharp" args
@@ -136,7 +138,8 @@ mkOne xx = do
            _ | fsharp -> makeFSharp make alex1 inDir alex2StringSharing glr xml inPackage name file
            _ | profile-> makeAllProfile make alex1 False xml name file
            _ | haskellGADT -> makeAllGADT make alexMode inDir alex2StringSharing alex2ByteString glr xml inPackage name file
-           _  -> makeAll make alexMode inDir alex2StringSharing alex2ByteString glr xml inPackage name multi file
+           _ | cnf -> makeCNF make alexMode inDir alex2StringSharing alex2ByteString glr xml inPackage name multi file        
+           _  -> makeAll make alexMode inDir alex2StringSharing alex2ByteString glr xml inPackage name multi file           
          if (make && multi) 
            then (system ("cp Makefile Makefile_" ++ name)) >> return ()  
            else return ()

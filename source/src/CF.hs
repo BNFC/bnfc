@@ -1,4 +1,4 @@
-{-# LANGUAGE PatternGuards #-}
+{-# LANGUAGE PatternGuards, DeriveFunctor, StandaloneDeriving #-}
 {-
     BNF Converter: Abstract syntax
     Copyright (C) 2004  Author:  Markus Forberg, Michael Pellauer, Aarne Ranta
@@ -21,8 +21,10 @@
 module CF (
 	    -- Types.
 	    CF,
-            CFG(..), pragmasOfCF, -- ...
-	    Rule, Rul(..), lookupRule,
+            CFG, Rul,
+            CFG'(..), pragmasOfCF, -- ...
+	    Rule, Rul'(..), lookupRule,
+            mapCatCFG, mapCatRul,
 	    Pragma(..),
 	    Exp(..),
 	    Literal,
@@ -103,25 +105,43 @@ module CF (
            ) where
 
 import Utils (prParenth,(+++))
-import Data.List (nub, intersperse, partition, sort,sort,group)
+import Data.List (nub, intersperse, partition, sort,sort,group,intercalate)
 import Data.Char
 import AbsBNF (Reg())
 
 -- | A context free grammar consists of a set of rules and some extended 
 -- information (e.g. pragmas, literals, symbols, keywords)
+type CFG = CFG' Cat
 type CF = CFG Fun
+type Rul = Rul' Cat
 
 -- | A rule consists of a function name, a main category and a sequence of
 -- terminals and non-terminals.
 -- function_name . Main_Cat ::= sequence
-type Rule = Rul Fun -- (Fun, (Cat, [Either Cat String]))
+type Rule = Rul Fun 
 
 -- | Polymorphic rule type for common type signatures for CF and CFP
-newtype Rul function = Rule { unRule::(function, (Cat, [Either Cat String])) }
-                deriving Eq
+newtype Rul' cat function = Rule { unRule::(function, (cat, [Either cat String])) }
+                deriving (Eq)
 
+mapCatRul f (Rule (fun,(c,rhs))) = Rule (fun,(f c,map (either (Left . f) Right) rhs))
+
+instance Functor (Rul' cat) where
+  fmap f (Rule (fun,(c,rhs))) = Rule (f fun, (c,rhs))
+
+instance (Show function, Show cat) => Show (Rul' function cat) where
+  show (Rule (f,(cat,rhs))) = show f ++ ". " ++ show cat ++ " ::= " ++ intercalate " " (map (either show id) rhs)
 -- | Polymorphic CFG type for common type signatures for CF and CFP
-newtype CFG function = CFG { unCFG :: (Exts,[Rul function]) }
+newtype CFG' cat function = CFG { unCFG :: (Exts,[Rul' cat function]) }
+
+instance Functor (CFG' cat) where
+  fmap f (CFG (e,rs)) = CFG (e,map (fmap f) rs)
+
+mapCatCFG f (CFG (e,rs)) = CFG (e,map (mapCatRul f) rs)
+
+
+instance (Show function, Show cat) => Show (CFG' cat function) where  
+  show (CFG (_,rules)) = unlines $ map show rules
 
 type Exts = ([Pragma],Info)
 -- Info is information extracted from the CF, for easy access.
@@ -132,11 +152,13 @@ type Exts = ([Pragma],Info)
 type Info = ([Literal],[Symbol],[KeyWord],[Cat])
 
 -- Expressions for function definitions
-data Exp = App String [Exp]
+data Exp = App Exp [Exp]
 	 | LitInt Integer
 	 | LitDouble Double
 	 | LitChar Char
 	 | LitString String
+         | Const String
+  deriving (Eq)
 
 instance Show Exp where
     showsPrec p e =
@@ -145,8 +167,8 @@ instance Show Exp where
 		showString "["
 		. foldr (.) id (intersperse (showString ", ") $ map shows es)
 		. showString "]"
-	    Left (App x []) -> showString x
-	    Left (App "(:)" [e1,e2]) ->
+	    Left (Const x) -> showString x
+	    Left (App (Const "(:)") [e1,e2]) ->
 		showParen (p>0)
 		$ showsPrec 1 e1
 		. showString " : "
@@ -155,14 +177,14 @@ instance Show Exp where
 		showParen (p>1)
 		$ foldr (.) id
 		$ intersperse (showString " ")
-		$ showString x : map (showsPrec 2) es
+		$ showsPrec 1 x : map (showsPrec 2) es
 	    Left (LitInt n)	-> shows n
 	    Left (LitDouble x)	-> shows x
 	    Left (LitChar c)	-> shows c
 	    Left (LitString s)	-> shows s
 	where
-	    listView (App "[]" []) = Right []
-	    listView (App "(:)" [e1,e2])
+	    listView (Const "[]") = Right []
+	    listView (App (Const "(:)") [e1,e2])
 		| Right es <- listView e2   = Right $ e1:es
 	    listView e	= Left e
 

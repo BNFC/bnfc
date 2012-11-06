@@ -151,12 +151,12 @@ definedRules cf =
 		cppArg (x,t) = cppType t ++ " " ++ x ++ "_"
 
 		cppExp :: Exp -> String
-		cppExp (App "[]" []) = "0"
-		cppExp (App x [])
+		cppExp (Const "[]") = "0"
+		cppExp (Const x)
 		    | elem x xs		= x ++ "_"	-- argument
-		cppExp (App t [e])
+		cppExp (App (Const t) [e])
 		    | isToken t ctx	= cppExp e
-		cppExp (App x es)
+		cppExp (App (Const x) es)
 		    | isUpper (head x)	= call ("new " ++ x) es
 		    | otherwise		= call (x ++ "_") es
 		cppExp (LitInt n)	= show n

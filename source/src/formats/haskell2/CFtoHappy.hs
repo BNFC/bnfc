@@ -234,9 +234,9 @@ definedRules cf = [ mkDef f xs e | FunDef f xs e <- pragmasOfCF cf ]
 	    where
 		xs' = map (++"_") xs
 		e'  = underscore e
-	underscore (App x es)
-	    | isLower $ head x	= App (x ++ "_") $ map underscore es
-	    | otherwise		= App x $ map underscore es
+	underscore (App (Const x) es)
+	    | isLower $ head x	= App (Const (x ++ "_")) $ map underscore es
+	    | otherwise		= App (Const x) $ map underscore es
 	underscore e	      = e
 
 -- aarne's modifs 8/1/2002:
