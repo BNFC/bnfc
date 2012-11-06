@@ -73,7 +73,7 @@ cross (x:xs) = [y:ys | y <- x,  ys <- cross xs]
 
 x ∪ y = nub (x ++ y)
                              
-lkNull cat nullset = maybe [] id (M.lookup cat nullset)
+lk cat nullset = maybe [] id (M.lookup cat nullset)
         
 nullStep :: Ord cat => [Rul' cat Exp] -> Nullable cat -> Nullable cat
 nullStep rs nullset = M.unionsWith (∪) (map (uncurry M.singleton . nullRule nullset) rs)
@@ -81,7 +81,7 @@ nullStep rs nullset = M.unionsWith (∪) (map (uncurry M.singleton . nullRule nu
                                     
 nullRule nullset (Rule (f,(c,rhs))) = (c,map (App f) (cross (map nulls rhs)))
     where nulls (Right tok) = []
-          nulls (Left cat) = lkNull cat nullset
+          nulls (Left cat) = lk cat nullset
 
 
 nullable :: Ord cat => Nullable cat -> Rul' cat Exp -> Bool
@@ -105,14 +105,37 @@ delNullable :: Ord cat => Nullable cat -> Rul' cat Exp -> [Rul' cat Exp]
 delNullable nullset ~r@(Rule (f,(cat,rhs@[r1,r2])))
   | nullable nullset r = []
   | length rhs == 1 = [r] -- here we know not element rhs is nullable, so there is nothing to do
-  | otherwise = [r] ++ [Rule (App f [x],(cat,[r2])) | x <- lkNull' r1]
-                    ++ [Rule (App (flip' f) [x],(cat,[r1])) | x <- lkNull' r2]
+  | otherwise = [r] ++ [Rule (App f [x],(cat,[r2])) | x <- lk' r1]
+                    ++ [Rule (App (flip' f) [x],(cat,[r1])) | x <- lk' r2]
   where flip' x = App (Const "flip") [x]
-        lkNull' (Right tok) = []
-        lkNull' (Left cat) = lkNull cat nullset
+        lk' (Right tok) = []
+        lk' (Left cat) = lk cat nullset
         
         
 delNull :: Ord cat => [Rul' cat Exp] -> [Rul' cat Exp]
 delNull rs = concatMap (delNullable (nullSet rs)) rs
 
 
+---------------
+-- UNIT
+
+type UnitRel cat = M.Map (Either cat String) [(Exp,cat)] 
+
+-- (c,(f,c')) ∈ unitSet   ⇒  f : c → c'
+
+unitSetStep :: Ord cat => [Rul' cat Exp] -> UnitRel cat -> UnitRel cat
+unitSetStep rs unitSet = M.unionsWith (∪) (map unitRule rs)
+ where unitRule (Rule (f,(c,[r]))) = case r of 
+         Right tok -> M.singleton (Right tok) [(f,c)]
+         Left cat -> M.singleton (Left cat) $ (f,c) : [(comp' g f,c') | (g,c') <- lk (Left c) unitSet]
+       unitRule _ = M.empty
+                
+unitSet rs = case fixk (unitSetStep rs) M.empty of
+  Left _ -> error "Could not find fixpoint of unit set"
+  Right x -> x
+
+comp' :: Exp -> Exp -> Exp
+comp' g f = App (Const "(.)") [f,g]
+
+isUnitRule (Rule (f,(c,[r]))) = True
+isUnitRule _ = False
