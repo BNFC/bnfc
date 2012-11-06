@@ -152,12 +152,11 @@ type Exts = ([Pragma],Info)
 type Info = ([Literal],[Symbol],[KeyWord],[Cat])
 
 -- Expressions for function definitions
-data Exp = App Exp [Exp]
+data Exp = App String [Exp]
 	 | LitInt Integer
 	 | LitDouble Double
 	 | LitChar Char
 	 | LitString String
-         | Const String
   deriving (Eq)
 
 instance Show Exp where
@@ -167,8 +166,8 @@ instance Show Exp where
 		showString "["
 		. foldr (.) id (intersperse (showString ", ") $ map shows es)
 		. showString "]"
-	    Left (Const x) -> showString x
-	    Left (App (Const "(:)") [e1,e2]) ->
+	    Left (App x []) -> showString x
+	    Left (App  "(:)" [e1,e2]) ->
 		showParen (p>0)
 		$ showsPrec 1 e1
 		. showString " : "
@@ -183,8 +182,8 @@ instance Show Exp where
 	    Left (LitChar c)	-> shows c
 	    Left (LitString s)	-> shows s
 	where
-	    listView (Const "[]") = Right []
-	    listView (App (Const "(:)") [e1,e2])
+	    listView (App "[]" []) = Right []
+	    listView (App "(:)" [e1,e2])
 		| Right es <- listView e2   = Right $ e1:es
 	    listView e	= Left e
 

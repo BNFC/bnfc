@@ -124,12 +124,12 @@ definedRules packageAbsyn cf =
 		javaArg (x,t) = javaType t ++ " " ++ x ++ "_"
 
 		javaExp :: Exp -> String
-		javaExp (Const "null") = "null"
-		javaExp (Const x)
+		javaExp (App "null" []) = "null"
+		javaExp (App x [])
 		    | elem x xs		= x ++ "_"	-- argument
-		javaExp (App (Const t) [e])
+		javaExp (App t [e])
 		    | isToken t ctx	= call ("new String") [e]
-		javaExp (App (Const x) es)
+		javaExp (App x es)
 		    | isUpper (head x)	= call ("new " ++ packageAbsyn ++ "." ++ x) es
 		    | otherwise		= call (x ++ "_") es
 		javaExp (LitInt n)	= "new Integer(" ++ show n ++ ")"

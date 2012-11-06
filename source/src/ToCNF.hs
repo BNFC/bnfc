@@ -18,7 +18,7 @@ instance Ord WithType where
   compare = compare `on` catIdent
 
 catTyp' (Left c) = catTyp c
-catTyp' (Right x) = Const x
+catTyp' (Right x) = App x []
 
 instance Show WithType where
   show (WithType t c) = c
@@ -31,9 +31,11 @@ toCNF cf0 = cf1
   where cf1 = onRules (toBin) . typedCats . funToExp $ cf0
     
 funToExp :: CFG Fun -> CFG Exp
-funToExp = fmap Const
+funToExp = fmap toExp
 
-typedCats = mapCatCFG (\c -> WithType (Const c) c)
+toExp x = App x []
+
+typedCats = mapCatCFG (\c -> WithType (toExp c) c)
 
 --------------------------------------------------------------
 -- BIN: make sure no rule has more than 2 symbols on the rhs
@@ -53,9 +55,9 @@ catName = either id id
 toBinRul :: Rul' WithType  Exp -> State Int [Rul' WithType Exp]
 toBinRul (Rule (f,(cat,rhs))) | length rhs > 2 = do
   nm <- allocateCatName
-  let cat' = WithType (App (Const "->") [catTyp' l, catTyp cat]) nm
+  let cat' = WithType (App "->" [catTyp' l, catTyp cat]) nm
   r' <- toBinRul $ Rule (f,(cat',p))
-  return $ Rule (Const "($)", (cat, [Left cat',l]))
+  return $ Rule (toExp "($)", (cat, [Left cat',l]))
          : r'
   where l = last rhs
         p = init rhs
@@ -78,8 +80,8 @@ lk cat nullset = maybe [] id (M.lookup cat nullset)
 nullStep :: Ord cat => [Rul' cat Exp] -> Nullable cat -> Nullable cat
 nullStep rs nullset = M.unionsWith (∪) (map (uncurry M.singleton . nullRule nullset) rs)
   
-                                    
-nullRule nullset (Rule (f,(c,rhs))) = (c,map (App f) (cross (map nulls rhs)))
+nullRule :: Ord cat => Nullable cat -> Rul' cat Exp -> (cat,[Exp])
+nullRule nullset (Rule (f,(c,rhs))) = (c,map (\xs -> (App "($)" (f:xs))) (cross (map nulls rhs)))
     where nulls (Right tok) = []
           nulls (Left cat) = lk cat nullset
 
@@ -105,9 +107,10 @@ delNullable :: Ord cat => Nullable cat -> Rul' cat Exp -> [Rul' cat Exp]
 delNullable nullset ~r@(Rule (f,(cat,rhs@[r1,r2])))
   | nullable nullset r = []
   | length rhs == 1 = [r] -- here we know not element rhs is nullable, so there is nothing to do
-  | otherwise = [r] ++ [Rule (App f [x],(cat,[r2])) | x <- lk' r1]
-                    ++ [Rule (App (flip' f) [x],(cat,[r1])) | x <- lk' r2]
-  where flip' x = App (Const "flip") [x]
+  | otherwise = [r] ++ [Rule (app'  f x,(cat,[r2])) | x <- lk' r1]
+                    ++ [Rule (flip' f x,(cat,[r1])) | x <- lk' r2]
+  where flip' x y = App "flip" [x,y]
+        app' x y = App "($)" [x,y]
         lk' (Right tok) = []
         lk' (Left cat) = lk cat nullset
         
@@ -135,7 +138,7 @@ unitSet rs = case fixk (unitSetStep rs) M.empty of
   Right x -> x
 
 comp' :: Exp -> Exp -> Exp
-comp' g f = App (Const "(.)") [f,g]
+comp' g f = App "(.)" [f,g]
 
 isUnitRule (Rule (f,(c,[r]))) = True
 isUnitRule _ = False

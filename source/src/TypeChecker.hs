@@ -119,18 +119,18 @@ checkDefinition' list ctx f xs e =
 	plural _ = "s"
 
 checkExp :: ListConstructors -> Context -> Exp -> Base -> Err Exp
-checkExp list ctx (Const "[]") (ListT t) = return (Const (nil list t))
-checkExp _ _	  (Const "[]") _	  = fail $ "[] is applied to too many arguments."
-checkExp list ctx (App (Const "(:)") [e,es]) (ListT t) =
+checkExp list ctx (App "[]" []) (ListT t) = return (App (nil list t) [])
+checkExp _ _	  (App "[]" _) _	  = fail $ "[] is applied to too many arguments."
+checkExp list ctx (App "(:)" [e,es]) (ListT t) =
     do	e'  <- checkExp list ctx e t
 	es' <- checkExp list ctx es (ListT t)
-	return $ App (Const (cons list t)) [e',es']
-checkExp _ _ (App (Const "(:)") es) _	= fail $ "(:) takes 2 arguments, but has been given " ++ show (length es) ++ "."
-checkExp list ctx e@(App (Const x) es) t =
+	return $ App (cons list t) [e',es']
+checkExp _ _ (App "(:)" es) _	= fail $ "(:) takes 2 arguments, but has been given " ++ show (length es) ++ "."
+checkExp list ctx e@(App x es) t =
     do	FunT ts t' <- lookupCtx x ctx
 	es' <- matchArgs ctx es ts
 	unless (t == t') $ fail $ show e ++ " has type " ++ show t' ++ ", but something of type " ++ show t ++ " was expected."
-	return $ App (Const x) es'
+	return $ App x es'
     where
 	matchArgs ctx es ts
 	    | expect /= given	= fail $ "'" ++ x ++ "' takes " ++ show expect ++ " arguments, but has been given " ++ show given ++ "."
