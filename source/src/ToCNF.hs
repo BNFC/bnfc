@@ -1,12 +1,13 @@
-module ToCNF where
+module ToCNF (toCNF,generate) where
 
 import CF
 import Control.Monad.State
 import Control.Applicative hiding (Const)
 import qualified Data.Map as M
-import Data.List (nub)
+import Data.List (nub,intercalate)
 import Data.Maybe (maybeToList)
 import Data.Function (on)
+import Data.Char (isAlphaNum,ord)
 
 data WithType = WithType { catTyp :: Exp, catIdent :: Cat}
 
@@ -27,8 +28,12 @@ instance Show WithType where
 
 onRules f (CFG (exts,rules)) = CFG (exts,f rules)
 
-toCNF cf0 = cf1
-  where cf1 = onRules (toBin) . typedCats . funToExp $ cf0
+
+
+toCNF cf0 = (cf2,units)
+  where cf1 = onRules (delNull . toBin) . typedCats . funToExp $ cf0
+        cf2 = onRules (filter (not . isUnitRule)) cf1
+        units = unitSet . snd . unCFG $ cf1
     
 funToExp :: CFG Fun -> CFG Exp
 funToExp = fmap toExp
@@ -103,19 +108,21 @@ nullSet rs = case fixk (nullStep rs) M.empty of
   Right x -> x
 
 -- | Replace nullable occurences by nothing, and adapt the function consequently.
-delNullable :: Ord cat => Nullable cat -> Rul' cat Exp -> [Rul' cat Exp]
-delNullable nullset ~r@(Rule (f,(cat,rhs@[r1,r2])))
+delNullable :: (Show cat, Ord cat) => Nullable cat -> Rul' cat Exp -> [Rul' cat Exp]
+delNullable nullset r@(Rule (f,(cat,rhs)))
   | nullable nullset r = []
   | length rhs == 1 = [r] -- here we know not element rhs is nullable, so there is nothing to do
-  | otherwise = [r] ++ [Rule (app'  f x,(cat,[r2])) | x <- lk' r1]
-                    ++ [Rule (flip' f x,(cat,[r1])) | x <- lk' r2]
+  | otherwise = case rhs of
+    [r1,r2] -> [r] ++ [Rule (app'  f x,(cat,[r2])) | x <- lk' r1]
+                   ++ [Rule (flip' f x,(cat,[r1])) | x <- lk' r2]
+    _ -> error $ "Panic:" ++ show r ++ "should have two elements."
   where flip' x y = App "flip" [x,y]
         app' x y = App "($)" [x,y]
         lk' (Right tok) = []
         lk' (Left cat) = lk cat nullset
         
         
-delNull :: Ord cat => [Rul' cat Exp] -> [Rul' cat Exp]
+delNull :: (Show cat, Ord cat) => [Rul' cat Exp] -> [Rul' cat Exp]
 delNull rs = concatMap (delNullable (nullSet rs)) rs
 
 
@@ -142,3 +149,29 @@ comp' g f = App "(.)" [f,g]
 
 isUnitRule (Rule (f,(c,[r]))) = True
 isUnitRule _ = False
+
+generate (CFG (exts,rules),units) = unlines [genCatTags rules,
+                                             genCombTable rules]
+
+genCombTable :: [Rul' WithType Exp] -> String
+genCombTable rs = unlines $ map alt rs ++ ["combine _ _ = []"]
+
+
+allToks = concatMap toks
+ where  toks (Rule (f,(c,rhs))) = Left c : rhs
+  
+genCatTags :: [Rul' WithType Exp] -> String
+genCatTags rs = "data CATEGORY = " ++ intercalate " | " (map catTag (allToks rs))
+
+alt (Rule (f,(c,[r1,r2]))) = "combine " ++ catTag r1 ++ " " ++ catTag r2 ++ " = Just (" ++ catTag (Left c) ++ ", "++show f++")" -- TODO: take into account the unit to generate directly a list of results.
+
+catTag :: Either WithType String -> String
+catTag (Left c) = "CAT_" ++ concatMap escape (catIdent c)
+catTag (Right t) = "TOK_" ++ concatMap escape t
+
+genTokens :: 
+
+escape c | isAlphaNum c = [c]
+escape c = show $ ord c
+
+                

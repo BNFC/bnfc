@@ -48,7 +48,7 @@ makeCNF m am d ss bs g x p n mu file = do
 --       shareMod = shareFileM opts
   (cf, isOK) <- tryReadCF [formatOptHaskell] file
   if isOK then do
-    let cf' = toCNF cf
+    let (cf',units) = toCNF cf
 --     let dir = codeDir opts
 --     when (not (null dir)) $ do
 -- 			    putStrLn $ "Creating directory " ++ dir
@@ -82,8 +82,10 @@ makeCNF m am d ss bs g x p n mu file = do
 --       _ -> return ()
     putStrLn "ORIGINAL --------------"              
     print cf
-    putStrLn "BIN ---------------"              
+    putStrLn "2NF ---------------"              
     print cf'
+    putStrLn "CODE ==============" 
+    putStrLn $ generate $ (cf',units)
     putStrLn $ "Done!"
    else do putStrLn $ "Failed!"
 	   exitFailure
