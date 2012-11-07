@@ -85,7 +85,7 @@ makeCNF m am d ss bs g x p n mu file = do
     putStrLn "2NF ---------------"              
     print cf'
     putStrLn "CODE ==============" 
-    writeFile "ParseTables.hs" $ generate $ (cf',units)
+    writeFile "ParseTables.hs" $ generate file $ (cf',units)
     putStrLn $ "Done!"
    else do putStrLn $ "Failed!"
 	   exitFailure

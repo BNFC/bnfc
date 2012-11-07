@@ -30,9 +30,8 @@ instance Show WithType where
   
 onRules f (CFG (exts,rules)) = CFG (exts,f rules)
 
-toCNF cf0 = (cf2,units)
+toCNF cf0 = (cf1,units)
   where cf1 = onRules (delNull . toBin) . typedCats . funToExp $ cf0
-        cf2 = onRules (filter (not . isUnitRule)) cf1
         units = unitSet . snd . unCFG $ cf1
     
 funToExp :: CFG Fun -> CFG Exp
@@ -149,16 +148,26 @@ isUnitRule _ = False
 -------------------------
 -- Code generation
 
-generate (cf@(CFG (exts,rules)),units) = render $ vcat [header,
+generate opts
+          (cf@(CFG (exts,rules)),units) = render $ vcat [header opts,
                                                         genCatTags cf,
-                                                        genCombTable units rules,
+                                                        genCombTable units (filter (not . isUnitRule) rules),
                                                         genTokTable units cf]
 
-header = vcat ["module ParseTables where"
+header opts
+       = vcat ["module ParseTables where"
               ,"import GHC.Prim"
+              ,"import Absalfa" 
+              ,"import Lexalfa(Tok(..))" 
               ,"readInteger :: String -> Integer"
               ,"readInteger = read"
               ]
+
+punctuate' p = cat . punctuate p
+
+genCatTags :: CFG' WithType Exp -> Doc
+genCatTags cf = "data CATEGORY = " <> punctuate' "|" (map catTag (allSyms cf))
+
 
 genCombTable :: UnitRel WithType -> [Rul' WithType Exp] -> Doc
 genCombTable units rs = 
@@ -166,14 +175,9 @@ genCombTable units rs =
   $$ vcat (map (alt units) rs) 
   $$  "combine _ _ = []"
 
-punctuate' p = cat . punctuate p
-
 allSyms :: CFG' WithType Exp -> [Either String String]
 allSyms cf = map Left (map catIdent (allCats cf)  ++ literals cf) ++ map (Right . fst) (cfTokens cf)
         
-genCatTags :: CFG' WithType Exp -> Doc
-genCatTags cf = "data CATEGORY = " <> punctuate' "|" (map catTag (allSyms cf))
-
 
 ppPair (x,y) = parens $ x <> comma <> " " <> y
 ppList xs = brackets $ punctuate' comma xs
@@ -193,19 +197,26 @@ catTag :: Either String String -> Doc
 catTag (Left c) = "CAT_" <> text (concatMap escape c)
 catTag (Right t) = "TOK_" <> text (concatMap escape t)
 
-genTokTable units cf = vcat $
-                       ["tokens :: Tok -> [(CATEGORY,String -> Any)]"
-                       ,"tokens (TL x) = [(CAT_String,id)]"
-                       ,"tokens (TI x) = [(CAT_Integer,readInteger)]"
-                       ,"tokens (TV x) = [(CAT_Ident,Ident)]"
-                        ] ++
-                       map (genTokEntry units) (cfTokens cf)
+genTokTable :: UnitRel WithType -> CFG' WithType Exp -> Doc
+genTokTable units cf = "tokens :: Tok -> [(CATEGORY,Any)]" $$
+                       vcat (map (genSpecEntry units) (tokInfo cf)) $$
+                       vcat (map (genTokEntry units) (cfTokens cf))
+
+forgetTypes = first catIdent
+
+tokInfo cf = ("String","TL",Id):("Integer","TI",Con "readInteger") : [("Ident","TV",Con "Ident")|hasIdent (forgetTypes cf)] ++
+        [(t,"T_" <> text t,(Con t) ) | t <- tokenNames cf]
+
+genSpecEntry units (tokName,constrName,fun) = "tokens (" <> constrName <> " x) = " <> ppList (map ppPair xs)
+  where xs = map (second (prettyExp . (`app'` Con "x"))) $ 
+             (catTag (Left tokName), fun) : [(catTag (Left $ catIdent c),f `after` fun) |
+              (f,c) <- lk (Left $ WithType (Con tokName) tokName) units]
 
 genTokEntry units (tok,x) = "tokens (TS _ " <> int x <> ") = " <> ppList (map ppPair xs)
   where xs = (catTag (Right tok), tokVal):
           [(catTag (Left $ catIdent c),prettyExp f) 
           | (f,c) <- lk (Right tok) units]
-        tokVal = "error" <> doubleQuotes (text $ "cannot access value of token: " ++ tok)
+        tokVal = "error" <> (text $ show $ "cannot access value of token: " ++ tok)
   
   
 escape c | isAlphaNum c = [c]

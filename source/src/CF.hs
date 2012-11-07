@@ -130,6 +130,7 @@ instance Bifunctor Rul' where
 
 instance (Show function, Show cat) => Show (Rul' function cat) where
   show (Rule (f,(cat,rhs))) = show f ++ ". " ++ show cat ++ " ::= " ++ intercalate " " (map (either show id) rhs)
+
 -- | Polymorphic CFG type for common type signatures for CF and CFP
 newtype CFG' cat function = CFG { unCFG :: (Exts,[Rul' cat function]) }
 
@@ -200,9 +201,9 @@ data Pragma = CommentS  String
 tokenPragmas :: CFG' c f -> [(String,Reg)]
 tokenPragmas cf = [(name,exp) | TokenReg name _ exp <- pragmasOfCF cf]
 
- -- | The names of all user-defined tokens
-tokenNames :: CF -> [String]
-tokenNames cf = fst (unzip (tokenPragmas cf))
+-- | The names of all user-defined tokens
+tokenNames :: CFG' c f -> [String]
+tokenNames cf = map fst (tokenPragmas cf)
 
 layoutPragmas :: CF -> (Bool,[String],[String])
 layoutPragmas cf = let ps = pragmasOfCF cf in (
@@ -250,6 +251,7 @@ rulesOfCFP  :: CFP -> [RuleP]
 infoOfCF    :: CFG' c f -> Info
 pragmasOfCF :: CFG' c f -> [Pragma]
 
+{-# DEPRECATED rulesOfCFP "Use rulesOfCF instead" #-}
 rulesOfCF   = snd . unCFG
 rulesOfCFP  = snd . unCFG
 infoOfCF    = snd . fst . unCFG
@@ -309,7 +311,7 @@ allCatsIdNorm :: CF -> [Cat]
 allCatsIdNorm = nub . map identCat . map normCat . allCats
 
 -- | Is the category is used on an rhs?
-isUsedCat :: CF -> Cat -> Bool
+isUsedCat :: CFG' Cat f -> Cat -> Bool
 isUsedCat cf cat = elem cat [c | r <- (rulesOfCF cf), Left c <- rhsRule r]
 
 -- | Entry points to parser ----
@@ -331,7 +333,7 @@ literals :: CFG' c f -> [String]
 literals cf = lits ++ owns
  where 
    (lits,_,_,_) = infoOfCF cf
-   owns = map fst $ tokenPragmas cf
+   owns = tokenNames cf
 
 {-# DEPRECATED symbols, reservedWords "Almost certainly, you should treat symbols and reserved words uniformly, so use cfTokens instead." #-}
 
@@ -345,7 +347,8 @@ reservedWords :: CFG' c f -> [String]
 reservedWords cf = sort keywords
  where (_,_,keywords,_) = infoOfCF cf
 
--- | Canonical, numbered list of symbols and reserved words 
+-- | Canonical, numbered list of symbols and reserved words. (These do
+-- not end up in the AST.)
 cfTokens :: CFG' c f -> [(String,Int)]
 cfTokens cf = zip (sort (symbols cf ++ reservedWords cf)) [1..]
 -- NOTE: some backends (incl. Haskell) assume that this list is sorted.
@@ -371,13 +374,17 @@ rhsRule = snd . snd . unRule
 
 -- built-in categories (corresponds to lexer)
 
--- | Wether the grammar uses the predefined Ident type.
-hasIdent :: CF -> Bool
+-- | Whether the grammar uses the predefined Ident type.
+hasIdent :: CFG' Cat f -> Bool
 hasIdent cf = isUsedCat cf "Ident"
 
+
 -- these need new datatypes
+
+-- | Categories corresponding to tokens. These end up in the
+-- AST. (unlike tokens returned by 'cfTokens')
 specialCats :: CF -> [Cat]
-specialCats cf = (if hasIdent cf then ("Ident":) else id) (map fst (tokenPragmas cf))
+specialCats cf = (if hasIdent cf then ("Ident":) else id) (tokenNames cf)
 
 -- the parser needs these
 specialCatsP :: [Cat]
@@ -391,35 +398,29 @@ prTree (Tree (fun,trees)) = fun +++ unwords (map pr2 trees) where
 
 -- abstract syntax trees: data type definitions
 
-cf2data :: CF -> [Data]
-cf2data cf = 
-  [(cat, nub (map mkData [r | r <- rulesOfCF cf,
-                              let f=funRule r,
-			      not (isDefinedRule f),
-                              not (isCoercion f), eqCat cat (valCat r)])) 
-      | cat <- allNormalCats cf] 
- where
-  mkData (Rule (f,(_,its))) = (normFun f,[normCat c | Left c <- its, c /= internalCat])
-
---This version includes lists in the returned data.
---Michael 4/03
-cf2dataLists :: CF -> [Data]
-cf2dataLists cf = 
+cf2data' :: (Cat -> Bool) -> CF -> [Data]
+cf2data' predicate cf =   
   [(cat, nub (map mkData [r | r <- rulesOfCF cf,
                               let f = funRule r,
 			      not (isDefinedRule f),
                               not (isCoercion f), eqCat cat (valCat r)])) 
-      | cat <- (filter (\x -> not $ isDigit $ last x) (allCats cf))] 
+      | cat <- filter predicate (allCats cf)] 
  where
   mkData (Rule (f,(_,its))) = (normFun f,[normCat c | Left c <- its, c /= internalCat])
+
+cf2data :: CF -> [Data]
+cf2data = cf2data' isNormal
+  where isNormal c = not (isList c || isDigit (last c))
+        -- Does the category correspond to a data type?
+
+cf2dataLists :: CF -> [Data]
+cf2dataLists = cf2data' (\x -> not $ isDigit $ last x) 
 
 specialData :: CF -> [Data]
 specialData cf = [(c,[(c,[arg c])]) | c <- specialCats cf] where
   arg c = case c of 
     _ -> "String"
 
-allNormalCats :: CF -> [Cat]
-allNormalCats = filter isNormal . allCats
 
 -- to deal with coercions
 
@@ -470,8 +471,6 @@ normFun = id -- takeWhile (not . isDigit)
 normRuleFun :: Rule -> Rule
 normRuleFun (Rule (f,p)) = Rule (normFun f, p)
 
-isNormal :: Cat -> Bool
-isNormal c = not (isList c || isDigit (last c))
 
 -- | Checks if the rule is parsable.
 isParsable :: Rul f -> Bool
@@ -576,8 +575,8 @@ checkRule cf r@(Rule((f,_),(cat,rhs)))
    badMissing  = not (null missing)
    missing     = filter nodef [c | Left c <- rhs] 
    nodef t = notElem t defineds
-   defineds = 
-    "#" : map fst (tokenPragmas cf) ++ specialCatsP ++ map valCat (rulesOfCF cf) 
+   defineds =
+    "#" : tokenNames cf ++ specialCatsP ++ map valCat (rulesOfCF cf) 
    badTypeName = not (null badtypes)
    badtypes = filter isBadType $ cat : [c | Left c <- rhs]
    isBadType c = not (isUpper (head c) || isList c || c == "#")
