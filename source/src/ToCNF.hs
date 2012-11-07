@@ -60,10 +60,13 @@ toBinRul (Rule (f,(cat,rhs))) | length rhs > 2 = do
   nm <- allocateCatName
   let cat' = WithType (appMany (Con "->") [catTyp' l, catTyp cat]) nm
   r' <- toBinRul $ Rule (f,(cat',p))
-  return $ Rule (Con "($)", (cat, [Left cat',l])) -- FIXME: do the application only if the rhs in not a single token.
+  return $ Rule (Con "($)", (cat, [Left cat',l])) 
          : r'
   where l = last rhs
         p = init rhs
+        fun' = case l of
+          Left _ -> Con "($)" -- in this case we have to apply the final argument to the partial result
+          Right _ -> Con "const" -- in this case the 2nd argument must be ignored (it is not present in the result).
 toBinRul r = return [r]
 
 
@@ -112,7 +115,7 @@ delNullable nullset r@(Rule (f,(cat,rhs)))
   | length rhs == 1 = [r] -- here we know not element rhs is nullable, so there is nothing to do
   | otherwise = case rhs of
     [r1,r2] -> [r] ++ [Rule (app'  f x,(cat,[r2])) | x <- lk' r1]
-                   ++ [Rule (App2  f x,(cat,[r1])) | x <- lk' r2]
+                   ++ [Rule (app2 (isCat r1) f x,(cat,[r1])) | x <- lk' r2]
     _ -> error $ "Panic:" ++ show r ++ "should have two elements."
   where lk' (Right tok) = []
         lk' (Left cat) = lk cat nullset
@@ -200,7 +203,7 @@ genTokTable units cf = vcat $
 
 genTokEntry units (tok,x) = "tokens (TS _ " <> int x <> ") = " <> ppList (map ppPair xs)
   where xs = (catTag (Right tok), tokVal):
-          [(catTag (Left $ catIdent c),prettyExp f `app` Con "err?") 
+          [(catTag (Left $ catIdent c),prettyExp f) 
           | (f,c) <- lk (Right tok) units]
         tokVal = "error" <> doubleQuotes (text $ "cannot access value of token: " ++ tok)
   
@@ -229,11 +232,16 @@ prettyExp (f `After` g) = parens (prettyExp f) <> "." <> parens (prettyExp g)
 
 instance Show Exp where show = render . prettyExp
 
+-- | Apply in 2nd position if the flag is true, otherwise apply normally.
+app2 True f x =  App2 f x
+app2 False f x = app' f x
+
 app' :: Exp -> Exp -> Exp
 app' (f `After` g) x = app' f (app' g x)
 app' Id x = x
 app' (App2 f y) x = (f `app'` x) `app'` y
 app' (Con "($)") f = f
+-- app' (Con "const") f = f
 app' f x = App f x
 
 toExp f | isCoercion f = Id
