@@ -85,8 +85,8 @@ module CF (
 	    precRule,       -- get the precendence level of the value category of a rule.
 	    precCF,         -- Check if the CF consists of precendence levels.
             isUsedCat,
-	    internalCat,    -- the symbol #
-            isPositionCat,  -- category that has a position in AST
+	    internalCat,    
+            isPositionCat, 
             hasIdent,
             hasLayout,
             layoutPragmas,
@@ -185,10 +185,10 @@ instance Show Exp where
 		| Right es <- listView e2   = Right $ e1:es
 	    listView e	= Left e
 
--- | Pragmas for single line comments and for multiple-line comments.
-data Pragma = CommentS  String        
-            | CommentM (String,String)
-            | TokenReg String Bool Reg
+-- | Pragmas 
+data Pragma = CommentS  String -- ^ for single line comments
+            | CommentM (String,String) -- ^  for multiple-line comments.    
+            | TokenReg String Bool Reg -- ^ for tokens
             | EntryPoints [Cat]
             | Layout [String]
             | LayoutStop [String]
@@ -228,6 +228,8 @@ type Fun     = String
 -- | Either Cat or Fun
 type Name = String
 
+-- | The category '#'. It is inserted in 1st position in "internal"
+-- rules, essentially ensuring that they are never parsed.
 internalCat :: Cat
 internalCat = "#"
 
@@ -583,7 +585,8 @@ checkRule cf r@(Rule((f,_),(cat,rhs)))
    badFunName = not (all (\c -> isAlphaNum c || c == '_') f {-isUpper (head f)-}
                        || isCoercion f || isNilFun f || isOneFun f || isConsFun f)
 
-isPositionCat :: CFG f -> Cat -> Bool
+-- | Does the category have a position stored in AST?
+isPositionCat :: CFG' c f -> Cat -> Bool
 isPositionCat cf cat =  or [b | TokenReg name b _ <- pragmasOfCF cf, name == cat]
 
 

@@ -6,7 +6,7 @@ import CF hiding (App,Exp)
 import Control.Monad.State
 import Control.Applicative hiding (Const)
 import qualified Data.Map as M
-import Data.List (nub,intercalate)
+import Data.List (nub,intercalate,sortBy)
 import Data.Maybe (maybeToList)
 import Data.Function (on)
 import Data.Char (isAlphaNum,ord)
@@ -31,13 +31,17 @@ instance Show WithType where
 onRules f (CFG (exts,rules)) = CFG (exts,f rules)
 
 toCNF cf0 = (cf1,units)
-  where cf1 = onRules (delNull . toBin) . typedCats . funToExp $ cf0
+  where cf1 = onRules (delNull . toBin) . typedCats . funToExp . onRules delInternal $ cf0
         units = unitSet . snd . unCFG $ cf1
     
 funToExp :: CFG Fun -> CFG Exp
 funToExp = second toExp
 
 typedCats = first (\c -> WithType (toExp c) c)
+
+delInternal = filter (not . isInternalRhs . rhsRule)
+  where isInternalRhs (Left c:_) = c == internalCat
+        isInternalRhs _ = False
 
 --------------------------------------------------------------
 -- BIN: make sure no rule has more than 2 symbols on the rhs
@@ -155,8 +159,10 @@ generate opts
                                                         genTokTable units cf]
 
 header opts
-       = vcat ["module ParseTables where"
+       = vcat ["{-# LANGUAGE MagicHash #-}"
+              ,"module ParseTables where"
               ,"import GHC.Prim"
+              ,"import GHC.Exts"
               ,"import Absalfa" 
               ,"import Lexalfa(Tok(..))" 
               ,"readInteger :: String -> Integer"
@@ -172,8 +178,8 @@ genCatTags cf = "data CATEGORY = " <> punctuate' "|" (map catTag (allSyms cf))
 genCombTable :: UnitRel WithType -> [Rul' WithType Exp] -> Doc
 genCombTable units rs = 
      "combine :: CATEGORY -> CATEGORY -> [(CATEGORY, Any -> Any -> Any)]"
-  $$ vcat (map (alt units) rs) 
-  $$  "combine _ _ = []"
+  $$ genCombine units rs
+  $$ "combine _ _ = []"
 
 allSyms :: CFG' WithType Exp -> [Either String String]
 allSyms cf = map Left (map catIdent (allCats cf)  ++ literals cf) ++ map (Right . fst) (cfTokens cf)
@@ -182,15 +188,28 @@ allSyms cf = map Left (map catIdent (allCats cf)  ++ literals cf) ++ map (Right 
 ppPair (x,y) = parens $ x <> comma <> " " <> y
 ppList xs = brackets $ punctuate' comma xs
 
-alt :: UnitRel WithType -> Rul' WithType Exp -> Doc
-alt units (Rule (f,(c,[r1,r2]))) = "combine " <> catTag (first catIdent r1) <> " " <> catTag (first catIdent r2) <> " = " <> ppList (map (ppPair . second (mkLam . prettyExp)) (initial:others))
-  where initial = (catTag (Left $ catIdent c), f `appMany` args)
-        others = [(catTag (Left $ catIdent c'), f' `app'` (f `appMany` args)) | (f',c') <- lk (Left c) units]
-        args = map Con $ ["x"|isCat r1]++["y"|isCat r2]
+unsafeCoerce' = app' (Con "unsafeCoerce#")
+
+type RHSEl = Either WithType String
+
+group' :: Eq a =>[(a,[b])] -> [(a,[b])]
+group' [] = []
+group' ((a,bs):xs) = (a,bs ++ concatMap snd ys) : group' zs
+  where (ys,zs) = span (\x -> fst x == a) xs
+
+genCombine :: UnitRel WithType -> [Rul' WithType Exp] -> Doc
+genCombine units rs = vcat $ map genEntry $ group' $ sortBy (compare `on` fst) $ map (alt units) rs
+  where genEntry ((r1,r2),fs) = "combine " <> catTag (first catIdent r1) <> " " <> catTag (first catIdent r2) <> " = " <> ppList (map (ppPair . bimap (catTag . Left . catIdent) (mkLam . prettyExp . unsafeCoerce')) fs)
         mkLam body = "\\x y -> " <> body
-                             
-isCat (Left _) = True
+
+alt :: UnitRel WithType -> Rul' WithType Exp -> ((RHSEl,RHSEl),[(WithType,Exp)])
+alt units (Rule (f,(c,[r1,r2]))) = ((r1,r2),initial:others)
+  where initial = (c, f `appMany` args)
+        others = [(c', f' `app'` (f `appMany` args)) | (f',c') <- lk (Left c) units]
+        args = map (unsafeCoerce' . Con) $ ["x"|isCat r1]++["y"|isCat r2]
+    
 isCat (Right _) = False
+isCat (Left _) = True
         
 
 catTag :: Either String String -> Doc
@@ -198,23 +217,25 @@ catTag (Left c) = "CAT_" <> text (concatMap escape c)
 catTag (Right t) = "TOK_" <> text (concatMap escape t)
 
 genTokTable :: UnitRel WithType -> CFG' WithType Exp -> Doc
-genTokTable units cf = "tokens :: Tok -> [(CATEGORY,Any)]" $$
-                       vcat (map (genSpecEntry units) (tokInfo cf)) $$
+genTokTable units cf = "tokens :: (Int,Int) -> Tok -> [(CATEGORY,Any)]" $$
+                       vcat (map (genSpecEntry cf units) (tokInfo cf)) $$
                        vcat (map (genTokEntry units) (cfTokens cf))
 
 forgetTypes = first catIdent
 
 tokInfo cf = ("String","TL",Id):("Integer","TI",Con "readInteger") : [("Ident","TV",Con "Ident")|hasIdent (forgetTypes cf)] ++
-        [(t,"T_" <> text t,(Con t) ) | t <- tokenNames cf]
+        [(t,"T_" <> text t,(Con t)) | t <- tokenNames cf]
 
-genSpecEntry units (tokName,constrName,fun) = "tokens (" <> constrName <> " x) = " <> ppList (map ppPair xs)
-  where xs = map (second (prettyExp . (`app'` Con "x"))) $ 
+genSpecEntry cf units (tokName,constrName,fun) = "tokens posn (" <> constrName <> " x) = " <> ppList (map ppPair xs)
+  where xs = map (second (prettyExp . (\f -> unsafeCoerce' (f `app'` tokArgs)))) $ 
              (catTag (Left tokName), fun) : [(catTag (Left $ catIdent c),f `after` fun) |
               (f,c) <- lk (Left $ WithType (Con tokName) tokName) units]
+        tokArgs | isPositionCat cf tokName = Con "(posn,x)"
+                | otherwise = Con "x"
 
-genTokEntry units (tok,x) = "tokens (TS _ " <> int x <> ") = " <> ppList (map ppPair xs)
+genTokEntry units (tok,x) = "tokens posn (TS _ " <> int x <> ") = " <> ppList (map ppPair xs)
   where xs = (catTag (Right tok), tokVal):
-          [(catTag (Left $ catIdent c),prettyExp f) 
+          [(catTag (Left $ catIdent c),prettyExp (unsafeCoerce' f)) 
           | (f,c) <- lk (Right tok) units]
         tokVal = "error" <> (text $ show $ "cannot access value of token: " ++ tok)
   
@@ -247,6 +268,7 @@ instance Show Exp where show = render . prettyExp
 app2 True f x =  App2 f x
 app2 False f x = app' f x
 
+infixl `app'`
 app' :: Exp -> Exp -> Exp
 app' (f `After` g) x = app' f (app' g x)
 app' Id x = x
