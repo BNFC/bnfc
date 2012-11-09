@@ -127,15 +127,15 @@ nullSet rs = case fixk (nullStep rs) M.empty of
   Left x -> error "Could not find fixpoint of nullable set"
   Right x -> x
 
+
 -- | Replace nullable occurences by nothing, and adapt the function consequently.
 delNullable :: (Show cat, Ord cat) => Nullable cat -> Rul' cat Exp -> [Rul' cat Exp]
-delNullable nullset r@(Rule (f,(cat,rhs)))
-  | nullable nullset r = []
-  | length rhs == 1 = [r] -- here we know not element rhs is nullable, so there is nothing to do
-  | otherwise = case rhs of
-    [r1,r2] -> [r] ++ [Rule (app'  f x,(cat,[r2])) | x <- lk' r1]
-                   ++ [Rule (app2 (isCat r1) f x,(cat,[r1])) | x <- lk' r2]
-    _ -> error $ "Panic:" ++ show r ++ "should have two elements."
+delNullable nullset r@(Rule (f,(cat,rhs))) = case rhs of
+  [] -> []
+  [_] -> [r] 
+  [r1,r2] -> [r] ++ [Rule (app'  f x,(cat,[r2])) | x <- lk' r1]
+                 ++ [Rule (app2 (isCat r1) f x,(cat,[r1])) | x <- lk' r2]
+  _ -> error $ "Panic:" ++ show r ++ "should have at most two elements."
   where lk' (Right tok) = []
         lk' (Left cat) = lk cat nullset
         
@@ -168,10 +168,14 @@ isUnitRule _ = False
 -------------------------
 -- Code generation
 
-generate opts cf0 = render $ vcat [header opts,
-                                   genCatTags cf1,
-                                   genCombTable units (filter (not . isUnitRule) rules),
-                                   genTokTable units cf]
+incomment x = "{-" <> x <> "-}"
+
+generate opts cf0 = render $ vcat [header opts
+                                  ,genCatTags cf1
+                                  ,genCombTable units (filter (not . isUnitRule) rules)
+                                  ,genTokTable units cf
+                                  ,incomment (text $ show cf)
+                                  ]
   where (cf1,cf@(CFG (exts,rules)),units) = toCNF cf0
 
 header opts
