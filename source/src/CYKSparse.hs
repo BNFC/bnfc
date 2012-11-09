@@ -66,10 +66,9 @@ merge (*) l r = result
 type AST cat = (cat,Any)
 
 
-type Posn = (Int,Int)
 
-mkTree :: (Posn -> tok -> [(cat,Any)]) -> 
-          (cat -> cat -> [(cat, Any -> Any -> Any)]) -> [(Posn,tok)] -> Chart [AST cat]
+mkTree :: (posn -> tok -> [(cat,Any)]) -> 
+          (cat -> cat -> [(cat, Any -> Any -> Any)]) -> [(posn,tok)] -> Chart [AST cat]
 mkTree tokens combine ts = sweeps (map unitChart ts)
  where
   sweeps []  = error "can't parse the empty string, sorry"

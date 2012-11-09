@@ -251,7 +251,7 @@ catTag (Left c) = "CAT_" <> text (concatMap escape c)
 catTag (Right t) = "TOK_" <> text (concatMap escape t)
 
 genTokTable :: UnitRel WithType -> CFG' WithType Exp -> Doc
-genTokTable units cf = "tokens :: (Int,Int) -> Tok -> [(CATEGORY,Any)]" $$
+genTokTable units cf = "tokens :: Posn -> Tok -> [(CATEGORY,Any)]" $$
                        vcat (map (genSpecEntry cf units) (tokInfo cf)) $$
                        vcat (map (genTokEntry units) (cfTokens cf))
 
@@ -260,11 +260,11 @@ forgetTypes = first catIdent
 tokInfo cf = ("String","TL",Id):("Integer","TI",Con "readInteger") : [("Ident","TV",Con "Ident")|hasIdent (forgetTypes cf)] ++
         [(t,"T_" <> text t,(Con t)) | t <- tokenNames cf]
 
-genSpecEntry cf units (tokName,constrName,fun) = "tokens posn (" <> constrName <> " x) = " <> ppList (map ppPair xs)
+genSpecEntry cf units (tokName,constrName,fun) = "tokens (Pn _ l c) (" <> constrName <> " x) = " <> ppList (map ppPair xs)
   where xs = map (second (prettyExp . (\f -> unsafeCoerce' (f `app'` tokArgs)))) $ 
              (catTag (Left tokName), fun) : [(catTag (Left $ catIdent c),f `after` fun) |
               (f,c) <- lk (Left $ WithType (Con tokName) tokName) units]
-        tokArgs | isPositionCat cf tokName = Con "(posn,x)"
+        tokArgs | isPositionCat cf tokName = Con "((l,c),x)"
                 | otherwise = Con "x"
 
 genTokEntry units (tok,x) = "tokens posn (TS _ " <> int x <> ") = " <> ppList (map ppPair xs)
