@@ -25,7 +25,6 @@ module Main where
 
 -- import Utils
 -- import CF
-import CNFTop
 import HaskellTop
 import HaskellTopGADT
 import ProfileTop
@@ -48,11 +47,11 @@ import System.Cmd (system)
 import Data.Char
 import Data.List (elemIndex, foldl')
 
-version = "2.5b"
+version = "2.6a"
 
 title = unlines [
   "The BNF Converter, "++version, 
-  "(c) Krasimir Angelov, Bjorn Bringert, Johan Broberg, Paul Callaghan, ",
+  "(c) Krasimir Angelov, Jean-Philippe Bernardy, Bjorn Bringert, Johan Broberg, Paul Callaghan, ",
   "    Markus Forsberg, Ola Frid, Peter Gammie, Patrik Jansson, ",
   "    Kristofer Johannisson, Antti-Juhani Kaijanaho, Ulf Norell, ",
   "    Michael Pellauer and Aarne Ranta 2002 - 2012.",
@@ -138,7 +137,6 @@ mkOne xx = do
            _ | fsharp -> makeFSharp make alex1 inDir alex2StringSharing glr xml inPackage name file
            _ | profile-> makeAllProfile make alex1 False xml name file
            _ | haskellGADT -> makeAllGADT make alexMode inDir alex2StringSharing alex2ByteString glr xml inPackage name file
-           _ | cnf -> makeCNF make alexMode inDir alex2StringSharing alex2ByteString glr xml inPackage name multi file        
            _  -> makeAll make alexMode inDir alex2StringSharing alex2ByteString glr xml inPackage name multi file           
          if (make && multi) 
            then (system ("cp Makefile Makefile_" ++ name)) >> return ()  

@@ -1,8 +1,40 @@
+{-
+    Copyright (C) 2012  Authors: 
+    Jean-Philippe Bernardy.
+
+    This program is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 2 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program; if not, write to the Free Software
+    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+-}
+
 {-# LANGUAGE OverloadedStrings #-}
 
-module ToCNF (toCNF,generate) where
+module ToCNF (generate) where
+
+{-
+
+Construction of CYK tables. The algorithm follows:
+
+Lange, Martin; Leiß, Hans (2009), "To CNF or not to CNF? An Efficient
+Yet Presentable Version of the CYK Algorithm", Informatica Didactica
+
+-}
+
+
+
 
 import CF hiding (App,Exp)
+import HsOpts
 import Control.Monad.State
 import Control.Applicative hiding (Const)
 import qualified Data.Map as M
@@ -30,9 +62,10 @@ instance Show WithType where
   
 onRules f (CFG (exts,rules)) = CFG (exts,f rules)
 
-toCNF cf0 = (cf1,units)
-  where cf1 = onRules (delNull . toBin) . typedCats . funToExp . onRules delInternal $ cf0
-        units = unitSet . snd . unCFG $ cf1
+toCNF cf0 = (cf1,cf2,units)
+  where cf1 = onRules toBin . typedCats . funToExp . onRules delInternal $ cf0
+        cf2 = onRules delNull cf1
+        units = unitSet . snd . unCFG $ cf2
     
 funToExp :: CFG Fun -> CFG Exp
 funToExp = second toExp
@@ -152,19 +185,19 @@ isUnitRule _ = False
 -------------------------
 -- Code generation
 
-generate opts
-          (cf@(CFG (exts,rules)),units) = render $ vcat [header opts,
-                                                        genCatTags cf,
-                                                        genCombTable units (filter (not . isUnitRule) rules),
-                                                        genTokTable units cf]
+generate opts cf0 = render $ vcat [header opts,
+                                   genCatTags cf1,
+                                   genCombTable units (filter (not . isUnitRule) rules),
+                                   genTokTable units cf]
+  where (cf1,cf@(CFG (exts,rules)),units) = toCNF cf0
 
 header opts
        = vcat ["{-# LANGUAGE MagicHash #-}"
               ,"module ParseTables where"
               ,"import GHC.Prim"
               ,"import GHC.Exts"
-              ,"import Absalfa" 
-              ,"import Lexalfa(Tok(..))" 
+              ,"import " <> text (absFileM  opts)
+              ,"import " <> text (alexFileM opts)
               ,"readInteger :: String -> Integer"
               ,"readInteger = read"
               ]
@@ -172,7 +205,8 @@ header opts
 punctuate' p = cat . punctuate p
 
 genCatTags :: CFG' WithType Exp -> Doc
-genCatTags cf = "data CATEGORY = " <> punctuate' "|" (map catTag (allSyms cf))
+genCatTags cf = "data CATEGORY = " <> punctuate' "|" (map catTag (allSyms cf)) $$
+                "  deriving (Eq,Ord,Show)"
 
 
 genCombTable :: UnitRel WithType -> [Rul' WithType Exp] -> Doc

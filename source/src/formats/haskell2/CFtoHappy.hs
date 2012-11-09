@@ -20,7 +20,6 @@
 module CFtoHappy 
        (
        cf2HappyS -- cf2HappyS :: CF -> CFCat -> String
-       ,HappyMode(..)
        )
         where
 
@@ -28,7 +27,7 @@ import CF
 --import Lexer
 import Data.List (intersperse, sort)
 import Data.Char
-
+import HsOpts (HappyMode(..))
 -- Type declarations
 
 type Rules       = [(NonTerminal,[(Pattern,Action)])]
@@ -44,7 +43,6 @@ tokenName   = "Token"
 
 -- Happy mode
 
-data HappyMode = Standard | GLR deriving Eq
 
 
 cf2HappyS :: String -> String -> String -> String -> HappyMode -> Bool -> CF -> String

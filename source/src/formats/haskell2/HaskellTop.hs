@@ -34,6 +34,8 @@ import CFtoTemplate
 import CFtoPrinter
 import CFtoLayout
 import CFtoXML
+import HsOpts
+import ToCNF
 import MkErrM
 import MkSharedString
 -- import CFtoGF		( cf2AbsGF, cf2ConcGF )
@@ -47,82 +49,8 @@ import Control.Monad(when)
 
 -- naming conventions
 
-noLang :: Options -> String -> String
-noLang _ name = name
 
-withLang :: Options -> String -> String
-withLang opts name = name ++ lang opts
 
-withLangAbs :: Options -> String -> String
-withLangAbs opts name = postp $ name ++ lang opts
-  where
-    postp nam = if multi opts 
-                   then takeWhile (/='_') nam
-                   else nam
-
-mkMod :: (Options -> String -> String) -> String -> Options -> String
-mkMod addLang name opts = 
-    pref ++ if inDir opts then lang opts ++ "." ++ name else addLang opts name
-	where pref = maybe "" (++".") (inPackage opts)
-
-mkFile :: (Options -> String -> String) -> String -> String -> Options -> FilePath
-mkFile addLang name ext opts = 
-    pref ++ if inDir opts
-       then lang opts ++ [pathSep] ++ name ++ ext'
-       else addLang opts name ++ if null ext then "" else ext'
-    where pref = maybe "" (\p->pkgToDir p++[pathSep]) (inPackage opts)
-	  ext' = if null ext then "" else "." ++ ext
-
-absFile, absFileM, alexFile, alexFileM, dviFile,
- gfAbs, gfConc,
- happyFile, happyFileM,
- latexFile, errFile, errFileM,
- templateFile, templateFileM, 
- printerFile, printerFileM,
- layoutFile, layoutFileM, 
- psFile, tFile, tFileM :: Options -> String
-absFile       = mkFile withLangAbs "Abs" "hs"
-absFileM      = mkMod  withLangAbs "Abs" 
-alexFile      = mkFile withLang "Lex" "x"
-alexFileM     = mkMod  withLang "Lex"
-happyFile     = mkFile withLang "Par" "y"
-happyFileM    = mkMod  withLang "Par"
-latexFile     = mkFile withLang "Doc" "tex"
-txtFile       = mkFile withLang "Doc" "txt"
-templateFile  = mkFile withLang "Skel" "hs"
-templateFileM = mkMod  withLang "Skel"
-printerFile   = mkFile withLang "Print" "hs"
-printerFileM  = mkMod  withLang "Print"
-dviFile       = mkFile withLang "Doc" "dvi"
-psFile        = mkFile withLang "Doc" "ps"
-gfAbs         = mkFile withLangAbs "" "Abs.gf"
-gfConc        = mkFile withLang "" "Conc.gf"
-tFile         = mkFile withLang "Test" "hs"
-tFileM        = mkMod  withLang "Test"
-errFile       = mkFile noLang   "ErrM" "hs"
-errFileM      = mkMod  noLang   "ErrM"
-shareFile     = mkFile noLang   "SharedString" "hs"
-shareFileM    = mkMod  noLang   "SharedString"
-layoutFileM   = mkMod  withLang "Layout"
-xmlFileM      = mkMod  withLang "XML"
-layoutFile    = mkFile withLang "Layout" "hs"
-
-data AlexMode = Alex1 | Alex2 | Alex3 deriving Eq
-
-data Options = Options 
-    { 
-     make :: Bool,
-     alex1 :: Bool,
-     alexMode :: AlexMode,
-     inDir :: Bool,
-     shareStrings :: Bool,
-     byteStrings :: Bool,
-     glr :: HappyMode,
-     xml :: Int,
-     inPackage :: Maybe String,
-     lang :: String,
-     multi :: Bool
-    }
 
 makeAll :: Bool -> AlexMode -> Bool -> Bool -> Bool -> Bool -> Int 
 	   -> Maybe String -- ^ The hierarchical package to put the modules
@@ -172,12 +100,10 @@ makeAll m am d ss bs g x p n mu file = do
       2 -> makeXML (lang opts) True cf
       1 -> makeXML (lang opts) False cf
       _ -> return ()
+    writeFileRep "ParseTables.hs" $ ToCNF.generate opts cf
     putStrLn $ "Done!"
    else do putStrLn $ "Failed!"
 	   exitFailure
-
-pkgToDir :: String -> FilePath
-pkgToDir s = replace '.' pathSep s
 
 codeDir :: Options -> FilePath
 codeDir opts = let pref = maybe "" pkgToDir (inPackage opts)
