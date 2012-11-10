@@ -21,9 +21,8 @@
 module CF (
 	    -- Types.
 	    CF,
-            CFG, Rul,
-            CFG'(..), pragmasOfCF, -- ...
-	    Rule, Rul'(..), lookupRule,
+            CFG(..), pragmasOfCF, -- ...
+	    Rule, Rul(..), lookupRule,
 	    Pragma(..),
 	    Exp(..),
 	    Literal,
@@ -108,13 +107,10 @@ import Utils (prParenth,(+++))
 import Data.List (nub, intersperse, partition, sort,sort,group,intercalate)
 import Data.Char
 import AbsBNF (Reg())
-import Data.Bifunctor
 
 -- | A context free grammar consists of a set of rules and some extended 
 -- information (e.g. pragmas, literals, symbols, keywords)
-type CFG = CFG' Cat
 type CF = CFG Fun
-type Rul = Rul' Cat
 
 -- | A rule consists of a function name, a main category and a sequence of
 -- terminals and non-terminals.
@@ -122,22 +118,18 @@ type Rul = Rul' Cat
 type Rule = Rul Fun 
 
 -- | Polymorphic rule type for common type signatures for CF and CFP
-newtype Rul' cat function = Rule { unRule::(function, (cat, [Either cat String])) }
-                deriving (Eq)
+newtype Rul function = Rule { unRule::(function, (Cat, [Either Cat String])) }
+                deriving (Eq,Functor)
 
-instance Bifunctor Rul' where
-  bimap f g (Rule (fun,(c,rhs))) = Rule (g fun, (f c,map (either (Left . f) Right) rhs))
-
-instance (Show function, Show cat) => Show (Rul' function cat) where
-  show (Rule (f,(cat,rhs))) = show f ++ ". " ++ show cat ++ " ::= " ++ intercalate " " (map (either show id) rhs)
+instance (Show function) => Show (Rul function) where
+  show (Rule (f,(cat,rhs))) = show f ++ ". " ++ cat ++ " ::= " ++ intercalate " " (map (either show id) rhs)
 
 -- | Polymorphic CFG type for common type signatures for CF and CFP
-newtype CFG' cat function = CFG { unCFG :: (Exts,[Rul' cat function]) }
+newtype CFG function = CFG { unCFG :: (Exts,[Rul function]) }
+                deriving (Functor)
 
-instance Bifunctor CFG' where
-  bimap f g (CFG (e,rs)) = CFG (e,map (bimap f g) rs)
 
-instance (Show function, Show cat) => Show (CFG' cat function) where  
+instance (Show function) => Show (CFG function) where  
   show (CFG (_,rules)) = unlines $ map show rules
 
 type Exts = ([Pragma],Info)
@@ -198,11 +190,11 @@ data Pragma = CommentS  String -- ^ for single line comments
 	      deriving (Show)
 
 -- | User-defined regular expression tokens
-tokenPragmas :: CFG' c f -> [(String,Reg)]
+tokenPragmas :: CFG f -> [(String,Reg)]
 tokenPragmas cf = [(name,exp) | TokenReg name _ exp <- pragmasOfCF cf]
 
 -- | The names of all user-defined tokens
-tokenNames :: CFG' c f -> [String]
+tokenNames :: CFG f -> [String]
 tokenNames cf = map fst (tokenPragmas cf)
 
 layoutPragmas :: CF -> (Bool,[String],[String])
@@ -248,10 +240,10 @@ firstEntry cf = case allEntryPoints cf of
 		 (x:_) -> x
 		 _     -> firstCat cf
 
-rulesOfCF   :: CFG' c f -> [Rul' c f]
+rulesOfCF   :: CFG f -> [Rul f]
 rulesOfCFP  :: CFP -> [RuleP]
-infoOfCF    :: CFG' c f -> Info
-pragmasOfCF :: CFG' c f -> [Pragma]
+infoOfCF    :: CFG f -> Info
+pragmasOfCF :: CFG f -> [Pragma]
 
 {-# DEPRECATED rulesOfCFP "Use rulesOfCF instead" #-}
 rulesOfCF   = snd . unCFG
@@ -301,11 +293,11 @@ rulesForCat' :: CF -> Cat -> [Rule]
 rulesForCat' cf cat = [normRuleFun r | r <- rulesOfCF cf, valCat r == cat] 
 
 -- | The value category of a rule. (TODO: what is a value category?)
-valCat :: Rul' c f -> c
+valCat :: Rul f -> Cat
 valCat = fst . snd . unRule
 
 -- | Get all categories of a grammar. (No Cat w/o production returned; No duplicates)
-allCats :: Eq c => CFG' c f -> [c]
+allCats :: CFG f -> [Cat]
 allCats = nub . map valCat . rulesOfCF 
 
 -- | Gets all normalized identified Categories
@@ -313,7 +305,7 @@ allCatsIdNorm :: CF -> [Cat]
 allCatsIdNorm = nub . map identCat . map normCat . allCats
 
 -- | Is the category is used on an rhs?
-isUsedCat :: CFG' Cat f -> Cat -> Bool
+isUsedCat :: CFG f -> Cat -> Bool
 isUsedCat cf cat = elem cat [c | r <- (rulesOfCF cf), Left c <- rhsRule r]
 
 -- | Entry points to parser ----
@@ -331,7 +323,7 @@ ruleGroupsInternals :: CF -> [(Cat,[Rule])]
 ruleGroupsInternals cf = [(c, rulesForCat' cf c) | c <- allCats cf]
 
 -- | Get all literals of a grammar. (e.g. String, Double)
-literals :: CFG' c f -> [String]
+literals :: CFG f -> [String]
 literals cf = lits ++ owns
  where 
    (lits,_,_,_) = infoOfCF cf
@@ -340,18 +332,18 @@ literals cf = lits ++ owns
 {-# DEPRECATED symbols, reservedWords "Almost certainly, you should treat symbols and reserved words uniformly, so use cfTokens instead." #-}
 
 -- | Get all symbols
-symbols :: CFG' c f -> [String]
+symbols :: CFG f -> [String]
 symbols cf = syms
  where (_,syms,_,_) = infoOfCF cf
 
 -- | Get the keywords of a grammar. 
-reservedWords :: CFG' c f -> [String]
+reservedWords :: CFG f -> [String]
 reservedWords cf = sort keywords
  where (_,_,keywords,_) = infoOfCF cf
 
 -- | Canonical, numbered list of symbols and reserved words. (These do
 -- not end up in the AST.)
-cfTokens :: CFG' c f -> [(String,Int)]
+cfTokens :: CFG f -> [(String,Int)]
 cfTokens cf = zip (sort (symbols cf ++ reservedWords cf)) [1..]
 -- NOTE: some backends (incl. Haskell) assume that this list is sorted.
 
@@ -367,7 +359,7 @@ comments cf = case commentPragmas (pragmasOfCF cf) of
 		      [s | CommentS s <- xs])
 
 -- | The function name of a rule.
-funRule :: Rul' c f -> f
+funRule :: Rul f -> f
 funRule = fst . unRule
 
 -- | The list of Terminals/NonTerminals in the right-hand-side of a rule.
@@ -377,7 +369,7 @@ rhsRule = snd . snd . unRule
 -- built-in categories (corresponds to lexer)
 
 -- | Whether the grammar uses the predefined Ident type.
-hasIdent :: CFG' Cat f -> Bool
+hasIdent :: CFG f -> Bool
 hasIdent cf = isUsedCat cf "Ident"
 
 
@@ -586,7 +578,7 @@ checkRule cf r@(Rule((f,_),(cat,rhs)))
                        || isCoercion f || isNilFun f || isOneFun f || isConsFun f)
 
 -- | Does the category have a position stored in AST?
-isPositionCat :: CFG' c f -> Cat -> Bool
+isPositionCat :: CFG f -> Cat -> Bool
 isPositionCat cf cat =  or [b | TokenReg name b _ <- pragmasOfCF cf, name == cat]
 
 

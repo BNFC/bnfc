@@ -221,7 +221,6 @@ printUsage = do
   putStrLn "  -wcf           Add support for Windows Communication Foundation, by"
   putStrLn "                 marking abstract syntax classes as DataContracts"
   exitFailure
---		      putStrLn "          : -gf        write GF files"
 
 
 checkUsage _ [] = True

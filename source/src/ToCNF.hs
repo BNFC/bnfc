@@ -44,7 +44,9 @@ import Data.Function (on)
 import Data.Char (isAlphaNum,ord)
 import Data.String
 import Text.PrettyPrint.HughesPJ hiding (first)
-import Data.Bifunctor
+
+(f *** g) (a,b) = (f a, g b)
+second g = id *** g
 
 onRules f (CFG (exts,rules)) = CFG (exts,f rules)
 
@@ -54,7 +56,7 @@ toCNF cf0 = (cf1,cf2,units)
         units = unitSet . snd . unCFG $ cf2
     
 funToExp :: CFG Fun -> CFG Exp
-funToExp = second toExp
+funToExp = fmap toExp
 
 delInternal = filter (not . isInternalRhs . rhsRule)
   where isInternalRhs (Left c:_) = c == internalCat
@@ -68,14 +70,14 @@ allocateCatName = do
   put (1+n)
   return $ show n
 
-toBin :: [Rul' Cat Exp] -> [Rul' Cat Exp]
+toBin :: [Rul Exp] -> [Rul Exp]
 toBin cf = fst $ runState (concat <$> forM cf toBinRul) 0
 
 catName = either id id
 
 -- | Convert a rule into a number of equivalent rules with at most 2
 -- symbols on the rhs
-toBinRul :: Rul' Cat  Exp -> State Int [Rul' Cat Exp]
+toBinRul :: Rul  Exp -> State Int [Rul Exp]
 toBinRul (Rule (f,(cat,rhs))) | length rhs > 2 = do
   cat' <- allocateCatName
   r' <- toBinRul $ Rule (f,(cat',p))
@@ -102,16 +104,16 @@ x ∪ y = nub (x ++ y)
                              
 lk cat nullset = maybe [] id (M.lookup cat nullset)
         
-nullStep :: Ord cat => [Rul' cat Exp] -> Nullable cat -> Nullable cat
+nullStep :: [Rul Exp] -> Nullable Cat -> Nullable Cat
 nullStep rs nullset = M.unionsWith (∪) (map (uncurry M.singleton . nullRule nullset) rs)
   
-nullRule :: Ord cat => Nullable cat -> Rul' cat Exp -> (cat,[Exp])
+nullRule :: Nullable Cat -> Rul Exp -> (Cat,[Exp])
 nullRule nullset (Rule (f,(c,rhs))) = (c,map (\xs -> (appMany f xs)) (cross (map nulls rhs)))
     where nulls (Right tok) = []
           nulls (Left cat) = lk cat nullset
 
 
-nullable :: Ord cat => Nullable cat -> Rul' cat Exp -> Bool
+nullable :: Nullable Cat -> Rul Exp -> Bool
 nullable s = not . null . snd . nullRule s
 
 fixk :: Eq a => (a -> a) -> a -> Either String a
@@ -122,14 +124,14 @@ fixn 0 f x = Left "Could not find fixpoint"
 fixn n f x = if x' == x then Right x else fixn (n-1) f x'
   where x' = f x
         
-nullSet :: Ord cat => [Rul' cat Exp] -> Nullable cat   
+nullSet :: [Rul Exp] -> Nullable Cat   
 nullSet rs = case fixk (nullStep rs) M.empty of
   Left x -> error "Could not find fixpoint of nullable set"
   Right x -> x
 
 
 -- | Replace nullable occurences by nothing, and adapt the function consequently.
-delNullable :: (Show cat, Ord cat) => Nullable cat -> Rul' cat Exp -> [Rul' cat Exp]
+delNullable :: Nullable Cat -> Rul Exp -> [Rul Exp]
 delNullable nullset r@(Rule (f,(cat,rhs))) = case rhs of
   [] -> []
   [_] -> [r] 
@@ -140,7 +142,7 @@ delNullable nullset r@(Rule (f,(cat,rhs))) = case rhs of
         lk' (Left cat) = lk cat nullset
         
         
-delNull :: (Show cat, Ord cat) => [Rul' cat Exp] -> [Rul' cat Exp]
+delNull :: [Rul Exp] -> [Rul Exp]
 delNull rs = concatMap (delNullable (nullSet rs)) rs
 
 
@@ -151,7 +153,7 @@ type UnitRel cat = M.Map (Either cat String) [(Exp,cat)]
 
 -- (c,(f,c')) ∈ unitSet   ⇒  f : c → c'
 
-unitSetStep :: Ord cat => [Rul' cat Exp] -> UnitRel cat -> UnitRel cat
+unitSetStep :: [Rul Exp] -> UnitRel Cat -> UnitRel Cat
 unitSetStep rs unitSet = M.unionsWith (∪) (map unitRule rs)
  where unitRule (Rule (f,(c,[r]))) = case r of 
          Right tok -> M.singleton (Right tok) [(f,c)]
@@ -191,18 +193,18 @@ header opts
 
 punctuate' p = cat . punctuate p
 
-genCatTags :: CFG' Cat Exp -> Doc
+genCatTags :: CFG Exp -> Doc
 genCatTags cf = "data CATEGORY = " <> punctuate' "|" (map catTag (allSyms cf)) $$
                 "  deriving (Eq,Ord,Show)"
 
 
-genCombTable :: UnitRel Cat -> [Rul' Cat Exp] -> Doc
+genCombTable :: UnitRel Cat -> [Rul Exp] -> Doc
 genCombTable units rs = 
      "combine :: CATEGORY -> CATEGORY -> [(CATEGORY, Any -> Any -> Any)]"
   $$ genCombine units rs
   $$ "combine _ _ = []"
 
-allSyms :: CFG' Cat Exp -> [Either String String]
+allSyms :: CFG Exp -> [Either String String]
 allSyms cf = map Left (allCats cf  ++ literals cf) ++ map (Right . fst) (cfTokens cf)
         
 
@@ -218,12 +220,12 @@ group' [] = []
 group' ((a,bs):xs) = (a,bs ++ concatMap snd ys) : group' zs
   where (ys,zs) = span (\x -> fst x == a) xs
 
-genCombine :: UnitRel Cat -> [Rul' Cat Exp] -> Doc
+genCombine :: UnitRel Cat -> [Rul Exp] -> Doc
 genCombine units rs = vcat $ map genEntry $ group' $ sortBy (compare `on` fst) $ map (alt units) rs
-  where genEntry ((r1,r2),fs) = "combine " <> catTag r1 <> " " <> catTag r2 <> " = " <> ppList (map (ppPair . bimap (catTag . Left) (mkLam . prettyExp . unsafeCoerce')) fs)
+  where genEntry ((r1,r2),fs) = "combine " <> catTag r1 <> " " <> catTag r2 <> " = " <> ppList (map (ppPair . ((catTag . Left) *** (mkLam . prettyExp . unsafeCoerce'))) fs)
         mkLam body = "\\x y -> " <> body
 
-alt :: UnitRel Cat -> Rul' Cat Exp -> ((RHSEl,RHSEl),[(Cat,Exp)])
+alt :: UnitRel Cat -> Rul Exp -> ((RHSEl,RHSEl),[(Cat,Exp)])
 alt units (Rule (f,(c,[r1,r2]))) = ((r1,r2),initial:others)
   where initial = (c, f `appMany` args)
         others = [(c', f' `app'` (f `appMany` args)) | (f',c') <- lk (Left c) units]
@@ -237,7 +239,7 @@ catTag :: Either String String -> Doc
 catTag (Left c) = "CAT_" <> text (concatMap escape c)
 catTag (Right t) = "TOK_" <> text (concatMap escape t)
 
-genTokTable :: UnitRel Cat -> CFG' Cat Exp -> Doc
+genTokTable :: UnitRel Cat -> CFG Exp -> Doc
 genTokTable units cf = "tokens :: Posn -> Tok -> [(CATEGORY,Any)]" $$
                        vcat (map (genSpecEntry cf units) (tokInfo cf)) $$
                        vcat (map (genTokEntry units) (cfTokens cf))

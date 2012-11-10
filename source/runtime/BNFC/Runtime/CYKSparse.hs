@@ -1,4 +1,4 @@
-module CYKSparse where
+module BNFC.Runtime.CYKSparse where
 
 import Data.Array.IArray
 import Data.List

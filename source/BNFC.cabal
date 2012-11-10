@@ -23,8 +23,14 @@ Description:
   a Latex file containing a readable specification of the language.
 Extra-source-files: src/BNF.cf 
 
+Library 
+  hs-source-dirs: runtime            
+
+  exposed-modules: 
+   BNFC.Runtime.CYKSparse
+
 Executable bnfc
-  Build-Depends: base>=4.4 && <5, mtl, directory, array, process, containers, pretty==1.1.*, bifunctors==3.0.*
+  Build-Depends: base>=4.4 && <5, mtl, directory, array, process, containers, pretty==1.1.* 
   Main-is: Main.hs
   HS-source-dirs: src src/formats
     src/formats/haskell2
