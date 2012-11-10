@@ -38,6 +38,7 @@ import OCamlTop
 import FSharpTop
 import CFtoXML
 import Utils
+import Options
 
 import MultiView (preprocessMCF, mkTestMulti, mkMakefileMulti)
 
@@ -87,7 +88,6 @@ mkOne xx = do
       let make = elem "-m" args
       let multi = elem "-multi" args
       let c = elem "-c" args
-      let cnf = elem "-cnf" args 
       let cpp_no_stl = elem "-cpp_no_stl" args 
       let cpp_stl = elem "-cpp_stl" args || elem "-cpp" args
       let csharp = elem "-csharp" args
@@ -121,6 +121,18 @@ mkOne xx = do
 			 _ -> do
 			      putStrLn "-p option requires an argument"
 			      printUsage
+      let options = Options {make = make, 
+                             alexMode = alexMode, 
+                             inDir = inDir, 
+                             shareStrings = alex2StringSharing, 
+                             byteStrings = alex2ByteString,
+                             glr = if glr then GLR else Standard,
+                             xml = xml,
+                             inPackage = inPackage,
+                             lang = name,
+                             multi = multi,
+                             cnf = elem "-cnf" args
+                             }
       if checkUsage False [c, cpp_no_stl, cpp_stl, csharp, java14, haskell, profile] then
        do
        if (isCF (reverse file)) then 
@@ -133,11 +145,11 @@ mkOne xx = do
            _ | csharp -> makeCSharp make vsfiles wcfSupport inPackage file
            _ | java14 -> makeJava make name file
            _ | java15 -> makeJava15 make inPackage name file
-           _ | ocaml  -> makeOCaml make alex1 inDir alex2StringSharing glr xml inPackage name file
-           _ | fsharp -> makeFSharp make alex1 inDir alex2StringSharing glr xml inPackage name file
+           _ | ocaml  -> makeOCaml options file
+           _ | fsharp -> makeFSharp options file
            _ | profile-> makeAllProfile make alex1 False xml name file
-           _ | haskellGADT -> makeAllGADT make alexMode inDir alex2StringSharing alex2ByteString glr xml inPackage name file
-           _  -> makeAll make alexMode inDir alex2StringSharing alex2ByteString glr xml inPackage name multi file           
+           _ | haskellGADT -> makeAllGADT options file
+           _  -> makeAll options file
          if (make && multi) 
            then (system ("cp Makefile Makefile_" ++ name)) >> return ()  
            else return ()

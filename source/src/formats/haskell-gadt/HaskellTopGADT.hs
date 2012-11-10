@@ -23,6 +23,7 @@ module HaskellTopGADT (makeAllGADT) where
 
 
 -- import Utils
+import Options
 import HsOpts
 import CF
 import CFtoHappy
@@ -48,15 +49,9 @@ import System.Exit (exitFailure)
 import Control.Monad(when)
 
 
-makeAllGADT :: Bool -> AlexMode -> Bool -> Bool -> Bool -> Bool -> Int 
-	   -> Maybe String -- ^ The hierarchical package to put the modules
-	                   --   in, or Nothing.
-	   -> String -> FilePath -> IO ()
-makeAllGADT m am d ss bs g x p n file = do
-  let opts = Options { make = m, alexMode = am, inDir = d, shareStrings = ss, byteStrings = bs,
- 		       glr = if g then GLR else Standard, xml = x, alex1 = am == Alex1, multi = False,
- 		       inPackage = p, lang = n }        
-      absMod = absFileM opts
+makeAllGADT :: Options -> FilePath -> IO ()
+makeAllGADT opts file = do
+  let absMod = absFileM opts
       composOpMod = composOpFileM opts
       lexMod = alexFileM opts
       parMod = happyFileM opts

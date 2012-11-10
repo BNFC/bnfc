@@ -22,6 +22,7 @@ module HaskellTop (makeAll, AlexMode(..)) where
 
 
 -- import Utils
+import Options
 import CF
 import CFtoHappy
 import CFtoAlex
@@ -52,15 +53,9 @@ import Control.Monad(when)
 
 
 
-makeAll :: Bool -> AlexMode -> Bool -> Bool -> Bool -> Bool -> Int 
-	   -> Maybe String -- ^ The hierarchical package to put the modules
-	                   --   in, or Nothing.
-	   -> String -> Bool -> FilePath -> IO ()
-makeAll m am d ss bs g x p n mu file = do
-  let opts = Options { make = m, alex1 = am == Alex1, alexMode = am, inDir = d, shareStrings = ss, byteStrings=bs,
- 		       glr = if g then GLR else Standard, xml = x, 
- 		       inPackage = p, lang = n, multi = mu}
-      absMod = absFileM opts
+makeAll :: Options -> FilePath -> IO ()
+makeAll opts file = do
+  let absMod = absFileM opts
       lexMod = alexFileM opts
       parMod = happyFileM opts
       prMod  = printerFileM opts

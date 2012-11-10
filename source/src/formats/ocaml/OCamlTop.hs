@@ -34,6 +34,7 @@ import CFtoOCamlTest
 import CFtoXML
 import GetCF
 import Utils
+import Options
 
 import Data.Char
 import Data.Maybe (fromMaybe,maybe)
@@ -88,27 +89,12 @@ utilFile       = mkFile noLang   "BNFC_Util" "ml"
 utilFileM      = mkMod  noLang   "BNFC_Util"
 xmlFileM      = mkMod  withLang "XML"
 
-data Options = Options 
-    { 
-     make :: Bool,
-     alex1 :: Bool,
-     inDir :: Bool,
-     shareStrings :: Bool,
-     xml :: Int,
-     inPackage :: Maybe String,
-     lang :: String
-    }
+type Options = SharedOptions
 
 -- FIXME: we probably don't need all these arguments
-makeOCaml :: Bool -> Bool -> Bool -> Bool -> Bool -> Int 
-           -> Maybe String -- ^ The hierarchical package to put the modules
-                           --   in, or Nothing.
-           -> String -> FilePath -> IO ()
-makeOCaml m a1 d ss g x p n file = do
-  let opts = Options { make = m, alex1 = a1, inDir = d, shareStrings = ss,
-                       xml = x, inPackage = p, lang = n }
-
-      absMod = absFileM opts
+makeOCaml :: Options -> FilePath -> IO ()
+makeOCaml opts file = do
+  let absMod = absFileM opts
       lexMod = ocamllexFileM opts
       parMod = ocamlyaccFileM opts
       prMod  = printerFileM opts

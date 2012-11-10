@@ -1,30 +1,11 @@
-module HsOpts where
+module HsOpts  where
+
 import Utils
+import Options
 
--- Probably there should be a global (inter-format) options record.
+type Options = SharedOptions
 
-data AlexMode = Alex1 | Alex2 | Alex3 deriving Eq
-
-data Options = Options 
-    { 
-     make :: Bool,
-     alex1 :: Bool,
-     alexMode :: AlexMode,
-     inDir :: Bool,
-     shareStrings :: Bool,
-     byteStrings :: Bool,
-     glr :: HappyMode,
-     xml :: Int,
-     inPackage :: Maybe String,
-     lang :: String,
-     multi :: Bool
-    }
-    
-    
-
-data HappyMode = Standard | GLR deriving Eq
-
-
+alex1 opts = alexMode opts == Alex1    
 
 absFile, absFileM, alexFile, alexFileM, dviFile,
  composOpFile, composOpFileM,
