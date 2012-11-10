@@ -156,14 +156,14 @@ conv (Ok (Abs.Grammar defs)) = map Left $ concatMap transDef defs
 transDef :: Abs.Def -> [Either Pragma RuleP]
 transDef x = case x of
  Abs.Rule label cat items -> 
-   [Right $ Rule (transLabel label,(transCat cat,map transItem items))]
+   [Right $ Rule (transLabel label) (transCat cat) (map transItem items)]
  Abs.Comment str               -> [Left $ CommentS str]
  Abs.Comments str0 str         -> [Left $ CommentM (str0,str)]
  Abs.Token ident reg           -> [Left $ TokenReg (transIdent ident) False reg]
  Abs.PosToken ident reg        -> [Left $ TokenReg (transIdent ident) True reg]
  Abs.Entryp idents             -> [Left $ EntryPoints (map transIdent idents)]
  Abs.Internal label cat items  -> 
-   [Right $ Rule (transLabel label,(transCat cat,(Left "#":(map transItem items))))]
+   [Right $ Rule (transLabel label) (transCat cat) (Left "#":(map transItem items))]
  Abs.Separator size ident str -> map  (Right . cf2cfpRule) $ separatorRules size ident str
  Abs.Terminator size ident str -> map  (Right . cf2cfpRule) $ terminatorRules size ident str
  Abs.Coercions ident int -> map  (Right . cf2cfpRule) $ coercionRules ident int
@@ -175,38 +175,38 @@ transDef x = case x of
 
 separatorRules :: Abs.MinimumSize -> Abs.Cat -> String -> [Rule]
 separatorRules size c s = if null s then terminatorRules size c s else ifEmpty [
-  Rule ("(:[])", (cs,[Left c'])),
-  Rule ("(:)",   (cs,[Left c', Right s, Left cs]))
+  Rule "(:[])" cs [Left c'],
+  Rule "(:)"   cs [Left c', Right s, Left cs]
   ]
  where 
    c' = transCat c
    cs = "[" ++ c' ++ "]"
    ifEmpty rs = if (size == Abs.MNonempty)
                 then rs
-                else (Rule ("[]", (cs,[])) : rs)
+                else Rule "[]" cs [] : rs
 
 terminatorRules :: Abs.MinimumSize -> Abs.Cat -> String -> [Rule]
 terminatorRules size c s = [
   ifEmpty,
-  Rule ("(:)",   (cs,Left c' : s' [Left cs]))
+  Rule "(:)" cs (Left c' : s' [Left cs])
   ]
  where 
    c' = transCat c
    cs = "[" ++ c' ++ "]"
    s' its = if null s then its else (Right s : its)
    ifEmpty = if (size == Abs.MNonempty) 
-                then Rule ("(:[])",(cs,[Left c'] ++ if null s then [] else [Right s]))
-                else Rule ("[]",   (cs,[]))
+                then Rule "(:[])" cs ([Left c'] ++ if null s then [] else [Right s])
+                else Rule "[]" cs []
 
 coercionRules :: Abs.Ident -> Integer -> [Rule]
 coercionRules (Abs.Ident c) n = 
-   Rule ("_", (c,               [Left (c ++ "1")])) :
-  [Rule ("_", (c ++ show (i-1), [Left (c ++ show i)])) | i <- [2..n]] ++
-  [Rule ("_", (c ++ show n,     [Right "(", Left c, Right ")"]))]
+   Rule "_" c                  [Left (c ++ "1")] :
+  [(Rule "_" (c ++ show (i-1)) [Left (c ++ show i)]) | i <- [2..n]] ++
+  [(Rule "_" (c ++ show n)     [Right "(", Left c, Right ")"])]
 
 ebnfRules :: Abs.Ident -> [Abs.RHS] -> [Rule]
 ebnfRules (Abs.Ident c) rhss = 
-  [Rule (mkFun k c its, (c, map transItem its))
+  [Rule (mkFun k c its) c (map transItem its)
      | (k, Abs.RHS its) <- zip [1 :: Int ..] rhss]
  where
    mkFun k c i = case i of

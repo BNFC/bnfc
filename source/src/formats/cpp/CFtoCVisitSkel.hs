@@ -107,7 +107,7 @@ prDataH (cat, rules) =
 
 --Visit functions for a rule.
 prRuleH :: Rule -> String
-prRuleH (Rule (fun, (c, cats))) | not (isCoercion fun) = concat
+prRuleH (Rule fun c cats) | not (isCoercion fun) = concat
   ["  void visit", fun, "(", fun, "* ", fnm, ");\n"]
    where
     fnm = map toLower fun
@@ -203,7 +203,7 @@ prData user (cat, rules) =
 
 --Visits all the instance variables of a category.
 prRule :: [UserDef] -> Rule -> String
-prRule user (Rule (fun, (c, cats))) | not (isCoercion fun) = unlines
+prRule user (Rule fun c cats) | not (isCoercion fun) = unlines
   [
    "void Skeleton::visit" ++ fun ++ "(" ++ fun ++ "*" +++ fnm ++ ")",
    "{",

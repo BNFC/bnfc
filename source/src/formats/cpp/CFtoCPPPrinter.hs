@@ -171,7 +171,7 @@ prDataH (cat, rules) =
 
 --Prints all the methods to visit a rule.
 prRuleH :: Rule -> String
-prRuleH (Rule (fun, (c, cats))) | isProperLabel fun = concat
+prRuleH (Rule fun c cats) | isProperLabel fun = concat
   ["  void visit", fun, "(", fun, " *p);\n"]
 prRuleH _ = ""
 
@@ -354,7 +354,7 @@ prPrintData user (cat, rules) =
     
 --Pretty Printer methods for a rule.
 prPrintRule :: [UserDef] -> Rule -> String
-prPrintRule user r@(Rule (fun, (c, cats))) | isProperLabel fun = unlines
+prPrintRule user r@(Rule fun c cats) | isProperLabel fun = unlines
   [
    "void PrintAbsyn::visit" ++ fun ++ "(" ++ fun ++ "*" +++ fnm ++ ")",
    "{",
@@ -436,7 +436,7 @@ prShowData user (cat, rules) =
 
 --This prints all the methods for Abstract Syntax tree rules.
 prShowRule :: [UserDef] -> Rule -> String
-prShowRule user (Rule (fun, (c, cats))) | isProperLabel fun = concat
+prShowRule user (Rule fun c cats) | isProperLabel fun = concat
   [
    "void ShowAbsyn::visit" ++ fun ++ "(" ++ fun ++ "*" +++ fnm ++ ")\n",
    "{\n",
@@ -518,25 +518,6 @@ funName v =
 setI :: Int -> String
 setI n = "_i_ = " ++ (show n) ++ "; "
 
---Gets the separator for a list.
-getCons :: [Rule] -> String
-getCons (Rule (f, (c, cats)):rs) =
- if isConsFun f
-   then seper cats
-   else getCons rs
- where
-    seper [] = []
-    seper ((Right x):xs) = x
-    seper ((Left x):xs) = seper xs
-
---Checks if the list has a non-empty rule.
-hasOneFunc :: [Rule] -> Bool
-hasOneFunc [] = False
-hasOneFunc (Rule (f, (c, cats)):rs) =
- if (isOneFun f)
-    then True
-    else hasOneFunc rs
-    
 --Helper function that escapes characters in strings
 escapeChars :: String -> String
 escapeChars [] = []

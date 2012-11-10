@@ -78,10 +78,10 @@ catName = either id id
 -- | Convert a rule into a number of equivalent rules with at most 2
 -- symbols on the rhs
 toBinRul :: Rul  Exp -> State Int [Rul Exp]
-toBinRul (Rule (f,(cat,rhs))) | length rhs > 2 = do
+toBinRul (Rule f cat rhs) | length rhs > 2 = do
   cat' <- allocateCatName
-  r' <- toBinRul $ Rule (f,(cat',p))
-  return $ Rule (Con "($)", (cat, [Left cat',l])) 
+  r' <- toBinRul $ Rule f cat' p
+  return $ Rule (Con "($)") cat [Left cat',l]
          : r'
   where l = last rhs
         p = init rhs
@@ -108,7 +108,7 @@ nullStep :: [Rul Exp] -> Nullable Cat -> Nullable Cat
 nullStep rs nullset = M.unionsWith (∪) (map (uncurry M.singleton . nullRule nullset) rs)
   
 nullRule :: Nullable Cat -> Rul Exp -> (Cat,[Exp])
-nullRule nullset (Rule (f,(c,rhs))) = (c,map (\xs -> (appMany f xs)) (cross (map nulls rhs)))
+nullRule nullset (Rule f c rhs) = (c,map (\xs -> (appMany f xs)) (cross (map nulls rhs)))
     where nulls (Right tok) = []
           nulls (Left cat) = lk cat nullset
 
@@ -132,11 +132,11 @@ nullSet rs = case fixk (nullStep rs) M.empty of
 
 -- | Replace nullable occurences by nothing, and adapt the function consequently.
 delNullable :: Nullable Cat -> Rul Exp -> [Rul Exp]
-delNullable nullset r@(Rule (f,(cat,rhs))) = case rhs of
+delNullable nullset r@(Rule f cat rhs) = case rhs of
   [] -> []
   [_] -> [r] 
-  [r1,r2] -> [r] ++ [Rule (app'  f x,(cat,[r2])) | x <- lk' r1]
-                 ++ [Rule (app2 (isCat r1) f x,(cat,[r1])) | x <- lk' r2]
+  [r1,r2] -> [r] ++ [Rule (app'  f x) cat [r2] | x <- lk' r1]
+                 ++ [Rule (app2 (isCat r1) f x) cat [r1] | x <- lk' r2]
   _ -> error $ "Panic:" ++ show r ++ "should have at most two elements."
   where lk' (Right tok) = []
         lk' (Left cat) = lk cat nullset
@@ -155,7 +155,7 @@ type UnitRel cat = M.Map (Either cat String) [(Exp,cat)]
 
 unitSetStep :: [Rul Exp] -> UnitRel Cat -> UnitRel Cat
 unitSetStep rs unitSet = M.unionsWith (∪) (map unitRule rs)
- where unitRule (Rule (f,(c,[r]))) = case r of 
+ where unitRule (Rule f c [r]) = case r of 
          Right tok -> M.singleton (Right tok) [(f,c)]
          Left cat -> M.singleton (Left cat) $ (f,c) : [(g `after` f,c') | (g,c') <- lk (Left c) unitSet]
        unitRule _ = M.empty
@@ -164,7 +164,7 @@ unitSet rs = case fixk (unitSetStep rs) M.empty of
   Left _ -> error "Could not find fixpoint of unit set"
   Right x -> x
 
-isUnitRule (Rule (f,(c,[r]))) = True
+isUnitRule (Rule f c [r]) = True
 isUnitRule _ = False
 
 -------------------------
@@ -226,7 +226,7 @@ genCombine units rs = vcat $ map genEntry $ group' $ sortBy (compare `on` fst) $
         mkLam body = "\\x y -> " <> body
 
 alt :: UnitRel Cat -> Rul Exp -> ((RHSEl,RHSEl),[(Cat,Exp)])
-alt units (Rule (f,(c,[r1,r2]))) = ((r1,r2),initial:others)
+alt units (Rule f c [r1,r2]) = ((r1,r2),initial:others)
   where initial = (c, f `appMany` args)
         others = [(c', f' `app'` (f `appMany` args)) | (f',c') <- lk (Left c) units]
         args = map (unsafeCoerce' . Con) $ ["x"|isCat r1]++["y"|isCat r2]
