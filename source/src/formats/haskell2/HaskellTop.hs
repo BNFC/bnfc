@@ -86,7 +86,7 @@ makeAll opts file = do
     writeFileRep (txtFile opts)      $ cfToTxt (lang opts) cf
     writeFileRep (templateFile opts) $ cf2Template (templateFileM opts) absMod errMod cf
     writeFileRep (printerFile opts)  $ cf2Printer (byteStrings opts) prMod absMod cf
-    when (hasLayout cf) $ writeFileRep (layoutFile opts) $ cf2Layout (alexMode opts == Alex1) (inDir opts) layMod lexMod cf
+    when (hasLayout cf) $ writeFileRep (layoutFile opts) $ cf2Layout (alex1 opts) (inDir opts) layMod lexMod cf
     writeFileRep (tFile opts)        $ testfile opts cf
     writeFileRep (errFile opts)      $ errM errMod cf
     when (shareStrings opts) $ writeFileRep (shareFile opts)    $ sharedString shareMod (byteStrings opts) cf
@@ -95,7 +95,7 @@ makeAll opts file = do
       2 -> makeXML (lang opts) True cf
       1 -> makeXML (lang opts) False cf
       _ -> return ()
-    writeFileRep "ParseTables.hs" $ ToCNF.generate opts cf
+    writeFileRep (cnfTablesFile opts) $ ToCNF.generate opts cf
     putStrLn $ "Done!"
    else do putStrLn $ "Failed!"
 	   exitFailure

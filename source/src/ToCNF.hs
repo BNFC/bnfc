@@ -182,7 +182,7 @@ generate opts cf0 = render $ vcat [header opts
 
 header opts
        = vcat ["{-# LANGUAGE MagicHash #-}"
-              ,"module ParseTables where"
+              ,"module " <> text (cnfTablesFileM opts) <> " where"
               ,"import GHC.Prim"
               ,"import GHC.Exts"
               ,"import " <> text (absFileM  opts)

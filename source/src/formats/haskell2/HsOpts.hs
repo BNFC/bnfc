@@ -39,9 +39,10 @@ errFileM      = mkMod  noLang   "ErrM"
 shareFile     = mkFile noLang   "SharedString" "hs"
 shareFileM    = mkMod  noLang   "SharedString"
 layoutFileM   = mkMod  withLang "Layout"
-xmlFileM      = mkMod  withLang "XML"
 layoutFile    = mkFile withLang "Layout" "hs"
-
+cnfTablesFile = mkFile withLang "CnfTables" "hs"
+cnfTablesFileM= mkMod  withLang "CnfTables" 
+xmlFileM      = mkMod  withLang "XML"
 composOpFile  = mkFile noLang   "ComposOp" "hs"
 composOpFileM = mkMod noLang    "ComposOp"
 
