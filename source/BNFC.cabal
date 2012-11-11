@@ -27,7 +27,9 @@ Library
   hs-source-dirs: runtime            
 
   exposed-modules: 
-   BNFC.Runtime.CYKSparse
+   Algebra.RingUtils
+   Data.Matrix.Valiant
+--    BNFC.Runtime.CYKSparse
 
 Executable bnfc
   Build-Depends: base>=4.4 && <5, mtl, directory, array, process, containers, pretty==1.1.* 
