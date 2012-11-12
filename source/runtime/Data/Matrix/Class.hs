@@ -4,7 +4,7 @@ module Data.Matrix.Class where
 
 import Prelude ()
 import Algebra.RingUtils
-import Control.Applicative
+import Control.Applicative hiding ((<|>))
 
 (f *** g) (x,y) = (f x,g y)
 
@@ -12,6 +12,8 @@ data Dimension
     = XD  
     | YD
       deriving (Eq,Show)
+
+quad a b c d = (a <|> b) <-> (c <|> d)
 
 
 nextDim XD = YD

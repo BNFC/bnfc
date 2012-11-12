@@ -31,10 +31,13 @@ instance AbelianGroupZ Int where
     isZero x = x == 0
 
 class AbelianGroupZ a => Ring a where
-    (*) :: a -> a -> a
+    (*) :: a -> a -> a    
 
-class AbelianGroupZ a => RingP a where
+class (AbelianGroupZ a, Ring a) => RingP a where
     mul :: Bool -> a -> a -> Pair a
+    mul _ x y = pure $ x * y
+
+mulDefault x y = leftOf (mul False x y)
 
 onlyLeft  x = x  :/: []
 onlyRight x = [] :/: x

@@ -181,14 +181,18 @@ generate opts cf0 = render $ vcat [header opts
   where (cf1,cf@(CFG (exts,rules)),units) = toCNF cf0
 
 header opts
-       = vcat ["{-# LANGUAGE MagicHash #-}"
+       = vcat ["{-# LANGUAGE MagicHash, FlexibleInstances #-}"
               ,"module " <> text (cnfTablesFileM opts) <> " where"
               ,"import GHC.Prim"
               ,"import GHC.Exts"
+              ,"import Algebra.RingUtils"
+              ,"import Parsing.Chart ()"
               ,"import " <> text (absFileM  opts)
               ,"import " <> text (alexFileM opts)
               ,"readInteger :: String -> Integer"
               ,"readInteger = read"
+              ,"instance Ring [(CATEGORY,Any)] where"
+              ,"  a * b = [(z,f tx ty) | (x,tx) <- a, (y,ty) <- b, (z,f) <- combine x y]"
               ]
 
 punctuate' p = cat . punctuate p

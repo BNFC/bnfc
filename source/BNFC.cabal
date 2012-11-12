@@ -29,7 +29,7 @@ Library
   exposed-modules: 
    Algebra.RingUtils
    Data.Matrix.Valiant
---    BNFC.Runtime.CYKSparse
+   Parsing.Chart
 
 Executable bnfc
   Build-Depends: base>=4.4 && <5, mtl, directory, array, process, containers, pretty==1.1.* 

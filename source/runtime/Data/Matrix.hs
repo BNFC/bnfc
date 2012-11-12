@@ -1,6 +1,6 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving, DeriveFunctor, GADTs, RankNTypes #-}
 
-module Matrix (
+module Data.Matrix (
   Bounding (..),
   MT(..),
   mdepth,
@@ -8,14 +8,14 @@ module Matrix (
 
 import Control.Applicative
 import Prelude ()
-import Tree2
-import Matrices
-import Zero
+import Data.Matrix.Tree
+import Data.Matrix.Class
+import Algebra.RingUtils
 
 
 
 newtype MT a = MT (Bounding (PTree a))
-  deriving (Eq,AbelianGroupZ,AbelianGroup,Show,RingP,Functor)               
+  deriving (Eq,AbelianGroupZ,AbelianGroup,Show,Ring,RingP,Functor)               
 
 mdepth (MT (Bounding _ x)) = depth x
 
