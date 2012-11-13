@@ -19,7 +19,7 @@
 
 {-# LANGUAGE OverloadedStrings #-}
 
-module ToCNF (generate) where
+module ToCNF (generate, genTestFile) where
 
 {-
 
@@ -270,9 +270,81 @@ escape '[' = ""
 escape ']' = "_List"
 escape c = show $ ord c
 
-                
+------------------------           
+-- Test file generation
+
+
+genTestFile opts = render $ vcat
+    ["{-# LANGUAGE MagicHash #-}"
+    ,"module Main where"
+    ,""
+    ,"import System.IO ( stdin, hGetContents )"
+    ,"import System.Environment ( getArgs, getProgName )"
+    ,""
+    ,"import LexBNF"
+    ,"import SkelBNF"
+    ,"import PrintBNF"
+    ,"import AbsBNF"
+    ,"import ParseTables"
+    ,"import CYKSparse"
+    ,"import Data.Bifunctor"
+    ,"import GHC.Exts"
+    ,"import Control.Monad"
+    ,"import ErrM"
+    ,""
+    ,"myLLexer = LexBNF.tokens"
+    ,""
+    ,"type Verbosity = Int"
+    ,""
+    ,"putStrV :: Verbosity -> String -> IO ()"
+    ,"putStrV v s = if v > 1 then putStrLn s else return ()"
+    ,""
+    ,"runFile v p f = putStrLn f >> readFile f >>= run v p"
+    ,""
+    ,"run v p s = case startingAt 0 tree of"
+    ,"    (sz,x):_ -> do"
+    ,"      putStrLn $ \"could parse up to \" ++ show sz      "
+    ,"      forM x $ \\(cat,ast) -> do"
+    ,"        print cat        "
+    ,"        case cat of"
+    ,"          CAT_LGrammar -> do "
+    ,"            putStrLn $ printTree ((unsafeCoerce# ast)::LGrammar)"
+    ,"            return ()"
+    ,"          _ -> return ()"
+    ,"      return ()"
+    ,"    _ -> error \"no parse\""
+    ,"   where ts = myLLexer s"
+    ,"         tree = p ts "
+    ,"         "
+    ,""
+    ,"showTree :: (Show a, Print a) => Int -> a -> IO ()"
+    ,"showTree v tree"
+    ," = do"
+    ,"      putStrV v $ \"[Abstract Syntax]\" ++ show tree"
+    ,"      putStrV v $ \"[Linearized tree]\" ++ printTree tree"
+    ,""
+    ,"unzipTok (PT posn tok) = (posn,tok)"
+    ,""
+    ,"pLGrammar toks = mkTree ParseTables.tokens combine $ map unzipTok toks"
+    ,""
+    ,"main :: IO ()"
+    ,"main = do args <- getArgs"
+    ,"          case args of"
+    ,"            [] -> hGetContents stdin >>= run 2 pLGrammar"
+    ,"            \"-s\":fs -> mapM_ (runFile 0 pLGrammar) fs"
+    ,"            fs -> mapM_ (runFile 2 pLGrammar) fs"
+    ,""
+    ,""]
+
+
+
+
            
---------           
+---------------------------------           
+-- Management of expressions. 
+
+-- Most of this is not strictly useful; its main purpose is to
+-- generate "nice-looking" semantic actions
 
 data Exp = Id -- identity function
           | Con String -- constructor or variable

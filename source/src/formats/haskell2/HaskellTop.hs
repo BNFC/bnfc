@@ -95,7 +95,9 @@ makeAll opts file = do
       2 -> makeXML (lang opts) True cf
       1 -> makeXML (lang opts) False cf
       _ -> return ()
-    writeFileRep (cnfTablesFile opts) $ ToCNF.generate opts cf
+    when (cnf opts) $ do 
+      writeFileRep (cnfTablesFile opts) $ ToCNF.generate opts cf
+      writeFileRep "TestCNF" $ ToCNF.genTestFile opts
     putStrLn $ "Done!"
    else do putStrLn $ "Failed!"
 	   exitFailure
