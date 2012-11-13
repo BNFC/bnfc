@@ -29,6 +29,9 @@ Library
   exposed-modules: 
    Algebra.RingUtils
    Data.Matrix.Valiant
+   Data.Matrix
+   Data.Matrix.Class
+   Data.Matrix.Tree
    Parsing.Chart
 
 Executable bnfc

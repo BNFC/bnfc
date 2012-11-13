@@ -274,25 +274,24 @@ escape c = show $ ord c
 -- Test file generation
 
 
-genTestFile opts = render $ vcat
+genTestFile opts cf = render $ vcat
     ["{-# LANGUAGE MagicHash #-}"
     ,"module Main where"
     ,""
     ,"import System.IO ( stdin, hGetContents )"
     ,"import System.Environment ( getArgs, getProgName )"
     ,""
-    ,"import LexBNF"
-    ,"import SkelBNF"
-    ,"import PrintBNF"
-    ,"import AbsBNF"
-    ,"import ParseTables"
-    ,"import CYKSparse"
-    ,"import Data.Bifunctor"
+    ,"import " <> text ( alexFileM     opts)
+    ,"import " <> text ( templateFileM     opts)
+    ,"import " <> text ( printerFileM  opts)
+    ,"import " <> text ( absFileM      opts)
+    ,"import " <> text ( cnfTablesFileM opts)
     ,"import GHC.Exts"
     ,"import Control.Monad"
+    ,"import Parsing.Chart"
     ,"import ErrM"
     ,""
-    ,"myLLexer = LexBNF.tokens"
+    ,"myLLexer = "<> text (alexFileM opts) <> ".tokens"
     ,""
     ,"type Verbosity = Int"
     ,""
@@ -301,20 +300,20 @@ genTestFile opts = render $ vcat
     ,""
     ,"runFile v p f = putStrLn f >> readFile f >>= run v p"
     ,""
-    ,"run v p s = case startingAt 0 tree of"
+    ,"run v p s = case root chart of"
     ,"    (sz,x):_ -> do"
     ,"      putStrLn $ \"could parse up to \" ++ show sz      "
     ,"      forM x $ \\(cat,ast) -> do"
     ,"        print cat        "
     ,"        case cat of"
-    ,"          CAT_LGrammar -> do "
-    ,"            putStrLn $ printTree ((unsafeCoerce# ast)::LGrammar)"
-    ,"            return ()"
+    ,nest 10 $ vcat [hang (catTag (Left cat) <> " -> do ") 2 (vcat [ 
+                       "putStrLn $ printTree ((unsafeCoerce# ast)::" <> text cat <> ")",
+                       "return ()"]) | cat <- allEntryPoints cf]
     ,"          _ -> return ()"
     ,"      return ()"
     ,"    _ -> error \"no parse\""
     ,"   where ts = myLLexer s"
-    ,"         tree = p ts "
+    ,"         chart = p ts "
     ,"         "
     ,""
     ,"showTree :: (Show a, Print a) => Int -> a -> IO ()"
@@ -325,7 +324,7 @@ genTestFile opts = render $ vcat
     ,""
     ,"unzipTok (PT posn tok) = (posn,tok)"
     ,""
-    ,"pLGrammar toks = mkTree ParseTables.tokens combine $ map unzipTok toks"
+    ,"pLGrammar toks = mkTree $ map ("<> text (cnfTablesFileM opts) <> ".tokens . unzipTok) toks"
     ,""
     ,"main :: IO ()"
     ,"main = do args <- getArgs"

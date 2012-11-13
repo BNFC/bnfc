@@ -46,7 +46,7 @@ module CF (
 	    isProperLabel,  -- not coercion or defined rule
 	    allCats,        -- all categories of a grammar
 	    allCatsIdNorm,
-	    allEntryPoints, -- those categories that are entry points to the parser
+	    allEntryPoints, 
 	    reservedWords,  
             cfTokens,
 	    symbols,        
@@ -54,13 +54,11 @@ module CF (
 	    reversibleCats, 
 	    findAllReversibleCats, -- find all reversible categories
 	    identCat,       -- transforms '[C]' to ListC (others, unchanged).
-	    valCat,         
 	    isParsable,     
 	    rulesOfCF,      -- All rules of a grammar.
 	    rulesForCat,    -- rules for a given category
 	    ruleGroups,     -- Categories are grouped with their rules.
             ruleGroupsInternals, --As above, but includes internal cats.
-	    funRule,        
             notUniqueNames, -- list of not unique names (replaces the following 2)
 --	    notUniqueFuns,   -- Returns a list of function labels that are not unique.
 --            badInheritence, -- Returns a list of all function labels that can cause problems in languages with inheritence.
@@ -74,7 +72,6 @@ module CF (
 	    isNilCons,      -- either three of above?
             isEmptyListCat, -- checks if the list permits []
 	    revSepListRule, -- reverse a rule, if it is of form C t [C].
-	    rhsRule,        
 	    normCat,        
 	    normCatOfList,  -- Removes precendence information and enclosed List. C1 => C, C2 => C
 	    catOfList,	    -- Removes enclosed list: [C1] => C1
@@ -316,7 +313,7 @@ allCatsIdNorm = nub . map identCat . map normCat . allCats
 isUsedCat :: CFG f -> Cat -> Bool
 isUsedCat cf cat = elem cat [c | r <- (rulesOfCF cf), Left c <- rhsRule r]
 
--- | Entry points to parser ----
+-- | Categories that are entry points to the parser
 allEntryPoints :: CF -> [Cat]
 allEntryPoints cf = case concat [cats | EntryPoints cats <- pragmasOfCF cf] of
   [] -> allCats cf

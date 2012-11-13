@@ -97,7 +97,7 @@ makeAll opts file = do
       _ -> return ()
     when (cnf opts) $ do 
       writeFileRep (cnfTablesFile opts) $ ToCNF.generate opts cf
-      writeFileRep "TestCNF" $ ToCNF.genTestFile opts
+      writeFileRep "TestCNF.hs" $ ToCNF.genTestFile opts cf
     putStrLn $ "Done!"
    else do putStrLn $ "Failed!"
 	   exitFailure
