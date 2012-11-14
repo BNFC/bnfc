@@ -41,15 +41,6 @@ mkTree :: (RingP a, IsChart c) => [Pair a] -> c a
 mkTree = mkTreeHelp [False,True]  
 mkTree' = mkTreeHelp [True,False]  
 
-{-
-powerN p 0 t = unitChart p t
-powerN p n t = merging p (powerN False (n-1) t) (powerN True (n-1) t)
-
-powers n t = listArray (0,n) pows
-   where pows = (unitChart False t, unitChart True t) : map (\(x,y) -> (merging False x y, merging True x y)) pows 
-
--}
-
 type Set a = [a]
 
 -- Sets form an abelian group

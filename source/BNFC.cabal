@@ -1,4 +1,4 @@
-Name: BNFC
+ Name: BNFC
 Version: 2.6
 cabal-version: >= 1.2
 build-type: Simple
@@ -24,11 +24,11 @@ Description:
 Extra-source-files: src/BNF.cf 
 
 Library 
-  hs-source-dirs: runtime            
+  hs-source-dirs: runtime, src           
 
   exposed-modules: 
    Algebra.RingUtils
-   Data.Matrix.Valiant
+   Data.Pair
    Data.Matrix.ValiantPosition
    Data.Matrix
    Data.Matrix.Class

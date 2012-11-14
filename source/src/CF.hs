@@ -254,9 +254,8 @@ rulesOfCFP  :: CFP -> [RuleP]
 infoOfCF    :: CFG f -> Info
 pragmasOfCF :: CFG f -> [Pragma]
 
-{-# DEPRECATED rulesOfCFP "Use rulesOfCF instead" #-}
 rulesOfCF   = snd . unCFG
-rulesOfCFP  = snd . unCFG
+rulesOfCFP  = rulesOfCF
 infoOfCF    = snd . fst . unCFG
 pragmasOfCF = fst . fst . unCFG
 
@@ -313,12 +312,6 @@ allCatsIdNorm = nub . map identCat . map normCat . allCats
 -- | Is the category is used on an rhs?
 isUsedCat :: CFG f -> Cat -> Bool
 isUsedCat cf cat = elem cat [c | r <- (rulesOfCF cf), Left c <- rhsRule r]
-
--- | Categories that are entry points to the parser
-allEntryPoints :: CF -> [Cat]
-allEntryPoints cf = case concat [cats | EntryPoints cats <- pragmasOfCF cf] of
-  [] -> allCats cf
-  cs -> cs
 
 -- | Group all categories with their rules.
 ruleGroups :: CF -> [(Cat,[Rule])]
@@ -617,6 +610,8 @@ cfp2cf = fmap fst
 trivialProf :: [Either Cat String] -> [([[Int]],[Int])]
 trivialProf its = [([],[i]) | (i,_) <- zip [0..] [c | Left c <- its]]
 
+{-# DEPRECATED rulesOfCFP, allCatsP, allEntryPointsP  "Use the version without P postfix instead" #-}
+
 funRuleP :: RuleP -> Fun
 funRuleP = fst . funRule
 
@@ -627,9 +622,14 @@ rulesForCatP :: CFP -> Cat -> [RuleP]
 rulesForCatP cf cat = [r | r <- rulesOfCFP cf, isParsable r, valCat r == cat] 
 
 allCatsP :: CFP -> [Cat]
-allCatsP = nub . map valCat . rulesOfCFP -- no cats w/o production
+allCatsP = allCats
+
+
+-- | Categories that are entry points to the parser
+allEntryPoints :: CFG f -> [Cat]
+allEntryPoints cf = case concat [cats | EntryPoints cats <- pragmasOfCF cf] of
+  [] -> allCats cf
+  cs -> cs
 
 allEntryPointsP :: CFP -> [Cat]
-allEntryPointsP cf = case concat [cats | EntryPoints cats <- pragmasOfCF cf] of
-  [] -> allCatsP cf
-  cs -> cs
+allEntryPointsP = allEntryPoints

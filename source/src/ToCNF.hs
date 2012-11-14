@@ -43,6 +43,7 @@ import Data.Maybe (maybeToList)
 import Data.Function (on)
 import Data.Char (isAlphaNum,ord)
 import Data.String
+import Data.Pair
 import Text.PrettyPrint.HughesPJ hiding (first)
 
 (f *** g) (a,b) = (f a, g b)
@@ -169,6 +170,25 @@ unitSet rs = case fixk (unitSetStep rs) M.empty of
 isUnitRule (Rule f c [r]) = True
 isUnitRule _ = False
 
+
+------------------------
+-- Left/Right occurences
+
+isOnLeft, isOnRight :: RHSEl -> Rul f -> Bool
+isOnLeft c (Rule f _ [c',_]) = c == c'
+isOnLeft _ _ = False
+
+isOnRight c (Rule f _ [_,c']) = c == c'
+isOnRight _ _ = False
+
+
+occurs :: (RHSEl -> Rul f -> Bool) -> RHSEl -> CFG f -> Bool
+occurs where_ el cf = either (`elem` allEntryPoints cf) (const False) el || any (where_ el) (rulesOfCF cf)
+
+splitLROn :: (a -> RHSEl) -> CFG f -> [a] -> Pair [a]
+splitLROn f cf xs = filt <$> (isOnLeft :/: isOnRight) <*> pure xs
+  where filt wh = filter (\c -> occurs wh (f c) cf)
+
 -------------------------
 -- Code generation
 
@@ -176,7 +196,7 @@ incomment x = "{-" <> x <> "-}"
 
 generate opts cf0 = render $ vcat [header opts
                                   ,genCatTags cf1
-                                  ,genCombTable units (filter (not . isUnitRule) rules)
+                                  ,genCombTable units (onRules (filter (not . isUnitRule)) cf)
                                   ,genTokTable units cf
                                   ,incomment $ vcat 
                                    ["Normalised grammar:"
@@ -185,7 +205,7 @@ generate opts cf0 = render $ vcat [header opts
                                    ,prettyUnitSet units
                                    ]
                                   ]
-  where (cf1,cf@(CFG (exts,rules)),units) = toCNF cf0
+  where (cf1,cf,units) = toCNF cf0
 
 prettyUnitSet units = vcat [prettyExp f <> " : " <> catTag cat <> " --> " <> text cat' | (cat,x) <- M.assocs units, (f,cat') <- x] 
 
@@ -218,10 +238,10 @@ genCatTags cf = "data CATEGORY = " <> punctuate' "|" (map catTag (allSyms cf)) $
                 "  deriving (Eq,Ord,Show)"
 
 
-genCombTable :: UnitRel Cat -> [Rul Exp] -> Doc
-genCombTable units rs = 
+genCombTable :: UnitRel Cat -> CFG Exp -> Doc
+genCombTable units cf = 
      "combine :: Bool -> CATEGORY -> CATEGORY -> Pair [(CATEGORY, Any -> Any -> Any)]"
-  $$ genCombine units rs
+  $$ genCombine units cf
   $$ "combine _ _ _ = pure []"
 
 allSyms :: CFG Exp -> [Either String String]
@@ -235,15 +255,22 @@ unsafeCoerce' = app' (Con "unsafeCoerce#")
 
 type RHSEl = Either Cat String
 
-group' :: Eq a =>[(a,[b])] -> [(a,[b])]
+isCat (Right _) = False
+isCat (Left _) = True
+
+group' :: Eq a => [(a,[b])] -> [(a,[b])]
 group' [] = []
 group' ((a,bs):xs) = (a,bs ++ concatMap snd ys) : group' zs
   where (ys,zs) = span (\x -> fst x == a) xs
 
-genCombine :: UnitRel Cat -> [Rul Exp] -> Doc
-genCombine units rs = vcat $ map genEntry $ group' $ sortBy (compare `on` fst) $ map (alt units) rs
-  where genEntry ((r1,r2),fs) = "combine _ " <> catTag r1 <> " " <> catTag r2 <> " = pure " <> ppList (map (ppPair . ((catTag . Left) *** (mkLam . prettyExp . unsafeCoerce'))) fs)
+prettyPair (x :/: y) = sep [x,":/:",y]
+
+genCombine :: UnitRel Cat -> CFG Exp -> Doc
+genCombine units cf = vcat $ map genEntry $ group' $ sortBy (compare `on` fst) $ map (alt units) (rulesOfCF cf)
+  where genEntry :: ((RHSEl,RHSEl),[(Cat,Exp)]) -> Doc
+        genEntry ((r1,r2),cs) = "combine _ " <> catTag r1 <> " " <> catTag r2 <> " = " <> prettyPair (genList <$> splitLROn (Left . fst) cf cs)
         mkLam body = "\\x y -> " <> body
+        genList xs = ppList (map (ppPair . ((catTag . Left) *** (mkLam . prettyExp . unsafeCoerce'))) xs)
 
 alt :: UnitRel Cat -> Rul Exp -> ((RHSEl,RHSEl),[(Cat,Exp)])
 alt units (Rule f c [r1,r2]) = ((r1,r2),initial:others)
@@ -251,10 +278,6 @@ alt units (Rule f c [r1,r2]) = ((r1,r2),initial:others)
         others = [(c', f' `app'` (f `appMany` args)) | (f',c') <- lk (Left c) units]
         args = map (unsafeCoerce' . Con) $ ["x"|isCat r1]++["y"|isCat r2]
     
-isCat (Right _) = False
-isCat (Left _) = True
-        
-
 catTag :: Either String String -> Doc
 catTag (Left c) = "CAT_" <> text (concatMap escape c)
 catTag (Right t) = "TOK_" <> text (concatMap escape t)
@@ -265,29 +288,30 @@ escape ']' = "_List"
 escape c = show $ ord c
 
 genTokTable :: UnitRel Cat -> CFG Exp -> Doc
-genTokTable units cf = "tokens :: Token -> [(CATEGORY,Any)]" $$
+genTokTable units cf = "tokens :: Token -> Pair [(CATEGORY,Any)]" $$
                        vcat (map (genSpecEntry cf units) (tokInfo cf)) $$
-                       vcat (map (genTokEntry units) (cfTokens cf)) $$
+                       vcat (map (genTokEntry cf units) (cfTokens cf)) $$
                        "tokens t = error (\"unknown token: \" ++ show t)"
 
-tokInfo cf = ("Char","TC",Con "head"):("String","TL",Id):("Integer","TI",Con "readInteger"):("Double","TD",Con "readDouble") : [("Ident","TV",Con "Ident")|hasIdent cf] ++
-        [(t,"T_" <> text t,(Con t)) | t <- tokenNames cf]
+tokInfo cf = ("Char","TC",Con "head"):
+             ("String","TL",Id):("Integer","TI",Con "readInteger"):
+             ("Double","TD",Con "readDouble"):
+             [("Ident","TV",Con "Ident")|hasIdent cf] ++
+             [(t,"T_" <> text t,(Con t)) | t <- tokenNames cf]
 
-genSpecEntry cf units (tokName,constrName,fun) = "tokens (PT (Pn _ l c) (" <> constrName <> " x)) = " <> ppList (map ppPair xs)
+genTokCommon cf xs = prettyPair ((ppList . map (ppPair . (catTag *** id))) <$> splitLROn fst cf xs)
+
+genSpecEntry cf units (tokName,constrName,fun) = "tokens (PT (Pn _ l c) (" <> constrName <> " x)) = " <> genTokCommon cf xs
   where xs = map (second (prettyExp . (\f -> unsafeCoerce' (f `app'` tokArgs)))) $ 
-             (catTag (Left tokName), fun) : [(catTag (Left c),f `after` fun) |
-              (f,c) <- lk (Left tokName) units]
+             (Left tokName, fun) : [(Left c,f `after` fun) | (f,c) <- lk (Left tokName) units]
         tokArgs | isPositionCat cf tokName = Con "((l,c),x)"
                 | otherwise = Con "x"
 
-genTokEntry units (tok,x) = "tokens (PT posn (TS _ " <> int x <> ")) = " <> ppList (map ppPair xs)
-  where xs = (catTag (Right tok), tokVal):
-          [(catTag (Left c),prettyExp (unsafeCoerce' f)) 
-          | (f,c) <- lk (Right tok) units]
+genTokEntry cf units (tok,x) = "tokens (PT posn (TS _ " <> int x <> ")) = " <> genTokCommon cf xs
+  where xs = (Right tok, tokVal) : 
+             [(Left c,prettyExp (unsafeCoerce' f)) | (f,c) <- lk (Right tok) units]
         tokVal = "error" <> (text $ show $ "cannot access value of token: " ++ tok)
   
-  
-
 ------------------------           
 -- Test file generation
 
@@ -341,7 +365,7 @@ genTestFile opts cf = render $ vcat
     ,"      putStrV v $ \"[Linearized tree]\" ++ printTree tree"
     ,""
     ,"pLGrammar :: [Token] -> MT2 [(CATEGORY,Any)]"
-    ,"pLGrammar toks = mkTree $ map (pure . "<> text (cnfTablesFileM opts) <> ".tokens) toks"
+    ,"pLGrammar toks = mkTree $ map ("<> text (cnfTablesFileM opts) <> ".tokens) toks"
     ,""
     ,"main :: IO ()"
     ,"main = do args <- getArgs"

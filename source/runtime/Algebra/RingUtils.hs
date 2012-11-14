@@ -10,12 +10,14 @@ module Algebra.RingUtils
   , O(..)
   , sum
   , mulDefault
+  , module Data.Pair
   )
  where
 
 import qualified Prelude as P
 import Prelude hiding ( (+), (*), splitAt, sum )
 import Control.Applicative
+import Data.Pair
 
 class AbelianGroup a where
     zero :: a
@@ -45,21 +47,11 @@ onlyRight x = [] :/: x
 
 select p = if p then onlyRight else onlyLeft
 
-data Pair a = (:/:) {leftOf :: a, rightOf :: a}
-  deriving (Show)
-
-instance Functor Pair where
-  fmap f (a :/: b) = f a :/: f b
-
 newtype O f g a = O {fromO :: f (g a)}
   deriving (AbelianGroup, AbelianGroupZ, Show)
            
 instance (Functor f,Functor g) => Functor (O f g) where
    fmap f (O x) = O (fmap (fmap f) x)
-
-instance Applicative Pair where
-  pure a = a :/: a
-  (f :/: g) <*> (a :/: b) = f a :/: g b
 
 instance AbelianGroup a => AbelianGroup (Pair a) where
   zero = (zero:/:zero)
@@ -73,7 +65,6 @@ instance Ring Int where
 
 infixl 7  *
 infixl 6  +
-infixl 2  :/:
 
 sum :: AbelianGroup a => [a] -> a
 sum = foldr (+) zero
