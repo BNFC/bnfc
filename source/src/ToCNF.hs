@@ -321,7 +321,6 @@ genTestFile opts cf = render $ vcat
     ,"runFile v f = putStrLn f >> readFile f >>= run v"
     ,""
     ,"run v s = do"
-    ,"      print $ map (map fst . CnfTablesc.tokens) ts"
     ,"      putStrLn $ show (length x) ++ \" results\""
     ,"      forM x $ \\(cat,ast) -> do"
     ,"        print cat        "
