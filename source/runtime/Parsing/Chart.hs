@@ -1,4 +1,4 @@
-{-# LANGUAGE NoMonomorphismRestriction, TypeSynonymInstances #-}
+{-# LANGUAGE NoMonomorphismRestriction, TypeSynonymInstances, FlexibleInstances #-}
 
 module Parsing.Chart where
 
@@ -13,7 +13,8 @@ import Control.Monad(join)
 import Algebra.RingUtils
 import Data.Matrix
 import Data.Matrix.Class
-import Data.Matrix.Valiant
+import qualified Data.Matrix.Valiant as V
+import qualified Data.Matrix.ValiantPosition as VP
 
 -- interface to charts and generic code on top of it.
 
@@ -61,10 +62,19 @@ instance AbelianGroupZ (Set a) where
 
 
 
-instance IsChart MT where
+-- instance IsChart MT where
+--     root x = at (countColumns x - 1) 0 x
+--     merging _ x y = V.merge x y
+--     single (x :/: y) = quad z (singleton (x + y)) z z 
+--        where z = singleton zero
+-- This instance needs the Ring constraint
+
+
+type MT2 = O Pair MT
+
+instance IsChart MT2 where
     root x = at (countColumns x - 1) 0 x
-    merging _ x y = merge x y
-    single (x :/: y) = quad z (singleton (x + y)) z z 
+    merging = VP.merge
+    single x = quad z s z z 
        where z = singleton zero
-
-
+             s = O $ singleton (leftOf x) :/: singleton (rightOf x)

@@ -9,6 +9,7 @@ module Algebra.RingUtils
   , Pair(..), select, onlyLeft, onlyRight
   , O(..)
   , sum
+  , mulDefault
   )
  where
 
@@ -33,9 +34,9 @@ instance AbelianGroupZ Int where
 class AbelianGroupZ a => Ring a where
     (*) :: a -> a -> a    
 
-class (AbelianGroupZ a, Ring a) => RingP a where
+class (AbelianGroupZ a) => RingP a where
     mul :: Bool -> a -> a -> Pair a
-    mul _ x y = pure $ x * y
+--    mul _ x y = pure $ x * y
 
 mulDefault x y = leftOf (mul False x y)
 

@@ -38,7 +38,7 @@ import HsOpts
 import Control.Monad.State
 import Control.Applicative hiding (Const)
 import qualified Data.Map as M
-import Data.List (nub,intercalate,sortBy)
+import Data.List (nub,intercalate,sortBy,sort)
 import Data.Maybe (maybeToList)
 import Data.Function (on)
 import Data.Char (isAlphaNum,ord)
@@ -100,7 +100,7 @@ cross :: [[a]] -> [[a]]
 cross [] = [[]]
 cross (x:xs) = [y:ys | y <- x,  ys <- cross xs]
 
-x ∪ y = nub (x ++ y)
+x ∪ y = sort $ nub (x ++ y)
                              
 lk cat nullset = maybe [] id (M.lookup cat nullset)
         
@@ -116,11 +116,11 @@ nullRule nullset (Rule f c rhs) = (c,map (\xs -> (appMany f xs)) (cross (map nul
 nullable :: Nullable Cat -> Rul Exp -> Bool
 nullable s = not . null . snd . nullRule s
 
-fixk :: Eq a => (a -> a) -> a -> Either String a
+fixk :: Eq a => (a -> a) -> a -> Either a a
 fixk = fixn 100
 
-fixn :: Eq a => Int -> (a -> a) -> a -> Either String a
-fixn 0 f x = Left "Could not find fixpoint"
+fixn :: Eq a => Int -> (a -> a) -> a -> Either a a
+fixn 0 f x = Left x
 fixn n f x = if x' == x then Right x else fixn (n-1) f x'
   where x' = f x
         
@@ -155,13 +155,15 @@ type UnitRel cat = M.Map (Either cat String) [(Exp,cat)]
 
 unitSetStep :: [Rul Exp] -> UnitRel Cat -> UnitRel Cat
 unitSetStep rs unitSet = M.unionsWith (∪) (map unitRule rs)
- where unitRule (Rule f c [r]) = case r of 
-         Right tok -> M.singleton (Right tok) [(f,c)]
-         Left cat -> M.singleton (Left cat) $ (f,c) : [(g `after` f,c') | (g,c') <- lk (Left c) unitSet]
+ where unitRule (Rule f c [r]) = M.singleton r $ (f,c) : [(g `appl` f,c') | (g,c') <- lk (Left c) unitSet]
+         where appl = case r of
+                 Left _ -> after
+                 Right _ -> app'
        unitRule _ = M.empty
                 
+unitSet :: [Rul Exp] -> UnitRel Cat                  
 unitSet rs = case fixk (unitSetStep rs) M.empty of
-  Left _ -> error "Could not find fixpoint of unit set"
+  Left x -> error $ "Could not find fixpoint of unit set. Last iteration:\n" ++ render (prettyUnitSet x)
   Right x -> x
 
 isUnitRule (Rule f c [r]) = True
@@ -176,23 +178,37 @@ generate opts cf0 = render $ vcat [header opts
                                   ,genCatTags cf1
                                   ,genCombTable units (filter (not . isUnitRule) rules)
                                   ,genTokTable units cf
-                                  ,incomment (text $ show cf)
+                                  ,incomment $ vcat 
+                                   ["Normalised grammar:"
+                                   ,text $ show cf
+                                   ,"Unit relation:"
+                                   ,prettyUnitSet units
+                                   ]
                                   ]
   where (cf1,cf@(CFG (exts,rules)),units) = toCNF cf0
+
+prettyUnitSet units = vcat [prettyExp f <> " : " <> catTag cat <> " --> " <> text cat' | (cat,x) <- M.assocs units, (f,cat') <- x] 
 
 header opts
        = vcat ["{-# LANGUAGE MagicHash, FlexibleInstances #-}"
               ,"module " <> text (cnfTablesFileM opts) <> " where"
               ,"import GHC.Prim"
               ,"import GHC.Exts"
+              ,"import Control.Applicative hiding (Const)"
               ,"import Algebra.RingUtils"
               ,"import Parsing.Chart ()"
               ,"import " <> text (absFileM  opts)
               ,"import " <> text (alexFileM opts)
               ,"readInteger :: String -> Integer"
               ,"readInteger = read"
-              ,"instance Ring [(CATEGORY,Any)] where"
-              ,"  a * b = [(z,f tx ty) | (x,tx) <- a, (y,ty) <- b, (z,f) <- combine x y]"
+              ,"readDouble :: String -> Double"
+              ,"readDouble = read"
+              ,"instance RingP [(CATEGORY,Any)] where"
+              ,"  mul p a b = trav [map (app tx ty) l :/: map (app tx ty) r | (x,tx) <- a, (y,ty) <- b, let l:/:r = combine p x y]"
+              ,"    where trav :: [Pair [a]] -> Pair [a]"
+              ,"          trav [] = pure []"
+              ,"          trav (x:xs) = (++) <$> x <*> trav xs"
+              ,"          app tx ty (z,f)  = (z, f tx ty)"
               ]
 
 punctuate' p = cat . punctuate p
@@ -204,9 +220,9 @@ genCatTags cf = "data CATEGORY = " <> punctuate' "|" (map catTag (allSyms cf)) $
 
 genCombTable :: UnitRel Cat -> [Rul Exp] -> Doc
 genCombTable units rs = 
-     "combine :: CATEGORY -> CATEGORY -> [(CATEGORY, Any -> Any -> Any)]"
+     "combine :: Bool -> CATEGORY -> CATEGORY -> Pair [(CATEGORY, Any -> Any -> Any)]"
   $$ genCombine units rs
-  $$ "combine _ _ = []"
+  $$ "combine _ _ _ = pure []"
 
 allSyms :: CFG Exp -> [Either String String]
 allSyms cf = map Left (allCats cf  ++ literals cf) ++ map (Right . fst) (cfTokens cf)
@@ -226,7 +242,7 @@ group' ((a,bs):xs) = (a,bs ++ concatMap snd ys) : group' zs
 
 genCombine :: UnitRel Cat -> [Rul Exp] -> Doc
 genCombine units rs = vcat $ map genEntry $ group' $ sortBy (compare `on` fst) $ map (alt units) rs
-  where genEntry ((r1,r2),fs) = "combine " <> catTag r1 <> " " <> catTag r2 <> " = " <> ppList (map (ppPair . ((catTag . Left) *** (mkLam . prettyExp . unsafeCoerce'))) fs)
+  where genEntry ((r1,r2),fs) = "combine _ " <> catTag r1 <> " " <> catTag r2 <> " = pure " <> ppList (map (ppPair . ((catTag . Left) *** (mkLam . prettyExp . unsafeCoerce'))) fs)
         mkLam body = "\\x y -> " <> body
 
 alt :: UnitRel Cat -> Rul Exp -> ((RHSEl,RHSEl),[(Cat,Exp)])
@@ -243,32 +259,34 @@ catTag :: Either String String -> Doc
 catTag (Left c) = "CAT_" <> text (concatMap escape c)
 catTag (Right t) = "TOK_" <> text (concatMap escape t)
 
-genTokTable :: UnitRel Cat -> CFG Exp -> Doc
-genTokTable units cf = "tokens :: Posn -> Tok -> [(CATEGORY,Any)]" $$
-                       vcat (map (genSpecEntry cf units) (tokInfo cf)) $$
-                       vcat (map (genTokEntry units) (cfTokens cf))
+escape c | isAlphaNum c || c == '_' = [c]
+escape '[' = ""
+escape ']' = "_List"
+escape c = show $ ord c
 
-tokInfo cf = ("String","TL",Id):("Integer","TI",Con "readInteger") : [("Ident","TV",Con "Ident")|hasIdent cf] ++
+genTokTable :: UnitRel Cat -> CFG Exp -> Doc
+genTokTable units cf = "tokens :: Token -> [(CATEGORY,Any)]" $$
+                       vcat (map (genSpecEntry cf units) (tokInfo cf)) $$
+                       vcat (map (genTokEntry units) (cfTokens cf)) $$
+                       "tokens t = error (\"unknown token: \" ++ show t)"
+
+tokInfo cf = ("Char","TC",Con "head"):("String","TL",Id):("Integer","TI",Con "readInteger"):("Double","TD",Con "readDouble") : [("Ident","TV",Con "Ident")|hasIdent cf] ++
         [(t,"T_" <> text t,(Con t)) | t <- tokenNames cf]
 
-genSpecEntry cf units (tokName,constrName,fun) = "tokens (Pn _ l c) (" <> constrName <> " x) = " <> ppList (map ppPair xs)
+genSpecEntry cf units (tokName,constrName,fun) = "tokens (PT (Pn _ l c) (" <> constrName <> " x)) = " <> ppList (map ppPair xs)
   where xs = map (second (prettyExp . (\f -> unsafeCoerce' (f `app'` tokArgs)))) $ 
              (catTag (Left tokName), fun) : [(catTag (Left c),f `after` fun) |
               (f,c) <- lk (Left tokName) units]
         tokArgs | isPositionCat cf tokName = Con "((l,c),x)"
                 | otherwise = Con "x"
 
-genTokEntry units (tok,x) = "tokens posn (TS _ " <> int x <> ") = " <> ppList (map ppPair xs)
+genTokEntry units (tok,x) = "tokens (PT posn (TS _ " <> int x <> ")) = " <> ppList (map ppPair xs)
   where xs = (catTag (Right tok), tokVal):
           [(catTag (Left c),prettyExp (unsafeCoerce' f)) 
           | (f,c) <- lk (Right tok) units]
         tokVal = "error" <> (text $ show $ "cannot access value of token: " ++ tok)
   
   
-escape c | isAlphaNum c = [c]
-escape '[' = ""
-escape ']' = "_List"
-escape c = show $ ord c
 
 ------------------------           
 -- Test file generation
@@ -288,7 +306,9 @@ genTestFile opts cf = render $ vcat
     ,"import " <> text ( cnfTablesFileM opts)
     ,"import GHC.Exts"
     ,"import Control.Monad"
+    ,"import Control.Applicative (pure)"
     ,"import Parsing.Chart"
+    ,"import Data.Matrix"
     ,"import ErrM"
     ,""
     ,"myLLexer = "<> text (alexFileM opts) <> ".tokens"
@@ -298,23 +318,22 @@ genTestFile opts cf = render $ vcat
     ,"putStrV :: Verbosity -> String -> IO ()"
     ,"putStrV v s = if v > 1 then putStrLn s else return ()"
     ,""
-    ,"runFile v p f = putStrLn f >> readFile f >>= run v p"
+    ,"runFile v f = putStrLn f >> readFile f >>= run v"
     ,""
-    ,"run v p s = case root chart of"
-    ,"    (sz,x):_ -> do"
-    ,"      putStrLn $ \"could parse up to \" ++ show sz      "
+    ,"run v s = do"
+    ,"      print $ map (map fst . CnfTablesc.tokens) ts"
+    ,"      putStrLn $ show (length x) ++ \" results\""
     ,"      forM x $ \\(cat,ast) -> do"
     ,"        print cat        "
     ,"        case cat of"
     ,nest 10 $ vcat [hang (catTag (Left cat) <> " -> do ") 2 (vcat [ 
                        "putStrLn $ printTree ((unsafeCoerce# ast)::" <> text cat <> ")",
-                       "return ()"]) | cat <- allEntryPoints cf]
+                       "return ()"]) | cat <- filter isDataCat $ allCats cf]
     ,"          _ -> return ()"
     ,"      return ()"
-    ,"    _ -> error \"no parse\""
     ,"   where ts = myLLexer s"
-    ,"         chart = p ts "
-    ,"         "
+    ,"         chart = pLGrammar ts "
+    ,"         x = root chart"
     ,""
     ,"showTree :: (Show a, Print a) => Int -> a -> IO ()"
     ,"showTree v tree"
@@ -322,17 +341,15 @@ genTestFile opts cf = render $ vcat
     ,"      putStrV v $ \"[Abstract Syntax]\" ++ show tree"
     ,"      putStrV v $ \"[Linearized tree]\" ++ printTree tree"
     ,""
-    ,"unzipTok (PT posn tok) = (posn,tok)"
-    ,""
-    ,"pLGrammar toks = mkTree $ map ("<> text (cnfTablesFileM opts) <> ".tokens . unzipTok) toks"
+    ,"pLGrammar :: [Token] -> MT2 [(CATEGORY,Any)]"
+    ,"pLGrammar toks = mkTree $ map (pure . "<> text (cnfTablesFileM opts) <> ".tokens) toks"
     ,""
     ,"main :: IO ()"
     ,"main = do args <- getArgs"
     ,"          case args of"
-    ,"            [] -> hGetContents stdin >>= run 2 pLGrammar"
-    ,"            \"-s\":fs -> mapM_ (runFile 0 pLGrammar) fs"
-    ,"            fs -> mapM_ (runFile 2 pLGrammar) fs"
-    ,""
+    ,"            [] -> hGetContents stdin >>= run 2"
+    ,"            \"-s\":fs -> mapM_ (runFile 0) fs"
+    ,"            fs -> mapM_ (runFile 2) fs"
     ,""]
 
 
@@ -350,7 +367,7 @@ data Exp = Id -- identity function
           | App Exp Exp
           | Exp `After` Exp
           | App2 Exp Exp
-            deriving (Eq)
+            deriving (Eq,Ord)
 
 prettyExp Id = "id"
 prettyExp (Con x) = text x

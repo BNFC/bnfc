@@ -29,6 +29,7 @@ Library
   exposed-modules: 
    Algebra.RingUtils
    Data.Matrix.Valiant
+   Data.Matrix.ValiantPosition
    Data.Matrix
    Data.Matrix.Class
    Data.Matrix.Tree

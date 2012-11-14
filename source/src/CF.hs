@@ -73,6 +73,7 @@ module CF (
             isEmptyListCat, -- checks if the list permits []
 	    revSepListRule, -- reverse a rule, if it is of form C t [C].
 	    normCat,        
+            isDataCat,
 	    normCatOfList,  -- Removes precendence information and enclosed List. C1 => C, C2 => C
 	    catOfList,	    -- Removes enclosed list: [C1] => C1
 	    comments,       -- translates the pragmas into two list containing the s./m. comments
@@ -400,9 +401,10 @@ cf2data' predicate cf =
   mkData (Rule f _ its) = (normFun f,[normCat c | Left c <- its, c /= internalCat])
 
 cf2data :: CF -> [Data]
-cf2data = cf2data' isNormal
-  where isNormal c = not (isList c || isDigit (last c))
-        -- Does the category correspond to a data type?
+cf2data = cf2data' isDataCat
+          
+-- | Does the category correspond to a data type?
+isDataCat c = not (isList c || isDigit (last c))
 
 cf2dataLists :: CF -> [Data]
 cf2dataLists = cf2data' (\x -> not $ isDigit $ last x) 
