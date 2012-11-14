@@ -353,6 +353,7 @@ genTestFile opts cf = render $ vcat
                        "putStrLn $ printTree ((unsafeCoerce# ast)::" <> text cat <> ")",
                        "return ()"]) | cat <- filter isDataCat $ allCats cf]
     ,"          _ -> return ()"
+    ,"      forM (fingerprint chart) putStrLn"
     ,"      return ()"
     ,"   where ts = myLLexer s"
     ,"         chart = pLGrammar ts "

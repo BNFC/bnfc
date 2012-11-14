@@ -6,6 +6,10 @@ import Prelude ()
 import Algebra.RingUtils
 import Control.Applicative hiding ((<|>))
 
+fingerprint m = [[ if isZero (at i j m) then ' ' else 'X' | i <- [0..x-1] ] | j <- [0..y-1]]
+  where x = countColumns m
+        y = countRows m
+
 (f *** g) (x,y) = (f x,g y)
 
 data Dimension 
@@ -70,25 +74,6 @@ lastColumn x = snd . split XD (countColumns x - 1) $ x
 chopLastRow x = fst . split YD (countRows x - 1) $ x
  
  
-{-           
-instance AbelianGroupZ a => AbelianGroupZ (Y.Matrix a) where
-  isZero (Y.Matrix xs) = all (all isZero) xs
-                 
-instance Matrix (Y.Matrix) where
-  atZero (Y.Matrix ((x:_):_)) = x
-  extent (Y.Matrix []) = (0,0)
-  extent (Y.Matrix (x:xs)) = (length x, 1 + length xs)
-  glue XD (Y.Matrix x) (Y.Matrix y) = Y.Matrix (zipWith (++) x y)
-  glue YD (Y.Matrix x) (Y.Matrix y) = Y.Matrix (x ++ y)
-  split XD k (Y.Matrix x) = (Y.Matrix *** Y.Matrix) (unzip (map (splitAt k) x))
-  split YD k (Y.Matrix x)= (Y.Matrix *** Y.Matrix) (splitAt k x)
-  singleton x = Y.Matrix [[x]]
-  zeroMatrix columns rows = Y.Matrix $ replicate rows (replicate columns zero)
--}
-
--- at :: (AbelianGroupZ a, Matrix m) => Int -> Int -> m a -> a
--- at x y m = atZero $ snd $ split XD x $ snd $ split YD y $ m
-  
 
   
   
