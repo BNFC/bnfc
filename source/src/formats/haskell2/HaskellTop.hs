@@ -98,6 +98,8 @@ makeAll opts file = do
     when (cnf opts) $ do 
       writeFileRep (cnfTablesFile opts) $ ToCNF.generate opts cf
       writeFileRep "TestCNF.hs" $ ToCNF.genTestFile opts cf
+      writeFileRep "BenchCNF.hs" $ ToCNF.genBenchmark opts
+
     putStrLn $ "Done!"
    else do putStrLn $ "Failed!"
 	   exitFailure
