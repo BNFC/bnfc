@@ -9,7 +9,6 @@ import Data.Traversable (sequenceA)
 import Control.Applicative
 import Control.Monad(join)
 
--- import Parsing.CNF
 import Algebra.RingUtils
 import Data.Matrix
 import Data.Matrix.Class
