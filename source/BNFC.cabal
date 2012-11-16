@@ -31,6 +31,7 @@ Library
    Data.Pair
    Data.Matrix.ValiantPosition
    Data.Matrix
+   Data.Matrix.Quad
    Data.Matrix.Class
    Data.Matrix.Tree
    Parsing.Chart

@@ -86,11 +86,14 @@ merge p l r = (l' <|> m ) <->
           m = closeDisjoint p (lef a) (O $ mul p (lef b) (rig c)) (rig d)
           z' = zeroMatrix (countColumns l) (countRows r)
 
-merge' :: forall m a. (Matrix m, RingP (m a), AbelianGroupZ a) => Bool -> Pai m a -> Pai m a -> Pai m a -> Pai m a
+merge' :: forall m a. (Matrix m, RingP (m a), AbelianGroupZ a) => Bool -> Pai m a -> Pair a -> Pai m a -> Pai m a
 merge' p a c b = (a <|> x ) <->
                  (z <|> b )
-    where x = closeDisjoint p (lef a) c (rig b)
+    where x = closeDisjoint p (lef a) c' (rig b)
           z = zeroMatrix (countColumns a) (countRows b)
+          c' :: Pai m a
+          c' = (zeroMatrix (countColumns a - 1) 1 <-> (O $ singleton <$> c)) <|> zeroMatrix (countColumns a) (countRows b - 1)
+
 
 
 {-

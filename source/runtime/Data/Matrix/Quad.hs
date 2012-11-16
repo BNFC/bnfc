@@ -1,6 +1,6 @@
-{-# LANGUAGE GADTs, DataKinds, ScopedTypeVariables #-}
+{-# LANGUAGE GADTs, DataKinds, ScopedTypeVariables, KindSignatures #-}
 
-module Data.Matrix.QuadGADT where
+module Data.Matrix.Quad where
 
 import Prelude ()
 import Data.List (splitAt)
@@ -147,6 +147,8 @@ mkMat (Bin' sl sr) xs = quad (mkMat sl l) (mkSing sr sl x) Zero (mkMat sr r)
 data SomeTri a where                  
   T :: Shape' s -> Pair (Mat s s a) -> SomeTri a
         
+type Q a = SomeTri a       
+       
 -- mkTree :: forall a. AbelianGroupZ a => [Pair a] -> SomeTri a          
 -- mkTree xs = case mkShape (length xs) of
 --   S s -> T s (mkMat s xs)
@@ -157,6 +159,7 @@ mergein :: RingP a => Bool -> SomeTri a -> Pair a -> SomeTri a -> SomeTri a
 mergein p (T y a) c (T x b) = T (Bin' y x) (quad' a (closeDisjointP p (leftOf a) c' (rightOf b)) zero b)
   where c' = mkSing x y c
   
+        
 root' :: AbelianGroup a => Mat x y a -> a
 root' Zero = zero
 root' (One x) = x
@@ -164,5 +167,44 @@ root' (Quad _ a _ _) = root' a
 root' (Col a _) = root' a
 root' (Row _ a) = root' a
 
+
 root (T _ (m :/: m')) = root' m + root' m'
 
+single x = T Leaf' (one <$> x)
+
+square2 x = T (Bin' Leaf' Leaf') $ quad' zero zero (one <$> x) zero
+
+square3 p x y = T (Bin' (Bin' Leaf' Leaf') (Leaf')) 
+  (quad' (quad' zero (one <$> x) zero zero) (Col <$> (one <$> mul p (leftOf x) (rightOf y)) <*> (one <$> y)) zero zero)
+  
+
+lin :: AbelianGroup a => Shape' x -> Shape' y -> Mat x y a -> [[a]]
+lin x y Zero = replicate (sz y) $ replicate (sz x) zero
+lin _ _ (One x) = [[x]]
+lin (Bin' x x') (Bin' y y') (Quad a b c d) = zipWith (++) (lin x y a ++ lin x' y b) (lin x y' c ++ lin x' y' d)
+lin Leaf' (Bin' y y') (Col a b) = (lin Leaf' y a ++ lin Leaf' y' b)
+lin (Bin' x x') Leaf' (Row a b) = zipWith (++) (lin x Leaf' a) (lin x' Leaf' b)
+
+genXPM xs@(h:_) = unlines $
+  ["! XPM2",
+   -- <width/cols> <height/rows> <colors> <char on pixel>
+   show width ++ " " ++ show height ++ " 2 1",
+   "X c green",
+   "  c black"
+   ] ++ xs
+  where width = length h
+        height = length xs
+
+fingerprint (T s (m :/: m')) = map (map (c.isZero)) $ lin s s (m + m')
+  where 
+        c True = 'X'
+        c False = ' '
+
+{-
+instance Matrix SomeTri where
+  countRows (T s _) = sz s
+  countColumns = countRows
+  at i j (T _ Zero) = zero
+  at i j (T _ (One x)) = x
+  at i j (T (Bin s1 s2)) = 
+-}
