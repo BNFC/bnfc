@@ -6,21 +6,23 @@ import Data.Array
 import Data.Maybe
 import Prelude ()
 import Data.Traversable (sequenceA)
-import Control.Applicative
+import Control.Applicative ((<$>),(<*>),pure)
 import Control.Monad(join)
 
 -- import Parsing.CNF
+import Data.List (splitAt)
 import Algebra.RingUtils
 import Data.Matrix
 import Data.Matrix.Class
-import qualified Data.Matrix.Valiant as V
+-- import qualified Data.Matrix.Valiant as V
 import qualified Data.Matrix.ValiantPosition as VP
 
 -- interface to charts and generic code on top of it.
 
 class IsChart c where
     single :: AbelianGroupZ a => Pair a -> c a
-    merging :: RingP a => Bool -> c a -> c a -> c a
+    merging  :: RingP a => Bool -> c a -> c a -> c a
+    merging' :: RingP a => Bool -> c a -> Pair a -> c a -> c a
     root :: AbelianGroupZ a => c a -> a
 
 
@@ -37,9 +39,22 @@ mkTreeHelp alt s = sweeps (map single s)
 
   alts = cycle alt
   
+  
+mkTree2 :: RingP a => Bool -> [Pair a] -> MT2 a
+mkTree2 p [] = error "can't parse the empty string, sorry"
+mkTree2 p [x] = single x
+mkTree2 p [x,y] = O $ quad <$> ((\z -> zero <|> singleton z) <$> x) <*> (singleton <$> mul p (leftOf x) (rightOf y) ) <*> (pure zero) <*> ((\z -> singleton z <-> zero) <$> y)
+mkTree2 p leaves = merging' p (mkTree2 False xs) y (mkTree2 True zs)
+ where (xs,y:zs) = splitAt n2 leaves
+       n2 = length leaves `div` 2 
+
+
 mkTree :: (RingP a, IsChart c) => [Pair a] -> c a
 mkTree = mkTreeHelp [False,True]  
 mkTree' = mkTreeHelp [True,False]  
+
+
+
 
 type Set a = [a]
 
@@ -66,6 +81,7 @@ type MT2 = O Pair MT
 instance IsChart MT2 where
     root x = at (countColumns x - 1) 0 x
     merging = VP.merge
+--    merging' a c b = VP.merge' a c b
     single x = quad z s z z 
        where z = singleton zero
              s = O $ singleton (leftOf x) :/: singleton (rightOf x)
