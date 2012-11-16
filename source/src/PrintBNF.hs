@@ -122,6 +122,7 @@ instance Print Def where
    Entryp ids -> prPrec i 0 (concatD [doc (showString "entrypoints") , prt 0 ids])
    Separator minimumsize cat str -> prPrec i 0 (concatD [doc (showString "separator") , prt 0 minimumsize , prt 0 cat , prt 0 str])
    Terminator minimumsize cat str -> prPrec i 0 (concatD [doc (showString "terminator") , prt 0 minimumsize , prt 0 cat , prt 0 str])
+   Delimiters cat str0 str -> prPrec i 0 (concatD [doc (showString "delimiters") , prt 0 cat , prt 0 str0 , prt 0 str])
    Coercions id n -> prPrec i 0 (concatD [doc (showString "coercions") , prt 0 id , prt 0 n])
    Rules id rhss -> prPrec i 0 (concatD [doc (showString "rules") , prt 0 id , doc (showString "::=") , prt 0 rhss])
    Function id args exp -> prPrec i 0 (concatD [doc (showString "define") , prt 0 id , prt 0 args , doc (showString "=") , prt 0 exp])

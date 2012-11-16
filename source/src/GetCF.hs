@@ -31,7 +31,8 @@ import Utils
 import ParBNF
 import Data.List(nub,partition)
 import qualified AbsBNF as Abs
--- import LexBNF
+import Data.Maybe (catMaybes)
+import Data.Either (partitionEithers)
 import ErrM
 import Data.Char
 import TypeChecker
@@ -125,33 +126,26 @@ tryReadCFP opts file = do
 getCF :: String -> (CF, [String])
 getCF s = let (cfp,msg) = getCFP s in (cfp2cf cfp, msg)
 
-getCFP :: String -> (CFP, [String])
-getCFP s = (cf,msgs ++ msgs1) where
-  (cf,msgs1) = (CFG (exts,ruls2),msgs2)
-  (ruls2,msgs2) = untag $ partition (isRule) $ map (checkRule cf00) $ rulesOfCFP cf0
-  untag (ls,rs) = ([c | Left c <- ls], [c | Right c <- rs])
-  isRule = either (const True) (const False)
-  cf00 = cfp2cf cf0
-  (cf0@(CFG(exts,_)),msgs) = (revs . srt . conv . pGrammar . myLexer) s
-  srt rs = let rules              = [r | Left (Right r) <- rs]
-	       literals           = nub  [lit | xs <- map rhsRule rules,
-					        Left lit <- xs,
-					        elem lit specialCatsP]
-	       pragma             = [r | Left (Left r) <- rs]
-	       errors             = [s | Right s <- rs, not (null s)]
-	       (symbols,keywords) = partition notIdent reservedWords
-               notIdent s         = null s || not (isAlpha (head s)) || any (not . isIdentRest) s
-               isIdentRest c      = isAlphaNum c || c == '_' || c == '\''
-	       reservedWords      = nub [t | r <- rules, Right t <- rhsRule r]
-               cats               = []
-	    in (CFG((pragma,(literals,symbols,keywords,cats)),rules),errors)
-  revs (cf@(CFG((pragma,(literals,symbols,keywords,_)),rules)),errors) =
-    (CFG((pragma,
-       (literals,symbols,keywords,findAllReversibleCats (cfp2cf cf))),rules),errors)
+nilCFP :: CFP
+nilCFP = CFG (([],([],[],[],[])),[])
 
-conv :: Err Abs.Grammar -> [Either (Either Pragma RuleP) String]
-conv (Bad s)                 = [Right s]
-conv (Ok (Abs.Grammar defs)) = map Left $ concatMap transDef defs
+getCFP :: String -> (CFP,[String])
+getCFP s = case pGrammar . myLexer $ s of
+  Bad s -> (nilCFP,[s])
+  Ok (Abs.Grammar defs) -> (cf0,msgs)
+    where (pragma,rules) = partitionEithers $ concatMap transDef defs
+          msgs = catMaybes $ map (checkRule (cfp2cf cf0)) (rulesOfCF cf0)
+          cf0 = revs srt 
+          srt = let    literals           = nub [lit | xs <- map rhsRule rules,
+               	         		         Left lit <- xs,
+               	         		         elem lit specialCatsP]
+                       (symbols,keywords) = partition notIdent reservedWords
+                       notIdent s         = null s || not (isAlpha (head s)) || any (not . isIdentRest) s
+                       isIdentRest c      = isAlphaNum c || c == '_' || c == '\''
+                       reservedWords      = nub [t | r <- rules, Right t <- rhsRule r]
+                   in CFG((pragma,(literals,symbols,keywords,[])),rules)
+          revs cf1@(CFG((pragma,(literals,symbols,keywords,_)),rules)) =
+              CFG((pragma,(literals,symbols,keywords,findAllReversibleCats (cfp2cf cf1))),rules)
 
 transDef :: Abs.Def -> [Either Pragma RuleP]
 transDef x = case x of
@@ -163,15 +157,34 @@ transDef x = case x of
  Abs.PosToken ident reg        -> [Left $ TokenReg (transIdent ident) True reg]
  Abs.Entryp idents             -> [Left $ EntryPoints (map transIdent idents)]
  Abs.Internal label cat items  -> 
-   [Right $ Rule (transLabel label) (transCat cat) (Left "#":(map transItem items))]
+   [Right $ Rule (transLabel label) (transCat cat) (Left internalCat:(map transItem items))]
  Abs.Separator size ident str -> map  (Right . cf2cfpRule) $ separatorRules size ident str
  Abs.Terminator size ident str -> map  (Right . cf2cfpRule) $ terminatorRules size ident str
+ Abs.Delimiters a b c -> map  (Right . cf2cfpRule) $ delimiterRules a b c
  Abs.Coercions ident int -> map  (Right . cf2cfpRule) $ coercionRules ident int
  Abs.Rules ident strs -> map (Right . cf2cfpRule) $ ebnfRules ident strs
  Abs.Layout ss      -> [Left $ Layout ss]
  Abs.LayoutStop ss  -> [Left $ LayoutStop ss]
  Abs.LayoutTop      -> [Left $ LayoutTop]
  Abs.Function f xs e -> [Left $ FunDef (transIdent f) (map transArg xs) (transExp e)]
+
+
+
+delimiterRules :: Abs.Cat -> String -> String -> [Rule]
+delimiterRules a0 l r = [
+  Rule "(++)"   a'  [Left a', Left a'],
+  Rule "(:[])"  a'  [Left a],
+  Rule "[]"     c   [Right l],
+  Rule "(++)"   c   [Left c,Left a'],
+  Rule "[]"     d   [Right r],
+  Rule "(++)"   d   [Left a',Left d],
+  Rule "(++)"   as  [Left c,Left d]
+  ]
+ where a = transCat a0
+       as = listCat a
+       a' = '@':'@':a
+       c  = '@':'{':a
+       d  = '@':'}':a
 
 separatorRules :: Abs.MinimumSize -> Abs.Cat -> String -> [Rule]
 separatorRules size c s = if null s then terminatorRules size c s else ifEmpty [
@@ -296,3 +309,45 @@ nullable r =
       Abs.RUpper       -> False
       Abs.RLower       -> False
       Abs.RAny         -> False
+
+
+-- we should actually check that 
+-- (1) coercions are always between variants
+-- (2) no other digits are used
+
+checkRule :: CF -> RuleP -> Maybe String
+checkRule cf (Rule _ ('@':_) rhs) = Nothing -- Generated by a pragma; it's a trusted category
+checkRule cf (Rule (f,_) cat rhs)
+  | badCoercion    = Just $ "Bad coercion in rule" +++ s
+  | badNil         = Just $ "Bad empty list rule" +++ s
+  | badOne         = Just $ "Bad one-element list rule" +++ s
+  | badCons        = Just $ "Bad list construction rule" +++ s
+  | badList        = Just $ "Bad list formation rule" +++ s
+  | badSpecial     = Just $ "Bad special category rule" +++ s
+  | badTypeName    = Just $ "Bad type name" +++ unwords badtypes +++ "in" +++ s
+  | badFunName     = Just $ "Bad constructor name" +++ f +++ "in" +++ s
+  | badMissing     = Just $ "No production for" +++ unwords missing ++
+                             ", appearing in rule" +++ s
+  | otherwise      = Nothing
+ where
+   s  = f ++ "." +++ cat +++ "::=" +++ unwords (map (either id show) rhs) -- Todo: consider using the show instance of Rule
+   c  = normCat cat
+   cs = [normCat c | Left c <- rhs]
+   badCoercion = isCoercion f && not ([c] == cs)
+   badNil      = isNilFun f   && not (isList c && null cs)
+   badOne      = isOneFun f   && not (isList c && cs == [catOfList c])
+   badCons     = isConsFun f  && not (isList c && cs == [catOfList c, c])
+   badList     = isList c     && 
+                 not (isCoercion f || isNilCons f)
+   badSpecial  = elem c specialCatsP && not (isCoercion f)
+
+   badMissing  = not (null missing)
+   missing     = filter nodef [c | Left c <- rhs] 
+   nodef t = notElem t defineds
+   defineds =
+    internalCat : tokenNames cf ++ specialCatsP ++ map valCat (rulesOfCF cf) 
+   badTypeName = not (null badtypes)
+   badtypes = filter isBadType $ cat : [c | Left c <- rhs]
+   isBadType c = not (isUpper (head c) || isList c || c == internalCat || (head c == '@') )
+   badFunName = not (all (\c -> isAlphaNum c || c == '_') f {-isUpper (head f)-}
+                       || isCoercion f || isNilCons f)

@@ -181,13 +181,26 @@ isOnLeft _ _ = False
 isOnRight c (Rule f _ [_,c']) = c == c'
 isOnRight _ _ = False
 
-
 occurs :: (RHSEl -> Rul f -> Bool) -> RHSEl -> CFG f -> Bool
 occurs where_ el cf = either (`elem` allEntryPoints cf) (const False) el || any (where_ el) (rulesOfCF cf)
 
 splitLROn :: (a -> RHSEl) -> CFG f -> [a] -> Pair [a]
 splitLROn f cf xs = filt <$> (isOnLeft :/: isOnRight) <*> pure xs
   where filt wh = filter (\c -> occurs wh (f c) cf)
+        
+isSpecial (Left ('@':'@':_)) = True
+isSpecial _ = False
+        
+optim :: (a -> RHSEl) -> Pair [a] -> Pair [(a,Doc -> Doc)]
+optim f (x:/:y) = map modif x :/: map modif' y
+  where modif  a | isSpecial (f a) = (a,\x -> "(if not p then (" <> x <> ":) else id)")
+                 | otherwise = (a,rob) 
+        modif' a | isSpecial (f a) = (a,\x -> "(if     p then (" <> x <> ":) else id)")
+                 | otherwise = (a,rob)
+        rob x = "("<> x <> ":)"
+                                      
+
+splitOptim f cf xs = optim f $ splitLROn f cf $ xs
 
 -------------------------
 -- Code generation
@@ -249,7 +262,6 @@ allSyms cf = map Left (allCats cf  ++ literals cf) ++ map (Right . fst) (cfToken
         
 
 ppPair (x,y) = parens $ x <> comma <> " " <> y
-ppList xs = brackets $ punctuate' comma xs
 
 unsafeCoerce' = app' (Con "unsafeCoerce#")
 
@@ -264,13 +276,15 @@ group' ((a,bs):xs) = (a,bs ++ concatMap snd ys) : group' zs
   where (ys,zs) = span (\x -> fst x == a) xs
 
 prettyPair (x :/: y) = sep [x,":/:",y]
+prettyListFun xs = parens $ sep (map (<> "$") xs) <> "[]"
+
 
 genCombine :: UnitRel Cat -> CFG Exp -> Doc
 genCombine units cf = vcat $ map genEntry $ group' $ sortBy (compare `on` fst) $ map (alt units) (rulesOfCF cf)
   where genEntry :: ((RHSEl,RHSEl),[(Cat,Exp)]) -> Doc
-        genEntry ((r1,r2),cs) = "combine _ " <> catTag r1 <> " " <> catTag r2 <> " = " <> prettyPair (genList <$> splitLROn (Left . fst) cf cs)
+        genEntry ((r1,r2),cs) = "combine p " <> catTag r1 <> " " <> catTag r2 <> " = " <> prettyPair (genList <$> splitOptim (Left . fst) cf cs)
         mkLam body = "\\x y -> " <> body
-        genList xs = ppList (map (ppPair . ((catTag . Left) *** (mkLam . prettyExp . unsafeCoerce'))) xs)
+        genList xs = prettyListFun [p (ppPair (catTag . Left $ x, mkLam . prettyExp . unsafeCoerce' $ y)) | ((x,y),p) <- xs]
 
 alt :: UnitRel Cat -> Rul Exp -> ((RHSEl,RHSEl),[(Cat,Exp)])
 alt units (Rule f c [r1,r2]) = ((r1,r2),initial:others)
@@ -285,6 +299,9 @@ catTag (Right t) = "TOK_" <> text (concatMap escape t)
 escape c | isAlphaNum c || c == '_' = [c]
 escape '[' = ""
 escape ']' = "_List"
+escape '{' = "OPEN_"
+escape '}' = "CLOS_"
+escape '@' = "BIN_"
 escape c = show $ ord c
 
 genTokTable :: UnitRel Cat -> CFG Exp -> Doc
@@ -299,7 +316,8 @@ tokInfo cf = ("Char","TC",Con "head"):
              [("Ident","TV",Con "Ident")|hasIdent cf] ++
              [(t,"T_" <> text t,(Con t)) | t <- tokenNames cf]
 
-genTokCommon cf xs = prettyPair ((ppList . map (ppPair . (catTag *** id))) <$> splitLROn fst cf xs)
+genTokCommon cf xs = prettyPair (gen <$> splitOptim fst cf xs)
+  where gen ys = prettyListFun [p (ppPair (catTag x,y)) | ((x,y),p) <- ys]
 
 genSpecEntry cf units (tokName,constrName,fun) = "tokens (PT (Pn _ l c) (" <> constrName <> " x)) = " <> genTokCommon cf xs
   where xs = map (second (prettyExp . (\f -> unsafeCoerce' (f `app'` tokArgs)))) $ 
@@ -307,14 +325,15 @@ genSpecEntry cf units (tokName,constrName,fun) = "tokens (PT (Pn _ l c) (" <> co
         tokArgs | isPositionCat cf tokName = Con "((l,c),x)"
                 | otherwise = Con "x"
 
-genTokEntry cf units (tok,x) = "tokens (PT posn (TS _ " <> int x <> ")) = " <> genTokCommon cf xs
+genTokEntry cf units (tok,x) = 
+  " -- " <> text tok $$
+  "tokens (PT posn (TS _ " <> int x <> ")) = " <> genTokCommon cf xs
   where xs = (Right tok, tokVal) : 
              [(Left c,prettyExp (unsafeCoerce' f)) | (f,c) <- lk (Right tok) units]
         tokVal = "error" <> (text $ show $ "cannot access value of token: " ++ tok)
   
 ------------------------           
 -- Test file generation
-
 
 genTestFile opts cf = render $ vcat
     ["{-# LANGUAGE MagicHash #-}"
@@ -354,7 +373,7 @@ genTestFile opts cf = render $ vcat
                        "putStrLn $ printTree ((unsafeCoerce# ast)::" <> text cat <> ")",
                        "return ()"]) | cat <- filter isDataCat $ allCats cf]
     ,"          _ -> return ()"
-    ,"      forM (fingerprint chart) putStrLn"
+    ,"      writeFile \"cnf.xpm\" (genXPM $ fingerprint chart)"
     ,"      return ()"
     ,"   where ts = myLLexer s"
     ,"         chart = pLGrammar ts "

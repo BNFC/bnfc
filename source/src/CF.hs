@@ -75,7 +75,8 @@ module CF (
 	    normCat,        
             isDataCat,
 	    normCatOfList,  -- Removes precendence information and enclosed List. C1 => C, C2 => C
-	    catOfList,	    -- Removes enclosed list: [C1] => C1
+            listCat,        
+	    catOfList,	    
 	    comments,       -- translates the pragmas into two list containing the s./m. comments
             tokenPragmas,   
             tokenNames,    
@@ -89,8 +90,7 @@ module CF (
             hasIdent,
             hasLayout,
             layoutPragmas,
-            checkRule,
-
+            
             CFP,            -- CF with profiles
             RuleP,
 	    FunP, 
@@ -233,6 +233,7 @@ type Name = String
 -- rules, essentially ensuring that they are never parsed.
 internalCat :: Cat
 internalCat = "#"
+
 
 -- | Abstract syntax tree.
 newtype Tree = Tree (Fun,[Tree])
@@ -397,10 +398,12 @@ cf2data :: CF -> [Data]
 cf2data = cf2data' isDataCat
           
 -- | Does the category correspond to a data type?
-isDataCat c = not (isList c || isDigit (last c))
+isDataCat c = isDataOrListCat c && not (isList c)
+
+isDataOrListCat c = not (isDigit (last c) || head c == '@')
 
 cf2dataLists :: CF -> [Data]
-cf2dataLists = cf2data' (\x -> not $ isDigit $ last x) 
+cf2dataLists = cf2data' isDataOrListCat
 
 specialData :: CF -> [Data]
 specialData cf = [(c,[(c,[arg c])]) | c <- specialCats cf] where
@@ -460,7 +463,7 @@ normRuleFun (Rule f p rhs) = Rule (normFun f) p rhs
 
 -- | Checks if the rule is parsable.
 isParsable :: Rul f -> Bool
-isParsable (Rule _ _ (Left "#":_)) = False
+isParsable (Rule _ _ (Left c:_)) = c /= internalCat
 isParsable _ = True
 
 isList :: Cat -> Bool
@@ -470,17 +473,22 @@ isList c = head c == '['
 unList :: Cat -> Cat
 unList c = c
 
--- | Unwraps the list constructor from the category name
+-- | Adds list constructor
+listCat :: Cat -> Cat
+listCat c = "[" ++ c ++ "]"
+
+-- | Unwraps the list constructor from the category name. Eg. [C1] => C1
 catOfList :: Cat -> Cat
 catOfList c = case c of
   '[':_:_ -> init (tail c)
   _ -> c
 
-isNilFun, isOneFun, isConsFun, isNilCons :: Fun -> Bool
-isNilCons f = isNilFun f || isOneFun f || isConsFun f
+isNilFun, isOneFun, isConsFun, isNilCons,isConcatFun :: Fun -> Bool
+isNilCons f = isNilFun f || isOneFun f || isConsFun f || isConcatFun f
 isNilFun f  = f == "[]"    
 isOneFun f  = f == "(:[])" 
 isConsFun f = f == "(:)"   
+isConcatFun f = f == "(++)"   
 
 -- | Checks if the list has a non-empty rule.
 hasOneFunc :: [Rule] -> Bool
@@ -537,53 +545,15 @@ precLevels cf = sort $ nub $ [ precCat c | c <- allCats cf]
 precCF :: CF -> Bool
 precCF cf = length (precLevels cf) > 1
 
+
 analyseCat :: Cat -> (Cat,Int)
 analyseCat c = if (isList c) then list c else noList c
  where
-  list   cat = let (rc,n) = noList (init (tail cat)) in ("[" ++ rc ++ "]",n)
+  list   cat = let (rc,n) = noList (init (tail cat)) in (listCat rc,n)
   noList cat = case span isDigit (reverse cat) of
 	        ([],c') -> (reverse c', 0)
 	        (d,c') ->  (reverse c', read (reverse d))
 
--- we should actually check that 
--- (1) coercions are always between variants
--- (2) no other digits are used
-
-checkRule :: CF -> RuleP -> Either RuleP String
-checkRule cf r@(Rule (f,_) cat rhs)
-  | badCoercion    = Right $ "Bad coercion in rule" +++ s
-  | badNil         = Right $ "Bad empty list rule" +++ s
-  | badOne         = Right $ "Bad one-element list rule" +++ s
-  | badCons        = Right $ "Bad list construction rule" +++ s
-  | badList        = Right $ "Bad list formation rule" +++ s
-  | badSpecial     = Right $ "Bad special category rule" +++ s
-  | badTypeName    = Right $ "Bad type name" +++ unwords badtypes +++ "in" +++ s
-  | badFunName     = Right $ "Bad constructor name" +++ f +++ "in" +++ s
-  | badMissing     = Right $ "No production for" +++ unwords missing ++
-                             ", appearing in rule" +++ s
-  | otherwise      = Left r
- where
-   s  = f ++ "." +++ cat +++ "::=" +++ unwords (map (either id show) rhs) ---
-   c  = normCat cat
-   cs = [normCat c | Left c <- rhs]
-   badCoercion = isCoercion f && not ([c] == cs)
-   badNil      = isNilFun f   && not (isList c && null cs)
-   badOne      = isOneFun f   && not (isList c && cs == [catOfList c])
-   badCons     = isConsFun f  && not (isList c && cs == [catOfList c, c])
-   badList     = isList c     && 
-                 not (isCoercion f || isNilFun f || isOneFun f || isConsFun f)
-   badSpecial  = elem c specialCatsP && not (isCoercion f)
-
-   badMissing  = not (null missing)
-   missing     = filter nodef [c | Left c <- rhs] 
-   nodef t = notElem t defineds
-   defineds =
-    "#" : tokenNames cf ++ specialCatsP ++ map valCat (rulesOfCF cf) 
-   badTypeName = not (null badtypes)
-   badtypes = filter isBadType $ cat : [c | Left c <- rhs]
-   isBadType c = not (isUpper (head c) || isList c || c == "#")
-   badFunName = not (all (\c -> isAlphaNum c || c == '_') f {-isUpper (head f)-}
-                       || isCoercion f || isNilFun f || isOneFun f || isConsFun f)
 
 -- | Does the category have a position stored in AST?
 isPositionCat :: CFG f -> Cat -> Bool

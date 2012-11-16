@@ -42,6 +42,7 @@ transDef x = case x of
   Entryp ids  -> failure x
   Separator minimumsize cat str  -> failure x
   Terminator minimumsize cat str  -> failure x
+  Delimiters cat str1 str2  -> failure x
   Coercions id n  -> failure x
   Rules id rhss  -> failure x
   Function id args exp  -> failure x
