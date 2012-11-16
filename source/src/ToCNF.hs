@@ -19,7 +19,7 @@
 
 {-# LANGUAGE OverloadedStrings #-}
 
-module ToCNF (generate, genTestFile) where
+module ToCNF (generate, genTestFile, genBenchmark) where
 
 {-
 
@@ -333,6 +333,7 @@ genTestFile opts cf = render $ vcat
     ,"import Control.Applicative (pure)"
     ,"import Parsing.Chart"
     ,"import Data.Matrix"
+    ,"import Data.Matrix.Class"
     ,"import ErrM"
     ,""
     ,"myLLexer = "<> text (alexFileM opts) <> ".tokens"
@@ -353,6 +354,7 @@ genTestFile opts cf = render $ vcat
                        "putStrLn $ printTree ((unsafeCoerce# ast)::" <> text cat <> ")",
                        "return ()"]) | cat <- filter isDataCat $ allCats cf]
     ,"          _ -> return ()"
+    ,"      forM (fingerprint chart) putStrLn"
     ,"      return ()"
     ,"   where ts = myLLexer s"
     ,"         chart = pLGrammar ts "
@@ -376,6 +378,27 @@ genTestFile opts cf = render $ vcat
     ,""]
 
 
+genBenchmark opts = render $ vcat
+   ["import System.Environment ( getArgs )"
+   ,"import "<> text ( alexFileM opts) <> " as Lexer"
+   ,"import "<> text ( cnfTablesFileM opts) <> " as Parser"
+   ,"import GHC.Exts"
+   ,"import Parsing.Chart"
+   ,"import Data.Matrix.Class"
+   ,"import Criterion.Main"
+   ,"import Algebra.RingUtils"
+   ,"type T = [(CATEGORY,Any)]"
+   ,"pLGrammar :: [Pair T] -> MT2 T"
+   ,"pLGrammar = mkTree"
+   ,"main = do"
+   ,"  f:_ <- getArgs"
+   ,"  s <- readFile f"
+   ,"  let ts = map (Parser.tokens) $ Lexer.tokens s"
+   ,"      (ts1,ts2) = splitAt (length ts `div` 2) ts"
+   ,"      cs = map pLGrammar [ts1,ts2] "
+   ,"      work [c1,c2] = show $ map fst $ root $ merging False c1 c2"
+   ,"  defaultMain [bench f $ nf work cs] -- note the hack!!!"
+   ]
 
 
            

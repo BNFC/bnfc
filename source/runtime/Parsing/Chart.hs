@@ -9,12 +9,10 @@ import Data.Traversable (sequenceA)
 import Control.Applicative ((<$>),(<*>),pure)
 import Control.Monad(join)
 
--- import Parsing.CNF
 import Data.List (splitAt)
 import Algebra.RingUtils
 import Data.Matrix
 import Data.Matrix.Class
--- import qualified Data.Matrix.Valiant as V
 import qualified Data.Matrix.ValiantPosition as VP
 
 -- interface to charts and generic code on top of it.
