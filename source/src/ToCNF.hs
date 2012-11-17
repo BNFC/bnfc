@@ -181,12 +181,15 @@ isOnLeft _ _ = False
 isOnRight c (Rule f _ [_,c']) = c == c'
 isOnRight _ _ = False
 
+isEntryPoint cf el = either (`elem` allEntryPoints cf) (const False) el
+
 occurs :: (RHSEl -> Rul f -> Bool) -> RHSEl -> CFG f -> Bool
-occurs where_ el cf = either (`elem` allEntryPoints cf) (const False) el || any (where_ el) (rulesOfCF cf)
+occurs where_ el cf = any (where_ el) (rulesOfCF cf)
 
 splitLROn :: (a -> RHSEl) -> CFG f -> [a] -> Pair [a]
-splitLROn f cf xs = filt <$> (isOnLeft :/: isOnRight) <*> pure xs
-  where filt wh = filter (\c -> occurs wh (f c) cf)
+splitLROn f cf xs = filt <*> pure xs
+  where filt = filter (\c -> occurs isOnLeft  (f c) cf || isEntryPoint cf (f c)) :/: 
+               filter (\c -> occurs isOnRight (f c) cf)
         
 isSpecial (Left ('@':'@':_)) = True
 isSpecial _ = False
