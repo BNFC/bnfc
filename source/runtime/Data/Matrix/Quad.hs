@@ -5,7 +5,7 @@ module Data.Matrix.Quad where
 import Prelude ()
 import Data.List (splitAt,intercalate)
 import Control.Applicative
-import Algebra.RingUtils
+import Algebra.RingUtils hiding (O)
 import Data.Traversable 
 import Data.Foldable
 
@@ -26,6 +26,12 @@ data Mat :: Shape -> Shape -> * -> * where
   One :: a -> Mat Leaf Leaf a
   Row :: Mat x1 Leaf a -> Mat x2 Leaf a -> Mat (Bin x1 x2) Leaf a
   Col :: Mat Leaf y1 a -> Mat Leaf y2 a -> Mat Leaf (Bin y1 y2) a
+
+data Vec :: Shape -> * -> * where
+  Z :: Vec s a
+  O :: a -> Vec Leaf a
+  (:!) :: Vec s a -> Vec s' a -> Vec (Bin s s') a
+
 
 row Zero Zero = Zero
 row x y = Row x y
@@ -141,7 +147,44 @@ mergein :: RingP a => Bool -> SomeTri a -> Pair a -> SomeTri a -> SomeTri a
 mergein p (T y a) c (T x b) = T (Bin' y x) (quad' a (closeDisjointP p (leftOf a) c' (rightOf b)) zero b)
   where c' = mkSing x y c
   
-        
+zw :: (AbelianGroup a, AbelianGroup b) => (a -> b -> c) -> Vec y a -> Vec y b -> Vec y c
+zw f Z Z = Z
+zw f Z (a :! b) = zw f (Z :! Z) (a :! b)
+zw f (a :! b) Z = zw f (a :! b) (Z :! Z)
+zw f Z (O x) = O $ f zero x
+zw f (O x) Z = O $ f x zero
+zw f (O x) (O y) = O (f x y)
+zw f (a :! b) (a' :! b') = zw f a a' :! zw f b b'
+
+lk :: AbelianGroup a => Int -> Shape' x -> Vec x a -> a
+lk n _ Z = zero
+lk 0 Leaf' (O x) = x
+lk i (Bin' s s') (x :! x') 
+  | i < sz' s  = lk i s x
+  | otherwise = lk (i - sz' s) s' x'
+
+lin' :: AbelianGroup a => Mat x y a -> Vec y (Vec x a)
+lin' Zero = Z
+lin' (One a) = O (O a)
+lin' (Row a b) = zw (:!) (lin' a) (lin' b)
+lin' (Col a b) = lin' a :! lin' b
+lin' (Quad a b c d) = zw (:!) (lin' a) (lin' b) :!zw (:!) (lin' c) (lin' d)
+
+contents :: Shape' x -> Vec x a -> [(Int,a)]
+contents s Z = [] 
+contents s (O a) = [(0,a)]
+contents (Bin' s s') (xs :! xs') = contents s xs ++ map (first (+sz' s)) (contents s' xs')
+
+first f (a,b) = (f a,b)
+
+instance AbelianGroup a => AbelianGroup (Vec x a) where
+  zero = Z
+  (+) = zw (+)
+
+-- | Return one line from the matrix
+line :: AbelianGroupZ a => Int -> SomeTri a -> [(Int,a)]
+line i (T s (a :/: a')) = contents s $ lk i s (lin' $ a + a')
+                               
 root' :: AbelianGroup a => Mat x y a -> a
 root' Zero = zero
 root' (One x) = x
@@ -160,16 +203,16 @@ square3 p x y = T (Bin' (Bin' Leaf' Leaf') (Leaf'))
   (quad' (quad' zero (one <$> x) zero zero) (Col <$> (one <$> mul p (leftOf x) (rightOf y)) <*> (one <$> y)) zero zero)
   
 
-sz :: Shape' s -> Int
-sz Leaf' = 1
-sz (Bin' l r) = sz l + sz r
+sz' :: Shape' s -> Int
+sz' Leaf' = 1
+sz' (Bin' l r) = sz' l + sz' r
 
 
 (|+|) = zipWith (++) 
 (-+-) = (++)
 
 lin :: AbelianGroup a => Shape' x -> Shape' y -> Mat x y a -> [[a]]
-lin x y Zero = replicate (sz y) $ replicate (sz x) zero
+lin x y Zero = replicate (sz' y) $ replicate (sz' x) zero
 lin _ _ (One x) = [[x]]
 lin (Bin' x x') (Bin' y y') (Quad a b c d) = (lin x y a |+| lin x' y b) -+- (lin x y' c |+| lin x' y' d)
 lin Leaf' (Bin' y y') (Col a b) = lin Leaf' y a -+- lin Leaf' y' b
