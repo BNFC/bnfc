@@ -218,7 +218,9 @@ lin (Bin' x x') (Bin' y y') (Quad a b c d) = (lin x y a |+| lin x' y b) -+- (lin
 lin Leaf' (Bin' y y') (Col a b) = lin Leaf' y a -+- lin Leaf' y' b
 lin (Bin' x x') Leaf' (Row a b) = (lin x Leaf' a) |+| (lin x' Leaf' b)
 
-fingerprint (T s (m :/: m')) = map (map (c . not . isZero)) $ lin s s (m + m')
-  where 
-        c True = 'X'
-        c False = ' '
+fingerprint (T s (m :/: m')) = zipWith (zipWith c) (lin s s m) (lin s s m')
+  where c x y = case (isZero x,isZero y) of
+                     (True  , True) -> ' '
+                     (True  , False) -> '>'
+                     (False , True) -> '<'
+                     (False , False) -> 'X'

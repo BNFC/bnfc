@@ -9,8 +9,10 @@ import Control.Applicative hiding ((<|>))
 genXPM xs@(h:_) = unlines $
   ["! XPM2",
    -- <width/cols> <height/rows> <colors> <char on pixel>
-   show width ++ " " ++ show height ++ " 2 1",
-   "X c green",
+   show width ++ " " ++ show height ++ " 4 1",
+   "X c cyan",
+   "< c blue",
+   "> c red",
    "  c black"
    ] ++ 
    xs
