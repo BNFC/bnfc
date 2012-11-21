@@ -354,7 +354,6 @@ genTestFile opts cf = render $ vcat
     ,"import Control.Monad"
     ,"import Control.Applicative (pure)"
     ,"import Parsing.Chart"
-    ,"import Data.Matrix.Class (genXPM)"
     ,"import ErrM"
     ,""
     ,"myLLexer = "<> text (alexFileM opts) <> ".tokens"
@@ -405,7 +404,6 @@ genBenchmark opts = render $ vcat
    ,"import "<> text ( cnfTablesFileM opts) <> " as Parser"
    ,"import GHC.Exts"
    ,"import Parsing.Chart"
-   ,"import Data.Matrix.Class"
    ,"import Criterion.Main"
    ,"import Algebra.RingUtils"
    ,"import Control.Applicative"
@@ -418,7 +416,7 @@ genBenchmark opts = render $ vcat
    ,"  let ts = map (Parser.tokens) $ Lexer.tokens s"
    ,"      (ts1,x:ts2) = splitAt (length ts `div` 2) ts"
    ,"      cs = [mkTree ts1,mkTree' ts2]"
-   ,"      work [c1,c2] = show $ map fst $ root $ merging' False c1 x c2"
+   ,"      work [c1,c2] = show $ map fst $ root $ mergein False c1 x c2"
    ,"  defaultMain [bench f $ nf work cs] -- note the hack!!!"
    ]
 

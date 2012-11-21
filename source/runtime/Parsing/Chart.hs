@@ -57,3 +57,20 @@ instance AbelianGroupZ (Set a) where
 
 type MT2 a = Q.Q a
 
+genXPM xs@(h:_) = unlines $
+  ["! XPM2",
+   -- <width/cols> <height/rows> <colors> <char on pixel>
+   show width ++ " " ++ show height ++ " 4 1",
+   "X c cyan",
+   "< c blue",
+   "> c red",
+   "  c black"
+   ] ++ 
+   xs
+  where width = length h
+        height = length xs
+
+root = Q.root 
+mergein a c b = Q.mergein a c b
+single x = Q.single x
+

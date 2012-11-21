@@ -6,18 +6,6 @@ import Prelude ()
 import Algebra.RingUtils
 import Control.Applicative hiding ((<|>))
 
-genXPM xs@(h:_) = unlines $
-  ["! XPM2",
-   -- <width/cols> <height/rows> <colors> <char on pixel>
-   show width ++ " " ++ show height ++ " 4 1",
-   "X c cyan",
-   "< c blue",
-   "> c red",
-   "  c black"
-   ] ++ 
-   xs
-  where width = length h
-        height = length xs
 
 fingerprint m = [[ if isZero (at i j m) then ' ' else 'X' | i <- [0..x-1] ] | j <- [0..y-1]]
   where x = countColumns m
