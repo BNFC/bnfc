@@ -12,18 +12,18 @@ import Data.Foldable
 data Shape = Bin Shape Shape | Leaf
 
 data Shape' :: Shape -> * where 
-  Bin' :: Shape' s -> Shape' s' -> Shape' (Bin s s') 
+  Bin' :: !Int -> Shape' s -> Shape' s' -> Shape' (Bin s s') 
   Leaf' :: Shape' Leaf
 
 data SomeShape where 
   S :: Shape' s -> SomeShape
 
 data Mat :: Shape -> Shape -> * -> * where
-  Quad :: Mat x1 y1 a -> Mat x2 y1 a -> 
-          Mat x1 y2 a -> Mat x2 y2 a -> 
+  Quad :: !(Mat x1 y1 a) -> !(Mat x2 y1 a) -> 
+          !(Mat x1 y2 a) -> !(Mat x2 y2 a) -> 
           Mat (Bin x1 x2) (Bin y1 y2) a
   Zero :: Mat x y a
-  One :: a -> Mat Leaf Leaf a
+  One :: !a -> Mat Leaf Leaf a
   Row :: Mat x1 Leaf a -> Mat x2 Leaf a -> Mat (Bin x1 x2) Leaf a
   Col :: Mat Leaf y1 a -> Mat Leaf y2 a -> Mat Leaf (Bin y1 y2) a
 
@@ -118,35 +118,51 @@ showR (Row a b) = "("++showR a++"-"++showR b++")"
 showR (Col a b) = "("++showR a++"|"++showR b++")"
 showR (Quad a b c d) = "#("++ intercalate "," [showR a,showR b,showR c,showR d]++")"
 
+bin' :: Shape' s -> Shape' s' -> Shape' (Bin s s')
+bin' s s' = Bin' (sz' s + sz' s') s s'
+
 mkShape :: Int -> SomeShape
-mkShape 1 = S (Bin' Leaf' Leaf')
-mkShape 2 = S (Bin' (Bin' Leaf' Leaf') Leaf')
+mkShape 1 = S (bin' Leaf' Leaf')
+mkShape 2 = S (bin' (bin' Leaf' Leaf') Leaf')
 mkShape n = case (mkShape n'1, mkShape n'2) of
-  (S x, S y) -> S (Bin' x y)
+  (S x, S y) -> S (bin' x y)
   where n'1 = n `div` 2
         n'2 = n - n'1 - 1
 
 mkSing :: AbelianGroupZ a => Shape' x -> Shape' y -> a -> Mat x y a
-mkSing (Bin' x1 x2) (Bin' y1 y2) a = quad Zero Zero (mkSing x1 y2 a) Zero
+mkSing (Bin' _ x1 x2) (Bin' _ y1 y2) a = quad Zero Zero (mkSing x1 y2 a) Zero
 mkSing Leaf' Leaf' a = one a
-mkSing Leaf' (Bin' y1 y2) a = col Zero (mkSing Leaf' y2 a)
-mkSing (Bin' x1 x2) Leaf' a = row (mkSing x1 Leaf' a) Zero
+mkSing Leaf' (Bin' _ y1 y2) a = col Zero (mkSing Leaf' y2 a)
+mkSing (Bin' _ x1 x2) Leaf' a = row (mkSing x1 Leaf' a) Zero
 
 data SomeTri a where                  
   T :: Shape' s -> Pair (Mat s s a) -> SomeTri a
         
 type Q a = SomeTri a       
        
--- mkTree :: forall a. AbelianGroupZ a => [Pair a] -> SomeTri a          
--- mkTree xs = case mkShape (length xs) of
---   S s -> T s (mkMat s xs)
+mkUpDiag :: AbelianGroupZ a => [a] -> Shape' s -> Mat s s a
+mkUpDiag [] Leaf' = Zero
+mkUpDiag xs (Bin' _ s s') = Quad (mkUpDiag a s) (mkSing s' s c) Zero (mkUpDiag b s')
+  where (a,c:b) = splitAt (sz' s - 1) xs
+
+close :: RingP a => Bool -> Mat s s (Pair a) -> Pair (Mat s s a)
+close p Zero = zero
+close p (One x) = one <$> x
+close p (Quad a11 a12 Zero a22) = quad' x11 (closeDisjointP p (leftOf x11) a12 (rightOf x22)) zero x22
+ where x11 = close False a11 
+       x22 = close True  a22
+
+mkTree :: RingP a => [Pair a] -> SomeTri a          
+mkTree xs = case mkShape (length xs) of
+  S s -> T s (close True $ mkUpDiag xs s)
 
 quad' a b c d = quad <$> a <*> b <*> c <*> d
 
 mergein :: RingP a => Bool -> SomeTri a -> Pair a -> SomeTri a -> SomeTri a
-mergein p (T y a) c (T x b) = T (Bin' y x) (quad' a (closeDisjointP p (leftOf a) c' (rightOf b)) zero b)
+mergein p (T y a) c (T x b) = T (bin' y x) (quad' a (closeDisjointP p (leftOf a) c' (rightOf b)) zero b)
   where c' = mkSing x y c
   
+-- | A variant of zipWith on vectors
 zw :: (AbelianGroup a, AbelianGroup b) => (a -> b -> c) -> Vec y a -> Vec y b -> Vec y c
 zw f Z Z = Z
 zw f Z (a :! b) = zw f (Z :! Z) (a :! b)
@@ -156,13 +172,15 @@ zw f (O x) Z = O $ f x zero
 zw f (O x) (O y) = O (f x y)
 zw f (a :! b) (a' :! b') = zw f a a' :! zw f b b'
 
+-- | Lookup in a vector
 lk :: AbelianGroup a => Int -> Shape' x -> Vec x a -> a
 lk n _ Z = zero
 lk 0 Leaf' (O x) = x
-lk i (Bin' s s') (x :! x') 
+lk i (Bin' _ s s') (x :! x') 
   | i < sz' s  = lk i s x
   | otherwise = lk (i - sz' s) s' x'
 
+-- | Linearize a matrix
 lin' :: AbelianGroup a => Mat x y a -> Vec y (Vec x a)
 lin' Zero = Z
 lin' (One a) = O (O a)
@@ -170,16 +188,66 @@ lin' (Row a b) = zw (:!) (lin' a) (lin' b)
 lin' (Col a b) = lin' a :! lin' b
 lin' (Quad a b c d) = zw (:!) (lin' a) (lin' b) :!zw (:!) (lin' c) (lin' d)
 
+-- | Contents of a vector
 contents :: Shape' x -> Vec x a -> [(Int,a)]
 contents s Z = [] 
 contents s (O a) = [(0,a)]
-contents (Bin' s s') (xs :! xs') = contents s xs ++ map (first (+sz' s)) (contents s' xs')
+contents (Bin' _ s s') (xs :! xs') = contents s xs ++ map (first (+sz' s)) (contents s' xs')
+
 
 first f (a,b) = (f a,b)
+second f (a,b) = (a,f b)
 
 instance AbelianGroup a => AbelianGroup (Vec x a) where
   zero = Z
   (+) = zw (+)
+
+data Path :: Shape -> * where
+  Here :: Path Leaf
+  Low  :: Path s -> Path (Bin s s') 
+  High :: Path s -> Path (Bin s' s) 
+
+lineAsVec :: Path y -> Mat x y a -> Vec x a
+lineAsVec _ Zero = Z
+lineAsVec Here (One x) = O x
+lineAsVec Here (Row a b) = lineAsVec Here a :! lineAsVec Here b
+lineAsVec (Low p) (Quad a b c d) = lineAsVec p a :! lineAsVec p b
+lineAsVec (High p) (Quad a b c d) = lineAsVec p c :! lineAsVec p d
+lineAsVec (Low p) (Col a b) = lineAsVec p a
+lineAsVec (High p) (Col a b) = lineAsVec p b
+
+rightmostOnLine :: Path y -> Mat x y a -> (a,Path x)
+rightmostOnLine Here (One x) = (x,Here)
+rightmostOnLine Here (Row a Zero) = second Low  $ rightmostOnLine Here a
+rightmostOnLine Here (Row a b)    = second High $ rightmostOnLine Here b
+rightmostOnLine (Low p) (Col a b) = rightmostOnLine p a
+rightmostOnLine (High p) (Col a b) = rightmostOnLine p b
+rightmostOnLine (Low p) (Quad a Zero _ _) = second Low $ rightmostOnLine p a
+rightmostOnLine (Low p) (Quad a b    _ _) = second High $ rightmostOnLine p b
+rightmostOnLine (High p) (Quad _ _ c Zero) = second Low $ rightmostOnLine p c
+rightmostOnLine (High p) (Quad _ _    c d) = second High $ rightmostOnLine p d
+
+isRightmost :: Path x -> Bool
+isRightmost (Low _) = False
+isRightmost (Here) = True
+isRightmost (High x) = isRightmost x
+
+results' :: Mat y y a -> Path y -> [(Path y, a, Path y)]
+results' m y | isRightmost y = []
+             | otherwise = (y,a,x) : results' m x
+  where (a,x) = rightmostOnLine y m
+
+results :: AbelianGroupZ a => SomeTri a -> [(Int, a, Int)]
+results (T s (m :/: m')) = [(fromPath s x,a,fromPath s y) | (x,a,y) <- results' (m+m') (leftMost s)]
+
+leftMost :: Shape' s -> Path s
+leftMost Leaf' = Here
+leftMost (Bin' _ s _) = Low $ leftMost s
+
+fromPath :: Shape' y -> Path y -> Int
+fromPath _ Here =  0
+fromPath (Bin' _ s s') (Low x) = fromPath s x
+fromPath (Bin' _ s s') (High x) = sz' s + fromPath s' x 
 
 -- | Return one line from the matrix
 line :: AbelianGroupZ a => Int -> SomeTri a -> [(Int,a)]
@@ -197,26 +265,27 @@ root (T _ (m :/: m')) = root' m + root' m'
 
 single x = T Leaf' (one <$> x)
 
-square2 x = T (Bin' Leaf' Leaf') $ quad' zero (one <$> x) zero zero
+square2 x = T (bin' Leaf' Leaf') $ quad' zero (one <$> x) zero zero
 
-square3 p x y = T (Bin' (Bin' Leaf' Leaf') (Leaf')) 
+square3 p x y = T (bin' (bin' Leaf' Leaf') (Leaf')) 
   (quad' (quad' zero (one <$> x) zero zero) (Col <$> (one <$> mul p (leftOf x) (rightOf y)) <*> (one <$> y)) zero zero)
   
 
 sz' :: Shape' s -> Int
 sz' Leaf' = 1
-sz' (Bin' l r) = sz' l + sz' r
+sz' (Bin' x l r) = x -- sz' l + sz' r
 
 
 (|+|) = zipWith (++) 
 (-+-) = (++)
 
+-- TODO: reimplement using lin'
 lin :: AbelianGroup a => Shape' x -> Shape' y -> Mat x y a -> [[a]]
 lin x y Zero = replicate (sz' y) $ replicate (sz' x) zero
 lin _ _ (One x) = [[x]]
-lin (Bin' x x') (Bin' y y') (Quad a b c d) = (lin x y a |+| lin x' y b) -+- (lin x y' c |+| lin x' y' d)
-lin Leaf' (Bin' y y') (Col a b) = lin Leaf' y a -+- lin Leaf' y' b
-lin (Bin' x x') Leaf' (Row a b) = (lin x Leaf' a) |+| (lin x' Leaf' b)
+lin (Bin' _ x x') (Bin' _ y y') (Quad a b c d) = (lin x y a |+| lin x' y b) -+- (lin x y' c |+| lin x' y' d)
+lin Leaf' (Bin' _ y y') (Col a b) = lin Leaf' y a -+- lin Leaf' y' b
+lin (Bin' _ x x') Leaf' (Row a b) = (lin x Leaf' a) |+| (lin x' Leaf' b)
 
 fingerprint (T s (m :/: m')) = zipWith (zipWith c) (lin s s m) (lin s s m')
   where c x y = case (isZero x,isZero y) of
