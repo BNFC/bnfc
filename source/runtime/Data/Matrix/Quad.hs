@@ -216,26 +216,27 @@ lineAsVec (High p) (Quad a b c d) = lineAsVec p c :! lineAsVec p d
 lineAsVec (Low p) (Col a b) = lineAsVec p a
 lineAsVec (High p) (Col a b) = lineAsVec p b
 
-rightmostOnLine :: Path y -> Mat x y a -> (a,Path x)
-rightmostOnLine Here (One x) = (x,Here)
-rightmostOnLine Here (Row a Zero) = second Low  $ rightmostOnLine Here a
-rightmostOnLine Here (Row a b)    = second High $ rightmostOnLine Here b
+(<||>) :: Maybe (a,Path x) -> Maybe (a,Path x') -> Maybe (a,Path (Bin x x'))
+x <||> y =  (second High <$> y) <|> (second Low <$> x) 
+
+rightmostOnLine :: Path y -> Mat x y a -> Maybe (a,Path x)
+rightmostOnLine _ Zero = Nothing
+rightmostOnLine Here (One x) = Just (x,Here)
+rightmostOnLine Here (Row a b)    = rightmostOnLine Here a <||> rightmostOnLine Here b
 rightmostOnLine (Low p) (Col a b) = rightmostOnLine p a
 rightmostOnLine (High p) (Col a b) = rightmostOnLine p b
-rightmostOnLine (Low p) (Quad a Zero _ _) = second Low $ rightmostOnLine p a
-rightmostOnLine (Low p) (Quad a b    _ _) = second High $ rightmostOnLine p b
-rightmostOnLine (High p) (Quad _ _ c Zero) = second Low $ rightmostOnLine p c
-rightmostOnLine (High p) (Quad _ _    c d) = second High $ rightmostOnLine p d
+rightmostOnLine (Low p) (Quad a b _ _) = rightmostOnLine p a <||> rightmostOnLine p b
+rightmostOnLine (High p) (Quad _ _ a b) = rightmostOnLine p a <||> rightmostOnLine p b
 
 isRightmost :: Path x -> Bool
 isRightmost (Low _) = False
 isRightmost (Here) = True
 isRightmost (High x) = isRightmost x
 
-results' :: Mat y y a -> Path y -> [(Path y, a, Path y)]
+results' :: AbelianGroup a => Mat y y a -> Path y -> [(Path y, a, Path y)]
 results' m y | isRightmost y = []
              | otherwise = (y,a,x) : results' m x
-  where (a,x) = rightmostOnLine y m
+  where Just (a,x) = rightmostOnLine y m
 
 results :: AbelianGroupZ a => SomeTri a -> [(Int, a, Int)]
 results (T s (m :/: m')) = [(fromPath s x,a,fromPath s y) | (x,a,y) <- results' (m+m') (leftMost s)]

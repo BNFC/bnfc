@@ -211,6 +211,7 @@ splitOptim f cf xs = optim f $ splitLROn f cf $ xs
 incomment x = "{-" <> x <> "-}"
 
 generate opts cf0 = render $ vcat [header opts
+                                  ,genShowFunction cf0
                                   ,genCatTags cf1
                                   ,genCombTable units (onRules (filter (not . isUnitRule)) cf)
                                   ,genTokTable units cf
@@ -235,6 +236,7 @@ header opts
               ,"import Parsing.Chart ()"
               ,"import " <> text (absFileM  opts)
               ,"import " <> text (alexFileM opts)
+              ,"import " <> text ( printerFileM  opts)
               ,"readInteger :: String -> Integer"
               ,"readInteger = read"
               ,"readDouble :: String -> Double"
@@ -248,6 +250,12 @@ header opts
               ]
 
 punctuate' p = cat . punctuate p
+
+genShowFunction cf = hang "showAst (cat,ast) = case cat of " 6 
+       (vcat [catTag (Left cat) <> " -> printTree ((unsafeCoerce# ast)::" <> text cat <> ")"
+             | cat <- filter isDataCat $ allCats cf] $$ 
+        "_ -> \"Unprintable category\"")
+
 
 genCatTags :: CFG Exp -> Doc
 genCatTags cf = "data CATEGORY = " <> punctuate' "|" (map catTag (allSyms cf)) $$
@@ -308,10 +316,10 @@ escape '@' = "BIN_"
 escape c = show $ ord c
 
 genTokTable :: UnitRel Cat -> CFG Exp -> Doc
-genTokTable units cf = "tokens :: Token -> Pair [(CATEGORY,Any)]" $$
+genTokTable units cf = "tokenToCats :: Token -> Pair [(CATEGORY,Any)]" $$
                        vcat (map (genSpecEntry cf units) (tokInfo cf)) $$
                        vcat (map (genTokEntry cf units) (cfTokens cf)) $$
-                       "tokens t = error (\"unknown token: \" ++ show t)"
+                       "tokenToCats t = error (\"unknown token: \" ++ show t)"
 
 tokInfo cf = ("Char","TC",Con "head"):
              ("String","TL",Id):("Integer","TI",Con "readInteger"):
@@ -322,7 +330,7 @@ tokInfo cf = ("Char","TC",Con "head"):
 genTokCommon cf xs = prettyPair (gen <$> splitOptim fst cf xs)
   where gen ys = prettyListFun [p (ppPair (catTag x,y)) | ((x,y),p) <- ys]
 
-genSpecEntry cf units (tokName,constrName,fun) = "tokens (PT (Pn _ l c) (" <> constrName <> " x)) = " <> genTokCommon cf xs
+genSpecEntry cf units (tokName,constrName,fun) = "tokenToCats (PT (Pn _ l c) (" <> constrName <> " x)) = " <> genTokCommon cf xs
   where xs = map (second (prettyExp . (\f -> unsafeCoerce' (f `app'` tokArgs)))) $ 
              (Left tokName, fun) : [(Left c,f `after` fun) | (f,c) <- lk (Left tokName) units]
         tokArgs | isPositionCat cf tokName = Con "((l,c),x)"
@@ -330,7 +338,7 @@ genSpecEntry cf units (tokName,constrName,fun) = "tokens (PT (Pn _ l c) (" <> co
 
 genTokEntry cf units (tok,x) = 
   " -- " <> text tok $$
-  "tokens (PT posn (TS _ " <> int x <> ")) = " <> genTokCommon cf xs
+  "tokenToCats (PT posn (TS _ " <> int x <> ")) = " <> genTokCommon cf xs
   where xs = (Right tok, tokVal) : 
              [(Left c,prettyExp (unsafeCoerce' f)) | (f,c) <- lk (Right tok) units]
         tokVal = "error" <> (text $ show $ "cannot access value of token: " ++ tok)
@@ -339,63 +347,11 @@ genTokEntry cf units (tok,x) =
 -- Test file generation
 
 genTestFile opts cf = render $ vcat
-    ["{-# LANGUAGE MagicHash #-}"
-    ,"module Main where"
-    ,""
-    ,"import System.IO ( stdin, hGetContents )"
-    ,"import System.Environment ( getArgs, getProgName )"
-    ,""
+    ["module Main where"
     ,"import " <> text ( alexFileM     opts)
-    ,"import " <> text ( templateFileM     opts)
-    ,"import " <> text ( printerFileM  opts)
-    ,"import " <> text ( absFileM      opts)
     ,"import " <> text ( cnfTablesFileM opts)
-    ,"import GHC.Exts"
-    ,"import Control.Monad"
-    ,"import Control.Applicative (pure)"
-    ,"import Parsing.Chart"
-    ,"import ErrM"
-    ,""
-    ,"myLLexer = "<> text (alexFileM opts) <> ".tokens"
-    ,""
-    ,"type Verbosity = Int"
-    ,""
-    ,"putStrV :: Verbosity -> String -> IO ()"
-    ,"putStrV v s = if v > 1 then putStrLn s else return ()"
-    ,""
-    ,"runFile v f = putStrLn f >> readFile f >>= run v"
-    ,""
-    ,"run v s = do"
-    ,"      putStrLn $ show (length x) ++ \" results\""
-    ,"      forM x $ \\(cat,ast) -> do"
-    ,"        print cat        "
-    ,"        case cat of"
-    ,nest 10 $ vcat [hang (catTag (Left cat) <> " -> do ") 2 (vcat [ 
-                       "putStrLn $ printTree ((unsafeCoerce# ast)::" <> text cat <> ")",
-                       "return ()"]) | cat <- filter isDataCat $ allCats cf]
-    ,"          _ -> return ()"
-    ,"      writeFile \"cnf.xpm\" (genXPM $ fingerprint chart)"
-    ,"      return ()"
-    ,"   where ts = myLLexer s"
-    ,"         chart = pLGrammar ts "
-    ,"         x = root chart"
-    ,""
-    ,"showTree :: (Show a, Print a) => Int -> a -> IO ()"
-    ,"showTree v tree"
-    ," = do"
-    ,"      putStrV v $ \"[Abstract Syntax]\" ++ show tree"
-    ,"      putStrV v $ \"[Linearized tree]\" ++ printTree tree"
-    ,""
-    ,"pLGrammar :: [Token] -> MT2 [(CATEGORY,Any)]"
-    ,"pLGrammar toks = mkTree $ map ("<> text (cnfTablesFileM opts) <> ".tokens) toks"
-    ,""
-    ,"main :: IO ()"
-    ,"main = do args <- getArgs"
-    ,"          case args of"
-    ,"            [] -> hGetContents stdin >>= run 2"
-    ,"            \"-s\":fs -> mapM_ (runFile 0) fs"
-    ,"            fs -> mapM_ (runFile 2) fs"
-    ,""]
+    ,"import Parsing.TestProgram"
+    ,"main = mainTest showAst tokenToCats tokens tokenLineCol"]
 
 
 genBenchmark opts = render $ vcat
@@ -413,7 +369,7 @@ genBenchmark opts = render $ vcat
    ,"main = do"
    ,"  f:_ <- getArgs"
    ,"  s <- readFile f"
-   ,"  let ts = map (Parser.tokens) $ Lexer.tokens s"
+   ,"  let ts = map tokenToCats $ Lexer.tokens s"
    ,"      (ts1,x:ts2) = splitAt (length ts `div` 2) ts"
    ,"      cs = [mkTree ts1,mkTree' ts2]"
    ,"      work [c1,c2] = show $ map fst $ root $ mergein False c1 x c2"
