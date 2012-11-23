@@ -218,7 +218,15 @@ splitOptim f cf xs = optim f $ splitLROn f cf $ xs
 ---------------------------
 -- Error reporting
 
--- lrSet (Rule f c [r1,r2]) = c 
+{-
+
+leftOf C = ⋃ { {X} ∪ leftOf X | C ::= X B ∈ Grammar or C ::= X ∈ Grammar }
+
+neighbors A B = ∃ A' B'.  A ∈ rightOf A'  ∧  B ∈ leftOf B
+
+rightNeibors = leftOf . rightOf°
+
+-}
 
 
 -------------------------
