@@ -35,7 +35,7 @@ Yet Presentable Version of the CYK Algorithm", Informatica Didactica
 
 import CF hiding (App,Exp)
 import HsOpts
-import Control.Monad.State
+import Control.Monad.RWS
 import Control.Applicative hiding (Const)
 import qualified Data.Map as M
 import Data.List (nub,intercalate,sortBy,sort)
@@ -44,15 +44,17 @@ import Data.Function (on)
 import Data.Char (isAlphaNum,ord)
 import Data.String
 import Data.Pair
-import Text.PrettyPrint.HughesPJ hiding (first)
+import Text.PrettyPrint.HughesPJ hiding (first,(<>))
 
 (f *** g) (a,b) = (f a, g b)
 second g = id *** g
 
 onRules f (CFG (exts,rules)) = CFG (exts,f rules)
 
-toCNF cf0 = (cf1,cf2,units)
-  where cf1 = onRules toBin . funToExp . onRules delInternal $ cf0
+toCNF cf0 = (cf1,cf2,units,descriptions)
+  where cf01@(CFG (exts01,_)) = funToExp . onRules delInternal $ cf0
+        (rules',descriptions) = toBin (rulesOfCF cf01) 
+        cf1 = CFG (exts01,rules')
         cf2 = onRules delNull cf1
         units = unitSet . snd . unCFG $ cf2
     
@@ -71,17 +73,22 @@ allocateCatName = do
   put (1+n)
   return $ show n
 
-toBin :: [Rul Exp] -> [Rul Exp]
-toBin cf = fst $ runState (concat <$> forM cf toBinRul) 0
-
+toBin :: [Rul Exp] -> ([Rul Exp], CatDescriptions)
+toBin cf = (a,w)
+  where (a,_,w) = runRWS (concat <$> forM cf toBinRul) () 0
+        
 catName = either id id
 
+type CatDescriptions = M.Map Cat Doc
+
 -- | Convert a rule into a number of equivalent rules with at most 2
--- symbols on the rhs
-toBinRul :: Rul  Exp -> State Int [Rul Exp]
+-- symbols on the rhs.
+-- Also writes an explanation of what new categories are.
+toBinRul :: Rul Exp -> RWS () CatDescriptions Int [Rul Exp]
 toBinRul (Rule f cat rhs) | length rhs > 2 = do
   cat' <- allocateCatName
   r' <- toBinRul $ Rule f cat' p
+  tell $ M.singleton cat' (int (length p) <> "-prefix of " <> prettyExp f <> " " <> parens (prettyRHS p))
   return $ Rule (Con "($)") cat [Left cat',l]
          : r'
   where l = last rhs
@@ -91,6 +98,8 @@ toBinRul (Rule f cat rhs) | length rhs > 2 = do
           Right _ -> Con "const" -- in this case the 2nd argument must be ignored (it is not present in the result).
 toBinRul r = return [r]
 
+
+prettyRHS = hcat . punctuate " " . map (either text (quotes . text))
 
 -------------------------------------------------------
 -- DEL : make sure no rule has 0 symbol on the rhs
@@ -205,6 +214,13 @@ optim f (x:/:y) = map modif x :/: map modif' y
 
 splitOptim f cf xs = optim f $ splitLROn f cf $ xs
 
+
+---------------------------
+-- Error reporting
+
+-- lrSet (Rule f c [r1,r2]) = c 
+
+
 -------------------------
 -- Code generation
 
@@ -213,6 +229,7 @@ incomment x = "{-" <> x <> "-}"
 generate opts cf0 = render $ vcat [header opts
                                   ,genShowFunction cf0
                                   ,genCatTags cf1
+                                  ,genDesc cf1 descriptions
                                   ,genCombTable units (onRules (filter (not . isUnitRule)) cf)
                                   ,genTokTable units cf
                                   ,incomment $ vcat 
@@ -222,7 +239,7 @@ generate opts cf0 = render $ vcat [header opts
                                    ,prettyUnitSet units
                                    ]
                                   ]
-  where (cf1,cf,units) = toCNF cf0
+  where (cf1,cf,units,descriptions) = toCNF cf0
 
 prettyUnitSet units = vcat [prettyExp f <> " : " <> catTag cat <> " --> " <> text cat' | (cat,x) <- M.assocs units, (f,cat') <- x] 
 
@@ -261,6 +278,12 @@ genCatTags :: CFG Exp -> Doc
 genCatTags cf = "data CATEGORY = " <> punctuate' "|" (map catTag (allSyms cf)) $$
                 "  deriving (Eq,Ord,Show)"
 
+genDesc :: CFG Exp -> CatDescriptions -> Doc
+genDesc cf descs = vcat ["describe " <> catTag s <> " = " <> doubleQuotes (descOf s) | s <- allSyms cf]
+  where descOf (Right x) = "token " <> text x
+        descOf (Left x) = maybe (text x) id $ M.lookup x descs
+  
+  
 
 genCombTable :: UnitRel Cat -> CFG Exp -> Doc
 genCombTable units cf = 
@@ -351,7 +374,7 @@ genTestFile opts cf = render $ vcat
     ,"import " <> text ( alexFileM     opts)
     ,"import " <> text ( cnfTablesFileM opts)
     ,"import Parsing.TestProgram"
-    ,"main = mainTest showAst tokenToCats tokens tokenLineCol"]
+    ,"main = mainTest showAst tokenToCats tokens tokenLineCol describe"]
 
 
 genBenchmark opts = render $ vcat
