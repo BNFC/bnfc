@@ -207,18 +207,11 @@ data Path :: Shape -> * where
   Low  :: Path s -> Path (Bin s s') 
   High :: Path s -> Path (Bin s' s) 
 
-lineAsVec :: Path y -> Mat x y a -> Vec x a
-lineAsVec _ Zero = Z
-lineAsVec Here (One x) = O x
-lineAsVec Here (Row a b) = lineAsVec Here a :! lineAsVec Here b
-lineAsVec (Low p) (Quad a b c d) = lineAsVec p a :! lineAsVec p b
-lineAsVec (High p) (Quad a b c d) = lineAsVec p c :! lineAsVec p d
-lineAsVec (Low p) (Col a b) = lineAsVec p a
-lineAsVec (High p) (Col a b) = lineAsVec p b
-
 (<||>) :: Maybe (a,Path x) -> Maybe (a,Path x') -> Maybe (a,Path (Bin x x'))
 x <||> y =  (second High <$> y) <|> (second Low <$> x) 
 
+-- | What is, and where is the rightmost non-zero element on a given
+-- line of the matrix?
 rightmostOnLine :: Path y -> Mat x y a -> Maybe (a,Path x)
 rightmostOnLine _ Zero = Nothing
 rightmostOnLine Here (One x) = Just (x,Here)
@@ -228,6 +221,7 @@ rightmostOnLine (High p) (Col a b) = rightmostOnLine p b
 rightmostOnLine (Low p) (Quad a b _ _) = rightmostOnLine p a <||> rightmostOnLine p b
 rightmostOnLine (High p) (Quad _ _ a b) = rightmostOnLine p a <||> rightmostOnLine p b
 
+-- | Is this the rightmost path?
 isRightmost :: Path x -> Bool
 isRightmost (Low _) = False
 isRightmost (Here) = True
@@ -250,9 +244,6 @@ fromPath _ Here =  0
 fromPath (Bin' _ s s') (Low x) = fromPath s x
 fromPath (Bin' _ s s') (High x) = sz' s + fromPath s' x 
 
--- | Return one line from the matrix
-line :: AbelianGroupZ a => Int -> SomeTri a -> [(Int,a)]
-line i (T s (a :/: a')) = contents s $ lk i s (lin' $ a + a')
                                
 root' :: AbelianGroup a => Mat x y a -> a
 root' Zero = zero
@@ -260,7 +251,6 @@ root' (One x) = x
 root' (Quad _ a _ _) = root' a
 root' (Col a _) = root' a
 root' (Row _ a) = root' a
-
 
 root (T _ (m :/: m')) = root' m + root' m'
 
