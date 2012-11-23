@@ -1,3 +1,4 @@
+{-# LANGUAGE TypeSynonymInstances, FlexibleInstances #-}
 {-
     Copyright (C) 2012  Authors: 
     Jean-Philippe Bernardy.
@@ -115,8 +116,6 @@ fixn 0 f x = Left x
 fixn n f x = if x' == x then Right x else fixn (n-1) f x'
   where x' = f x
         
-
-
 -------------------------------------------------------
 -- DEL : make sure no rule has 0 symbol on the rhs
 
@@ -154,7 +153,6 @@ delNull cf = onRules (concatMap (delNullable (nullSet cf))) cf
 
 ---------------
 -- UNIT
-
 
 type UnitRel cat = Set (Either cat String) (Exp,cat)
 
@@ -211,16 +209,24 @@ splitOptim f cf xs = optim f $ splitLROn f cf $ xs
 ---------------------------
 -- Error reporting
 
-{-
+-- leftOf C = ⋃ { {X} ∪ leftOf X | C ::= X B ∈ Grammar or C ::= X ∈ Grammar }
+leftRight pos s (Rule f c rhs) = M.singleton c (lkCat x s)
+  where x = pos rhs
 
-leftOf C = ⋃ { {X} ∪ leftOf X | C ::= X B ∈ Grammar or C ::= X ∈ Grammar }
+lkCat (Right t) s = [Right t]
+lkCat (Left c) s = Left c:lk c s
+        
+-- neighbors A B = ∃ A' B'.  A ∈ rightOf A'  ∧  B ∈ leftOf B
+neighborSet cf = map (second (nub . sort)) $ group' [(x',lkCat y leftSet) | Rule _ _ [x,y] <- rulesOfCF cf, x' <- lkCat x rightSet]
+  where leftSet  = fixpointOnGrammar "left set"  (leftRight head) cf
+        rightSet = fixpointOnGrammar "right set" (leftRight last) cf
 
-neighbors A B = ∃ A' B'.  A ∈ rightOf A'  ∧  B ∈ leftOf B
+genNeighborSet cf = vcat 
+              ["neighbors " <> catTag x <> " = " <> ppList (map catTag y) 
+              | (x,y) <- neighborSet cf] $$
+               "neighbors _ = []"
 
-rightNeibors = leftOf . rightOf°
-
--}
-
+ppList = brackets . punctuate' ", " 
 
 -------------------------
 -- Code generation
@@ -231,6 +237,7 @@ generate opts cf0 = render $ vcat [header opts
                                   ,genShowFunction cf0
                                   ,genCatTags cf1
                                   ,genDesc cf1 descriptions
+                                  ,genNeighborSet cf1                   
                                   ,genCombTable units (onRules (filter (not . isUnitRule)) cf)
                                   ,genTokTable units cf
                                   ,incomment $ vcat 
@@ -241,6 +248,19 @@ generate opts cf0 = render $ vcat [header opts
                                    ]
                                   ]
   where (cf1,cf,units,descriptions) = toCNF cf0
+
+class Pretty a where
+  pretty :: a -> Doc
+
+instance (Pretty k, Pretty v) => Pretty (Set k v) where
+  pretty s = sep [pretty k <> " --> " <> pretty v | (k,x) <- M.assocs s, v <- x] 
+
+instance Pretty (Either Cat String) where
+  pretty (Left x) = text x
+  pretty (Right x) = quotes $ text x
+
+instance Pretty String where
+  pretty = text
 
 prettyUnitSet units = vcat [prettyExp f <> " : " <> catTag cat <> " --> " <> text cat' | (cat,x) <- M.assocs units, (f,cat') <- x] 
 
@@ -305,17 +325,20 @@ type RHSEl = Either Cat String
 isCat (Right _) = False
 isCat (Left _) = True
 
-group' :: Eq a => [(a,[b])] -> [(a,[b])]
-group' [] = []
-group' ((a,bs):xs) = (a,bs ++ concatMap snd ys) : group' zs
+group0 :: Eq a => [(a,[b])] -> [(a,[b])]
+group0 [] = []
+group0 ((a,bs):xs) = (a,bs ++ concatMap snd ys) : group0 zs
   where (ys,zs) = span (\x -> fst x == a) xs
+
+group' :: Ord a => [(a,[b])] -> [(a,[b])]
+group' = group0 . sortBy (compare `on` fst)
 
 prettyPair (x :/: y) = sep [x,":/:",y]
 prettyListFun xs = parens $ sep (map (<> "$") xs) <> "[]"
 
 
 genCombine :: UnitRel Cat -> CFG Exp -> Doc
-genCombine units cf = vcat $ map genEntry $ group' $ sortBy (compare `on` fst) $ map (alt units) (rulesOfCF cf)
+genCombine units cf = vcat $ map genEntry $ group' $ map (alt units) (rulesOfCF cf)
   where genEntry :: ((RHSEl,RHSEl),[(Cat,Exp)]) -> Doc
         genEntry ((r1,r2),cs) = "combine p " <> catTag r1 <> " " <> catTag r2 <> " = " <> prettyPair (genList <$> splitOptim (Left . fst) cf cs)
         mkLam body = "\\x y -> " <> body
@@ -327,6 +350,7 @@ alt units (Rule f c [r1,r2]) = ((r1,r2),initial:others)
         others = [(c', f' `app'` (f `appMany` args)) | (f',c') <- lk (Left c) units]
         args = map (unsafeCoerce' . Con) $ ["x"|isCat r1]++["y"|isCat r2]
     
+
 catTag :: Either String String -> Doc
 catTag (Left c) = "CAT_" <> text (concatMap escape c)
 catTag (Right t) = "TOK_" <> text (concatMap escape t)
@@ -375,7 +399,7 @@ genTestFile opts cf = render $ vcat
     ,"import " <> text ( alexFileM     opts)
     ,"import " <> text ( cnfTablesFileM opts)
     ,"import Parsing.TestProgram"
-    ,"main = mainTest showAst tokenToCats tokens tokenLineCol describe"]
+    ,"main = mainTest showAst tokenToCats tokens tokenLineCol describe neighbors"]
 
 
 genBenchmark opts = render $ vcat
