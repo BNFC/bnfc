@@ -30,9 +30,6 @@ Yet Presentable Version of the CYK Algorithm", Informatica Didactica
 
 -}
 
-
-
-
 import CF hiding (App,Exp)
 import HsOpts
 import Control.Monad.RWS
@@ -55,8 +52,8 @@ toCNF cf0 = (cf1,cf2,units,descriptions)
   where cf01@(CFG (exts01,_)) = funToExp . onRules delInternal $ cf0
         (rules',descriptions) = toBin (rulesOfCF cf01) 
         cf1 = CFG (exts01,rules')
-        cf2 = onRules delNull cf1
-        units = unitSet . snd . unCFG $ cf2
+        cf2 = delNull cf1
+        units = unitSet cf2
     
 funToExp :: CFG Fun -> CFG Exp
 funToExp = fmap toExp
@@ -77,8 +74,6 @@ toBin :: [Rul Exp] -> ([Rul Exp], CatDescriptions)
 toBin cf = (a,w)
   where (a,_,w) = runRWS (concat <$> forM cf toBinRul) () 0
         
-catName = either id id
-
 type CatDescriptions = M.Map Cat Doc
 
 -- | Convert a rule into a number of equivalent rules with at most 2
@@ -98,50 +93,52 @@ toBinRul (Rule f cat rhs) | length rhs > 2 = do
           Right _ -> Con "const" -- in this case the 2nd argument must be ignored (it is not present in the result).
 toBinRul r = return [r]
 
-
 prettyRHS = hcat . punctuate " " . map (either text (quotes . text))
 
--------------------------------------------------------
--- DEL : make sure no rule has 0 symbol on the rhs
-
-type Nullable cat = M.Map cat [Exp]
-
-cross :: [[a]] -> [[a]]
-cross [] = [[]]
-cross (x:xs) = [y:ys | y <- x,  ys <- cross xs]
+---------------------------
+-- Fixpoint utilities
 
 x ∪ y = sort $ nub (x ++ y)
                              
 lk cat nullset = maybe [] id (M.lookup cat nullset)
         
-nullStep :: [Rul Exp] -> Nullable Cat -> Nullable Cat
-nullStep rs nullset = M.unionsWith (∪) (map (uncurry M.singleton . nullRule nullset) rs)
-  
-nullRule :: Nullable Cat -> Rul Exp -> (Cat,[Exp])
-nullRule nullset (Rule f c rhs) = (c,map (\xs -> (appMany f xs)) (cross (map nulls rhs)))
-    where nulls (Right tok) = []
-          nulls (Left cat) = lk cat nullset
+type Set k x = M.Map k [x]
 
-
-nullable :: Nullable Cat -> Rul Exp -> Bool
-nullable s = not . null . snd . nullRule s
-
-fixk :: Eq a => (a -> a) -> a -> Either a a
-fixk = fixn 100
+fixpointOnGrammar :: (Show k, Show x,Ord k, Ord x) => String -> (Set k x -> Rul f -> Set k x) -> CFG f -> Set k x
+fixpointOnGrammar name f cf = case fixn 100 step M.empty of
+  Left x -> error $ "Could not find fixpoint of " ++ name ++". Last iteration:\n" ++ show x
+  Right x -> x
+  where step curSet = M.unionsWith (∪) (map (f curSet) (rulesOfCF cf))
 
 fixn :: Eq a => Int -> (a -> a) -> a -> Either a a
 fixn 0 f x = Left x
 fixn n f x = if x' == x then Right x else fixn (n-1) f x'
   where x' = f x
         
-nullSet :: [Rul Exp] -> Nullable Cat   
-nullSet rs = case fixk (nullStep rs) M.empty of
-  Left x -> error "Could not find fixpoint of nullable set"
-  Right x -> x
 
+
+-------------------------------------------------------
+-- DEL : make sure no rule has 0 symbol on the rhs
+
+type Nullable = Set Cat Exp
+
+cross :: [[a]] -> [[a]]
+cross [] = [[]]
+cross (x:xs) = [y:ys | y <- x,  ys <- cross xs]
+
+nullRule :: Nullable -> Rul Exp -> (Cat,[Exp])
+nullRule nullset (Rule f c rhs) = (c, map (\xs -> (appMany f xs)) (cross (map nulls rhs)))
+    where nulls (Right tok) = []
+          nulls (Left cat) = lk cat nullset
+
+nullable :: Nullable -> Rul Exp -> Bool
+nullable s = not . null . snd . nullRule s
+
+nullSet :: CFG Exp -> Nullable 
+nullSet = fixpointOnGrammar "nullable" (\s r -> uncurry M.singleton (nullRule s r))
 
 -- | Replace nullable occurences by nothing, and adapt the function consequently.
-delNullable :: Nullable Cat -> Rul Exp -> [Rul Exp]
+delNullable :: Nullable -> Rul Exp -> [Rul Exp]
 delNullable nullset r@(Rule f cat rhs) = case rhs of
   [] -> []
   [_] -> [r] 
@@ -152,29 +149,25 @@ delNullable nullset r@(Rule f cat rhs) = case rhs of
         lk' (Left cat) = lk cat nullset
         
         
-delNull :: [Rul Exp] -> [Rul Exp]
-delNull rs = concatMap (delNullable (nullSet rs)) rs
+delNull cf = onRules (concatMap (delNullable (nullSet cf))) cf
 
 
 ---------------
 -- UNIT
 
-type UnitRel cat = M.Map (Either cat String) [(Exp,cat)] 
+
+type UnitRel cat = Set (Either cat String) (Exp,cat)
 
 -- (c,(f,c')) ∈ unitSet   ⇒  f : c → c'
 
-unitSetStep :: [Rul Exp] -> UnitRel Cat -> UnitRel Cat
-unitSetStep rs unitSet = M.unionsWith (∪) (map unitRule rs)
- where unitRule (Rule f c [r]) = M.singleton r $ (f,c) : [(g `appl` f,c') | (g,c') <- lk (Left c) unitSet]
+unitSet :: CFG Exp -> UnitRel Cat
+unitSet = fixpointOnGrammar "unit set" unitRule 
+
+unitRule unitSet (Rule f c [r]) = M.singleton r $ (f,c) : [(g `appl` f,c') | (g,c') <- lk (Left c) unitSet]
          where appl = case r of
                  Left _ -> after
                  Right _ -> app'
-       unitRule _ = M.empty
-                
-unitSet :: [Rul Exp] -> UnitRel Cat                  
-unitSet rs = case fixk (unitSetStep rs) M.empty of
-  Left x -> error $ "Could not find fixpoint of unit set. Last iteration:\n" ++ render (prettyUnitSet x)
-  Right x -> x
+unitRule _ _ = M.empty
 
 isUnitRule (Rule f c [r]) = True
 isUnitRule _ = False
