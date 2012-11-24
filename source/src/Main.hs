@@ -133,18 +133,19 @@ mkOne xx = do
                              inPackage = inPackage,
                              lang = name,
                              multi = multi,
-                             cnf = elem "-cnf" args
+                             cnf = elem "-cnf" args,
+                             targets = targets
                              }
-          readOptions0 = [ FormatOptC |c] ++ [ FormatOptCPP | cpp_no_stl ] ++ [FormatOptCPP_STL  |  cpp_stl 
-                ] ++ [ FormatOptCSharp | csharp] ++ [ FormatOptFSharp |fsharp] ++ [FormatOptHaskellGADT|haskellGADT
-                ] ++ [ FormatOptJava15 |java15] ++ [FormatOptJava |java14] ++ [FormatOptOCAML |ocaml] ++ [FormatOptProfile|profile]
-          readOptions = if null readOptions0 then [FormatOptHaskell] else readOptions0
+          targets0 = [ TargetC |c] ++ [ TargetCPP | cpp_no_stl ] ++ [TargetCPP_STL  |  cpp_stl 
+                ] ++ [ TargetCSharp | csharp] ++ [ TargetFSharp |fsharp] ++ [TargetHaskellGADT|haskellGADT
+                ] ++ [ TargetJava15 |java15] ++ [TargetJava |java14] ++ [TargetOCAML |ocaml] ++ [TargetProfile|profile]
+          targets = if null targets0 then [TargetHaskell] else targets0
       putStrLn title
-      unless (length readOptions == 1) $
+      unless (length targets == 1) $
         fail "Error: only one language mode may be chosen"
       unless (isCF (reverse file)) $ 
         fail "Error: the input file must end with .cf"
-      (cfp, isOk) <- tryReadCFP [FormatOptHaskell] file
+      (cfp, isOk) <- tryReadCFP options file
       let cf = cfp2cf cfp
       unless isOk $
         fail "Error: Failed"

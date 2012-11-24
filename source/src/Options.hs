@@ -1,9 +1,18 @@
 module Options where
 
+data Target = TargetC | TargetCPP |TargetCPP_STL 
+                | TargetCSharp | TargetFSharp |TargetHaskell |TargetHaskellGADT
+                | TargetJava15 |TargetJava |TargetOCAML |TargetProfile
+  deriving Eq
+
+-- | Which version of Alex is targeted?
 data AlexMode = Alex1 | Alex2 | Alex3 deriving Eq
+
+data HappyMode = Standard | GLR deriving Eq
 
 data SharedOptions = Options 
     { 
+     targets :: [Target],
      make :: Bool,
      alexMode :: AlexMode,
      inDir :: Bool,
@@ -17,7 +26,9 @@ data SharedOptions = Options
      multi :: Bool,
      cnf :: Bool -- ^ Generate CNF-like tables?
     }
-    
-    
 
-data HappyMode = Standard | GLR deriving Eq
+anyTarget opts vs = any (isOpt opts) vs
+  where isOpt     opts v  = elem v $ targets opts
+
+
+    

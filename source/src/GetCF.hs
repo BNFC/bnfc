@@ -18,7 +18,7 @@
 -}
 
 
-module GetCF(tryReadCFP,ReadOption(..)) where
+module GetCF(tryReadCFP) where
 
 import Control.Monad		( when )
 
@@ -32,21 +32,12 @@ import Data.Either (partitionEithers)
 import ErrM
 import Data.Char
 import TypeChecker
+import Options
 
-readCF :: ReadOptions -> FilePath -> IO CFP
+readCF :: SharedOptions -> FilePath -> IO CFP
 readCF opts f = tryReadCFP opts f >>= return . fst
 
-data ReadOption = FormatOptC | FormatOptCPP |FormatOptCPP_STL 
-                | FormatOptCSharp | FormatOptFSharp |FormatOptHaskell |FormatOptHaskellGADT
-                | FormatOptJava15 |FormatOptJava |FormatOptOCAML |FormatOptProfile
-  deriving Eq
-type ReadOptions = [ReadOption]
-
-isOpt  opts v  = elem v opts
-anyOpt opts vs = any (isOpt opts) vs
-allOpt opts vs = all (isOpt opts) vs
-
-tryReadCFP :: ReadOptions -> FilePath -> IO (CFP,Bool)
+tryReadCFP :: SharedOptions -> FilePath -> IO (CFP,Bool)
 tryReadCFP opts file = do
   putStrLn $ "\nReading grammar from " ++ file
   s <- readFile file
@@ -59,11 +50,11 @@ tryReadCFP opts file = do
       msg = msgs1++msgs2 -- ++ msgs3 -- in a future version
       ret = cfp
 
-  let reserved = if anyOpt opts [FormatOptJava,FormatOptJava15] 
+  let reserved = if anyTarget opts [TargetJava,TargetJava15] 
                    then [takeWhile (/='.') file] else []
   case filter (not . isDefinedRule) $ notUniqueNames reserved cf of
     ns@(_:_) 
-      | not (anyOpt opts [FormatOptHaskell,FormatOptHaskellGADT,FormatOptOCAML]) -> do
+      | not (anyTarget opts [TargetHaskell,TargetHaskellGADT,TargetOCAML]) -> do
         putStrLn $ "ERROR: names not unique: " ++ unwords ns
         return (ret,False)
     ns -> do
