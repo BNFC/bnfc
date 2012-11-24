@@ -24,7 +24,7 @@
 module Main where
 
 -- import Utils
--- import CF
+import CF (cfp2cf)
 import HaskellTop
 import HaskellTopGADT
 import ProfileTop
@@ -144,21 +144,26 @@ mkOne xx = do
         fail "Error: only one language mode may be chosen"
       unless (isCF (reverse file)) $ 
         fail "Error: the input file must end with .cf"
+      (cfp, isOk) <- tryReadCFP [FormatOptHaskell] file
+      let cf = cfp2cf cfp
+      unless isOk $
+        fail "Error: Failed"
       case () of
-           _ | c      -> makeC make name file
-           _ | cpp_no_stl    -> makeCPP make name file
-           _ | cpp_stl-> makeSTL make linenumbers inPackage name file
-           _ | csharp -> makeCSharp make vsfiles wcfSupport inPackage file
-           _ | java14 -> makeJava make name file
-           _ | java15 -> makeJava15 make inPackage name file
-           _ | ocaml  -> makeOCaml options file
-           _ | fsharp -> makeFSharp options file
-           _ | profile-> makeAllProfile make alex1 False xml name file
-           _ | haskellGADT -> makeAllGADT options file
-           _  -> makeAll options file
+           _ | c      -> makeC make name cf
+           _ | cpp_no_stl    -> makeCPP make name cf
+           _ | cpp_stl-> makeSTL make linenumbers inPackage name cf
+           _ | csharp -> makeCSharp make vsfiles wcfSupport inPackage cf file
+           _ | java14 -> makeJava make name cf
+           _ | java15 -> makeJava15 make inPackage name cf
+           _ | ocaml  -> makeOCaml options cf
+           _ | fsharp -> makeFSharp options cf
+           _ | profile-> makeAllProfile make alex1 False xml name cfp
+           _ | haskellGADT -> makeAllGADT options cf
+           _  -> makeAll options cf
       when (make && multi) $ do
             system ("cp Makefile Makefile_" ++ name)
             return ()
+      putStrLn "Done!"
  where isCF ('f':'c':'.':_)     = True
        isCF ('f':'n':'b':'.':_) = True
        isCF ('f':'n':'b':'l':'.':_) = True

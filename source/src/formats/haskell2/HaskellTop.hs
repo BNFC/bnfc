@@ -53,8 +53,8 @@ import Control.Monad(when)
 
 
 
-makeAll :: Options -> FilePath -> IO ()
-makeAll opts file = do
+makeAll :: Options -> CF -> IO ()
+makeAll opts cf = do
   let absMod = absFileM opts
       lexMod = alexFileM opts
       parMod = happyFileM opts
@@ -62,8 +62,7 @@ makeAll opts file = do
       layMod = layoutFileM opts
       errMod = errFileM opts
       shareMod = shareFileM opts
-  (cf, isOK) <- tryReadCF [FormatOptHaskell] file
-  if isOK then do
+  do
     let dir = codeDir opts
     when (not (null dir)) $ do
 			    putStrLn $ "Creating directory " ++ dir
@@ -99,10 +98,6 @@ makeAll opts file = do
       writeFileRep (cnfTablesFile opts) $ ToCNF.generate opts cf
       writeFileRep "TestCNF.hs" $ ToCNF.genTestFile opts cf
       writeFileRep "BenchCNF.hs" $ ToCNF.genBenchmark opts
-
-    putStrLn $ "Done!"
-   else do putStrLn $ "Failed!"
-	   exitFailure
 
 codeDir :: Options -> FilePath
 codeDir opts = let pref = maybe "" pkgToDir (inPackage opts)

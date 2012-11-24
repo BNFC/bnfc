@@ -39,8 +39,6 @@ import CFtoLayout
 import CFtoXML
 import MkErrM
 import MkSharedString
--- import CFtoGF		( cf2AbsGF, cf2ConcGF )
-import GetCF
 import Utils
 
 import Data.Char
@@ -49,8 +47,8 @@ import System.Exit (exitFailure)
 import Control.Monad(when)
 
 
-makeAllGADT :: Options -> FilePath -> IO ()
-makeAllGADT opts file = do
+makeAllGADT :: Options -> CF -> IO ()
+makeAllGADT opts cf = do
   let absMod = absFileM opts
       composOpMod = composOpFileM opts
       lexMod = alexFileM opts
@@ -59,8 +57,7 @@ makeAllGADT opts file = do
       layMod = layoutFileM opts
       errMod = errFileM opts
       shareMod = shareFileM opts
-  (cf, isOK) <- tryReadCF [FormatOptHaskellGADT] file
-  if isOK then do
+  do
     let dir = codeDir opts
     when (not (null dir)) $ do
 			    putStrLn $ "Creating directory " ++ dir
@@ -92,9 +89,6 @@ makeAllGADT opts file = do
       2 -> makeXML (lang opts) True cf
       1 -> makeXML (lang opts) False cf
       _ -> return ()
-    putStrLn $ "Done!"
-   else do putStrLn $ "Failed!"
-	   exitFailure
 
 codeDir :: Options -> FilePath
 codeDir opts = let pref = maybe "" pkgToDir (inPackage opts)

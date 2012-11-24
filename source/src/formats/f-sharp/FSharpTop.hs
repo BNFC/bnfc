@@ -33,7 +33,6 @@ import CFtoOCamlPrinter
 import CFtoOCamlShow
 import CFtoOCamlTest
 import CFtoXML
-import GetCF
 import Utils
 import Options
 
@@ -92,8 +91,8 @@ xmlFileM      = mkMod  withLang "XML"
 
 type Options = SharedOptions
 
-makeFSharp :: Options -> FilePath -> IO ()
-makeFSharp opts file = do
+makeFSharp :: Options -> CF -> IO ()
+makeFSharp opts cf = do
   let absMod = absFileM opts
       lexMod = ocamllexFileM opts
       parMod = ocamlyaccFileM opts
@@ -101,8 +100,7 @@ makeFSharp opts file = do
       showMod = showFileM opts
 --      layMod = layoutFileM opts
       utilMod = utilFileM opts
-  (cf, isOK) <- tryReadCF [FormatOptFSharp] file
-  if isOK then do
+  do
     let dir = codeDir opts
     when (not (null dir)) $ do
                             putStrLn $ "Creating directory " ++ dir
@@ -122,9 +120,6 @@ makeFSharp opts file = do
       2 -> makeXML (lang opts) True cf
       1 -> makeXML (lang opts) False cf
       _ -> return ()
-    putStrLn $ "Done!"
-   else do putStrLn $ "Failed!"
-           exitFailure
 
 pkgToDir :: String -> FilePath
 pkgToDir s = replace '.' pathSep s

@@ -50,7 +50,6 @@ import CFtoJavaPrinter
 import CFtoJavaSkeleton
 import CFtoVisitSkel
 import CFtoLatex
-import GetCF		( tryReadCF, ReadOption(FormatOptJava) )
 import Data.Char
 import Data.List(intersperse)
 
@@ -59,14 +58,8 @@ import Data.List(intersperse)
 -- FIXME: get everything to put the files in the right places.
 -- Adapt Makefile to do the business.
 -------------------------------------------------------------------
-makeJava :: Bool -> String -> FilePath -> IO ()
-makeJava make name file =
-    do (cf, isOK) <- tryReadCF [FormatOptJava] file
-       if isOK
-         then do mkFiles make name cf
-		 putStrLn $ "Done!"
-	 else do putStrLn $ "Failed!"
-		 exitFailure
+makeJava :: Bool -> String -> CF -> IO ()
+makeJava = mkFiles
 
 mkFiles :: Bool -> String -> CF -> IO ()
 mkFiles make name cf =

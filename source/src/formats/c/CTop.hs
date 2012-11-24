@@ -26,14 +26,11 @@ import CFtoBisonC
 import CFtoCSkel
 import CFtoCPrinter
 import CFtoLatex
-import GetCF
 import Data.Char
 import System.Exit (exitFailure)
 
-makeC :: Bool -> String -> FilePath -> IO ()
-makeC make name file = do
-  (cf, isOK) <- tryReadCF [FormatOptC] file
-  if isOK then do 
+makeC :: Bool -> String -> CF -> IO ()
+makeC make name cf = do
     let (hfile, cfile) = cf2CAbs name cf
     writeFileRep "Absyn.h" hfile
     writeFileRep "Absyn.c" cfile
@@ -55,9 +52,6 @@ makeC make name file = do
     let latex = cfToLatex name cf
     writeFileRep (name ++ ".tex") latex
     if make then (writeFileRep "Makefile" $ makefile name) else return ()
-    putStrLn "Done!"
-   else do putStrLn $ "Failed"
-	   exitFailure
 
 makefile :: String -> String
 makefile name = unlines 
