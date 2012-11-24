@@ -30,7 +30,6 @@ import CFtoCVisitSkelSTL
 import CFtoSTLPrinter
 import CFtoLatex
 import System.Exit (exitFailure)
-import GetCF
 import Data.Char
 import STLUtils
 

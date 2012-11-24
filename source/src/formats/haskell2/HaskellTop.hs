@@ -39,8 +39,6 @@ import HsOpts
 import ToCNF
 import MkErrM
 import MkSharedString
--- import CFtoGF		( cf2AbsGF, cf2ConcGF )
-import GetCF
 import Utils
 
 import Data.Char

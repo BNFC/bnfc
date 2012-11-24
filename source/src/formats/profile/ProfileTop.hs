@@ -31,8 +31,6 @@ import MkErrM
 ---- import CFtoPrinter
 ---- import CFtoLayout
 ---- import CFtoXML
--- import CFtoGF		( cf2AbsGF, cf2ConcGF )
-import GetCF
 import Utils
 
 import Data.Char

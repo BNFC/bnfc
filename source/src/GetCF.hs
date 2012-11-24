@@ -18,7 +18,7 @@
 -}
 
 
-module GetCF(tryReadCF,tryReadCFP,ReadOption(..)) where
+module GetCF(tryReadCFP,ReadOption(..)) where
 
 import Control.Monad		( when )
 
@@ -33,8 +33,8 @@ import ErrM
 import Data.Char
 import TypeChecker
 
-readCF :: ReadOptions -> FilePath -> IO CF
-readCF opts f = tryReadCF opts f >>= return . fst
+readCF :: ReadOptions -> FilePath -> IO CFP
+readCF opts f = tryReadCFP opts f >>= return . fst
 
 data ReadOption = FormatOptC | FormatOptCPP |FormatOptCPP_STL 
                 | FormatOptCSharp | FormatOptFSharp |FormatOptHaskell |FormatOptHaskellGADT
@@ -45,12 +45,6 @@ type ReadOptions = [ReadOption]
 isOpt  opts v  = elem v opts
 anyOpt opts vs = any (isOpt opts) vs
 allOpt opts vs = all (isOpt opts) vs
-
-
-tryReadCF :: ReadOptions -> FilePath -> IO (CF,Bool)
-tryReadCF opts file = do
-  (cfp,m) <- tryReadCFP opts file
-  return (cfp2cf cfp, m)
 
 tryReadCFP :: ReadOptions -> FilePath -> IO (CFP,Bool)
 tryReadCFP opts file = do
