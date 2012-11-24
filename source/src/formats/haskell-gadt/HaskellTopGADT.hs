@@ -132,7 +132,7 @@ makeAllGADT m am d ss bs g x p n file = do
       layMod = layoutFileM opts
       errMod = errFileM opts
       shareMod = shareFileM opts
-  (cf, isOK) <- tryReadCF [formatOptHaskellGADT] file
+  (cf, isOK) <- tryReadCF [FormatOptHaskellGADT] file
   if isOK then do
     let dir = codeDir opts
     when (not (null dir)) $ do

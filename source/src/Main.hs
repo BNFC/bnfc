@@ -46,6 +46,7 @@ import System.Exit (exitFailure,exitSuccess)
 import System.Cmd (system)
 import Data.Char
 import Data.List (elemIndex, foldl')
+import Control.Monad (when)
 
 version = "2.5b"
 
@@ -120,11 +121,11 @@ mkOne xx = do
 			 _ -> do
 			      putStrLn "-p option requires an argument"
 			      printUsage
+      putStrLn title
       if checkUsage False [c, cpp_no_stl, cpp_stl, csharp, java14, haskell, profile] then
        do
        if (isCF (reverse file)) then 
         do 
-         putStrLn title
          case () of
            _ | c      -> makeC make name file
            _ | cpp_no_stl    -> makeCPP make name file
@@ -137,9 +138,9 @@ mkOne xx = do
            _ | profile-> makeAllProfile make alex1 False xml name file
            _ | haskellGADT -> makeAllGADT make alexMode inDir alex2StringSharing alex2ByteString glr xml inPackage name file
            _  -> makeAll make alexMode inDir alex2StringSharing alex2ByteString glr xml inPackage name multi file
-         if (make && multi) 
-           then (system ("cp Makefile Makefile_" ++ name)) >> return ()  
-           else return ()
+         when (make && multi) $ do
+            system ("cp Makefile Makefile_" ++ name)
+            return ()
          else endFileErr
        else endLanguageErr
  where isCF ('f':'c':'.':_)     = True
@@ -148,11 +149,9 @@ mkOne xx = do
        isCF ('c':'f':'n':'b':'.':_) = True
        isCF _                   = False
        endFileErr = do 
-                      putStr title
                       putStrLn "Error: the input file must end with .cf"
 		      exitFailure
        endLanguageErr = do 
-                          putStr title
                           putStrLn "Error: only one language mode may be chosen"
 			  exitFailure
        
