@@ -18,11 +18,7 @@
 -}
 
 
-module GetCF(tryReadCF,tryReadCFP,
-  formatOptC,formatOptCPP,formatOptCPP_STL,
-  formatOptCSharp,formatOptFSharp,formatOptHaskell,formatOptHaskellGADT,
-    formatOptJava15,formatOptJava,formatOptOCAML,formatOptProfile
-  ) where
+module GetCF(tryReadCF,tryReadCFP,ReadOption(..)) where
 
 import Control.Monad		( when )
 
@@ -40,17 +36,15 @@ import TypeChecker
 readCF :: ReadOptions -> FilePath -> IO CF
 readCF opts f = tryReadCF opts f >>= return . fst
 
-type ReadOptions = [String]
+data ReadOption = FormatOptC | FormatOptCPP |FormatOptCPP_STL 
+                | FormatOptCSharp | FormatOptFSharp |FormatOptHaskell |FormatOptHaskellGADT
+                | FormatOptJava15 |FormatOptJava |FormatOptOCAML |FormatOptProfile
+  deriving Eq
+type ReadOptions = [ReadOption]
+
 isOpt  opts v  = elem v opts
 anyOpt opts vs = any (isOpt opts) vs
 allOpt opts vs = all (isOpt opts) vs
-
-[formatOptC,formatOptCPP,formatOptCPP_STL,
-  formatOptCSharp,formatOptFSharp,formatOptHaskell,formatOptHaskellGADT,
-    formatOptJava15,formatOptJava,formatOptOCAML,formatOptProfile] =
-  ["formatOptC","formatOptCPP","formatOptCPP_STL",
-    "formatOptCSharp","formatOptFSharp","formatOptHaskell","formatOptHaskellGADT",
-      "formatOptJava15","formatOptJava","formatOptOCAML","formatOptProfile"]
 
 
 tryReadCF :: ReadOptions -> FilePath -> IO (CF,Bool)
@@ -71,11 +65,11 @@ tryReadCFP opts file = do
       msg = msgs1++msgs2 -- ++ msgs3 -- in a future version
       ret = cfp
 
-  let reserved = if anyOpt opts [formatOptJava,formatOptJava15] 
+  let reserved = if anyOpt opts [FormatOptJava,FormatOptJava15] 
                    then [takeWhile (/='.') file] else []
   case filter (not . isDefinedRule) $ notUniqueNames reserved cf of
     ns@(_:_) 
-      | not (anyOpt opts [formatOptHaskell,formatOptHaskellGADT,formatOptOCAML]) -> do
+      | not (anyOpt opts [FormatOptHaskell,FormatOptHaskellGADT,FormatOptOCAML]) -> do
         putStrLn $ "ERROR: names not unique: " ++ unwords ns
         return (ret,False)
     ns -> do

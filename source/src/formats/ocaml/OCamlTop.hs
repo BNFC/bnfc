@@ -101,7 +101,7 @@ makeOCaml opts file = do
       showMod = showFileM opts
 --      layMod = layoutFileM opts
       utilMod = utilFileM opts
-  (cf, isOK) <- tryReadCF [formatOptOCAML] file
+  (cf, isOK) <- tryReadCF [FormatOptOCAML] file
   if isOK then do
     let dir = codeDir opts
     when (not (null dir)) $ do

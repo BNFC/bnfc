@@ -33,7 +33,7 @@ import System.Exit (exitFailure)
 
 makeCPP :: Bool -> String -> FilePath -> IO ()
 makeCPP make name file = do
-  (cf, isOK) <- tryReadCF [formatOptCPP] file
+  (cf, isOK) <- tryReadCF [FormatOptCPP] file
   if isOK then do 
     let (hfile, cfile) = cf2CPPAbs name cf
     writeFileRep "Absyn.H" hfile

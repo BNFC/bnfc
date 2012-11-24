@@ -62,7 +62,7 @@ makeAll opts file = do
       layMod = layoutFileM opts
       errMod = errFileM opts
       shareMod = shareFileM opts
-  (cf, isOK) <- tryReadCF [formatOptHaskell] file
+  (cf, isOK) <- tryReadCF [FormatOptHaskell] file
   if isOK then do
     let dir = codeDir opts
     when (not (null dir)) $ do

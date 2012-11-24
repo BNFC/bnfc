@@ -39,6 +39,7 @@ import FSharpTop
 import CFtoXML
 import Utils
 import Options
+import GetCF
 
 import MultiView (preprocessMCF, mkTestMulti, mkMakefileMulti)
 
@@ -47,6 +48,7 @@ import System.Exit (exitFailure,exitSuccess)
 import System.Cmd (system)
 import Data.Char
 import Data.List (elemIndex, foldl')
+import Control.Monad (when,unless)
 
 version = "2.6a"
 
@@ -133,12 +135,16 @@ mkOne xx = do
                              multi = multi,
                              cnf = elem "-cnf" args
                              }
-      if checkUsage False [c, cpp_no_stl, cpp_stl, csharp, java14, haskell, profile] then
-       do
-       if (isCF (reverse file)) then 
-        do 
-         putStrLn title
-         case () of
+          readOptions0 = [ FormatOptC |c] ++ [ FormatOptCPP | cpp_no_stl ] ++ [FormatOptCPP_STL  |  cpp_stl 
+                ] ++ [ FormatOptCSharp | csharp] ++ [ FormatOptFSharp |fsharp] ++ [FormatOptHaskellGADT|haskellGADT
+                ] ++ [ FormatOptJava15 |java15] ++ [FormatOptJava |java14] ++ [FormatOptOCAML |ocaml] ++ [FormatOptProfile|profile]
+          readOptions = if null readOptions0 then [FormatOptHaskell] else readOptions0
+      putStrLn title
+      unless (length readOptions == 1) $
+        fail "Error: only one language mode may be chosen"
+      unless (isCF (reverse file)) $ 
+        fail "Error: the input file must end with .cf"
+      case () of
            _ | c      -> makeC make name file
            _ | cpp_no_stl    -> makeCPP make name file
            _ | cpp_stl-> makeSTL make linenumbers inPackage name file
@@ -150,24 +156,14 @@ mkOne xx = do
            _ | profile-> makeAllProfile make alex1 False xml name file
            _ | haskellGADT -> makeAllGADT options file
            _  -> makeAll options file
-         if (make && multi) 
-           then (system ("cp Makefile Makefile_" ++ name)) >> return ()  
-           else return ()
-         else endFileErr
-       else endLanguageErr
+      when (make && multi) $ do
+            system ("cp Makefile Makefile_" ++ name)
+            return ()
  where isCF ('f':'c':'.':_)     = True
        isCF ('f':'n':'b':'.':_) = True
        isCF ('f':'n':'b':'l':'.':_) = True
        isCF ('c':'f':'n':'b':'.':_) = True
        isCF _                   = False
-       endFileErr = do 
-                      putStr title
-                      putStrLn "Error: the input file must end with .cf"
-		      exitFailure
-       endLanguageErr = do 
-                          putStr title
-                          putStrLn "Error: only one language mode may be chosen"
-			  exitFailure
        
 printUsage = do 
   putStrLn title
@@ -221,9 +217,3 @@ printUsage = do
   putStrLn "  -wcf           Add support for Windows Communication Foundation, by"
   putStrLn "                 marking abstract syntax classes as DataContracts"
   exitFailure
-
-
-checkUsage _ [] = True
-checkUsage True (True:xs) = False
-checkUsage False (True:xs) = checkUsage True xs
-checkUsage old (x:xs) = checkUsage old xs
