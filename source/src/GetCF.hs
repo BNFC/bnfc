@@ -41,7 +41,7 @@ tryReadCFP :: SharedOptions -> FilePath -> IO (CFP,Bool)
 tryReadCFP opts file = do
   putStrLn $ "\nReading grammar from " ++ file
   s <- readFile file
-  let (cfp,msgs1) = getCFP s
+  let (cfp,msgs1) = getCFP (cnf opts) s
       cf = cfp2cf cfp
       msgs2 = case checkDefinitions cf of
 		Bad err	-> [err]
@@ -102,17 +102,14 @@ tryReadCFP opts file = do
           return (ret,True)
 -}
 
-getCF :: String -> (CF, [String])
-getCF s = let (cfp,msg) = getCFP s in (cfp2cf cfp, msg)
-
 nilCFP :: CFP
 nilCFP = CFG (([],([],[],[],[])),[])
 
-getCFP :: String -> (CFP,[String])
-getCFP s = case pGrammar . myLexer $ s of
+getCFP :: Bool -> String -> (CFP,[String])
+getCFP cnf s = case pGrammar . myLexer $ s of
   Bad s -> (nilCFP,[s])
   Ok (Abs.Grammar defs) -> (cf0,msgs)
-    where (pragma,rules) = partitionEithers $ concatMap transDef defs
+    where (pragma,rules) = partitionEithers $ concatMap (transDef cnf) defs
           msgs = catMaybes $ map (checkRule (cfp2cf cf0)) (rulesOfCF cf0)
           cf0 = revs srt 
           srt = let    literals           = nub [lit | xs <- map rhsRule rules,
@@ -126,8 +123,8 @@ getCFP s = case pGrammar . myLexer $ s of
           revs cf1@(CFG((pragma,(literals,symbols,keywords,_)),rules)) =
               CFG((pragma,(literals,symbols,keywords,findAllReversibleCats (cfp2cf cf1))),rules)
 
-transDef :: Abs.Def -> [Either Pragma RuleP]
-transDef x = case x of
+transDef :: Bool -> Abs.Def -> [Either Pragma RuleP]
+transDef cnf x = case x of
  Abs.Rule label cat items -> 
    [Right $ Rule (transLabel label) (transCat cat) (map transItem items)]
  Abs.Comment str               -> [Left $ CommentS str]
@@ -139,7 +136,7 @@ transDef x = case x of
    [Right $ Rule (transLabel label) (transCat cat) (Left internalCat:(map transItem items))]
  Abs.Separator size ident str -> map  (Right . cf2cfpRule) $ separatorRules size ident str
  Abs.Terminator size ident str -> map  (Right . cf2cfpRule) $ terminatorRules size ident str
- Abs.Delimiters a b c -> map  (Right . cf2cfpRule) $ delimiterRules a b c
+ Abs.Delimiters a b c d -> map  (Right . cf2cfpRule) $ delimiterRules cnf a b c d
  Abs.Coercions ident int -> map  (Right . cf2cfpRule) $ coercionRules ident int
  Abs.Rules ident strs -> map (Right . cf2cfpRule) $ ebnfRules ident strs
  Abs.Layout ss      -> [Left $ Layout ss]
@@ -149,14 +146,35 @@ transDef x = case x of
 
 
 
-delimiterRules :: Abs.Cat -> String -> String -> [Rule]
-delimiterRules a0 l r = [
-  Rule "(++)"   a'  [Left a', Left a'],
-  Rule "(:[])"  a'  [Left a],
+delimiterRules :: Bool -> Abs.Cat -> String -> String -> Abs.Separation -> [Rule]
+delimiterRules False a0 l r sep = [
+  Rule "_" as [Right l, Left (listCat x), Right r]
+  ] ++ separationRules (Abs.IdCat $ Abs.Ident $ x) sep 
+ where 
+   a = transCat a0
+   as = listCat a
+   x = a ++ "_without_delimiters"
+delimiterRules True a0 l r (Abs.SepTerm "") = delimiterRules True a0 l r Abs.SepNone 
+delimiterRules True a0 l r (Abs.SepSepar "") = delimiterRules True a0 l r Abs.SepNone
+delimiterRules True a0 l r sep = [
+   -- recognizing a single element
+  Rule "(:[])"  a'  (Left a :
+                     [Right t | Abs.SepTerm t <- [sep]]), -- optionally terminated
+  
+  -- glueing two sublists
+  Rule "(++)"   a'  (Left a' :
+                     [Right t | Abs.SepSepar t <- [sep]] ++ -- optionally separated
+                     [Left a']),
+  
+   -- starting on either side with a delimiter
   Rule "[]"     c   [Right l],
-  Rule "(++)"   c   [Left c,Left a'],
   Rule "[]"     d   [Right r],
+  
+   -- gathering chains
+  Rule "(++)"   c   [Left c,Left a'],
   Rule "(++)"   d   [Left a',Left d],
+  
+   -- finally, put together left and right chains
   Rule "(++)"   as  [Left c,Left d]
   ]
  where a = transCat a0
@@ -165,6 +183,13 @@ delimiterRules a0 l r = [
        c  = '@':'{':a
        d  = '@':'}':a
 
+   
+separationRules :: Abs.Cat -> Abs.Separation -> [Rule]
+separationRules c Abs.SepNone = terminatorRules Abs.MEmpty c ""  
+separationRules c (Abs.SepTerm t) = terminatorRules Abs.MEmpty c t
+separationRules c (Abs.SepSepar t) = separatorRules Abs.MEmpty c t
+
+
 separatorRules :: Abs.MinimumSize -> Abs.Cat -> String -> [Rule]
 separatorRules size c s = if null s then terminatorRules size c s else ifEmpty [
   Rule "(:[])" cs [Left c'],
@@ -172,7 +197,7 @@ separatorRules size c s = if null s then terminatorRules size c s else ifEmpty [
   ]
  where 
    c' = transCat c
-   cs = "[" ++ c' ++ "]"
+   cs = listCat c'
    ifEmpty rs = if (size == Abs.MNonempty)
                 then rs
                 else Rule "[]" cs [] : rs
@@ -184,7 +209,7 @@ terminatorRules size c s = [
   ]
  where 
    c' = transCat c
-   cs = "[" ++ c' ++ "]"
+   cs = listCat c'
    s' its = if null s then its else (Right s : its)
    ifEmpty = if (size == Abs.MNonempty) 
                 then Rule "(:[])" cs ([Left c'] ++ if null s then [] else [Right s])

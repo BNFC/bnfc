@@ -28,7 +28,7 @@ data Def =
  | Entryp [Ident]
  | Separator MinimumSize Cat String
  | Terminator MinimumSize Cat String
- | Delimiters Cat String String
+ | Delimiters Cat String String Separation
  | Coercions Ident Integer
  | Rules Ident [RHS]
  | Function Ident [Arg] Exp
@@ -68,6 +68,12 @@ data ProfItem =
 
 data IntList =
    Ints [Integer]
+  deriving (Eq,Ord,Show)
+
+data Separation =
+   SepNone
+ | SepTerm String
+ | SepSepar String
   deriving (Eq,Ord,Show)
 
 data Arg =

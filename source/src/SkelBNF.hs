@@ -42,7 +42,7 @@ transDef x = case x of
   Entryp ids  -> failure x
   Separator minimumsize cat str  -> failure x
   Terminator minimumsize cat str  -> failure x
-  Delimiters cat str1 str2  -> failure x
+  Delimiters cat str1 str2 separation3  -> failure x
   Coercions id n  -> failure x
   Rules id rhss  -> failure x
   Function id args exp  -> failure x
@@ -88,6 +88,13 @@ transProfItem x = case x of
 transIntList :: IntList -> Result
 transIntList x = case x of
   Ints ns  -> failure x
+
+
+transSeparation :: Separation -> Result
+transSeparation x = case x of
+  SepNone  -> failure x
+  SepTerm str  -> failure x
+  SepSepar str  -> failure x
 
 
 transArg :: Arg -> Result
