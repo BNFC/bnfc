@@ -145,7 +145,7 @@ Def : Label '.' Cat '::=' ListItem { Rule $1 $3 (reverse $5) }
   | 'entrypoints' ListIdent { Entryp $2 }
   | 'separator' MinimumSize Cat String { Separator $2 $3 $4 }
   | 'terminator' MinimumSize Cat String { Terminator $2 $3 $4 }
-  | 'delimiters' Cat String String Separation { Delimiters $2 $3 $4 $5 }
+  | 'delimiters' Cat String String Separation MinimumSize { Delimiters $2 $3 $4 $5 $6 }
   | 'coercions' Ident Integer { Coercions $2 $3 }
   | 'rules' Ident '::=' ListRHS { Rules $2 $4 }
   | 'define' Ident ListArg '=' Exp { Function $2 (reverse $3) $5 }

@@ -28,7 +28,7 @@ data Def =
  | Entryp [Ident]
  | Separator MinimumSize Cat String
  | Terminator MinimumSize Cat String
- | Delimiters Cat String String Separation
+ | Delimiters Cat String String Separation MinimumSize
  | Coercions Ident Integer
  | Rules Ident [RHS]
  | Function Ident [Arg] Exp

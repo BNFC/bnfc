@@ -76,7 +76,7 @@ PosToken.   Def ::= "position" "token" Ident Reg ;
 Entryp.     Def ::= "entrypoints" [Ident] ;
 Separator.  Def ::= "separator" MinimumSize Cat String ;
 Terminator. Def ::= "terminator" MinimumSize Cat String ;
-Delimiters. Def ::= "delimiters" Cat String String Separation;
+Delimiters. Def ::= "delimiters" Cat String String Separation MinimumSize;
 Coercions.  Def ::= "coercions" Ident Integer ;
 Rules.      Def ::= "rules" Ident "::=" [RHS] ;
 Function.   Def ::= "define" Ident [Arg] "=" Exp ;

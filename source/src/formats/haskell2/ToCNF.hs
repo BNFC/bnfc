@@ -364,10 +364,10 @@ escape '@' = "BIN_"
 escape c = show $ ord c
 
 genTokTable :: UnitRel Cat -> CFG Exp -> Doc
-genTokTable units cf = "tokenToCats :: Token -> Pair [(CATEGORY,Any)]" $$
+genTokTable units cf = "tokenToCats :: Bool -> Token -> Pair [(CATEGORY,Any)]" $$
                        vcat (map (genSpecEntry cf units) (tokInfo cf)) $$
                        vcat (map (genTokEntry cf units) (cfTokens cf)) $$
-                       "tokenToCats t = error (\"unknown token: \" ++ show t)"
+                       "tokenToCats p t = error (\"unknown token: \" ++ show t)"
 
 tokInfo cf = ("Char","TC",Con "head"):
              ("String","TL",Id):("Integer","TI",Con "readInteger"):
@@ -378,7 +378,7 @@ tokInfo cf = ("Char","TC",Con "head"):
 genTokCommon cf xs = prettyPair (gen <$> splitOptim fst cf xs)
   where gen ys = prettyListFun [p (ppPair (catTag x,y)) | ((x,y),p) <- ys]
 
-genSpecEntry cf units (tokName,constrName,fun) = "tokenToCats (PT (Pn _ l c) (" <> constrName <> " x)) = " <> genTokCommon cf xs
+genSpecEntry cf units (tokName,constrName,fun) = "tokenToCats p (PT (Pn _ l c) (" <> constrName <> " x)) = " <> genTokCommon cf xs
   where xs = map (second (prettyExp . (\f -> unsafeCoerce' (f `app'` tokArgs)))) $ 
              (Left tokName, fun) : [(Left c,f `after` fun) | (f,c) <- lk (Left tokName) units]
         tokArgs | isPositionCat cf tokName = Con "((l,c),x)"
@@ -386,7 +386,7 @@ genSpecEntry cf units (tokName,constrName,fun) = "tokenToCats (PT (Pn _ l c) (" 
 
 genTokEntry cf units (tok,x) = 
   " -- " <> text tok $$
-  "tokenToCats (PT posn (TS _ " <> int x <> ")) = " <> genTokCommon cf xs
+  "tokenToCats p (PT posn (TS _ " <> int x <> ")) = " <> genTokCommon cf xs
   where xs = (Right tok, tokVal) : 
              [(Left c,prettyExp (unsafeCoerce' f)) | (f,c) <- lk (Right tok) units]
         tokVal = "error" <> (text $ show $ "cannot access value of token: " ++ tok)
@@ -417,7 +417,7 @@ genBenchmark opts = render $ vcat
    ,"main = do"
    ,"  f:_ <- getArgs"
    ,"  s <- readFile f"
-   ,"  let ts = map tokenToCats $ Lexer.tokens s"
+   ,"  let ts = zipWith tokenToCats (cycle [False,True]) (Lexer.tokens s)"
    ,"      (ts1,x:ts2) = splitAt (length ts `div` 2) ts"
    ,"      cs = [mkTree ts1,mkTree' ts2]"
    ,"      work [c1,c2] = show $ map fst $ root $ mergein False c1 x c2"

@@ -136,7 +136,7 @@ transDef cnf x = case x of
    [Right $ Rule (transLabel label) (transCat cat) (Left internalCat:(map transItem items))]
  Abs.Separator size ident str -> map  (Right . cf2cfpRule) $ separatorRules size ident str
  Abs.Terminator size ident str -> map  (Right . cf2cfpRule) $ terminatorRules size ident str
- Abs.Delimiters a b c d -> map  (Right . cf2cfpRule) $ delimiterRules cnf a b c d
+ Abs.Delimiters a b c d e -> map  (Right . cf2cfpRule) $ delimiterRules cnf a b c d e
  Abs.Coercions ident int -> map  (Right . cf2cfpRule) $ coercionRules ident int
  Abs.Rules ident strs -> map (Right . cf2cfpRule) $ ebnfRules ident strs
  Abs.Layout ss      -> [Left $ Layout ss]
@@ -146,48 +146,64 @@ transDef cnf x = case x of
 
 
 
-delimiterRules :: Bool -> Abs.Cat -> String -> String -> Abs.Separation -> [Rule]
-delimiterRules False a0 l r sep = [
+delimiterRules :: Bool -> Abs.Cat -> String -> String -> Abs.Separation -> Abs.MinimumSize -> [Rule]
+delimiterRules False a0 l r sep size = [
   Rule "_" as [Right l, Left (listCat x), Right r]
-  ] ++ separationRules (Abs.IdCat $ Abs.Ident $ x) sep 
+  ] ++ separationRules (Abs.IdCat $ Abs.Ident $ x) sep size
  where 
    a = transCat a0
    as = listCat a
    x = a ++ "_without_delimiters"
-delimiterRules True a0 l r (Abs.SepTerm "") = delimiterRules True a0 l r Abs.SepNone 
-delimiterRules True a0 l r (Abs.SepSepar "") = delimiterRules True a0 l r Abs.SepNone
-delimiterRules True a0 l r sep = [
+delimiterRules True a0 l r (Abs.SepTerm  "") size = delimiterRules True a0 l r Abs.SepNone size
+delimiterRules True a0 l r (Abs.SepSepar "") size = delimiterRules True a0 l r Abs.SepNone size
+delimiterRules True a0 l r sep size = [
    -- recognizing a single element
-  Rule "(:[])"  a'  (Left a :
-                     [Right t | Abs.SepTerm t <- [sep]]), -- optionally terminated
+  Rule "(:[])"  a'  (Left a : termin), -- optional terminator/separator
   
   -- glueing two sublists
-  Rule "(++)"   a'  (Left a' :
-                     [Right t | Abs.SepSepar t <- [sep]] ++ -- optionally separated
-                     [Left a']),
+  Rule "(++)"   a'  [Left a', Left a'],
   
    -- starting on either side with a delimiter
   Rule "[]"     c   [Right l],
-  Rule "[]"     d   [Right r],
+  Rule (if optFinal then "(:[])" else
+                         "[]")     
+                d   ([Left a | optFinal] ++ [Right r]),
   
    -- gathering chains
-  Rule "(++)"   c   [Left c,Left a'],
-  Rule "(++)"   d   [Left a',Left d],
+  Rule "(++)"   c   [Left c, Left a'],
+  Rule "(++)"   d   [Left a', Left d],
   
    -- finally, put together left and right chains
-  Rule "(++)"   as  [Left c,Left d]
-  ]
+  Rule "(++)"   as  [Left c,Left d]] ++ [
+  -- special rule for the empty list if necessary
+  Rule "[]"     as  [Right l,Right r] | optEmpty] 
  where a = transCat a0
        as = listCat a
        a' = '@':'@':a
        c  = '@':'{':a
        d  = '@':'}':a
+       -- optionally separated concat. of x and y categories.
+       x // y = (Left x :
+                 [Right t | Abs.SepSepar t <- [sep]] ++ 
+                 [Left y ])
+       termin = case sep of
+                  Abs.SepSepar t -> [Right t]
+                  Abs.SepTerm  t -> [Right t]
+                  _ -> []
+       optFinal = case (sep,size) of
+         (Abs.SepSepar t,_) -> True
+         (Abs.SepTerm _,Abs.MNonempty) -> True
+         (Abs.SepNone,Abs.MNonempty) -> True
+         _ -> False
+       optEmpty = case sep of
+         Abs.SepSepar _ -> size == Abs.MEmpty
+         _ -> False
 
    
-separationRules :: Abs.Cat -> Abs.Separation -> [Rule]
-separationRules c Abs.SepNone = terminatorRules Abs.MEmpty c ""  
-separationRules c (Abs.SepTerm t) = terminatorRules Abs.MEmpty c t
-separationRules c (Abs.SepSepar t) = separatorRules Abs.MEmpty c t
+separationRules :: Abs.Cat -> Abs.Separation -> Abs.MinimumSize -> [Rule]
+separationRules c Abs.SepNone size = terminatorRules size c ""  
+separationRules c (Abs.SepTerm t) size = terminatorRules size c t
+separationRules c (Abs.SepSepar t) size = separatorRules size c t
 
 
 separatorRules :: Abs.MinimumSize -> Abs.Cat -> String -> [Rule]

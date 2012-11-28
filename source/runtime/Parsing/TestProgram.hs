@@ -21,7 +21,7 @@ putStrV v s = if v > 1 then putStrLn s else return ()
 mainTest :: forall category token. 
             (RingP [(category,Any)], Eq category) =>
          ((category,Any) -> String) ->
-         (token -> Pair [(category,Any)]) ->
+         (Bool -> token -> Pair [(category,Any)]) ->
          (String -> [token]) ->
          (token -> (Int,Int)) -> 
          (category -> String) -> 
@@ -52,7 +52,7 @@ mainTest showAst cnfToksToCat myLLexer getTokPos describe follows =
                  mapM_ (putStrLn . showErr ts) $ filter (\x -> quality x == best) errs
        writeFile "cnf.xpm" (genXPM $ fingerprint chart)
     where ts = myLLexer s
-          chart = mkTree $ map cnfToksToCat ts 
+          chart = mkTree $ zipWith cnfToksToCat (cycle [False,True]) ts 
           rs = results chart
   
   showTokPos :: (Int,Int) -> String

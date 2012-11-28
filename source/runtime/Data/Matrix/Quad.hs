@@ -149,8 +149,8 @@ close :: RingP a => Bool -> Mat s s (Pair a) -> Pair (Mat s s a)
 close p Zero = zero
 close p (One x) = one <$> x
 close p (Quad a11 a12 Zero a22) = quad' x11 (closeDisjointP p (leftOf x11) a12 (rightOf x22)) zero x22
- where x11 = close False a11 
-       x22 = close True  a22
+ where x11 = close (not p) a11 
+       x22 = close (not p) a22
 
 mkTree :: RingP a => [Pair a] -> SomeTri a          
 mkTree xs = case mkShape (length xs) of
