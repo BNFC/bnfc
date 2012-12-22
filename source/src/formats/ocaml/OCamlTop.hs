@@ -32,8 +32,8 @@ import CFtoOCamlPrinter
 import CFtoOCamlShow
 import CFtoOCamlTest
 import CFtoXML
-import GetCF
 import Utils
+import Options
 
 import Data.Char
 import Data.Maybe (fromMaybe,maybe)
@@ -88,35 +88,19 @@ utilFile       = mkFile noLang   "BNFC_Util" "ml"
 utilFileM      = mkMod  noLang   "BNFC_Util"
 xmlFileM      = mkMod  withLang "XML"
 
-data Options = Options 
-    { 
-     make :: Bool,
-     alex1 :: Bool,
-     inDir :: Bool,
-     shareStrings :: Bool,
-     xml :: Int,
-     inPackage :: Maybe String,
-     lang :: String
-    }
+type Options = SharedOptions
 
 -- FIXME: we probably don't need all these arguments
-makeOCaml :: Bool -> Bool -> Bool -> Bool -> Bool -> Int 
-           -> Maybe String -- ^ The hierarchical package to put the modules
-                           --   in, or Nothing.
-           -> String -> FilePath -> IO ()
-makeOCaml m a1 d ss g x p n file = do
-  let opts = Options { make = m, alex1 = a1, inDir = d, shareStrings = ss,
-                       xml = x, inPackage = p, lang = n }
-
-      absMod = absFileM opts
+makeOCaml :: Options -> CF -> IO ()
+makeOCaml opts cf = do
+  let absMod = absFileM opts
       lexMod = ocamllexFileM opts
       parMod = ocamlyaccFileM opts
       prMod  = printerFileM opts
       showMod = showFileM opts
 --      layMod = layoutFileM opts
       utilMod = utilFileM opts
-  (cf, isOK) <- tryReadCF [formatOptOCAML] file
-  if isOK then do
+  do
     let dir = codeDir opts
     when (not (null dir)) $ do
                             putStrLn $ "Creating directory " ++ dir
@@ -136,9 +120,6 @@ makeOCaml m a1 d ss g x p n file = do
       2 -> makeXML (lang opts) True cf
       1 -> makeXML (lang opts) False cf
       _ -> return ()
-    putStrLn $ "Done!"
-   else do putStrLn $ "Failed!"
-           exitFailure
 
 pkgToDir :: String -> FilePath
 pkgToDir s = replace '.' pathSep s

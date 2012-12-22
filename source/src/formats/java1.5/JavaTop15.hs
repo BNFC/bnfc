@@ -54,7 +54,6 @@ import CFtoAbstractVisitor
 import CFtoFoldVisitor
 import CFtoAllVisitor
 import CFtoLatex
-import GetCF		( tryReadCF, formatOptJava15 )
 import Data.Char
 import Data.List(intersperse)
 
@@ -66,15 +65,9 @@ import Data.List(intersperse)
 makeJava15 :: Bool 
 	  -> Maybe String -- ^ Java package name to put the classes in
 	  -> String -- ^ Name of grammar
-	  -> FilePath -- ^ Grammar file
+	  -> CF -- ^ Grammar file
 	  -> IO ()
-makeJava15 make inPackage name file =
-    do (cf, isOK) <- tryReadCF [formatOptJava15] file
-       if isOK
-         then do mkFiles make inPackage name cf
-		 putStrLn $ "Done!"
-	 else do putStrLn $ "Failed!"
-		 exitFailure
+makeJava15 = mkFiles
 
 mkFiles :: Bool -> Maybe String -> String -> CF -> IO ()
 mkFiles make inPackage name cf =

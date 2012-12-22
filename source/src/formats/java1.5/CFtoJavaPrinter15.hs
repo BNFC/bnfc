@@ -225,7 +225,7 @@ prData packageAbsyn user (cat, rules) =
   where addElse = map ("    "++). intersperse "else " . filter (not . null) . map (dropWhile isSpace)
 
 prRule :: String -> Rule -> String
-prRule packageAbsyn r@(Rule (fun, (_c, cats))) | not (isCoercion fun || isDefinedRule fun) = concat
+prRule packageAbsyn r@(Rule fun _c cats) | not (isCoercion fun || isDefinedRule fun) = concat
   [
    "    if (foo instanceof" +++ packageAbsyn ++ "." ++ fun ++ ")\n",
    "    {\n",
@@ -267,26 +267,8 @@ prList user c rules = unlines
   ]
  where
     et = typename (normCatOfList c) user
-    sep = maybe "" escapeChars $ getCons rules
+    sep = escapeChars $ getCons rules
     optsep = if hasOneFunc rules then "" else sep
-
-getCons :: [Rule] -> Maybe String
-getCons (Rule (f, (_c, cats)):rs) =
- if isConsFun f
-   then Just $ seper cats
-   else getCons rs
- where
-    seper [] = []
-    seper ((Right x):_xs) = x
-    seper ((Left {}):xs) = seper xs
-getCons _ = Nothing
-
-hasOneFunc :: [Rule] -> Bool
-hasOneFunc [] = False
-hasOneFunc (Rule (f, (_, _cats)):rs) =
- if (isOneFun f)
-    then True
-    else hasOneFunc rs
 
 prCat fnm (c, p) = 
     case c of
@@ -316,7 +298,7 @@ shData packageAbsyn user (cat, rules) =
  ]
 
 shRule :: String -> Rule -> String
-shRule packageAbsyn (Rule (fun, (_c, cats))) | not (isCoercion fun || isDefinedRule fun) = unlines
+shRule packageAbsyn (Rule fun _c cats) | not (isCoercion fun || isDefinedRule fun) = unlines
   [
    "    if (foo instanceof" +++ packageAbsyn ++ "." ++ fun ++ ")",
    "    {",

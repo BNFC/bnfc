@@ -30,14 +30,11 @@ import CFtoCVisitSkelSTL
 import CFtoSTLPrinter
 import CFtoLatex
 import System.Exit (exitFailure)
-import GetCF
 import Data.Char
 import STLUtils
 
-makeSTL :: Bool -> Bool -> Maybe String -> String -> FilePath -> IO ()
-makeSTL make linenumbers inPackage name file = do
-  (cf, isOK) <- tryReadCF [formatOptCPP_STL] file
-  if isOK then do 
+makeSTL :: Bool -> Bool -> Maybe String -> String -> CF -> IO ()
+makeSTL make linenumbers inPackage name cf = do
     let (hfile, cfile) = cf2CPPAbs linenumbers inPackage name cf
     writeFileRep "Absyn.H" hfile
     writeFileRep "Absyn.C" cfile
@@ -59,9 +56,6 @@ makeSTL make linenumbers inPackage name file = do
     let latex = cfToLatex name cf
     writeFileRep (name ++ ".tex") latex
     if make then (writeFileRep "Makefile" $ makefile name) else return ()
-    putStrLn "Done!"
-   else do putStrLn $ "Failed"
-	   exitFailure
 
 makefile :: String -> String
 makefile name = unlines 

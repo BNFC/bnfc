@@ -48,7 +48,6 @@ import CAbstoCSharpAbstractVisitSkeleton
 import CFtoCSharpPrinter
 import CFtoLatex
 import CSharpUtils
-import GetCF
 import Data.Char
 import System.Exit (exitFailure)
 import System.Environment (getEnv)
@@ -66,12 +65,10 @@ makeCSharp :: Bool -- Makefile
            -> Bool -- Visual Studio files
            -> Bool -- Windows Communication Foundation support
            -> Maybe Namespace -- C# namespace to use
-           -> FilePath 
+           -> CF 
+           -> FilePath
            -> IO ()
-makeCSharp make vsfiles wcfSupport maybenamespace file = do
-  (cf, isOK) <- tryReadCF [formatOptCSharp] file
-  if isOK 
-    then do 
+makeCSharp make vsfiles wcfSupport maybenamespace cf file = do
       let namespace    = fromMaybe (filepathtonamespace file) maybenamespace
           cabs         = cf2cabs cf
           absyn        = cabs2csharpabs namespace cabs wcfSupport
@@ -93,10 +90,6 @@ makeCSharp make vsfiles wcfSupport maybenamespace file = do
       writeFileRep (namespace ++ ".tex") latex
       if vsfiles then (writeVisualStudioFiles namespace) else return ()
       if make then (writeMakefile namespace) else return ()
-      putStrLn "Done!"
-    else do 
-      putStrLn "Failed"
-      exitFailure
 
 writeMakefile :: Namespace -> IO ()
 writeMakefile namespace = do 

@@ -87,7 +87,7 @@ cf2cabs cf = CAbs {
   (pos,base) = partition (isPositionCat cf) $ fst (unzip (tokenPragmas cf))
   (lists,cats) = partition isList $ allCats cf
   toks = map normCat base
-  testRule (Rule (f, (c, r)))
+  testRule (Rule f c r)
    | isList c  = Nothing
    | f == "_"  = Nothing
    | otherwise = Just f

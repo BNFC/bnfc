@@ -1,12 +1,12 @@
-Name: BNFC
-Version: 2.5
+ Name: BNFC
+Version: 2.6
 cabal-version: >= 1.2
 build-type: Simple
 category: Development
-Copyright: (c) Krasimir Angelov, Bjorn Bringert, Johan Broberg, Paul Callaghan, Markus Forsberg, Ola Frid, Peter Gammie, Patrik Jansson, Kristofer Johannisson, Antti-Juhani Kaijanaho, Ulf Norell, Michael Pellauer and Aarne Ranta 2002 - 2010. Free software under GNU General Public License (GPL).
+Copyright: (c) Krasimir Angelov, Jean-Philippe Bernardy, Bjorn Bringert, Johan Broberg, Paul Callaghan, Markus Forsberg, Ola Frid, Peter Gammie, Patrik Jansson, Kristofer Johannisson, Antti-Juhani Kaijanaho, Ulf Norell, Michael Pellauer and Aarne Ranta 2002 - 2012. Free software under GNU General Public License (GPL).
 License: GPL
 License-File: LICENSE
-Maintainer: Markus Forsberg <markus.forsberg@gu.se> Aarne Ranta <aarne@chalmers.se>
+Maintainer: bnfc-dev@googlegroups.com
 Homepage: http://bnfc.digitalgrammars.com/
 Synopsis: A compiler front-end generator.
 Description:
@@ -23,8 +23,18 @@ Description:
   a Latex file containing a readable specification of the language.
 Extra-source-files: src/BNF.cf 
 
+Library 
+  hs-source-dirs: runtime, src           
+
+  exposed-modules: 
+   Algebra.RingUtils
+   Data.Pair
+   Data.Matrix.Quad
+   Parsing.Chart
+   Parsing.TestProgram
+
 Executable bnfc
-  Build-Depends: base>=4.4 && <5, mtl, directory, array, process
+  Build-Depends: base>=4.4 && <5, mtl, directory, array, process, containers, pretty==1.1.* 
   Main-is: Main.hs
   HS-source-dirs: src src/formats
     src/formats/haskell2

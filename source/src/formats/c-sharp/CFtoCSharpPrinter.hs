@@ -336,7 +336,7 @@ prData namespace user (cat, rules)
       otherRules = tail rules'
 
 prRule :: Namespace -> Maybe String -> Rule -> String
-prRule namespace maybeElse r@(Rule (fun, (_c, cats)))
+prRule namespace maybeElse r@(Rule fun _c cats)
   | not (isCoercion fun || isDefinedRule fun) = unlinesInline [
     "      " ++ fromMaybe "" maybeElse ++ "if(p is " ++ identifier namespace fun ++ ")",
     "      {",
@@ -377,23 +377,6 @@ prList user c rules = unlinesInline [
     sep = getCons rules
     optsep = if hasOneFunc rules then "" else escapeChars sep
 
-getCons :: [Rule] -> String
-getCons (Rule (f, (_c, cats)):rs) =
-  if isConsFun f
-    then seper cats
-    else getCons rs
-  where
-    seper [] = []
-    seper ((Right x):_xs) = x
-    seper ((Left {}):xs) = seper xs
-
-hasOneFunc :: [Rule] -> Bool
-hasOneFunc [] = False
-hasOneFunc (Rule (f, (_, _cats)):rs) =
-  if (isOneFun f)
-    then True
-    else hasOneFunc rs
-
 prCat fnm (c, p) = 
   case c of
     Right t -> "        Render(\"" ++ escapeChars t ++ "\");"
@@ -421,7 +404,7 @@ shData namespace user (cat, rules)
     ]
 
 shRule :: Namespace -> Rule -> String
-shRule namespace (Rule (fun, (_c, cats))) 
+shRule namespace (Rule fun _c cats)
   | not (isCoercion fun || isDefinedRule fun) = unlinesInline [
     "      if(p is " ++ identifier namespace fun ++ ")",
     "      {",

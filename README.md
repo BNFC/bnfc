@@ -1,4 +1,1 @@
-bnfc
-====
-
-BNF Converter
+BNF Converter:  http://bnfc.digitalgrammars.com/

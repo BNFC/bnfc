@@ -383,7 +383,7 @@ prPrintData user (cat, rules) =
     
 --Pretty Printer methods for a rule.
 prPrintRule :: [UserDef] -> Rule -> String
-prPrintRule user r@(Rule (fun, (c, cats))) | not (isCoercion fun) = unlines
+prPrintRule user r@(Rule fun c cats) | not (isCoercion fun) = unlines
   [
    "  case is_" ++ fun ++ ":",
    lparen,
@@ -485,7 +485,7 @@ prShowData user (cat, rules) =
     
 --Pretty Printer methods for a rule.
 prShowRule :: [UserDef] -> Rule -> String
-prShowRule user r@(Rule (fun, (c, cats))) | not (isCoercion fun) = unlines
+prShowRule user r@(Rule fun c cats) | not (isCoercion fun) = unlines
   [
    "  case is_" ++ fun ++ ":",
    lparen,
@@ -566,26 +566,6 @@ basicFunName v =
 setI :: Int -> String
 setI n = "_i_ = " ++ (show n) ++ "; "
 
---Gets the separator for a list.
-getCons :: [Rule] -> String
-getCons [] = error $ "FIXME: CFtoCPrinter/getCons: No separator for a list."
-getCons (Rule (f, (c, cats)):rs) =
- if isConsFun f
-   then seper cats
-   else getCons rs
- where
-    seper [] = []
-    seper ((Right x):xs) = x
-    seper ((Left x):xs) = seper xs
-
---Checks if the list has a non-empty rule.
-hasOneFunc :: [Rule] -> Bool
-hasOneFunc [] = False
-hasOneFunc (Rule (f, (c, cats)):rs) =
- if (isOneFun f)
-    then True
-    else hasOneFunc rs
-    
 --Helper function that escapes characters in strings
 escapeChars :: String -> String
 escapeChars [] = []

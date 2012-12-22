@@ -24,7 +24,7 @@
 module Main where
 
 -- import Utils
--- import CF
+import CF (cfp2cf)
 import HaskellTop
 import HaskellTopGADT
 import ProfileTop
@@ -38,6 +38,8 @@ import OCamlTop
 import FSharpTop
 import CFtoXML
 import Utils
+import Options
+import GetCF
 
 import MultiView (preprocessMCF, mkTestMulti, mkMakefileMulti)
 
@@ -46,12 +48,13 @@ import System.Exit (exitFailure,exitSuccess)
 import System.Cmd (system)
 import Data.Char
 import Data.List (elemIndex, foldl')
+import Control.Monad (when,unless)
 
-version = "2.5b"
+version = "2.6a"
 
 title = unlines [
   "The BNF Converter, "++version, 
-  "(c) Krasimir Angelov, Bjorn Bringert, Johan Broberg, Paul Callaghan, ",
+  "(c) Krasimir Angelov, Jean-Philippe Bernardy, Bjorn Bringert, Johan Broberg, Paul Callaghan, ",
   "    Markus Forsberg, Ola Frid, Peter Gammie, Patrik Jansson, ",
   "    Kristofer Johannisson, Antti-Juhani Kaijanaho, Ulf Norell, ",
   "    Michael Pellauer and Aarne Ranta 2002 - 2012.",
@@ -120,41 +123,53 @@ mkOne xx = do
 			 _ -> do
 			      putStrLn "-p option requires an argument"
 			      printUsage
-      if checkUsage False [c, cpp_no_stl, cpp_stl, csharp, java14, haskell, profile] then
-       do
-       if (isCF (reverse file)) then 
-        do 
-         putStrLn title
-         case () of
-           _ | c      -> makeC make name file
-           _ | cpp_no_stl    -> makeCPP make name file
-           _ | cpp_stl-> makeSTL make linenumbers inPackage name file
-           _ | csharp -> makeCSharp make vsfiles wcfSupport inPackage file
-           _ | java14 -> makeJava make name file
-           _ | java15 -> makeJava15 make inPackage name file
-           _ | ocaml  -> makeOCaml make alex1 inDir alex2StringSharing glr xml inPackage name file
-           _ | fsharp -> makeFSharp make alex1 inDir alex2StringSharing glr xml inPackage name file
-           _ | profile-> makeAllProfile make alex1 False xml name file
-           _ | haskellGADT -> makeAllGADT make alexMode inDir alex2StringSharing alex2ByteString glr xml inPackage name file
-           _  -> makeAll make alexMode inDir alex2StringSharing alex2ByteString glr xml inPackage name multi file
-         if (make && multi) 
-           then (system ("cp Makefile Makefile_" ++ name)) >> return ()  
-           else return ()
-         else endFileErr
-       else endLanguageErr
+      let options = Options {make = make, 
+                             alexMode = alexMode, 
+                             inDir = inDir, 
+                             shareStrings = alex2StringSharing, 
+                             byteStrings = alex2ByteString,
+                             glr = if glr then GLR else Standard,
+                             xml = xml,
+                             inPackage = inPackage,
+                             lang = name,
+                             multi = multi,
+                             cnf = elem "-cnf" args,
+                             targets = targets
+                             }
+          targets0 = [ TargetC |c] ++ [ TargetCPP | cpp_no_stl ] ++ [TargetCPP_STL  |  cpp_stl 
+                ] ++ [ TargetCSharp | csharp] ++ [ TargetFSharp |fsharp] ++ [TargetHaskellGADT|haskellGADT
+                ] ++ [ TargetJava15 |java15] ++ [TargetJava |java14] ++ [TargetOCAML |ocaml] ++ [TargetProfile|profile]
+          targets = if null targets0 then [TargetHaskell] else targets0
+      putStrLn title
+      unless (length targets == 1) $
+        fail "Error: only one language mode may be chosen"
+      unless (isCF (reverse file)) $ 
+        fail "Error: the input file must end with .cf"
+      (cfp, isOk) <- tryReadCFP options file
+      let cf = cfp2cf cfp
+      unless isOk $
+        fail "Error: Failed"
+      case () of
+           _ | c      -> makeC make name cf
+           _ | cpp_no_stl    -> makeCPP make name cf
+           _ | cpp_stl-> makeSTL make linenumbers inPackage name cf
+           _ | csharp -> makeCSharp make vsfiles wcfSupport inPackage cf file
+           _ | java14 -> makeJava make name cf
+           _ | java15 -> makeJava15 make inPackage name cf
+           _ | ocaml  -> makeOCaml options cf
+           _ | fsharp -> makeFSharp options cf
+           _ | profile-> makeAllProfile make alex1 False xml name cfp
+           _ | haskellGADT -> makeAllGADT options cf
+           _  -> makeAll options cf
+      when (make && multi) $ do
+            system ("cp Makefile Makefile_" ++ name)
+            return ()
+      putStrLn "Done!"
  where isCF ('f':'c':'.':_)     = True
        isCF ('f':'n':'b':'.':_) = True
        isCF ('f':'n':'b':'l':'.':_) = True
        isCF ('c':'f':'n':'b':'.':_) = True
        isCF _                   = False
-       endFileErr = do 
-                      putStr title
-                      putStrLn "Error: the input file must end with .cf"
-		      exitFailure
-       endLanguageErr = do 
-                          putStr title
-                          putStrLn "Error: only one language mode may be chosen"
-			  exitFailure
        
 printUsage = do 
   putStrLn title
@@ -208,10 +223,3 @@ printUsage = do
   putStrLn "  -wcf           Add support for Windows Communication Foundation, by"
   putStrLn "                 marking abstract syntax classes as DataContracts"
   exitFailure
---		      putStrLn "          : -gf        write GF files"
-
-
-checkUsage _ [] = True
-checkUsage True (True:xs) = False
-checkUsage False (True:xs) = checkUsage True xs
-checkUsage old (x:xs) = checkUsage old xs

@@ -31,8 +31,6 @@ import MkErrM
 ---- import CFtoPrinter
 ---- import CFtoLayout
 ---- import CFtoXML
--- import CFtoGF		( cf2AbsGF, cf2ConcGF )
-import GetCF
 import Utils
 
 import Data.Char
@@ -85,8 +83,8 @@ layoutFileM   = nameMod  "Layout"
 xmlFileM      = nameMod  "XML"
 layoutFile    = nameFile "Layout" "hs"
 
-makeAllProfile :: Bool -> Bool -> Bool -> Int -> String -> FilePath -> IO ()
-makeAllProfile make alex1 inDir xml name file = do
+makeAllProfile :: Bool -> Bool -> Bool -> Int -> String -> CFP -> IO ()
+makeAllProfile make alex1 inDir xml name cfp = do
   let absMod = absFileM      inDir name
       lexMod = alexFileM     inDir name
       parMod = happyFileM    inDir name
@@ -94,10 +92,8 @@ makeAllProfile make alex1 inDir xml name file = do
       layMod = layoutFileM   inDir name
       tplMod = templateFileM inDir name
       errMod = errFileM      inDir name
-  (cfp, isOK) <- tryReadCFP [formatOptProfile] file
   let cf = cfp2cf cfp
-  if isOK then do
-
+  do
     when inDir (prepareDir name)
 ----    writeFileRep (absFile  inDir name) $ cf2Abstract (absFileM inDir name) cf
     if (alex1) then do
@@ -125,9 +121,6 @@ makeAllProfile make alex1 inDir xml name file = do
 ----      2 -> makeXML name True cf
 ----      1 -> makeXML name False cf
 ----      _ -> return ()
-----    putStrLn $ "Done!"
-   else do putStrLn $ "Failed!"
-	   exitFailure
 
 makefile :: Bool -> String -> String
 makefile inDir name = makeA where

@@ -124,6 +124,9 @@ restOfAlex shareMod shareStrings byteStrings cf = [
   "tokenPos (Err (Pn _ l _) :_) = \"line \" ++ show l", 
   "tokenPos _ = \"end of file\"",
   "",
+  "tokenPosn (PT p _) = p",
+  "tokenPosn (Err p) = p",
+  "tokenLineCol = posLineCol . tokenPosn",
   "posLineCol (Pn _ l c) = (l,c)",
   "mkPosToken t@(PT p _) = (posLineCol p, prToken t)",
   "",
@@ -146,7 +149,7 @@ restOfAlex shareMod shareStrings byteStrings cf = [
   "                              | s > a  = treeFind right",
   "                              | s == a = t",
   "",
-  "resWords = " ++ (show $ sorted2tree $ zip (sort resws) [1..]),
+  "resWords = " ++ (show $ sorted2tree $ cfTokens $ cf),
   "   where b s n = let bs = "++stringPack++" s",
   "                  in B bs (TS bs n)",
   "",
@@ -266,8 +269,6 @@ restOfAlex shareMod shareStrings byteStrings cf = [
    ident =
      "$l $i*   { tok (\\p s -> PT p (eitherResIdent (TV . share) s)) }" 
      --ifC "Ident"  "<ident>   ::= ^l ^i*   { ident  p = PT p . eitherResIdent TV }" 
-
-   resws = reservedWords cf ++ symbols cf
 
 
 data BTree = N | B String Int BTree BTree 

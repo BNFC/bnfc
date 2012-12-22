@@ -89,7 +89,7 @@ prData packageAbsyn user (cat, rules) =
 
 --traverses a standard rule.
 prRule :: String -> [UserDef] -> Rule -> String
-prRule packageAbsyn user (Rule (fun, (c, cats))) | not (isCoercion fun || isDefinedRule fun) = unlines
+prRule packageAbsyn user (Rule fun c cats) | not (isCoercion fun || isDefinedRule fun) = unlines
   [
    "    public R visit(" ++ packageAbsyn ++ "." ++ fun ++ " p, A arg)",
    "    {",

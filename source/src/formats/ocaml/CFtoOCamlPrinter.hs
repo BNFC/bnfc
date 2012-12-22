@@ -171,11 +171,11 @@ case_fun cat xs = unlines [
 
 ifList cf cat = mkListRule $ nil cat ++ one cat ++ cons cat where
   nil cat  = ["    []    -> " ++ mkRhs [] its | 
-                            Rule (f,(c,its)) <- rulesOfCF cf, isNilFun f , normCatOfList c == cat]
+                            Rule f c its <- rulesOfCF cf, isNilFun f , normCatOfList c == cat]
   one cat  = ["  | [x]   -> " ++ mkRhs ["x"] its | 
-                            Rule (f,(c,its)) <- rulesOfCF cf, isOneFun f , normCatOfList c == cat]
+                            Rule f c its <- rulesOfCF cf, isOneFun f , normCatOfList c == cat]
   cons cat = ["  | x::xs -> " ++ mkRhs ["x","xs"] its | 
-                            Rule (f,(c,its)) <- rulesOfCF cf, isConsFun f , normCatOfList c == cat]
+                            Rule f c its <- rulesOfCF cf, isConsFun f , normCatOfList c == cat]
   mkListRule [] = ""
   mkListRule rs = unlines $ ("and prt" ++ fixTypeUpper cat ++ "ListBNFC" +++ "_ es : doc = match es with"):rs
 

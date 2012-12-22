@@ -20,7 +20,6 @@
 module CFtoHappy 
        (
        cf2HappyS -- cf2HappyS :: CF -> CFCat -> String
-       ,HappyMode(..)
        )
         where
 
@@ -28,7 +27,7 @@ import CF
 --import Lexer
 import Data.List (intersperse, sort)
 import Data.Char
-
+import Options (HappyMode(..))
 -- Type declarations
 
 type Rules       = [(NonTerminal,[(Pattern,Action)])]
@@ -44,7 +43,6 @@ tokenName   = "Token"
 
 -- Happy mode
 
-data HappyMode = Standard | GLR deriving Eq
 
 
 cf2HappyS :: String -> String -> String -> String -> HappyMode -> Bool -> CF -> String
@@ -57,7 +55,7 @@ cf2Happy name absName lexName errName mode byteStrings cf
  = unlines 
     [header name absName lexName errName mode byteStrings,
      declarations mode (allEntryPoints cf),
-     tokens (symbols cf ++ reservedWords cf),
+     tokens (cfTokens cf),
      specialToks cf,
      delimiter,
      specialRules byteStrings cf,
@@ -86,7 +84,7 @@ cf2Happy name cf
  = unlines 
     [header name,
      declarations (allEntryPoints cf),
-     tokens (symbols cf ++ reservedWords cf),
+     tokens (cfTokens cf),
      specialToks cf,
      delimiter,
      specialRules cf,
@@ -124,8 +122,8 @@ delimiter :: String
 delimiter = "\n%%\n"
 
 -- Generate the list of tokens and their identifiers.
-tokens :: [String] -> String
-tokens toks = "%token \n" ++ prTokens (zip (sort toks) [1..])
+tokens :: [(String,Int)] -> String
+tokens toks = "%token \n" ++ prTokens toks
  where prTokens []         = []
        prTokens ((t,k):tk) = " " ++ (convert t) ++ 
                              " { " ++ oneTok t k ++ " }\n" ++
