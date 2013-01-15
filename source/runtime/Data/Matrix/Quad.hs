@@ -5,7 +5,7 @@ module Data.Matrix.Quad where
 import Prelude ()
 import Data.List (splitAt,intercalate)
 import Control.Applicative
-import Algebra.RingUtils hiding (O)
+import Algebra.RingUtils -- hiding (O)
 import Data.Traversable 
 import Data.Foldable
 
@@ -26,6 +26,14 @@ data Mat :: Shape -> Shape -> * -> * where
   One :: !a -> Mat Leaf Leaf a
   Row :: Mat x1 Leaf a -> Mat x2 Leaf a -> Mat (Bin x1 x2) Leaf a
   Col :: Mat Leaf y1 a -> Mat Leaf y2 a -> Mat Leaf (Bin y1 y2) a
+
+showR :: Mat x y a -> String
+showR Zero = "0"
+showR (One _) = "1"
+showR (Row a b) = "("++showR a++"-"++showR b++")"
+showR (Col a b) = "("++showR a++"|"++showR b++")"
+showR (Quad a b c d) = "#("++ intercalate "," [showR a,showR b,showR c,showR d]++")"
+
 
 data Vec :: Shape -> * -> * where
   Z :: Vec s a
@@ -59,22 +67,58 @@ instance AbelianGroupZ a => AbelianGroup (Mat x y a) where
   (+) = (.+.)
   zero = Zero
 
-mult :: RingP a => Bool -> Mat x y a -> Mat z x a -> Mat z y (Pair a)
-mult p a b = a & b where
+mult :: RingU a => Mat x y a -> Mat z x a ->  (Mat x y a, Mat z y a, Mat z x a)
+mult a b = a & b where
   infixl 7  &
-  (&) :: RingP a => Mat x y a -> Mat z x a -> Mat z y (Pair a)
-  Zero & x = Zero
-  x & Zero = Zero
-  One x & One x' = one (mul p x x')
-  One x & Row a b = row (One x & a) (One x & b)
-  Col a b & One x = col (a & One x) (b & One x)
-  Row a b & Col a' b' = a & a' + b & b'
-  Col a b & Row a' b' = quad (a & a') (a & b') (b & a') (b & b')
-  Row a b & Quad a' b' c' d' = row (a & a' + b & c') (a & b' + b & d')
-  Quad a b c d & Col a' c' = col (a & a' + b & c') (c & a' + d & c')
-  Quad a b c d & Quad a' b' c' d' = 
-     quad (a & a' + b & c') (a & b' + b & d')
-          (c & a' + d & c') (c & b' + d & d')
+  (&) :: RingU a => Mat x y a -> Mat z x a -> (Mat x y a, Mat z y a, Mat z x a)
+  Zero & y = (Zero,Zero,y)
+  x & Zero = (x,Zero,Zero)
+  One x & One y = (one x',one a, one y')
+    where (x',a,y') = mul x y
+  x@(One _) & Row a b = runI $ do
+    let (x,b',b) = x & b
+    let (x,a',a) = x & a
+    return (x,row a' b', row a b)
+  Col a b & x@(One _) = runI $ do 
+    let (a,a',x) = a & x
+    let (b,b',x) = b & x
+    return (col a b,col a' b',x)
+  Row a b & Col a' b' = runI $ do
+    let (a,x,a') = a & a'
+    let (b,y,b') = b & b'
+    return (row a b,x + y,col a' b')
+
+  Col a b & Row a' c' = runI $ do 
+     let (b,w ,a') = b & a'
+     let (a,v, b') = a & b'
+     let (b,x ,b') = b & b'
+     let (a,u, a') = a & a'
+     return (col a b, quad u v w x, row a' c')
+
+  Row a b & Quad a' b' c' d' = runI $ do 
+     let (a,v, b') = a & b'
+     let (b,v',d') = b & d'
+     let (a,u, a') = a & a'
+     let (b,u',c') = b & c'
+     return (row a b, row (u+u') (v+v'), quad a' b' c' d')
+
+  Quad a b c d & Col a' c' = runI $ do 
+     let (c,w ,a') = c & a'
+     let (d,w',c') = d & c'
+     let (a,u, a') = a & a'
+     let (b,u',c') = b & c'
+     return (quad a b c d, col (u+u') (w+w'), col a' c')
+
+  Quad a b c d & Quad a' b' c' d' = runI $ do 
+     let (c,w ,a') = c & a'
+     let (d,w',c') = d & c'
+     let (a,v, b') = a & b'
+     let (b,v',d') = b & d'
+     let (c,x ,b') = c & b'
+     let (d,x',d') = d & d'
+     let (a,u, a') = a & a'
+     let (b,u',c') = b & c'
+     return (quad a b c d, quad (u+u') (v+v') (w+w') (x+x'), quad a' b' c' d')
 
   x & y = error $ "mult:" ++ intercalate "; " [showR x,showR y]
   
@@ -89,35 +133,39 @@ trav (Row a b) = row <$> trav a <*> trav b
 q0 :: Mat (Bin x x') (Bin y y') a
 q0 = Quad Zero Zero Zero Zero
 
-closeDisjointP :: RingP a => Bool -> Mat x x a -> Mat y x (Pair a) -> Mat y y a -> Pair (Mat y x a)
-closeDisjointP p l c r = close l c r
-  where  close :: RingP a => Mat x x a -> Mat y x (Pair a) -> Mat y y a -> Pair (Mat y x a)
-         close l Zero r = Zero :/: Zero
-         close Zero x Zero = trav x -- if x = One x', we are in this case
-         close (Quad a11 a12 Zero a22) (Quad c11 c12 c21 c22) (Quad b11 b12 Zero b22) = quad <$> x11 <*> x12 <*> x21 <*> x22 
-           where x21 = close a22 c21 b11
-                 x11 = close a11 (a12 & rightOf x21 + c11) b11
-                 x22 = close a22 (leftOf  x21 & b12 + c22) b22
-                 x12 = close a11 (a12 & rightOf x22 + leftOf x11 & b12 + c12) b22
+data I a = I {runI :: a}
+instance Monad I where
+  return = I
+  x >>= f = f (runI x)
+
+closeDisjointU :: RingU a => Mat x x a -> Mat y x a -> Mat y y a -> (Mat x x a, Mat y x a, Mat y y a)
+closeDisjointU l c r = close l c r
+  where  close :: RingU a => Mat x x a -> Mat y x a -> Mat y y a -> (Mat x x a, Mat y x a, Mat y y a)
+         close l Zero r = (l,Zero,r)
+         close Zero x Zero = (Zero,x,Zero)
+         close (Quad a11 a12 Zero a22) (Quad c11 c12 c21 c22) (Quad b11 b12 Zero b22) = runI $ do
+           let (a22,x21,b11)  = close a22 c21 b11
+           let (a12,y11,x21)  = a12 `mult` x21
+           let (x21,y22,b12) = x21 `mult` b12
+           let (a11,x11,b11) = close a11 (y11 + c11) b11
+           let (a22,x22,b22) = close a22 (y22 + c22) b22
+           let (a12,y12,x22) = a12 `mult` x22
+           let (x11,z12,b12) = x11 `mult` b12
+           let (a11,x12,b22) = close a11 (y12 + z12 + c12) b22
+           return (quad a11 a12 Zero a22, Quad x11 x12 x21 x22,quad b11 b12 Zero b22)
          close Zero (Quad c11 c12 c21 c22) (Quad b11 b12 Zero b22) = close q0 (Quad c11 c12 c21 c22) (Quad b11 b12 Zero b22)
          close (Quad a11 a12 Zero a22) (Quad c11 c12 c21 c22) Zero = close (Quad a11 a12 Zero a22) (Quad c11 c12 c21 c22) q0
-         close (Quad a11 a12 Zero a22) (Col c1 c2) (Zero) = col <$> x1 <*> x2
-           where x2 = close a22 c2 Zero
-                 x1 = close a11 (mult p a12 (rightOf x2) + c1) Zero
-         close Zero (Row c1 c2) (Quad b11 b12 Zero b22) = row <$> x1 <*> x2
-           where x1 = close Zero c1 b11
-                 x2 = close Zero (mult p (leftOf x1) b12 + c2) b22
+         close (Quad a11 a12 Zero a22) (Col c11 c21) Zero = runI $ do
+           let (a22,x21,Zero)  = close a22 c21 Zero
+           let (a12,y11,x21) = a12 `mult` x21
+           let (a11,x11,Zero) = close a11 (y11 + c11) Zero
+           return (quad a11 a12 Zero a22, Col x11 x21,Zero)
+         close Zero (Row c21 c22) (Quad b11 b12 Zero b22) = runI $ do
+           let (Zero,x21,b11) = close Zero c21 b11
+           let (x21,y22,b12) = x21 `mult` b12
+           let (Zero,x22,b22) = close Zero (y22 + c22) b22
+           return (Zero, Row x21 x22,quad b11 b12 Zero b22)
          close a c b = error $ "closeDisjointP:" ++ intercalate "; " [showR a,showR c,showR b]
-         (&) :: RingP a => Mat x y a -> Mat z x a -> Mat z y (Pair a)
-         (&) = mult p
-
-showR :: Mat x y a -> String
-showR Zero = "0"
-showR (One _) = "1"
-showR (Row a b) = "("++showR a++"-"++showR b++")"
-showR (Col a b) = "("++showR a++"|"++showR b++")"
-showR (Quad a b c d) = "#("++ intercalate "," [showR a,showR b,showR c,showR d]++")"
-
 bin' :: Shape' s -> Shape' s' -> Shape' (Bin s s')
 bin' s s' = Bin' (sz' s + sz' s') s s'
 
@@ -136,7 +184,7 @@ mkSing Leaf' (Bin' _ y1 y2) a = col Zero (mkSing Leaf' y2 a)
 mkSing (Bin' _ x1 x2) Leaf' a = row (mkSing x1 Leaf' a) Zero
 
 data SomeTri a where                  
-  T :: Shape' s -> Pair (Mat s s a) -> SomeTri a
+  T :: Shape' s -> Mat s s a -> SomeTri a
         
 type Q a = SomeTri a       
        
@@ -145,23 +193,24 @@ mkUpDiag [] Leaf' = Zero
 mkUpDiag xs (Bin' _ s s') = Quad (mkUpDiag a s) (mkSing s' s c) Zero (mkUpDiag b s')
   where (a,c:b) = splitAt (sz' s - 1) xs
 
-close :: RingP a => Bool -> Mat s s (Pair a) -> Pair (Mat s s a)
-close p Zero = zero
-close p (One x) = one <$> x
-close p (Quad a11 a12 Zero a22) = quad' x11 (closeDisjointP p (leftOf x11) a12 (rightOf x22)) zero x22
- where x11 = close (not p) a11 
-       x22 = close (not p) a22
+close :: RingU a => Mat s s a -> Mat s s a
+close Zero = zero
+close (One x) = one x
+close (Quad a11 a12 Zero a22) = runI $ do
+ let (a11,a12,a22) = closeDisjointU (close a11) a12 (close a22)
+ return $ Quad a11 a12 Zero a22
 
-mkTree :: RingP a => [Pair a] -> SomeTri a          
+mkTree :: RingU a => [a] -> SomeTri a          
 mkTree xs = case mkShape (length xs) of
-  S s -> T s (close True $ mkUpDiag xs s)
+  S s -> T s (close $ mkUpDiag xs s)
 
 quad' a b c d = quad <$> a <*> b <*> c <*> d
 
-mergein :: RingP a => Bool -> SomeTri a -> Pair a -> SomeTri a -> SomeTri a
+{-mergein :: RingU a => Bool -> SomeTri a -> Pair a -> SomeTri a -> SomeTri a
 mergein p (T y a) c (T x b) = T (bin' y x) (quad' a (closeDisjointP p (leftOf a) c' (rightOf b)) zero b)
   where c' = mkSing x y c
-  
+  -}
+
 -- | A variant of zipWith on vectors
 zw :: (AbelianGroup a, AbelianGroup b) => (a -> b -> c) -> Vec y a -> Vec y b -> Vec y c
 zw f Z Z = Z
@@ -233,7 +282,7 @@ results' m y | isRightmost y = []
   where Just (a,x) = rightmostOnLine y m
 
 results :: AbelianGroupZ a => SomeTri a -> [(Int, a, Int)]
-results (T s (m :/: m')) = [(fromPath s x,a,fromPath s y) | (x,a,y) <- results' (m+m') (leftMost s)]
+results (T s m) = [(fromPath s x,a,fromPath s y) | (x,a,y) <- results' m (leftMost s)]
 
 leftMost :: Shape' s -> Path s
 leftMost Leaf' = Here
@@ -252,15 +301,12 @@ root' (Quad _ a _ _) = root' a
 root' (Col a _) = root' a
 root' (Row _ a) = root' a
 
-root (T _ (m :/: m')) = root' m + root' m'
+root (T _ m) = root' m
 
-single x = T Leaf' (one <$> x)
+single x = T Leaf' (one x)
 
-square2 x = T (bin' Leaf' Leaf') $ quad' zero (one <$> x) zero zero
+square2 x = T (bin' Leaf' Leaf') $ quad zero (one x) zero zero
 
-square3 p x y = T (bin' (bin' Leaf' Leaf') (Leaf')) 
-  (quad' (quad' zero (one <$> x) zero zero) (Col <$> (one <$> mul p (leftOf x) (rightOf y)) <*> (one <$> y)) zero zero)
-  
 
 sz' :: Shape' s -> Int
 sz' Leaf' = 1
@@ -278,9 +324,11 @@ lin (Bin' _ x x') (Bin' _ y y') (Quad a b c d) = (lin x y a |+| lin x' y b) -+- 
 lin Leaf' (Bin' _ y y') (Col a b) = lin Leaf' y a -+- lin Leaf' y' b
 lin (Bin' _ x x') Leaf' (Row a b) = (lin x Leaf' a) |+| (lin x' Leaf' b)
 
-fingerprint (T s (m :/: m')) = zipWith (zipWith c) (lin s s m) (lin s s m')
-  where c x y = case (isZero x,isZero y) of
-                     (True  , True) -> ' '
-                     (True  , False) -> '>'
-                     (False , True) -> '<'
-                     (False , False) -> 'X'
+fingerprint :: AbelianGroupZ a => SomeTri a -> [[Char]]
+fingerprint (T s m) = map (map c) (lin s s m)
+  where c x = case (isZero x) of
+                     (True  ) -> ' '
+                     (False ) -> 'X'
+
+
+

@@ -7,7 +7,7 @@ import System.Environment ( getArgs, getProgName )
 import GHC.Exts
 import Control.Monad
 import Control.Applicative (pure)
-import Parsing.Chart hiding (fingerprint,mkTree)
+import Parsing.Chart hiding (fingerprint)
 import Data.Matrix.Quad
 import Data.Pair
 import Algebra.RingUtils
@@ -19,9 +19,9 @@ putStrV v s = if v > 1 then putStrLn s else return ()
 
 
 mainTest :: forall category token. 
-            (RingP [(category,Any)], Eq category) =>
+            (RingU [(category,Any)], Eq category) =>
          ((category,Any) -> String) ->
-         (Bool -> token -> Pair [(category,Any)]) ->
+         (token -> [(category,Any)]) ->
          (String -> [token]) ->
          (token -> (Int,Int)) -> 
          (category -> String) -> 
@@ -52,7 +52,7 @@ mainTest showAst cnfToksToCat myLLexer getTokPos describe follows =
                  mapM_ (putStrLn . showErr ts) $ filter (\x -> quality x == best) errs
        writeFile "cnf.xpm" (genXPM $ fingerprint chart)
     where ts = myLLexer s
-          chart = mkTree $ zipWith cnfToksToCat (cycle [False,True]) ts 
+          chart = mkTree $ map cnfToksToCat ts 
           rs = results chart
   
   showTokPos :: (Int,Int) -> String

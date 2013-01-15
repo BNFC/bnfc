@@ -186,25 +186,9 @@ isEntryPoint cf el = either (`elem` allEntryPoints cf) (const False) el
 occurs :: (RHSEl -> Rul f -> Bool) -> RHSEl -> CFG f -> Bool
 occurs where_ el cf = any (where_ el) (rulesOfCF cf)
 
-splitLROn :: (a -> RHSEl) -> CFG f -> [a] -> Pair [a]
-splitLROn f cf xs = filt <*> pure xs
-  where filt = filter (\c -> occurs isOnLeft  (f c) cf || isEntryPoint cf (f c)) :/: 
-               filter (\c -> occurs isOnRight (f c) cf)
-        
 isSpecial (Left ('@':'@':_)) = True
 isSpecial _ = False
         
-optim :: (a -> RHSEl) -> Pair [a] -> Pair [(a,Doc -> Doc)]
-optim f (x:/:y) = map modif x :/: map modif' y
-  where modif  a | isSpecial (f a) = (a,\x -> "(if not p then (" <> x <> ":) else id)")
-                 | otherwise = (a,rob) 
-        modif' a | isSpecial (f a) = (a,\x -> "(if     p then (" <> x <> ":) else id)")
-                 | otherwise = (a,rob)
-        rob x = "("<> x <> ":)"
-                                      
-
-splitOptim f cf xs = optim f $ splitLROn f cf $ xs
-
 
 ---------------------------
 -- Error reporting
@@ -333,14 +317,13 @@ group0 ((a,bs):xs) = (a,bs ++ concatMap snd ys) : group0 zs
 group' :: Ord a => [(a,[b])] -> [(a,[b])]
 group' = group0 . sortBy (compare `on` fst)
 
-prettyPair (x :/: y) = sep [x,":/:",y]
 prettyListFun xs = parens $ sep (map (<> "$") xs) <> "[]"
 
 
 genCombine :: UnitRel Cat -> CFG Exp -> Doc
 genCombine units cf = vcat $ map genEntry $ group' $ map (alt units) (rulesOfCF cf)
   where genEntry :: ((RHSEl,RHSEl),[(Cat,Exp)]) -> Doc
-        genEntry ((r1,r2),cs) = "combine p " <> catTag r1 <> " " <> catTag r2 <> " = " <> prettyPair (genList <$> splitOptim (Left . fst) cf cs)
+        genEntry ((r1,r2),cs) = "combine " <> catTag r1 <> " " <> catTag r2 <> " = " <> (genList cs)
         mkLam body = "\\x y -> " <> body
         genList xs = prettyListFun [p (ppPair (catTag . Left $ x, mkLam . prettyExp . unsafeCoerce' $ y)) | ((x,y),p) <- xs]
 
@@ -375,7 +358,7 @@ tokInfo cf = ("Char","TC",Con "head"):
              [("Ident","TV",Con "Ident")|hasIdent cf] ++
              [(t,"T_" <> text t,(Con t)) | t <- tokenNames cf]
 
-genTokCommon cf xs = prettyPair (gen <$> splitOptim fst cf xs)
+genTokCommon cf xs = gen xs
   where gen ys = prettyListFun [p (ppPair (catTag x,y)) | ((x,y),p) <- ys]
 
 genSpecEntry cf units (tokName,constrName,fun) = "tokenToCats p (PT (Pn _ l c) (" <> constrName <> " x)) = " <> genTokCommon cf xs
