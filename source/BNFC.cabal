@@ -1,5 +1,5 @@
  Name: BNFC
-Version: 2.6
+Version: 2.6.0.0
 cabal-version: >= 1.2
 build-type: Simple
 category: Development
@@ -34,7 +34,7 @@ Library
    Parsing.TestProgram
 
 Executable bnfc
-  Build-Depends: base>=4.4 && <5, mtl, directory, array, process, containers, pretty==1.1.* 
+  Build-Depends: base>=4.4 && <5, mtl, directory, array, process, containers, pretty >=1.1 && <1.2 
   Main-is: Main.hs
   HS-source-dirs: src src/formats
     src/formats/haskell2
