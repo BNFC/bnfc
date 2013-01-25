@@ -1,6 +1,6 @@
- Name: BNFC
-Version: 2.6.0.0
-cabal-version: >= 1.2
+Name: BNFC
+Version: 2.6.0.3
+cabal-version: >= 1.8
 build-type: Simple
 category: Development
 Copyright: (c) Krasimir Angelov, Jean-Philippe Bernardy, Bjorn Bringert, Johan Broberg, Paul Callaghan, Markus Forsberg, Ola Frid, Peter Gammie, Patrik Jansson, Kristofer Johannisson, Antti-Juhani Kaijanaho, Ulf Norell, Michael Pellauer and Aarne Ranta 2002 - 2012. Free software under GNU General Public License (GPL).
@@ -21,20 +21,21 @@ Description:
   a Happy, CUP, or Bison parser generator file,
   a pretty-printer as a Haskell/Java/C++/C module,
   a Latex file containing a readable specification of the language.
-Extra-source-files: src/BNF.cf 
+Extra-source-files: src/BNF.cf
 
-Library 
-  hs-source-dirs: runtime, src           
-
-  exposed-modules: 
+Library
+  hs-source-dirs: runtime, src
+  Build-Depends: base>=4.4 && <5, array
+  exposed-modules:
    Algebra.RingUtils
    Data.Pair
    Data.Matrix.Quad
+   Data.Matrix.Class
    Parsing.Chart
    Parsing.TestProgram
 
 Executable bnfc
-  Build-Depends: base>=4.4 && <5, mtl, directory, array, process, containers, pretty >=1.1 && <1.2 
+  Build-Depends: base>=4.4 && <5, mtl, directory, array, process, containers, pretty >=1.1 && <1.2, BNFC
   Main-is: Main.hs
   HS-source-dirs: src src/formats
     src/formats/haskell2
@@ -64,7 +65,9 @@ Executable bnfc
     OOAbstract,
     CFtoLatex,
     CFtoXML,
-    CFtoTxt,	
+    CFtoTxt,
+    Options,
+    ToCNF,
     -- Haskell
     HaskellTop,
     RegToAlex,
@@ -78,6 +81,7 @@ Executable bnfc
     CFtoLayout,
     MkErrM,
     MkSharedString,
+    HsOpts,
     -- Profile
     ProfileTop,
     CFtoHappyProfile,
