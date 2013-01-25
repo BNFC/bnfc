@@ -8,10 +8,11 @@ License: GPL
 License-File: LICENSE
 Maintainer: bnfc-dev@googlegroups.com
 Homepage: http://bnfc.digitalgrammars.com/
+bug-reports: https://github.com/BNFC/bnfc/issues
 Synopsis: A compiler front-end generator.
 Description:
-  The BNF Converter is a compiler construction tool generating a compiler front-end 
-  from a Labelled BNF grammar. It was originally written to generate Haskell, 
+  The BNF Converter is a compiler construction tool generating a compiler front-end
+  from a Labelled BNF grammar. It was originally written to generate Haskell,
   but starting from Version 2.0, it can also be used for generating Java, C++, and C.
   .
   Given a Labelled BNF grammar the tool produces:
