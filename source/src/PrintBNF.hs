@@ -213,9 +213,7 @@ instance Print Exp where
   prtList es = case es of
    [] -> (concatD [])
    [x] -> (concatD [prt 2 x])
-   [x] -> (concatD [prt 0 x])
    x:xs -> (concatD [prt 2 x , prt 2 xs])
-   x:xs -> (concatD [prt 0 x , doc (showString ",") , prt 0 xs])
 
 instance Print RHS where
   prt i e = case e of
