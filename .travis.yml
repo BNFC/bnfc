@@ -1,4 +1,3 @@
 language: haskell
 before_install: "cd source"
-script:
-  - cabal configure && cabal build
+
