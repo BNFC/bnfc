@@ -36,7 +36,7 @@ Library
    Parsing.TestProgram
 
 Executable bnfc
-  Build-Depends: base>=4.4 && <5, mtl, directory, array, process, containers, pretty >=1.1 && <1.2, BNFC
+  Build-Depends: base>=4.4 && <5, mtl, directory, array, process, containers, pretty >=1.1 && <1.2, BNFC, filepath
   Main-is: Main.hs
   HS-source-dirs: src src/formats
     src/formats/haskell2
@@ -158,3 +158,23 @@ Executable bnfc
     CFtoCup15,
     -- F-sharp
     FSharpTop
+
+Test-suite unit-tests
+  Type: exitcode-stdio-1.0
+  Build-Depends: base>=4 && <5, mtl, directory, array, process, filepath,
+                 HUnit, test-framework, test-framework-hunit
+  Main-is: unit-tests.hs
+  HS-source-dirs: src src/tests src/formats
+    src/formats/haskell2
+    src/formats/haskell-gadt
+    src/formats/xml
+    src/formats/profile
+    src/formats/java
+    src/formats/java1.5
+    src/formats/cpp
+    src/formats/c
+    src/formats/ocaml
+    src/formats/cpp_stl
+    src/formats/c-sharp
+    src/formats/f-sharp
+

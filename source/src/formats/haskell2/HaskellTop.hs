@@ -40,7 +40,7 @@ import ToCNF
 import MkErrM
 import MkSharedString
 import Utils
-
+import qualified Common.Makefile as Makefile
 import Data.Char
 import Data.Maybe (fromMaybe,maybe)
 import System.Exit (exitFailure)
@@ -108,42 +108,33 @@ makefile opts = makeA where
   glr_params = if glr opts == GLR then "--glr --decode " else ""  
   dir = let d = codeDir opts in if null d then "" else d ++ [pathSep]
   cd c = if null dir then c else "(cd " ++ dir ++ "; " ++ c ++ ")"
-  makeA = unlines 
-                [
- 		 "all:", 
-                 "\thappy -gca " ++ glr_params ++ happyFile opts, 
-		 "\talex -g "  ++ alexFile opts,
-		 "\t" ++ cd ("latex " ++ basename (latexFile opts)
-			     ++ "; " ++ "dvips " ++ basename (dviFile opts) 
-			     ++ " -o " ++ basename (psFile opts)),
-		 "\tghc --make " ++ tFile opts ++ " -o " ++ mkFile withLang "Test" "" opts,
-		 "clean:",
-		 "\t-rm -f " ++ unwords (map (dir++) [
-						       "*.log", "*.aux", "*.hi", 
-						       "*.o", "*.dvi"
-						      ]),
-		 "\t-rm -f " ++ psFile opts,
-
-		 "distclean: clean",
-		 "\t-rm -f " ++ unwords [
-					 mkFile withLang "Doc" "*" opts,
-					 mkFile withLang "Lex" "*" opts,
-					 mkFile withLang "Par" "*" opts,
-					 mkFile withLang "Layout" "*" opts,
-					 mkFile withLang "Skel" "*" opts,
-					 mkFile withLang "Print" "*" opts,
-					 mkFile withLang "Test" "*" opts,
-					 mkFile withLang "Abs" "*" opts,
-					 mkFile withLang "Test" "" opts,
-					 mkFile noLang   "ErrM" "*" opts,
-					 mkFile noLang   "SharedString" "*" opts,
-                                         dir ++ lang opts ++ ".dtd",
-					 mkFile withLang "XML" "*" opts, 
-					 "Makefile*"
-					],
-		 if null dir then "" else "\t-rmdir -p " ++ dir
-		]
-
+  makeA = Makefile.mkRule "all" []
+            [ "happy -gca " ++ glr_params ++ happyFile opts
+            , "alex -g " ++ alexFile opts
+            , "ghc --make " ++ tFile opts ++ " -o " ++ mkFile withLang "Test" "" opts]
+        $ Makefile.mkDoc (basename (latexFile opts))
+        $ Makefile.mkRule "clean" []
+            [ "-rm -f "  ++ unwords 
+                (map (dir++) [ "*.log", "*.aux", "*.hi", "*.o", "*.dvi" ])
+            , "-rm -f " ++ psFile opts ]
+        $  Makefile.mkRule "distclean" ["clean"]
+            [ "-rm -f " ++ unwords
+                [ mkFile withLang "Doc" "*" opts
+                , mkFile withLang "Lex" "*" opts
+                , mkFile withLang "Par" "*" opts
+                , mkFile withLang "Layout" "*" opts
+                , mkFile withLang "Skel" "*" opts
+                , mkFile withLang "Print" "*" opts
+                , mkFile withLang "Test" "*" opts
+                , mkFile withLang "Abs" "*" opts
+                , mkFile withLang "Test" "" opts
+                , mkFile noLang   "ErrM" "*" opts
+                , mkFile noLang   "SharedString" "*" opts
+                , dir ++ lang opts ++ ".dtd"
+                , mkFile withLang "XML" "*" opts 
+                , "Makefile*" ]
+            , if null dir then "" else "\t-rmdir -p " ++ dir ]
+        $ ""
 
 testfile :: Options -> CF -> String
 testfile opts cf
@@ -278,3 +269,4 @@ lift_parser
    , "                            dec_fn f = decode (find f) r"
    , "                        in GLR_Result (\\ff -> dec_fn $ ff f) (dec_fn f)"
    ]
+
