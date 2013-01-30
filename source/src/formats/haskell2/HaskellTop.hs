@@ -152,6 +152,7 @@ testfile opts cf
 	         "",
 	         "import System.IO ( stdin, hGetContents )",
 	         "import System.Environment ( getArgs, getProgName )",
+	         "import System.Exit ( exitFailure, exitSuccess )",
 		 "",
 		 "import " ++ alexFileM     opts,
 		 "import " ++ happyFileM    opts,
@@ -208,11 +209,13 @@ run_std xml
    , "                          putStrV v \"Tokens:\""
    , "                          putStrV v $ show ts"
    , "                          putStrLn s"
+   , "                          exitFailure"
    , "           Ok  tree -> do putStrLn \"\\nParse Successful!\""
    , "                          showTree v tree"
    , if xml then
      "                          putStrV v $ \"\\n[XML]\\n\\n\" ++ printXML tree"
      else ""
+   , "                          exitSuccess"
    ]
 
 run_glr
