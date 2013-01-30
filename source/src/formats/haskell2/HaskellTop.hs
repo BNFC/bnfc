@@ -41,10 +41,11 @@ import MkErrM
 import MkSharedString
 import Utils
 import qualified Common.Makefile as Makefile
+
 import Data.Char
 import Data.Maybe (fromMaybe,maybe)
 import System.Exit (exitFailure)
-import Control.Monad(when)
+import Control.Monad(when,unless)
 
 -- naming conventions
 
@@ -62,7 +63,7 @@ makeAll opts cf = do
       shareMod = shareFileM opts
   do
     let dir = codeDir opts
-    when (not (null dir)) $ do
+    unless (null dir) $ do
 			    putStrLn $ "Creating directory " ++ dir
 			    prepareDir dir
     writeFileRep (absFile opts) $ cf2Abstract (byteStrings opts) absMod cf
@@ -134,7 +135,7 @@ makefile opts = makeA where
                 , mkFile withLang "XML" "*" opts 
                 , "Makefile*" ]
             , if null dir then "" else "\t-rmdir -p " ++ dir ]
-        $ ""
+        ""
 
 testfile :: Options -> CF -> String
 testfile opts cf
@@ -159,8 +160,8 @@ testfile opts cf
 		 "import " ++ templateFileM opts,
 	         "import " ++ printerFileM  opts,
 	         "import " ++ absFileM      opts,
-	         if lay then ("import " ++ layoutFileM opts) else "",
-	         if use_xml then ("import " ++ xmlFileM opts) else "",
+	         if lay then "import " ++ layoutFileM opts else "",
+	         if use_xml then "import " ++ xmlFileM opts else "",
 	         if_glr "import Data.FiniteMap(FiniteMap, lookupFM, fmToList)",
 	         if_glr "import Data.Maybe(fromJust)",
 	         "import " ++ errFileM      opts,

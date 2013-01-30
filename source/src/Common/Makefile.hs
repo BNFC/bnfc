@@ -1,7 +1,6 @@
 module Common.Makefile where
 
 import Text.Printf
-import Data.List (intercalate)
 import Text.Show (ShowS) -- Efficient string concatenation
 import System.FilePath (replaceExtension)
 
@@ -13,7 +12,7 @@ mkRule :: String   -- ^ The target name
        -> [String] -- ^ Recipe
        -> Makefile
 mkRule target deps recipe = (++) $ unlines $
-  [ printf "%s: %s" target (intercalate " " deps) ]
+  [ printf "%s: %s" target (unwords deps) ]
   ++ map (printf "\t%s") recipe
   ++ [""]
 
