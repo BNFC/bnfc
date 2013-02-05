@@ -1,12 +1,11 @@
-include config.mk
+all: build
 
-.PHONY: all install clean
+build:
+	cabal configure --enable-tests && cabal build
 
-all: force
-	cd src; make -f ../config.mk -f Makefile;cd ..
-force: ;
+test: build
+	cabal test
+
 install:
-	$(INSTALL) -d $(bindir)
-	$(INSTALL) bin/$(PROGRAM)$(EXEEXT) $(bindir)
-clean:
-	find . '(' -name '*~' -o -name '*.hi' -o -name '*.ghi' -o -name '*.o' ')' -exec rm -f '{}' ';'
+	cabal install
+
