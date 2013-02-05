@@ -17,7 +17,7 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 -}
 
-module HaskellTop (makeAll, AlexMode(..)) where 
+module HaskellTop (makeAll, AlexMode(..), makefile) where 
 
 
 
@@ -131,6 +131,7 @@ makefile opts = makeA where
                 , mkFile withLang "Test" "" opts
                 , mkFile noLang   "ErrM" "*" opts
                 , mkFile noLang   "SharedString" "*" opts
+                , mkFile withLang "ComposOp" "*" opts
                 , dir ++ lang opts ++ ".dtd"
                 , mkFile withLang "XML" "*" opts 
                 , "Makefile*" ]
