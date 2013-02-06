@@ -17,14 +17,10 @@ mkRule target deps recipe = (++) $ unlines $
   ++ [""]
 
 mkDoc :: String -> Makefile
-mkDoc texfile = mkRule "doc" [psfile] []
-              . mkRule psfile [dvifile]
-                  [ printf "dvips %s -o %s" dvifile psfile ]
-              . mkRule dvifile [texfile]
-                  [ printf "latex %s" texfile ]
-  where dvifile = replaceExtension texfile "dvi"
-        psfile = replaceExtension texfile "ps"
-
+mkDoc texfile = mkRule "doc" [pdffile] []
+              . mkRule pdffile [texfile]
+                  [ printf "pdflatex %s" texfile ]
+  where pdffile = replaceExtension texfile "pdf"
 
 --                [
 -- 		 "all:", 
