@@ -20,5 +20,5 @@ testRule1 = "main: file1 file2\n\tdo something\n\n"
 testRule2 = "main: program.exe\n\n"
           @=? Makefile.mkRule "main" ["program.exe"] [] ""
 
-testDocRule = "doc: test.ps\n\ntest.ps: test.dvi\n\tdvips test.dvi -o test.ps\n\ntest.dvi: test.tex\n\tlatex test.tex\n\n"
+testDocRule = "doc: test.pdf\n\ntest.pdf: test.tex\n\tpdflatex test.tex\n\n"
              @=? Makefile.mkDoc "test.tex" ""
