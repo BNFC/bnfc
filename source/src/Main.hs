@@ -50,10 +50,11 @@ import Data.Char
 import Data.List (elemIndex, foldl')
 import Control.Monad (when,unless)
 
-version = "2.6a"
+import Paths_BNFC ( version )
+import Data.Version ( showVersion )
 
 title = unlines [
-  "The BNF Converter, "++version, 
+  "The BNF Converter, "++showVersion version,
   "(c) Krasimir Angelov, Jean-Philippe Bernardy, Bjorn Bringert, Johan Broberg, Paul Callaghan, ",
   "    Markus Forsberg, Ola Frid, Peter Gammie, Patrik Jansson, ",
   "    Kristofer Johannisson, Antti-Juhani Kaijanaho, Ulf Norell, ",
@@ -68,7 +69,7 @@ main = do
 	  
   case xx of
     ["--numeric-version"] -> do
-      putStrLn version
+      putStrLn (showVersion version)
       exitSuccess
     [] -> printUsage
     _ | elem "-multi" xx -> do

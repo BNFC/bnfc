@@ -52,6 +52,7 @@ Executable bnfc
     src/formats/c-sharp
     src/formats/f-sharp
   Other-modules:
+    Paths_BNFC,
     LexBNF,
     ParBNF,
     AbsBNF,
