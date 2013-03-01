@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<!-- saved from url=(0042)http://bnfc.digitalgrammars.com/index.html -->
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+<title>The BNF Converter</title>
+<link rel="stylesheet" title="GF" href="http://www.grammaticalframework.org/css/style.css">
+</head>
+
+
+<body>
+<div class="center">
+
+  <img width="200" src="bnfc-logo.png">
+
+<p>
+
+  
+<a href="http://www.clt.gu.se/">Centre for Language Technology</a> 
+<p>
+  Chalmers University of Technology and University of Gothenburg
+</div>
+
+<h2>News</h2>
+<ul>
+  <li>2013-03-01: <a href="http://bnfc.digitalgrammars.com/download/bnfc-2.5-src.tgz">BNFC 2.5</a> released.
+  <li>2012-07-13: 
+    <a href="http://www.digitalgrammars.com/ipl-book/">Implementing Programming Languages</a>, a 
+    compiler book using BNFC.
+</li></ul>
+
+<h2>What is the BNF Converter?</h2>
+<p>The BNF Converter is a compiler construction tool generating a
+compiler front-end
+from a <b>Labelled BNF grammar</b>. It is currently able to generate
+C, C++, C#, Haskell, Java, and OCaml, as well as XML representations.
+</p>
+
+<p> Given a <b>Labelled BNF grammar</b> the tool produces: </p>
+<ul>
+  <li> an abstract syntax implementation</li>
+  <li>a case skeleton for the abstract syntax in the same language</li>
+  <li> an <a href="http://www.haskell.org/alex"> Alex</a>, <a href="http://www.cs.princeton.edu/~appel/modern/java/JLex/">JLex</a>,
+or <a href="http://www.gnu.org/software/flex/flex.html">Flex</a> lexer
+generator file </li>
+  <li> a <a href="http://www.haskell.org/happy">Happy</a>, <a href="http://www.cs.princeton.edu/~appel/modern/java/CUP/">CUP</a>,
+or <a href="http://www.gnu.org/software/bison/bison.html">Bison</a>
+parser generator file</li>
+  <li> a pretty-printer as a Haskell/Java/C++/C module </li>
+  <li> a Latex file containing a readable specification of the
+language </li>
+</ul>
+
+<h2>Documentation</h2>
+<ul>
+
+  <li><a href="http://bnfc.digitalgrammars.com/doc/tutorial/bnfc-tutorial.html">Tutorial</a> </li>
+  
+  <li><a
+  href="http://bnfc.digitalgrammars.com/doc/LBNF-report.pdf">Reference Manual</a>
+
+  <li>  <a href="http://www.digitalgrammars.com/ipl-book/">Implementing Programming Languages</a>, a 
+    compiler book using BNFC.
+</ul>
+
+<h2 id="download">Download</h2>
+
+<p>Binary executables:
+</p><ul>
+  </li><li> <a href="http://bnfc.digitalgrammars.com/download/bnfc-2.5-linux.gz"> Linux binary </a>
+  </li><li> <a
+  href="http://bnfc.digitalgrammars.com/download/bnfc-2.5-mac.gz"> Mac OS X binary </a>
+  </li><li> <a href="http://bnfc.digitalgrammars.com/download/bnfc-2.5-windows.exe">Windows binary </a>
+</li></ul>
+<p></p>
+<p>Source package:
+</p><ul>
+  <li> <a
+  href="http://bnfc.digitalgrammars.com/download/bnfc-2.5src.tgz">source package 2.5</a>
+</li></ul>
+<p></p>
+
+
+<p>Source repository at GitHub:
+
+<blockquote><code>git clone https://github.org/bnfc
+</code></blockquote>
+
+
+<p>Install by Cabal from Hackage:
+
+</p><blockquote><code>cabal install bnfc</code></blockquote>
+
+
+
+
+<h2>Large examples</h2>
+
+<p>A <a href="http://bnfc.digitalgrammars.com/doc/examples/C.cf">grammar of C</a>. An <a href="http://bnfc.digitalgrammars.com/doc/examples/runtime.c">example C file</a> parsable in type <tt>Program</tt>.
+</p>
+<p>A <a href="http://bnfc.digitalgrammars.com/doc/examples/Alfa.cf">grammar of Alfa</a>
+(For more details, see the <a href="http://www.cse.chalmers.se/~hallgren/Alfa/">Alfa home page</a>.)
+</p>
+<p>A <a href="http://bnfc.digitalgrammars.com/doc/examples/LBNF.cf">grammar of LBNF</a>. It is at the
+same
+time an example LBNF file, parsable in type <tt>Grammar</tt>. This
+grammar is used in the implementation of the BNF Converter.<br>
+<br>
+A <a href="http://people.cs.uchicago.edu/~mrainey/java.cf">grammar
+of Java 1.1</a> developed by <a href="http://people.cs.uchicago.edu/~mrainey/">Mike Rainey</a> </p>
+
+
+<h2>Contact</h2>
+
+<h3>Mailing list</h3>
+
+Send questions, bug reports, usage news, etc, to our <a href="https://groups.google.com/group/bnfc-dev?hl=en">Google group</a>.
+
+<h3>Authors</h3>
+
+(c) Björn Bringert, Johan Broberg, Paul Callaghan, Gr&eacute;goire
+D&eacute;trez, Markus Forsberg, 
+Ola Frid, Peter Gammie, Patrik Jansson, Kristofer Johannisson, 
+Antti-Juhani Kaijanaho, Ulf Norell, Michael Pellauer 
+and Aarne Ranta 2002 - 2011.
+
+<h2>License</h2>
+
+Free software under GNU General Public License (<a href="http://bnfc.digitalgrammars.com/LICENSE">GPL</a>).
+
+
+
+</body></html>
