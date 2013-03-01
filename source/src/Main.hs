@@ -1,12 +1,12 @@
 {-
     BNF Converter: Main file
     Copyright (C) 2002-2013  Authors:
-    Jonas Almström Duregård, Krasimir Angelov, Jean-Philippe Bernardy, Björn Bringert, Johan Broberg, Paul Callaghan,
-    Grégoire Détrez, Markus Forsberg, Ola Frid, Peter Gammie, Thomas Hallgren, Patrik Jansson,
+    Jonas AlmstrÃ¶m DuregÃ¥rd, Krasimir Angelov, Jean-Philippe Bernardy, BjÃ¶rn Bringert, Johan Broberg, Paul Callaghan,
+    GrÃ©goire DÃ©trez, Markus Forsberg, Ola Frid, Peter Gammie, Thomas Hallgren, Patrik Jansson,
     Kristofer Johannisson, Antti-Juhani Kaijanaho, Ulf Norell,
     Michael Pellauer and Aarne Ranta 2002 - 2013.
  
-    Björn Bringert, Johan Broberg, Markus Forberg, Peter Gammie, 
+    BjÃ¶rn Bringert, Johan Broberg, Markus Forberg, Peter Gammie, 
     Patrik Jansson, Antti-Juhani Kaijanaho, Ulf Norell,
     Michael Pellauer, Aarne Ranta
 
@@ -60,8 +60,8 @@ import Data.Version ( showVersion )
 
 title = unlines [
   "The BNF Converter, "++showVersion version,
-  "(c) Jonas Almström Duregård, Krasimir Angelov, Jean-Philippe Bernardy, Björn Bringert, Johan Broberg, Paul Callaghan, ",
-  "    Grégoire Détrez, Markus Forsberg, Ola Frid, Peter Gammie, Thomas Hallgren, Patrik Jansson, ",
+  "(c) Jonas AlmstrÃ¶m DuregÃ¥rd, Krasimir Angelov, Jean-Philippe Bernardy, BjÃ¶rn Bringert, Johan Broberg, Paul Callaghan, ",
+  "    GrÃ©goire DÃ©trez, Markus Forsberg, Ola Frid, Peter Gammie, Thomas Hallgren, Patrik Jansson, ",
   "    Kristofer Johannisson, Antti-Juhani Kaijanaho, Ulf Norell, ",
   "    Michael Pellauer and Aarne Ranta 2002 - 2013.",
   "Free software under GNU General Public License (GPL).",
