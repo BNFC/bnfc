@@ -12,16 +12,23 @@
 
 
 <body>
+
+<p>
+
   <div class="container">
 <div class="center">
 
-  <img width="200" src="bnfc-logo.png">
+<img class="grow" width="300" src="bnfc-logo.png">
+  
+<p>
+<p>
 
+  Version 2.5, March 2013
 <p>
 
   
 <a href="http://www.clt.gu.se/">Centre for Language Technology</a> 
-<p>
+<br>
   Chalmers University of Technology and University of Gothenburg
 </div>
 
@@ -45,9 +52,10 @@ C, C++, C#, Haskell, Java, and OCaml, as well as XML representations.
   <li> an abstract syntax implementation</li>
   <li>a case skeleton for the abstract syntax in the same language</li>
   <li> an <a href="http://www.haskell.org/alex"> Alex</a>, <a href="http://www.cs.princeton.edu/~appel/modern/java/JLex/">JLex</a>,
-or <a href="http://www.gnu.org/software/flex/flex.html">Flex</a> lexer
+or <a href="http://flex.sourceforge.net/">Flex</a> lexer
 generator file </li>
-  <li> a <a href="http://www.haskell.org/happy">Happy</a>, <a href="http://www.cs.princeton.edu/~appel/modern/java/CUP/">CUP</a>,
+  <li> a <a href="http://www.haskell.org/happy">Happy</a>,
+<a href="http://www2.cs.tum.edu/projects/cup/">CUP</a>,
 or <a href="http://www.gnu.org/software/bison/bison.html">Bison</a>
 parser generator file</li>
   <li> a pretty-printer as a Haskell/Java/C++/C module </li>
@@ -55,54 +63,15 @@ parser generator file</li>
 language </li>
 </ul>
 
-<h2>Documentation</h2>
-<ul>
+<h2>A small example</h2>
 
-  <li><a href="http://bnfc.digitalgrammars.com/doc/tutorial/bnfc-tutorial.html">Tutorial</a> </li>
-  
-  <li><a
-  href="http://bnfc.digitalgrammars.com/doc/LBNF-report.pdf">Reference Manual</a>
-
-  <li>  <a href="http://www.digitalgrammars.com/ipl-book/">Implementing Programming Languages</a>, a 
-    compiler book using BNFC.
-</ul>
-
-<h2 id="download">Download</h2>
-
-<p>Binary executables:
-</p><ul>
-  </li><li> <a href="http://bnfc.digitalgrammars.com/download/bnfc-2.5-linux.gz"> Linux binary </a>
-  </li><li> <a
-  href="http://bnfc.digitalgrammars.com/download/bnfc-2.5-mac.gz"> Mac OS X binary </a>
-  </li><li> <a href="http://bnfc.digitalgrammars.com/download/bnfc-2.5-windows.exe">Windows binary </a>
-</li></ul>
-<p></p>
-<p>Source package:
-</p><ul>
-  <li> <a
-  href="http://bnfc.digitalgrammars.com/download/bnfc-2.5src.tgz">source package 2.5</a>
-</li></ul>
-<p></p>
-
-
-<p>Source repository at GitHub:
-
-<blockquote><code>git clone https://github.org/bnfc
-</code></blockquote>
-
-
-<p>Install by Cabal from Hackage:
-
-</p><blockquote><code>cabal install bnfc</code></blockquote>
-
-
-
-<a2>A small example</a>
-
-<table border="0">
+<table border="0" cellpadding=10>
   <tr>
      <td>
        <table border="0">
+<tr>
+<td style="color:#586e75" colspan="2">-- file Calc.bnfc</td>
+</tr>
 <tr>
 <td style="color:#586e75">EAdd.</td>
 <td style="color:#b58900">Exp</td>
@@ -163,11 +132,13 @@ language </li>
      </td>
      <td>
        <pre>
+
       bnfc -haskell Calc.bnfc   
       bnfc -c       Calc.bnfc   
-      bnfc -cpp     Calc.bnfc   
+      bnfc -cpp     Calc.bnfc
+      bnfc -csharp  Calc.bnfc
       bnfc -java    Calc.bnfc   
-        
+      bnfc -ocaml   Calc.bnfc   
        </pre>
        </td>
      <td>
@@ -175,6 +146,53 @@ language </li>
      </td>
     </tr>
     </table>
+
+
+<h2>Documentation</h2>
+<ul>
+
+  <li><a href="http://bnfc.digitalgrammars.com/doc/tutorial/bnfc-tutorial.html">Tutorial</a> </li>
+  
+  <li><a
+  href="http://bnfc.digitalgrammars.com/doc/LBNF-report.pdf">Reference Manual</a>
+
+  <li>  <a href="http://www.digitalgrammars.com/ipl-book/">Implementing Programming Languages</a>, a 
+    compiler book using BNFC.
+</ul>
+
+<h2 id="download">Download</h2>
+
+<p>Binary executables (stable version 2.5):
+</p><ul>
+  </li><li> <a href="http://bnfc.digitalgrammars.com/download/bnfc-2.5-linux.gz"> Linux binary </a>
+  </li><li> <a
+  href="http://bnfc.digitalgrammars.com/download/bnfc-2.5-mac.gz"> Mac OS X binary </a>
+  </li><li> <a href="http://bnfc.digitalgrammars.com/download/bnfc-2.5-windows.exe">Windows binary </a>
+</li></ul>
+<p></p>
+<p>Source package (stable version 2.5):
+</p><ul>
+  <li> <a
+  href="http://bnfc.digitalgrammars.com/download/bnfc-2.5src.tgz">source package 2.5</a>
+</li></ul>
+<p></p>
+
+
+<p>Current development code: Source repository at GitHub (<a href="https://github.com/BNFC/bnfc">https://github.com/BNFC/bnfc</a>):
+
+<blockquote><code>git clone https://github.org/BNFC/bnfc
+</code></blockquote>
+
+
+
+
+
+<p>Install by Cabal from Hackage:
+
+</p><blockquote><code>cabal install bnfc</code></blockquote>
+
+
+
 
 <h2>Large examples</h2>
 
@@ -200,11 +218,11 @@ Send questions, bug reports, usage news, etc, to our <a href="https://groups.goo
 
 <h3>Authors</h3>
 
-(c) Björn Bringert, Johan Broberg, Paul Callaghan, Gr&eacute;goire
-D&eacute;trez, Markus Forsberg, 
-Ola Frid, Peter Gammie, Patrik Jansson, Kristofer Johannisson, 
-Antti-Juhani Kaijanaho, Ulf Norell, Michael Pellauer 
-and Aarne Ranta 2002 - 2011.
+(c)
+    Jonas Almström Duregård, Krasimir Angelov, Jean-Philippe Bernardy, Björn Bringert, Johan Broberg, Paul Callaghan,
+    Grégoire Détrez, Markus Forsberg, Ola Frid, Peter Gammie, Thomas Hallgren, Patrik Jansson,
+    Kristofer Johannisson, Antti-Juhani Kaijanaho, Ulf Norell,
+    Michael Pellauer and Aarne Ranta 2002 - 2013.
 
 <h2>License</h2>
 
