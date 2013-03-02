@@ -13,6 +13,8 @@ import Shelly
 import Prelude hiding (FilePath)
 import Data.Text.Lazy (Text)
 import Control.Exception (assert)
+import Paths_BNFC (getBinDir)
+
 default (Text)
 
 -- | First we define the backends that we want to test BNFC with.
@@ -50,13 +52,24 @@ main = testFactory >>= defaultMain
 
 -- | Build The Test Suite
 testFactory :: IO [Test]
-testFactory = return $ do
-  bknd@(Backend name _ _) <- backends
-  let tests = [mkTest bknd tc | tc <- testCases]
-  return (testGroup name tests)
+testFactory = do
+  -- first we have to find where bnfc is. To do that, 
+  -- we use the getBinDir exposed by cabal and turn the returned
+  -- string in a FilePath. Then we concatenate “bnfc” to this
+  -- path. This might be a problem on windows though...
+  bin <- getBinDir >>= return . decodeString
+  let bnfc = cmd (bin </> "bnfc")
+  -- Then we build a list of test groups (one for each backend)
+  -- using the List monad
+  return $ do
+    bknd@(Backend name _ _) <- backends
+    let tests = [mkTest bnfc bknd tc | tc <- testCases]
+    return (testGroup name tests)
 
-mkTest :: Backend -> TestBundle -> Test
-mkTest (Backend name language runner) bundle = testCase (testName bundle) $
+type BNFC = Text -> Text -> FilePath -> Sh Text
+
+mkTest :: BNFC -> Backend -> TestBundle -> Test
+mkTest bnfc (Backend name language runner) bundle = testCase (testName bundle) $
   shelly $ print_commands True $
     withTmpDir $ \temp -> do
       -- Preconditions: thesting for the existence of the input files
@@ -81,8 +94,7 @@ mkTest (Backend name language runner) bundle = testCase (testName bundle) $
       -- program to decide if the test passes or fails
       setStdin input
       print_stdout False $ runner (testName bundle)
-  where bnfc = cmd "bnfc"
-        make = cmd "make"
+  where make = cmd "make"
 
 
 -- HUnit assertion: file exists
