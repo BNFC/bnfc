@@ -13,7 +13,7 @@ import Shelly
 import Prelude hiding (FilePath)
 import Data.Text.Lazy (Text)
 import Control.Exception (assert)
-import Paths_BNFC (getBinDir)
+import Paths_BNFC 
 
 default (Text)
 
@@ -57,8 +57,12 @@ testFactory = do
   -- we use the getBinDir exposed by cabal and turn the returned
   -- string in a FilePath. Then we concatenate “bnfc” to this
   -- path. This might be a problem on windows though...
-  bin <- getBinDir >>= return . decodeString
-  let bnfc = cmd (bin </> "bnfc")
+  --   bin <- getBinDir >>= return . decodeString
+  --   let bnfc = cmd ( bin</>"bnfc")
+  -- it looks like cabal doesn't set the binbir variable proserly
+  -- when running tests. We need to but the hard coded path instead.
+  bnfcPath <- shelly $ absPath ( "dist"</>"build"</>"bnfc"</>"bnfc")
+  let bnfc = cmd bnfcPath
   -- Then we build a list of test groups (one for each backend)
   -- using the List monad
   return $ do
