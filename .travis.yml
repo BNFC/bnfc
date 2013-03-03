@@ -1,3 +1,6 @@
 language: haskell
-before_install: "cd source"
-
+before_install:
+  - sudo apt-get update -qq
+  - sudo apt-get install -qq jlex cup openjdk-6-jdk
+env: CLASSPATH=".:/usr/share/java/JLex.jar:/usr/share/java/cup.jar"
+before_script: "cd source"

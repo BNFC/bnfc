@@ -23,8 +23,8 @@ default (Text)
 data Backend = Backend String Text (String -> Sh ())
 backends :: [Backend]
 backends =
-  [ Backend "Haskell" "-haskell" (cmd . decodeString . ("./Test" ++)) ]
---  , Backend "Java"    "-java"    (\n -> cmd "java" (n </> "Test")) ]
+  [ Backend "Haskell" "-haskell" (cmd . decodeString . ("./Test" ++))
+  , Backend "Java"    "-java"    (\n -> cmd "java" (n </> "Test")) ]
 
 
 -- | Next, we define the test cases: a cf grammar, and an input file
@@ -41,7 +41,8 @@ testInput = snd
 
 testCases :: [TestBundle]
 testCases = make
-  [ ( "c/c.cf",       "c/test.c" )
+  [ -- ( "alfa/alfa.cf",       "alfa/test.alfa" ) Broken
+    ( "c/c.cf",       "c/test.c" )
   , ( "cpp/cpp.cf",   "cpp/test.cpp" )
   , ( "gf/gf.cf",     "gf/test.gf" )
   , ( "lbnf/lbnf.cf", "lbnf/test.lbnf" )
