@@ -187,7 +187,7 @@ Test-suite unit-tests
   Build-Depends: base>=4 && <5, mtl, directory, array, process, filepath,
                  HUnit, test-framework, test-framework-hunit
   Main-is: unit-tests.hs
-  HS-source-dirs: src src/tests src/formats
+  HS-source-dirs: src test/src src/formats
     src/formats/haskell2
     src/formats/haskell-gadt
     src/formats/xml
