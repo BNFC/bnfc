@@ -56,7 +56,7 @@ import CFtoAllVisitor
 import CFtoLatex
 import Data.Char
 import Data.List(intersperse)
-
+import qualified Common.Makefile as Makefile
 -------------------------------------------------------------------
 -- | Build the Java output.
 -- FIXME: get everything to put the files in the right places.
@@ -122,81 +122,62 @@ mkFiles make inPackage name cf =
 -- Replace with an ANT script?
 makefile :: String -> FilePath -> FilePath -> [String] -> String
 makefile name dirBase dirAbsyn absynFileNames =
-    unlines 
-    [
-     "JAVAC = javac",
-     "JAVAC_FLAGS = -sourcepath .",
-     "",
-     "JAVA = java",
-     "JAVA_FLAGS =",
-     "",
-     "CUP = java_cup.Main",
-     "CUPFLAGS = -nopositions -expect 100",
-     "",
-     "JLEX = JLex.Main",
-     "",
-     "LATEX = latex",
-     "DVIPS = dvips",
-     "",
-     "all: test " ++ name ++ ".ps",
-     "",
-     "test: absyn "
-       ++ unwords (map (dirBase ++) [
-				      "Yylex.class",
-				      "PrettyPrinter.class",
-				      "Test.class",
-                                      "ComposVisitor.class",
-                                      "AbstractVisitor.class",
-                                      "FoldVisitor.class",
-                                      "AllVisitor.class",
-				      "parser.class",
-				      "sym.class",
-				      "Test.class"]),
-     "",
-     ".PHONY: absyn",
-     "",
-     "%.class: %.java",
-     "\t${JAVAC} ${JAVAC_FLAGS} $^",
-     "",
-     "absyn: " ++ absynJavaSrc,
-     "\t${JAVAC} ${JAVAC_FLAGS} $^",
-     "",
-     dirBase ++ "Yylex.java: " ++ dirBase ++ "Yylex",
-     "\t${JAVA} ${JAVA_FLAGS} ${JLEX} " ++ dirBase ++ "Yylex",
-     "",
-     dirBase ++ "sym.java " ++ dirBase ++ "parser.java: " ++ dirBase ++ name ++ ".cup",
-     "\t${JAVA} ${JAVA_FLAGS} ${CUP} ${CUPFLAGS} " ++ dirBase ++ name ++ ".cup",
-     "\tmv sym.java parser.java " ++ dirBase,
-     "",
-     dirBase ++ "Yylex.class: " ++ dirBase ++ "Yylex.java"
-       ++ " " ++ dirBase ++ "sym.java",
-     "",
-     dirBase ++ "sym.class: " ++ dirBase ++ "sym.java",
-     "",
-     dirBase ++ "parser.class: " ++ dirBase ++ "parser.java " ++ dirBase ++ "sym.java",
-     "",
-     dirBase ++ "PrettyPrinter.class: " ++ dirBase ++ "PrettyPrinter.java",
-     "",
-     "" ++ name ++ ".dvi: " ++ name ++ ".tex",
-     "\t${LATEX} " ++ name ++ ".tex",
-     "",
-     "" ++ name ++ ".ps: " ++ name ++ ".dvi",
-     "\t${DVIPS} " ++ name ++ ".dvi -o " ++ name ++ ".ps",
+  (++) (unlines [ "JAVAC = javac",
+                  "JAVAC_FLAGS = -sourcepath .", "",
+                  "JAVA = java",
+                  "JAVA_FLAGS =", "",
+                  "CUP = java_cup.Main",
+                  "CUPFLAGS = -nopositions -expect 100", "",
+                  "JLEX = JLex.Main", "" ])
+  $ Makefile.mkRule "all" [ "test" ]
+    []
+  $ Makefile.mkRule "test" ("absyn":(map (dirBase ++) [ "Yylex.class",
+				                       "PrettyPrinter.class",
+				                       "Test.class",
+                                                       "ComposVisitor.class",
+                                                       "AbstractVisitor.class",
+                                                       "FoldVisitor.class",
+                                                       "AllVisitor.class",
+				                       "parser.class",
+				                       "sym.class",
+				                       "Test.class"]))
+    []
+  $ Makefile.mkRule ".PHONY" ["absyn"]
+    []
+  $ Makefile.mkRule "%.class" [ "%.java" ]
+    [ "${JAVAC} ${JAVAC_FLAGS} $^" ]
+  $ Makefile.mkRule "absyn" [absynJavaSrc]
+    [ "${JAVAC} ${JAVAC_FLAGS} $^" ]
+  $ Makefile.mkRule (dirBase ++ "Yylex.java") [ dirBase ++ "Yylex" ]
+    [ "${JAVA} ${JAVA_FLAGS} ${JLEX} " ++ dirBase ++ "Yylex" ]
+  $ Makefile.mkRule (dirBase ++ "sym.java " ++ dirBase ++ "parser.java")
+                    [ dirBase ++ name ++ ".cup" ]
+    [ "${JAVA} ${JAVA_FLAGS} ${CUP} ${CUPFLAGS} " ++ dirBase ++ name ++ ".cup"
+    , "mv sym.java parser.java " ++ dirBase ]
+  $ Makefile.mkRule (dirBase ++ "Yylex.class") [ dirBase ++ "Yylex.java",
+                                                 dirBase ++ "sym.java" ]
+    []
+  $ Makefile.mkRule (dirBase ++ "sym.class") [ dirBase ++ "sym.java" ]
+    []
+  $ Makefile.mkRule (dirBase ++ "parser.class") [ dirBase ++ "parser.java"
+                                                , dirBase ++ "sym.java" ]
+    []
+  $ Makefile.mkRule (dirBase ++ "PrettyPrinter.class")
+                    [ dirBase ++ "PrettyPrinter.java" ]
+    []
 -- FIXME
-     "",
-     "clean:",
-     "\t rm -f " ++ dirAbsyn ++ "*.class" ++ " " ++ dirBase ++ "*.class",
-     "\t rm -f " ++ ".dvi " ++ name ++ ".aux " ++ name ++ ".log " ++ name ++ ".ps " ++ " *.class",
-     "",
-     "distclean: vclean",
-     "",
-     "vclean:",
-     "\t rm -f " ++ absynJavaSrc ++ " " ++ absynJavaClass,
-     "\t rm -f " ++ dirAbsyn ++ "*.class", 
----     "\t rm -f " ++ "Test" ++ name,
-     "\t rmdir " ++ dirAbsyn,
-     "\t rm -f " ++ name ++ ".tex " ++ name ++ ".dvi " ++ name ++ ".aux " ++ name ++ ".log " ++ name ++ ".ps ",
-     "\t rm -f " ++ unwords (map (dirBase ++) [
+  $ Makefile.mkRule "clean" []
+    [ "rm -f " ++ dirAbsyn ++ "*.class" ++ " " ++ dirBase ++ "*.class"
+    , "rm -f " ++ ".dvi " ++ name ++ ".aux " ++ name ++ ".log " ++ name ++ ".ps " ++ " *.class" ]
+  $ Makefile.mkRule "distclean" [ "vclean" ]
+    []
+  $ Makefile.mkRule "vclean" []
+    [ " rm -f " ++ absynJavaSrc ++ " " ++ absynJavaClass
+    , " rm -f " ++ dirAbsyn ++ "*.class"
+--     , "rm -f " ++ "Test" ++ name
+    , " rmdir " ++ dirAbsyn
+    , " rm -f " ++ name ++ ".tex " ++ name ++ ".dvi " ++ name ++ ".aux " ++ name ++ ".log " ++ name ++ ".ps "
+    , " rm -f " ++ unwords (map (dirBase ++) [
 					        "Yylex",
 						name ++ ".cup",
 						"Yylex.java",
@@ -210,11 +191,10 @@ makefile name dirBase dirAbsyn absynFileNames =
 						"Test.java",
 						"sym.java",
 						"parser.java",
-						"*.class"]),
-     "\t rm -f Makefile",
-     "\t rmdir -p " ++ dirBase,
-     ""
-    ]
+						"*.class"])
+    , "rm -f Makefile"
+    , "rmdir -p " ++ dirBase ]
+  ""
     where absynJavaSrc = unwords (map (++ ".java") absynFileNames)
 	  absynJavaClass = unwords (map (++ ".class") absynFileNames)
 
