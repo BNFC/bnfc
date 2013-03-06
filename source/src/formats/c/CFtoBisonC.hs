@@ -67,7 +67,7 @@ cf2Bison name cf env
      declarations cf,
      specialToks cf,
      "%%",
-     prRules (rulesForBison name cf env)
+     prRules (rulesForBison cf env)
     ]
   where
    user = fst (unzip (tokenPragmas cf))
@@ -191,8 +191,8 @@ specialToks cf = concat [
 
 --The following functions are a (relatively) straightforward translation
 --of the ones in CFtoHappy.hs
-rulesForBison :: String -> CF -> SymEnv -> Rules
-rulesForBison name cf env = map mkOne $ ruleGroups cf where
+rulesForBison :: CF -> SymEnv -> Rules
+rulesForBison cf env = map mkOne $ ruleGroups cf where
   mkOne (cat,rules) = constructRule cf env rules cat
 
 -- For every non-terminal, we construct a set of rules.

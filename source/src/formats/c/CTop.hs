@@ -32,13 +32,13 @@ import qualified Common.Makefile as Makefile
 
 makeC :: Bool -> String -> CF -> IO ()
 makeC make name cf = do
-    let (hfile, cfile) = cf2CAbs name cf
+    let (hfile, cfile) = cf2CAbs prefix cf
     writeFileRep "Absyn.h" hfile
     writeFileRep "Absyn.c" cfile
-    let (flex, env) = cf2flex name cf
+    let (flex, env) = cf2flex prefix cf
     writeFileRep (name ++ ".l") flex
     putStrLn "   (Tested with flex 2.5.31)"
-    let bison = cf2Bison name cf env
+    let bison = cf2Bison prefix cf env
     writeFileRep (name ++ ".y") bison
     putStrLn "   (Tested with bison 1.875a)"
     let header = mkHeaderFile cf (allCats cf) (allEntryPoints cf) env
@@ -52,16 +52,24 @@ makeC make name cf = do
     writeFileRep "Test.c" (ctest cf)
     let latex = cfToLatex name cf
     writeFileRep (name ++ ".tex") latex
-    if make then (writeFileRep "Makefile" $ makefile name) else return ()
+    if make then (writeFileRep "Makefile" $ makefile name prefix) else return ()
+  where prefix :: String  -- The prefix is a string used by flex and bison
+                          -- that is prepended to generated function names.
+                          -- In most cases we want the grammar name as the prefix 
+                          -- but in a few specific cases, this can create clashes
+                          -- with existing functions
+        prefix = if name `elem` ["m","c","re","std","str"]
+          then (name ++ "_")
+          else name
 
-makefile :: String -> String
-makefile name =
+makefile :: String -> String -> String
+makefile name prefix =
   (++) (unlines [ "CC = gcc",
                   "CCFLAGS = -g -W -Wall", "",
                   "FLEX = flex",
-                  "FLEX_OPTS = -P" ++ name, "",
+                  "FLEX_OPTS = -P" ++ prefix, "",
                   "BISON = bison",
-                  "BISON_OPTS = -t -p" ++ name, ""])
+                  "BISON_OPTS = -t -p" ++ prefix, ""])
   $ Makefile.mkRule ".PHONY" ["clean", "distclean"]
     []
   $ Makefile.mkRule "all" [testName]
