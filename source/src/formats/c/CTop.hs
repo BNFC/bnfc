@@ -78,7 +78,7 @@ makefile name prefix =
     -- peteg: don't nuke what we generated - move that to the "vclean" target.
     [ "rm -f *.o " ++ unwords [ name ++ e | e <- [".aux",".log",".pdf",""]] ]
   $ Makefile.mkRule "distclean" ["clean"] -- FIXME
-    [ "rm -f" ++ unwords
+    [ "rm -f " ++ unwords
       [ "Absyn.c", "Absyn.h", "Test.c", "Parser.c", "Parser.h", "Lexer.c"
       , "Skeleton.c", "Skeleton.h", "Printer.c" ,"Printer.h"
       , name ++ ".l " ++ name ++ ".y " ++ name ++ ".tex "
