@@ -160,27 +160,55 @@ Executable bnfc
     -- F-sharp
     FSharpTop
 
-Test-suite SystemTesting 
+Flag haskell-tests
+  Description: Enable debug support
+  Default:     True
+
+Test-suite system-tests-haskell
   Type: exitcode-stdio-1.0
   Build-Depends:  base>=4 && <5,
     HUnit, test-framework, test-framework-hunit,
     shelly, system-filepath, text
---   --, mtl, directory, array, process, filepath,
---                  --HUnit, test-framework, test-framework-hunit
-  Main-is: SystemTesting.hs
-  HS-source-dirs: src src/formats test/src
-    src/formats/haskell2
-    src/formats/haskell-gadt
-    src/formats/xml
-    src/formats/profile
-    src/formats/java
-    src/formats/java1.5
-    src/formats/cpp
-    src/formats/c
-    src/formats/ocaml
-    src/formats/cpp_stl
-    src/formats/c-sharp
-    src/formats/f-sharp
+  Main-is: system-tests-haskell.hs
+  HS-source-dirs: test/src
+  if flag(haskell-tests)
+    Buildable: True
+  else
+    Buildable: False
+
+
+Flag java-tests
+  Description: Enable debug support
+  Default:     True
+
+Test-suite system-tests-java
+  Type: exitcode-stdio-1.0
+  Build-Depends:  base>=4 && <5,
+    HUnit, test-framework, test-framework-hunit,
+    shelly, system-filepath, text
+  Main-is: system-tests-java.hs
+  HS-source-dirs: test/src
+  if flag(java-tests)
+    Buildable: True
+  else
+    Buildable: False
+
+Flag c-tests
+  Description: Enable debug support
+  Default:     True
+
+Test-suite system-tests-c
+  Type: exitcode-stdio-1.0
+  Build-Depends:  base>=4 && <5,
+    HUnit, test-framework, test-framework-hunit,
+    shelly, system-filepath, text
+  Main-is: system-tests-c.hs
+  HS-source-dirs: test/src
+  if flag(c-tests)
+    Buildable: True
+  else
+    Buildable: False
+
 
 Test-suite unit-tests
   Type: exitcode-stdio-1.0
