@@ -1,4 +1,11 @@
-cd source
-./configure
-make
-sudo make install
+# Installing using cabal
+
+    cd source
+    cabal install
+
+# Installing using the makefile
+
+    cd source
+    make
+    make install
+
