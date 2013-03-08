@@ -32,6 +32,7 @@ import CFtoLatex
 import System.Exit (exitFailure)
 import Data.Char
 import STLUtils
+import qualified Common.Makefile as Makefile
 
 makeSTL :: Bool -> Bool -> Maybe String -> String -> CF -> IO ()
 makeSTL make linenumbers inPackage name cf = do
@@ -58,59 +59,38 @@ makeSTL make linenumbers inPackage name cf = do
     if make then (writeFileRep "Makefile" $ makefile name) else return ()
 
 makefile :: String -> String
-makefile name = unlines 
-  [
-   "CC = g++",
-   "CCFLAGS = -g",
-   "FLEX = flex",
-   "BISON = bison",
-   "LATEX = latex",
-   "DVIPS = dvips",
-   "",
-   "all: Test" ++ name ++ " " ++ name ++ ".ps",
-   "",
-   "clean:",
+makefile name =
+  (unlines [ "CC = g++", "CCFLAGS = -g", "FLEX = flex", "BISON = bison" ] ++)
+  $ Makefile.mkRule "all" [ "Test" ++ name ]
+    []
+  $ Makefile.mkRule "clean" []
    -- peteg: don't nuke what we generated - move that to the "vclean" target.
-   "\trm -f *.o " ++ name ++ ".dvi " ++ name ++ ".aux " ++ name ++ ".log " ++ name ++ ".ps Test" ++ name,
-   "",
-   "distclean:",
-   "\t rm -f *.o Absyn.C Absyn.H Test.C Parser.C Parser.H Lexer.C Skeleton.C Skeleton.H Printer.C Printer.H " ++ name ++ ".l " ++ name ++ ".y " ++ name ++ ".tex " ++ name ++ ".dvi " ++ name ++ ".aux " ++ name ++ ".log " ++ name ++ ".ps Test" ++ name ++ " Makefile",
-   "",
-   "Test" ++ name ++ ": Absyn.o Lexer.o Parser.o Printer.o Test.o",
-   "\t@echo \"Linking Test" ++ name ++ "...\"",
-   "\t${CC} ${CCFLAGS} *.o -o Test" ++ name ++ "",
-   "        ",
-   "Absyn.o: Absyn.C Absyn.H",
-   "\t${CC} ${CCFLAGS} -c Absyn.C",
-   "",
-   "Lexer.C: " ++ name ++ ".l",
-   "\t${FLEX} -oLexer.C " ++ name ++ ".l",
-   "",
-   "Parser.C: " ++ name ++ ".y",
-   "\t${BISON} " ++ name ++ ".y -o Parser.C",
-   "",
-   "Lexer.o: Lexer.C Parser.H",
-   "\t${CC} ${CCFLAGS} -c Lexer.C ",
-   "",
-   "Parser.o: Parser.C Absyn.H",
-   "\t${CC} ${CCFLAGS} -c Parser.C",
-   "",
-   "Printer.o: Printer.C Printer.H Absyn.H",
-   "\t${CC} ${CCFLAGS} -c Printer.C",
-   "",
-   "Skeleton.o: Skeleton.C Skeleton.H Absyn.H",
-   "\t${CC} ${CCFLAGS} -c Skeleton.C",
-   "",
-   "Test.o: Test.C Parser.H Printer.H Absyn.H",
-   "\t${CC} ${CCFLAGS} -c Test.C",
-   "",
-   "" ++ name ++ ".dvi: " ++ name ++ ".tex",
-   "\t${LATEX} " ++ name ++ ".tex",
-   "",
-   "" ++ name ++ ".ps: " ++ name ++ ".dvi",
-   "\t${DVIPS} " ++ name ++ ".dvi -o " ++ name ++ ".ps",
-   ""
-  ]
+   [ "rm -f *.o " ++ name ++ ".dvi " ++ name ++ ".aux " ++ name ++ ".log " 
+   , "rm -f " ++ name ++ ".pdf Test" ++ name ]
+  $ Makefile.mkRule "distclean" []
+   [ " rm -f *.o Absyn.C Absyn.H Test.C Parser.C Parser.H Lexer.C Skeleton.C Skeleton.H Printer.C Printer.H " ++ name ++ ".l " ++ name ++ ".y " ++ name ++ ".tex " ++ name ++ ".dvi " ++ name ++ ".aux " ++ name ++ ".log " ++ name ++ ".ps Test" ++ name ++ " Makefile" ]
+  $ Makefile.mkRule ("Test" ++ name) [ "Absyn.o", "Lexer.o",
+                                       "Parser.o", "Printer.o", "Test.o" ]
+   [ "@echo \"Linking Test" ++ name ++ "...\""
+   , "${CC} ${CCFLAGS} *.o -o Test" ++ name ]
+  $ Makefile.mkRule "Absyn.o" [ "Absyn.C", "Absyn.H" ]
+   [ "${CC} ${CCFLAGS} -c Absyn.C" ]
+  $ Makefile.mkRule "Lexer.C" [ name ++ ".l" ]
+   [ "${FLEX} -oLexer.C " ++ name ++ ".l" ]
+  $ Makefile.mkRule "Parser.C" [ name ++ ".y" ]
+   [ "${BISON} " ++ name ++ ".y -o Parser.C" ]
+  $ Makefile.mkRule "Lexer.o" [ "Lexer.C", "Parser.H" ]
+   [ "${CC} ${CCFLAGS} -c Lexer.C" ]
+  $ Makefile.mkRule "Parser.o" [ "Parser.C", "Absyn.H" ]
+   [ "${CC} ${CCFLAGS} -c Parser.C" ]
+  $ Makefile.mkRule "Printer.o" [ "Printer.C", "Printer.H", "Absyn.H" ]
+   [ "${CC} ${CCFLAGS} -c Printer.C" ]
+  $ Makefile.mkRule "Skeleton.o" [ "Skeleton.C", "Skeleton.H", "Absyn.H" ]
+   [ "${CC} ${CCFLAGS} -c Skeleton.C" ]
+  $ Makefile.mkRule "Test.o" [ "Test.C", "Parser.H", "Printer.H", "Absyn.H" ]
+   [ "${CC} ${CCFLAGS} -c Test.C" ]
+  $ Makefile.mkDoc name
+  ""
   
 cpptest :: Maybe String -> CF -> String
 cpptest inPackage cf =
