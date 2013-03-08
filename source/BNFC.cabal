@@ -161,7 +161,7 @@ Executable bnfc
     FSharpTop
 
 Flag haskell-tests
-  Description: Enable debug support
+  Description: Enable/disable testing using the haskell backend 
   Default:     True
 
 Test-suite system-tests-haskell
@@ -178,7 +178,7 @@ Test-suite system-tests-haskell
 
 
 Flag java-tests
-  Description: Enable debug support
+  Description: Enable/disable testing using the java backend 
   Default:     True
 
 Test-suite system-tests-java
@@ -194,7 +194,7 @@ Test-suite system-tests-java
     Buildable: False
 
 Flag c-tests
-  Description: Enable debug support
+  Description: Enable/disable testing using the C backend 
   Default:     True
 
 Test-suite system-tests-c
@@ -205,6 +205,34 @@ Test-suite system-tests-c
   Main-is: system-tests-c.hs
   HS-source-dirs: test/src
   if flag(c-tests)
+    Buildable: True
+  else
+    Buildable: False
+
+Flag cpp-tests
+  Description: Enable/disable testing using the C++ backend 
+  Default:     True
+
+Test-suite system-tests-cpp
+  Type: exitcode-stdio-1.0
+  Build-Depends:  base>=4 && <5,
+    HUnit, test-framework, test-framework-hunit,
+    shelly, system-filepath, text
+  Main-is: system-tests-cpp.hs
+  HS-source-dirs: test/src
+  if flag(cpp-tests)
+    Buildable: True
+  else
+    Buildable: False
+
+Test-suite system-tests-cpp-no-stl
+  Type: exitcode-stdio-1.0
+  Build-Depends:  base>=4 && <5,
+    HUnit, test-framework, test-framework-hunit,
+    shelly, system-filepath, text
+  Main-is: system-tests-cpp-no-stl.hs
+  HS-source-dirs: test/src
+  if flag(cpp-tests)
     Buildable: True
   else
     Buildable: False
