@@ -1,10 +1,7 @@
 all: build
 
 build:
-	cabal configure --enable-tests && cabal build
-
-test: build
-	cabal test
+	cabal configure && cabal build
 
 install:
 	cabal install
