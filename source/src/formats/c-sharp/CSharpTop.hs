@@ -58,7 +58,8 @@ import System.Process
 import Data.Maybe
 import Data.Char
 import Control.Monad.ST
-
+import qualified Common.Makefile as Makefile
+import System.FilePath ((<.>))
 -- Control.Monad.State
 
 makeCSharp :: Bool -- Makefile
@@ -104,44 +105,32 @@ writeMakefile namespace = do
   putStrLn "-----------------------------------------------------------------------------"
   putStrLn ""
   where
-    makefile = unlines [ 
-      "MONO = mono",
-      "MONOC = gmcs",
-      "MONOCFLAGS = -optimize -reference:${PARSERREF}",
-      "GPLEX = ${MONO} gplex.exe",
-      "GPPG = ${MONO} gppg.exe",
-      "LATEX = latex",
-      "DVIPS = dvips",
-      "PARSERREF = bin/ShiftReduceParser.dll",
-      -- Apparently GPLEX outputs filenames in lowercase, so scanner.cs is supposed to be like that!
-      "CSFILES = Absyn.cs Parser.cs Printer.cs scanner.cs Test.cs VisitSkeleton.cs",
-      "",
-      "all: test " ++ namespace ++ ".ps",
-      "",
-      "clean:",
-      -- peteg: don't nuke what we generated - move that to the "vclean" target.
-      "\trm -f " ++ namespace ++ ".dvi " ++ namespace ++ ".aux " ++ namespace ++ ".log " ++ namespace ++ ".ps test",
-      "",
-      "distclean:",
-      "\trm -f ${CSFILES} " ++ namespace ++ ".l " ++ namespace ++ ".y " ++ namespace ++ ".tex " ++ namespace ++ ".dvi " ++ namespace ++ ".aux " ++ namespace ++ ".log " ++ namespace ++ ".ps test Makefile",
-      "",
-      "test: Parser.cs Scanner.cs",
-      "\t@echo \"Compiling test...\"",
-      "\t${MONOC} ${MONOCFLAGS} -out:bin/test.exe ${CSFILES}",
-      "",
-      "Scanner.cs: " ++ namespace ++ ".l",
-      "\t${GPLEX} /out:Scanner.cs " ++ namespace ++ ".l",
-      "",
-      "Parser.cs: " ++ namespace ++ ".y",
-      "\t${GPPG} /gplex " ++ namespace ++ ".y > Parser.cs",
-      "",
-      "" ++ namespace ++ ".dvi: " ++ namespace ++ ".tex",
-      "\t${LATEX} " ++ namespace ++ ".tex",
-      "",
-      "" ++ namespace ++ ".ps: " ++ namespace ++ ".dvi",
-      "\t${DVIPS} " ++ namespace ++ ".dvi -o " ++ namespace ++ ".ps",
+    makefile = 
+      (unlines [ "MONO = mono", "MONOC = gmcs"
+               , "MONOCFLAGS = -optimize -reference:${PARSERREF}"
+               , "GPLEX = ${MONO} gplex.exe", "GPPG = ${MONO} gppg.exe"
+               , "PARSERREF = bin/ShiftReduceParser.dll"
+               -- Apparently GPLEX outputs filenames in 
+               -- lowercase, so scanner.cs is supposed to be like that!
+              , "CSFILES = Absyn.cs Parser.cs Printer.cs scanner.cs Test.cs VisitSkeleton.cs" ] ++)
+      $ Makefile.mkRule "all" [ "test" ]
+        []
+      $ Makefile.mkRule "clean" []
+        -- peteg: don't nuke what we generated - move that to the "vclean" target.
+        [ "rm -f " ++ namespace ++ ".pdf test" ]
+      $ Makefile.mkRule "distclean" [ "clean" ]
+        [ "rm -f ${CSFILES}"
+        , "rm -f " ++ unwords [namespace <.> ext | ext <- [ "l","y","tex" ]]
+        , "rm -f Makefile" ]
+      $ Makefile.mkRule "test" [ "Parser.cs", "Scanner.cs" ]
+        [ "@echo \"Compiling test...\""
+        , "${MONOC} ${MONOCFLAGS} -out:bin/test.exe ${CSFILES}" ]
+      $ Makefile.mkRule "Scanner.cs" [ namespace <.> "l" ]
+        [ "${GPLEX} /out:Scanner.cs " ++ namespace <.> "l" ]
+      $ Makefile.mkRule "Parser.cs" [ namespace <.> "y" ]
+        [ "${GPPG} /gplex " ++ namespace <.> "y > Parser.cs" ]
+      $ Makefile.mkDoc namespace
       ""
-      ]
 
 writeVisualStudioFiles :: Namespace -> IO ()
 writeVisualStudioFiles namespace = do
