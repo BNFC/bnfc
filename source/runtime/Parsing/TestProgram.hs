@@ -51,6 +51,9 @@ mainTest showAst cnfToksToCat myLLexer getTokPos describe follows =
                      best = minimum $ map quality errs                     
                  mapM_ (putStrLn . showErr ts) $ filter (\x -> quality x == best) errs
        writeFile "cnf.xpm" (genXPM $ fingerprint chart)
+       let scatt = scatterplot chart
+       putStrLn $ "Scatterplot data size:" ++ show (length scatt)
+       writeFile "cnf.data" scatt
     where ts = myLLexer s
           chart = mkTree $ zipWith cnfToksToCat (cycle [False,True]) ts 
           rs = results chart

@@ -10,7 +10,7 @@ entrypoints Program, Stm, Exp ;
 
 Progr.  Program ::= [External_declaration] ;
 
-delimiters External_declaration "BEGIN" "END";
+delimiters External_declaration "__BEGIN_PROGRAM" "__END_PROGRAM";
 
 Afunc.  External_declaration ::= Function_def ;
 Global. External_declaration ::= Dec ;

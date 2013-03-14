@@ -5,7 +5,7 @@ module Data.Matrix.Quad where
 import Prelude ()
 import Data.List (splitAt,intercalate)
 import Control.Applicative
-import Algebra.RingUtils hiding (O)
+import Algebra.RingUtils hiding (O,concat)
 import Data.Traversable 
 import Data.Foldable
 
@@ -99,7 +99,7 @@ closeDisjointP p l c r = close l c r
                  x11 = close a11 (a12 & rightOf x21 + c11) b11
                  x22 = close a22 (leftOf  x21 & b12 + c22) b22
                  x12 = close a11 (a12 & rightOf x22 + leftOf x11 & b12 + c12) b22
-         close Zero (Quad c11 c12 c21 c22) (Quad b11 b12 Zero b22) = close q0 (Quad c11 c12 c21 c22) (Quad b11 b12 Zero b22)
+         close Zero (Quad c11 c12 c21 c22) (Quad b11 b12 Zero b22) = close q0 (Quad c11 c12 c21 c22) (Quad b11 b12 Zero b22) 
          close (Quad a11 a12 Zero a22) (Quad c11 c12 c21 c22) Zero = close (Quad a11 a12 Zero a22) (Quad c11 c12 c21 c22) q0
          close (Quad a11 a12 Zero a22) (Col c1 c2) (Zero) = col <$> x1 <*> x2
            where x2 = close a22 c2 Zero
@@ -278,9 +278,22 @@ lin (Bin' _ x x') (Bin' _ y y') (Quad a b c d) = (lin x y a |+| lin x' y b) -+- 
 lin Leaf' (Bin' _ y y') (Col a b) = lin Leaf' y a -+- lin Leaf' y' b
 lin (Bin' _ x x') Leaf' (Row a b) = (lin x Leaf' a) |+| (lin x' Leaf' b)
 
+sparse :: AbelianGroup a => Shape' x -> Shape' y -> Mat x y a -> [(Int,Int,a)]
+sparse x y Zero = []
+sparse _ _ (One x) = [(0,0,x)]
+sparse (Bin' _ x x') (Bin' _ y y') (Quad a b c d) = sparse x y a ++ shiftX x (sparse x' y b) ++ shiftY y (sparse x y' c) ++ shiftX x (shiftY y(sparse x' y' d))
+sparse Leaf' (Bin' _ y y') (Col a b) = sparse Leaf' y a ++ shiftY y (sparse Leaf' y' b)
+sparse (Bin' _ x x') Leaf' (Row a b) = sparse x Leaf' a ++ shiftX x (sparse x' Leaf' b)
+
+shiftX x0 as = [(x+sz' x0,y,a) | (x,y,a) <- as]
+shiftY y0 as = [(x,y+sz' y0,a) | (x,y,a) <- as]
+
 fingerprint (T s (m :/: m')) = zipWith (zipWith c) (lin s s m) (lin s s m')
   where c x y = case (isZero x,isZero y) of
                      (True  , True) -> ' '
                      (True  , False) -> '>'
                      (False , True) -> '<'
                      (False , False) -> 'X'
+
+scatterplot (T s (m :/: m')) = concat [show x ++ " " ++ show y ++ "\n" | (x,y,_) <- sparse s s m ++ sparse s s m']
+
