@@ -30,7 +30,7 @@ mainTest :: forall category token.
 mainTest showAst cnfToksToCat myLLexer getTokPos describe follows = 
   do args <- getArgs
      case args of
-       [] -> hGetContents stdin >>= run 2
+       [] -> hGetContents stdin >>= run "stdin" 2 
        "-s":fs -> mapM_ (runFile 0) fs
        fs -> mapM_ (runFile 2) fs
        
@@ -43,17 +43,18 @@ mainTest showAst cnfToksToCat myLLexer getTokPos describe follows =
           putStrLn $ describe cat        
           putStrLn $ showAst (cat,ast)
   
-  runFile v f = putStrLn f >> readFile f >>= run v
-  run v s = 
+  runFile v f = putStrLn f >> readFile f >>= run f v
+  run f v s = 
     do case rs of
          [(_,x,_)] -> showResults x
          _ -> do let errs = pairs rs
                      best = minimum $ map quality errs                     
                  mapM_ (putStrLn . showErr ts) $ filter (\x -> quality x == best) errs
-       writeFile "cnf.xpm" (genXPM $ fingerprint chart)
-       let scatt = scatterplot chart
-       putStrLn $ "Scatterplot data size:" ++ show (length scatt)
-       writeFile "cnf.data" scatt
+       when (v >= 2) $ do
+         writeFile (f ++ ".xpm") (genXPM $ fingerprint chart)
+         let scatt = scatterplot chart
+         putStrLn $ "Scatterplot data size:" ++ show (length scatt)
+         writeFile (f ++ ".data") scatt
     where ts = myLLexer s
           chart = mkTree $ zipWith cnfToksToCat (cycle [False,True]) ts 
           rs = results chart
