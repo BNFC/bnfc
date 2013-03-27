@@ -27,7 +27,7 @@ import CF
 --import Lexer
 import Data.List (intersperse, sort)
 import Data.Char
-import Options (HappyMode(..))
+import BNFC.Options (HappyMode(..))
 -- Type declarations
 
 type Rules       = [(NonTerminal,[(Pattern,Action)])]

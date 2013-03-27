@@ -17,12 +17,12 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 -}
 
-module HaskellTop (makeAll, AlexMode(..), makefile) where 
+module HaskellTop (makeAll, AlexVersion(..), makefile) where 
 
 
 
 -- import Utils
-import Options
+import BNFC.Options
 import CF
 import CFtoHappy
 import CFtoAlex

@@ -32,7 +32,7 @@ import Data.Either (partitionEithers)
 import ErrM
 import Data.Char
 import TypeChecker
-import Options
+import BNFC.Options
 
 readCF :: SharedOptions -> FilePath -> IO CFP
 readCF opts f = tryReadCFP opts f >>= return . fst

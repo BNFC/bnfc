@@ -67,7 +67,7 @@ Executable bnfc
     CFtoLatex,
     CFtoXML,
     CFtoTxt,
-    Options,
+    BNFC.Options,
     ToCNF,
     -- Haskell
     HaskellTop,

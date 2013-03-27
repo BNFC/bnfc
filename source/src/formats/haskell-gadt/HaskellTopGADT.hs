@@ -23,7 +23,7 @@ module HaskellTopGADT (makeAllGADT) where
 
 
 -- import Utils
-import Options
+import BNFC.Options
 import HsOpts
 import CF
 import CFtoHappy
@@ -31,7 +31,7 @@ import CFtoAlex
 import CFtoAlex2
 import CFtoAlex3
 import CFtoLatex
-import HaskellTop(AlexMode(..))
+import HaskellTop(AlexVersion(..))
 import CFtoAbstractGADT
 import CFtoTemplateGADT
 import CFtoPrinterGADT

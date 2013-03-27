@@ -33,7 +33,8 @@ import CFtoOCamlShow
 import CFtoOCamlTest
 import CFtoXML
 import Utils
-import Options
+import System.FilePath (takeFileName)
+import BNFC.Options
 
 import Data.Char
 import Data.Maybe (fromMaybe,maybe)
@@ -139,9 +140,9 @@ makefile opts = makeA where
                  "all:",
                  "\tocamlyacc " ++ ocamlyaccFile opts, 
                  "\tocamllex "  ++ ocamllexFile opts,
-                 "\t" ++ cd ("latex " ++ basename (latexFile opts)
-                             ++ "; " ++ "dvips " ++ basename (dviFile opts) 
-                             ++ " -o " ++ basename (psFile opts)),
+                 "\t" ++ cd ("latex " ++ takeFileName (latexFile opts)
+                             ++ "; " ++ "dvips " ++ takeFileName (dviFile opts)
+                             ++ " -o " ++ takeFileName (psFile opts)),
                  "\tocamlc -o " ++ mkFile withLang "Test" "" opts +++
                     utilFile opts +++
                     absFile opts +++ templateFile opts +++

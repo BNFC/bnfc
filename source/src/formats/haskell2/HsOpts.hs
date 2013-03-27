@@ -1,7 +1,7 @@
 module HsOpts  where
 
 import Utils
-import Options
+import BNFC.Options
 
 type Options = SharedOptions
 
