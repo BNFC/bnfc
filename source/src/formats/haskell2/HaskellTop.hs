@@ -46,6 +46,7 @@ import Data.Char
 import Data.Maybe (fromMaybe,maybe)
 import System.Exit (exitFailure)
 import Control.Monad(when,unless)
+import System.FilePath (takeFileName)
 
 -- naming conventions
 
@@ -113,7 +114,7 @@ makefile opts = makeA where
             [ "happy -gca " ++ glr_params ++ happyFile opts
             , "alex -g " ++ alexFile opts
             , "ghc --make " ++ tFile opts ++ " -o " ++ mkFile withLang "Test" "" opts]
-        $ Makefile.mkDoc (basename (latexFile opts))
+        $ Makefile.mkDoc (takeFileName (latexFile opts))
         $ Makefile.mkRule "clean" []
             [ "-rm -f "  ++ unwords 
                 (map (dir++) [ "*.log", "*.aux", "*.hi", "*.o", "*.dvi" ])

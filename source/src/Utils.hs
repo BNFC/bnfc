@@ -123,8 +123,8 @@ pathInits xs = let (ys,zs) = split pathSep xs
 		   in ys : map ((ys ++ [pathSep]) ++) (pathInits zs)
 
 -- | Like basename(1), remove all leading directories from a path name.
-basename :: String -> String
-basename = last . splitAll pathSep
+-- basename :: String -> String
+-- basename = last . splitAll pathSep
 
 
 -- | Write a file, after making a backup of an existing file with the same name.

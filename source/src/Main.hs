@@ -56,6 +56,7 @@ import Control.Monad (when,unless)
 
 import Paths_BNFC ( version )
 import Data.Version ( showVersion )
+import System.FilePath (takeFileName)
 
 title = unlines [
   "The BNF Converter, "++showVersion version,
@@ -91,7 +92,7 @@ mkOne xx = do
   let file = last args  
   if (head file == '-') then printUsage 
    else do
-      let name = takeWhile (/= '.') $ basename file
+      let name = takeWhile (/= '.') $ takeFileName file
       let make = elem "-m" args
       let multi = elem "-multi" args
       let c = elem "-c" args

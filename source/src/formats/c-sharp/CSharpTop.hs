@@ -59,7 +59,7 @@ import Data.Maybe
 import Data.Char
 import Control.Monad.ST
 import qualified BNFC.Backend.Common.Makefile as Makefile
-import System.FilePath ((<.>))
+import System.FilePath ((<.>),takeFileName)
 -- Control.Monad.State
 
 makeCSharp :: Bool -- Makefile
@@ -316,7 +316,7 @@ csharptest namespace cf = unlines [
    def = head (allEntryPoints cf)
 
 filepathtonamespace :: FilePath -> Namespace
-filepathtonamespace file = take (length file - 3) (basename file)
+filepathtonamespace file = take (length file - 3) (takeFileName file)
 
 projectguid :: IO String
 projectguid = do
