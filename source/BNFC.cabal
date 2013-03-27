@@ -237,10 +237,10 @@ Test-suite system-tests-cpp-no-stl
 
 Test-suite unit-tests
   Type: exitcode-stdio-1.0
-  Build-Depends: base>=4 && <5, mtl, directory, array, process, filepath,
-                 HUnit, test-framework, test-framework-hunit
+  Build-Depends: base>=4 && <5, mtl, directory, array, process, filepath, pretty,
+                 HTF == 0.10.*
   Main-is: unit-tests.hs
-  HS-source-dirs: src test/src src/formats
+  HS-source-dirs: src test/unit src/formats
     src/formats/haskell2
     src/formats/haskell-gadt
     src/formats/xml
@@ -252,4 +252,3 @@ Test-suite unit-tests
     src/formats/ocaml
     src/formats/cpp_stl
     src/formats/c-sharp
-
