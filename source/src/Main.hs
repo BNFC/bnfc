@@ -40,7 +40,6 @@ import CSharpTop
 import STLTop
 import CTop
 import OCamlTop
-import FSharpTop
 import CFtoXML
 import Utils
 import Options
@@ -102,7 +101,6 @@ mkOne xx = do
       let java14 = elem "-java1.4" args
       let java15 = elem "-java1.5" args || elem "-java" args
       let ocaml = elem "-ocaml" args
-      let fsharp = elem "-fsharp" args
       let haskell = elem "-haskell" args
       let haskellGADT = elem "-gadt" args
       let profile = elem "-prof" args
@@ -143,7 +141,7 @@ mkOne xx = do
                              targets = targets
                              }
           targets0 = [ TargetC |c] ++ [ TargetCPP | cpp_no_stl ] ++ [TargetCPP_STL  |  cpp_stl 
-                ] ++ [ TargetCSharp | csharp] ++ [ TargetFSharp |fsharp] ++ [TargetHaskellGADT|haskellGADT
+                ] ++ [ TargetCSharp | csharp] ++ [TargetHaskellGADT|haskellGADT
                 ] ++ [ TargetJava15 |java15] ++ [TargetJava |java14] ++ [TargetOCAML |ocaml] ++ [TargetProfile|profile]
           targets = if null targets0 then [TargetHaskell] else targets0
       putStrLn title
@@ -163,7 +161,6 @@ mkOne xx = do
            _ | java14 -> makeJava make name cf
            _ | java15 -> makeJava15 make inPackage name cf
            _ | ocaml  -> makeOCaml options cf
-           _ | fsharp -> makeFSharp options cf
            _ | profile-> makeAllProfile make alex1 False xml name cfp
            _ | haskellGADT -> makeAllGADT options cf
            _  -> makeAll options cf

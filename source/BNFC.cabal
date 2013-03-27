@@ -50,7 +50,6 @@ Executable bnfc
     src/formats/ocaml
     src/formats/cpp_stl
     src/formats/c-sharp
-    src/formats/f-sharp
   Other-modules:
     Paths_BNFC,
     LexBNF,
@@ -156,9 +155,7 @@ Executable bnfc
     CFtoVisitSkel15,
     CFtoJavaPrinter15,
     CFtoJLex15,
-    CFtoCup15,
-    -- F-sharp
-    FSharpTop
+    CFtoCup15
 
 Flag haskell-tests
   Description: Enable/disable testing using the haskell backend 
@@ -255,5 +252,4 @@ Test-suite unit-tests
     src/formats/ocaml
     src/formats/cpp_stl
     src/formats/c-sharp
-    src/formats/f-sharp
 
