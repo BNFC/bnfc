@@ -4,7 +4,7 @@ import Test.HUnit
 import Test.Framework (defaultMain, testGroup)
 import Test.Framework.Providers.HUnit
 
-import qualified Common.Makefile as Makefile
+import qualified BNFC.Backend.Common.Makefile as Makefile
 
 main = defaultMain tests
 

@@ -28,7 +28,7 @@ import CFtoCPrinter
 import CFtoLatex
 import Data.Char
 import System.Exit (exitFailure)
-import qualified Common.Makefile as Makefile
+import qualified BNFC.Backend.Common.Makefile as Makefile
 
 makeC :: Bool -> String -> CF -> IO ()
 makeC make name cf = do

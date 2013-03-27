@@ -56,7 +56,7 @@ import CFtoAllVisitor
 import CFtoLatex
 import Data.Char
 import Data.List(intersperse)
-import qualified Common.Makefile as Makefile
+import qualified BNFC.Backend.Common.Makefile as Makefile
 -------------------------------------------------------------------
 -- | Build the Java output.
 -- FIXME: get everything to put the files in the right places.

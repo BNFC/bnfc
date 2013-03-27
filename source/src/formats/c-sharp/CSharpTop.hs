@@ -58,7 +58,7 @@ import System.Process
 import Data.Maybe
 import Data.Char
 import Control.Monad.ST
-import qualified Common.Makefile as Makefile
+import qualified BNFC.Backend.Common.Makefile as Makefile
 import System.FilePath ((<.>))
 -- Control.Monad.State
 

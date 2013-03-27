@@ -32,7 +32,7 @@ import CFtoLatex
 import System.Exit (exitFailure)
 import Data.Char
 import STLUtils
-import qualified Common.Makefile as Makefile
+import qualified BNFC.Backend.Common.Makefile as Makefile
 
 makeSTL :: Bool -> Bool -> Maybe String -> String -> CF -> IO ()
 makeSTL make linenumbers inPackage name cf = do

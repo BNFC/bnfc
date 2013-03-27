@@ -40,7 +40,7 @@ import CFtoXML
 import MkErrM
 import MkSharedString
 import Utils
-import qualified Common.Makefile as Makefile
+import qualified BNFC.Backend.Common.Makefile as Makefile
 import qualified HaskellTop as Haskell
 
 import Data.Char

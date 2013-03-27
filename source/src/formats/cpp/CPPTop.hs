@@ -29,7 +29,7 @@ import CFtoCPPPrinter
 import CFtoLatex
 import Data.Char
 import System.Exit (exitFailure)
-import qualified Common.Makefile as Makefile
+import qualified BNFC.Backend.Common.Makefile as Makefile
 
 makeCPP :: Bool -> String -> CF -> IO ()
 makeCPP make name cf = do

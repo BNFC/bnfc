@@ -1,4 +1,4 @@
-module Common.Makefile where
+module BNFC.Backend.Common.Makefile where
 
 import Text.Printf
 import Text.Show (ShowS) -- Efficient string concatenation
