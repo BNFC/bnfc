@@ -8,6 +8,8 @@ import qualified Data.Either as Either
 import Control.Exception (assert)
 import System.FilePath ((<.>))
 import Debug.Trace (trace)
+import qualified WarningM as WithWarnings
+import WarningM (WithWarnings)
 
 main = htfMain htf_thisModulesTests
 
@@ -93,4 +95,37 @@ prop_isCfFile = forAll genFilename (\n -> O.isCfFile n)
           ext  <- elements O.allowed_exts
           name <- listOf1 $ elements ['a'..'z']
           return (name <.> ext)
+
+prop_translateArguments :: Property
+prop_translateArguments =
+  forAll genArgument $ \arg ->
+    arg `elem` deprecated ==> WithWarnings.hasWarnings (O.translateArguments [arg])
+  where genArgument = elements (deprecated ++ others)
+        deprecated =  [ "-java","-java1.5","-java1.4","-c","-cpp","-cpp_stl"
+                      , "-cpp_no_stl","-csharp","-ocaml","-haskell"
+                      , "-prof","-gadt","-alex1","-alex1","-alex3"
+                      , "-sharestrings","-bytestrings","-glr","-xml","-xmlt"
+                      , "-vs","-wcf" ]
+        others =  [ "--java","--java5","--java4","--c","--cpp","--stl"
+                      , "--no-stl","--csharp","--ocaml","--haskell"
+                      , "--prof","--gadt","--alex1","--alex2","--alex3"
+                      , "--sharestrings","--bytestrings","--glr","--xml","--xmlt"
+                      , "--vs","--wcf", "-d", "-p", "-l" ]
+
+-- ------------------------------------------------------------------------- --
+-- Warning monad
+-- ------------------------------------------------------------------------- --
+
+test_run = assertEqual (3,["Coucou", "Hi"])
+  $ WithWarnings.run 
+      (WithWarnings.warn "Coucou" >> WithWarnings.warn "Hi" >> return 3)
+
+test_putWarnings =
+  WithWarnings.putWarnings 
+    (WithWarnings.warn "Coucou" >> WithWarnings.warn "Hi" >> return 3)
+    >>= assertEqual 3
+
+test_hasWarnings = 
+  assertBool $ WithWarnings.hasWarnings 
+    (WithWarnings.warn "Coucou" >> WithWarnings.warn "Hi" >> return 3)
 

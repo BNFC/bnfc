@@ -7,6 +7,10 @@ import Data.Char
 import Data.List (elemIndex, foldl')
 import Control.Monad (when,unless)
 import System.FilePath (takeFileName)
+import Control.Monad (liftM)
+import WarningM
+import Text.Printf (printf)
+import Data.List (intercalate)
 
 -- Allowed extensions for grammar files
 allowed_exts = [ "cf", "bnf", "lbnf", "bnfc" ]
@@ -253,4 +257,47 @@ isCfFile = isCF . reverse
         isCF ('f':'n':'b':'l':'.':_) = True
         isCF ('c':'f':'n':'b':'.':_) = True
         isCF _                   = False
- 
+
+-- Backward compatibility: This function makes sure that we stay backward
+-- compatible wrt. the old argument names by translating the old arguments
+-- to their new equivalent. In addition, it produces wornings messages
+-- to be displayed to the user
+translateArguments :: [String] -> WithWarnings [String]
+translateArguments
+  = concatMapM $ translate
+      [ ( "-java1.4", ["--java4"])
+      , ( "-java1.5", ["--java5"])
+      , ( "-java", ["--java"])
+      , ( "-c", ["--c"])
+      , ( "-cpp", ["--cpp"])
+      , ( "-cpp_stl", ["--cpp","--stl"])
+      , ( "-cpp_no_stl", ["--cpp","--no-stl"])
+      , ( "-csharp", ["--csharp"])
+      , ( "-ocaml", ["--ocaml"])
+      , ( "-haskell", ["--haskell"])
+      , ( "-prof", ["--haskell","--prof"])
+      , ( "-gadt", ["--haskell","--gadt"])
+      , ( "-alex1", ["--alex1"])
+      , ( "-alex2", ["--alex2"])
+      , ( "-alex3", ["--alex3"])
+      , ( "-sharestrings", ["--sharestrings"])
+      , ( "-bytestrings", ["--bytestrings"])
+      , ( "-glr", ["--glr"])
+      , ( "-bytestrings", ["--bytestrings"])
+      , ( "-xml", ["--xml"])
+      , ( "-xmlt", ["--xmlt"])
+      , ( "-vs", ["--vs"])
+      , ( "-wcf", ["--wcf"])
+      ]
+  where translate :: [(String,[String])] -> String -> WithWarnings [String]
+        translate map s
+          = case lookup s map of
+              Nothing -> return [s]
+              Just ss ->
+                let msg = printf "Option %s is deprecated, use %s instead" 
+                                  s (intercalate " " ss)
+                in warn msg >> return ss
+
+
+concatMapM :: Monad m => ( a -> m [b] ) -> [a] -> m [b]
+concatMapM f l = mapM f l >>= return . concat
