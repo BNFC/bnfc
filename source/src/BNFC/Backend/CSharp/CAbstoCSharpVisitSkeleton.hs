@@ -36,15 +36,15 @@
    ************************************************************** 
 -}
 
-module CAbstoCSharpVisitSkeleton (cabs2csharpvisitskeleton) where
+module BNFC.Backend.CSharp.CAbstoCSharpVisitSkeleton (cabs2csharpvisitskeleton) where
 
 import CF
 import Utils ((+++), (++++))
 import NamedVariables
 import Data.List
 import OOAbstract hiding (basetypes)
-import CSharpUtils
-import CAbstoCSharpAbs
+import BNFC.Backend.CSharp.CSharpUtils
+import BNFC.Backend.CSharp.CAbstoCSharpAbs
 
 --Produces .cs file
 cabs2csharpvisitskeleton :: Namespace -> CAbs -> String

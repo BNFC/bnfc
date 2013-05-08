@@ -36,14 +36,14 @@
    ************************************************************** 
 -}
 
-module CFtoGPLEX (cf2gplex) where
+module BNFC.Backend.CSharp.CFtoGPLEX (cf2gplex) where
 
 import CF
-import RegToGPLEX
+import BNFC.Backend.CSharp.RegToGPLEX
 import Utils((+++), (++++))
 import NamedVariables
 import Data.List
-import CSharpUtils
+import BNFC.Backend.CSharp.CSharpUtils
 
 --The environment must be returned for the parser to use.
 cf2gplex :: Namespace -> CF -> (String, SymEnv)

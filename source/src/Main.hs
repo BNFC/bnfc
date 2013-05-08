@@ -36,7 +36,7 @@ import ProfileTop
 import JavaTop
 import BNFC.Backend.Java
 import BNFC.Backend.CPP.NoSTL
-import CSharpTop
+import BNFC.Backend.CSharp
 import BNFC.Backend.CPP.STL
 import BNFC.Backend.C
 import BNFC.Backend.OCaml

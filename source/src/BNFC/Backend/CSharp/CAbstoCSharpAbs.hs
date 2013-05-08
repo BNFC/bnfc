@@ -38,7 +38,7 @@
    ************************************************************** 
 -}
 
-module CAbstoCSharpAbs (cabs2csharpabs) where
+module BNFC.Backend.CSharp.CAbstoCSharpAbs (cabs2csharpabs) where
 
 import OOAbstract
 import CF
@@ -47,7 +47,7 @@ import NamedVariables
 import Data.List
 import Data.Char(toLower)
 import Data.Maybe
-import CSharpUtils
+import BNFC.Backend.CSharp.CSharpUtils
 
 --The result is one file (.cs)
 

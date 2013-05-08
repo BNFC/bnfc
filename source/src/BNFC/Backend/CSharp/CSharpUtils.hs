@@ -35,7 +35,7 @@
    ************************************************************** 
 -}
 
-module CSharpUtils where
+module BNFC.Backend.CSharp.CSharpUtils where
 
 import CF
 import Control.Monad.ST

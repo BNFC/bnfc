@@ -35,19 +35,19 @@
    ************************************************************** 
 -}
 
-module CSharpTop (makeCSharp) where
+module BNFC.Backend.CSharp (makeCSharp) where
 
 import Utils
 import CF
 import OOAbstract
-import CAbstoCSharpAbs
-import CFtoGPLEX
-import CFtoGPPG
-import CAbstoCSharpVisitSkeleton
-import CAbstoCSharpAbstractVisitSkeleton
-import CFtoCSharpPrinter
+import BNFC.Backend.CSharp.CAbstoCSharpAbs
+import BNFC.Backend.CSharp.CFtoGPLEX
+import BNFC.Backend.CSharp.CFtoGPPG
+import BNFC.Backend.CSharp.CAbstoCSharpVisitSkeleton
+import BNFC.Backend.CSharp.CAbstoCSharpAbstractVisitSkeleton
+import BNFC.Backend.CSharp.CFtoCSharpPrinter
 import BNFC.Backend.Latex
-import CSharpUtils
+import BNFC.Backend.CSharp.CSharpUtils
 import Data.Char
 import System.Exit (exitFailure)
 import System.Environment (getEnv)

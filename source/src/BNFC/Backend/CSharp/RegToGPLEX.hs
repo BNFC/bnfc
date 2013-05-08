@@ -1,4 +1,4 @@
-module RegToGPLEX (printRegGPLEX) where
+module BNFC.Backend.CSharp.RegToGPLEX (printRegGPLEX) where
 
 -- modified from RegToFlex
 

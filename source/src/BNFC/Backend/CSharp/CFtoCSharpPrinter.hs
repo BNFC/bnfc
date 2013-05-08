@@ -38,7 +38,7 @@
    ************************************************************** 
 -}
 
-module CFtoCSharpPrinter (cf2csharpprinter) where
+module BNFC.Backend.CSharp.CFtoCSharpPrinter (cf2csharpprinter) where
 
 import CF
 import Utils ((+++), (++++))
@@ -46,7 +46,7 @@ import NamedVariables
 import Data.List
 import Data.Char(toLower, toUpper, isSpace)
 import Data.Maybe
-import CSharpUtils
+import BNFC.Backend.CSharp.CSharpUtils
 
 --Produces .cs file
 cf2csharpprinter :: Namespace -> CF -> String

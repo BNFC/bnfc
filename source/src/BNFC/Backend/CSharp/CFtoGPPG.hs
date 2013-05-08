@@ -36,7 +36,7 @@
    ************************************************************** 
 -}
 
-module CFtoGPPG (cf2gppg) where
+module BNFC.Backend.CSharp.CFtoGPPG (cf2gppg) where
 
 import CF
 import Data.List (intersperse, isPrefixOf)
@@ -46,7 +46,7 @@ import Utils ((+++), (++++))
 import TypeChecker
 import ErrM
 import OOAbstract hiding (basetypes)
-import CSharpUtils
+import BNFC.Backend.CSharp.CSharpUtils
 
 --This follows the basic structure of CFtoHappy.
 

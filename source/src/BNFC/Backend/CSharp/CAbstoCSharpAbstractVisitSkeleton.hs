@@ -3,7 +3,7 @@
     
     Copyright (C) 2006  Author:  Johan Broberg
     
-    Modified from CAbstoCSharpVisitSkeleton
+    Modified from BNFC.Backend.CSharp.CAbstoCSharpVisitSkeleton
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -46,15 +46,15 @@
    ************************************************************** 
 -}
 
-module CAbstoCSharpAbstractVisitSkeleton (cabs2csharpAbstractVisitSkeleton) where
+module BNFC.Backend.CSharp.CAbstoCSharpAbstractVisitSkeleton (cabs2csharpAbstractVisitSkeleton) where
 
 import CF
 import Utils ((+++), (++++))
 import NamedVariables
 import Data.List
 import OOAbstract hiding (basetypes)
-import CSharpUtils
-import CAbstoCSharpAbs
+import BNFC.Backend.CSharp.CSharpUtils
+import BNFC.Backend.CSharp.CAbstoCSharpAbs
 
 --Produces .cs file
 cabs2csharpAbstractVisitSkeleton :: Namespace -> CAbs -> String
