@@ -64,7 +64,8 @@ Executable bnfc
     GetCF,
     NamedVariables,
     OOAbstract,
-    CFtoLatex,
+    -- Latex
+    BNFC.Backend.Latex,
     CFtoXML,
     CFtoTxt,
     BNFC.Options,

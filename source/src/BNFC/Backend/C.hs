@@ -25,7 +25,7 @@ import BNFC.Backend.C.CFtoFlexC
 import BNFC.Backend.C.CFtoBisonC
 import BNFC.Backend.C.CFtoCSkel
 import BNFC.Backend.C.CFtoCPrinter
-import CFtoLatex
+import BNFC.Backend.Latex
 import Data.Char
 import System.Exit (exitFailure)
 import qualified BNFC.Backend.Common.Makefile as Makefile

@@ -53,7 +53,7 @@ import BNFC.Backend.Java.CFtoComposVisitor
 import BNFC.Backend.Java.CFtoAbstractVisitor
 import BNFC.Backend.Java.CFtoFoldVisitor
 import BNFC.Backend.Java.CFtoAllVisitor
-import CFtoLatex
+import BNFC.Backend.Latex
 import Data.Char
 import Data.List(intersperse)
 import qualified BNFC.Backend.Common.Makefile as Makefile

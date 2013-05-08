@@ -49,7 +49,7 @@ import CFtoJavaAbs	( cf2JavaAbs )
 import CFtoJavaPrinter
 import CFtoJavaSkeleton
 import CFtoVisitSkel
-import CFtoLatex
+import BNFC.Backend.Latex
 import Data.Char
 import Data.List(intersperse)
 

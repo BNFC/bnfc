@@ -25,7 +25,7 @@ module OCamlTop (makeOCaml) where
 import CF
 import CFtoOCamlYacc
 import CFtoOCamlLex
-import CFtoLatex
+import BNFC.Backend.Latex
 import CFtoOCamlAbs
 import CFtoOCamlTemplate
 import CFtoOCamlPrinter

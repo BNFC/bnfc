@@ -24,7 +24,7 @@ import CF
 import CFtoHappyProfile
 import CFtoAlex
 import CFtoAlex2
-import CFtoLatex
+import BNFC.Backend.Latex
 import MkErrM
 ---- import CFtoAbstract
 ---- import CFtoTemplate

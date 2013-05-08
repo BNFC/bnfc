@@ -28,7 +28,7 @@ import CFtoHappy
 import CFtoAlex
 import CFtoAlex2
 import CFtoAlex3
-import CFtoLatex
+import BNFC.Backend.Latex
 import CFtoTxt
 import CFtoAbstract
 import CFtoTemplate

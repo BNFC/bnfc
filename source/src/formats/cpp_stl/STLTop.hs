@@ -28,7 +28,7 @@ import CFtoFlex
 import CFtoBisonSTL
 import CFtoCVisitSkelSTL
 import CFtoSTLPrinter
-import CFtoLatex
+import BNFC.Backend.Latex
 import System.Exit (exitFailure)
 import Data.Char
 import STLUtils

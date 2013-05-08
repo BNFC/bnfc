@@ -46,7 +46,7 @@ import CFtoGPPG
 import CAbstoCSharpVisitSkeleton
 import CAbstoCSharpAbstractVisitSkeleton
 import CFtoCSharpPrinter
-import CFtoLatex
+import BNFC.Backend.Latex
 import CSharpUtils
 import Data.Char
 import System.Exit (exitFailure)
