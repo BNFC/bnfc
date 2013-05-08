@@ -37,7 +37,7 @@
    ************************************************************** 
 -}
 
-module CFtoCSkel (cf2CSkel) where
+module BNFC.Backend.C.CFtoCSkel (cf2CSkel) where
 
 import CF
 import Utils			( (+++) )

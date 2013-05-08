@@ -103,12 +103,12 @@ Executable bnfc
     CFtoOCamlYacc,
     CFtoOCamlLex,
     -- C
-    CTop,
-    CFtoCPrinter,
-    CFtoCSkel,
-    CFtoBisonC,
-    CFtoFlexC,
-    CFtoCAbs,
+    BNFC.Backend.C,
+    BNFC.Backend.C.CFtoCPrinter,
+    BNFC.Backend.C.CFtoCSkel,
+    BNFC.Backend.C.CFtoBisonC,
+    BNFC.Backend.C.CFtoFlexC,
+    BNFC.Backend.C.CFtoCAbs,
     CFtoCVisitSkel,
     -- C++
     CPPTop,

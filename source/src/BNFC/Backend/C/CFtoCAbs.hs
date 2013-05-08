@@ -38,7 +38,7 @@
    ************************************************************** 
 -}
 
-module CFtoCAbs (cf2CAbs) where
+module BNFC.Backend.C.CFtoCAbs (cf2CAbs) where
 
 import CF
 import Utils((+++),(++++))

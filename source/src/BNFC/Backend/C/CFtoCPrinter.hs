@@ -39,7 +39,7 @@
    ************************************************************** 
 -}
 
-module CFtoCPrinter (cf2CPrinter) where
+module BNFC.Backend.C.CFtoCPrinter (cf2CPrinter) where
 
 import CF
 import Utils ((+++), (++++))

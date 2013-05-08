@@ -38,7 +38,7 @@ import JavaTop15
 import CPPTop
 import CSharpTop
 import STLTop
-import CTop
+import BNFC.Backend.C
 import OCamlTop
 import CFtoXML
 import Utils

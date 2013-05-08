@@ -35,7 +35,7 @@
    
    ************************************************************** 
 -}
-module CFtoFlexC (cf2flex) where
+module BNFC.Backend.C.CFtoFlexC (cf2flex) where
 
 import CF
 import RegToFlex

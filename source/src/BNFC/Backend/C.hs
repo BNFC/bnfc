@@ -16,15 +16,15 @@
     along with this program; if not, write to the Free Software
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 -}
-module CTop (makeC) where
+module BNFC.Backend.C (makeC) where
 
 import Utils
 import CF
-import CFtoCAbs
-import CFtoFlexC
-import CFtoBisonC
-import CFtoCSkel
-import CFtoCPrinter
+import BNFC.Backend.C.CFtoCAbs
+import BNFC.Backend.C.CFtoFlexC
+import BNFC.Backend.C.CFtoBisonC
+import BNFC.Backend.C.CFtoCSkel
+import BNFC.Backend.C.CFtoCPrinter
 import CFtoLatex
 import Data.Char
 import System.Exit (exitFailure)
