@@ -20,7 +20,7 @@
 -- based on BNFC Haskell backend
 
 
-module CFtoOCamlYacc 
+module BNFC.Backend.OCaml.CFtoOCamlYacc 
        (
        cf2ocamlyacc, terminal
        )
@@ -31,7 +31,7 @@ import Data.List (intersperse,nub)
 import Data.Char
 
 import Utils ((+++))
-import OCamlUtil
+import BNFC.Backend.OCaml.OCamlUtil
 
 -- Type declarations
 

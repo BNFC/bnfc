@@ -39,7 +39,7 @@ import BNFC.Backend.CPP.NoSTL
 import CSharpTop
 import BNFC.Backend.CPP.STL
 import BNFC.Backend.C
-import OCamlTop
+import BNFC.Backend.OCaml
 import CFtoXML
 import Utils
 import qualified BNFC.Options as O

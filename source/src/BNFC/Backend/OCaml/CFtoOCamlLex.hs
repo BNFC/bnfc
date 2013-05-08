@@ -20,14 +20,14 @@
 
 -- based on BNFC Haskell backend
 
-module CFtoOCamlLex (cf2ocamllex) where
+module BNFC.Backend.OCaml.CFtoOCamlLex (cf2ocamllex) where
 
 import Data.List
 import Data.Char
 
 import CF
 import AbsBNF
-import CFtoOCamlYacc (terminal)
+import BNFC.Backend.OCaml.CFtoOCamlYacc (terminal)
 import Utils ((+++))
 
 cf2ocamllex :: String -> String -> CF -> String

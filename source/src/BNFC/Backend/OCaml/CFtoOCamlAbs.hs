@@ -19,12 +19,12 @@
 
 -- based on BNFC Haskell backend
 
-module CFtoOCamlAbs (cf2Abstract) where
+module BNFC.Backend.OCaml.CFtoOCamlAbs (cf2Abstract) where
 
 import CF
 import Utils((+++),(++++))
 import Data.List(intersperse)
-import OCamlUtil
+import BNFC.Backend.OCaml.OCamlUtil
 
 -- to produce an OCaml module
 cf2Abstract :: String -> CF -> String

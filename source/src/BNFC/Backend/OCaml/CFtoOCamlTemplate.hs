@@ -20,7 +20,7 @@
 -- based on BNFC Haskell backend
 
 
-module CFtoOCamlTemplate (
+module BNFC.Backend.OCaml.CFtoOCamlTemplate (
                     cf2Template
                     ) where
 
@@ -28,7 +28,7 @@ import CF
 import Data.Char
 import Data.List (delete)
 import Utils((+++))
-import OCamlUtil
+import BNFC.Backend.OCaml.OCamlUtil
 
 
 type ModuleName = String

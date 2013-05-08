@@ -21,14 +21,14 @@
 -- on camlp4. Here we generate our own "show module".
 
 
-module CFtoOCamlShow (cf2show) where
+module BNFC.Backend.OCaml.CFtoOCamlShow (cf2show) where
 
 import CF
 import Utils
 import CFtoTemplate
 import Data.List (intersperse)
 import Data.Char(toLower,isDigit)
-import OCamlUtil
+import BNFC.Backend.OCaml.OCamlUtil
 
 cf2show :: String -> String -> CF -> String
 cf2show name absMod cf = unlines [

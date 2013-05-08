@@ -19,14 +19,14 @@
 
 -- based on BNFC Haskell backend
 
-module CFtoOCamlPrinter (cf2Printer) where
+module BNFC.Backend.OCaml.CFtoOCamlPrinter (cf2Printer) where
 
 import CF
 import Utils
 import CFtoTemplate
 import Data.List (intersperse)
 import Data.Char(toLower,isDigit)
-import OCamlUtil
+import BNFC.Backend.OCaml.OCamlUtil
 
 -- derive pretty-printer from a BNF grammar. AR 15/2/2002
 cf2Printer :: String -> String -> CF -> String

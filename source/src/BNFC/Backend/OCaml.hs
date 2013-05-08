@@ -20,17 +20,17 @@
 -- based on BNFC Haskell backend
 
 
-module OCamlTop (makeOCaml) where 
+module BNFC.Backend.OCaml (makeOCaml) where 
 
 import CF
-import CFtoOCamlYacc
-import CFtoOCamlLex
+import BNFC.Backend.OCaml.CFtoOCamlYacc
+import BNFC.Backend.OCaml.CFtoOCamlLex
 import BNFC.Backend.Latex
-import CFtoOCamlAbs
-import CFtoOCamlTemplate
-import CFtoOCamlPrinter
-import CFtoOCamlShow
-import CFtoOCamlTest
+import BNFC.Backend.OCaml.CFtoOCamlAbs
+import BNFC.Backend.OCaml.CFtoOCamlTemplate
+import BNFC.Backend.OCaml.CFtoOCamlPrinter
+import BNFC.Backend.OCaml.CFtoOCamlShow
+import BNFC.Backend.OCaml.CFtoOCamlTest
 import CFtoXML
 import Utils
 import System.FilePath (takeFileName)

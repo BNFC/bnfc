@@ -17,11 +17,11 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 -}
 
-module CFtoOCamlTest where 
+module BNFC.Backend.OCaml.CFtoOCamlTest where 
 
 import CF
 import Utils
-import OCamlUtil
+import BNFC.Backend.OCaml.OCamlUtil
 
 ocamlTestfile :: String -> String -> String -> String -> String -> CF -> String
 ocamlTestfile absM lexM parM printM showM cf = 
