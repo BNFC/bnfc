@@ -17,11 +17,11 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 -}
 
-module CFtoPrinter (cf2Printer) where
+module BNFC.Backend.Haskell.CFtoPrinter (cf2Printer) where
 
 import CF
 import Utils
-import CFtoTemplate
+import BNFC.Backend.Haskell.CFtoTemplate
 import Data.List (intersperse)
 import Data.Char(toLower)
 
@@ -132,7 +132,7 @@ ownPrintRule byteStrings cf own = unlines $ [
    stringUnpack | byteStrings = "BS.unpack"
                 | otherwise   = ""
 
--- copy and paste from CFtoTemplate
+-- copy and paste from BNFC.Backend.Haskell.CFtoTemplate
 
 rules :: CF -> String
 rules cf = unlines $ 

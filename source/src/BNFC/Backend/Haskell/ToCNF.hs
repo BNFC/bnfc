@@ -20,7 +20,7 @@
 
 {-# LANGUAGE OverloadedStrings #-}
 
-module ToCNF (generate, genTestFile, genBenchmark) where
+module BNFC.Backend.Haskell.ToCNF (generate, genTestFile, genBenchmark) where
 
 {-
 
@@ -32,7 +32,7 @@ Yet Presentable Version of the CYK Algorithm", Informatica Didactica
 -}
 
 import CF hiding (App,Exp)
-import HsOpts
+import BNFC.Backend.Haskell.HsOpts
 import Control.Monad.RWS
 import Control.Applicative hiding (Const)
 import qualified Data.Map as M

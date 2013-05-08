@@ -24,24 +24,24 @@ module HaskellTopGADT (makeAllGADT) where
 
 -- import Utils
 import BNFC.Options
-import HsOpts
+import BNFC.Backend.Haskell.HsOpts
 import CF
-import CFtoHappy
-import CFtoAlex
-import CFtoAlex2
-import CFtoAlex3
+import BNFC.Backend.Haskell.CFtoHappy
+import BNFC.Backend.Haskell.CFtoAlex
+import BNFC.Backend.Haskell.CFtoAlex2
+import BNFC.Backend.Haskell.CFtoAlex3
 import BNFC.Backend.Latex
-import HaskellTop(AlexVersion(..))
+import BNFC.Backend.Haskell(AlexVersion(..))
 import CFtoAbstractGADT
 import CFtoTemplateGADT
 import CFtoPrinterGADT
-import CFtoLayout
+import BNFC.Backend.Haskell.CFtoLayout
 import CFtoXML
-import MkErrM
-import MkSharedString
+import BNFC.Backend.Haskell.MkErrM
+import BNFC.Backend.Haskell.MkSharedString
 import Utils
 import qualified BNFC.Backend.Common.Makefile as Makefile
-import qualified HaskellTop as Haskell
+import qualified BNFC.Backend.Haskell as Haskell
 
 import Data.Char
 import Data.Maybe (fromMaybe,maybe)

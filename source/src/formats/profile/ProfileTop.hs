@@ -22,10 +22,10 @@ module ProfileTop (makeAllProfile) where
 -- import Utils
 import CF
 import CFtoHappyProfile
-import CFtoAlex
-import CFtoAlex2
+import BNFC.Backend.Haskell.CFtoAlex
+import BNFC.Backend.Haskell.CFtoAlex2
 import BNFC.Backend.Latex
-import MkErrM
+import BNFC.Backend.Haskell.MkErrM
 ---- import CFtoAbstract
 ---- import CFtoTemplate
 ---- import CFtoPrinter

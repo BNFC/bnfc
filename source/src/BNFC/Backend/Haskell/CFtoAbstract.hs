@@ -17,7 +17,7 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 -}
 
-module CFtoAbstract (cf2Abstract) where
+module BNFC.Backend.Haskell.CFtoAbstract (cf2Abstract) where
 
 import CF
 import Utils((+++),(++++))

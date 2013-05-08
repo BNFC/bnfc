@@ -22,7 +22,7 @@ module CFtoXML ---- (cf2DTD, cf2XML)
 
 import CF
 import Utils
-import CFtoTemplate
+import BNFC.Backend.Haskell.CFtoTemplate
 import Data.List (intersperse, nub)
 import Data.Char(toLower)
 

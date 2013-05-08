@@ -30,7 +30,7 @@ module Main where
 
 -- import Utils
 import CF (cfp2cf)
-import HaskellTop
+import BNFC.Backend.Haskell
 import HaskellTopGADT
 import ProfileTop
 import JavaTop

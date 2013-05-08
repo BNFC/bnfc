@@ -18,10 +18,10 @@
 -}
 
 
-module CFtoAlex (cf2alex) where
+module BNFC.Backend.Haskell.CFtoAlex (cf2alex) where
 
 import CF
-import RegToAlex
+import BNFC.Backend.Haskell.RegToAlex
 import Data.List
 
 cf2alex :: String -> String -> CF -> String

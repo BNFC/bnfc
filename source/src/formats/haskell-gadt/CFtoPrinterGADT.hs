@@ -21,7 +21,7 @@ module CFtoPrinterGADT (cf2Printer) where
 
 import CF
 import Utils
-import CFtoTemplate
+import BNFC.Backend.Haskell.CFtoTemplate
 import Data.List (intersperse)
 import Data.Char(toLower)
 

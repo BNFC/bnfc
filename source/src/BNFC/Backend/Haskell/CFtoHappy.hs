@@ -17,7 +17,7 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 -}
 
-module CFtoHappy 
+module BNFC.Backend.Haskell.CFtoHappy 
        (
        cf2HappyS -- cf2HappyS :: CF -> CFCat -> String
        )

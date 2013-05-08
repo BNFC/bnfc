@@ -17,28 +17,28 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 -}
 
-module HaskellTop (makeAll, AlexVersion(..), makefile) where 
+module BNFC.Backend.Haskell (makeAll, AlexVersion(..), makefile) where 
 
 
 
 -- import Utils
 import BNFC.Options
 import CF
-import CFtoHappy
-import CFtoAlex
-import CFtoAlex2
-import CFtoAlex3
+import BNFC.Backend.Haskell.CFtoHappy
+import BNFC.Backend.Haskell.CFtoAlex
+import BNFC.Backend.Haskell.CFtoAlex2
+import BNFC.Backend.Haskell.CFtoAlex3
 import BNFC.Backend.Latex
 import BNFC.Backend.Txt2Tag
-import CFtoAbstract
-import CFtoTemplate
-import CFtoPrinter
-import CFtoLayout
+import BNFC.Backend.Haskell.CFtoAbstract
+import BNFC.Backend.Haskell.CFtoTemplate
+import BNFC.Backend.Haskell.CFtoPrinter
+import BNFC.Backend.Haskell.CFtoLayout
 import CFtoXML
-import HsOpts
-import ToCNF
-import MkErrM
-import MkSharedString
+import BNFC.Backend.Haskell.HsOpts
+import BNFC.Backend.Haskell.ToCNF as ToCNF
+import BNFC.Backend.Haskell.MkErrM
+import BNFC.Backend.Haskell.MkSharedString
 import Utils
 import qualified BNFC.Backend.Common.Makefile as Makefile
 

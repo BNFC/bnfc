@@ -18,7 +18,7 @@
 -}
 
 
-module CFtoTemplate (
+module BNFC.Backend.Haskell.CFtoTemplate (
 		    cf2Template
                     ) where
 

@@ -1,4 +1,4 @@
-module HsOpts  where
+module BNFC.Backend.Haskell.HsOpts  where
 
 import Utils
 import BNFC.Options

@@ -18,7 +18,7 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 -}
 
-module CFtoLayout where
+module BNFC.Backend.Haskell.CFtoLayout where
 
 import Data.List (sort)
 import CF
