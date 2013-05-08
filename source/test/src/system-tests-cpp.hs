@@ -10,7 +10,7 @@ import Shelly
 import Prelude hiding (FilePath)
 import Data.Text.Lazy (Text)
 import Control.Exception (assert)
-import Paths_BNFC 
+import Paths_BNFC
 import SystemTesting (systemTestMain, Backend, assertExists)
 
 default (Text)
@@ -36,6 +36,6 @@ cBackend bnfcBin cfFile testFile =
         bnfc = cmd bnfcBin
         testProg = decodeString ("Test" ++ (encodeString $ basename cfFile))
         test = cmd ("." </> testProg)
-        
+
 -- Main is defined in SystemTesting, we just pass our backend as a parameter
 main = systemTestMain cBackend

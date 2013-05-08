@@ -372,49 +372,49 @@ happy_n_nonterms = 37 :: Int
 
 happyReduce_32 = happySpecReduce_1  0# happyReduction_32
 happyReduction_32 happy_x_1
-	 =  case happyOutTok happy_x_1 of { (PT _ (TL happy_var_1)) -> 
+	 =  case happyOutTok happy_x_1 of { (PT _ (TL happy_var_1)) ->
 	happyIn35
 		 (happy_var_1
 	)}
 
 happyReduce_33 = happySpecReduce_1  1# happyReduction_33
 happyReduction_33 happy_x_1
-	 =  case happyOutTok happy_x_1 of { (PT _ (TV happy_var_1)) -> 
+	 =  case happyOutTok happy_x_1 of { (PT _ (TV happy_var_1)) ->
 	happyIn36
 		 (Ident happy_var_1
 	)}
 
 happyReduce_34 = happySpecReduce_1  2# happyReduction_34
 happyReduction_34 happy_x_1
-	 =  case happyOutTok happy_x_1 of { (PT _ (TI happy_var_1)) -> 
+	 =  case happyOutTok happy_x_1 of { (PT _ (TI happy_var_1)) ->
 	happyIn37
 		 ((read ( happy_var_1)) :: Integer
 	)}
 
 happyReduce_35 = happySpecReduce_1  3# happyReduction_35
 happyReduction_35 happy_x_1
-	 =  case happyOutTok happy_x_1 of { (PT _ (TC happy_var_1)) -> 
+	 =  case happyOutTok happy_x_1 of { (PT _ (TC happy_var_1)) ->
 	happyIn38
 		 ((read ( happy_var_1)) :: Char
 	)}
 
 happyReduce_36 = happySpecReduce_1  4# happyReduction_36
 happyReduction_36 happy_x_1
-	 =  case happyOutTok happy_x_1 of { (PT _ (TD happy_var_1)) -> 
+	 =  case happyOutTok happy_x_1 of { (PT _ (TD happy_var_1)) ->
 	happyIn39
 		 ((read ( happy_var_1)) :: Double
 	)}
 
 happyReduce_37 = happySpecReduce_1  5# happyReduction_37
 happyReduction_37 happy_x_1
-	 =  case happyOut42 happy_x_1 of { happy_var_1 -> 
+	 =  case happyOut42 happy_x_1 of { happy_var_1 ->
 	happyIn40
 		 (LGr happy_var_1
 	)}
 
 happyReduce_38 = happySpecReduce_1  6# happyReduction_38
 happyReduction_38 happy_x_1
-	 =  case happyOut46 happy_x_1 of { happy_var_1 -> 
+	 =  case happyOut46 happy_x_1 of { happy_var_1 ->
 	happyIn41
 		 (DefAll happy_var_1
 	)}
@@ -423,8 +423,8 @@ happyReduce_39 = happySpecReduce_3  6# happyReduction_39
 happyReduction_39 happy_x_3
 	happy_x_2
 	happy_x_1
-	 =  case happyOut71 happy_x_1 of { happy_var_1 -> 
-	case happyOut46 happy_x_3 of { happy_var_3 -> 
+	 =  case happyOut71 happy_x_1 of { happy_var_1 ->
+	case happyOut46 happy_x_3 of { happy_var_3 ->
 	happyIn41
 		 (DefSome happy_var_1 happy_var_3
 	)}}
@@ -432,7 +432,7 @@ happyReduction_39 happy_x_3
 happyReduce_40 = happySpecReduce_2  6# happyReduction_40
 happyReduction_40 happy_x_2
 	happy_x_1
-	 =  case happyOut71 happy_x_2 of { happy_var_2 -> 
+	 =  case happyOut71 happy_x_2 of { happy_var_2 ->
 	happyIn41
 		 (LDefView happy_var_2
 	)}
@@ -444,7 +444,7 @@ happyReduction_41  =  happyIn42
 
 happyReduce_42 = happySpecReduce_1  7# happyReduction_42
 happyReduction_42 happy_x_1
-	 =  case happyOut41 happy_x_1 of { happy_var_1 -> 
+	 =  case happyOut41 happy_x_1 of { happy_var_1 ->
 	happyIn42
 		 ((:[]) happy_var_1
 	)}
@@ -453,15 +453,15 @@ happyReduce_43 = happySpecReduce_3  7# happyReduction_43
 happyReduction_43 happy_x_3
 	happy_x_2
 	happy_x_1
-	 =  case happyOut41 happy_x_1 of { happy_var_1 -> 
-	case happyOut42 happy_x_3 of { happy_var_3 -> 
+	 =  case happyOut41 happy_x_1 of { happy_var_1 ->
+	case happyOut42 happy_x_3 of { happy_var_3 ->
 	happyIn42
 		 ((:) happy_var_1 happy_var_3
 	)}}
 
 happyReduce_44 = happySpecReduce_1  8# happyReduction_44
 happyReduction_44 happy_x_1
-	 =  case happyOut44 happy_x_1 of { happy_var_1 -> 
+	 =  case happyOut44 happy_x_1 of { happy_var_1 ->
 	happyIn43
 		 (Grammar happy_var_1
 	)}
@@ -473,7 +473,7 @@ happyReduction_45  =  happyIn44
 
 happyReduce_46 = happySpecReduce_1  9# happyReduction_46
 happyReduction_46 happy_x_1
-	 =  case happyOut46 happy_x_1 of { happy_var_1 -> 
+	 =  case happyOut46 happy_x_1 of { happy_var_1 ->
 	happyIn44
 		 ((:[]) happy_var_1
 	)}
@@ -482,8 +482,8 @@ happyReduce_47 = happySpecReduce_3  9# happyReduction_47
 happyReduction_47 happy_x_3
 	happy_x_2
 	happy_x_1
-	 =  case happyOut46 happy_x_1 of { happy_var_1 -> 
-	case happyOut44 happy_x_3 of { happy_var_3 -> 
+	 =  case happyOut46 happy_x_1 of { happy_var_1 ->
+	case happyOut44 happy_x_3 of { happy_var_3 ->
 	happyIn44
 		 ((:) happy_var_1 happy_var_3
 	)}}
@@ -496,8 +496,8 @@ happyReduction_48  =  happyIn45
 happyReduce_49 = happySpecReduce_2  10# happyReduction_49
 happyReduction_49 happy_x_2
 	happy_x_1
-	 =  case happyOut45 happy_x_1 of { happy_var_1 -> 
-	case happyOut47 happy_x_2 of { happy_var_2 -> 
+	 =  case happyOut45 happy_x_1 of { happy_var_1 ->
+	case happyOut47 happy_x_2 of { happy_var_2 ->
 	happyIn45
 		 (flip (:) happy_var_1 happy_var_2
 	)}}
@@ -509,9 +509,9 @@ happyReduction_50 (happy_x_5 `HappyStk`
 	happy_x_2 `HappyStk`
 	happy_x_1 `HappyStk`
 	happyRest)
-	 = case happyOut49 happy_x_1 of { happy_var_1 -> 
-	case happyOut48 happy_x_3 of { happy_var_3 -> 
-	case happyOut45 happy_x_5 of { happy_var_5 -> 
+	 = case happyOut49 happy_x_1 of { happy_var_1 ->
+	case happyOut48 happy_x_3 of { happy_var_3 ->
+	case happyOut45 happy_x_5 of { happy_var_5 ->
 	happyIn46
 		 (Rule happy_var_1 happy_var_3 (reverse happy_var_5)
 	) `HappyStk` happyRest}}}
@@ -519,7 +519,7 @@ happyReduction_50 (happy_x_5 `HappyStk`
 happyReduce_51 = happySpecReduce_2  11# happyReduction_51
 happyReduction_51 happy_x_2
 	happy_x_1
-	 =  case happyOut35 happy_x_2 of { happy_var_2 -> 
+	 =  case happyOut35 happy_x_2 of { happy_var_2 ->
 	happyIn46
 		 (Comment happy_var_2
 	)}
@@ -528,8 +528,8 @@ happyReduce_52 = happySpecReduce_3  11# happyReduction_52
 happyReduction_52 happy_x_3
 	happy_x_2
 	happy_x_1
-	 =  case happyOut35 happy_x_2 of { happy_var_2 -> 
-	case happyOut35 happy_x_3 of { happy_var_3 -> 
+	 =  case happyOut35 happy_x_2 of { happy_var_2 ->
+	case happyOut35 happy_x_3 of { happy_var_3 ->
 	happyIn46
 		 (Comments happy_var_2 happy_var_3
 	)}}
@@ -542,9 +542,9 @@ happyReduction_53 (happy_x_6 `HappyStk`
 	happy_x_2 `HappyStk`
 	happy_x_1 `HappyStk`
 	happyRest)
-	 = case happyOut49 happy_x_2 of { happy_var_2 -> 
-	case happyOut48 happy_x_4 of { happy_var_4 -> 
-	case happyOut45 happy_x_6 of { happy_var_6 -> 
+	 = case happyOut49 happy_x_2 of { happy_var_2 ->
+	case happyOut48 happy_x_4 of { happy_var_4 ->
+	case happyOut45 happy_x_6 of { happy_var_6 ->
 	happyIn46
 		 (Internal happy_var_2 happy_var_4 (reverse happy_var_6)
 	) `HappyStk` happyRest}}}
@@ -553,8 +553,8 @@ happyReduce_54 = happySpecReduce_3  11# happyReduction_54
 happyReduction_54 happy_x_3
 	happy_x_2
 	happy_x_1
-	 =  case happyOut36 happy_x_2 of { happy_var_2 -> 
-	case happyOut70 happy_x_3 of { happy_var_3 -> 
+	 =  case happyOut36 happy_x_2 of { happy_var_2 ->
+	case happyOut70 happy_x_3 of { happy_var_3 ->
 	happyIn46
 		 (Token happy_var_2 happy_var_3
 	)}}
@@ -565,8 +565,8 @@ happyReduction_55 (happy_x_4 `HappyStk`
 	happy_x_2 `HappyStk`
 	happy_x_1 `HappyStk`
 	happyRest)
-	 = case happyOut36 happy_x_3 of { happy_var_3 -> 
-	case happyOut70 happy_x_4 of { happy_var_4 -> 
+	 = case happyOut36 happy_x_3 of { happy_var_3 ->
+	case happyOut70 happy_x_4 of { happy_var_4 ->
 	happyIn46
 		 (PosToken happy_var_3 happy_var_4
 	) `HappyStk` happyRest}}
@@ -574,7 +574,7 @@ happyReduction_55 (happy_x_4 `HappyStk`
 happyReduce_56 = happySpecReduce_2  11# happyReduction_56
 happyReduction_56 happy_x_2
 	happy_x_1
-	 =  case happyOut71 happy_x_2 of { happy_var_2 -> 
+	 =  case happyOut71 happy_x_2 of { happy_var_2 ->
 	happyIn46
 		 (Entryp happy_var_2
 	)}
@@ -585,9 +585,9 @@ happyReduction_57 (happy_x_4 `HappyStk`
 	happy_x_2 `HappyStk`
 	happy_x_1 `HappyStk`
 	happyRest)
-	 = case happyOut66 happy_x_2 of { happy_var_2 -> 
-	case happyOut48 happy_x_3 of { happy_var_3 -> 
-	case happyOut35 happy_x_4 of { happy_var_4 -> 
+	 = case happyOut66 happy_x_2 of { happy_var_2 ->
+	case happyOut48 happy_x_3 of { happy_var_3 ->
+	case happyOut35 happy_x_4 of { happy_var_4 ->
 	happyIn46
 		 (Separator happy_var_2 happy_var_3 happy_var_4
 	) `HappyStk` happyRest}}}
@@ -598,9 +598,9 @@ happyReduction_58 (happy_x_4 `HappyStk`
 	happy_x_2 `HappyStk`
 	happy_x_1 `HappyStk`
 	happyRest)
-	 = case happyOut66 happy_x_2 of { happy_var_2 -> 
-	case happyOut48 happy_x_3 of { happy_var_3 -> 
-	case happyOut35 happy_x_4 of { happy_var_4 -> 
+	 = case happyOut66 happy_x_2 of { happy_var_2 ->
+	case happyOut48 happy_x_3 of { happy_var_3 ->
+	case happyOut35 happy_x_4 of { happy_var_4 ->
 	happyIn46
 		 (Terminator happy_var_2 happy_var_3 happy_var_4
 	) `HappyStk` happyRest}}}
@@ -609,8 +609,8 @@ happyReduce_59 = happySpecReduce_3  11# happyReduction_59
 happyReduction_59 happy_x_3
 	happy_x_2
 	happy_x_1
-	 =  case happyOut36 happy_x_2 of { happy_var_2 -> 
-	case happyOut37 happy_x_3 of { happy_var_3 -> 
+	 =  case happyOut36 happy_x_2 of { happy_var_2 ->
+	case happyOut37 happy_x_3 of { happy_var_3 ->
 	happyIn46
 		 (Coercions happy_var_2 happy_var_3
 	)}}
@@ -621,8 +621,8 @@ happyReduction_60 (happy_x_4 `HappyStk`
 	happy_x_2 `HappyStk`
 	happy_x_1 `HappyStk`
 	happyRest)
-	 = case happyOut36 happy_x_2 of { happy_var_2 -> 
-	case happyOut64 happy_x_4 of { happy_var_4 -> 
+	 = case happyOut36 happy_x_2 of { happy_var_2 ->
+	case happyOut64 happy_x_4 of { happy_var_4 ->
 	happyIn46
 		 (Rules happy_var_2 happy_var_4
 	) `HappyStk` happyRest}}
@@ -634,9 +634,9 @@ happyReduction_61 (happy_x_5 `HappyStk`
 	happy_x_2 `HappyStk`
 	happy_x_1 `HappyStk`
 	happyRest)
-	 = case happyOut36 happy_x_2 of { happy_var_2 -> 
-	case happyOut57 happy_x_3 of { happy_var_3 -> 
-	case happyOut58 happy_x_5 of { happy_var_5 -> 
+	 = case happyOut36 happy_x_2 of { happy_var_2 ->
+	case happyOut57 happy_x_3 of { happy_var_3 ->
+	case happyOut58 happy_x_5 of { happy_var_5 ->
 	happyIn46
 		 (Function happy_var_2 (reverse happy_var_3) happy_var_5
 	) `HappyStk` happyRest}}}
@@ -644,7 +644,7 @@ happyReduction_61 (happy_x_5 `HappyStk`
 happyReduce_62 = happySpecReduce_2  11# happyReduction_62
 happyReduction_62 happy_x_2
 	happy_x_1
-	 =  case happyOut63 happy_x_2 of { happy_var_2 -> 
+	 =  case happyOut63 happy_x_2 of { happy_var_2 ->
 	happyIn46
 		 (Layout happy_var_2
 	)}
@@ -653,7 +653,7 @@ happyReduce_63 = happySpecReduce_3  11# happyReduction_63
 happyReduction_63 happy_x_3
 	happy_x_2
 	happy_x_1
-	 =  case happyOut63 happy_x_3 of { happy_var_3 -> 
+	 =  case happyOut63 happy_x_3 of { happy_var_3 ->
 	happyIn46
 		 (LayoutStop happy_var_3
 	)}
@@ -667,14 +667,14 @@ happyReduction_64 happy_x_2
 
 happyReduce_65 = happySpecReduce_1  12# happyReduction_65
 happyReduction_65 happy_x_1
-	 =  case happyOut35 happy_x_1 of { happy_var_1 -> 
+	 =  case happyOut35 happy_x_1 of { happy_var_1 ->
 	happyIn47
 		 (Terminal happy_var_1
 	)}
 
 happyReduce_66 = happySpecReduce_1  12# happyReduction_66
 happyReduction_66 happy_x_1
-	 =  case happyOut48 happy_x_1 of { happy_var_1 -> 
+	 =  case happyOut48 happy_x_1 of { happy_var_1 ->
 	happyIn47
 		 (NTerminal happy_var_1
 	)}
@@ -683,21 +683,21 @@ happyReduce_67 = happySpecReduce_3  13# happyReduction_67
 happyReduction_67 happy_x_3
 	happy_x_2
 	happy_x_1
-	 =  case happyOut48 happy_x_2 of { happy_var_2 -> 
+	 =  case happyOut48 happy_x_2 of { happy_var_2 ->
 	happyIn48
 		 (ListCat happy_var_2
 	)}
 
 happyReduce_68 = happySpecReduce_1  13# happyReduction_68
 happyReduction_68 happy_x_1
-	 =  case happyOut36 happy_x_1 of { happy_var_1 -> 
+	 =  case happyOut36 happy_x_1 of { happy_var_1 ->
 	happyIn48
 		 (IdCat happy_var_1
 	)}
 
 happyReduce_69 = happySpecReduce_1  14# happyReduction_69
 happyReduction_69 happy_x_1
-	 =  case happyOut50 happy_x_1 of { happy_var_1 -> 
+	 =  case happyOut50 happy_x_1 of { happy_var_1 ->
 	happyIn49
 		 (LabNoP happy_var_1
 	)}
@@ -705,8 +705,8 @@ happyReduction_69 happy_x_1
 happyReduce_70 = happySpecReduce_2  14# happyReduction_70
 happyReduction_70 happy_x_2
 	happy_x_1
-	 =  case happyOut50 happy_x_1 of { happy_var_1 -> 
-	case happyOut55 happy_x_2 of { happy_var_2 -> 
+	 =  case happyOut50 happy_x_1 of { happy_var_1 ->
+	case happyOut55 happy_x_2 of { happy_var_2 ->
 	happyIn49
 		 (LabP happy_var_1 happy_var_2
 	)}}
@@ -715,9 +715,9 @@ happyReduce_71 = happySpecReduce_3  14# happyReduction_71
 happyReduction_71 happy_x_3
 	happy_x_2
 	happy_x_1
-	 =  case happyOut50 happy_x_1 of { happy_var_1 -> 
-	case happyOut50 happy_x_2 of { happy_var_2 -> 
-	case happyOut55 happy_x_3 of { happy_var_3 -> 
+	 =  case happyOut50 happy_x_1 of { happy_var_1 ->
+	case happyOut50 happy_x_2 of { happy_var_2 ->
+	case happyOut55 happy_x_3 of { happy_var_3 ->
 	happyIn49
 		 (LabPF happy_var_1 happy_var_2 happy_var_3
 	)}}}
@@ -725,15 +725,15 @@ happyReduction_71 happy_x_3
 happyReduce_72 = happySpecReduce_2  14# happyReduction_72
 happyReduction_72 happy_x_2
 	happy_x_1
-	 =  case happyOut50 happy_x_1 of { happy_var_1 -> 
-	case happyOut50 happy_x_2 of { happy_var_2 -> 
+	 =  case happyOut50 happy_x_1 of { happy_var_1 ->
+	case happyOut50 happy_x_2 of { happy_var_2 ->
 	happyIn49
 		 (LabF happy_var_1 happy_var_2
 	)}}
 
 happyReduce_73 = happySpecReduce_1  15# happyReduction_73
 happyReduction_73 happy_x_1
-	 =  case happyOut36 happy_x_1 of { happy_var_1 -> 
+	 =  case happyOut36 happy_x_1 of { happy_var_1 ->
 	happyIn50
 		 (Id happy_var_1
 	)}
@@ -781,8 +781,8 @@ happyReduction_78 (happy_x_9 `HappyStk`
 	happy_x_2 `HappyStk`
 	happy_x_1 `HappyStk`
 	happyRest)
-	 = case happyOut54 happy_x_3 of { happy_var_3 -> 
-	case happyOut53 happy_x_7 of { happy_var_7 -> 
+	 = case happyOut54 happy_x_3 of { happy_var_3 ->
+	case happyOut53 happy_x_7 of { happy_var_7 ->
 	happyIn51
 		 (ProfIt happy_var_3 happy_var_7
 	) `HappyStk` happyRest}}
@@ -791,7 +791,7 @@ happyReduce_79 = happySpecReduce_3  17# happyReduction_79
 happyReduction_79 happy_x_3
 	happy_x_2
 	happy_x_1
-	 =  case happyOut53 happy_x_2 of { happy_var_2 -> 
+	 =  case happyOut53 happy_x_2 of { happy_var_2 ->
 	happyIn52
 		 (Ints happy_var_2
 	)}
@@ -803,7 +803,7 @@ happyReduction_80  =  happyIn53
 
 happyReduce_81 = happySpecReduce_1  18# happyReduction_81
 happyReduction_81 happy_x_1
-	 =  case happyOut37 happy_x_1 of { happy_var_1 -> 
+	 =  case happyOut37 happy_x_1 of { happy_var_1 ->
 	happyIn53
 		 ((:[]) happy_var_1
 	)}
@@ -812,8 +812,8 @@ happyReduce_82 = happySpecReduce_3  18# happyReduction_82
 happyReduction_82 happy_x_3
 	happy_x_2
 	happy_x_1
-	 =  case happyOut37 happy_x_1 of { happy_var_1 -> 
-	case happyOut53 happy_x_3 of { happy_var_3 -> 
+	 =  case happyOut37 happy_x_1 of { happy_var_1 ->
+	case happyOut53 happy_x_3 of { happy_var_3 ->
 	happyIn53
 		 ((:) happy_var_1 happy_var_3
 	)}}
@@ -825,7 +825,7 @@ happyReduction_83  =  happyIn54
 
 happyReduce_84 = happySpecReduce_1  19# happyReduction_84
 happyReduction_84 happy_x_1
-	 =  case happyOut52 happy_x_1 of { happy_var_1 -> 
+	 =  case happyOut52 happy_x_1 of { happy_var_1 ->
 	happyIn54
 		 ((:[]) happy_var_1
 	)}
@@ -834,15 +834,15 @@ happyReduce_85 = happySpecReduce_3  19# happyReduction_85
 happyReduction_85 happy_x_3
 	happy_x_2
 	happy_x_1
-	 =  case happyOut52 happy_x_1 of { happy_var_1 -> 
-	case happyOut54 happy_x_3 of { happy_var_3 -> 
+	 =  case happyOut52 happy_x_1 of { happy_var_1 ->
+	case happyOut54 happy_x_3 of { happy_var_3 ->
 	happyIn54
 		 ((:) happy_var_1 happy_var_3
 	)}}
 
 happyReduce_86 = happySpecReduce_1  20# happyReduction_86
 happyReduction_86 happy_x_1
-	 =  case happyOut51 happy_x_1 of { happy_var_1 -> 
+	 =  case happyOut51 happy_x_1 of { happy_var_1 ->
 	happyIn55
 		 ((:[]) happy_var_1
 	)}
@@ -850,15 +850,15 @@ happyReduction_86 happy_x_1
 happyReduce_87 = happySpecReduce_2  20# happyReduction_87
 happyReduction_87 happy_x_2
 	happy_x_1
-	 =  case happyOut51 happy_x_1 of { happy_var_1 -> 
-	case happyOut55 happy_x_2 of { happy_var_2 -> 
+	 =  case happyOut51 happy_x_1 of { happy_var_1 ->
+	case happyOut55 happy_x_2 of { happy_var_2 ->
 	happyIn55
 		 ((:) happy_var_1 happy_var_2
 	)}}
 
 happyReduce_88 = happySpecReduce_1  21# happyReduction_88
 happyReduction_88 happy_x_1
-	 =  case happyOut36 happy_x_1 of { happy_var_1 -> 
+	 =  case happyOut36 happy_x_1 of { happy_var_1 ->
 	happyIn56
 		 (Arg happy_var_1
 	)}
@@ -871,8 +871,8 @@ happyReduction_89  =  happyIn57
 happyReduce_90 = happySpecReduce_2  22# happyReduction_90
 happyReduction_90 happy_x_2
 	happy_x_1
-	 =  case happyOut57 happy_x_1 of { happy_var_1 -> 
-	case happyOut56 happy_x_2 of { happy_var_2 -> 
+	 =  case happyOut57 happy_x_1 of { happy_var_1 ->
+	case happyOut56 happy_x_2 of { happy_var_2 ->
 	happyIn57
 		 (flip (:) happy_var_1 happy_var_2
 	)}}
@@ -881,15 +881,15 @@ happyReduce_91 = happySpecReduce_3  23# happyReduction_91
 happyReduction_91 happy_x_3
 	happy_x_2
 	happy_x_1
-	 =  case happyOut59 happy_x_1 of { happy_var_1 -> 
-	case happyOut58 happy_x_3 of { happy_var_3 -> 
+	 =  case happyOut59 happy_x_1 of { happy_var_1 ->
+	case happyOut58 happy_x_3 of { happy_var_3 ->
 	happyIn58
 		 (Cons happy_var_1 happy_var_3
 	)}}
 
 happyReduce_92 = happySpecReduce_1  23# happyReduction_92
 happyReduction_92 happy_x_1
-	 =  case happyOut59 happy_x_1 of { happy_var_1 -> 
+	 =  case happyOut59 happy_x_1 of { happy_var_1 ->
 	happyIn58
 		 (happy_var_1
 	)}
@@ -897,50 +897,50 @@ happyReduction_92 happy_x_1
 happyReduce_93 = happySpecReduce_2  24# happyReduction_93
 happyReduction_93 happy_x_2
 	happy_x_1
-	 =  case happyOut36 happy_x_1 of { happy_var_1 -> 
-	case happyOut61 happy_x_2 of { happy_var_2 -> 
+	 =  case happyOut36 happy_x_1 of { happy_var_1 ->
+	case happyOut61 happy_x_2 of { happy_var_2 ->
 	happyIn59
 		 (App happy_var_1 happy_var_2
 	)}}
 
 happyReduce_94 = happySpecReduce_1  24# happyReduction_94
 happyReduction_94 happy_x_1
-	 =  case happyOut60 happy_x_1 of { happy_var_1 -> 
+	 =  case happyOut60 happy_x_1 of { happy_var_1 ->
 	happyIn59
 		 (happy_var_1
 	)}
 
 happyReduce_95 = happySpecReduce_1  25# happyReduction_95
 happyReduction_95 happy_x_1
-	 =  case happyOut36 happy_x_1 of { happy_var_1 -> 
+	 =  case happyOut36 happy_x_1 of { happy_var_1 ->
 	happyIn60
 		 (Var happy_var_1
 	)}
 
 happyReduce_96 = happySpecReduce_1  25# happyReduction_96
 happyReduction_96 happy_x_1
-	 =  case happyOut37 happy_x_1 of { happy_var_1 -> 
+	 =  case happyOut37 happy_x_1 of { happy_var_1 ->
 	happyIn60
 		 (LitInt happy_var_1
 	)}
 
 happyReduce_97 = happySpecReduce_1  25# happyReduction_97
 happyReduction_97 happy_x_1
-	 =  case happyOut38 happy_x_1 of { happy_var_1 -> 
+	 =  case happyOut38 happy_x_1 of { happy_var_1 ->
 	happyIn60
 		 (LitChar happy_var_1
 	)}
 
 happyReduce_98 = happySpecReduce_1  25# happyReduction_98
 happyReduction_98 happy_x_1
-	 =  case happyOut35 happy_x_1 of { happy_var_1 -> 
+	 =  case happyOut35 happy_x_1 of { happy_var_1 ->
 	happyIn60
 		 (LitString happy_var_1
 	)}
 
 happyReduce_99 = happySpecReduce_1  25# happyReduction_99
 happyReduction_99 happy_x_1
-	 =  case happyOut39 happy_x_1 of { happy_var_1 -> 
+	 =  case happyOut39 happy_x_1 of { happy_var_1 ->
 	happyIn60
 		 (LitDouble happy_var_1
 	)}
@@ -949,7 +949,7 @@ happyReduce_100 = happySpecReduce_3  25# happyReduction_100
 happyReduction_100 happy_x_3
 	happy_x_2
 	happy_x_1
-	 =  case happyOut62 happy_x_2 of { happy_var_2 -> 
+	 =  case happyOut62 happy_x_2 of { happy_var_2 ->
 	happyIn60
 		 (List happy_var_2
 	)}
@@ -958,14 +958,14 @@ happyReduce_101 = happySpecReduce_3  25# happyReduction_101
 happyReduction_101 happy_x_3
 	happy_x_2
 	happy_x_1
-	 =  case happyOut58 happy_x_2 of { happy_var_2 -> 
+	 =  case happyOut58 happy_x_2 of { happy_var_2 ->
 	happyIn60
 		 (happy_var_2
 	)}
 
 happyReduce_102 = happySpecReduce_1  26# happyReduction_102
 happyReduction_102 happy_x_1
-	 =  case happyOut60 happy_x_1 of { happy_var_1 -> 
+	 =  case happyOut60 happy_x_1 of { happy_var_1 ->
 	happyIn61
 		 ((:[]) happy_var_1
 	)}
@@ -973,8 +973,8 @@ happyReduction_102 happy_x_1
 happyReduce_103 = happySpecReduce_2  26# happyReduction_103
 happyReduction_103 happy_x_2
 	happy_x_1
-	 =  case happyOut60 happy_x_1 of { happy_var_1 -> 
-	case happyOut61 happy_x_2 of { happy_var_2 -> 
+	 =  case happyOut60 happy_x_1 of { happy_var_1 ->
+	case happyOut61 happy_x_2 of { happy_var_2 ->
 	happyIn61
 		 ((:) happy_var_1 happy_var_2
 	)}}
@@ -986,7 +986,7 @@ happyReduction_104  =  happyIn62
 
 happyReduce_105 = happySpecReduce_1  27# happyReduction_105
 happyReduction_105 happy_x_1
-	 =  case happyOut58 happy_x_1 of { happy_var_1 -> 
+	 =  case happyOut58 happy_x_1 of { happy_var_1 ->
 	happyIn62
 		 ((:[]) happy_var_1
 	)}
@@ -995,15 +995,15 @@ happyReduce_106 = happySpecReduce_3  27# happyReduction_106
 happyReduction_106 happy_x_3
 	happy_x_2
 	happy_x_1
-	 =  case happyOut58 happy_x_1 of { happy_var_1 -> 
-	case happyOut62 happy_x_3 of { happy_var_3 -> 
+	 =  case happyOut58 happy_x_1 of { happy_var_1 ->
+	case happyOut62 happy_x_3 of { happy_var_3 ->
 	happyIn62
 		 ((:) happy_var_1 happy_var_3
 	)}}
 
 happyReduce_107 = happySpecReduce_1  28# happyReduction_107
 happyReduction_107 happy_x_1
-	 =  case happyOut35 happy_x_1 of { happy_var_1 -> 
+	 =  case happyOut35 happy_x_1 of { happy_var_1 ->
 	happyIn63
 		 ((:[]) happy_var_1
 	)}
@@ -1012,15 +1012,15 @@ happyReduce_108 = happySpecReduce_3  28# happyReduction_108
 happyReduction_108 happy_x_3
 	happy_x_2
 	happy_x_1
-	 =  case happyOut35 happy_x_1 of { happy_var_1 -> 
-	case happyOut63 happy_x_3 of { happy_var_3 -> 
+	 =  case happyOut35 happy_x_1 of { happy_var_1 ->
+	case happyOut63 happy_x_3 of { happy_var_3 ->
 	happyIn63
 		 ((:) happy_var_1 happy_var_3
 	)}}
 
 happyReduce_109 = happySpecReduce_1  29# happyReduction_109
 happyReduction_109 happy_x_1
-	 =  case happyOut65 happy_x_1 of { happy_var_1 -> 
+	 =  case happyOut65 happy_x_1 of { happy_var_1 ->
 	happyIn64
 		 ((:[]) happy_var_1
 	)}
@@ -1029,15 +1029,15 @@ happyReduce_110 = happySpecReduce_3  29# happyReduction_110
 happyReduction_110 happy_x_3
 	happy_x_2
 	happy_x_1
-	 =  case happyOut65 happy_x_1 of { happy_var_1 -> 
-	case happyOut64 happy_x_3 of { happy_var_3 -> 
+	 =  case happyOut65 happy_x_1 of { happy_var_1 ->
+	case happyOut64 happy_x_3 of { happy_var_3 ->
 	happyIn64
 		 ((:) happy_var_1 happy_var_3
 	)}}
 
 happyReduce_111 = happySpecReduce_1  30# happyReduction_111
 happyReduction_111 happy_x_1
-	 =  case happyOut45 happy_x_1 of { happy_var_1 -> 
+	 =  case happyOut45 happy_x_1 of { happy_var_1 ->
 	happyIn65
 		 (RHS (reverse happy_var_1)
 	)}
@@ -1056,15 +1056,15 @@ happyReduction_113  =  happyIn66
 happyReduce_114 = happySpecReduce_2  32# happyReduction_114
 happyReduction_114 happy_x_2
 	happy_x_1
-	 =  case happyOut67 happy_x_1 of { happy_var_1 -> 
-	case happyOut69 happy_x_2 of { happy_var_2 -> 
+	 =  case happyOut67 happy_x_1 of { happy_var_1 ->
+	case happyOut69 happy_x_2 of { happy_var_2 ->
 	happyIn67
 		 (RSeq happy_var_1 happy_var_2
 	)}}
 
 happyReduce_115 = happySpecReduce_1  32# happyReduction_115
 happyReduction_115 happy_x_1
-	 =  case happyOut69 happy_x_1 of { happy_var_1 -> 
+	 =  case happyOut69 happy_x_1 of { happy_var_1 ->
 	happyIn67
 		 (happy_var_1
 	)}
@@ -1073,8 +1073,8 @@ happyReduce_116 = happySpecReduce_3  33# happyReduction_116
 happyReduction_116 happy_x_3
 	happy_x_2
 	happy_x_1
-	 =  case happyOut68 happy_x_1 of { happy_var_1 -> 
-	case happyOut67 happy_x_3 of { happy_var_3 -> 
+	 =  case happyOut68 happy_x_1 of { happy_var_1 ->
+	case happyOut67 happy_x_3 of { happy_var_3 ->
 	happyIn68
 		 (RAlt happy_var_1 happy_var_3
 	)}}
@@ -1083,15 +1083,15 @@ happyReduce_117 = happySpecReduce_3  33# happyReduction_117
 happyReduction_117 happy_x_3
 	happy_x_2
 	happy_x_1
-	 =  case happyOut67 happy_x_1 of { happy_var_1 -> 
-	case happyOut67 happy_x_3 of { happy_var_3 -> 
+	 =  case happyOut67 happy_x_1 of { happy_var_1 ->
+	case happyOut67 happy_x_3 of { happy_var_3 ->
 	happyIn68
 		 (RMinus happy_var_1 happy_var_3
 	)}}
 
 happyReduce_118 = happySpecReduce_1  33# happyReduction_118
 happyReduction_118 happy_x_1
-	 =  case happyOut67 happy_x_1 of { happy_var_1 -> 
+	 =  case happyOut67 happy_x_1 of { happy_var_1 ->
 	happyIn68
 		 (happy_var_1
 	)}
@@ -1099,7 +1099,7 @@ happyReduction_118 happy_x_1
 happyReduce_119 = happySpecReduce_2  34# happyReduction_119
 happyReduction_119 happy_x_2
 	happy_x_1
-	 =  case happyOut69 happy_x_1 of { happy_var_1 -> 
+	 =  case happyOut69 happy_x_1 of { happy_var_1 ->
 	happyIn69
 		 (RStar happy_var_1
 	)}
@@ -1107,7 +1107,7 @@ happyReduction_119 happy_x_2
 happyReduce_120 = happySpecReduce_2  34# happyReduction_120
 happyReduction_120 happy_x_2
 	happy_x_1
-	 =  case happyOut69 happy_x_1 of { happy_var_1 -> 
+	 =  case happyOut69 happy_x_1 of { happy_var_1 ->
 	happyIn69
 		 (RPlus happy_var_1
 	)}
@@ -1115,7 +1115,7 @@ happyReduction_120 happy_x_2
 happyReduce_121 = happySpecReduce_2  34# happyReduction_121
 happyReduction_121 happy_x_2
 	happy_x_1
-	 =  case happyOut69 happy_x_1 of { happy_var_1 -> 
+	 =  case happyOut69 happy_x_1 of { happy_var_1 ->
 	happyIn69
 		 (ROpt happy_var_1
 	)}
@@ -1128,7 +1128,7 @@ happyReduction_122 happy_x_1
 
 happyReduce_123 = happySpecReduce_1  34# happyReduction_123
 happyReduction_123 happy_x_1
-	 =  case happyOut38 happy_x_1 of { happy_var_1 -> 
+	 =  case happyOut38 happy_x_1 of { happy_var_1 ->
 	happyIn69
 		 (RChar happy_var_1
 	)}
@@ -1137,7 +1137,7 @@ happyReduce_124 = happySpecReduce_3  34# happyReduction_124
 happyReduction_124 happy_x_3
 	happy_x_2
 	happy_x_1
-	 =  case happyOut35 happy_x_2 of { happy_var_2 -> 
+	 =  case happyOut35 happy_x_2 of { happy_var_2 ->
 	happyIn69
 		 (RAlts happy_var_2
 	)}
@@ -1146,7 +1146,7 @@ happyReduce_125 = happySpecReduce_3  34# happyReduction_125
 happyReduction_125 happy_x_3
 	happy_x_2
 	happy_x_1
-	 =  case happyOut35 happy_x_2 of { happy_var_2 -> 
+	 =  case happyOut35 happy_x_2 of { happy_var_2 ->
 	happyIn69
 		 (RSeqs happy_var_2
 	)}
@@ -1185,21 +1185,21 @@ happyReduce_131 = happySpecReduce_3  34# happyReduction_131
 happyReduction_131 happy_x_3
 	happy_x_2
 	happy_x_1
-	 =  case happyOut70 happy_x_2 of { happy_var_2 -> 
+	 =  case happyOut70 happy_x_2 of { happy_var_2 ->
 	happyIn69
 		 (happy_var_2
 	)}
 
 happyReduce_132 = happySpecReduce_1  35# happyReduction_132
 happyReduction_132 happy_x_1
-	 =  case happyOut68 happy_x_1 of { happy_var_1 -> 
+	 =  case happyOut68 happy_x_1 of { happy_var_1 ->
 	happyIn70
 		 (happy_var_1
 	)}
 
 happyReduce_133 = happySpecReduce_1  36# happyReduction_133
 happyReduction_133 happy_x_1
-	 =  case happyOut36 happy_x_1 of { happy_var_1 -> 
+	 =  case happyOut36 happy_x_1 of { happy_var_1 ->
 	happyIn71
 		 ((:[]) happy_var_1
 	)}
@@ -1208,8 +1208,8 @@ happyReduce_134 = happySpecReduce_3  36# happyReduction_134
 happyReduction_134 happy_x_3
 	happy_x_2
 	happy_x_1
-	 =  case happyOut36 happy_x_1 of { happy_var_1 -> 
-	case happyOut71 happy_x_3 of { happy_var_3 -> 
+	 =  case happyOut36 happy_x_1 of { happy_var_1 ->
+	case happyOut71 happy_x_3 of { happy_var_3 ->
 	happyIn71
 		 ((:) happy_var_1 happy_var_3
 	)}}
@@ -1387,7 +1387,7 @@ thenM = (>>=)
 
 happyError :: [Token] -> Err a
 happyError ts =
-  Bad $ "syntax error at " ++ tokenPos ts ++ 
+  Bad $ "syntax error at " ++ tokenPos ts ++
   case ts of
     [] -> []
     [Err _] -> " due to lexer error"
@@ -1399,7 +1399,7 @@ myLexer = tokens
 {-# LINE 1 "<built-in>" #-}
 {-# LINE 1 "<command-line>" #-}
 {-# LINE 1 "templates/GenericTemplate.hs" #-}
--- Id: GenericTemplate.hs,v 1.26 2005/01/14 14:47:22 simonmar Exp 
+-- Id: GenericTemplate.hs,v 1.26 2005/01/14 14:47:22 simonmar Exp
 
 {-# LINE 30 "templates/GenericTemplate.hs" #-}
 
@@ -1432,7 +1432,7 @@ happyParse start_state = happyNewToken start_state notHappyAtAll notHappyAtAll
 -- the stack in this case.
 happyAccept 0# tk st sts (_ `HappyStk` ans `HappyStk` _) =
 	happyReturn1 ans
-happyAccept j tk st sts (HappyStk ans _) = 
+happyAccept j tk st sts (HappyStk ans _) =
 	(happyTcHack j (happyTcHack st)) (happyReturn1 ans)
 
 -----------------------------------------------------------------------------
@@ -1567,7 +1567,7 @@ happyDropStk n (x `HappyStk` xs) = happyDropStk (n Happy_GHC_Exts.-# (1#::Happy_
 -- Moving to a new state after a reduction
 
 
-happyGoto nt j tk st = 
+happyGoto nt j tk st =
    {- nothing -}
    happyDoAction j tk new_state
    where (off) = indexShortOffAddr happyGotoOffsets st
@@ -1582,7 +1582,7 @@ happyGoto nt j tk st =
 
 -- parse error if we are in recovery and we fail again
 happyFail  0# tk old_st _ stk =
---	trace "failing" $ 
+--	trace "failing" $
     	happyError_ tk
 
 {-  We don't need state discarding for our restricted implementation of
@@ -1590,7 +1590,7 @@ happyFail  0# tk old_st _ stk =
     for now --SDM
 
 -- discard a state
-happyFail  0# tk old_st (HappyCons ((action)) (sts)) 
+happyFail  0# tk old_st (HappyCons ((action)) (sts))
 						(saved_tok `HappyStk` _ `HappyStk` stk) =
 --	trace ("discarding state, depth " ++ show (length stk))  $
 	happyDoAction 0# tk action sts ((saved_tok`HappyStk`stk))
@@ -1617,7 +1617,7 @@ happyTcHack x y = y
 
 
 -----------------------------------------------------------------------------
--- Seq-ing.  If the --strict flag is given, then Happy emits 
+-- Seq-ing.  If the --strict flag is given, then Happy emits
 --	happySeq = happyDoSeq
 -- otherwise it emits
 -- 	happySeq = happyDontSeq

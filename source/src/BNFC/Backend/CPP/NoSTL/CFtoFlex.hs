@@ -17,23 +17,23 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 -}
 
-{- 
+{-
    **************************************************************
     BNF Converter Module
 
     Description   : This module generates the Flex file. It is
                     similar to JLex but with a few peculiarities.
-                    
+
     Author        : Michael Pellauer (pellauer@cs.chalmers.se)
 
     License       : GPL (GNU General Public License)
 
-    Created       : 5 August, 2003                           
+    Created       : 5 August, 2003
 
-    Modified      : 22 August, 2006 by Aarne Ranta                          
+    Modified      : 22 August, 2006 by Aarne Ranta
 
-   
-   ************************************************************** 
+
+   **************************************************************
 -}
 module BNFC.Backend.CPP.NoSTL.CFtoFlex (cf2flex) where
 
@@ -100,7 +100,7 @@ cMacros = unlines
 lexSymbols :: SymEnv -> String
 lexSymbols ss = concatMap transSym ss
   where
-    transSym (s,r) = 
+    transSym (s,r) =
       "<YYINITIAL>\"" ++ s' ++ "\"      \t return " ++ r ++ ";\n"
         where
          s' = escapeChars s
@@ -125,7 +125,7 @@ restOfFlex inPackage cf env = concat
    ifC cat s = if isUsedCat cf cat then s else ""
    ns = nsString inPackage
    userDefTokens = unlines $
-     ["<YYINITIAL>" ++ printRegFlex exp ++ 
+     ["<YYINITIAL>" ++ printRegFlex exp ++
       "     \t " ++ ns ++ "yylval.string_ = strdup(yytext); return " ++ sName name ++ ";"
        | (name, exp) <- tokenPragmas cf]
       where
@@ -162,12 +162,12 @@ restOfFlex inPackage cf env = concat
 
 
 lexComments :: Maybe String -> ([(String, String)], [String]) -> String
-lexComments inPackage (m,s) = 
-  (unlines (map (lexSingleComment inPackage) s)) 
+lexComments inPackage (m,s) =
+  (unlines (map (lexSingleComment inPackage) s))
   ++ (unlines (map (lexMultiComment inPackage) m))
 
 lexSingleComment :: Maybe String -> String -> String
-lexSingleComment inPackage c = 
+lexSingleComment inPackage c =
   "<YYINITIAL>\"" ++ c ++ "\"[^\\n]*\\n  ++" ++ nsString inPackage ++ "yy_mylinenumber ; \t /* BNFC single-line comment */;"
 
 --There might be a possible bug here if a language includes 2 multi-line comments.
@@ -181,7 +181,7 @@ lexMultiComment inPackage (b,e) = unlines [
   "<COMMENT>[\\n]   ++" ++ nsString inPackage ++ "yy_mylinenumber ; \t /* BNFC multi-line comment */;"
  ---- "\\n  ++yy_mylinenumber ;"
   ]
-  
+
 
 --Helper function that escapes characters in strings
 escapeChars :: String -> String

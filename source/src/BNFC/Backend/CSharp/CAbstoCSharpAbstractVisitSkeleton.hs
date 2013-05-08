@@ -1,8 +1,8 @@
 {-
     BNF Converter: C# Abstract Visit Skeleton Generator
-    
+
     Copyright (C) 2006  Author:  Johan Broberg
-    
+
     Modified from BNFC.Backend.CSharp.CAbstoCSharpVisitSkeleton
 
     This program is free software; you can redistribute it and/or modify
@@ -20,19 +20,19 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 -}
 
-{- 
+{-
    **************************************************************
     BNF Converter Module
 
     Description   : This module generates an Abstract Visit Skeleton for C#.
-                    This can be useful if you often make changes to your 
-                    grammar and want to keep your own changes (not having to 
-                    merge with the new visit skeleton each time), while still 
+                    This can be useful if you often make changes to your
+                    grammar and want to keep your own changes (not having to
+                    merge with the new visit skeleton each time), while still
                     getting compile errors if your code is no longer correct.
                     The generated file uses the Visitor design pattern.
 
-                    This could have been generated from within 
-                    CAbstoVisitSkeleton, but that would have made it more 
+                    This could have been generated from within
+                    CAbstoVisitSkeleton, but that would have made it more
                     difficult to actually use it (and the visit skeleton).
 
     Author        : Johan Broberg (johan@pontemonti.com)
@@ -42,8 +42,8 @@
     Created       : 19 December, 2006
 
     Modified      : 19 December, 2006 by Johan Broberg
-   
-   ************************************************************** 
+
+   **************************************************************
 -}
 
 module BNFC.Backend.CSharp.CAbstoCSharpAbstractVisitSkeleton (cabs2csharpAbstractVisitSkeleton) where

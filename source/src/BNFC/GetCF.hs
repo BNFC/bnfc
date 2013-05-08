@@ -50,10 +50,10 @@ tryReadCFP opts file = do
       msg = msgs1++msgs2 -- ++ msgs3 -- in a future version
       ret = cfp
 
-  let reserved = if anyTarget opts [TargetJava,TargetJava15] 
+  let reserved = if anyTarget opts [TargetJava,TargetJava15]
                    then [takeWhile (/='.') file] else []
   case filter (not . isDefinedRule) $ notUniqueNames reserved cf of
-    ns@(_:_) 
+    ns@(_:_)
       | not (anyTarget opts [TargetHaskell,TargetHaskellGADT,TargetOCAML]) -> do
         putStrLn $ "ERROR: names not unique: " ++ unwords ns
         return (ret,False)
@@ -71,7 +71,7 @@ tryReadCFP opts file = do
          putStrLn $ show (length (rulesOfCF cf)) +++ "rules accepted\n"
          let c3s = [(b,e) | (b,e) <- fst (comments cf), length b > 2 || length e > 2]
          if null c3s then return () else do
-           putStrLn 
+           putStrLn
              "Warning: comment delimiters longer than 2 characters ignored in Haskell:"
            mapM_ putStrLn [b +++ "-" +++ e | (b,e) <- c3s]
          return (ret,True)
@@ -87,8 +87,8 @@ tryReadCFP opts file = do
         putStrLn $ "  Labels has the same name as the Category. This will almost"
         putStrLn $ "  certainly cause problems in languages other than Haskell.\n"
         return (ret,True)
-     xs -> do  
-       putStrLn $ "Warning :" 
+     xs -> do
+       putStrLn $ "Warning :"
        putStrLn $ "  Non-unique label name(s) : " ++ unwords xs
        putStrLn $ "  There may be problems with the pretty-printer.\n"
        case (badInheritence cf) of
@@ -111,7 +111,7 @@ getCFP cnf s = case pGrammar . myLexer $ s of
   Ok (Abs.Grammar defs) -> (cf0,msgs)
     where (pragma,rules) = partitionEithers $ concatMap (transDef cnf) defs
           msgs = catMaybes $ map (checkRule (cfp2cf cf0)) (rulesOfCF cf0)
-          cf0 = revs srt 
+          cf0 = revs srt
           srt = let    literals           = nub [lit | xs <- map rhsRule rules,
                	         		         Left lit <- xs,
                	         		         elem lit specialCatsP]
@@ -125,14 +125,14 @@ getCFP cnf s = case pGrammar . myLexer $ s of
 
 transDef :: Bool -> Abs.Def -> [Either Pragma RuleP]
 transDef cnf x = case x of
- Abs.Rule label cat items -> 
+ Abs.Rule label cat items ->
    [Right $ Rule (transLabel label) (transCat cat) (map transItem items)]
  Abs.Comment str               -> [Left $ CommentS str]
  Abs.Comments str0 str         -> [Left $ CommentM (str0,str)]
  Abs.Token ident reg           -> [Left $ TokenReg (transIdent ident) False reg]
  Abs.PosToken ident reg        -> [Left $ TokenReg (transIdent ident) True reg]
  Abs.Entryp idents             -> [Left $ EntryPoints (map transIdent idents)]
- Abs.Internal label cat items  -> 
+ Abs.Internal label cat items  ->
    [Right $ Rule (transLabel label) (transCat cat) (Left internalCat:(map transItem items))]
  Abs.Separator size ident str -> map  (Right . cf2cfpRule) $ separatorRules size ident str
  Abs.Terminator size ident str -> map  (Right . cf2cfpRule) $ terminatorRules size ident str
@@ -150,7 +150,7 @@ delimiterRules :: Bool -> Abs.Cat -> String -> String -> Abs.Separation -> Abs.M
 delimiterRules False a0 l r sep size = [
   Rule "_" as [Right l, Left (listCat x), Right r]
   ] ++ separationRules (Abs.IdCat $ Abs.Ident $ x) sep size
- where 
+ where
    a = transCat a0
    as = listCat a
    x = a ++ "_without_delimiters"
@@ -159,24 +159,24 @@ delimiterRules True a0 l r (Abs.SepSepar "") size = delimiterRules True a0 l r A
 delimiterRules True a0 l r sep size = [
    -- recognizing a single element
   Rule "(:[])"  a'  (Left a : termin), -- optional terminator/separator
-  
+
   -- glueing two sublists
   Rule "(++)"   a'  [Left a', Left a'],
-  
+
    -- starting on either side with a delimiter
   Rule "[]"     c   [Right l],
   Rule (if optFinal then "(:[])" else
-                         "[]")     
+                         "[]")
                 d   ([Left a | optFinal] ++ [Right r]),
-  
+
    -- gathering chains
   Rule "(++)"   c   [Left c, Left a'],
   Rule "(++)"   d   [Left a', Left d],
-  
+
    -- finally, put together left and right chains
   Rule "(++)"   as  [Left c,Left d]] ++ [
   -- special rule for the empty list if necessary
-  Rule "[]"     as  [Right l,Right r] | optEmpty] 
+  Rule "[]"     as  [Right l,Right r] | optEmpty]
  where a = transCat a0
        as = listCat a
        a' = '@':'@':a
@@ -184,7 +184,7 @@ delimiterRules True a0 l r sep size = [
        d  = '@':'}':a
        -- optionally separated concat. of x and y categories.
        x // y = (Left x :
-                 [Right t | Abs.SepSepar t <- [sep]] ++ 
+                 [Right t | Abs.SepSepar t <- [sep]] ++
                  [Left y ])
        termin = case sep of
                   Abs.SepSepar t -> [Right t]
@@ -199,9 +199,9 @@ delimiterRules True a0 l r sep size = [
          Abs.SepSepar _ -> size == Abs.MEmpty
          _ -> False
 
-   
+
 separationRules :: Abs.Cat -> Abs.Separation -> Abs.MinimumSize -> [Rule]
-separationRules c Abs.SepNone size = terminatorRules size c ""  
+separationRules c Abs.SepNone size = terminatorRules size c ""
 separationRules c (Abs.SepTerm t) size = terminatorRules size c t
 separationRules c (Abs.SepSepar t) size = separatorRules size c t
 
@@ -211,7 +211,7 @@ separatorRules size c s = if null s then terminatorRules size c s else ifEmpty [
   Rule "(:[])" cs [Left c'],
   Rule "(:)"   cs [Left c', Right s, Left cs]
   ]
- where 
+ where
    c' = transCat c
    cs = listCat c'
    ifEmpty rs = if (size == Abs.MNonempty)
@@ -223,22 +223,22 @@ terminatorRules size c s = [
   ifEmpty,
   Rule "(:)" cs (Left c' : s' [Left cs])
   ]
- where 
+ where
    c' = transCat c
    cs = listCat c'
    s' its = if null s then its else (Right s : its)
-   ifEmpty = if (size == Abs.MNonempty) 
+   ifEmpty = if (size == Abs.MNonempty)
                 then Rule "(:[])" cs ([Left c'] ++ if null s then [] else [Right s])
                 else Rule "[]" cs []
 
 coercionRules :: Abs.Ident -> Integer -> [Rule]
-coercionRules (Abs.Ident c) n = 
+coercionRules (Abs.Ident c) n =
    Rule "_" c                  [Left (c ++ "1")] :
   [(Rule "_" (c ++ show (i-1)) [Left (c ++ show i)]) | i <- [2..n]] ++
   [(Rule "_" (c ++ show n)     [Right "(", Left c, Right ")"])]
 
 ebnfRules :: Abs.Ident -> [Abs.RHS] -> [Rule]
-ebnfRules (Abs.Ident c) rhss = 
+ebnfRules (Abs.Ident c) rhss =
   [Rule (mkFun k c its) c (map transItem its)
      | (k, Abs.RHS its) <- zip [1 :: Int ..] rhss]
  where
@@ -247,7 +247,7 @@ ebnfRules (Abs.Ident c) rhss =
      [Abs.NTerminal n] -> c' ++ identCat (transCat n)
      _ -> c' ++ "_" ++ show k
    c' = c --- normCat c
-   mkName k s = if all (\c -> isAlphaNum c || elem c "_'") s 
+   mkName k s = if all (\c -> isAlphaNum c || elem c "_'") s
                    then s else show k
 
 transItem :: Abs.Item -> Either Cat String
@@ -273,7 +273,7 @@ transLabel y = case y of
      Abs.ListE     -> "[]"
      Abs.ListCons  -> "(:)"
      Abs.ListOne   -> "(:[])"
-   transProf (Abs.ProfIt bss as) = 
+   transProf (Abs.ProfIt bss as) =
      ([map fromInteger bs | Abs.Ints bs <- bss], map fromInteger as)
 
 transIdent :: Abs.Ident -> String
@@ -331,7 +331,7 @@ nullable r =
       Abs.RAny         -> False
 
 
--- we should actually check that 
+-- we should actually check that
 -- (1) coercions are always between variants
 -- (2) no other digits are used
 
@@ -357,15 +357,15 @@ checkRule cf (Rule (f,_) cat rhs)
    badNil      = isNilFun f   && not (isList c && null cs)
    badOne      = isOneFun f   && not (isList c && cs == [catOfList c])
    badCons     = isConsFun f  && not (isList c && cs == [catOfList c, c])
-   badList     = isList c     && 
+   badList     = isList c     &&
                  not (isCoercion f || isNilCons f)
    badSpecial  = elem c specialCatsP && not (isCoercion f)
 
    badMissing  = not (null missing)
-   missing     = filter nodef [c | Left c <- rhs] 
+   missing     = filter nodef [c | Left c <- rhs]
    nodef t = notElem t defineds
    defineds =
-    internalCat : tokenNames cf ++ specialCatsP ++ map valCat (rulesOfCF cf) 
+    internalCat : tokenNames cf ++ specialCatsP ++ map valCat (rulesOfCF cf)
    badTypeName = not (null badtypes)
    badtypes = filter isBadType $ cat : [c | Left c <- rhs]
    isBadType c = not (isUpper (head c) || isList c || c == internalCat || (head c == '@') )

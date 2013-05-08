@@ -55,7 +55,7 @@ makeC make name cf = do
     if make then (writeFileRep "Makefile" $ makefile name prefix) else return ()
   where prefix :: String  -- The prefix is a string used by flex and bison
                           -- that is prepended to generated function names.
-                          -- In most cases we want the grammar name as the prefix 
+                          -- In most cases we want the grammar name as the prefix
                           -- but in a few specific cases, this can create clashes
                           -- with existing functions
         prefix = if name `elem` ["m","c","re","std","str"]
@@ -182,19 +182,19 @@ mkHeaderFile cf cats eps env = unlines
   mkVar _ = ""
   mkDefines n [] = mkString n
   mkDefines n ((_,s):ss) = ("#define " ++ s +++ (show n) ++ "\n") ++ (mkDefines (n+1) ss)
-  mkString n =  if isUsedCat cf "String" 
+  mkString n =  if isUsedCat cf "String"
    then ("#define _STRING_ " ++ show n ++ "\n") ++ mkChar (n+1)
    else mkChar n
-  mkChar n =  if isUsedCat cf "Char" 
+  mkChar n =  if isUsedCat cf "Char"
    then ("#define _CHAR_ " ++ show n ++ "\n") ++ mkInteger (n+1)
    else mkInteger n
-  mkInteger n =  if isUsedCat cf "Integer" 
+  mkInteger n =  if isUsedCat cf "Integer"
    then ("#define _INTEGER_ " ++ show n ++ "\n") ++ mkDouble (n+1)
    else mkDouble n
-  mkDouble n =  if isUsedCat cf "Double" 
+  mkDouble n =  if isUsedCat cf "Double"
    then ("#define _DOUBLE_ " ++ show n ++ "\n") ++ mkIdent(n+1)
    else mkIdent n
-  mkIdent n =  if isUsedCat cf "Ident" 
+  mkIdent n =  if isUsedCat cf "Ident"
    then ("#define _IDENT_ " ++ show n ++ "\n")
    else ""
   mkFunc s | (normCat s == s) = (identCat s) ++ " p" ++ (identCat s) ++ "(FILE *inp);\n"

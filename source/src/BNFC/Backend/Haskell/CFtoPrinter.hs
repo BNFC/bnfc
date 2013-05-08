@@ -100,7 +100,7 @@ prologue byteStrings name absMod = unlines [
   "mkEsc :: Char -> Char -> ShowS",
   "mkEsc q s = case s of",
   "  _ | s == q -> showChar '\\\\' . showChar s",
-  "  '\\\\'-> showString \"\\\\\\\\\"", 
+  "  '\\\\'-> showString \"\\\\\\\\\"",
   "  '\\n' -> showString \"\\\\n\"",
   "  '\\t' -> showString \"\\\\t\"",
   "  _ -> showChar s",
@@ -128,16 +128,16 @@ ownPrintRule byteStrings cf own = unlines $ [
   ]
  where
    posn = if isPositionCat cf own then " (_,i)" else " i"
-   
+
    stringUnpack | byteStrings = "BS.unpack"
                 | otherwise   = ""
 
 -- copy and paste from BNFC.Backend.Haskell.CFtoTemplate
 
 rules :: CF -> String
-rules cf = unlines $ 
+rules cf = unlines $
   map (\(s,xs) -> case_fun s (map toArgs xs) ++ ifList cf s) $ cf2data cf
- where 
+ where
    toArgs (cons,args) = ((cons, names (map (checkRes . var) args) (0 :: Int)), ruleOf cons)
    names [] _ = []
    names (x:xs) n
@@ -162,23 +162,23 @@ rules cf = unlines $
 case_fun cat xs = unlines [
   "instance Print" +++ cat +++ "where",
   "  prt i" +++ "e = case e of",
-  unlines $ map (\ ((c,xx),r) -> 
-    "   " ++ c +++ unwords xx +++ "->" +++ 
+  unlines $ map (\ ((c,xx),r) ->
+    "   " ++ c +++ unwords xx +++ "->" +++
     "prPrec i" +++ show (precCat (fst r)) +++ mkRhs xx (snd r)) xs
   ]
 
 ifList cf cat = mkListRule $ nil cat ++ one cat ++ cons cat where
-  nil cat  = ["   [] -> " ++ mkRhs [] its | 
+  nil cat  = ["   [] -> " ++ mkRhs [] its |
                             Rule f c its <- rulesOfCF cf, isNilFun f , normCatOfList c == cat]
-  one cat  = ["   [x] -> " ++ mkRhs ["x"] its | 
+  one cat  = ["   [x] -> " ++ mkRhs ["x"] its |
                             Rule f c its <- rulesOfCF cf, isOneFun f , normCatOfList c == cat]
-  cons cat = ["   x:xs -> " ++ mkRhs ["x","xs"] its | 
+  cons cat = ["   x:xs -> " ++ mkRhs ["x","xs"] its |
                             Rule f c its <- rulesOfCF cf, isConsFun f , normCatOfList c == cat]
   mkListRule [] = ""
   mkListRule rs = unlines $ ("  prtList" +++ "es = case es of"):rs
 
 
-mkRhs args its = 
+mkRhs args its =
   "(concatD [" ++ unwords (intersperse "," (mk args its)) ++ "])"
  where
   mk args (Left "#" : items)      = mk args items

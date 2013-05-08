@@ -1,4 +1,4 @@
-{-# LANGUAGE MultiParamTypeClasses, FunctionalDependencies, 
+{-# LANGUAGE MultiParamTypeClasses, FunctionalDependencies,
              TypeSynonymInstances, FlexibleInstances #-}
 module CNF where
 -- Tools for grammars in CNF (or Bin).
@@ -15,10 +15,10 @@ trans xys = iter [] xys
  where
   iter rel [] =
     rel
-  
+
   iter rel (xy:xys) | xy `elem` rel =
     iter rel xys
-  
+
   iter rel (xy@(x,y):xys) =
     iter (xy:rel) (new ++ xys)
    where
@@ -28,17 +28,17 @@ trans xys = iter [] xys
 class Token tok where
     -- | For printing
     tokToString :: tok -> String
-  
+
 
 class (Eq nt, Token token, Eq token, Bounded nt, Enum nt)
    => Grammar nt token | nt -> token where
     -- | All NTs generating a given token
     tokNT :: token -> [nt]
     -- | productions a b = All NTs producing "a b"
-    productions :: nt -> nt -> [nt]                  
+    productions :: nt -> nt -> [nt]
 
     startcats :: [nt]
-    
+
     allNTs :: [nt]
     allNTs = [minBound .. maxBound]
 
@@ -107,7 +107,7 @@ class (Eq nt, Token token, Eq token, Bounded nt, Enum nt)
     tokNTP _ = pure . tokNTN
     tokNTN :: token -> [nt]
     -- | productions a b = All NTs producing "a b"
-    productionsP :: Bool -> nt -> nt -> Pair [nt]    
+    productionsP :: Bool -> nt -> nt -> Pair [nt]
     productionsP _ x y = pure $ productionsN x y
     productionsN :: nt -> nt -> [nt]
 
@@ -116,7 +116,7 @@ data AST cat token = L cat token
                    | B cat (AST cat token) (AST cat token)
           deriving (Eq)
 
--- | Linearisation of an AST.                   
+-- | Linearisation of an AST.
 lin (L _ s) = tokToString s
 lin (B _ x y) = lin x ++ " " ++ lin y
 
@@ -127,7 +127,7 @@ cat (B x _ _) = x
 
 instance (GrammarP nt token, Show nt) => Show (AST nt token) where
   show = sho
-  
+
 sho (L x t)   = show x ++ "=" ++ tokToString t
 sho (B x s t) = show x ++ "{" ++ sho s ++ "," ++ sho t ++ "}"
 
@@ -150,5 +150,5 @@ instance Grammar nt token => Ring (Set (AST nt token)) where
 instance GrammarP nt token => RingP (Set (AST nt token)) where
     mul p xs ys = join <$> sequenceA [map (\z -> B z x y) <$> productionsP p (cat x) (cat y) | x <- xs, y <- ys]
 
-                  
+
 

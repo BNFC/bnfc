@@ -56,7 +56,7 @@ lit x (c:cs) = [(x,cs) | x == c]
 lit _ _ = []
 
 (***) :: Parser a b -> (b -> c) -> Parser a c
-(p *** f) s = [(f x,r) | (x,r) <- p s] 
+(p *** f) s = [(f x,r) | (x,r) <- p s]
 
 succeed :: b -> Parser a b
 succeed v s = [(v,s)]
@@ -73,8 +73,8 @@ parseResults p s = [x | (x,r) <- p s, null r]
 -- * List utilities
 
 -- | Replace all occurences of a value by another value
-replace :: Eq a => 
-	   a -- ^ Value to replace 
+replace :: Eq a =>
+	   a -- ^ Value to replace
 	-> a -- ^ Value to replace it with
 	-> [a] -> [a]
 replace x y xs = [ if z == x then y else z | z <- xs]

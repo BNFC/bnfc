@@ -33,13 +33,13 @@ data Constructor = Constructor {
 
 -- | Get category, function, and rhs categories paired with variable names.
 cf2cons :: CF -> [Constructor]
-cf2cons cf = [  Constructor { consCat = cat, 
+cf2cons cf = [  Constructor { consCat = cat,
 			      consFun = fun,
 			      consPrec = precFun cf fun,
 			      consVars = zip cats (mkVars cats),
-			      consRhs = rhsFun cf fun} 
+			      consRhs = rhsFun cf fun}
 		| (cat,rules) <- cf2data cf, (fun,cats) <- rules]
-	     ++ [ Constructor { consCat = cat, 
+	     ++ [ Constructor { consCat = cat,
 				consFun = cat,
 				consPrec = 0,
 				consVars = [("String","str")],
@@ -80,4 +80,4 @@ rhsFun cf f = rhsRule $ ruleFun cf f
 
 isTreeType :: CF -> Cat -> Bool
 isTreeType cf c | isList c  = isTreeType cf (catOfList c)
-                | otherwise = c `elem` (allCats cf ++ specialCats cf) 
+                | otherwise = c `elem` (allCats cf ++ specialCats cf)

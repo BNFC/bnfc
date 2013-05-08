@@ -18,7 +18,7 @@
     along with this program; if not, write to the Free Software
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 -}
-{- 
+{-
    **************************************************************
     BNF Converter Module
 
@@ -31,8 +31,8 @@
     Created       : 20 November, 2006
 
     Modified      : 8 January, 2007 by Johan Broberg
-   
-   ************************************************************** 
+
+   **************************************************************
 -}
 
 module BNFC.Backend.CSharp (makeCSharp) where
@@ -66,7 +66,7 @@ makeCSharp :: Bool -- Makefile
            -> Bool -- Visual Studio files
            -> Bool -- Windows Communication Foundation support
            -> Maybe Namespace -- C# namespace to use
-           -> CF 
+           -> CF
            -> FilePath
            -> IO ()
 makeCSharp make vsfiles wcfSupport maybenamespace cf file = do
@@ -93,7 +93,7 @@ makeCSharp make vsfiles wcfSupport maybenamespace cf file = do
       if make then (writeMakefile namespace) else return ()
 
 writeMakefile :: Namespace -> IO ()
-writeMakefile namespace = do 
+writeMakefile namespace = do
   writeFileRep "Makefile" makefile
   putStrLn ""
   putStrLn "-----------------------------------------------------------------------------"
@@ -105,12 +105,12 @@ writeMakefile namespace = do
   putStrLn "-----------------------------------------------------------------------------"
   putStrLn ""
   where
-    makefile = 
+    makefile =
       (unlines [ "MONO = mono", "MONOC = gmcs"
                , "MONOCFLAGS = -optimize -reference:${PARSERREF}"
                , "GPLEX = ${MONO} gplex.exe", "GPPG = ${MONO} gppg.exe"
                , "PARSERREF = bin/ShiftReduceParser.dll"
-               -- Apparently GPLEX outputs filenames in 
+               -- Apparently GPLEX outputs filenames in
                -- lowercase, so scanner.cs is supposed to be like that!
               , "CSFILES = Absyn.cs Parser.cs Printer.cs scanner.cs Test.cs VisitSkeleton.cs" ] ++)
       $ Makefile.mkRule "all" [ "test" ]
@@ -321,7 +321,7 @@ filepathtonamespace file = take (length file - 3) (takeFileName file)
 projectguid :: IO String
 projectguid = do
   maybeFilePath <- findDirectory
-  guid <- maybe getBadGUID getGoodGUID maybeFilePath 
+  guid <- maybe getBadGUID getGoodGUID maybeFilePath
   return guid
   where
     getBadGUID :: IO String
@@ -332,19 +332,19 @@ projectguid = do
       putStrLn "-----------------------------------------------------------------------------"
       return "{00000000-0000-0000-0000-000000000000}"
     getGoodGUID :: FilePath -> IO String
-    getGoodGUID filepath = do 
+    getGoodGUID filepath = do
       let filepath' = "\"" ++ filepath ++ "\""
       (hIn, hOut, hErr, processHandle) <- runInteractiveCommand filepath'
       guid <- hGetLine hOut
       return ('{' : init guid ++ "}")
     findDirectory :: IO (Maybe FilePath)
     findDirectory = do
-      -- This works with Visual Studio 2005. 
-      -- We will probably have to be modify this to include another environment variable name for Orcas. 
+      -- This works with Visual Studio 2005.
+      -- We will probably have to be modify this to include another environment variable name for Orcas.
       -- I doubt there is any need to support VS2003? (I doubt they have patched it up to have 2.0 support?)
       toolpath <- catchIOError (getEnv "VS80COMNTOOLS") (\_ -> return "C:\\Program Files\\Microsoft Visual Studio 8\\Common7\\Tools")
       exists <- doesDirectoryExist toolpath
-      if exists 
+      if exists
         then return (Just (toolpath ++ "\\uuidgen.exe"))
         -- this handles the case when the user was clever enough to add the directory to his/her PATH
         else findExecutable "uuidgen.exe"

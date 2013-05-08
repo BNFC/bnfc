@@ -100,7 +100,7 @@ prologue name absMod = unlines [
   "mkEsc :: Char -> Char -> ShowS",
   "mkEsc q s = case s of",
   "  _ | s == q -> showChar '\\\\' . showChar s",
-  "  '\\\\'-> showString \"\\\\\\\\\"", 
+  "  '\\\\'-> showString \"\\\\\\\\\"",
   "  '\\n' -> showString \"\\\\n\"",
   "  '\\t' -> showString \"\\\\t\"",
   "  _ -> showChar s",
@@ -133,8 +133,8 @@ prPrt cf = ["instance Print (Tree c) where",
 	     "  prt _i e = case e of"
 	    ] ++ map prPrtCons (cf2cons cf)
   where
-  prPrtCons c = "    " ++ consFun c +++ unwords (vars c) +++ "->" +++ 
-                "prPrec _i" +++ show (consPrec c) +++ rhs 
+  prPrtCons c = "    " ++ consFun c +++ unwords (vars c) +++ "->" +++
+                "prPrec _i" +++ show (consPrec c) +++ rhs
     -- for token rules, just print the string argument unquoted
     where rhs | isToken c = let [v] = vars c in "(doc (showString " ++ v ++ "))"
               | otherwise = mkRhs (vars c) (consRhs c)
@@ -144,11 +144,11 @@ prPrt cf = ["instance Print (Tree c) where",
 prPrtList :: CF -> Cat -> [String]
 prPrtList cf cat = mkListRule (nil ++ one ++ cons)
  where
-  nil  = ["   [] -> " ++ mkRhs [] its | 
+  nil  = ["   [] -> " ++ mkRhs [] its |
                          Rule f _ its <- rules, isNilFun f]
-  one  = ["   [x] -> " ++ mkRhs ["x"] its | 
+  one  = ["   [x] -> " ++ mkRhs ["x"] its |
                          Rule f _ its <- rules, isOneFun f]
-  cons = ["   x:xs -> " ++ mkRhs ["x","xs"] its | 
+  cons = ["   x:xs -> " ++ mkRhs ["x","xs"] its |
                          Rule f _ its <- rules, isConsFun f]
   mkListRule [] = []
   mkListRule rs = ["instance Print" +++ cat +++ "where",
@@ -156,7 +156,7 @@ prPrtList cf cat = mkListRule (nil ++ one ++ cons)
   rules = rulesForCat cf cat
 
 mkRhs :: [String] -> [Either Cat String] -> String
-mkRhs args its = 
+mkRhs args its =
   "(concatD [" ++ unwords (intersperse "," (mk args its)) ++ "])"
  where
   mk args (Left "#" : items)      = mk args items

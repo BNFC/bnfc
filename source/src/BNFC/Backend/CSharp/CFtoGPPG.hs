@@ -1,7 +1,7 @@
 {-
     BNF Converter: C# GPPG Generator
     Copyright (C) 2006  Author:  Johan Broberg
-    
+
     Modified from CFtoBisonSTL.
 
     This program is free software; you can redistribute it and/or modify
@@ -19,7 +19,7 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 -}
 
-{- 
+{-
    **************************************************************
     BNF Converter Module
 
@@ -33,7 +33,7 @@
 
     Modified      : 17 December, 2006 by Johan Broberg
 
-   ************************************************************** 
+   **************************************************************
 -}
 
 module BNFC.Backend.CSharp.CFtoGPPG (cf2gppg) where
@@ -88,7 +88,7 @@ header namespace cf = unlines [
 
 definedRules :: Namespace -> CF -> String
 definedRules namespace cf = unlinesInline [
-  if null [ rule f xs e | FunDef f xs e <- pragmasOfCF cf ] 
+  if null [ rule f xs e | FunDef f xs e <- pragmasOfCF cf ]
     then ""
     else error "Defined rules are not yet available in C# mode!"
   ]
@@ -143,7 +143,7 @@ union namespace cats = unlines $ filter (\x -> x /= "\n") [
   "}"
   ]
   where --This is a little weird because people can make [Exp2] etc.
-    catline cat | (identCat cat /= cat) || (normCat cat == cat) = 
+    catline cat | (identCat cat /= cat) || (normCat cat == cat) =
       "  public " ++ identifier namespace (identCat (normCat cat)) +++ (varName (normCat cat)) ++ ";"
     catline cat = ""
 
@@ -163,7 +163,7 @@ tokens user ts = concatMap (declTok user) ts
       else "%token " ++ r ++ "    //   " ++ s ++ "\n"
 
 specialToks :: CF -> String
-specialToks cf = unlinesInline [ 
+specialToks cf = unlinesInline [
   ifC "String"  "%token<string_> STRING_",
   ifC "Char"    "%token<char_> CHAR_",
   ifC "Integer" "%token<int_> INTEGER_",
@@ -183,13 +183,13 @@ rulesForGPPG namespace cf env = (map mkOne $ ruleGroups cf) ++ posRules where
     "$$ = new " ++ cat ++ "($1);")])
 
 -- For every non-terminal, we construct a set of rules.
-constructRule :: Namespace -> 
+constructRule :: Namespace ->
   CF -> SymEnv -> [Rule] -> NonTerminal -> (NonTerminal,[(Pattern,Action)])
-constructRule namespace cf env rules nt = 
-  (nt,[(p,(generateAction namespace nt (ruleName r) b m) +++ result) | 
+constructRule namespace cf env rules nt =
+  (nt,[(p,(generateAction namespace nt (ruleName r) b m) +++ result) |
      r0 <- rules,
-     let (b,r) = if isConsFun (funRule r0) && elem (valCat r0) revs 
-                   then (True,revSepListRule r0) 
+     let (b,r) = if isConsFun (funRule r0) && elem (valCat r0) revs
+                   then (True,revSepListRule r0)
                  else (False,r0),
      let (p,m) = generatePatterns cf env r b])
   where
@@ -204,7 +204,7 @@ constructRule namespace cf env rules nt =
 
 -- Generates a string containing the semantic action.
 -- This was copied from CFtoCup15, with only a few small modifications
-generateAction :: Namespace -> NonTerminal -> Fun -> Bool -> [(MetaVar, Bool)] 
+generateAction :: Namespace -> NonTerminal -> Fun -> Bool -> [(MetaVar, Bool)]
 	       -> Action
 generateAction namespace nt f rev mbs
   | isNilFun f             = "$$ = new " ++ identifier namespace c ++ "();"
@@ -215,19 +215,19 @@ generateAction namespace nt f rev mbs
   | isDefinedRule f        = "$$ = " ++ f ++ "_" ++ "(" ++ concat (intersperse "," ms) ++ ");"
   | otherwise              = "$$ = new " ++ identifier namespace c ++ "(" ++ concat (intersperse "," ms) ++ ");"
   where
-    c = if isNilFun f || isOneFun f || isConsFun f 
+    c = if isNilFun f || isOneFun f || isConsFun f
         then identCat (normCat nt) else f
     ms = map fst mbs
     p_1 = ms!!0
     p_2 = ms!!1
 
 
--- Generate patterns and a set of metavariables indicating 
+-- Generate patterns and a set of metavariables indicating
 -- where in the pattern the non-terminal
 generatePatterns :: CF -> SymEnv -> Rule -> Bool -> (Pattern,[(MetaVar,Bool)])
 generatePatterns cf env r revv = case rhsRule r of
   []  -> ("/* empty */",[])
-  its -> (unwords (map mkIt its), metas its) 
+  its -> (unwords (map mkIt its), metas its)
   where
     mkIt i = case i of
       Left c -> case lookup c env of
@@ -241,19 +241,19 @@ generatePatterns cf env r revv = case rhsRule r of
 
     -- notice: reversibility with push_back vectors is the opposite
     -- of right-recursive lists!
-    revert c = (head c == '[') && 
-               not (isConsFun (funRule r)) && notElem c revs 
+    revert c = (head c == '[') &&
+               not (isConsFun (funRule r)) && notElem c revs
     revs = reversibleCats cf
 
--- We have now constructed the patterns and actions, 
+-- We have now constructed the patterns and actions,
 -- so the only thing left is to merge them into one string.
 
 prRules :: Rules -> String
 prRules [] = []
 prRules ((nt, []):rs) = prRules rs --internal rule
-prRules ((nt,((p,a):ls)):rs) = 
+prRules ((nt,((p,a):ls)):rs) =
   (unwords [nt', ":" , p, "{ ", a, "}", "\n" ++ pr ls]) ++ ";\n" ++ prRules rs
-  where 
+  where
     nt' = identCat nt
     pr []           = []
     pr ((p,a):ls)   = (unlines [(concat $ intersperse " " ["  |", p, "{ ", a , "}"])]) ++ pr ls

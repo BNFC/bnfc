@@ -17,7 +17,7 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 -}
 
-{- 
+{-
    **************************************************************
     BNF Converter Module
 
@@ -30,12 +30,12 @@
 
     License       : GPL (GNU General Public License)
 
-    Created       : 4 August, 2003                           
+    Created       : 4 August, 2003
 
     Modified      : 22 May, 2004 / Antti-Juhani Kaijanaho
 	            29 August, 2006 / Aarne Ranta
-   
-   ************************************************************** 
+
+   **************************************************************
 -}
 
 module BNFC.Backend.CPP.STL.CFtoSTLAbs (cf2CPPAbs) where
@@ -74,7 +74,7 @@ mkHFile ln inPackage cf = unlines
   "",
   unlines ["typedef " ++ d ++ " " ++ c ++ ";" | (c,d) <- basetypes],
   "",
-  unlines ["typedef std::string " ++ s ++ ";" | s <- tokentypes cf], 
+  unlines ["typedef std::string " ++ s ++ ";" | s <- tokentypes cf],
   "",
   "/********************   Forward Declarations    ********************/",
   "",
@@ -118,11 +118,11 @@ prVisitor cf = unlines [
   "{",
   "public:",
   "  virtual ~Visitor() {}",
-  unlines 
-    ["  virtual void visit"++c++"("++c++" *p) = 0;" | c <- allClasses cf, 
+  unlines
+    ["  virtual void visit"++c++"("++c++" *p) = 0;" | c <- allClasses cf,
                                                       notElem c (defineds cf)],
   "",
-  unlines 
+  unlines
     ["  virtual void visit"++c++"(" ++c++" x) = 0;" | c <- allNonClasses cf],
   "};"
  ]
@@ -142,7 +142,7 @@ prCon (c,(f,cs)) = unlines [
   "class " ++f++ " : public " ++ c,
   "{",
   "public:",
-  unlines 
+  unlines
     ["  "++ typ +++ pointerIf st var ++ ";" | (typ,st,var) <- cs],
   "  " ++ f ++ "(const " ++ f ++ " &);",
   "  " ++ f ++ " &operator=(const " ++f++ " &);",
@@ -155,7 +155,7 @@ prCon (c,(f,cs)) = unlines [
   "};"
   ]
  where
-   conargs = concat $ intersperse ", " 
+   conargs = concat $ intersperse ", "
      [x +++ pointerIf st ("p" ++ show i) | ((x,st,_),i) <- zip cs [1..]]
 
 prList :: (Cat,Bool) -> String
@@ -167,7 +167,7 @@ prList (c,b) = unlines [
   "  virtual " ++ c ++ " *clone() const;",
   "};"
   ]
- where 
+ where
    bas = drop 4 c ++ -- drop List
 	 if b then "*" else ""
 
@@ -213,7 +213,7 @@ prListC c = unlines [
 prAcceptC :: Cat -> String
 prAcceptC ty = unlines [
   "void " ++ ty ++ "::accept(Visitor *v)",
-  "{", 
+  "{",
   "  v->visit" ++ ty ++ "(this);",
   "}"
   ]
@@ -221,7 +221,7 @@ prAcceptC ty = unlines [
 --The cloner makes a new deep copy of the object
 prCloneC :: Cat -> String
 prCloneC c = unlines [
-  c +++ "*" ++ c ++ "::clone() const", 
+  c +++ "*" ++ c ++ "::clone() const",
   "{",
   "  return new" +++ c ++ "(*this);",
   "}"
@@ -238,7 +238,7 @@ prConstructorC (f,cs) = unlines [
  where
    cvs = [c | (_,_,c) <- cs]
    pvs = ["p" ++ show i | ((x,st,_),i) <- zip cs [1..]]
-   conargs = concat $ intersperse ", " 
+   conargs = concat $ intersperse ", "
      [x +++ pointerIf st v | ((x,st,_),v) <- zip cs pvs]
 
 
@@ -250,14 +250,14 @@ prCopyC (c,cs) = unlines [
   unlines ["  " ++ cv ++ " = other." ++ cloneIf st cv ++ ";" | (_,st,cv) <- cs],
   "}",
   "",
-  c +++ "&" ++ c ++ "::" ++ "operator=(const" +++ c +++ "& other)", 
+  c +++ "&" ++ c ++ "::" ++ "operator=(const" +++ c +++ "& other)",
   "{",
   "  " ++ c +++ "tmp(other);",
   "  swap(tmp);",
   "  return *this;",
   "}",
   "",
-  "void" +++ c ++ "::swap(" ++ c +++ "& other)", 
+  "void" +++ c ++ "::swap(" ++ c +++ "& other)",
   "{",
   unlines ["  std::swap(" ++ cv ++ ", other." ++ cv ++ ");" | (_,_,cv) <- cs],
   "}"
@@ -267,7 +267,7 @@ prCopyC (c,cs) = unlines [
 
 --The destructor deletes all a class's members.
 prDestructorC :: CAbsRule -> String
-prDestructorC (c,cs) = unlines [ 
+prDestructorC (c,cs) = unlines [
   c ++ "::~" ++ c ++"()",
   "{",
   unlines ["  delete(" ++ cv ++ ");" | (_,isPointer,cv) <- cs, isPointer],

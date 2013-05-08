@@ -1,4 +1,4 @@
-{- 
+{-
    **************************************************************
     BNF Converter Module
 
@@ -9,12 +9,12 @@
 
     License       : GPL (GNU General Public License)
 
-    Created       : 29 April, 2003                           
+    Created       : 29 April, 2003
 
-    Modified      : 2 September, 2003                          
+    Modified      : 2 September, 2003
 
-   
-   ************************************************************** 
+
+   **************************************************************
 -}
 module CFtoJavaSkeleton (cf2JavaSkeleton) where
 
@@ -26,7 +26,7 @@ import Data.Char(toLower)
 
 
 cf2JavaSkeleton :: String -> String -> CF -> String
-cf2JavaSkeleton packageBase packageAbsyn cf = 
+cf2JavaSkeleton packageBase packageAbsyn cf =
   unlines [
     header,
     unlines (map (prData packageAbsyn) groups),
@@ -52,9 +52,9 @@ cf2JavaSkeleton packageBase packageAbsyn cf =
       "}"
       ]
 
---Traverses a category based on its type.      
+--Traverses a category based on its type.
 prData :: String -> (Cat, [Rule]) -> String
-prData packageAbsyn (cat, rules) = 
+prData packageAbsyn (cat, rules) =
  if isList cat
  then unlines
  [

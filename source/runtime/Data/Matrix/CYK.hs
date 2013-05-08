@@ -12,15 +12,15 @@ import Examples
 import Chart
 
 
-data Chart a = 
-    Single a | 
+data Chart a =
+    Single a |
     Merge {
       mergeSize :: Int,
       here   :: (Array (Int,Int) a),
       left   :: Chart a,
       right  :: Chart a
     } -- invariant : size = size left + size right
-    deriving Show 
+    deriving Show
 
 size (Single _) = 1
 size (Merge s _ _ _) = s
@@ -36,13 +36,13 @@ access start end w | start < 0        =  error "start<0"
 
 access' 0 1 (Single x) = x
 access' start end (Merge n h l r)
-    | end   <= size l  =  access start end l 
+    | end   <= size l  =  access start end l
     | start >= size l  =  access (start - size l) (end - size l) r
     | otherwise        =  h ! (start,n-end)
 
 showW w = forM_ [1..n] $ \end -> do
             forM_ [0..end-1] $ \start ->
-                putStr (show (access start end w) ++ " ") 
+                putStr (show (access start end w) ++ " ")
             putStrLn ""
      where n = size w
 
@@ -50,14 +50,14 @@ showW w = forM_ [1..n] $ \end -> do
 merge l r = result
     where
       x i j = access i j result
-      result = Merge n h l r 
+      result = Merge n h l r
       n = size l + size r
-      h = array ((0,0),(size l-1, size r-1)) 
+      h = array ((0,0),(size l-1, size r-1))
                 [((start,n-end), nub [c | k <- [start+1..end-1], c <- x start k * x k end])
-                 | start <- [0..size l-1], 
+                 | start <- [0..size l-1],
                    end   <- [size l+1..n]
                 ]
-              
+
 
 instance IsChart Chart where
    single nt = Single nt

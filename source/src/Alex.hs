@@ -101,7 +101,7 @@ move_pos (Pn a l c) _    = Pn (a+1)  l     (c+1)
 -- The @Scan@ package generates simple scanners that convert input text to
 -- streams of tokens.  The scanners are stateless as each token generated is a
 -- function of its textual content and location.
---  
+--
 -- The token actions take the form of an association list associating each
 -- token name with an action function that constructs the token from the text
 -- matched and its location.  The stop action is invoked when no more input can
@@ -157,13 +157,13 @@ scan' scr p c inp = gscan' scr p c inp (0,())
 -- text into a return type determined by the application.  Access to the
 -- scanner's internal state, start codes and some application-specific state is
 -- provided.
---  
+--
 -- The token actions take the form of an association list associating each
 -- token name with an action function that constructs the result from the
 -- length of the token, the scanner's state (including the remaining input from
 -- the start of the token) and a continuation function that scans the remaining
 -- input.
---  
+--
 -- More specifically, each token action takes as arguments the position of the
 -- token, the last character read before the token (used to resolve leading
 -- context), the whole input text from the start of the token, the length of
@@ -177,7 +177,7 @@ type GScan s r = (DFA (GTokenAction s r), GStopAction s r)
 
 type GActions s r = ([(String, GTokenAction s r)], GStopAction s r)
 
-type GTokenAction s r = 
+type GTokenAction s r =
 	Posn -> Char -> String -> Int ->
 		((StartCode,s)->r) -> (StartCode,s) -> r
 
@@ -243,7 +243,7 @@ scan_token dfa sc_s p c inp =
 -- structure and determines whether the token has the right context to be
 -- accepted.  It may have some leading or trailing context or be restricted to
 -- certain start codes.
---  
+--
 -- Note that the trailing context is checked by invoking `scan_tkn' with the
 -- given state in the DFA corresponding to the regular expression specifying
 -- the trailing context; while this may be inefficient, trailing context is
@@ -299,31 +299,31 @@ scan_tkn dfa p c inp len s stk =
 
 -- (This section should logically belong to the DFA module but it has been
 -- placed here to make this module self-contained.)
---  
+--
 -- `DFA' provides an alternative to `Scanner' (described in the RExp module);
 -- it can be used directly to scan text efficiently.  Additionally it has an
 -- extra place holder for holding action functions for generating
 -- application-specific tokens.  When this place holder is not being used, the
 -- unit type will be used.
---  
+--
 -- Each state in the automaton consist of a list of `Accept' values, descending
 -- in priority, and an array mapping characters to new states.  As the array
 -- may only cover a sub-range of the characters, a default state number is
 -- given in the third field.  By convention, all transitions to the -1 state
 -- represent invalid transitions.
---  
+--
 -- A list of accept states is provided for as the original specification may
 -- have been ambiguous, in which case the highest priority token should be
 -- taken (the one appearing earliest in the specification); this can not be
 -- calculated when the DFA is generated in all cases as some of the tokens may
 -- be associated with leading or trailing context or start codes.
---  
+--
 -- `scan_token' (see above) can deal with unconditional accept states more
 -- efficiently than those associated with context; to save it testing each time
 -- whether the list of accept states contains an unconditional state, the flag
 -- in the first field of `St' is set to true whenever the list contains an
 -- unconditional state.
---  
+--
 -- The `Accept' structure contains the priority of the token being accepted
 -- (lower numbers => higher priorities), the name of the token, a place holder
 -- that can be used for storing the `action' function for constructing the
@@ -331,7 +331,7 @@ scan_tkn dfa p c inp len s stk =
 -- (listing the start codes that the scanner must be in for the token to be
 -- accepted; empty => no restriction), the leading and trailing context (both
 -- `Nothing' if there is none).
---  
+--
 -- The leading context consists simply of a character predicate that will
 -- return true if the last character read is acceptable.  The trailing context
 -- consists of an alternative starting state within the DFA; if this `sub-dfa'
@@ -396,7 +396,7 @@ recover_dfa l = listArray bds [rc_st cl accs df out| (cl,accs,df,out)<-l]
 	bds = (0,length l-1)
 
 	rc_st cl accs df out = St cl (rc_accs accs) df (rc_arr df out)
-	
+
 	rc_accs accs = map rc_acc accs
 
 	rc_acc (n,nm,scs,lctx,rctx) =

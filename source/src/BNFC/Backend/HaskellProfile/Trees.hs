@@ -13,7 +13,7 @@ type CFCat = Ident
 newtype Ident = Ident String deriving (Eq, Ord, Show)
 
 -- to build trees: the Atom contains a GF function, Cn | Meta | Vr | Literal
-newtype CFFun = CFFun (Atom, Profile) deriving (Eq,Ord,Show) 
+newtype CFFun = CFFun (Atom, Profile) deriving (Eq,Ord,Show)
 
 type Profile  = [([[Int]],[Int])]
 

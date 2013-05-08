@@ -37,7 +37,7 @@ removeMinuses (Rep a)= Rep a
 removeMinuses (Or a b)= (Or a b)
 removeMinuses (Seq a b)= (Seq a b)
 removeMinuses e@(Sub a b) =
- let 
+ let
    symbs = symbols e
    -- all (symbol,derivative) pairs
    derivatives = [(s,simplify $ derivative s e) | s <- symbs ]
@@ -46,7 +46,7 @@ removeMinuses e@(Sub a b) =
    -- Whether or not a (symbol,derivative)'s derivitive component is
    -- equal to our original formula
    loopCondition = (\(a,b) -> b == (simplify e))
-   -- Maybe a (symbol,derivative) pair where the derivative is the same as our 
+   -- Maybe a (symbol,derivative) pair where the derivative is the same as our
    -- original expression
    loopedDerivative = find loopCondition derivatives
    -- all (symbol,derivative) pairs except for loopedDerivative
@@ -61,7 +61,7 @@ removeMinuses e@(Sub a b) =
                           (Or (foldr Or Phi [ (Seq (Term sym) (removeMinuses reg)) | (sym,reg) <- derivativesMinusLooped ]) deltae ) )
  in
    simplify result
-  
+
 -- Takes a Regex and returns an equivalent one somewhat simplified.
 simplify (Term a) = (Term a)
 simplify Lambda = Lambda
@@ -128,7 +128,7 @@ derivative a Lambda = Phi
 derivative a Phi = Phi
 derivative a (Or b c) = Or (derivative a b) (derivative a c)
 derivative a (Sub b c) = Sub (derivative a b) (derivative a c)
-derivative a (Seq b c) = let dab = (derivative a b) 
+derivative a (Seq b c) = let dab = (derivative a b)
                              dac = (derivative a c)
                          in Or (Seq dab c)
                                (Seq (delta b) dac)

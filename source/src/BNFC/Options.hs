@@ -29,11 +29,11 @@ type Namespace = String
 data JavaVersion = Java4 | Java5
   deriving (Show,Eq)
 data Mode
-  -- | 
+  -- |
   = Haskell HaskellVariant AlexVersion Bool Namespace Makefile
   | Java JavaVersion Namespace Makefile
   | C Makefile
-  -- | C++ options: the first boolean 
+  -- | C++ options: the first boolean
   | Cpp Bool Namespace Makefile
   | Csharp Namespace Makefile
   | OCaml Makefile
@@ -155,7 +155,7 @@ csharpOptions =
     "Add support for Windows Communication Foundation, by marking abstract syntax classes as DataContracts" ]
 
 
-data Target = TargetC | TargetCPP |TargetCPP_STL 
+data Target = TargetC | TargetCPP |TargetCPP_STL
                 | TargetCSharp |TargetHaskell |TargetHaskellGADT
                 | TargetJava15 |TargetJava |TargetOCAML |TargetProfile
   deriving (Eq,Show)
@@ -165,8 +165,8 @@ data Target = TargetC | TargetCPP |TargetCPP_STL
 data HappyMode = Standard | GLR
   deriving (Eq,Show)
 
-data SharedOptions = Options 
-    { 
+data SharedOptions = Options
+    {
      targets :: [Target],
      make :: Bool,
      alexMode :: AlexVersion,
@@ -190,13 +190,13 @@ parseArguments :: Monad m => [String] -> m (SharedOptions,FilePath)
 parseArguments args' = do
   let args = (map (filter (not . isSpace)) args')
   let file = last args
-  if (head file == '-') then fail "Missing grammar file" 
+  if (head file == '-') then fail "Missing grammar file"
    else do
       let name = takeWhile (/= '.') $ takeFileName file
       let make = elem "-m" args
       let multi = elem "-multi" args
       let c = elem "-c" args
-      let cpp_no_stl = elem "-cpp_no_stl" args 
+      let cpp_no_stl = elem "-cpp_no_stl" args
       let cpp_stl = elem "-cpp_stl" args || elem "-cpp" args
       let csharp = elem "-csharp" args
       let java14 = elem "-java1.4" args
@@ -206,7 +206,7 @@ parseArguments args' = do
       let haskell = elem "-haskell" args
       let haskellGADT = elem "-gadt" args
       let profile = elem "-prof" args
-      let alexMode = foldl' (\m arg -> 
+      let alexMode = foldl' (\m arg ->
                               case arg of
                                 "-alex1" -> Alex1
                                 "-alex2" -> Alex2
@@ -217,7 +217,7 @@ parseArguments args' = do
           alex2StringSharing = elem "-sharestrings" args
           alex2ByteString    = elem "-bytestrings" args
           glr = "-glr" `elem` args
-      let xml = if elem "-xml"  args then 1 else 
+      let xml = if elem "-xml"  args then 1 else
                 if elem "-xmlt" args then 2 else 0
       let inDir = elem "-d" args
       let vsfiles = elem "-vs" args
@@ -228,10 +228,10 @@ parseArguments args' = do
 			 Just i | i < length args - 1 -> return (Just (args!!(i+1)))
 			 _ -> do
 			      fail "-p option requires an argument"
-      let options = Options {make = make, 
-                             alexMode = alexMode, 
-                             inDir = inDir, 
-                             shareStrings = alex2StringSharing, 
+      let options = Options {make = make,
+                             alexMode = alexMode,
+                             inDir = inDir,
+                             shareStrings = alex2StringSharing,
                              byteStrings = alex2ByteString,
                              glr = if glr then GLR else Standard,
                              xml = xml,
@@ -241,13 +241,13 @@ parseArguments args' = do
                              cnf = elem "-cnf" args,
                              targets = targets
                              }
-          targets0 = [ TargetC |c] ++ [ TargetCPP | cpp_no_stl ] ++ [TargetCPP_STL  |  cpp_stl 
+          targets0 = [ TargetC |c] ++ [ TargetCPP | cpp_no_stl ] ++ [TargetCPP_STL  |  cpp_stl
                 ] ++ [ TargetCSharp | csharp] ++ [TargetHaskellGADT|haskellGADT
                 ] ++ [ TargetJava15 |java15] ++ [TargetJava |java14] ++ [TargetOCAML |ocaml] ++ [TargetProfile|profile]
           targets = if null targets0 then [TargetHaskell] else targets0
       unless (length targets == 1) $
         fail "Error: only one language mode may be chosen"
-      unless (isCfFile file) $ 
+      unless (isCfFile file) $
         fail "Error: the input file must end with .cf"
       return (options,file)
 
@@ -294,7 +294,7 @@ translateArguments
           = case lookup s map of
               Nothing -> return [s]
               Just ss ->
-                let msg = printf "Option %s is deprecated, use %s instead" 
+                let msg = printf "Option %s is deprecated, use %s instead"
                                   s (intercalate " " ss)
                 in warn msg >> return ss
 

@@ -17,19 +17,19 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 -}
 
-module BNFC.Backend.OCaml.CFtoOCamlTest where 
+module BNFC.Backend.OCaml.CFtoOCamlTest where
 
 import BNFC.CF
 import BNFC.Utils
 import BNFC.Backend.OCaml.OCamlUtil
 
 ocamlTestfile :: String -> String -> String -> String -> String -> CF -> String
-ocamlTestfile absM lexM parM printM showM cf = 
-    let 
+ocamlTestfile absM lexM parM printM showM cf =
+    let
         lexerName = lexM ++ ".token"
         parserName = parM ++ ".p" ++ topTypeC
         printerName = printM ++ ".printTree " ++ printM ++ ".prt" ++ topTypeC
-        showFun = "(fun x -> " ++ showM ++ ".show (" ++ showM ++ ".show" ++ 
+        showFun = "(fun x -> " ++ showM ++ ".show (" ++ showM ++ ".show" ++
                   topTypeC ++ " x))"
         topTypeC = fixTypeUpper (firstEntry cf)
         topType = absM ++ "." ++ fixType (firstEntry cf)
@@ -43,7 +43,7 @@ ocamlTestfile absM lexM parM printM showM cf =
         ";;",
         "",
         "let showTree (t : " ++ topType ++ ") : string = ",
-        "    \"[Abstract syntax]\\n\\n\" ^ " ++ showFun +++ "t" ++ " ^ \"\\n\\n\" ^", 
+        "    \"[Abstract syntax]\\n\\n\" ^ " ++ showFun +++ "t" ++ " ^ \"\\n\\n\" ^",
         "    \"[Linearized tree]\\n\\n\" ^ " ++ printerName +++ "t" ++ " ^ \"\\n\"",
         ";;",
         "",

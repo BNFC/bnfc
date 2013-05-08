@@ -13,8 +13,8 @@ fingerprint m = [[ if isZero (at i j m) then ' ' else 'X' | i <- [0..x-1] ] | j 
 
 (f *** g) (x,y) = (f x,g y)
 
-data Dimension 
-    = XD  
+data Dimension
+    = XD
     | YD
       deriving (Eq,Show)
 
@@ -49,7 +49,7 @@ instance Matrix m => Matrix (O Pair m) where
   extent (O (x :/: y)) = extent x -- union with y
   glue d (O p) (O q) = O $ glue d <$> p <*> q
   split d k (O (x :/: y)) = (O $ ax :/: ay, O $ bx :/: by)
-     where (ax,bx) = split d k x 
+     where (ax,bx) = split d k x
            (ay,by) = split d k y
   zeroMatrix x y = O $ pure (zeroMatrix x y)
   singleton x = O $ pure (singleton x) -- Attention: on both sides always!
@@ -60,8 +60,8 @@ instance Matrix m => Matrix (O Pair m) where
 
 (<->) :: (AbelianGroup a, Matrix m)  => m a -> m a -> m a
 (<->) = glue YD
-    
-countColumns, countRows :: Matrix m => m a -> Int        
+
+countColumns, countRows :: Matrix m => m a -> Int
 countColumns = ext XD . extent
 countRows = ext YD . extent
 
@@ -73,9 +73,9 @@ firstRow = fst . split YD 1
 lastColumn x = snd . split XD (countColumns x - 1) $ x
 
 chopLastRow x = fst . split YD (countRows x - 1) $ x
- 
- 
 
-  
-  
-  
+
+
+
+
+

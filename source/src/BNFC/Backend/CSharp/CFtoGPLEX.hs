@@ -1,7 +1,7 @@
 {-
     BNF Converter: C# GPLEX Generator
     Copyright (C) 2006  Author:  Johan Broberg
-    
+
     Modified from CFtoFlex
 
     This program is free software; you can redistribute it and/or modify
@@ -19,7 +19,7 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 -}
 
-{- 
+{-
    **************************************************************
     BNF Converter Module
 
@@ -33,7 +33,7 @@
 
     Modified      : 17 December, 2006 by Johan Broberg
 
-   ************************************************************** 
+   **************************************************************
 -}
 
 module BNFC.Backend.CSharp.CFtoGPLEX (cf2gplex) where
@@ -146,7 +146,7 @@ cMacros = unlines
 lexSymbols :: SymEnv -> [(String, String)]
 lexSymbols ss = map transSym ss
   where
-    transSym (s,r) = 
+    transSym (s,r) =
       ("<YYINITIAL>\"" ++ s' ++ "\"" , "if(Trace) System.Console.Error.WriteLine(yytext); return (int)Tokens." ++ r ++ ";")
         where
          s' = escapeChars s
@@ -199,7 +199,7 @@ lexComments :: ([(String, String)], [String]) -> [(String, String)]
 lexComments (m,s) = (map lexSingleComment s) ++ (concatMap lexMultiComment m)
 
 lexSingleComment :: String -> (String, String)
-lexSingleComment c = 
+lexSingleComment c =
   ("<YYINITIAL>\"" ++ c ++ "\"[^\\n]*\\n" , "/* BNFC single-line comment */;")
 
 --There might be a possible bug here if a language includes 2 multi-line comments.
@@ -216,6 +216,6 @@ lexMultiComment (b,e) = [
 -- Used to print the lexer rules; makes sure that all rules are equally indented, to make the GPLEX file a little more readable.
 prettyprinter :: [(String, String)] -> String
 prettyprinter xs = unlines $ map prettyprinter' xs
-  where 
+  where
     padlength = 1 + (last $ sort $ map length $ map fst xs)
     prettyprinter' (x, y) = x ++ replicate (padlength - length x) ' ' ++ y

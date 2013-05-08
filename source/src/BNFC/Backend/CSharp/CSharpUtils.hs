@@ -17,11 +17,11 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 -}
 
-{- 
+{-
    **************************************************************
     BNF Converter Module
 
-    Description   : This module provides utility functions for the 
+    Description   : This module provides utility functions for the
                     C# format.
 
     Author        : Johan Broberg (johan@pontemonti.com)
@@ -32,7 +32,7 @@
 
     Modified      : 21 January, 2007 by Johan Broberg
 
-   ************************************************************** 
+   **************************************************************
 -}
 
 module BNFC.Backend.CSharp.CSharpUtils where
@@ -49,7 +49,7 @@ type Namespace = String
 
 --The visit-function name of a basic type
 visitFunName :: String -> String
-visitFunName v = 
+visitFunName v =
   if      "integer_" `isPrefixOf` v then "Integer"
   else if "char_"    `isPrefixOf` v then "Char"
   else if "string_"  `isPrefixOf` v then "String"
@@ -69,7 +69,7 @@ basetypes = [
   ]
 
 typename :: String -> String
-typename name 
+typename name
   | name == "Char"    = "char"
   | name == "Double"  = "double"
   | name == "Ident"   = "string"
@@ -77,7 +77,7 @@ typename name
   | name == "String"  = "string"
   | otherwise         = name
 
--- Creates a variable name. 
+-- Creates a variable name.
 -- To make sure that no reserved keyword is generated, an underscore is added at the end. Not very pretty, but effective.
 varname :: String -> String
 varname name = (map toLower name) ++ "_"
@@ -88,11 +88,11 @@ toString v = if isUserDefined v then ".ToString()" else ""
 
 -- Prepends namespace ".Absyn." to typ unless it is one of the basetypes
 identifier :: Namespace -> String -> String
-identifier namespace typ 
+identifier namespace typ
   | typ `elem` (map snd basetypes) = typ
   | otherwise                      = namespace ++ ".Absyn." ++ typ
 
--- Removes empty lines, and removes the line-break at the end. 
+-- Removes empty lines, and removes the line-break at the end.
 -- This can be useful if you want to use unlines "inside" unlines and don't want a whole lot of "useless" line-breaks.
 unlinesInline :: [String] -> String
 unlinesInline xs = concat $ intersperse "\n" $ filter (\x -> x /= "") xs
@@ -118,7 +118,7 @@ type PropertyName = String
 
 -- Just like CAbsRule in OOAbstract, except this also has PropertyName.
 -- (valcat,(constr,args)), True = is class (not basic), class variable stored
-type CSharpAbsRule = (Fun,[(Cat,Bool,VariableName,PropertyName)]) 
+type CSharpAbsRule = (Fun,[(Cat,Bool,VariableName,PropertyName)])
 
 cabsrule2csharpabsrule :: CAbsRule -> CSharpAbsRule
 cabsrule2csharpabsrule (f, cabsrule) = (f, addPropertyNames cabsrule)
@@ -145,7 +145,7 @@ propertyName c = c ++ "_"
 numProps :: [(String, Int)] -> [Either String b] -> [Either String b]
 numProps _env [] = []
 numProps env ((Right f) : fs) = (Right f) : (numProps env fs)
-numProps env ((Left f) : fs) = 
+numProps env ((Left f) : fs) =
    case lookup f' env of
      Nothing -> (Left f') : (numProps ((f',1):env) fs)
      Just n -> (Left $ f' ++ (show $ n + 1)) : (numProps ((f',n+1):env) fs)

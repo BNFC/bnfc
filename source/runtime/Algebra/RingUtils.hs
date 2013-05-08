@@ -34,7 +34,7 @@ instance AbelianGroupZ Int where
     isZero x = x == 0
 
 class AbelianGroupZ a => Ring a where
-    (*) :: a -> a -> a    
+    (*) :: a -> a -> a
 
 class (AbelianGroupZ a) => RingP a where
     mul :: Bool -> a -> a -> Pair a
@@ -49,7 +49,7 @@ select p = if p then onlyRight else onlyLeft
 
 newtype O f g a = O {fromO :: f (g a)}
   deriving (AbelianGroup, AbelianGroupZ, Show)
-           
+
 instance (Functor f,Functor g) => Functor (O f g) where
    fmap f (O x) = O (fmap (fmap f) x)
 

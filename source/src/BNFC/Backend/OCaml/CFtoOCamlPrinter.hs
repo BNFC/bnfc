@@ -121,7 +121,7 @@ doubleRule cf = unlines [
     ifList cf "Double",
     ""
     ]
-    
+
 stringRule cf = unlines [
     "let rec prtString (_:int) (s:string) : doc = render (\"\\\"\" ^ String.escaped s ^ \"\\\"\")",
     ifList cf "String",
@@ -140,9 +140,9 @@ ownPrintRule cf own = unlines $ [
 -- copy and paste from CFtoTemplate
 
 rules :: CF -> String
-rules cf = unlines $ mutualDefs $ 
+rules cf = unlines $ mutualDefs $
   map (\(s,xs) -> case_fun s (map toArgs xs) ++ ifList cf s) $ cf2data cf
- where 
+ where
    toArgs (cons,args) = ((cons, names (map (checkRes . var) args) (0 :: Int)), ruleOf cons)
    names [] _ = []
    names (x:xs) n
@@ -164,23 +164,23 @@ rules cf = unlines $ mutualDefs $
 case_fun cat xs = unlines [
 --  "instance Print" +++ cat +++ "where",
   prtFun cat +++"(i:int)" +++ "(e:" ++ fixType cat ++ ") : doc = match e with",
-  unlines $ insertBar $ map (\ ((c,xx),r) -> 
-    "   " ++ c +++ mkTuple xx +++ "->" +++ 
+  unlines $ insertBar $ map (\ ((c,xx),r) ->
+    "   " ++ c +++ mkTuple xx +++ "->" +++
     "prPrec i" +++ show (precCat (fst r)) +++ mkRhs xx (snd r)) xs
   ]
 
 ifList cf cat = mkListRule $ nil cat ++ one cat ++ cons cat where
-  nil cat  = ["    []    -> " ++ mkRhs [] its | 
+  nil cat  = ["    []    -> " ++ mkRhs [] its |
                             Rule f c its <- rulesOfCF cf, isNilFun f , normCatOfList c == cat]
-  one cat  = ["  | [x]   -> " ++ mkRhs ["x"] its | 
+  one cat  = ["  | [x]   -> " ++ mkRhs ["x"] its |
                             Rule f c its <- rulesOfCF cf, isOneFun f , normCatOfList c == cat]
-  cons cat = ["  | x::xs -> " ++ mkRhs ["x","xs"] its | 
+  cons cat = ["  | x::xs -> " ++ mkRhs ["x","xs"] its |
                             Rule f c its <- rulesOfCF cf, isConsFun f , normCatOfList c == cat]
   mkListRule [] = ""
   mkListRule rs = unlines $ ("and prt" ++ fixTypeUpper cat ++ "ListBNFC" +++ "_ es : doc = match es with"):rs
 
 
-mkRhs args its = 
+mkRhs args its =
   "(concatD [" ++ unwords (intersperse ";" (mk args its)) ++ "])"
  where
   mk args (Left "#" : items)      = mk args items
@@ -191,10 +191,10 @@ mkRhs args its =
 
 prtFun :: Cat -> String
 prtFun c = case c of
-    '[':xs -> case break (== ']') xs of 
+    '[':xs -> case break (== ']') xs of
         (t,"]") -> prtFun t ++ "ListBNFC"
         _ -> c -- should not occur (this means an invariant of the type Cat is broken)
     _ -> if precCat c > 0 -- precedence-level cats are not in abstract syntax
             then "prt" ++ (fixTypeUpper $ reverse (dropWhile isDigit (reverse c)))
             else "prt" ++ (fixTypeUpper c)
-        
+

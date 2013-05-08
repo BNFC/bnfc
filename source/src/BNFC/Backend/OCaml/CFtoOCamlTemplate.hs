@@ -46,7 +46,7 @@ cf2Template skelName absName cf = unlines
   "end"
   ]
  where toArgs               [] = []
-       toArgs ((cons,args):xs) 
+       toArgs ((cons,args):xs)
            = (cons ++ " " ++  (mkTuple $ names (map (checkRes . var) args) (0 :: Int))) : toArgs xs
        names :: [String] -> Int -> [String]
        names [] _ = []
@@ -66,8 +66,8 @@ cf2Template skelName absName cf = unlines
 
 
 case_fun :: Cat -> [Constructor] -> String
-case_fun cat xs = 
- unlines $ 
+case_fun cat xs =
+ unlines $
          ["trans" ++ cat ++ " (x : " ++ fixType cat ++ ") : result = match x with",
           unlines $ insertBar $ map (\s -> s ++ " -> " ++ "failure x") xs]
 

@@ -17,7 +17,7 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 -}
 
-{- 
+{-
    **************************************************************
     BNF Converter Module
 
@@ -30,12 +30,12 @@
 
     License       : GPL (GNU General Public License)
 
-    Created       : 4 August, 2003                           
+    Created       : 4 August, 2003
 
-    Modified      : 2 September, 2003                          
+    Modified      : 2 September, 2003
 
-   
-   ************************************************************** 
+
+   **************************************************************
 -}
 module CFtoVisitSkel (cf2VisitSkel) where
 
@@ -49,7 +49,7 @@ import Data.Char(toLower, toUpper)
 --Thus the user can choose which Skeleton to use.
 
 cf2VisitSkel :: String -> String -> CF -> String
-cf2VisitSkel packageBase packageAbsyn cf = 
+cf2VisitSkel packageBase packageAbsyn cf =
   concat [
     header,
     concatMap (prData packageAbsyn user) groups,
@@ -75,7 +75,7 @@ cf2VisitSkel packageBase packageAbsyn cf =
     prUser u = "  public void visit" ++ u' ++ "(String p) {}\n"
       where
        u' = ((toUpper (head u)) : (map toLower (tail u))) --this is a hack to fix a potential capitalization problem.
-    footer = unlines 
+    footer = unlines
      [ --later only include used categories
       "  public void visitIdent(String i) {}",
       "  public void visitInteger(Integer i) {}",
@@ -84,10 +84,10 @@ cf2VisitSkel packageBase packageAbsyn cf =
       "  public void visitString(String s) {}",
       "}"
      ]
-     
+
 --Traverses a category based on its type.
 prData :: String -> [UserDef] -> (Cat, [Rule]) -> String
-prData packageAbsyn user (cat, rules) = 
+prData packageAbsyn user (cat, rules) =
  if isList cat
  then unlines
  [
@@ -136,7 +136,7 @@ prRule packageAbsyn user (Rule fun c cats) | not (isCoercion fun) = unlines
 prRule user nm _ = ""
 
 --Traverses a class's instance variables.
-prCat user fnm c = 
+prCat user fnm c =
  case c of
   (Right t) -> ""
   (Left nt) -> if isBasic user nt
@@ -150,7 +150,7 @@ prCat user fnm c =
 --Just checks if something is a basic or user-defined type.
 --This is because you don't -> a basic non-pointer type.
 isBasic :: [UserDef] -> String -> Bool
-isBasic user v = 
+isBasic user v =
   if elem (init v) user'
     then True
     else if "integer_" `isPrefixOf` v then True
@@ -164,7 +164,7 @@ isBasic user v =
 
 --The visit-function name of a basic type
 funName :: String -> String
-funName v = 
+funName v =
     if "integer_" `isPrefixOf` v then "Integer"
     else if "char_" `isPrefixOf` v then "Char"
     else if "string_" `isPrefixOf` v then "String"

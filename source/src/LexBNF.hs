@@ -56,7 +56,7 @@ data Tok =
 
  deriving (Eq,Show,Ord)
 
-data Token = 
+data Token =
    PT  Posn Tok
  | Err Posn
   deriving (Eq,Show,Ord)
@@ -143,12 +143,12 @@ alexGetChar (p, _, s) =
 alexInputPrevChar :: AlexInput -> Char
 alexInputPrevChar (p, c, s) = c
 
-alex_action_3 =  tok (\p s -> PT p (eitherResIdent (TV . share) s)) 
-alex_action_4 =  tok (\p s -> PT p (eitherResIdent (TV . share) s)) 
-alex_action_5 =  tok (\p s -> PT p (TL $ share $ unescapeInitTail s)) 
-alex_action_6 =  tok (\p s -> PT p (TC $ share s))  
-alex_action_7 =  tok (\p s -> PT p (TI $ share s))    
-alex_action_8 =  tok (\p s -> PT p (TD $ share s)) 
+alex_action_3 =  tok (\p s -> PT p (eitherResIdent (TV . share) s))
+alex_action_4 =  tok (\p s -> PT p (eitherResIdent (TV . share) s))
+alex_action_5 =  tok (\p s -> PT p (TL $ share $ unescapeInitTail s))
+alex_action_6 =  tok (\p s -> PT p (TC $ share s))
+alex_action_7 =  tok (\p s -> PT p (TI $ share s))
+alex_action_8 =  tok (\p s -> PT p (TD $ share s))
 {-# LINE 1 "templates/GenericTemplate.hs" #-}
 {-# LINE 1 "templates/GenericTemplate.hs" #-}
 {-# LINE 1 "<built-in>" #-}
@@ -192,7 +192,7 @@ alexIndexInt16OffAddr (AlexA# arr) off =
 
 
 {-# INLINE alexIndexInt32OffAddr #-}
-alexIndexInt32OffAddr (AlexA# arr) off = 
+alexIndexInt32OffAddr (AlexA# arr) off =
 #ifdef WORDS_BIGENDIAN
   narrow32Int# i
   where
@@ -239,7 +239,7 @@ alexScanUser user input (I# (sc))
   = case alex_scan_tkn user input 0# input sc AlexNone of
 	(AlexNone, input') ->
 		case alexGetChar input of
-			Nothing -> 
+			Nothing ->
 
 
 
@@ -268,13 +268,13 @@ alexScanUser user input (I# (sc))
 
 alex_scan_tkn user orig_input len input s last_acc =
   input `seq` -- strict in the input
-  let 
+  let
 	new_acc = check_accs (alex_accept `quickIndex` (I# (s)))
   in
   new_acc `seq`
   case alexGetChar input of
      Nothing -> (new_acc, input)
-     Just (c, new_input) -> 
+     Just (c, new_input) ->
 
 
 
@@ -283,16 +283,16 @@ alex_scan_tkn user orig_input len input s last_acc =
 		((I# (ord_c))) = ord c
 		(offset) = (base +# ord_c)
 		(check)  = alexIndexInt16OffAddr alex_check offset
-		
+
 		(new_s) = if (offset >=# 0#) && (check ==# ord_c)
 			  then alexIndexInt16OffAddr alex_table offset
 			  else alexIndexInt16OffAddr alex_deflt s
 	in
-	case new_s of 
+	case new_s of
 	    -1# -> (new_acc, input)
 		-- on an error, we want to keep the input *before* the
 		-- character that failed, not after.
-    	    _ -> alex_scan_tkn user orig_input (len +# 1#) 
+    	    _ -> alex_scan_tkn user orig_input (len +# 1#)
 			new_input new_s new_acc
 
   where
@@ -326,14 +326,14 @@ type AlexAccPred user = user -> AlexInput -> Int -> AlexInput -> Bool
 alexAndPred p1 p2 user in1 len in2
   = p1 user in1 len in2 && p2 user in1 len in2
 
---alexPrevCharIsPred :: Char -> AlexAccPred _ 
+--alexPrevCharIsPred :: Char -> AlexAccPred _
 alexPrevCharIs c _ input _ _ = c == alexInputPrevChar input
 
---alexPrevCharIsOneOfPred :: Array Char Bool -> AlexAccPred _ 
+--alexPrevCharIsOneOfPred :: Array Char Bool -> AlexAccPred _
 alexPrevCharIsOneOf arr _ input _ _ = arr ! alexInputPrevChar input
 
 --alexRightContext :: Int -> AlexAccPred _
-alexRightContext (I# (sc)) user _ _ input = 
+alexRightContext (I# (sc)) user _ _ input =
      case alex_scan_tkn user input 0# input sc AlexNone of
 	  (AlexNone, _) -> False
 	  _ -> True

@@ -17,24 +17,24 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 -}
 
-{- 
+{-
    **************************************************************
     BNF Converter Module
 
     Description   : This module generates the C++ Skeleton functions.
-    
+
                     The generated files use the Visitor design pattern.
 
     Author        : Michael Pellauer (pellauer@cs.chalmers.se)
 
     License       : GPL (GNU General Public License)
 
-    Created       : 9 August, 2003                           
+    Created       : 9 August, 2003
 
-    Modified      : 12 August, 2003                          
+    Modified      : 12 August, 2003
 
-   
-   ************************************************************** 
+
+   **************************************************************
 -}
 
 module BNFC.Backend.CPP.NoSTL.CFtoCVisitSkel (cf2CVisitSkel) where
@@ -91,10 +91,10 @@ mkHFile cf groups = unlines
     "",
     "#endif"
    ]
-    
+
 --Prints out visit functions for a category
 prDataH :: (Cat, [Rule]) -> String
-prDataH (cat, rules) = 
+prDataH (cat, rules) =
  if "List" `isPrefixOf` (identCat cat)
  then concat ["  void visit", cl, "(", cl, "* ", vname, ");"]
  else abstract ++ (concatMap prRuleH rules)
@@ -118,7 +118,7 @@ prRuleH _ = ""
 
 --Makes the .C File
 mkCFile :: CF -> [(Cat,[Rule])] -> String
-mkCFile cf groups = concat 
+mkCFile cf groups = concat
    [
     header,
     concatMap (prData user) groups,
@@ -146,7 +146,7 @@ mkCFile cf groups = concat
      ]
      where
        x' = ((toUpper (head x)) : (map toLower (tail x))) --this is a hack to fix a potential capitalization problem.
-    footer = unlines 
+    footer = unlines
      [
       "void Skeleton::visitIdent(Ident i)",
       "{",
@@ -173,7 +173,7 @@ mkCFile cf groups = concat
 
 --Visit functions for a category.
 prData :: [UserDef] -> (Cat, [Rule]) -> String
-prData user (cat, rules) = 
+prData user (cat, rules) =
  if "List" `isPrefixOf` (identCat cat)
  then unlines
  [
@@ -236,7 +236,7 @@ prCat user fnm c =
 --Just checks if something is a basic or user-defined type.
 --This is because you don't -> a basic non-pointer type.
 isBasic :: [UserDef] -> String -> Bool
-isBasic user v = 
+isBasic user v =
   if elem (init v) user'
     then True
     else if "integer_" `isPrefixOf` v then True
@@ -250,7 +250,7 @@ isBasic user v =
 
 --The visit-function name of a basic type
 funName :: String -> String
-funName v = 
+funName v =
     if "integer_" `isPrefixOf` v then "Integer"
     else if "char_" `isPrefixOf` v then "Char"
     else if "string_" `isPrefixOf` v then "String"

@@ -8,15 +8,15 @@ import GHC.Exts
 
 
 -- Sparse triangle matrices.
-data Chart a = 
-    Single a | 
+data Chart a =
+    Single a |
     Merge {
       mergeSize :: !Int,
       here :: Array Int [(Int,a)], -- parses starting in left, ending in right.
       left :: Chart a,
       right :: Chart a
     } -- invariant : mergeSize = size left + size right
-    deriving Show 
+    deriving Show
 
 -- | Size of a chart
 size :: Chart a -> Int
@@ -31,7 +31,7 @@ startingAt = startingAt' True
 startingAt' :: Bool -> Int -> Chart a -> [(Int,a)]
 startingAt' _ 0 (Single nt) = [(1,nt)]
 startingAt' _ e (Single nt) = []
-startingAt' lookLeft s (Merge n h l r) 
+startingAt' lookLeft s (Merge n h l r)
     | s >= n = []
     | s >= size l = map (shift (size l)) (startingAt (s-size l) r)
     | lookLeft = (h ! s) ++  (startingAt s l)
@@ -41,7 +41,7 @@ startingAt' lookLeft s (Merge n h l r)
 -- | Merge two charts.
 merge (*) l r = result
     where
-      result = Merge n h l r 
+      result = Merge n h l r
       n = size l + size r
       h = listArray (0,size l-1) $
             map (\start -> concatMap (init . chainsFrom) (startingAt start l))
@@ -61,13 +61,13 @@ merge (*) l r = result
                               ] ++ [(mid,nts1)]
       -- it's tempting to sort the above list by large ends first, but
       -- that would destroy laziness. Things will be "more or less" sorted anyway.
-              
+
 
 type AST cat = (cat,Any)
 
 
 
-mkTree :: (posn -> tok -> [(cat,Any)]) -> 
+mkTree :: (posn -> tok -> [(cat,Any)]) ->
           (cat -> cat -> [(cat, Any -> Any -> Any)]) -> [(posn,tok)] -> Chart [AST cat]
 mkTree tokens combine ts = sweeps (map unitChart ts)
  where
@@ -77,8 +77,8 @@ mkTree tokens combine ts = sweeps (map unitChart ts)
 
   pairs []        = []
   pairs [p]       = [p]
-  pairs (p:q:ps)  = (merge mul p q) : pairs ps 
-  
+  pairs (p:q:ps)  = (merge mul p q) : pairs ps
+
   mul p q = [(c',f x1 x2) | (c1,x1) <- p, (c2,x2) <- q, (c',f) <- combine c1 c2]
 
   -- unitChart :: (Posn,tok) -> Chart [AST cat]

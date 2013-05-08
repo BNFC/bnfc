@@ -31,11 +31,11 @@ import BNFC.Backend.OCaml.CFtoOCamlYacc (terminal)
 import BNFC.Utils ((+++))
 
 cf2ocamllex :: String -> String -> CF -> String
-cf2ocamllex name parserMod cf = 
+cf2ocamllex name parserMod cf =
   unlines $ concat $ intersperse [""] [
     header parserMod cf,
     definitions cf,
-    let r = rules cf in case r of 
+    let r = rules cf in case r of
                 [] -> []
                 x:xs -> ("rule" +++ x) : map ("and" +++) xs
    ]
@@ -48,7 +48,7 @@ header parserMod cf = [
   "open Lexing",
   "",
   hashtables cf,
-  "",   
+  "",
   "let unescapeInitTail (s:string) : string =",
   "  let rec unesc s = match s with",
   "      '\\\\'::c::cs when List.mem c ['\\\"'; '\\\\'; '\\\''] -> c :: unesc cs",
@@ -73,7 +73,7 @@ header parserMod cf = [
   "let incr_lineno (lexbuf:Lexing.lexbuf) : unit =",
   "    let pos = lexbuf.lex_curr_p in",
   "        lexbuf.lex_curr_p <- { pos with",
-  "            pos_lnum = pos.pos_lnum + 1;", 
+  "            pos_lnum = pos.pos_lnum + 1;",
   "            pos_bol = pos.pos_cnum;",
   "        }",
   "}"
@@ -81,12 +81,12 @@ header parserMod cf = [
 
 -- | set up hashtables for reserved symbols and words
 hashtables :: CF -> String
-hashtables cf = ht "symbol_table" (symbols cf )  ++ "\n" ++ 
+hashtables cf = ht "symbol_table" (symbols cf )  ++ "\n" ++
                 ht "resword_table" (reservedWords cf)
     where ht table syms | length syms == 0 = ""
-          ht table syms = unlines [ 
+          ht table syms = unlines [
                 "let" +++ table +++ "= Hashtbl.create " ++ show (length syms),
-                "let _ = List.iter (fun (kwd, tok) -> Hashtbl.add" +++ table 
+                "let _ = List.iter (fun (kwd, tok) -> Hashtbl.add" +++ table
                          +++ "kwd tok)",
                 "                  [" ++ concat (intersperse ";" keyvals) ++ "]"
             ]
@@ -113,8 +113,8 @@ cMacros = [
   ]
 
 rMacros :: CF -> [String]
-rMacros cf = 
-  let symbs = symbols cf 
+rMacros cf =
+  let symbs = symbols cf
   in
   (if null symbs then [] else [
    "let rsyms =    (* reserved words consisting of special symbols *)",
@@ -133,7 +133,7 @@ rules cf = oneRule $ concat [
             [] -> "{let id = lexeme lexbuf in TOK_Ident id}"
             _ -> "{let id = lexeme lexbuf in try Hashtbl.find resword_table id with Not_found -> TOK_Ident id}"
         ],
-        if null (symbols cf) then [] 
+        if null (symbols cf) then []
             else ["rsyms {let id = lexeme lexbuf in try Hashtbl.find symbol_table id with Not_found -> failwith (\"internal lexer error: reserved symbol \" ^ id ^ \" not found in hashtable\")}"],
         ["d+ {let i = lexeme lexbuf in TOK_Integer (int_of_string i)}"],
         ["d+ '.' d+ ('e' ('-')? d+)? {let f = lexeme lexbuf in TOK_Double (float_of_string f)}"],
@@ -141,12 +141,12 @@ rules cf = oneRule $ concat [
         ["[' ' '\\t'] {token lexbuf}"],
         ["'\\n' {incr_lineno lexbuf; token lexbuf}"],
         ["eof { TOK_EOF }"]
-    ] 
+    ]
     where
         oneRule xs = ["token = \n    parse " ++ concat (intersperse "\n        | " xs)]
         lexComments ([],[]) = []
-        lexComments (xs,s1:ys) = ('\"' : s1 ++ "\"" ++ 
-            " (_ # '\\n')*  { token lexbuf } (* Toss single line comments *)") : 
+        lexComments (xs,s1:ys) = ('\"' : s1 ++ "\"" ++
+            " (_ # '\\n')*  { token lexbuf } (* Toss single line comments *)") :
             lexComments (xs, ys)
         lexComments (([l1,l2],[r1,r2]):xs,[]) = (concat $
             [
@@ -156,10 +156,10 @@ rules cf = oneRule $ concat [
             (r2:"']))* ('"),
             (r1:"')+ '"),
             (r2:"' { token lexbuf } \n")
-            ]) : 
+            ]) :
             lexComments (xs, [])
-        lexComments ((_:xs),[]) = lexComments (xs,[]) 
-    
+        lexComments ((_:xs),[]) = lexComments (xs,[])
+
 
 -------------------------------------------------------------------
 -- Modified from the inlined version of @RegToAlex@.

@@ -46,8 +46,8 @@ preprocessMCF f = do
   return $ (map fst grs,entryp)
 
 extract :: String -> LGrammar -> [(FilePath, Grammar)]
-extract name (LGr ldefs) = 
-  [(file lang,Grammar [unldef ldef | ldef <- ldefs, isFor lang ldef]) | 
+extract name (LGr ldefs) =
+  [(file lang,Grammar [unldef ldef | ldef <- ldefs, isFor lang ldef]) |
       lang <- views]
  where
    views = [lang | LDefView langs <- ldefs, Ident lang <- langs]
@@ -63,7 +63,7 @@ extract name (LGr ldefs) =
 --- the entrypoint is the same for all languages - could be different
 
 entrypoint :: LGrammar -> String
-entrypoint (LGr rs0) = head $ 
+entrypoint (LGr rs0) = head $
   [c | Entryp (Ident c:_) <- rs] ++
   [c | Rule _ (IdCat (Ident c)) _ <- rs]
  where
@@ -74,11 +74,11 @@ entrypoint (LGr rs0) = head $
      _ -> [] --- LDefView
 
 writeCF :: (FilePath, Grammar) -> IO ()
-writeCF (file,gr) = do 
+writeCF (file,gr) = do
   writeFile file $ printTree gr
   putStrLn $ "wrote file " ++ file
 
----- These are Haskell specific; 
+---- These are Haskell specific;
 ---- should be generalized by inspecting the options xx
 
 mkTestMulti :: String -> [String] -> FilePath -> [FilePath] -> IO ()
@@ -96,7 +96,7 @@ mkMakefileMulti xx file files = do
   writeFile "Makefile" content
 
 makefile xx abs cncs = unlines $
-  "all:" : 
+  "all:" :
   ["\tmake -f Makefile_" ++ cnc | cnc <- cncs] ++
   ["\tghc --make -o TestTrans" ++ abs ++ " TestTrans" ++ abs,
    ""

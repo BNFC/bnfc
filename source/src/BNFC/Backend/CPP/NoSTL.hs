@@ -56,7 +56,7 @@ makeCPP make name cf = do
     if make then (writeFileRep "Makefile" $ makefile name) else return ()
 
 makefile :: String -> String
-makefile name = 
+makefile name =
   (++) (unlines [ "CC = g++", "CCFLAGS = -g", "FLEX = flex", "BISON = bison", "" ])
   $ Makefile.mkRule "all" [ "Test" ++ name ]
     []
@@ -65,7 +65,7 @@ makefile name =
     [ "rm -f *.o " ++ name ++ ".dvi " ++ name ++ ".aux " ++ name ++ ".log " ++ name ++ ".ps Test" ++ name ]
   $ Makefile.mkRule "distclean" []
     [ "rm -f *.o Absyn.C Absyn.H Test.C Parser.C Parser.H Lexer.C Skeleton.C Skeleton.H Printer.C Printer.H"
-    , "rm -f " ++ name ++ ".l " ++ name ++ ".y " ++ name ++ ".tex " ++ name ++ ".dvi " ++ name ++ ".aux " 
+    , "rm -f " ++ name ++ ".l " ++ name ++ ".y " ++ name ++ ".tex " ++ name ++ ".dvi " ++ name ++ ".aux "
     , "rm -f " ++ name ++ ".log " ++ name ++ ".ps Test" ++ name ++ " Makefile" ]
   $ Makefile.mkRule ("Test" ++ name) [ "Absyn.o", "Lexer.o", "Parser.o", "Printer.o", "Test.o" ]
     [ "@echo \"Linking Test" ++ name ++ "...\""
@@ -86,7 +86,7 @@ makefile name =
     [ "${CC} ${CCFLAGS} -c Test.C" ]
   $ Makefile.mkDoc name
   ""
-  
+
 
 cpptest :: CF -> String
 cpptest cf =
@@ -164,19 +164,19 @@ mkHeaderFile cf cats eps env = unlines
   mkVar _ = ""
   mkDefines n [] = mkString n
   mkDefines n ((_,s):ss) = ("#define " ++ s +++ (show n) ++ "\n") ++ (mkDefines (n+1) ss)
-  mkString n =  if isUsedCat cf "String" 
+  mkString n =  if isUsedCat cf "String"
    then ("#define _STRING_ " ++ show n ++ "\n") ++ mkChar (n+1)
    else mkChar n
-  mkChar n =  if isUsedCat cf "Char" 
+  mkChar n =  if isUsedCat cf "Char"
    then ("#define _CHAR_ " ++ show n ++ "\n") ++ mkInteger (n+1)
    else mkInteger n
-  mkInteger n =  if isUsedCat cf "Integer" 
+  mkInteger n =  if isUsedCat cf "Integer"
    then ("#define _INTEGER_ " ++ show n ++ "\n") ++ mkDouble (n+1)
    else mkDouble n
-  mkDouble n =  if isUsedCat cf "Double" 
+  mkDouble n =  if isUsedCat cf "Double"
    then ("#define _DOUBLE_ " ++ show n ++ "\n") ++ mkIdent(n+1)
    else mkIdent n
-  mkIdent n =  if isUsedCat cf "Ident" 
+  mkIdent n =  if isUsedCat cf "Ident"
    then ("#define _IDENT_ " ++ show n ++ "\n")
    else ""
   mkFunc s | (normCat s == s) = (identCat s) ++ "*" +++ "p" ++ (identCat s) ++ "(FILE *inp);\n"

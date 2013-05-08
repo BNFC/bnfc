@@ -23,16 +23,16 @@ mkDoc texfile = mkRule "doc" [pdffile] []
   where pdffile = replaceExtension texfile "pdf"
 
 --                [
--- 		 "all:", 
---                 "\thappy -gca " ++ glr_params ++ happyFile opts, 
+-- 		 "all:",
+--                 "\thappy -gca " ++ glr_params ++ happyFile opts,
 --		 "\talex -g "  ++ alexFile opts,
 --		 "\t" ++ cd ("latex " ++ basename (latexFile opts)
---			     ++ "; " ++ "dvips " ++ basename (dviFile opts) 
+--			     ++ "; " ++ "dvips " ++ basename (dviFile opts)
 --			     ++ " -o " ++ basename (psFile opts)),
 --		 "\tghc --make " ++ tFile opts ++ " -o " ++ mkFile withLang "Test" "" opts,
 --		 "clean:",
 --		 "\t-rm -f " ++ unwords (map (dir++) [
---						       "*.log", "*.aux", "*.hi", 
+--						       "*.log", "*.aux", "*.hi",
 --						       "*.o", "*.dvi"
 --						      ]),
 --		 "\t-rm -f " ++ psFile opts,
@@ -51,7 +51,7 @@ mkDoc texfile = mkRule "doc" [pdffile] []
 --					 mkFile noLang   "ErrM" "*" opts,
 --					 mkFile noLang   "SharedString" "*" opts,
 --                                       dir ++ lang opts ++ ".dtd",
---					 mkFile withLang "XML" "*" opts, 
+--					 mkFile withLang "XML" "*" opts,
 --					 "Makefile*"
 --					],
 --		 if null dir then "" else "\t-rmdir -p " ++ dir

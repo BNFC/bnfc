@@ -25,8 +25,8 @@ import Alex
 untok :: [Token] -> String
 untok = unto (1,1) where
   unto _  [] = ""
-  unto (l0,c0) (t@(PT (Pn _ l c) _) : ts) = 
-    let s  = prToken t 
+  unto (l0,c0) (t@(PT (Pn _ l c) _) : ts) =
+    let s  = prToken t
         ns = l - l0
         ls = replicate ns '\n'
         cs = replicate (if ns == 0 then c - c0 else c-1) ' '

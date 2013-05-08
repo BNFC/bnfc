@@ -28,9 +28,9 @@ layoutClose = "}"
 layoutSep   = ";"
 
 cf2Layout :: Bool -> Bool -> String -> String -> CF -> String
-cf2Layout alex1 inDir layName lexName cf = 
- let 
-   (top,lay,stop) = layoutPragmas cf 
+cf2Layout alex1 inDir layName lexName cf =
+ let
+   (top,lay,stop) = layoutPragmas cf
  in unlines $ [
   "module " ++ layName ++ " where",
   "",

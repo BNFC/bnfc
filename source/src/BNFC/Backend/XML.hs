@@ -17,7 +17,7 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 -}
 
-module BNFC.Backend.XML ---- (cf2DTD, cf2XML) 
+module BNFC.Backend.XML ---- (cf2DTD, cf2XML)
   where
 
 import BNFC.CF
@@ -49,22 +49,22 @@ cf2DTD typ name cf = unlines [
   ]
 
 tag s = "<" ++ s ++ ">"
-element t ts = 
+element t ts =
   tag ("!ELEMENT " ++ t ++ " " ++ alts ts)
-attlist t a = 
+attlist t a =
   tag ("!ATTLIST " ++ t ++ " " ++ a ++ " CDATA #REQUIRED")
 elemAtt t a ts = element t ts ++++ attlist t a
 elemt t = elemAtt t "name"
-elemc cat fs = unlines $ element cat (map snd fs) : [element f [] | (f,_) <- fs] 
+elemc cat fs = unlines $ element cat (map snd fs) : [element f [] | (f,_) <- fs]
 elemEmp t = elemAtt t "value" []
-alts ts = 
+alts ts =
   if null ts then "EMPTY" else parenth (unwords (intersperse "|" ts))
 
 
 -- choose between these two encodings:
 
-elemData b  = if b then elemDataConstr else elemDataNotyp 
-efunDef b   = if b then efunDefConstr else efunDefNotyp 
+elemData b  = if b then elemDataConstr else elemDataNotyp
+efunDef b   = if b then efunDefConstr else efunDefNotyp
 endtagDef b = if b then endtagDefConstr else endtagDefNotyp
 
 -- coding 0: ---- not finished
@@ -92,8 +92,8 @@ efunDefNotyp = "elemFun i t x = [replicate (i+i) ' ' ++ tag x]"
 endtagDefNotyp = "endtag f c = tag (\"/\" ++ f)"
 
 
--- to show constructors as attributes; 
--- nice, but validation does not guarantee type correctness. 
+-- to show constructors as attributes;
+-- nice, but validation does not guarantee type correctness.
 -- Therefore rejected.
 -- elemDataAttr cf (cat,fcs) = elemt cat (nub [rhsCat cf cs | (_,cs) <- fcs])
 -- efunDefAttr =  "elemFun i t x = [replicate (i+i) ' ' ++ tag (t ++ \" name = \" ++ x)]"
@@ -180,9 +180,9 @@ ownPrintRule cf t = unlines $ [
    posn = if isPositionCat cf t then " (_,x)" else " x"
 
 rules :: CF -> String
-rules cf = unlines $ 
+rules cf = unlines $
   map (\(s,xs) -> case_fun s (map toArgs xs)) $ cf2data cf
- where 
+ where
    toArgs (cons,args) = ((cons, names (map (checkRes . var) args) (0 :: Int)), ruleOf cons)
    names [] _ = []
    names (x:xs) n
@@ -207,10 +207,10 @@ rules cf = unlines $
 case_fun cat xs = unlines [
   "instance XPrint" +++ cat +++ "where",
   "  prt i" +++ "e = case e of",
-  unlines $ map (\ ((c,xx),r) -> 
-    "   " ++ c +++ unwords xx +++ "-> concat $ " +++ 
+  unlines $ map (\ ((c,xx),r) ->
+    "   " ++ c +++ unwords xx +++ "-> concat $ " +++
     "elemFun i \"" ++ cat ++ "\" \"" ++ c ++ "\"" +++
     unwords [": prt (i+1)" +++ x | x <- xx] +++ ":" +++
-    "[[replicate (i+i) ' ' ++ endtag \"" ++ c ++ "\" \"" ++ cat ++ "\"]]" 
+    "[[replicate (i+i) ' ' ++ endtag \"" ++ c ++ "\" \"" ++ cat ++ "\"]]"
     ) xs
   ]

@@ -10,7 +10,7 @@ import Shelly
 import Prelude hiding (FilePath)
 import Data.Text.Lazy (Text)
 import Control.Exception (assert)
-import Paths_BNFC 
+import Paths_BNFC
 import SystemTesting (systemTestMain, Backend, assertExists)
 
 default (Text)

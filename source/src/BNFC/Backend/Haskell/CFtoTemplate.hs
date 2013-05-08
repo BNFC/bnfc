@@ -42,14 +42,14 @@ cf2Template skelName absName errName cf = unlines
   unlines $ map (\(s,xs) -> case_fun s (toArgs xs)) $ specialData cf ++ cf2data cf
   ]
  where toArgs               [] = []
-       toArgs ((cons,args):xs) 
+       toArgs ((cons,args):xs)
 	   = (cons ++ " " ++  names False (map (checkRes . var) args) (1 :: Int)) : toArgs xs
        names _ [] _ = []
        names b (x:xs) n
         | elem x xs = (x ++ show n) ++ " " ++ names True xs (n+1)
 	| otherwise = (x ++ if b then show n else "") ++ " " ++ names b xs (if b then n+1 else n)
 {-
-       toArgs ((cons,args):xs) 
+       toArgs ((cons,args):xs)
 	   = (cons ++ " " ++  names (map (checkRes . var) args) (0 :: Int)) : toArgs xs
        names [] _ = []
        names (x:xs) n
@@ -84,7 +84,7 @@ cf2Template name cf = unlines
   unlines $ map (\(s,xs) -> case_fun s (toArgs xs)) $ specialData cf ++ cf2data cf
   ]
  where toArgs               [] = []
-       toArgs ((cons,args):xs) 
+       toArgs ((cons,args):xs)
 	   = (cons ++ " " ++  names False (map (checkRes . var) args) (1 :: Int)) : toArgs xs
        names _ [] _ = []
        names b (x:xs) n
@@ -106,8 +106,8 @@ cf2Template name cf = unlines
 -}
 
 case_fun :: Cat -> [Constructor] -> String
-case_fun cat xs = 
- unlines $ 
+case_fun cat xs =
+ unlines $
 	 ["trans" ++ cat ++ " :: " ++ cat ++ " -> Result",
 	  "trans" ++ cat ++ " x = case x of",
 	  unlines $ map (\s -> "  " ++ s ++ " -> " ++ "failure x") xs]

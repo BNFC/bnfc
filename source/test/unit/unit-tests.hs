@@ -30,7 +30,7 @@ test_mkDoc = assertEqual
 -- ------------------------------------------------------------------------- --
 shuffle :: (Eq a) => [a] -> Gen [a]
 shuffle [] = return []
-shuffle xs = do 
+shuffle xs = do
   x  <- elements xs
   ys <- shuffle $ List.delete x xs
   assert (length ys == length xs - 1) $
@@ -53,11 +53,11 @@ instance Arbitrary O.SharedOptions where
     multi <- return False
     cnf <- return False
     return $ O.Options [target] make alexMode inDir shareStrings byteStrings glr
-                       xml inPackage lang multi cnf 
+                       xml inPackage lang multi cnf
 
 optionsToArguments :: O.SharedOptions -> [String]
 optionsToArguments (O.Options
-  [target] make alexMode inDir shareStrings byteStrings glr xml inPackage 
+  [target] make alexMode inDir shareStrings byteStrings glr xml inPackage
   lang multi cnf)
   = [ case target of
         O.TargetC           -> "-c"
@@ -81,10 +81,10 @@ optionsToArguments (O.Options
     ++ ["-glr" | glr == O.GLR ]
     ++ ["-xml" | xml == 1 ] ++ ["-xmlt" | xml == 2 ]
 
-prop_correctOptionParsing :: O.SharedOptions -> Property 
-prop_correctOptionParsing o = 
+prop_correctOptionParsing :: O.SharedOptions -> Property
+prop_correctOptionParsing o =
   let args = optionsToArguments o in
-  forAll (shuffle args) $ \args' -> 
+  forAll (shuffle args) $ \args' ->
     let o' = (fst . fromRight . O.parseArguments) (args'++[ O.lang o <.> "cf"])
     in o' == o
   where fromRight (Right s) = s
@@ -117,15 +117,15 @@ prop_translateArguments =
 -- ------------------------------------------------------------------------- --
 
 test_run = assertEqual (3,["Coucou", "Hi"])
-  $ WithWarnings.run 
+  $ WithWarnings.run
       (WithWarnings.warn "Coucou" >> WithWarnings.warn "Hi" >> return 3)
 
 test_putWarnings =
-  WithWarnings.putWarnings 
+  WithWarnings.putWarnings
     (WithWarnings.warn "Coucou" >> WithWarnings.warn "Hi" >> return 3)
     >>= assertEqual 3
 
-test_hasWarnings = 
-  assertBool $ WithWarnings.hasWarnings 
+test_hasWarnings =
+  assertBool $ WithWarnings.hasWarnings
     (WithWarnings.warn "Coucou" >> WithWarnings.warn "Hi" >> return 3)
 

@@ -1,6 +1,6 @@
 {-
     BNF Converter: Haskell main file
-    Copyright (C) 2004-2005  Author:  Markus Forberg, Peter Gammie, 
+    Copyright (C) 2004-2005  Author:  Markus Forberg, Peter Gammie,
                                       Aarne Ranta, Björn Bringert
 
     This program is free software; you can redistribute it and/or modify
@@ -18,7 +18,7 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 -}
 
-module BNFC.Backend.HaskellGADT (makeAllGADT) where 
+module BNFC.Backend.HaskellGADT (makeAllGADT) where
 
 
 
@@ -69,14 +69,14 @@ makeAllGADT opts cf = do
     case alexMode opts of
       Alex1 -> do
         writeFileRep (alexFile opts) $ cf2alex lexMod errMod cf
-        putStrLn "   (Use Alex 1.1 to compile.)" 
+        putStrLn "   (Use Alex 1.1 to compile.)"
       Alex2 -> do
         writeFileRep (alexFile opts) $ cf2alex2 lexMod errMod shareMod (shareStrings opts) (byteStrings opts) cf
         putStrLn "   (Use Alex 2.0 to compile.)"
       Alex3 -> do
         writeFileRep (alexFile opts) $ cf2alex3 lexMod errMod shareMod (shareStrings opts) (byteStrings opts) cf
         putStrLn "   (Use Alex 3.0 to compile.)"
-    writeFileRep (happyFile opts) $ 
+    writeFileRep (happyFile opts) $
 		 cf2HappyS parMod absMod lexMod errMod (glr opts) (byteStrings opts) cf
     putStrLn "   (Tested with Happy 1.15)"
     writeFileRep (latexFile opts)    $ cfToLatex (lang opts) cf
@@ -96,12 +96,12 @@ codeDir :: Options -> FilePath
 codeDir opts = let pref = maybe "" pkgToDir (inPackage opts)
 		   dir = if inDir opts then lang opts else ""
 		   sep = if null pref || null dir then "" else [pathSep]
-		 in pref ++ sep ++ dir 
+		 in pref ++ sep ++ dir
 
 makefile :: Options -> String
 makefile = Haskell.makefile
 -- makefile opts = makeA where
---   glr_params = if glr opts == GLR then "--glr --decode " else ""  
+--   glr_params = if glr opts == GLR then "--glr --decode " else ""
 --   dir = let d = codeDir opts in if null d then "" else d ++ [pathSep]
 --   cd c = if null dir then c else "(cd " ++ dir ++ "; " ++ c ++ ")"
 ---    makeA = Makefile.mkRule "all" []
@@ -110,7 +110,7 @@ makefile = Haskell.makefile
 --             , "ghc --make " ++ tFile opts ++ " -o " ++ mkFile withLang "Test" "" opts]
 --         $ Makefile.mkDoc (basename (latexFile opts))
 --         $ Makefile.mkRule "clean" []
---             [ "-rm -f "  ++ unwords 
+--             [ "-rm -f "  ++ unwords
 --                 (map (dir++) [ "*.log", "*.aux", "*.hi", "*.o", "*.dvi" ])
 --             , "-rm -f " ++ psFile opts ]
 --         $  Makefile.mkRule "distclean" ["clean"]
@@ -127,7 +127,7 @@ makefile = Haskell.makefile
 --                 , mkFile noLang   "ErrM" "*" opts
 --                 , mkFile noLang   "SharedString" "*" opts
 --                 , dir ++ lang opts ++ ".dtd"
---                 , mkFile withLang "XML" "*" opts 
+--                 , mkFile withLang "XML" "*" opts
 --                 , "Makefile*"
 --                 , mkFile withLang "ComposOp" "*" opts
 --                 , dir ++ lang opts ++ ".dtd"
@@ -138,7 +138,7 @@ makefile = Haskell.makefile
 
 testfile :: Options -> CF -> String
 testfile opts cf
-        = let lay = hasLayout cf 
+        = let lay = hasLayout cf
 	      use_xml = xml opts > 0
               xpr = if use_xml then "XPrint a, "     else ""
 	      use_glr = glr opts == GLR
@@ -168,7 +168,7 @@ testfile opts cf
 		   then "type ParseFun a = [[Token]] -> (GLRResult, GLR_Output (Err a))"
 		   else "type ParseFun a = [Token] -> Err a",
 	         "",
-                 "myLLexer = " ++ if lay then "resolveLayout True . myLexer" 
+                 "myLLexer = " ++ if lay then "resolveLayout True . myLexer"
                                          else "myLexer",
                  "",
                  "type Verbosity = Int",
@@ -202,7 +202,7 @@ testfile opts cf
 		 ]
 
 run_std xml
- = unlines 
+ = unlines
    [ "run v p s = let ts = myLLexer s in case p ts of"
    , "           Bad s    -> do putStrLn \"\\nParse              Failed...\\n\""
    , "                          putStrV v \"Tokens:\""
@@ -216,7 +216,7 @@ run_std xml
    ]
 
 run_glr
- = unlines 
+ = unlines
    [ "run v p s"
    , " = let ts = map (:[]) $ myLLexer s"
    , "       (raw_output, simple_output) = p ts in"
@@ -240,10 +240,10 @@ run_glr
    , "     | (Ok t,n) <- zip trees [1..]"
    , "     ]"
    ]
-   
+
 
 lift_parser
- = unlines 
+ = unlines
    [ "type Forest = FiniteMap ForestId [Branch]      -- omitted in ParX export."
    , "data GLR_Output a"
    , " = GLR_Result { pruned_decode     :: (Forest -> Forest) -> [a]"

@@ -5,8 +5,8 @@
     Grégoire Détrez, Markus Forsberg, Ola Frid, Peter Gammie, Thomas Hallgren, Patrik Jansson,
     Kristofer Johannisson, Antti-Juhani Kaijanaho, Ulf Norell,
     Michael Pellauer and Aarne Ranta 2002 - 2013.
- 
-    Björn Bringert, Johan Broberg, Markus Forberg, Peter Gammie, 
+
+    Björn Bringert, Johan Broberg, Markus Forberg, Peter Gammie,
     Patrik Jansson, Antti-Juhani Kaijanaho, Ulf Norell,
     Michael Pellauer, Aarne Ranta
 
@@ -67,11 +67,11 @@ title = unlines [
   "Free software under GNU General Public License (GPL).",
   "Bug reports to bnfc-dev@googlegroups.com."
  ]
- 
+
 main :: IO ()
 main = do
   xx <- getArgs
-	  
+
   case xx of
     ["--numeric-version"] -> do
       putStrLn (showVersion version)
@@ -87,10 +87,10 @@ main = do
     _ -> mkOne xx
 
 mkOne :: [String] -> IO ()
-mkOne xx = do   
+mkOne xx = do
   case O.parseArguments xx of
     Left err -> putStrLn err >> printUsage
-    Right (options,file) -> do 
+    Right (options,file) -> do
       let name = takeWhile (/= '.') $ takeFileName file
       putStrLn title
       (cfp, isOk) <- tryReadCFP options file
@@ -100,7 +100,7 @@ mkOne xx = do
       case O.targets options of
            [ O.TargetC ]          -> makeC (O.make options) name cf
            [ O.TargetCPP ]        -> makeCPP (O.make options) name cf
-           [ O.TargetCPP_STL ]    -> makeSTL (O.make options) 
+           [ O.TargetCPP_STL ]    -> makeSTL (O.make options)
                                              -- FIXME: should be an option
                                              False
                                              (O.inPackage options)
@@ -117,7 +117,7 @@ mkOne xx = do
            [ O.TargetOCAML ]      -> makeOCaml options cf
            [ O.TargetProfile ]    -> makeAllProfile (O.make options)
                                                     (O.alexMode options == O.Alex1)
-                                                    False 
+                                                    False
                                                     (O.xml options)  name cfp
            [ O.TargetHaskellGADT] -> makeAllGADT options cf
            _                      -> makeAll options cf
@@ -130,8 +130,8 @@ mkOne xx = do
        isCF ('f':'n':'b':'l':'.':_) = True
        isCF ('c':'f':'n':'b':'.':_) = True
        isCF _                   = False
-       
-printUsage = do 
+
+printUsage = do
   putStrLn title
   putStrLn "Usage: bnfc <makeoption>* <language>? <special>* file.cf"
   putStrLn ""

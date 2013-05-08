@@ -79,14 +79,14 @@ checkContext ctx =
 	    map ((fst . head) /\ map snd)
 	    . groupBy ((==) **.* fst)
 	    . sortBy (compare **.* fst)
-	
+
 	(f /\ g) x     = (f x, g x)
 	(f **.* g) x y = f (g x) (g y)
 
 	checkEntry (f,ts) =
 	    case nub ts of
 		[_] -> return ()
-		ts' -> 
+		ts' ->
 		    fail $ "The symbol '" ++ f ++ "' is used at conflicting types:\n" ++
 			    unlines (map (("  " ++) . show) ts')
 

@@ -5,19 +5,19 @@ import BNFC.Options
 
 type Options = SharedOptions
 
-alex1 opts = alexMode opts == Alex1    
+alex1 opts = alexMode opts == Alex1
 
 absFile, absFileM, alexFile, alexFileM, dviFile,
  composOpFile, composOpFileM,
  gfAbs, gfConc,
  happyFile, happyFileM,
  latexFile, errFile, errFileM,
- templateFile, templateFileM, 
+ templateFile, templateFileM,
  printerFile, printerFileM,
- layoutFile, layoutFileM, 
+ layoutFile, layoutFileM,
  psFile, tFile, tFileM :: Options -> String
 absFile       = mkFile withLangAbs "Abs" "hs"
-absFileM      = mkMod  withLangAbs "Abs" 
+absFileM      = mkMod  withLangAbs "Abs"
 alexFile      = mkFile withLang "Lex" "x"
 alexFileM     = mkMod  withLang "Lex"
 happyFile     = mkFile withLang "Par" "y"
@@ -41,7 +41,7 @@ shareFileM    = mkMod  noLang   "SharedString"
 layoutFileM   = mkMod  withLang "Layout"
 layoutFile    = mkFile withLang "Layout" "hs"
 cnfTablesFile = mkFile withLang "CnfTables" "hs"
-cnfTablesFileM= mkMod  withLang "CnfTables" 
+cnfTablesFileM= mkMod  withLang "CnfTables"
 xmlFileM      = mkMod  withLang "XML"
 composOpFile  = mkFile noLang   "ComposOp" "hs"
 composOpFileM = mkMod noLang    "ComposOp"
@@ -56,7 +56,7 @@ withLang opts name = name ++ lang opts
 withLangAbs :: Options -> String -> String
 withLangAbs opts name = postp $ name ++ lang opts
   where
-    postp nam = if multi opts 
+    postp nam = if multi opts
                    then takeWhile (/='_') nam
                    else nam
 
@@ -65,12 +65,12 @@ pkgToDir s = replace '.' pathSep s
 
 
 mkMod :: (Options -> String -> String) -> String -> Options -> String
-mkMod addLang name opts = 
+mkMod addLang name opts =
     pref ++ if inDir opts then lang opts ++ "." ++ name else addLang opts name
 	where pref = maybe "" (++".") (inPackage opts)
 
 mkFile :: (Options -> String -> String) -> String -> String -> Options -> FilePath
-mkFile addLang name ext opts = 
+mkFile addLang name ext opts =
     pref ++ if inDir opts
        then lang opts ++ [pathSep] ++ name ++ ext'
        else addLang opts name ++ if null ext then "" else ext'
