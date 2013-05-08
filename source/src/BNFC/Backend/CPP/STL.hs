@@ -21,8 +21,8 @@
 
 module BNFC.Backend.CPP.STL (makeSTL) where
 
-import Utils
-import CF
+import BNFC.Utils
+import BNFC.CF
 import BNFC.Backend.CPP.STL.CFtoSTLAbs
 import BNFC.Backend.CPP.NoSTL.CFtoFlex
 import BNFC.Backend.CPP.STL.CFtoBisonSTL

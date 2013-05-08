@@ -18,8 +18,8 @@
 -}
 module BNFC.Backend.C (makeC) where
 
-import Utils
-import CF
+import BNFC.Utils
+import BNFC.CF
 import BNFC.Backend.C.CFtoCAbs
 import BNFC.Backend.C.CFtoFlexC
 import BNFC.Backend.C.CFtoBisonC

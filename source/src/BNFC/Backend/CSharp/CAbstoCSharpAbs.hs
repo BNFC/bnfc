@@ -41,8 +41,8 @@
 module BNFC.Backend.CSharp.CAbstoCSharpAbs (cabs2csharpabs) where
 
 import BNFC.Backend.Common.OOAbstract
-import CF
-import Utils((+++),(++++))
+import BNFC.CF
+import BNFC.Utils((+++),(++++))
 import BNFC.Backend.Common.NamedVariables
 import Data.List
 import Data.Char(toLower)

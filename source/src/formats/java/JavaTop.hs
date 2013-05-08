@@ -41,8 +41,8 @@ import System.Directory	( createDirectory )
 import System.IO.Error	( tryIOError, isAlreadyExistsError )
 import System.Exit      ( exitFailure )
 
-import Utils
-import CF
+import BNFC.Utils
+import BNFC.CF
 import CFtoCup		( cf2Cup )
 import CFtoJLex
 import CFtoJavaAbs	( cf2JavaAbs )

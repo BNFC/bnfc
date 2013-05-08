@@ -22,7 +22,7 @@ module BNFC.Backend.Haskell.CFtoTemplate (
 		    cf2Template
                     ) where
 
-import CF
+import BNFC.CF
 import Data.Char
 import Data.List (delete)
 

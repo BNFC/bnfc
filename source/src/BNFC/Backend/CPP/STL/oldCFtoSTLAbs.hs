@@ -40,8 +40,8 @@
 
 module CFtoSTLAbs (cf2CPPAbs) where
 
-import CF
-import Utils((+++),(++++))
+import BNFC.CF
+import BNFC.Utils((+++),(++++))
 import BNFC.Backend.Common.NamedVariables
 import List
 import Char(toLower)

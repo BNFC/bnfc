@@ -26,11 +26,11 @@ module BNFC.Backend.OCaml.CFtoOCamlYacc
        )
         where
 
-import CF
+import BNFC.CF
 import Data.List (intersperse,nub)
 import Data.Char
 
-import Utils ((+++))
+import BNFC.Utils ((+++))
 import BNFC.Backend.OCaml.OCamlUtil
 
 -- Type declarations

@@ -22,7 +22,7 @@ module CFtoGF (
 	      cf2ConcGF
               )where
 
-import CF
+import BNFC.CF
 import List(intersperse,nub)
 
 automessage :: String

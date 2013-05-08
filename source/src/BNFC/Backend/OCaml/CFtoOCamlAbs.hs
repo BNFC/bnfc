@@ -21,8 +21,8 @@
 
 module BNFC.Backend.OCaml.CFtoOCamlAbs (cf2Abstract) where
 
-import CF
-import Utils((+++),(++++))
+import BNFC.CF
+import BNFC.Utils((+++),(++++))
 import Data.List(intersperse)
 import BNFC.Backend.OCaml.OCamlUtil
 

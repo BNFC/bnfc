@@ -24,10 +24,10 @@ module BNFC.Backend.OCaml.CFtoOCamlTemplate (
                     cf2Template
                     ) where
 
-import CF
+import BNFC.CF
 import Data.Char
 import Data.List (delete)
-import Utils((+++))
+import BNFC.Utils((+++))
 import BNFC.Backend.OCaml.OCamlUtil
 
 

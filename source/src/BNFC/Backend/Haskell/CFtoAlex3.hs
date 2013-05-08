@@ -21,7 +21,7 @@
 
 module BNFC.Backend.Haskell.CFtoAlex3 (cf2alex3) where
 
-import CF
+import BNFC.CF
 import Data.List
 
 -- For BNFC.Backend.Haskell.RegToAlex, see below.

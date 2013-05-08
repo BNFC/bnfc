@@ -37,7 +37,7 @@
 
 module BNFC.Backend.CSharp.CSharpUtils where
 
-import CF
+import BNFC.CF
 import Control.Monad.ST
 -- Control.Monad.State
 import Data.Char (toLower)

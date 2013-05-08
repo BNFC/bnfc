@@ -25,7 +25,7 @@ module BNFC.Backend.HaskellGADT (makeAllGADT) where
 -- import Utils
 import BNFC.Options
 import BNFC.Backend.Haskell.HsOpts
-import CF
+import BNFC.CF
 import BNFC.Backend.Haskell.CFtoHappy
 import BNFC.Backend.Haskell.CFtoAlex
 import BNFC.Backend.Haskell.CFtoAlex2
@@ -39,7 +39,7 @@ import BNFC.Backend.Haskell.CFtoLayout
 import BNFC.Backend.XML
 import BNFC.Backend.Haskell.MkErrM
 import BNFC.Backend.Haskell.MkSharedString
-import Utils
+import BNFC.Utils
 import qualified BNFC.Backend.Common.Makefile as Makefile
 import qualified BNFC.Backend.Haskell as Haskell
 

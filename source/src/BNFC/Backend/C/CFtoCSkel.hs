@@ -39,8 +39,8 @@
 
 module BNFC.Backend.C.CFtoCSkel (cf2CSkel) where
 
-import CF
-import Utils			( (+++) )
+import BNFC.CF
+import BNFC.Utils			( (+++) )
 import BNFC.Backend.Common.NamedVariables
 import Data.List		( isPrefixOf )
 import Data.Char		( toLower, toUpper )

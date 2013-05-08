@@ -39,9 +39,9 @@
 
 module BNFC.Backend.Java.CFtoJLex15 ( cf2jlex ) where
 
-import CF
+import BNFC.CF
 import RegToJLex
-import Utils		( (+++) )
+import BNFC.Utils		( (+++) )
 import BNFC.Backend.Common.NamedVariables
 import Data.List
 

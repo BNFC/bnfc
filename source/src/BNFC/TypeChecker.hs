@@ -1,11 +1,11 @@
 
-module TypeChecker where
+module BNFC.TypeChecker where
 
 import Control.Monad
 import Data.List
 import Data.Char
 
-import CF
+import BNFC.CF
 import ErrM
 
 data Base = BaseT String

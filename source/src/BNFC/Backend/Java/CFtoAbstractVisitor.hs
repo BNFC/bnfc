@@ -20,9 +20,9 @@
 
 module BNFC.Backend.Java.CFtoAbstractVisitor (cf2AbstractVisitor) where
 
-import CF
+import BNFC.CF
 import BNFC.Backend.Java.CFtoJavaAbs15 (typename)
-import Utils ((+++), (++++))
+import BNFC.Utils ((+++), (++++))
 import BNFC.Backend.Common.NamedVariables
 import Data.List
 import Data.Char(toLower, toUpper, isDigit)

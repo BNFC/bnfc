@@ -18,12 +18,12 @@
 -}
 
 
-module GetCF(tryReadCFP) where
+module BNFC.GetCF(tryReadCFP) where
 
 import Control.Monad		( when )
 
-import CF
-import Utils
+import BNFC.CF
+import BNFC.Utils
 import ParBNF
 import Data.List(nub,partition)
 import qualified AbsBNF as Abs
@@ -31,7 +31,7 @@ import Data.Maybe (catMaybes)
 import Data.Either (partitionEithers)
 import ErrM
 import Data.Char
-import TypeChecker
+import BNFC.TypeChecker
 import BNFC.Options
 
 readCF :: SharedOptions -> FilePath -> IO CFP

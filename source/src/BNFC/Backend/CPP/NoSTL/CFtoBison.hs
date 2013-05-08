@@ -60,12 +60,12 @@
 
 module BNFC.Backend.CPP.NoSTL.CFtoBison (cf2Bison) where
 
-import CF
+import BNFC.CF
 import Data.List (intersperse, isPrefixOf)
 import BNFC.Backend.Common.NamedVariables hiding (varName)
 import Data.Char (toLower,isUpper)
-import Utils ((+++), (++++))
-import TypeChecker
+import BNFC.Utils ((+++), (++++))
+import BNFC.TypeChecker
 import ErrM
 
 --This follows the basic structure of CFtoHappy.

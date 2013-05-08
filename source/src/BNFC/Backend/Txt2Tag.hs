@@ -19,9 +19,9 @@
 
 module BNFC.Backend.Txt2Tag (cfToTxt)where
 
-import CF
+import BNFC.CF
 import AbsBNF (Reg (..))
-import Utils
+import BNFC.Utils
 import Data.List (nub,intersperse)
 
 cfToTxt :: String -> CF -> String

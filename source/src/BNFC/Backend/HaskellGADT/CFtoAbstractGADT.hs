@@ -19,8 +19,8 @@
 
 module BNFC.Backend.HaskellGADT.CFtoAbstractGADT (cf2Abstract) where
 
-import CF
-import Utils((+++),(++++))
+import BNFC.CF
+import BNFC.Utils((+++),(++++))
 import Data.List(intersperse,nub)
 
 import BNFC.Backend.HaskellGADT.HaskellGADTCommon

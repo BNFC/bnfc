@@ -21,9 +21,9 @@ module BNFC.Backend.Haskell (makeAll, AlexVersion(..), makefile) where
 
 
 
--- import Utils
+-- import BNFC.Utils
 import BNFC.Options
-import CF
+import BNFC.CF
 import BNFC.Backend.Haskell.CFtoHappy
 import BNFC.Backend.Haskell.CFtoAlex
 import BNFC.Backend.Haskell.CFtoAlex2
@@ -39,7 +39,7 @@ import BNFC.Backend.Haskell.HsOpts
 import BNFC.Backend.Haskell.ToCNF as ToCNF
 import BNFC.Backend.Haskell.MkErrM
 import BNFC.Backend.Haskell.MkSharedString
-import Utils
+import BNFC.Utils
 import qualified BNFC.Backend.Common.Makefile as Makefile
 
 import Data.Char

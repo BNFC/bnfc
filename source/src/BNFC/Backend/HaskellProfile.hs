@@ -20,7 +20,7 @@
 module BNFC.Backend.HaskellProfile (makeAllProfile) where 
 
 -- import Utils
-import CF
+import BNFC.CF
 import BNFC.Backend.HaskellProfile.CFtoHappyProfile
 import BNFC.Backend.Haskell.CFtoAlex
 import BNFC.Backend.Haskell.CFtoAlex2
@@ -31,7 +31,7 @@ import BNFC.Backend.Haskell.MkErrM
 ---- import CFtoPrinter
 ---- import CFtoLayout
 ---- import BNFC.Backend.XML
-import Utils
+import BNFC.Utils
 
 import Data.Char
 import System.Exit(exitFailure)

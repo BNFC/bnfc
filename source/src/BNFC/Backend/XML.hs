@@ -20,8 +20,8 @@
 module BNFC.Backend.XML ---- (cf2DTD, cf2XML) 
   where
 
-import CF
-import Utils
+import BNFC.CF
+import BNFC.Utils
 import BNFC.Backend.Haskell.CFtoTemplate
 import Data.List (intersperse, nub)
 import Data.Char(toLower)

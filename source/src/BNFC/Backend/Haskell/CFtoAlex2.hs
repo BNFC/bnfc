@@ -32,7 +32,7 @@
 -------------------------------------------------------------------
 module BNFC.Backend.Haskell.CFtoAlex2 (cf2alex2) where
 
-import CF
+import BNFC.CF
 import Data.List
 
 -- For RegToAlex, see below.

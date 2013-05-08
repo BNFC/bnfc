@@ -19,8 +19,8 @@
 
 module BNFC.Backend.CPP.NoSTL (makeCPP) where
 
-import Utils
-import CF
+import BNFC.Utils
+import BNFC.CF
 import BNFC.Backend.CPP.NoSTL.CFtoCPPAbs
 import BNFC.Backend.CPP.NoSTL.CFtoFlex
 import BNFC.Backend.CPP.NoSTL.CFtoBison

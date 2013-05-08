@@ -31,7 +31,7 @@ Yet Presentable Version of the CYK Algorithm", Informatica Didactica
 
 -}
 
-import CF hiding (App,Exp)
+import BNFC.CF hiding (App,Exp)
 import BNFC.Backend.Haskell.HsOpts
 import Control.Monad.RWS
 import Control.Applicative hiding (Const)

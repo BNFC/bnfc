@@ -20,7 +20,7 @@
 
 module BNFC.Backend.Haskell.CFtoAlex (cf2alex) where
 
-import CF
+import BNFC.CF
 import BNFC.Backend.Haskell.RegToAlex
 import Data.List
 

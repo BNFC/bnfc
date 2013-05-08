@@ -45,8 +45,8 @@
 
 module BNFC.Backend.Java.CFtoJavaAbs15 (cf2JavaAbs, typename) where
 
-import CF
-import Utils((+++),(++++))
+import BNFC.CF
+import BNFC.Utils((+++),(++++))
 import BNFC.Backend.Common.NamedVariables hiding (IVar, getVars, varName)
 import Data.List
 import Data.Char(toLower, isDigit)

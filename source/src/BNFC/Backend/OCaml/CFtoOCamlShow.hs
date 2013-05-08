@@ -23,8 +23,8 @@
 
 module BNFC.Backend.OCaml.CFtoOCamlShow (cf2show) where
 
-import CF
-import Utils
+import BNFC.CF
+import BNFC.Utils
 import BNFC.Backend.Haskell.CFtoTemplate
 import Data.List (intersperse)
 import Data.Char(toLower,isDigit)

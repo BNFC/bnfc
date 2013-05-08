@@ -41,8 +41,8 @@ module BNFC.Backend.Java ( makeJava15 ) where
 import System.Directory	( createDirectory )
 import System.IO.Error	( isAlreadyExistsError )
 import System.Exit      ( exitFailure )
-import Utils
-import CF
+import BNFC.Utils
+import BNFC.CF
 import BNFC.Backend.Java.CFtoCup15       	( cf2Cup )
 import BNFC.Backend.Java.CFtoJLex15
 import BNFC.Backend.Java.CFtoJavaAbs15	( cf2JavaAbs )

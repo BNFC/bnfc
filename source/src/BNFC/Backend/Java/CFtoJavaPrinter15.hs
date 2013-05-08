@@ -48,9 +48,9 @@ module BNFC.Backend.Java.CFtoJavaPrinter15 ( cf2JavaPrinter ) where
 
 import BNFC.Backend.Java.CFtoJavaAbs15
 
-import CF
+import BNFC.CF
 import BNFC.Backend.Common.NamedVariables
-import Utils		( (+++) )
+import BNFC.Utils		( (+++) )
 import Data.List
 import Data.Char	( toLower, isSpace )
 

@@ -37,8 +37,8 @@
 
 module BNFC.Backend.CSharp (makeCSharp) where
 
-import Utils
-import CF
+import BNFC.Utils
+import BNFC.CF
 import BNFC.Backend.Common.OOAbstract
 import BNFC.Backend.CSharp.CAbstoCSharpAbs
 import BNFC.Backend.CSharp.CFtoGPLEX

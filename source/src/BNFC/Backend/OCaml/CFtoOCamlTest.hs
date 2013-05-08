@@ -19,8 +19,8 @@
 
 module BNFC.Backend.OCaml.CFtoOCamlTest where 
 
-import CF
-import Utils
+import BNFC.CF
+import BNFC.Utils
 import BNFC.Backend.OCaml.OCamlUtil
 
 ocamlTestfile :: String -> String -> String -> String -> String -> CF -> String

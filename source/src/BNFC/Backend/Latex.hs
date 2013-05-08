@@ -19,9 +19,9 @@
 
 module BNFC.Backend.Latex (cfToLatex) where
 
-import CF
+import BNFC.CF
 import AbsBNF (Reg (..))
-import Utils
+import BNFC.Utils
 import Data.List (nub,intersperse)
 
 cfToLatex :: String -> CF -> String

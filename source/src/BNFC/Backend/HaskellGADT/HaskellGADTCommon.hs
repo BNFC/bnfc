@@ -19,7 +19,7 @@
 
 module BNFC.Backend.HaskellGADT.HaskellGADTCommon (Constructor(..), cf2cons, isTreeType) where
 
-import CF
+import BNFC.CF
 
 import Data.Char
 

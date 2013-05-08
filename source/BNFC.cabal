@@ -56,12 +56,13 @@ Executable bnfc
     ParBNF,
     AbsBNF,
     PrintBNF,
-    Utils,
-    CF,
     ErrM,
-    MultiView,
-    TypeChecker,
-    GetCF,
+    -- BNFC core
+    BNFC.Utils,
+    BNFC.CF,
+    BNFC.MultiView,
+    BNFC.TypeChecker,
+    BNFC.GetCF,
     BNFC.Backend.Common.NamedVariables,
     BNFC.Backend.Common.OOAbstract,
     -- Latex

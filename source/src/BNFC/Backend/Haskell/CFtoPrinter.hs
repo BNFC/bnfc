@@ -19,8 +19,8 @@
 
 module BNFC.Backend.Haskell.CFtoPrinter (cf2Printer) where
 
-import CF
-import Utils
+import BNFC.CF
+import BNFC.Utils
 import BNFC.Backend.Haskell.CFtoTemplate
 import Data.List (intersperse)
 import Data.Char(toLower)

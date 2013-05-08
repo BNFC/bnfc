@@ -38,9 +38,9 @@
 
 module BNFC.Backend.CSharp.CFtoGPLEX (cf2gplex) where
 
-import CF
+import BNFC.CF
 import BNFC.Backend.CSharp.RegToGPLEX
-import Utils((+++), (++++))
+import BNFC.Utils((+++), (++++))
 import BNFC.Backend.Common.NamedVariables
 import Data.List
 import BNFC.Backend.CSharp.CSharpUtils

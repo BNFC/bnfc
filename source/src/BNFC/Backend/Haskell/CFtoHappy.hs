@@ -23,7 +23,7 @@ module BNFC.Backend.Haskell.CFtoHappy
        )
         where
 
-import CF
+import BNFC.CF
 --import Lexer
 import Data.List (intersperse, sort)
 import Data.Char

@@ -1,4 +1,4 @@
-module WarningM where
+module BNFC.WarningM where
 
 import qualified Control.Monad.Writer as W
 

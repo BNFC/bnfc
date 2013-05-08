@@ -39,8 +39,8 @@
 -}
 module CFtoVisitSkel (cf2VisitSkel) where
 
-import CF
-import Utils ((+++), (++++))
+import BNFC.CF
+import BNFC.Utils ((+++), (++++))
 import BNFC.Backend.Common.NamedVariables
 import Data.List
 import Data.Char(toLower, toUpper)

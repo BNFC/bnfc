@@ -22,8 +22,8 @@ module BNFC.Backend.HaskellGADT.CFtoTemplateGADT (
 		    cf2Template
                     ) where
 
-import CF
-import Utils((+++))
+import BNFC.CF
+import BNFC.Utils((+++))
 import Data.List (delete,groupBy)
 
 import BNFC.Backend.HaskellGADT.HaskellGADTCommon

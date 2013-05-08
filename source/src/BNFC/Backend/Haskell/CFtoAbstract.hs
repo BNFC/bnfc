@@ -19,8 +19,8 @@
 
 module BNFC.Backend.Haskell.CFtoAbstract (cf2Abstract) where
 
-import CF
-import Utils((+++),(++++))
+import BNFC.CF
+import BNFC.Utils((+++),(++++))
 import Data.List(intersperse)
 
 -- to produce a Haskell module

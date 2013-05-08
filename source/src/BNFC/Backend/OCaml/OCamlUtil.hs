@@ -19,8 +19,8 @@
 
 module BNFC.Backend.OCaml.OCamlUtil where
 
-import CF
-import Utils
+import BNFC.CF
+import BNFC.Utils
 import Data.Char (toLower, toUpper)
 
 -- Translate Haskell types to OCaml types

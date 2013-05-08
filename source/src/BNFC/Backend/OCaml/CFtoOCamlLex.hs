@@ -25,10 +25,10 @@ module BNFC.Backend.OCaml.CFtoOCamlLex (cf2ocamllex) where
 import Data.List
 import Data.Char
 
-import CF
+import BNFC.CF
 import AbsBNF
 import BNFC.Backend.OCaml.CFtoOCamlYacc (terminal)
-import Utils ((+++))
+import BNFC.Utils ((+++))
 
 cf2ocamllex :: String -> String -> CF -> String
 cf2ocamllex name parserMod cf = 

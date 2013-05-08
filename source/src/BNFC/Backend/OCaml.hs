@@ -22,7 +22,7 @@
 
 module BNFC.Backend.OCaml (makeOCaml) where 
 
-import CF
+import BNFC.CF
 import BNFC.Backend.OCaml.CFtoOCamlYacc
 import BNFC.Backend.OCaml.CFtoOCamlLex
 import BNFC.Backend.Latex
@@ -32,7 +32,7 @@ import BNFC.Backend.OCaml.CFtoOCamlPrinter
 import BNFC.Backend.OCaml.CFtoOCamlShow
 import BNFC.Backend.OCaml.CFtoOCamlTest
 import BNFC.Backend.XML
-import Utils
+import BNFC.Utils
 import System.FilePath (takeFileName)
 import BNFC.Options
 

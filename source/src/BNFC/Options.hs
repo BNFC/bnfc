@@ -8,7 +8,7 @@ import Data.List (elemIndex, foldl')
 import Control.Monad (when,unless)
 import System.FilePath (takeFileName)
 import Control.Monad (liftM)
-import WarningM
+import BNFC.WarningM
 import Text.Printf (printf)
 import Data.List (intercalate)
 

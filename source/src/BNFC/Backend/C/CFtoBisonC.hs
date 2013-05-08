@@ -41,11 +41,11 @@
 
 module BNFC.Backend.C.CFtoBisonC (cf2Bison) where
 
-import CF
+import BNFC.CF
 import Data.List (intersperse, isPrefixOf)
 import BNFC.Backend.Common.NamedVariables hiding (varName)
 import Data.Char (toLower)
-import Utils ((+++), (++++))
+import BNFC.Utils ((+++), (++++))
 
 --This follows the basic structure of CFtoHappy.
 

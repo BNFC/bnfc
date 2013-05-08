@@ -29,7 +29,7 @@
 module Main where
 
 -- import Utils
-import CF (cfp2cf)
+import BNFC.CF (cfp2cf)
 import BNFC.Backend.Haskell
 import BNFC.Backend.HaskellGADT
 import BNFC.Backend.HaskellProfile
@@ -41,11 +41,11 @@ import BNFC.Backend.CPP.STL
 import BNFC.Backend.C
 import BNFC.Backend.OCaml
 import BNFC.Backend.XML
-import Utils
+import BNFC.Utils
 import qualified BNFC.Options as O
-import GetCF
+import BNFC.GetCF
 
-import MultiView (preprocessMCF, mkTestMulti, mkMakefileMulti)
+import BNFC.MultiView (preprocessMCF, mkTestMulti, mkMakefileMulti)
 
 import System.Environment (getEnv,getArgs     )
 import System.Exit (exitFailure,exitSuccess)

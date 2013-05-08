@@ -1,6 +1,6 @@
 module BNFC.Backend.Haskell.HsOpts  where
 
-import Utils
+import BNFC.Utils
 import BNFC.Options
 
 type Options = SharedOptions

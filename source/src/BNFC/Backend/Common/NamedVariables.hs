@@ -37,7 +37,7 @@
 
 module BNFC.Backend.Common.NamedVariables where
 
-import CF
+import BNFC.CF
 import Data.Char (toLower)
 import Data.List (nub)
 

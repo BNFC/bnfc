@@ -21,7 +21,7 @@
 module BNFC.Backend.Haskell.CFtoLayout where
 
 import Data.List (sort)
-import CF
+import BNFC.CF
 
 layoutOpen  = "{"
 layoutClose = "}"

@@ -23,7 +23,7 @@ module BNFC.Backend.HaskellProfile.CFtoHappyProfile
        )
         where
 
-import CF
+import BNFC.CF
 --import Lexer
 import Data.List (intersperse)
 import Data.Char

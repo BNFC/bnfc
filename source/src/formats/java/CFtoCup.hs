@@ -37,14 +37,14 @@
 -}
 module CFtoCup ( cf2Cup ) where
 
-import CF
+import BNFC.CF
 import Data.List (intersperse, isPrefixOf)
 import Data.Char (isUpper)
 import BNFC.Backend.Common.NamedVariables
-import TypeChecker  -- We need to (re-)typecheck to figure out list instances in
+import BNFC.TypeChecker  -- We need to (re-)typecheck to figure out list instances in
 		    -- defined rules.
 import ErrM
-import Utils ( (+++) )
+import BNFC.Utils ( (+++) )
 
 -- Type declarations
 type Rules       = [(NonTerminal,[(Pattern,Action)])]

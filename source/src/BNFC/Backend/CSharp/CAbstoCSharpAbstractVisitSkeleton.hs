@@ -48,8 +48,8 @@
 
 module BNFC.Backend.CSharp.CAbstoCSharpAbstractVisitSkeleton (cabs2csharpAbstractVisitSkeleton) where
 
-import CF
-import Utils ((+++), (++++))
+import BNFC.CF
+import BNFC.Utils ((+++), (++++))
 import BNFC.Backend.Common.NamedVariables
 import Data.List
 import BNFC.Backend.Common.OOAbstract hiding (basetypes)

@@ -18,7 +18,7 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 -}
 
-module CF (
+module BNFC.CF (
 	    -- Types.
 	    CF,
             CFG(..), pragmasOfCF, -- ...
@@ -103,7 +103,7 @@ module CF (
             funRuleP, ruleGroupsP, allCatsP, allEntryPointsP
            ) where
 
-import Utils (prParenth,(+++))
+import BNFC.Utils (prParenth,(+++))
 import Data.List (nub, intersperse, partition, sort,sort,group,intercalate)
 import Data.Char
 import AbsBNF (Reg())

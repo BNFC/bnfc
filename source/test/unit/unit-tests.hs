@@ -8,8 +8,8 @@ import qualified Data.Either as Either
 import Control.Exception (assert)
 import System.FilePath ((<.>))
 import Debug.Trace (trace)
-import qualified WarningM as WithWarnings
-import WarningM (WithWarnings)
+import qualified BNFC.WarningM as WithWarnings
+import BNFC.WarningM (WithWarnings)
 
 main = htfMain htf_thisModulesTests
 
