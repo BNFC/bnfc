@@ -2,7 +2,7 @@
     BNF Converter: C++ Main file
     Copyright (C) 2004  Author:  Markus Forsberg, Michael Pellauer
 
-    Modified from CPPTop to STLTop 2006 by Aarne Ranta.
+    Modified from CPPTop to BNFC.Backend.CPP.STL 2006 by Aarne Ranta.
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -19,19 +19,19 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 -}
 
-module STLTop (makeSTL) where
+module BNFC.Backend.CPP.STL (makeSTL) where
 
 import Utils
 import CF
-import CFtoSTLAbs
+import BNFC.Backend.CPP.STL.CFtoSTLAbs
 import BNFC.Backend.CPP.NoSTL.CFtoFlex
-import CFtoBisonSTL
-import CFtoCVisitSkelSTL
-import CFtoSTLPrinter
+import BNFC.Backend.CPP.STL.CFtoBisonSTL
+import BNFC.Backend.CPP.STL.CFtoCVisitSkelSTL
+import BNFC.Backend.CPP.STL.CFtoSTLPrinter
 import BNFC.Backend.Latex
 import System.Exit (exitFailure)
 import Data.Char
-import STLUtils
+import BNFC.Backend.CPP.STL.STLUtils
 import qualified BNFC.Backend.Common.Makefile as Makefile
 
 makeSTL :: Bool -> Bool -> Maybe String -> String -> CF -> IO ()

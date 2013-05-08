@@ -20,14 +20,14 @@
    ************************************************************** 
 -}
 
-module CFtoSTLPrinter (cf2CPPPrinter) where
+module BNFC.Backend.CPP.STL.CFtoSTLPrinter (cf2CPPPrinter) where
 
 import CF
 import Utils ((+++), (++++))
 import NamedVariables
 import Data.List
 import Data.Char(toLower, toUpper)
-import STLUtils
+import BNFC.Backend.CPP.STL.STLUtils
 
 --Produces (.H file, .C file)
 cf2CPPPrinter :: Maybe String -> CF -> (String, String)

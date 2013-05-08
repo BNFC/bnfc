@@ -120,12 +120,12 @@ Executable bnfc
     BNFC.Backend.CPP.NoSTL.CFtoCPPAbs,
 
     -- C++ STL
-    CFtoBisonSTL,
-    CFtoSTLAbs,
-    STLUtils,
-    CFtoCVisitSkelSTL,
-    CFtoSTLPrinter,
-    STLTop,
+    BNFC.Backend.CPP.STL.CFtoBisonSTL,
+    BNFC.Backend.CPP.STL.CFtoSTLAbs,
+    BNFC.Backend.CPP.STL.STLUtils,
+    BNFC.Backend.CPP.STL.CFtoCVisitSkelSTL,
+    BNFC.Backend.CPP.STL.CFtoSTLPrinter,
+    BNFC.Backend.CPP.STL,
 
     -- C#
     CSharpTop,

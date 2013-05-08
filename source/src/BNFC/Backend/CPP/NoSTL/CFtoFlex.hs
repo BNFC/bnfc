@@ -42,7 +42,7 @@ import BNFC.Backend.CPP.NoSTL.RegToFlex
 import Utils((+++), (++++))
 import NamedVariables
 import Data.List
-import STLUtils
+import BNFC.Backend.CPP.STL.STLUtils
 
 --The environment must be returned for the parser to use.
 cf2flex :: Maybe String -> String -> CF -> (String, SymEnv)

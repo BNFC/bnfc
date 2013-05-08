@@ -42,7 +42,7 @@
 -}
 
 
-module CFtoBisonSTL (cf2Bison) where
+module BNFC.Backend.CPP.STL.CFtoBisonSTL (cf2Bison) where
 
 import CF
 import Data.List (intersperse, isPrefixOf)
@@ -51,7 +51,7 @@ import Data.Char (toLower,isUpper,isDigit)
 import Utils ((+++), (++++))
 import TypeChecker
 import ErrM
-import STLUtils
+import BNFC.Backend.CPP.STL.STLUtils
 
 --This follows the basic structure of CFtoHappy.
 

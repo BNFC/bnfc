@@ -37,7 +37,7 @@
    ************************************************************** 
 -}
 
-module CFtoCVisitSkelSTL (cf2CVisitSkel) where
+module BNFC.Backend.CPP.STL.CFtoCVisitSkelSTL (cf2CVisitSkel) where
 
 import CF
 import Utils ((+++), (++++))
@@ -45,7 +45,7 @@ import NamedVariables
 import Data.List
 import Data.Char(toLower, toUpper)
 import OOAbstract
-import STLUtils
+import BNFC.Backend.CPP.STL.STLUtils
 
 --Produces (.H file, .C file)
 cf2CVisitSkel :: Maybe String -> CF -> (String, String)

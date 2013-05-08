@@ -37,7 +37,7 @@ import JavaTop
 import BNFC.Backend.Java
 import BNFC.Backend.CPP.NoSTL
 import CSharpTop
-import STLTop
+import BNFC.Backend.CPP.STL
 import BNFC.Backend.C
 import OCamlTop
 import CFtoXML

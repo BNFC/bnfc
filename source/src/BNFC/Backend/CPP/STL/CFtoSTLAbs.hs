@@ -38,7 +38,7 @@
    ************************************************************** 
 -}
 
-module CFtoSTLAbs (cf2CPPAbs) where
+module BNFC.Backend.CPP.STL.CFtoSTLAbs (cf2CPPAbs) where
 
 import OOAbstract
 import CF
@@ -46,7 +46,7 @@ import Utils((+++),(++++))
 import NamedVariables
 import Data.List
 import Data.Char(toLower)
-import STLUtils
+import BNFC.Backend.CPP.STL.STLUtils
 
 --The result is two files (.H file, .C file)
 
