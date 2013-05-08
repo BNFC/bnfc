@@ -39,7 +39,7 @@ module BNFC.Backend.CSharp (makeCSharp) where
 
 import Utils
 import CF
-import OOAbstract
+import BNFC.Backend.Common.OOAbstract
 import BNFC.Backend.CSharp.CAbstoCSharpAbs
 import BNFC.Backend.CSharp.CFtoGPLEX
 import BNFC.Backend.CSharp.CFtoGPPG

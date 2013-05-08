@@ -43,7 +43,7 @@ import Control.Monad.ST
 import Data.Char (toLower)
 import Data.Maybe
 import Data.List
-import OOAbstract hiding (basetypes)
+import BNFC.Backend.Common.OOAbstract hiding (basetypes)
 
 type Namespace = String
 

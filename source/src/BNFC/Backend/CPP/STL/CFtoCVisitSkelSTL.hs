@@ -41,10 +41,10 @@ module BNFC.Backend.CPP.STL.CFtoCVisitSkelSTL (cf2CVisitSkel) where
 
 import CF
 import Utils ((+++), (++++))
-import NamedVariables
+import BNFC.Backend.Common.NamedVariables
 import Data.List
 import Data.Char(toLower, toUpper)
-import OOAbstract
+import BNFC.Backend.Common.OOAbstract
 import BNFC.Backend.CPP.STL.STLUtils
 
 --Produces (.H file, .C file)

@@ -62,8 +62,8 @@ Executable bnfc
     MultiView,
     TypeChecker,
     GetCF,
-    NamedVariables,
-    OOAbstract,
+    BNFC.Backend.Common.NamedVariables,
+    BNFC.Backend.Common.OOAbstract,
     -- Latex
     BNFC.Backend.Latex,
     CFtoXML,

@@ -22,7 +22,7 @@
     BNF Converter Module
 
     Description   : This module generates the Java Abstract Syntax
-                    It uses the NamedVariables module for variable
+                    It uses the BNFC.Backend.Common.NamedVariables module for variable
                     naming. It returns a list of file names, and the
                     contents to be written into that file. (In Java
                     public classes must go in their own file.)
@@ -47,7 +47,7 @@ module BNFC.Backend.Java.CFtoJavaAbs15 (cf2JavaAbs, typename) where
 
 import CF
 import Utils((+++),(++++))
-import NamedVariables hiding (IVar, getVars, varName)
+import BNFC.Backend.Common.NamedVariables hiding (IVar, getVars, varName)
 import Data.List
 import Data.Char(toLower, isDigit)
 import Data.Maybe(catMaybes,fromMaybe)
@@ -230,7 +230,7 @@ prAssigns ((t,n,nm):vs) (p:ps) =
     z -> ((varName t nm) ++ (showNum n)) +++ "=" +++ p ++ ";" +++ (prAssigns vs ps)
  else ((varName t nm) ++ (showNum n)) +++ "=" +++ p ++ ";" +++ (prAssigns vs ps)
 
---Different than the standard NamedVariables version because of the user-defined
+--Different than the standard BNFC.Backend.Common.NamedVariables version because of the user-defined
 --types.
 getVars :: [Cat] -> [UserDef] -> [IVar]
 getVars cs user = reverse $ singleToZero $ foldl addVar [] (map identCat cs)

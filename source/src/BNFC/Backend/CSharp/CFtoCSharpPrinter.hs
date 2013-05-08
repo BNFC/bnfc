@@ -42,7 +42,7 @@ module BNFC.Backend.CSharp.CFtoCSharpPrinter (cf2csharpprinter) where
 
 import CF
 import Utils ((+++), (++++))
-import NamedVariables
+import BNFC.Backend.Common.NamedVariables
 import Data.List
 import Data.Char(toLower, toUpper, isSpace)
 import Data.Maybe

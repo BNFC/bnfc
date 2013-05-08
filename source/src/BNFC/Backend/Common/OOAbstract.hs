@@ -39,11 +39,11 @@
    ************************************************************** 
 -}
 
-module OOAbstract where
+module BNFC.Backend.Common.OOAbstract where
 
 import CF
 import Utils((+++),(++++))
-import NamedVariables
+import BNFC.Backend.Common.NamedVariables
 import Data.List
 import Data.Char(toLower)
 

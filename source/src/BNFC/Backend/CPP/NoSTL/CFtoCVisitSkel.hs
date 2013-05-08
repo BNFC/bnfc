@@ -41,7 +41,7 @@ module BNFC.Backend.CPP.NoSTL.CFtoCVisitSkel (cf2CVisitSkel) where
 
 import CF
 import Utils ((+++), (++++))
-import NamedVariables
+import BNFC.Backend.Common.NamedVariables
 import Data.List
 import Data.Char(toLower, toUpper)
 

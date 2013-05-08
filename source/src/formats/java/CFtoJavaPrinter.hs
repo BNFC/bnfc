@@ -46,7 +46,7 @@
 module CFtoJavaPrinter ( cf2JavaPrinter ) where
 
 import CF
-import NamedVariables
+import BNFC.Backend.Common.NamedVariables
 import Utils		( (+++) )
 import Data.List
 import Data.Char	( toLower )

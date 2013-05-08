@@ -40,10 +40,10 @@
 
 module BNFC.Backend.CPP.STL.CFtoSTLAbs (cf2CPPAbs) where
 
-import OOAbstract
+import BNFC.Backend.Common.OOAbstract
 import CF
 import Utils((+++),(++++))
-import NamedVariables
+import BNFC.Backend.Common.NamedVariables
 import Data.List
 import Data.Char(toLower)
 import BNFC.Backend.CPP.STL.STLUtils

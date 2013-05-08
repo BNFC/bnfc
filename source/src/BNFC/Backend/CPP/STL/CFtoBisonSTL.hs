@@ -46,7 +46,7 @@ module BNFC.Backend.CPP.STL.CFtoBisonSTL (cf2Bison) where
 
 import CF
 import Data.List (intersperse, isPrefixOf)
-import NamedVariables hiding (varName)
+import BNFC.Backend.Common.NamedVariables hiding (varName)
 import Data.Char (toLower,isUpper,isDigit)
 import Utils ((+++), (++++))
 import TypeChecker

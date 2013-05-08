@@ -40,9 +40,9 @@ module BNFC.Backend.CSharp.CAbstoCSharpVisitSkeleton (cabs2csharpvisitskeleton) 
 
 import CF
 import Utils ((+++), (++++))
-import NamedVariables
+import BNFC.Backend.Common.NamedVariables
 import Data.List
-import OOAbstract hiding (basetypes)
+import BNFC.Backend.Common.OOAbstract hiding (basetypes)
 import BNFC.Backend.CSharp.CSharpUtils
 import BNFC.Backend.CSharp.CAbstoCSharpAbs
 

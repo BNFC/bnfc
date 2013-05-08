@@ -42,7 +42,7 @@ module BNFC.Backend.Java.CFtoJLex15 ( cf2jlex ) where
 import CF
 import RegToJLex
 import Utils		( (+++) )
-import NamedVariables
+import BNFC.Backend.Common.NamedVariables
 import Data.List
 
 --The environment must be returned for the parser to use.

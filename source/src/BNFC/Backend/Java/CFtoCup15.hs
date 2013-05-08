@@ -41,7 +41,7 @@ module BNFC.Backend.Java.CFtoCup15 ( cf2Cup ) where
 
 import CF
 import Data.List (intersperse, isPrefixOf)
-import NamedVariables
+import BNFC.Backend.Common.NamedVariables
 import Utils ( (+++) )
 import TypeChecker  -- We need to (re-)typecheck to figure out list instances in
 		    -- defined rules.

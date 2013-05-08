@@ -24,7 +24,7 @@ module BNFC.Backend.CPP.STL.CFtoSTLPrinter (cf2CPPPrinter) where
 
 import CF
 import Utils ((+++), (++++))
-import NamedVariables
+import BNFC.Backend.Common.NamedVariables
 import Data.List
 import Data.Char(toLower, toUpper)
 import BNFC.Backend.CPP.STL.STLUtils

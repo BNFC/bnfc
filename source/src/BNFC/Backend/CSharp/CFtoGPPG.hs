@@ -40,12 +40,12 @@ module BNFC.Backend.CSharp.CFtoGPPG (cf2gppg) where
 
 import CF
 import Data.List (intersperse, isPrefixOf)
-import NamedVariables hiding (varName)
+import BNFC.Backend.Common.NamedVariables hiding (varName)
 import Data.Char (toLower,isUpper,isDigit)
 import Utils ((+++), (++++))
 import TypeChecker
 import ErrM
-import OOAbstract hiding (basetypes)
+import BNFC.Backend.Common.OOAbstract hiding (basetypes)
 import BNFC.Backend.CSharp.CSharpUtils
 
 --This follows the basic structure of CFtoHappy.

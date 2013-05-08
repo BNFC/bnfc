@@ -35,7 +35,7 @@
    ************************************************************** 
 -}
 
-module NamedVariables where
+module BNFC.Backend.Common.NamedVariables where
 
 import CF
 import Data.Char (toLower)
