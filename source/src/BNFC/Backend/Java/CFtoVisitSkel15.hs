@@ -17,7 +17,7 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 -}
 
-{- 
+{-
    **************************************************************
     BNF Converter Module
 
@@ -31,12 +31,12 @@
 
     License       : GPL (GNU General Public License)
 
-    Created       : 4 August, 2003                           
+    Created       : 4 August, 2003
 
-    Modified      : 16 June, 2004         
+    Modified      : 16 June, 2004
 
-   
-   ************************************************************** 
+
+   **************************************************************
 -}
 module BNFC.Backend.Java.CFtoVisitSkel15 (cf2VisitSkel) where
 
@@ -51,7 +51,7 @@ import Data.Char(toLower, toUpper, isDigit)
 --Thus the user can choose which Skeleton to use.
 
 cf2VisitSkel :: String -> String -> CF -> String
-cf2VisitSkel packageBase packageAbsyn cf = 
+cf2VisitSkel packageBase packageAbsyn cf =
   concat [
     header,
 --    "  // NOT IMPLEMENTED for java1.5\n",
@@ -74,10 +74,10 @@ cf2VisitSkel packageBase packageAbsyn cf =
       "{"
       ]
 
-     
+
 --Traverses a category based on its type.
 prData :: String -> [UserDef] -> (Cat, [Rule]) -> String
-prData packageAbsyn user (cat, rules) = 
+prData packageAbsyn user (cat, rules) =
  if isList cat
  then ""
  else unlines ["  public class " ++ identCat cat ++ "Visitor<R,A> implements "
@@ -102,7 +102,7 @@ prRule packageAbsyn user (Rule fun c cats) | not (isCoercion fun || isDefinedRul
    where
     cats' = if allTerms cats
         then []
-    	else [ (c,v) | 
+    	else [ (c,v) |
 	       (Left c, Left v) <- zip cats (fixOnes (numVars [] cats)) ]
     allTerms [] = True
     allTerms ((Left z):zs) = False
@@ -110,7 +110,7 @@ prRule packageAbsyn user (Rule fun c cats) | not (isCoercion fun || isDefinedRul
 prRule user nm _ = ""
 
 --Traverses a class's instance variables.
-prCat :: [UserDef] 
+prCat :: [UserDef]
       -> Cat       -- ^ Variable category
       -> String    -- ^ Variable name
       -> String    -- ^ Code for visiting the variable
@@ -122,13 +122,13 @@ prCat user cat nt | isBasic user nt = "      //" ++ var ++ ";\n"
       varType = typename (normCat (identCat cat)) user
       accept = var ++ ".accept(new " ++ varType ++ "Visitor<R,A>(), arg);"
       et = typename (normCatOfList cat) user
-      listAccept = unlines ["      for (" ++ et ++ " x : " ++ var ++ ") {", 
+      listAccept = unlines ["      for (" ++ et ++ " x : " ++ var ++ ") {",
 			    "      }"]
 
 --Just checks if something is a basic or user-defined type.
 --This is because you don't -> a basic non-pointer type.
 isBasic :: [UserDef] -> String -> Bool
-isBasic user v = 
+isBasic user v =
   if elem (init v) user'
     then True
     else if "integer_" `isPrefixOf` v then True

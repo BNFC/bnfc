@@ -28,7 +28,7 @@ import Data.List
 import Data.Char(toLower, toUpper, isDigit)
 
 cf2AbstractVisitor :: String -> String -> CF -> String
-cf2AbstractVisitor packageBase packageAbsyn cf = 
+cf2AbstractVisitor packageBase packageAbsyn cf =
   unlines [
       "package" +++ packageBase ++ ";",
       "import" +++ packageAbsyn ++ ".*;",
@@ -42,7 +42,7 @@ cf2AbstractVisitor packageBase packageAbsyn cf =
 
 --Traverses a category based on its type.
 prData :: String -> [UserDef] -> (Cat, [Rule]) -> String
-prData packageAbsyn user (cat, rules) = 
+prData packageAbsyn user (cat, rules) =
     unlines $ ["/* " ++ identCat cat ++ " */"]
               ++ map (prRule packageAbsyn user cat) rules
               ++ ["    public R visitDefault(" ++ q ++ " p, A arg) {",

@@ -17,7 +17,7 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 -}
 
-{- 
+{-
    **************************************************************
     BNF Converter Module
 
@@ -29,12 +29,12 @@
 
     License       : GPL (GNU General Public License)
 
-    Created       : 25 April, 2003                           
+    Created       : 25 April, 2003
 
     Modified      : 4 Nov, 2004
 
-   
-   ************************************************************** 
+
+   **************************************************************
 -}
 
 module BNFC.Backend.Java.CFtoJLex15 ( cf2jlex ) where
@@ -47,7 +47,7 @@ import Data.List
 
 --The environment must be returned for the parser to use.
 cf2jlex :: String -> String -> CF -> (String, SymEnv)
-cf2jlex packageBase packageAbsyn cf = (unlines $ concat $ 
+cf2jlex packageBase packageAbsyn cf = (unlines $ concat $
  [
   prelude packageBase packageAbsyn,
   cMacros,
@@ -58,7 +58,7 @@ cf2jlex packageBase packageAbsyn cf = (unlines $ concat $
    env = makeSymEnv (symbols cf ++ reservedWords cf) (0 :: Int)
    makeSymEnv [] _ = []
    makeSymEnv (s:symbs) n = (s, "_SYMB_" ++ (show n)) : (makeSymEnv symbs (n+1))
-   
+
 prelude :: String -> String -> [String]
 prelude packageBase packageAbsyn =
     [
@@ -99,8 +99,8 @@ cMacros = [
 lexSymbols :: SymEnv -> [String]
 lexSymbols ss = map transSym ss
   where
-    transSym (s,r) = 
-      "<YYINITIAL>" ++ (escapeChars s) ++ " { return new Symbol(sym." 
+    transSym (s,r) =
+      "<YYINITIAL>" ++ (escapeChars s) ++ " { return new Symbol(sym."
       ++ r ++ "); }"
 
 restOfJLex :: CF -> [String]
@@ -118,7 +118,7 @@ restOfJLex cf =
   where
    ifC cat s = if isUsedCat cf cat then s else ""
    userDefTokens = unlines $
-     ["<YYINITIAL>" ++ printRegJLex exp +++ 
+     ["<YYINITIAL>" ++ printRegJLex exp +++
       "{ return new Symbol(sym." ++ name ++ ", yytext().intern()); }"
        | (name, exp) <- tokenPragmas cf]
    strStates = unlines --These handle escaped characters in Strings.
@@ -148,12 +148,12 @@ restOfJLex cf =
 
 
 lexComments :: ([(String, String)], [String]) -> String
-lexComments (m,s) = 
-  (unlines (map lexSingleComment s)) 
+lexComments (m,s) =
+  (unlines (map lexSingleComment s))
   ++ (unlines (map lexMultiComment m))
 
 lexSingleComment :: String -> String
-lexSingleComment c = 
+lexSingleComment c =
   "<YYINITIAL>\"" ++ c ++ "\"[^\\n]*\\n { /* BNFC single-line comment */ }"
 
 --There might be a possible bug here if a language includes 2 multi-line comments.
@@ -166,7 +166,7 @@ lexMultiComment (b,e) = unlines [
   "<COMMENT>. { }",
   "<COMMENT>[\\n] { }"
   ]
-  
+
 -- lexReserved :: String -> String
 -- lexReserved s = "<YYINITIAL>\"" ++ s ++ "\" { return new Symbol(sym.TS, yytext()); }"
 

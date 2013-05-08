@@ -18,7 +18,7 @@
 -}
 
 
-{- 
+{-
    **************************************************************
     BNF Converter Module
 
@@ -28,7 +28,7 @@
                     count) in Java, it generates a method that
                     displays the Abstract Syntax in a way similar
                     to Haskell.
-                    
+
                     This uses Appel's method and may serve as a
                     useful example to those who wish to use it.
 
@@ -37,12 +37,12 @@
 
     License       : GPL (GNU General Public License)
 
-    Created       : 24 April, 2003                           
+    Created       : 24 April, 2003
 
-    Modified      : 9 Aug, 2004         
+    Modified      : 9 Aug, 2004
 
     Added string buffer for efficiency (Michael, August 03)
-   ************************************************************** 
+   **************************************************************
 -}
 module BNFC.Backend.Java.CFtoJavaPrinter15 ( cf2JavaPrinter ) where
 
@@ -62,7 +62,7 @@ import Data.Char	( toLower, isSpace )
 
 cf2JavaPrinter :: String -> String -> CF -> String
 cf2JavaPrinter packageBase packageAbsyn cf =
-  unlines 
+  unlines
    [
     header,
     prEntryPoints packageAbsyn cf,
@@ -117,7 +117,7 @@ cf2JavaPrinter packageBase packageAbsyn cf =
       "        buf_.deleteCharAt(0); ",
       "    while (buf_.length() > 0 && buf_.charAt(buf_.length()-1) == ' ')",
       "        buf_.deleteCharAt(buf_.length()-1);",
-      "  }",       
+      "  }",
       "  private static int _n_ = 0;",
       "  private static StringBuilder buf_ = new StringBuilder(INITIAL_BUFFER_SIZE);",
       "}"
@@ -207,7 +207,7 @@ prEntryPoints packageAbsyn cf =
   prEntryPoint _ = ""
 
 prData :: String ->  [UserDef] -> (Cat, [Rule]) -> String
-prData packageAbsyn user (cat, rules) = 
+prData packageAbsyn user (cat, rules) =
  if isList cat
  then unlines
  [
@@ -238,10 +238,10 @@ prRule packageAbsyn r@(Rule fun _c cats) | not (isCoercion fun || isDefinedRule 
   ]
    where
     p = precRule r
-    (lparen, rparen) = 
+    (lparen, rparen) =
      ("       if (_i_ > " ++ (show p) ++ ") render(_L_PAREN);\n",
       "       if (_i_ > " ++ (show p) ++ ") render(_R_PAREN);\n")
-    cats' = case cats of 
+    cats' = case cats of
         [] -> ""
     	_  -> concatMap (prCat fnm) (zip (fixOnes (numVars [] cats)) (map getPrec cats))
     fnm = '_' : map toLower fun
@@ -270,7 +270,7 @@ prList user c rules = unlines
     sep = escapeChars $ getCons rules
     optsep = if hasOneFunc rules then "" else sep
 
-prCat fnm (c, p) = 
+prCat fnm (c, p) =
     case c of
 	   Right t -> "       render(\"" ++ escapeChars t ++ "\");\n"
 	   Left nt | "string" `isPrefixOf` nt
@@ -282,7 +282,7 @@ prCat fnm (c, p) =
 --The following methods generate the Show function.
 
 shData :: String -> [UserDef] -> (Cat, [Rule]) -> String
-shData packageAbsyn user (cat, rules) = 
+shData packageAbsyn user (cat, rules) =
  if isList cat
  then unlines
  [
@@ -290,7 +290,7 @@ shData packageAbsyn user (cat, rules) =
   "  {",
   (shList user cat rules) ++ "  }"
  ]
- else unlines 
+ else unlines
  [
   "  private static void sh(" ++ packageAbsyn ++ "." ++ identCat (normCat cat) +++ "foo)",
   "  {",
@@ -311,13 +311,13 @@ shRule packageAbsyn (Rule fun _c cats) | not (isCoercion fun || isDefinedRule fu
      [
       lparen,
       "       render(\"" ++ (escapeChars fun) ++ "\");\n",
-      cats', 
+      cats',
       rparen
      ]
-    cats' = if allTerms cats 
+    cats' = if allTerms cats
         then ""
     	else (concat (map (shCat fnm) (fixOnes (numVars [] cats))))
-    (lparen, rparen) = 
+    (lparen, rparen) =
       if allTerms cats
          then ("","")
  	 else ("       render(\"(\");\n","       render(\")\");\n")
@@ -340,11 +340,11 @@ shList user c _rules = unlines
   ]
     where
     et = typename (normCatOfList c) user
- 
+
 shCat fnm c =
     case c of
     Right {} -> ""
-    Left nt | "list" `isPrefixOf` nt 
+    Left nt | "list" `isPrefixOf` nt
                 -> unlines ["       render(\"[\");",
 		            "       sh(" ++ fnm ++ "." ++ nt ++ ");",
 		            "       render(\"]\");"]

@@ -1,6 +1,6 @@
 {-
     BNF Converter: Java Top File
-    Copyright (C) 2004  Author:  Markus Forsberg, Peter Gammie, 
+    Copyright (C) 2004  Author:  Markus Forsberg, Peter Gammie,
                                  Michael Pellauer, Bjorn Bringert
 
     This program is free software; you can redistribute it and/or modify
@@ -23,7 +23,7 @@
 -- Module      :  JavaTop
 -- Copyright   :  (C)opyright 2003, {markus, aarne, pellauer, peteg, bringert} at cs dot chalmers dot se
 -- License     :  GPL (see COPYING for details)
--- 
+--
 -- Maintainer  :  {markus, aarne} at cs dot chalmers dot se
 -- Stability   :  alpha
 -- Portability :  Haskell98
@@ -33,7 +33,7 @@
 -- > $Id: JavaTop15.hs,v 1.12 2007/01/08 18:20:23 aarne Exp $
 -------------------------------------------------------------------
 
-module BNFC.Backend.Java ( makeJava15 ) where 
+module BNFC.Backend.Java ( makeJava15 ) where
 
 -------------------------------------------------------------------
 -- Dependencies.
@@ -62,7 +62,7 @@ import qualified BNFC.Backend.Common.Makefile as Makefile
 -- FIXME: get everything to put the files in the right places.
 -- Adapt Makefile to do the business.
 -------------------------------------------------------------------
-makeJava15 :: Bool 
+makeJava15 :: Bool
 	  -> Maybe String -- ^ Java package name to put the classes in
 	  -> String -- ^ Name of grammar
 	  -> CF -- ^ Grammar file
@@ -230,7 +230,7 @@ javaTest packageBase packageAbsyn cf =
      "    /* " ++ (concat (intersperse ", " (showOpts (tail eps)))) ++ " */",
      "    try",
      "    {",
-     "      " ++ packageAbsyn ++ "." ++ def +++ "parse_tree = p.p" 
+     "      " ++ packageAbsyn ++ "." ++ def +++ "parse_tree = p.p"
      ++ def ++ "();",
      "      System.out.println();",
      "      System.out.println(\"Parse Succesful!\");",
@@ -257,5 +257,5 @@ javaTest packageBase packageAbsyn cf =
 	  showOpts [] = []
 
 	  showOpts (x:[]) = if normCat x /= x then [] else ['p' : (identCat x)]
-	  showOpts (x:xs) = if normCat x /= x then (showOpts xs) 
+	  showOpts (x:xs) = if normCat x /= x then (showOpts xs)
 			    else ('p' : (identCat x)) : (showOpts xs)
