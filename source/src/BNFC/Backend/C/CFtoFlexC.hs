@@ -38,7 +38,7 @@
 module BNFC.Backend.C.CFtoFlexC (cf2flex) where
 
 import CF
-import RegToFlex
+import BNFC.Backend.CPP.NoSTL.RegToFlex
 -- import Utils((+++), (++++))
 import NamedVariables
 import Data.List

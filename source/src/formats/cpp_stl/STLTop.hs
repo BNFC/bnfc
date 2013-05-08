@@ -24,7 +24,7 @@ module STLTop (makeSTL) where
 import Utils
 import CF
 import CFtoSTLAbs
-import CFtoFlex
+import BNFC.Backend.CPP.NoSTL.CFtoFlex
 import CFtoBisonSTL
 import CFtoCVisitSkelSTL
 import CFtoSTLPrinter

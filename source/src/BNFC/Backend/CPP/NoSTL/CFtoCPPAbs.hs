@@ -38,7 +38,7 @@
    ************************************************************** 
 -}
 
-module CFtoCPPAbs (cf2CPPAbs) where
+module BNFC.Backend.CPP.NoSTL.CFtoCPPAbs (cf2CPPAbs) where
 
 import CF
 import Utils((+++),(++++))

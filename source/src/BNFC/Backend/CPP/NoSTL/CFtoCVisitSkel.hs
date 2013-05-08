@@ -37,7 +37,7 @@
    ************************************************************** 
 -}
 
-module CFtoCVisitSkel (cf2CVisitSkel) where
+module BNFC.Backend.CPP.NoSTL.CFtoCVisitSkel (cf2CVisitSkel) where
 
 import CF
 import Utils ((+++), (++++))

@@ -17,15 +17,15 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 -}
 
-module CPPTop (makeCPP) where
+module BNFC.Backend.CPP.NoSTL (makeCPP) where
 
 import Utils
 import CF
-import CFtoCPPAbs
-import CFtoFlex
-import CFtoBison
-import CFtoCVisitSkel
-import CFtoCPPPrinter
+import BNFC.Backend.CPP.NoSTL.CFtoCPPAbs
+import BNFC.Backend.CPP.NoSTL.CFtoFlex
+import BNFC.Backend.CPP.NoSTL.CFtoBison
+import BNFC.Backend.CPP.NoSTL.CFtoCVisitSkel
+import BNFC.Backend.CPP.NoSTL.CFtoCPPPrinter
 import BNFC.Backend.Latex
 import Data.Char
 import System.Exit (exitFailure)

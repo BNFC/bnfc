@@ -58,7 +58,7 @@
 -}
 
 
-module CFtoBison (cf2Bison) where
+module BNFC.Backend.CPP.NoSTL.CFtoBison (cf2Bison) where
 
 import CF
 import Data.List (intersperse, isPrefixOf)

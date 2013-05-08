@@ -67,7 +67,7 @@ Executable bnfc
     -- Latex
     BNFC.Backend.Latex,
     CFtoXML,
-    CFtoTxt,
+    BNFC.Backend.Txt2Tag,
     BNFC.Options,
     ToCNF,
     -- Haskell
@@ -110,14 +110,14 @@ Executable bnfc
     BNFC.Backend.C.CFtoBisonC,
     BNFC.Backend.C.CFtoFlexC,
     BNFC.Backend.C.CFtoCAbs,
-    CFtoCVisitSkel,
+    BNFC.Backend.CPP.NoSTL.CFtoCVisitSkel,
     -- C++
-    CPPTop,
-    RegToFlex,
-    CFtoFlex,
-    CFtoBison,
-    CFtoCPPPrinter,
-    CFtoCPPAbs,
+    BNFC.Backend.CPP.NoSTL,
+    BNFC.Backend.CPP.NoSTL.RegToFlex,
+    BNFC.Backend.CPP.NoSTL.CFtoFlex,
+    BNFC.Backend.CPP.NoSTL.CFtoBison,
+    BNFC.Backend.CPP.NoSTL.CFtoCPPPrinter,
+    BNFC.Backend.CPP.NoSTL.CFtoCPPAbs,
 
     -- C++ STL
     CFtoBisonSTL,

@@ -20,7 +20,7 @@
    ************************************************************** 
 -}
 
-module CFtoCPPPrinter (cf2CPPPrinter) where
+module BNFC.Backend.CPP.NoSTL.CFtoCPPPrinter (cf2CPPPrinter) where
 
 import CF
 import Utils ((+++), (++++))
