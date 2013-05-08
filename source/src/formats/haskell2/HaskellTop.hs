@@ -29,7 +29,7 @@ import CFtoAlex
 import CFtoAlex2
 import CFtoAlex3
 import BNFC.Backend.Latex
-import CFtoTxt
+import BNFC.Backend.Txt2Tag
 import CFtoAbstract
 import CFtoTemplate
 import CFtoPrinter

@@ -17,7 +17,7 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 -}
 
-module CFtoTxt (cfToTxt)where
+module BNFC.Backend.Txt2Tag (cfToTxt)where
 
 import CF
 import AbsBNF (Reg (..))
