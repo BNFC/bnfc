@@ -17,24 +17,24 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 -}
 
-{- 
+{-
    **************************************************************
     BNF Converter Module
 
     Description   : This module generates the C Skeleton functions.
-    
+
                     The generated files follow Appel's case method.
 
     Author        : Michael Pellauer (pellauer@cs.chalmers.se)
 
     License       : GPL (GNU General Public License)
 
-    Created       : 9 August, 2003                           
+    Created       : 9 August, 2003
 
-    Modified      : 12 August, 2003                          
+    Modified      : 12 August, 2003
 
-   
-   ************************************************************** 
+
+   **************************************************************
 -}
 
 module BNFC.Backend.C.CFtoCSkel (cf2CSkel) where
@@ -87,10 +87,10 @@ mkHFile cf groups = unlines
     "",
     "#endif"
    ]
-    
+
 --Prints out visit functions for a category
 prDataH :: (Cat, [Rule]) -> String
-prDataH (cat, _rules) = 
+prDataH (cat, _rules) =
     if isList cat
       then concat ["void visit", cl, "(", cl,  " p);\n"]
       else "void visit" ++ cl ++ "(" ++ cl ++ " p);\n"
@@ -100,7 +100,7 @@ prDataH (cat, _rules) =
 
 --Makes the .C File
 mkCFile :: CF -> [(Cat,[Rule])] -> String
-mkCFile cf groups = concat 
+mkCFile cf groups = concat
    [
     header,
     concatMap (prData user) groups,
@@ -127,7 +127,7 @@ mkCFile cf groups = concat
      ]
      where
       u' = ((toUpper (head u)) : (map toLower (tail u))) --this is a hack to fix a potential capitalization problem.
-    footer = unlines 
+    footer = unlines
      [
       "void visitIdent(Ident i)",
       "{",
@@ -154,7 +154,7 @@ mkCFile cf groups = concat
 
 --Visit functions for a category.
 prData :: [UserDef] -> (Cat, [Rule]) -> String
-prData user (cat, rules) = 
+prData user (cat, rules) =
     if isList cat
       then unlines
 	       [
@@ -202,7 +202,7 @@ prPrintRule _user (Rule _fun _ _) = ""
 
 -- Prints the actual instance-variable visiting.
 prCat :: [UserDef] -> String -> (Either Cat Cat, Either Cat Cat) -> String
-prCat user fnm (c, o) = 
+prCat user fnm (c, o) =
     case c of
       Right {} -> ""
       Left nt  ->
@@ -217,7 +217,7 @@ prCat user fnm (c, o) =
 --Just checks if something is a basic or user-defined type.
 --This is because you don't -> a basic non-pointer type.
 isBasic :: [UserDef] -> String -> Bool
-isBasic user v = 
+isBasic user v =
   if elem (init v) user'
     then True
     else if "integer_" `isPrefixOf` v then True
@@ -231,7 +231,7 @@ isBasic user v =
 
 --The visit-function name of a basic type
 basicFunName :: String -> String
-basicFunName v = 
+basicFunName v =
     if "integer_" `isPrefixOf` v then "Integer"
     else if "char_" `isPrefixOf` v then "Char"
     else if "string_" `isPrefixOf` v then "String"
