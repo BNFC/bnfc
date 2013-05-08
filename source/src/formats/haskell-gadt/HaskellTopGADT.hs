@@ -36,7 +36,7 @@ import CFtoAbstractGADT
 import CFtoTemplateGADT
 import CFtoPrinterGADT
 import BNFC.Backend.Haskell.CFtoLayout
-import CFtoXML
+import BNFC.Backend.XML
 import BNFC.Backend.Haskell.MkErrM
 import BNFC.Backend.Haskell.MkSharedString
 import Utils

@@ -30,7 +30,7 @@ import BNFC.Backend.Haskell.MkErrM
 ---- import CFtoTemplate
 ---- import CFtoPrinter
 ---- import CFtoLayout
----- import CFtoXML
+---- import BNFC.Backend.XML
 import Utils
 
 import Data.Char

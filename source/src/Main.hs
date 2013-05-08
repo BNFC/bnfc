@@ -40,7 +40,7 @@ import BNFC.Backend.CSharp
 import BNFC.Backend.CPP.STL
 import BNFC.Backend.C
 import BNFC.Backend.OCaml
-import CFtoXML
+import BNFC.Backend.XML
 import Utils
 import qualified BNFC.Options as O
 import GetCF

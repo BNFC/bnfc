@@ -34,7 +34,7 @@ import BNFC.Backend.Haskell.CFtoAbstract
 import BNFC.Backend.Haskell.CFtoTemplate
 import BNFC.Backend.Haskell.CFtoPrinter
 import BNFC.Backend.Haskell.CFtoLayout
-import CFtoXML
+import BNFC.Backend.XML
 import BNFC.Backend.Haskell.HsOpts
 import BNFC.Backend.Haskell.ToCNF as ToCNF
 import BNFC.Backend.Haskell.MkErrM

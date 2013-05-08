@@ -31,7 +31,7 @@ import BNFC.Backend.OCaml.CFtoOCamlTemplate
 import BNFC.Backend.OCaml.CFtoOCamlPrinter
 import BNFC.Backend.OCaml.CFtoOCamlShow
 import BNFC.Backend.OCaml.CFtoOCamlTest
-import CFtoXML
+import BNFC.Backend.XML
 import Utils
 import System.FilePath (takeFileName)
 import BNFC.Options
