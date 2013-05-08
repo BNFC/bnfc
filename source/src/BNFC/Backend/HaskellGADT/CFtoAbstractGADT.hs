@@ -17,13 +17,13 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 -}
 
-module CFtoAbstractGADT (cf2Abstract) where
+module BNFC.Backend.HaskellGADT.CFtoAbstractGADT (cf2Abstract) where
 
 import CF
 import Utils((+++),(++++))
 import Data.List(intersperse,nub)
 
-import HaskellGADTCommon
+import BNFC.Backend.HaskellGADT.HaskellGADTCommon
 
 import Data.Maybe (catMaybes)
 

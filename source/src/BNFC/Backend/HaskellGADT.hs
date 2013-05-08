@@ -18,7 +18,7 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 -}
 
-module HaskellTopGADT (makeAllGADT) where 
+module BNFC.Backend.HaskellGADT (makeAllGADT) where 
 
 
 
@@ -32,9 +32,9 @@ import BNFC.Backend.Haskell.CFtoAlex2
 import BNFC.Backend.Haskell.CFtoAlex3
 import BNFC.Backend.Latex
 import BNFC.Backend.Haskell(AlexVersion(..))
-import CFtoAbstractGADT
-import CFtoTemplateGADT
-import CFtoPrinterGADT
+import BNFC.Backend.HaskellGADT.CFtoAbstractGADT
+import BNFC.Backend.HaskellGADT.CFtoTemplateGADT
+import BNFC.Backend.HaskellGADT.CFtoPrinterGADT
 import BNFC.Backend.Haskell.CFtoLayout
 import BNFC.Backend.XML
 import BNFC.Backend.Haskell.MkErrM

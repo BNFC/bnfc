@@ -18,7 +18,7 @@
 -}
 
 
-module CFtoTemplateGADT (
+module BNFC.Backend.HaskellGADT.CFtoTemplateGADT (
 		    cf2Template
                     ) where
 
@@ -26,7 +26,7 @@ import CF
 import Utils((+++))
 import Data.List (delete,groupBy)
 
-import HaskellGADTCommon
+import BNFC.Backend.HaskellGADT.HaskellGADTCommon
 
 type ModuleName = String
 

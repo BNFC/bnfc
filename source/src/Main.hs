@@ -31,8 +31,8 @@ module Main where
 -- import Utils
 import CF (cfp2cf)
 import BNFC.Backend.Haskell
-import HaskellTopGADT
-import ProfileTop
+import BNFC.Backend.HaskellGADT
+import BNFC.Backend.HaskellProfile
 import JavaTop
 import BNFC.Backend.Java
 import BNFC.Backend.CPP.NoSTL

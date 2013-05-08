@@ -17,11 +17,11 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 -}
 
-module ProfileTop (makeAllProfile) where 
+module BNFC.Backend.HaskellProfile (makeAllProfile) where 
 
 -- import Utils
 import CF
-import CFtoHappyProfile
+import BNFC.Backend.HaskellProfile.CFtoHappyProfile
 import BNFC.Backend.Haskell.CFtoAlex
 import BNFC.Backend.Haskell.CFtoAlex2
 import BNFC.Backend.Latex

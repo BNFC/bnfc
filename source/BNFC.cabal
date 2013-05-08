@@ -85,14 +85,14 @@ Executable bnfc
     BNFC.Backend.Haskell.MkSharedString,
     BNFC.Backend.Haskell.HsOpts,
     -- Profile
-    ProfileTop,
-    CFtoHappyProfile,
+    BNFC.Backend.HaskellProfile,
+    BNFC.Backend.HaskellProfile.CFtoHappyProfile,
     -- Haskell GADT
-    HaskellTopGADT,
-    HaskellGADTCommon,
-    CFtoPrinterGADT,
-    CFtoTemplateGADT,
-    CFtoAbstractGADT,
+    BNFC.Backend.HaskellGADT,
+    BNFC.Backend.HaskellGADT.HaskellGADTCommon,
+    BNFC.Backend.HaskellGADT.CFtoPrinterGADT,
+    BNFC.Backend.HaskellGADT.CFtoTemplateGADT,
+    BNFC.Backend.HaskellGADT.CFtoAbstractGADT,
     -- O'Caml
     BNFC.Backend.OCaml,
     BNFC.Backend.OCaml.OCamlUtil,

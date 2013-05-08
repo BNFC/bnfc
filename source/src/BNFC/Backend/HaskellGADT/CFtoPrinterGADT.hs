@@ -17,7 +17,7 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 -}
 
-module CFtoPrinterGADT (cf2Printer) where
+module BNFC.Backend.HaskellGADT.CFtoPrinterGADT (cf2Printer) where
 
 import CF
 import Utils
@@ -25,7 +25,7 @@ import BNFC.Backend.Haskell.CFtoTemplate
 import Data.List (intersperse)
 import Data.Char(toLower)
 
-import HaskellGADTCommon
+import BNFC.Backend.HaskellGADT.HaskellGADTCommon
 
 -- derive pretty-printer from a BNF grammar. AR 15/2/2002
 cf2Printer :: String -> String -> CF -> String
