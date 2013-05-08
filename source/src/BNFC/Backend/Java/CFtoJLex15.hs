@@ -37,7 +37,7 @@
    ************************************************************** 
 -}
 
-module CFtoJLex15 ( cf2jlex ) where
+module BNFC.Backend.Java.CFtoJLex15 ( cf2jlex ) where
 
 import CF
 import RegToJLex

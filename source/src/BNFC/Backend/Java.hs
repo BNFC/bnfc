@@ -33,7 +33,7 @@
 -- > $Id: JavaTop15.hs,v 1.12 2007/01/08 18:20:23 aarne Exp $
 -------------------------------------------------------------------
 
-module JavaTop15 ( makeJava15 ) where 
+module BNFC.Backend.Java ( makeJava15 ) where 
 
 -------------------------------------------------------------------
 -- Dependencies.
@@ -43,16 +43,16 @@ import System.IO.Error	( isAlreadyExistsError )
 import System.Exit      ( exitFailure )
 import Utils
 import CF
-import CFtoCup15       	( cf2Cup )
-import CFtoJLex15
-import CFtoJavaAbs15	( cf2JavaAbs )
-import CFtoJavaPrinter15
+import BNFC.Backend.Java.CFtoCup15       	( cf2Cup )
+import BNFC.Backend.Java.CFtoJLex15
+import BNFC.Backend.Java.CFtoJavaAbs15	( cf2JavaAbs )
+import BNFC.Backend.Java.CFtoJavaPrinter15
 --import CFtoJavaSkeleton
-import CFtoVisitSkel15
-import CFtoComposVisitor
-import CFtoAbstractVisitor
-import CFtoFoldVisitor
-import CFtoAllVisitor
+import BNFC.Backend.Java.CFtoVisitSkel15
+import BNFC.Backend.Java.CFtoComposVisitor
+import BNFC.Backend.Java.CFtoAbstractVisitor
+import BNFC.Backend.Java.CFtoFoldVisitor
+import BNFC.Backend.Java.CFtoAllVisitor
 import CFtoLatex
 import Data.Char
 import Data.List(intersperse)

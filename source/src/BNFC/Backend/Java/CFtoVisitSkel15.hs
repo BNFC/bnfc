@@ -38,10 +38,10 @@
    
    ************************************************************** 
 -}
-module CFtoVisitSkel15 (cf2VisitSkel) where
+module BNFC.Backend.Java.CFtoVisitSkel15 (cf2VisitSkel) where
 
 import CF
-import CFtoJavaAbs15 (typename)
+import BNFC.Backend.Java.CFtoJavaAbs15 (typename)
 import Utils ((+++), (++++))
 import NamedVariables
 import Data.List

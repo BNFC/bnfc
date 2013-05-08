@@ -34,7 +34,7 @@ import HaskellTop
 import HaskellTopGADT
 import ProfileTop
 import JavaTop
-import JavaTop15
+import BNFC.Backend.Java
 import CPPTop
 import CSharpTop
 import STLTop

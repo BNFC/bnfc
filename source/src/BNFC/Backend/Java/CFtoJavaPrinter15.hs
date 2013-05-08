@@ -44,9 +44,9 @@
     Added string buffer for efficiency (Michael, August 03)
    ************************************************************** 
 -}
-module CFtoJavaPrinter15 ( cf2JavaPrinter ) where
+module BNFC.Backend.Java.CFtoJavaPrinter15 ( cf2JavaPrinter ) where
 
-import CFtoJavaAbs15
+import BNFC.Backend.Java.CFtoJavaAbs15
 
 import CF
 import NamedVariables

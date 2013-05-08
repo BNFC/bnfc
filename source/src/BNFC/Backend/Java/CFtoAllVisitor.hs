@@ -18,10 +18,10 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 -}
 
-module CFtoAllVisitor (cf2AllVisitor) where
+module BNFC.Backend.Java.CFtoAllVisitor (cf2AllVisitor) where
 
 import CF
-import CFtoJavaAbs15 (typename)
+import BNFC.Backend.Java.CFtoJavaAbs15 (typename)
 import Utils ((+++), (++++))
 import NamedVariables
 import Data.List

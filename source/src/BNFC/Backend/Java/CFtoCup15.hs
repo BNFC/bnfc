@@ -37,7 +37,7 @@
    
    ************************************************************** 
 -}
-module CFtoCup15 ( cf2Cup ) where
+module BNFC.Backend.Java.CFtoCup15 ( cf2Cup ) where
 
 import CF
 import Data.List (intersperse, isPrefixOf)

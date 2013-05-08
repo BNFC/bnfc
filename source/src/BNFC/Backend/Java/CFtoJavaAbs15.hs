@@ -43,7 +43,7 @@
    ************************************************************** 
 -}
 
-module CFtoJavaAbs15 (cf2JavaAbs, typename) where
+module BNFC.Backend.Java.CFtoJavaAbs15 (cf2JavaAbs, typename) where
 
 import CF
 import Utils((+++),(++++))

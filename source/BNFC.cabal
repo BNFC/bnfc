@@ -146,16 +146,16 @@ Executable bnfc
     CFtoJavaAbs,
     CFtoJLex,
     -- Java 1.5
-    JavaTop15,
-    CFtoJavaAbs15,
-    CFtoAllVisitor,
-    CFtoFoldVisitor,
-    CFtoAbstractVisitor,
-    CFtoComposVisitor,
-    CFtoVisitSkel15,
-    CFtoJavaPrinter15,
-    CFtoJLex15,
-    CFtoCup15
+    BNFC.Backend.Java
+    BNFC.Backend.Java.CFtoJavaAbs15,
+    BNFC.Backend.Java.CFtoAllVisitor,
+    BNFC.Backend.Java.CFtoFoldVisitor,
+    BNFC.Backend.Java.CFtoAbstractVisitor,
+    BNFC.Backend.Java.CFtoComposVisitor,
+    BNFC.Backend.Java.CFtoVisitSkel15,
+    BNFC.Backend.Java.CFtoJavaPrinter15,
+    BNFC.Backend.Java.CFtoJLex15,
+    BNFC.Backend.Java.CFtoCup15
 
 Flag haskell-tests
   Description: Enable/disable testing using the haskell backend 
