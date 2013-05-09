@@ -39,6 +39,7 @@ import BNFC.Options
 import Data.Char
 import Data.Maybe (fromMaybe,maybe)
 import System.Exit (exitFailure)
+import System.FilePath (pathSeparator, (</>))
 import Control.Monad(when)
 
 -- naming conventions
@@ -57,9 +58,9 @@ mkMod addLang name opts =
 mkFile :: (Options -> String -> String) -> String -> String -> Options -> FilePath
 mkFile addLang name ext opts =
     pref ++ if inDir opts
-       then lang opts ++ [pathSep] ++ name ++ ext'
+       then lang opts </> name ++ ext'
        else addLang opts name ++ if null ext then "" else ext'
-    where pref = maybe "" (\p->pkgToDir p++[pathSep]) (inPackage opts)
+    where pref = maybe "" (\p->pkgToDir p </> "") (inPackage opts)
           ext' = if null ext then "" else "." ++ ext
 
 absFile, absFileM, ocamllexFile, ocamllexFileM, dviFile,
@@ -123,17 +124,17 @@ makeOCaml opts cf = do
       _ -> return ()
 
 pkgToDir :: String -> FilePath
-pkgToDir s = replace '.' pathSep s
+pkgToDir s = replace '.' pathSeparator s
 
 codeDir :: Options -> FilePath
 codeDir opts = let pref = maybe "" pkgToDir (inPackage opts)
                    dir = if inDir opts then lang opts else ""
-                   sep = if null pref || null dir then "" else [pathSep]
+                   sep = if null pref || null dir then "" else [pathSeparator]
                  in pref ++ sep ++ dir
 
 makefile :: Options -> String
 makefile opts = makeA where
-  dir = let d = codeDir opts in if null d then "" else d ++ [pathSep]
+  dir = let d = codeDir opts in if null d then "" else d ++ [pathSeparator]
   cd c = if null dir then c else "(cd " ++ dir ++ "; " ++ c ++ ")"
   makeA = unlines
                 [

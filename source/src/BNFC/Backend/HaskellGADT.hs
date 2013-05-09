@@ -46,6 +46,7 @@ import qualified BNFC.Backend.Haskell as Haskell
 import Data.Char
 import Data.Maybe (fromMaybe,maybe)
 import System.Exit (exitFailure)
+import System.FilePath (pathSeparator)
 import Control.Monad(when)
 
 
@@ -95,7 +96,7 @@ makeAllGADT opts cf = do
 codeDir :: Options -> FilePath
 codeDir opts = let pref = maybe "" pkgToDir (inPackage opts)
 		   dir = if inDir opts then lang opts else ""
-		   sep = if null pref || null dir then "" else [pathSep]
+		   sep = if null pref || null dir then "" else [pathSeparator]
 		 in pref ++ sep ++ dir
 
 makefile :: Options -> String

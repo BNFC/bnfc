@@ -24,6 +24,8 @@ import System.IO.Error (tryIOError)
 import System.Directory (createDirectory, doesDirectoryExist, renameFile,
                          removeFile, doesFileExist)
 
+import System.FilePath (pathSeparator)
+
 infixr 5 +++
 infixr 5 ++++
 infixr 5 +++++
@@ -110,21 +112,18 @@ createDirectoryIfNotExists d = do
       exists <- doesDirectoryExist d
       unless exists (createDirectory d)
 
-pathSep :: Char
-pathSep = '/'
-
 -- | Like the prelude function 'inits' but for path names.
 --   For example:
 -- > pathInits "foo/bar" = ["foo","foo/bar"]
 -- > pathInits "foo/bar/baz.hs" = ["foo","foo/bar","foo/bar/baz.hs"]
 pathInits :: String -> [String]
 pathInits "" = []
-pathInits xs = let (ys,zs) = split pathSep xs
-		   in ys : map ((ys ++ [pathSep]) ++) (pathInits zs)
+pathInits xs = let (ys,zs) = split pathSeparator xs
+		   in ys : map ((ys ++ [pathSeparator]) ++) (pathInits zs)
 
 -- | Like basename(1), remove all leading directories from a path name.
 -- basename :: String -> String
--- basename = last . splitAll pathSep
+-- basename = last . splitAll pathSeparator
 
 
 -- | Write a file, after making a backup of an existing file with the same name.

@@ -45,6 +45,7 @@ import qualified BNFC.Backend.Common.Makefile as Makefile
 import Data.Char
 import Data.Maybe (fromMaybe,maybe)
 import System.Exit (exitFailure)
+import System.FilePath (pathSeparator,(</>))
 import Control.Monad(when,unless)
 import System.FilePath (takeFileName)
 
@@ -102,13 +103,13 @@ makeAll opts cf = do
 codeDir :: Options -> FilePath
 codeDir opts = let pref = maybe "" pkgToDir (inPackage opts)
 		   dir = if inDir opts then lang opts else ""
-		   sep = if null pref || null dir then "" else [pathSep]
+		   sep = if null pref || null dir then "" else [pathSeparator]
 		 in pref ++ sep ++ dir
 
 makefile :: Options -> String
 makefile opts = makeA where
   glr_params = if glr opts == GLR then "--glr --decode " else ""
-  dir = let d = codeDir opts in if null d then "" else d ++ [pathSep]
+  dir = let d = codeDir opts in if null d then "" else d ++ [pathSeparator]
   cd c = if null dir then c else "(cd " ++ dir ++ "; " ++ c ++ ")"
   makeA = Makefile.mkRule "all" []
             [ "happy -gca " ++ glr_params ++ happyFile opts

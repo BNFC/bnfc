@@ -2,6 +2,7 @@ module BNFC.Backend.Haskell.HsOpts  where
 
 import BNFC.Utils
 import BNFC.Options
+import System.FilePath (pathSeparator)
 
 type Options = SharedOptions
 
@@ -61,7 +62,7 @@ withLangAbs opts name = postp $ name ++ lang opts
                    else nam
 
 pkgToDir :: String -> FilePath
-pkgToDir s = replace '.' pathSep s
+pkgToDir s = replace '.' pathSeparator s
 
 
 mkMod :: (Options -> String -> String) -> String -> Options -> String
@@ -72,7 +73,7 @@ mkMod addLang name opts =
 mkFile :: (Options -> String -> String) -> String -> String -> Options -> FilePath
 mkFile addLang name ext opts =
     pref ++ if inDir opts
-       then lang opts ++ [pathSep] ++ name ++ ext'
+       then lang opts ++ [pathSeparator] ++ name ++ ext'
        else addLang opts name ++ if null ext then "" else ext'
-    where pref = maybe "" (\p->pkgToDir p++[pathSep]) (inPackage opts)
+    where pref = maybe "" (\p->pkgToDir p++[pathSeparator]) (inPackage opts)
 	  ext' = if null ext then "" else "." ++ ext

@@ -41,6 +41,7 @@ module BNFC.Backend.Java ( makeJava15 ) where
 import System.Directory	( createDirectory )
 import System.IO.Error	( isAlreadyExistsError )
 import System.Exit      ( exitFailure )
+import System.FilePath (pathSeparator)
 import BNFC.Utils
 import BNFC.CF
 import BNFC.Backend.Java.CFtoCup15       	( cf2Cup )
@@ -113,7 +114,7 @@ mkFiles make inPackage name cf =
 			     Nothing -> (a, b) : (remDups as)
 
       pkgToDir :: String -> FilePath
-      pkgToDir s = replace '.' pathSep s ++ [pathSep]
+      pkgToDir s = replace '.' pathSeparator s ++ [pathSeparator]
 
 
 -- FIXME get filenames right.
