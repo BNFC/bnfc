@@ -271,14 +271,4 @@ Test-suite unit-tests
                  HTF == 0.10.*
   Main-is: unit-tests.hs
   HS-source-dirs: src test/unit src/formats
-    src/formats/haskell2
-    src/formats/haskell-gadt
-    src/formats/xml
-    src/formats/profile
     src/formats/java
-    src/formats/java1.5
-    src/formats/cpp
-    src/formats/c
-    src/formats/ocaml
-    src/formats/cpp_stl
-    src/formats/c-sharp
