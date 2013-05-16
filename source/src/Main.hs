@@ -57,7 +57,6 @@ import Control.Monad (when,unless)
 import Paths_BNFC ( version )
 import Data.Version ( showVersion )
 import System.FilePath (takeFileName)
-import System.Exit (exitFailure)
 import System.IO (stderr, hPutStrLn)
 import BNFC.Options (lookForDeprecatedOptions)
 import System.Console.GetOpt
