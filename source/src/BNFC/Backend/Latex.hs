@@ -56,6 +56,7 @@ cfToLatex name cf = unlines [
 			    ]
 
 
+makefile_ = makefile
 makefile :: String -> String
 makefile texfile =
       Makefile.mkRule "all" [pdffile]
@@ -63,11 +64,13 @@ makefile texfile =
     $ Makefile.mkRule pdffile [texfile]
       [ printf "pdflatex %s" texfile ]
     $ Makefile.mkRule "clean" []
-      [ "-rm " ++ replaceExtension texfile "{pdf,aux,log}" ]
+      [ unwords [ "-rm", pdffile, auxfile, logfile ]]
     $ Makefile.mkRule "cleanall" ["clean"]
       [ "-rm Makefile " ++ texfile ]
     ""
   where pdffile = replaceExtension texfile "pdf"
+        auxfile = replaceExtension texfile "aux"
+        logfile = replaceExtension texfile "log"
 
 introduction :: String
 introduction = concat

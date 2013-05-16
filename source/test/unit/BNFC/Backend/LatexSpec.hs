@@ -21,7 +21,7 @@ spec = describe "BNFC.Backend.Latex" $ do
                   "\tpdflatex myFile.tex",
                   "",
                   "clean:",
-                  "\t-rm myFile.{pdf,aux,log}",
+                  "\t-rm myFile.pdf myFile.aux myFile.log",
                   "",
                   "cleanall: clean",
                   "\t-rm Makefile myFile.tex",
