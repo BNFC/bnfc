@@ -42,9 +42,9 @@ spec = describe "BNFC.Options" $ do
 
     it "returns an error message if the arguments contain '--numeric-version'" $
       lookForDeprecatedOptions ["--numeric-version"]
-        `shouldBe` ["--numeric-version is deprecated, use --version instead"]
+        `shouldBe` ["--numeric-version is deprecated, use --version instead\n"]
 
     it "returns an error message if the arguments contain '-multi'" $
       lookForDeprecatedOptions ["-multi"]
-        `shouldBe` ["-multi is deprecated, use --multilingual instead"]
+        `shouldBe` ["-multi is deprecated, use --multilingual instead\n"]
 

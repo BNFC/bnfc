@@ -195,7 +195,7 @@ parseArguments args' = do
    else do
       let name = takeWhile (/= '.') $ takeFileName file
       let make = elem "-m" args
-      let multi = elem "-multi" args
+      let multi = elem "--multilingual" args
       let c = elem "-c" args
       let cpp_no_stl = elem "-cpp_no_stl" args
       let cpp_stl = elem "-cpp_stl" args || elem "-cpp" args
@@ -306,6 +306,8 @@ concatMapM f l = mapM f l >>= return . concat
 
 -- | Given a list of arguments, returns a list of error messages
 -- one for each deprecated argument in the original list
+-- Note that the returned error messages end with a newline
+-- to make them consistent with the errors reported by the GetOpt module
 lookForDeprecatedOptions :: [String] -> [String]
 lookForDeprecatedOptions = catMaybes . map msg
   where deprecated =  [ ("--numeric-version","--version")
@@ -313,4 +315,4 @@ lookForDeprecatedOptions = catMaybes . map msg
         msg :: String -> Maybe String
         msg arg = do
           newArg <- lookup arg deprecated
-          return $ printf "%s is deprecated, use %s instead" arg newArg
+          return $ printf "%s is deprecated, use %s instead\n" arg newArg

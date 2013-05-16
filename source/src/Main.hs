@@ -57,7 +57,7 @@ import Control.Monad (when,unless)
 import Paths_BNFC ( version )
 import Data.Version ( showVersion )
 import System.FilePath (takeFileName)
-import System.IO (stderr, hPutStrLn)
+import System.IO (stderr, hPutStrLn,hPutStr)
 import BNFC.Options (lookForDeprecatedOptions)
 import System.Console.GetOpt
 
@@ -73,6 +73,16 @@ title = unlines [
 
 data Flags = Version | Multilingual
 
+-- Print erre message and a (short) usage help and exit
+-- note that the argument is a list of error messages like
+-- those returned from getOpt and are expected to contain newline
+-- characters already.
+printUsageErrors :: [String] -> IO ()
+printUsageErrors msgs = do
+  mapM_ (hPutStr stderr) msgs
+  hPutStrLn stderr "usage: bnfc [--version] [-m] <language> <args> file.cf"
+  exitFailure
+
 main :: IO ()
 main = do
   args <- getArgs
@@ -81,9 +91,7 @@ main = do
   -- if we find any, we report them and exit immediately
   case lookForDeprecatedOptions args of
     [] -> return ()
-    msgs -> do  hPutStrLn stderr "Error:"
-                mapM_ (hPutStrLn stderr . ("\t" ++)) msgs
-                exitFailure
+    msgs -> printUsageErrors msgs
 
   -- next, we parse global options such as --version
   let bnfcOptions = [
@@ -101,15 +109,14 @@ main = do
          mkTestMulti entryp args file files
          mkMakefileMulti args file files
     -- standard case
-    ([],[file],args',[]) -> mkOne args
+    ([],_,_,[]) -> mkOne args
     -- Anything else: print usage message
-    (_,_,_,errs) -> printUsage errs
+    (_,_,_,errs) -> printUsageErrors errs
 
 mkOne :: [String] -> IO ()
-mkOne xx = do
-  print xx
+mkOne xx =
   case O.parseArguments xx of
-    Left err -> printUsage [err]
+    Left err -> printUsageErrors [err ++ "\n"]
     Right (options,file) -> do
       let name = takeWhile (/= '.') $ takeFileName file
       putStrLn title
@@ -151,10 +158,8 @@ mkOne xx = do
        isCF ('c':'f':'n':'b':'.':_) = True
        isCF _                   = False
 
-printUsage :: [String] -> IO ()
-printUsage errs = do
-  mapM_ putStr errs
-  putStrLn ""
+printUsage :: IO ()
+printUsage = do
   putStrLn title
   putStrLn "Usage: bnfc <makeoption>* <language>? <special>* file.cf"
   putStrLn ""
