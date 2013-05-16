@@ -48,13 +48,11 @@ import BNFC.Backend.Java.CFtoCup15       	( cf2Cup )
 import BNFC.Backend.Java.CFtoJLex15
 import BNFC.Backend.Java.CFtoJavaAbs15	( cf2JavaAbs )
 import BNFC.Backend.Java.CFtoJavaPrinter15
---import CFtoJavaSkeleton
 import BNFC.Backend.Java.CFtoVisitSkel15
 import BNFC.Backend.Java.CFtoComposVisitor
 import BNFC.Backend.Java.CFtoAbstractVisitor
 import BNFC.Backend.Java.CFtoFoldVisitor
 import BNFC.Backend.Java.CFtoAllVisitor
-import BNFC.Backend.Latex
 import Data.Char
 import Data.List(intersperse)
 import qualified BNFC.Backend.Common.Makefile as Makefile
@@ -103,7 +101,6 @@ mkFiles make inPackage name cf =
        -- FIXME: put in a doc directory?
        putStrLn $ "   (Parser created for category " ++ firstEntry cf ++ ")"
        putStrLn "   (Tested with CUP 0.10k)"
-       writeFileRep (name ++ ".tex") $ cfToLatex name cf
        if make
          then writeFileRep "Makefile" $ makefile name dirBase dirAbsyn absynFileNames
 	 else return ()
@@ -177,7 +174,6 @@ makefile name dirBase dirAbsyn absynFileNames =
     , " rm -f " ++ dirAbsyn ++ "*.class"
 --     , "rm -f " ++ "Test" ++ name
     , " rmdir " ++ dirAbsyn
-    , " rm -f " ++ name ++ ".tex " ++ name ++ ".dvi " ++ name ++ ".aux " ++ name ++ ".log " ++ name ++ ".ps "
     , " rm -f " ++ unwords (map (dirBase ++) [
 					        "Yylex",
 						name ++ ".cup",

@@ -46,7 +46,6 @@ import BNFC.Backend.CSharp.CFtoGPPG
 import BNFC.Backend.CSharp.CAbstoCSharpVisitSkeleton
 import BNFC.Backend.CSharp.CAbstoCSharpAbstractVisitSkeleton
 import BNFC.Backend.CSharp.CFtoCSharpPrinter
-import BNFC.Backend.Latex
 import BNFC.Backend.CSharp.CSharpUtils
 import Data.Char
 import System.Exit (exitFailure)
@@ -78,7 +77,6 @@ makeCSharp make vsfiles wcfSupport maybenamespace cf file = do
           skeleton     = cabs2csharpvisitskeleton namespace cabs
           absSkeleton  = cabs2csharpAbstractVisitSkeleton namespace cabs
           printer      = cf2csharpprinter namespace cf
-          latex        = cfToLatex namespace cf
       writeFileRep "Absyn.cs" absyn
       writeFileRep (namespace ++ ".l") gplex
       putStrLn "   (Tested with GPLEX RC1)"
@@ -88,7 +86,6 @@ makeCSharp make vsfiles wcfSupport maybenamespace cf file = do
       writeFileRep "VisitSkeleton.cs" skeleton
       writeFileRep "Printer.cs" printer
       writeFileRep "Test.cs" (csharptest namespace cf)
-      writeFileRep (namespace ++ ".tex") latex
       if vsfiles then (writeVisualStudioFiles namespace) else return ()
       if make then (writeMakefile namespace) else return ()
 
@@ -129,7 +126,6 @@ writeMakefile namespace = do
         [ "${GPLEX} /out:Scanner.cs " ++ namespace <.> "l" ]
       $ Makefile.mkRule "Parser.cs" [ namespace <.> "y" ]
         [ "${GPPG} /gplex " ++ namespace <.> "y > Parser.cs" ]
-      $ Makefile.mkDoc namespace
       ""
 
 writeVisualStudioFiles :: Namespace -> IO ()

@@ -25,7 +25,6 @@ import BNFC.Backend.C.CFtoFlexC
 import BNFC.Backend.C.CFtoBisonC
 import BNFC.Backend.C.CFtoCSkel
 import BNFC.Backend.C.CFtoCPrinter
-import BNFC.Backend.Latex
 import Data.Char
 import System.Exit (exitFailure)
 import qualified BNFC.Backend.Common.Makefile as Makefile
@@ -50,8 +49,6 @@ makeC make name cf = do
     writeFileRep "Printer.h" prinH
     writeFileRep "Printer.c" prinC
     writeFileRep "Test.c" (ctest cf)
-    let latex = cfToLatex name cf
-    writeFileRep (name ++ ".tex") latex
     if make then (writeFileRep "Makefile" $ makefile name prefix) else return ()
   where prefix :: String  -- The prefix is a string used by flex and bison
                           -- that is prepended to generated function names.
@@ -100,7 +97,6 @@ makefile name prefix =
     [ "${CC} ${CCFLAGS} -c Printer.c" ]
   $ Makefile.mkRule "Test.o" [ "Test.c", "Parser.h", "Printer.h", "Absyn.h" ]
     [ "${CC} ${CCFLAGS} -c Test.c" ]
-  $ Makefile.mkDoc (name ++ ".tex")
   ""
   where testName = "Test" ++ name
 

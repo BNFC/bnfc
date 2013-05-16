@@ -30,7 +30,6 @@ import BNFC.Backend.Haskell.CFtoHappy
 import BNFC.Backend.Haskell.CFtoAlex
 import BNFC.Backend.Haskell.CFtoAlex2
 import BNFC.Backend.Haskell.CFtoAlex3
-import BNFC.Backend.Latex
 import BNFC.Backend.Haskell(AlexVersion(..))
 import BNFC.Backend.HaskellGADT.CFtoAbstractGADT
 import BNFC.Backend.HaskellGADT.CFtoTemplateGADT
@@ -80,7 +79,6 @@ makeAllGADT opts cf = do
     writeFileRep (happyFile opts) $
 		 cf2HappyS parMod absMod lexMod errMod (glr opts) (byteStrings opts) cf
     putStrLn "   (Tested with Happy 1.15)"
-    writeFileRep (latexFile opts)    $ cfToLatex (lang opts) cf
     writeFileRep (templateFile opts) $ cf2Template (templateFileM opts) absMod errMod cf
     writeFileRep (printerFile opts)  $ cf2Printer prMod absMod cf
     when (hasLayout cf) $ writeFileRep (layoutFile opts) $ cf2Layout (alexMode opts == Alex1) (inDir opts) layMod lexMod cf
@@ -101,41 +99,6 @@ codeDir opts = let pref = maybe "" pkgToDir (inPackage opts)
 
 makefile :: Options -> String
 makefile = Haskell.makefile
--- makefile opts = makeA where
---   glr_params = if glr opts == GLR then "--glr --decode " else ""
---   dir = let d = codeDir opts in if null d then "" else d ++ [pathSep]
---   cd c = if null dir then c else "(cd " ++ dir ++ "; " ++ c ++ ")"
----    makeA = Makefile.mkRule "all" []
---             [ "happy -gca " ++ glr_params ++ happyFile opts
----             , "alex -g " ++ alexFile opts
---             , "ghc --make " ++ tFile opts ++ " -o " ++ mkFile withLang "Test" "" opts]
---         $ Makefile.mkDoc (basename (latexFile opts))
---         $ Makefile.mkRule "clean" []
---             [ "-rm -f "  ++ unwords
---                 (map (dir++) [ "*.log", "*.aux", "*.hi", "*.o", "*.dvi" ])
---             , "-rm -f " ++ psFile opts ]
---         $  Makefile.mkRule "distclean" ["clean"]
---             [ "-rm -f " ++ unwords
---                 [ mkFile withLang "Doc" "*" opts
---                 , mkFile withLang "Lex" "*" opts
---                 , mkFile withLang "Par" "*" opts
---                 , mkFile withLang "Layout" "*" opts
---                 , mkFile withLang "Skel" "*" opts
---                 , mkFile withLang "Print" "*" opts
---                 , mkFile withLang "Test" "*" opts
---                 , mkFile withLang "Abs" "*" opts
---                 , mkFile withLang "Test" "" opts
---                 , mkFile noLang   "ErrM" "*" opts
---                 , mkFile noLang   "SharedString" "*" opts
---                 , dir ++ lang opts ++ ".dtd"
---                 , mkFile withLang "XML" "*" opts
---                 , "Makefile*"
---                 , mkFile withLang "ComposOp" "*" opts
---                 , dir ++ lang opts ++ ".dtd"
--- 		, mkFile withLang "XML" "*" opts ]
---             , if null dir then "" else "\t-rmdir -p " ++ dir ]
---        ""
-
 
 testfile :: Options -> CF -> String
 testfile opts cf

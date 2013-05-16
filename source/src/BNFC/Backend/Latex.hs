@@ -17,7 +17,7 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 -}
 
-module BNFC.Backend.Latex (cfToLatex,main,makefile_) where
+module BNFC.Backend.Latex (main,makefile) where
 
 import AbsBNF (Reg (..))
 import Control.Monad (unless,when)
@@ -56,7 +56,6 @@ cfToLatex name cf = unlines [
 			    ]
 
 
-makefile_ = makefile
 makefile :: String -> String
 makefile texfile =
       Makefile.mkRule "all" [pdffile]

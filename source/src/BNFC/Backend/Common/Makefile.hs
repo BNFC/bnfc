@@ -15,9 +15,3 @@ mkRule target deps recipe = (++) $ unlines $
   [ unwords (printf "%s:" target:deps) ]
   ++ map (printf "\t%s") recipe
   ++ [""]
-
-mkDoc :: String -> Makefile
-mkDoc texfile = mkRule "doc" [pdffile] []
-              . mkRule pdffile [texfile]
-                  [ printf "pdflatex %s" texfile ]
-  where pdffile = replaceExtension texfile "pdf"

@@ -14,7 +14,7 @@ spec = describe "BNFC.Backend.Latex" $ do
   describe "makefile" $ do
 
     it "creates a makefile for the given tex file" $
-      makefile_ "myFile.tex" `shouldBe`
+      makefile "myFile.tex" `shouldBe`
         unlines [ "all: myFile.pdf",
                   "",
                   "myFile.pdf: myFile.tex",

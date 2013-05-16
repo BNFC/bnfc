@@ -26,7 +26,6 @@ import BNFC.Backend.CPP.NoSTL.CFtoFlex
 import BNFC.Backend.CPP.NoSTL.CFtoBison
 import BNFC.Backend.CPP.NoSTL.CFtoCVisitSkel
 import BNFC.Backend.CPP.NoSTL.CFtoCPPPrinter
-import BNFC.Backend.Latex
 import Data.Char
 import System.Exit (exitFailure)
 import qualified BNFC.Backend.Common.Makefile as Makefile
@@ -51,8 +50,6 @@ makeCPP make name cf = do
     writeFileRep "Printer.H" prinH
     writeFileRep "Printer.C" prinC
     writeFileRep "Test.C" (cpptest cf)
-    let latex = cfToLatex name cf
-    writeFileRep (name ++ ".tex") latex
     if make then (writeFileRep "Makefile" $ makefile name) else return ()
 
 makefile :: String -> String
@@ -84,7 +81,6 @@ makefile name =
     [ "${CC} ${CCFLAGS} -c Printer.C" ]
   $ Makefile.mkRule "Test.o" [ "Test.C", "Parser.H", "Printer.H", "Absyn.H" ]
     [ "${CC} ${CCFLAGS} -c Test.C" ]
-  $ Makefile.mkDoc name
   ""
 
 

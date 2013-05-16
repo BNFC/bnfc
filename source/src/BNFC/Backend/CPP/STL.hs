@@ -28,7 +28,6 @@ import BNFC.Backend.CPP.NoSTL.CFtoFlex
 import BNFC.Backend.CPP.STL.CFtoBisonSTL
 import BNFC.Backend.CPP.STL.CFtoCVisitSkelSTL
 import BNFC.Backend.CPP.STL.CFtoSTLPrinter
-import BNFC.Backend.Latex
 import System.Exit (exitFailure)
 import Data.Char
 import BNFC.Backend.CPP.STL.STLUtils
@@ -54,8 +53,6 @@ makeSTL make linenumbers inPackage name cf = do
     writeFileRep "Printer.H" prinH
     writeFileRep "Printer.C" prinC
     writeFileRep "Test.C" (cpptest inPackage cf)
-    let latex = cfToLatex name cf
-    writeFileRep (name ++ ".tex") latex
     if make then (writeFileRep "Makefile" $ makefile name) else return ()
 
 makefile :: String -> String
@@ -89,7 +86,6 @@ makefile name =
    [ "${CC} ${CCFLAGS} -c Skeleton.C" ]
   $ Makefile.mkRule "Test.o" [ "Test.C", "Parser.H", "Printer.H", "Absyn.H" ]
    [ "${CC} ${CCFLAGS} -c Test.C" ]
-  $ Makefile.mkDoc name
   ""
 
 cpptest :: Maybe String -> CF -> String

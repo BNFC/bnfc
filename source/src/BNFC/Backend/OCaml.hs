@@ -25,7 +25,6 @@ module BNFC.Backend.OCaml (makeOCaml) where
 import BNFC.CF
 import BNFC.Backend.OCaml.CFtoOCamlYacc
 import BNFC.Backend.OCaml.CFtoOCamlLex
-import BNFC.Backend.Latex
 import BNFC.Backend.OCaml.CFtoOCamlAbs
 import BNFC.Backend.OCaml.CFtoOCamlTemplate
 import BNFC.Backend.OCaml.CFtoOCamlPrinter
@@ -111,7 +110,6 @@ makeOCaml opts cf = do
     writeFileRep (ocamllexFile opts) $ cf2ocamllex lexMod parMod cf
     writeFileRep (ocamlyaccFile opts) $
                  cf2ocamlyacc parMod absMod lexMod  cf
-    writeFileRep (latexFile opts)    $ cfToLatex (lang opts) cf
     writeFileRep (templateFile opts) $ cf2Template (templateFileM opts) absMod cf
     writeFileRep (printerFile opts)  $ cf2Printer prMod absMod cf
     writeFileRep (showFile opts)  $ cf2show showMod absMod cf

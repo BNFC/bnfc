@@ -28,7 +28,6 @@ import BNFC.Backend.Haskell.CFtoHappy
 import BNFC.Backend.Haskell.CFtoAlex
 import BNFC.Backend.Haskell.CFtoAlex2
 import BNFC.Backend.Haskell.CFtoAlex3
-import BNFC.Backend.Latex
 import BNFC.Backend.Txt2Tag
 import BNFC.Backend.Haskell.CFtoAbstract
 import BNFC.Backend.Haskell.CFtoTemplate
@@ -82,7 +81,6 @@ makeAll opts cf = do
     writeFileRep (happyFile opts) $
 		 cf2HappyS parMod absMod lexMod errMod (glr opts) (byteStrings opts) cf
     putStrLn "   (Tested with Happy 1.15)"
-    writeFileRep (latexFile opts)    $ cfToLatex (lang opts) cf
     writeFileRep (txtFile opts)      $ cfToTxt (lang opts) cf
     writeFileRep (templateFile opts) $ cf2Template (templateFileM opts) absMod errMod cf
     writeFileRep (printerFile opts)  $ cf2Printer (byteStrings opts) prMod absMod cf
@@ -115,7 +113,6 @@ makefile opts = makeA where
             [ "happy -gca " ++ glr_params ++ happyFile opts
             , "alex -g " ++ alexFile opts
             , "ghc --make " ++ tFile opts ++ " -o " ++ mkFile withLang "Test" "" opts]
-        $ Makefile.mkDoc (takeFileName (latexFile opts))
         $ Makefile.mkRule "clean" []
             [ "-rm -f "  ++ unwords
                 (map (dir++) [ "*.log", "*.aux", "*.hi", "*.o", "*.dvi" ])

@@ -24,13 +24,7 @@ import BNFC.CF
 import BNFC.Backend.HaskellProfile.CFtoHappyProfile
 import BNFC.Backend.Haskell.CFtoAlex
 import BNFC.Backend.Haskell.CFtoAlex2
-import BNFC.Backend.Latex
 import BNFC.Backend.Haskell.MkErrM
----- import CFtoAbstract
----- import CFtoTemplate
----- import CFtoPrinter
----- import CFtoLayout
----- import BNFC.Backend.XML
 import BNFC.Utils
 
 import Data.Char
@@ -51,27 +45,19 @@ nameFile name ext inDir lang =
        then lang ++ "/" ++ name ++ "." ++ ext
        else name ++ lang ++ "." ++ ext
 
-absFile, absFileM, alexFile, alexFileM, dviFile,
- gfAbs, gfConc,
- happyFile, happyFileM,
- latexFile, errFile, errFileM,
- templateFile, templateFileM,
- printerFile, printerFileM,
- layoutFile, layoutFileM,
- psFile, tFile, tFileM, mFile :: Bool -> String -> FilePath
+absFile, absFileM, alexFile, alexFileM, gfAbs, gfConc, happyFile, happyFileM,
+ errFile, errFileM, templateFile, templateFileM, printerFile, printerFileM,
+ layoutFile, layoutFileM, tFile, tFileM, mFile :: Bool -> String -> FilePath
 absFile       = nameFile "Abs" "hs"
 absFileM      = nameMod  "Abs"
 alexFile      = nameFile "Lex" "x"
 alexFileM     = nameMod  "Lex"
 happyFile     = nameFile "Par" "y"
 happyFileM    = nameMod  "Par"
-latexFile     = nameFile "Doc" "tex"
 templateFile  = nameFile "Skel" "hs"
 templateFileM = nameMod  "Skel"
 printerFile   = nameFile "Print" "hs"
 printerFileM  = nameMod  "Print"
-dviFile       = nameFile "Doc" "dvi"
-psFile        = nameFile "Doc" "ps"
 gfAbs         = nameFile "" "Abs.gf"
 gfConc        = nameFile "" "Conc.gf"
 tFile         = nameFile "Test" "hs"
@@ -105,7 +91,6 @@ makeAllProfile make alex1 inDir xml name cfp = do
     writeFileRep (happyFile inDir name) $
 		 cf2HappyProfileS parMod absMod lexMod errMod cfp
     putStrLn "   (Tested with Happy 1.13)"
-    writeFileRep (latexFile inDir name)    $ cfToLatex name cf
 ----    writeFileRep (templateFile inDir name) $
 ----		 cf2Template tplMod absMod errMod cf
 ----    writeFileRep (printerFile inDir name)  $ cf2Printer prMod absMod cf
@@ -132,17 +117,11 @@ makefile inDir name = makeA where
  		 "all:",
                  "\thappy -gca " ++ happyFile False name',
 		 "\talex "  ++ alexFile  False name',
-                 "\tlatex " ++ latexFile False name',
-		 "\tdvips " ++ dviFile   False name' ++ " -o " ++ psFile False name',
 		 "\t" ++ if inDir then
 		           "(" ++ "cd ..; " ++ ghcCommand ++ ")"
                          else ghcCommand,
 		 "clean:",
-		 "\t rm -f " ++ unwords [
-                                         "*.log *.aux *.hi *.o *.dvi",
-				         psFile False name',
-				         "*.o"
-                                        ],
+		 "\t rm -f *.hi *.o",
 		 "distclean: " ++ if inDir then "" else "clean",
 		 if inDir then
 		   "\t rm -rf ../" ++ name -- erase this directory!
