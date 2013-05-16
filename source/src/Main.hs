@@ -80,7 +80,7 @@ data Flags = Version | Multilingual
 printUsageErrors :: [String] -> IO ()
 printUsageErrors msgs = do
   mapM_ (hPutStr stderr) msgs
-  hPutStrLn stderr "usage: bnfc [--version] [-m] <language> <args> file.cf"
+  hPutStrLn stderr "usage: bnfc [--version] [-m] <mode> [<args>] file.cf"
   exitFailure
 
 main :: IO ()
