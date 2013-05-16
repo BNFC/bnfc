@@ -29,10 +29,6 @@ import System.FilePath (pathSeparator)
 infixr 5 +++
 infixr 5 ++++
 infixr 5 +++++
-infixr 2 |||
-infixr 5 ...
-infixr 3 ***
-
 
 -- printing operations
 
@@ -41,36 +37,6 @@ a ++++ b  = a ++ "\n"   ++ b
 a +++++ b = a ++ "\n\n" ++ b
 
 prParenth s = if s == "" then "" else "(" ++ s ++ ")"
-
-
--- parser combinators a` la Wadler and Hutton
-
-type Parser a b = [a] -> [(b,[a])]
-
-(...) :: Parser a b -> Parser a c -> Parser a (b,c)
-(p ... q) s = [((x,y),r) | (x,t) <- p s, (y,r) <- q t]
-
-(|||) :: Parser a b -> Parser a b -> Parser a b
-(p ||| q) s = p s ++ q s
-
-lit :: (Eq a) => a -> Parser a a
-lit x (c:cs) = [(x,cs) | x == c]
-lit _ _ = []
-
-(***) :: Parser a b -> (b -> c) -> Parser a c
-(p *** f) s = [(f x,r) | (x,r) <- p s]
-
-succeed :: b -> Parser a b
-succeed v s = [(v,s)]
-
-fails :: Parser a b
-fails s = []
-
--- to get parse results
-
-parseResults :: Parser a b -> [a] -> [b]
-parseResults p s = [x | (x,r) <- p s, null r]
-
 
 -- * List utilities
 
