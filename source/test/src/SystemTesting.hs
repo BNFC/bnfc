@@ -3,7 +3,7 @@
 {-# OPTIONS_GHC -fno-warn-type-defaults #-}
 module SystemTesting where
 
-import Test.HUnit (assertBool, (@=?), Assertion)
+import Test.HUnit (assertBool, (@=?), Assertion, assertEqual)
 import Test.Framework (defaultMain, testGroup, Test)
 import Test.Framework.Providers.HUnit (testCase)
 import Filesystem.Path (basename, filename)
@@ -135,4 +135,9 @@ assertExists :: FilePath -> Sh ()
 assertExists f = test_f f >>= liftIO . assertBool msg
   where msg = "File " ++ encodeString f ++ " does not exists"
 
-
+-- HUnit assertion: cleaning removed all files
+assertEmpty :: FilePath -> Sh ()
+assertEmpty path = do
+  actual <- ls path
+  let errMsg = "Directory not empty: " ++ show actual
+  liftIO $ assertEqual errMsg [] actual

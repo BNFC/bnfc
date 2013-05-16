@@ -11,26 +11,32 @@ import Prelude hiding (FilePath)
 import Data.Text.Lazy (Text)
 import Control.Exception (assert)
 import Paths_BNFC
-import SystemTesting (systemTestMain, Backend, assertExists)
+import SystemTesting
+import Filesystem.Path
 
 default (Text)
 
 haskellBackend :: Backend
-haskellBackend bnfcBin cfFile testFile =
+haskellBackend bnfc cfFile testFile =
   shelly $ print_commands True $ withTmpDir $ \temp -> do
     cd temp
     -- Preconditions: testing for the existence of the input files
     assertExists cfFile
-    assertExists testFile
     -- run bnfc on the cf file
-    bnfc cfFile
+    cmd bnfc "latex" "--makefile" cfFile
     -- Here we only test that the latex file is produced
-    assertExists latexFile
+    assertExists texfile
+    assertExists "Makefile"
     -- and that it is accepted by pdflatex
-    pdflatex latexFile
-  where pdflatex = cmd "pdflatex"
-        latexFile = decodeString ("Doc" ++ (encodeString $ basename cfFile)) <.> "tex"
-        bnfc = cmd bnfcBin
+    cmd "make"
+    assertExists pdffile
+    cmd "make" "clean"
+    assertExists texfile
+    assertExists "Makefile"
+    cmd "make" "cleanall"
+    pwd >>= assertEmpty
+  where texfile = replaceExtension (basename cfFile) "tex"
+        pdffile = replaceExtension texfile "pdf"
 
 -- Main is defined in SystemTesting, we just pass our backend as a parameter
 main = systemTestMain haskellBackend

@@ -30,6 +30,7 @@ module Main where
 
 -- import Utils
 import BNFC.CF (cfp2cf)
+import qualified BNFC.Backend.Latex as Latex
 import BNFC.Backend.Haskell
 import BNFC.Backend.HaskellGADT
 import BNFC.Backend.HaskellProfile
@@ -55,7 +56,7 @@ import Control.Monad (when,unless)
 
 import Paths_BNFC ( version )
 import Data.Version ( showVersion )
-import System.FilePath (takeFileName)
+import System.FilePath
 import System.IO (stderr, hPutStrLn,hPutStr)
 import BNFC.Options (lookForDeprecatedOptions)
 import System.Console.GetOpt
@@ -96,7 +97,7 @@ main = do
   let bnfcOptions = [
           Option [] ["version"] (NoArg Version) "show version number"
         , Option [] ["multilingual"] (NoArg Multilingual) "multilingual BNF" ]
-  case getOpt' RequireOrder bnfcOptions args of
+  case getOpt' Permute bnfcOptions args of
     -- if --version is present, we print the version and exit
     ([Version],_,_,_) -> putStrLn (showVersion version) >> exitSuccess
     -- Mystery 'multilingual BNF' preprocessing (doc?)
@@ -107,6 +108,13 @@ main = do
          mapM_ mkOne [init args ++ [f] | f <- files]
          mkTestMulti entryp args file files
          mkMakefileMulti args file files
+    -- Latex backend
+    ([],["latex",cffile],args',[]) -> do
+      let name = takeBaseName cffile
+      (cfp, isOk) <- tryReadCFP O.defaultOptions cffile
+      let cf = cfp2cf cfp
+      unless isOk $ fail "Error: Failed"
+      Latex.main (name,cf) args'
     -- standard case
     ([],_,_,[]) -> mkOne args
     -- Anything else: print usage message

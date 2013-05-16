@@ -17,12 +17,32 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 -}
 
-module BNFC.Backend.Latex (cfToLatex) where
+module BNFC.Backend.Latex (cfToLatex,main,makefile_) where
 
-import BNFC.CF
 import AbsBNF (Reg (..))
-import BNFC.Utils
+import Control.Monad (unless,when)
 import Data.List (nub,intersperse)
+import System.Console.GetOpt
+import System.FilePath ((<.>),replaceExtension)
+import Text.Printf
+
+import BNFC.Backend.Common.Makefile as Makefile
+import BNFC.CF
+import BNFC.Utils
+
+data Flags = Makefile
+  deriving (Eq,Show)
+
+latexOptions = [ Option ['m'] ["makefile"] (NoArg Makefile) "generate makefile" ]
+
+main :: (String,CF) -> [String] -> IO ()
+main (name, cf) args = do
+    let (flags,[],errs) = getOpt Permute latexOptions args
+    -- if the option parser reports an error, fails directly
+    unless (null errs) $ fail (concat errs)
+    writeFile texfile (cfToLatex name cf)
+    when (Makefile `elem` flags) $ writeFile "Makefile" (makefile texfile)
+  where texfile = name <.> "tex"
 
 cfToLatex :: String -> CF -> String
 cfToLatex name cf = unlines [
@@ -34,6 +54,21 @@ cfToLatex name cf = unlines [
 			    prtBNF name cf,
 			    endDocument
 			    ]
+
+
+makefile_ = makefile
+makefile :: String -> String
+makefile texfile =
+      Makefile.mkRule "all" [pdffile]
+      []
+    $ Makefile.mkRule pdffile [texfile]
+      [ printf "pdflatex %s" texfile ]
+    $ Makefile.mkRule "clean" []
+      [ "-rm " ++ replaceExtension texfile "{pdf,aux,log}" ]
+    $ Makefile.mkRule "cleanall" ["clean"]
+      [ "-rm Makefile " ++ texfile ]
+    ""
+  where pdffile = replaceExtension texfile "pdf"
 
 introduction :: String
 introduction = concat

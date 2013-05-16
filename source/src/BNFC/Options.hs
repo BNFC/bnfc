@@ -184,6 +184,11 @@ data SharedOptions = Options
     }
   deriving (Eq,Show)
 
+defaultOptions = Options 
+  { make = False, alexMode = Alex3, inDir = False, shareStrings = False
+  , byteStrings = False, glr = Standard, xml = 0, inPackage = Nothing
+  , lang = "", multi = False, cnf = False, targets = [TargetHaskell] }
+
 anyTarget opts vs = any (isOpt opts) vs
   where isOpt     opts v  = elem v $ targets opts
 
