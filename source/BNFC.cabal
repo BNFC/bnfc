@@ -143,16 +143,6 @@ Executable bnfc
     BNFC.Backend.CSharp.CAbstoCSharpVisitSkeleton,
     BNFC.Backend.CSharp.CFtoGPPG,
 
-    -- Java 1.4 backend
-    JavaTop,
-    RegToJLex,
-    CFtoCup,
-    CFtoVisitSkel,
-    CFtoJavaSkeleton,
-    CFtoJavaPrinter,
-    CFtoJavaAbs,
-    CFtoJLex,
-
     -- Java backend
     BNFC.Backend.Java
     BNFC.Backend.Java.CFtoJavaAbs15,
@@ -164,6 +154,7 @@ Executable bnfc
     BNFC.Backend.Java.CFtoJavaPrinter15,
     BNFC.Backend.Java.CFtoJLex15,
     BNFC.Backend.Java.CFtoCup15,
+    BNFC.Backend.Java.RegToJLex
 
     -- XML backend
     BNFC.Backend.XML

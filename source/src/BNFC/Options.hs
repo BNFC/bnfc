@@ -200,7 +200,6 @@ parseArguments args' = do
       let cpp_no_stl = elem "-cpp_no_stl" args
       let cpp_stl = elem "-cpp_stl" args || elem "-cpp" args
       let csharp = elem "-csharp" args
-      let java14 = elem "-java1.4" args
       let java15 = elem "-java1.5" args || elem "-java" args
       let ocaml = elem "-ocaml" args
       let fsharp = elem "-fsharp" args

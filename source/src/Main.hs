@@ -33,7 +33,6 @@ import BNFC.CF (cfp2cf)
 import BNFC.Backend.Haskell
 import BNFC.Backend.HaskellGADT
 import BNFC.Backend.HaskellProfile
-import JavaTop
 import BNFC.Backend.Java
 import BNFC.Backend.CPP.NoSTL
 import BNFC.Backend.CSharp
@@ -138,7 +137,6 @@ mkOne xx =
                                                 -- FIXME: should be an option
                                                 False
                                                 (O.inPackage options)  cf file
-           [ O.TargetJava ]       -> makeJava (O.make options)  name cf
            [ O.TargetJava15 ]     -> makeJava15 (O.make options)
                                                 (O.inPackage options)  name cf
            [ O.TargetOCAML ]      -> makeOCaml options cf
@@ -172,7 +170,6 @@ printUsage = do
   putStrLn "Languages (Only one language mode may be selected.)"
   putStrLn "  -java          Output Java 1.5 code for use with JLex and CUP"
   putStrLn "  -java1.5       Output Java 1.5 code for use with JLex and CUP (same as -java)"
-  putStrLn "  -java1.4       Output Java 1.4 code for use with JLex and CUP (before 2.5 was: -java)"
   putStrLn "  -c             Output C code for use with FLex and Bison"
   putStrLn "  -cpp           Output C++ code for use with FLex and Bison (same as -cpp_stl)"
   putStrLn "  -cpp_stl       Output C++ code for use with FLex and Bison (same as -cpp)"
