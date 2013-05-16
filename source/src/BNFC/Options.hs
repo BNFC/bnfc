@@ -158,7 +158,7 @@ csharpOptions =
 
 data Target = TargetC | TargetCPP |TargetCPP_STL
                 | TargetCSharp |TargetHaskell |TargetHaskellGADT
-                | TargetJava15 |TargetJava |TargetOCAML |TargetProfile
+                | TargetJava |TargetOCAML |TargetProfile
   deriving (Eq,Show)
 
 -- | Which version of Alex is targeted?
@@ -200,7 +200,7 @@ parseArguments args' = do
       let cpp_no_stl = elem "-cpp_no_stl" args
       let cpp_stl = elem "-cpp_stl" args || elem "-cpp" args
       let csharp = elem "-csharp" args
-      let java15 = elem "-java1.5" args || elem "-java" args
+      let java = elem "-java1.5" args || elem "-java" args
       let ocaml = elem "-ocaml" args
       let fsharp = elem "-fsharp" args
       let haskell = elem "-haskell" args
@@ -243,7 +243,7 @@ parseArguments args' = do
                              }
           targets0 = [ TargetC |c] ++ [ TargetCPP | cpp_no_stl ] ++ [TargetCPP_STL  |  cpp_stl
                 ] ++ [ TargetCSharp | csharp] ++ [TargetHaskellGADT|haskellGADT
-                ] ++ [ TargetJava15 |java15] ++ [TargetJava |java14] ++ [TargetOCAML |ocaml] ++ [TargetProfile|profile]
+                ] ++ [ TargetJava |java] ++ [TargetOCAML |ocaml] ++ [TargetProfile|profile]
           targets = if null targets0 then [TargetHaskell] else targets0
       unless (length targets == 1) $
         fail "Error: only one language mode may be chosen"

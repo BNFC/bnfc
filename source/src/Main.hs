@@ -137,7 +137,7 @@ mkOne xx =
                                                 -- FIXME: should be an option
                                                 False
                                                 (O.inPackage options)  cf file
-           [ O.TargetJava15 ]     -> makeJava15 (O.make options)
+           [ O.TargetJava ]       -> makeJava15 (O.make options)
                                                 (O.inPackage options)  name cf
            [ O.TargetOCAML ]      -> makeOCaml options cf
            [ O.TargetProfile ]    -> makeAllProfile (O.make options)

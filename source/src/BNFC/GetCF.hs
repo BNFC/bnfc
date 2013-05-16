@@ -50,7 +50,7 @@ tryReadCFP opts file = do
       msg = msgs1++msgs2 -- ++ msgs3 -- in a future version
       ret = cfp
 
-  let reserved = if anyTarget opts [TargetJava,TargetJava15]
+  let reserved = if anyTarget opts [TargetJava]
                    then [takeWhile (/='.') file] else []
   case filter (not . isDefinedRule) $ notUniqueNames reserved cf of
     ns@(_:_)
