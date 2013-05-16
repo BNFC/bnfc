@@ -57,6 +57,10 @@ import Control.Monad (when,unless)
 import Paths_BNFC ( version )
 import Data.Version ( showVersion )
 import System.FilePath (takeFileName)
+import System.Exit (exitFailure)
+import System.IO (stderr, hPutStrLn)
+import BNFC.Options (lookForDeprecatedOptions)
+import System.Console.GetOpt
 
 title = unlines [
   "The BNF Converter, "++showVersion version,
@@ -68,28 +72,45 @@ title = unlines [
   "Bug reports to bnfc-dev@googlegroups.com."
  ]
 
+data Flags = Version | Multilingual
+
 main :: IO ()
 main = do
-  xx <- getArgs
+  args <- getArgs
 
-  case xx of
-    ["--numeric-version"] -> do
-      putStrLn (showVersion version)
-      exitSuccess
-    [] -> printUsage
-    _ | elem "-multi" xx -> do
-      putStrLn "preprocessing multilingual BNF"
-      let file = last xx
-      (files,entryp) <- preprocessMCF file
-      mapM_ mkOne [init xx ++ [f] | f <- files]
-      mkTestMulti entryp xx file files
-      mkMakefileMulti xx file files
-    _ -> mkOne xx
+  -- First, wo look for deprecated options in the arguments
+  -- if we find any, we report them and exit immediately
+  case lookForDeprecatedOptions args of
+    [] -> return ()
+    msgs -> do  hPutStrLn stderr "Error:"
+                mapM_ (hPutStrLn stderr . ("\t" ++)) msgs
+                exitFailure
+
+  -- next, we parse global options such as --version
+  let bnfcOptions = [
+          Option [] ["version"] (NoArg Version) "show version number"
+        , Option [] ["multilingual"] (NoArg Multilingual) "multilingual BNF" ]
+  case getOpt' RequireOrder bnfcOptions args of
+    -- if --version is present, we print the version and exit
+    ([Version],_,_,_) -> putStrLn (showVersion version) >> exitSuccess
+    -- Mystery 'multilingual BNF' preprocessing (doc?)
+    ([Multilingual],_,_,[]) ->
+      do putStrLn "preprocessing multilingual BNF"
+         let file = last args
+         (files,entryp) <- preprocessMCF file
+         mapM_ mkOne [init args ++ [f] | f <- files]
+         mkTestMulti entryp args file files
+         mkMakefileMulti args file files
+    -- standard case
+    ([],[file],args',[]) -> mkOne args
+    -- Anything else: print usage message
+    (_,_,_,errs) -> printUsage errs
 
 mkOne :: [String] -> IO ()
 mkOne xx = do
+  print xx
   case O.parseArguments xx of
-    Left err -> putStrLn err >> printUsage
+    Left err -> printUsage [err]
     Right (options,file) -> do
       let name = takeWhile (/= '.') $ takeFileName file
       putStrLn title
@@ -131,7 +152,10 @@ mkOne xx = do
        isCF ('c':'f':'n':'b':'.':_) = True
        isCF _                   = False
 
-printUsage = do
+printUsage :: [String] -> IO ()
+printUsage errs = do
+  mapM_ putStr errs
+  putStrLn ""
   putStrLn title
   putStrLn "Usage: bnfc <makeoption>* <language>? <special>* file.cf"
   putStrLn ""

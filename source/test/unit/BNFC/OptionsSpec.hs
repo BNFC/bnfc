@@ -20,16 +20,31 @@ spec = describe "BNFC.Options" $ do
 
   describe "translateArguments" $ do
     it "has warnings iff one of the arguments is deprecated" $
+      let genArguments = listOf $ elements (deprecated ++ others)
+          deprecated =  [ "-java","-java1.5","-java1.4","-c","-cpp","-cpp_stl"
+                        , "-cpp_no_stl","-csharp","-ocaml","-haskell"
+                        , "-prof","-gadt","-alex1","-alex1","-alex3"
+                        , "-sharestrings","-bytestrings","-glr","-xml","-xmlt"
+                        , "-vs","-wcf" ]
+          others =  [ "--java","--java5","--java4","--c","--cpp","--stl"
+                    , "--no-stl","--csharp","--ocaml","--haskell"
+                    , "--prof","--gadt","--alex1","--alex2","--alex3"
+                    , "--sharestrings","--bytestrings","--glr","--xml","--xmlt"
+                    , "--vs","--wcf", "-d", "-p", "-l" ]
+      in
       forAll genArguments $ \args ->
         any (`elem` deprecated) args == hasWarnings (translateArguments args)
-      where genArguments = listOf $ elements (deprecated ++ others)
-            deprecated =  [ "-java","-java1.5","-java1.4","-c","-cpp","-cpp_stl"
-                         , "-cpp_no_stl","-csharp","-ocaml","-haskell"
-                         , "-prof","-gadt","-alex1","-alex1","-alex3"
-                         , "-sharestrings","-bytestrings","-glr","-xml","-xmlt"
-                         , "-vs","-wcf" ]
-            others =  [ "--java","--java5","--java4","--c","--cpp","--stl"
-                      , "--no-stl","--csharp","--ocaml","--haskell"
-                      , "--prof","--gadt","--alex1","--alex2","--alex3"
-                      , "--sharestrings","--bytestrings","--glr","--xml","--xmlt"
-                      , "--vs","--wcf", "-d", "-p", "-l" ]
+
+  describe "lookForDeprecatedOptions" $ do
+
+    it "returns nothing on the empty list" $
+      lookForDeprecatedOptions [] `shouldBe` []
+
+    it "returns an error message if the arguments contain '--numeric-version'" $
+      lookForDeprecatedOptions ["--numeric-version"]
+        `shouldBe` ["--numeric-version is deprecated, use --version instead"]
+
+    it "returns an error message if the arguments contain '-multi'" $
+      lookForDeprecatedOptions ["-multi"]
+        `shouldBe` ["-multi is deprecated, use --multilingual instead"]
+

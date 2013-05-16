@@ -11,6 +11,7 @@ import Control.Monad (liftM)
 import BNFC.WarningM
 import Text.Printf (printf)
 import Data.List (intercalate)
+import Data.Maybe (catMaybes)
 
 -- Allowed extensions for grammar files
 allowed_exts = [ "cf", "bnf", "lbnf", "bnfc" ]
@@ -258,6 +259,7 @@ isCfFile = isCF . reverse
         isCF ('c':'f':'n':'b':'.':_) = True
         isCF _                   = False
 
+
 -- Backward compatibility: This function makes sure that we stay backward
 -- compatible wrt. the old argument names by translating the old arguments
 -- to their new equivalent. In addition, it produces wornings messages
@@ -301,3 +303,14 @@ translateArguments
 
 concatMapM :: Monad m => ( a -> m [b] ) -> [a] -> m [b]
 concatMapM f l = mapM f l >>= return . concat
+
+-- | Given a list of arguments, returns a list of error messages
+-- one for each deprecated argument in the original list
+lookForDeprecatedOptions :: [String] -> [String]
+lookForDeprecatedOptions = catMaybes . map msg
+  where deprecated =  [ ("--numeric-version","--version")
+                      , ("-multi", "--multilingual") ]
+        msg :: String -> Maybe String
+        msg arg = do
+          newArg <- lookup arg deprecated
+          return $ printf "%s is deprecated, use %s instead" arg newArg
