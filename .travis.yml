@@ -3,6 +3,6 @@ before_install:
   - sudo apt-get update -qq
   - sudo apt-get install -qq jlex cup openjdk-6-jdk
   - sudo apt-get install -qq g++
-  - sudo apt-get install -qq texlive-latex-base
+  - sudo apt-get install texlive-latex-base
   - cd source
 env: CLASSPATH=".:/usr/share/java/JLex.jar:/usr/share/java/cup.jar"
