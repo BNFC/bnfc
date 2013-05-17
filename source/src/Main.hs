@@ -71,7 +71,7 @@ title = unlines [
   "Bug reports to bnfc-dev@googlegroups.com."
  ]
 
-data Flags = Version | Multilingual
+data Flags = Version | Multilingual | Help
 
 -- Print erre message and a (short) usage help and exit
 -- note that the argument is a list of error messages like
@@ -95,11 +95,14 @@ main = do
 
   -- next, we parse global options such as --version
   let bnfcOptions = [
-          Option [] ["version"] (NoArg Version) "show version number"
-        , Option [] ["multilingual"] (NoArg Multilingual) "multilingual BNF" ]
-  case getOpt' Permute bnfcOptions args of
+        Option [] ["help"] (NoArg Help) "show help",
+        Option [] ["version"] (NoArg Version) "show version number",
+        Option [] ["multilingual"] (NoArg Multilingual) "multilingual BNF" ]
+  case getOpt' RequireOrder bnfcOptions args of
     -- if --version is present, we print the version and exit
-    ([Version],_,_,_) -> putStrLn (showVersion version) >> exitSuccess
+    (Version:_,_,_,_) -> putStrLn (showVersion version) >> exitSuccess
+    -- if --help is present, we print usage and exit
+    (Help:_,_,_,_) -> printUsage >> exitSuccess
     -- Mystery 'multilingual BNF' preprocessing (doc?)
     ([Multilingual],_,_,[]) ->
       do putStrLn "preprocessing multilingual BNF"
@@ -108,13 +111,9 @@ main = do
          mapM_ mkOne [init args ++ [f] | f <- files]
          mkTestMulti entryp args file files
          mkMakefileMulti args file files
-    -- Latex backend
-    ([],["latex",cffile],args',[]) -> do
-      let name = takeBaseName cffile
-      (cfp, isOk) <- tryReadCFP O.defaultOptions cffile
-      let cf = cfp2cf cfp
-      unless isOk $ fail "Error: Failed"
-      Latex.main (name,cf) args'
+    -- LaTeX backend
+    ([],"latex":args',[],[]) -> do
+      Latex.main args'
     -- standard case
     ([],_,_,[]) -> mkOne args
     -- Anything else: print usage message

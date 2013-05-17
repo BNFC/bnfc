@@ -25,24 +25,43 @@ import Data.List (nub,intersperse)
 import System.Console.GetOpt
 import System.FilePath ((<.>),replaceExtension)
 import Text.Printf
-
+import System.Exit (exitSuccess)
+import System.FilePath (takeBaseName)
+import BNFC.Options (defaultOptions)
 import BNFC.Backend.Common.Makefile as Makefile
 import BNFC.CF
+import BNFC.GetCF
 import BNFC.Utils
 
-data Flags = Makefile
+data Flags = Makefile | Help
   deriving (Eq,Show)
 
-latexOptions = [ Option ['m'] ["makefile"] (NoArg Makefile) "generate makefile" ]
+latexOptions = [ Option ['m'] ["makefile"] (NoArg Makefile) "generate makefile",
+                 Option ['h'] ["help"] (NoArg Help) "print help" ]
 
-main :: (String,CF) -> [String] -> IO ()
-main (name, cf) args = do
-    let (flags,[],errs) = getOpt Permute latexOptions args
+main ::[String] -> IO ()
+main args = do
+    let (flags,cffile,errs) = getOpt Permute latexOptions args
+
+    -- if help is requested, print mode usage and exti
+    when (Help `elem` flags) $ do
+      putStrLn $ usageInfo
+        "Usage: bnfc latex [-h|--help] [-m|--makefile] file.cf"
+        latexOptions
+      exitSuccess
+
     -- if the option parser reports an error, fails directly
     unless (null errs) $ fail (concat errs)
+
+    -- read cf file
+    let name = takeBaseName (head cffile)           -- FIXME: don't use head
+    (cfp, isOk) <- tryReadCFP defaultOptions (head cffile) -- FIXME: remove need to pass options
+    let cf = cfp2cf cfp
+    unless isOk $ fail "Error: Failed"
+
+    let texfile = name <.> "tex"
     writeFile texfile (cfToLatex name cf)
     when (Makefile `elem` flags) $ writeFile "Makefile" (makefile texfile)
-  where texfile = name <.> "tex"
 
 cfToLatex :: String -> CF -> String
 cfToLatex name cf = unlines [
