@@ -48,28 +48,38 @@ spec = describe "BNFC.Options" $ do
         `shouldBe` ["-multi is deprecated, use --multilingual instead\n"]
 
   describe "parseMode" $ do
+
     it "parses random generated modes" $
       forAll arbitrary $ \mode ->
         not( isUsageError mode) ==> parseMode (words (show mode)) `shouldBe` mode
+
     it "returns Help on an empty list of arguments" $
       parseMode [] `shouldBe` Help
+
     it "returns Help if given --help" $
       parseMode ["--help"] `shouldBe` Help
+
     it "returns Version if given --version" $
       parseMode ["--version"] `shouldBe` Version
+
     it "prioritize --help over --version, no mater the order" $
       (parseMode ["--version", "--help"], parseMode ["--help", "--version"])
         `shouldBe` (Help, Help)
+
     it "returns an error if help is given an argument" $
       isUsageError (parseMode ["--help=2"]) `shouldBe` True
+
     it "returns an error if the grammar file is missing" $
       parseMode["--haskell"] `shouldBe` UsageError "Missing grammar file"
+
     it "returns an error if multiple grammar files are given" $
       parseMode["--haskell", "file1.cf", "file2.cf"]
         `shouldBe` UsageError "only one grammar file is allowed"
+
     it "returns an error if multiple target languages are given" $
       parseMode["--haskell", "--c", "file.cf"]
         `shouldBe` UsageError "only one target language is allowed"
+
     it "accept latex as a target language" $
       parseMode["--latex", "--makefile", "file.cf"]
         `shouldBe` Target TargetLatex ["--makefile"] "file.cf"

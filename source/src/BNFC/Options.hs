@@ -255,7 +255,7 @@ targetOptions =
     "Output Haskell code for use with Alex and Happy (default)"
   , Option "" ["haskell-gadt"]  (NoArg TargetHaskellGadt)
     "Output Haskell code which uses GADTs"
-  , Option "" ["latex"]  (NoArg TargetHaskellGadt)
+  , Option "" ["latex"]         (NoArg TargetLatex)
     "Output LaTeX code to generate a PDF description of the language"
   , Option "" ["c"]             (NoArg TargetC)
     "Output C code for use with FLex and Bison"
