@@ -132,8 +132,8 @@ mkOne xx =
         fail "Error: Failed"
       case O.targets options of
            [ O.TargetC ]          -> makeC (O.make options) name cf
-           [ O.TargetCPP ]        -> makeCPP (O.make options) name cf
-           [ O.TargetCPP_STL ]    -> makeSTL (O.make options)
+           [ O.TargetCppNoStl ]   -> makeCPP (O.make options) name cf
+           [ O.TargetCpp ]        -> makeSTL (O.make options)
                                              -- FIXME: should be an option
                                              False
                                              (O.inPackage options)
@@ -146,12 +146,12 @@ mkOne xx =
                                                 (O.inPackage options)  cf file
            [ O.TargetJava ]       -> makeJava15 (O.make options)
                                                 (O.inPackage options)  name cf
-           [ O.TargetOCAML ]      -> makeOCaml options cf
+           [ O.TargetOCaml ]      -> makeOCaml options cf
            [ O.TargetProfile ]    -> makeAllProfile (O.make options)
                                                     (O.alexMode options == O.Alex1)
                                                     False
                                                     (O.xml options)  name cfp
-           [ O.TargetHaskellGADT] -> makeAllGADT options cf
+           [ O.TargetHaskellGadt] -> makeAllGADT options cf
            _                      -> makeAll options cf
       when (O.make options && O.multi options) $ do
             system ("cp Makefile Makefile_" ++ name)

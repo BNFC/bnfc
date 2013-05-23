@@ -54,7 +54,7 @@ tryReadCFP opts file = do
                    then [takeWhile (/='.') file] else []
   case filter (not . isDefinedRule) $ notUniqueNames reserved cf of
     ns@(_:_)
-      | not (anyTarget opts [TargetHaskell,TargetHaskellGADT,TargetOCAML]) -> do
+      | not (anyTarget opts [TargetHaskell,TargetHaskellGadt,TargetOCaml]) -> do
         putStrLn $ "ERROR: names not unique: " ++ unwords ns
         return (ret,False)
     ns -> do

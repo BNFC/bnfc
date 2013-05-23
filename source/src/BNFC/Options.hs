@@ -21,13 +21,13 @@ data AlexVersion = Alex1 | Alex2 | Alex3
   deriving (Show,Eq,Ord)
 
 data Target = TargetC
-            | TargetCPP
-            | TargetCPP_STL
+            | TargetCpp
+            | TargetCppNoStl
             | TargetCSharp
             | TargetHaskell
-            | TargetHaskellGADT
+            | TargetHaskellGadt
             | TargetJava
-            | TargetOCAML
+            | TargetOCaml
             | TargetProfile
   deriving (Eq,Show, Bounded, Enum)
 
@@ -115,9 +115,14 @@ parseArguments args' = do
                              cnf = elem "-cnf" args,
                              targets = targets
                              }
-          targets0 = [ TargetC |c] ++ [ TargetCPP | cpp_no_stl ] ++ [TargetCPP_STL  |  cpp_stl
-                ] ++ [ TargetCSharp | csharp] ++ [TargetHaskellGADT|haskellGADT
-                ] ++ [ TargetJava |java] ++ [TargetOCAML |ocaml] ++ [TargetProfile|profile]
+          targets0 = [ TargetC            | c           ]
+                  ++ [ TargetCppNoStl     | cpp_no_stl  ]
+                  ++ [ TargetCpp          | cpp_stl     ]
+                  ++ [ TargetCSharp       | csharp      ]
+                  ++ [ TargetHaskellGadt  | haskellGADT ]
+                  ++ [ TargetJava         | java        ]
+                  ++ [ TargetOCaml        | ocaml       ]
+                  ++ [ TargetProfile      | profile     ]
           targets = if null targets0 then [TargetHaskell] else targets0
       unless (length targets == 1) $
         fail "Error: only one language mode may be chosen"
@@ -219,13 +224,13 @@ isUsageError _ = False
 
 showTarget :: Target -> String
 showTarget TargetC = "--c"
-showTarget TargetCPP = "--cpp-nostl"
-showTarget TargetCPP_STL = "--cpp"
+showTarget TargetCppNoStl = "--cpp-nostl"
+showTarget TargetCpp = "--cpp"
 showTarget TargetCSharp = "--csharp"
 showTarget TargetHaskell = "--haskell"
-showTarget TargetHaskellGADT = "--haskell-gadt"
+showTarget TargetHaskellGadt = "--haskell-gadt"
 showTarget TargetJava ="--java"
-showTarget TargetOCAML ="--ocaml"
+showTarget TargetOCaml ="--ocaml"
 showTarget TargetProfile ="--profile"
 
 
@@ -242,23 +247,23 @@ globalOptions = [
 
 targetOptions :: [ OptDescr Target ]
 targetOptions =
-  [ Option "" ["java"]   (NoArg TargetJava)
+  [ Option "" ["java"]          (NoArg TargetJava)
     "Output Java code for use with JLex and CUP"
-  , Option "" ["haskell"] (NoArg TargetHaskell)
+  , Option "" ["haskell"]       (NoArg TargetHaskell)
     "Output Haskell code for use with Alex and Happy (default)"
-  , Option "" ["haskell-gadt"] (NoArg TargetHaskellGADT)
+  , Option "" ["haskell-gadt"]  (NoArg TargetHaskellGadt)
     "Output Haskell code which uses GADTs"
-  , Option "" ["c"]       (NoArg TargetC)
+  , Option "" ["c"]             (NoArg TargetC)
     "Output C code for use with FLex and Bison"
-  , Option "" ["cpp"]     (NoArg TargetCPP_STL)
+  , Option "" ["cpp"]           (NoArg TargetCpp)
     "Output C++ code for use with FLex and Bison"
-  , Option "" ["cpp-nostl"]     (NoArg TargetCPP)
+  , Option "" ["cpp-nostl"]     (NoArg TargetCppNoStl)
     "Output C++ code (without STL) for use with FLex and Bison"
-  , Option "" ["csharp"]  (NoArg TargetCSharp)
+  , Option "" ["csharp"]        (NoArg TargetCSharp)
     "Output C# code for use with GPLEX and GPPG"
-  , Option "" ["ocaml"]   (NoArg TargetOCAML)
+  , Option "" ["ocaml"]         (NoArg TargetOCaml)
     "Output OCaml code for use with ocamllex and ocamlyacc"
-  , Option "" ["profile"]   (NoArg TargetProfile)
+  , Option "" ["profile"]       (NoArg TargetProfile)
     "Output Haskell code for rules with permutation profiles" ]
 
 parseMode :: [String] -> Mode
