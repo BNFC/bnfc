@@ -4,7 +4,8 @@ import Test.Hspec
 import Test.QuickCheck
 import System.FilePath ((<.>))
 import BNFC.WarningM
-import Control.Monad (liftM2)
+import Control.Monad (liftM, liftM2)
+import Data.List (intercalate)
 
 import BNFC.Options -- SUT
 
@@ -14,9 +15,7 @@ spec = describe "BNFC.Options" $ do
   describe "isCfFile" $ do
 
     it "returns True for any file name ending with one of the allowed extensions" $
-      let filenames = do
-            liftM2 (<.>) (listOf1 $ elements ['a'..'z']) (elements allowed_exts)
-      in forAll filenames isCfFile
+      forAll (elements allowed_exts >>= arbitraryFilePath) isCfFile
 
   describe "translateArguments" $ do
     it "has warnings iff one of the arguments is deprecated" $
@@ -48,3 +47,52 @@ spec = describe "BNFC.Options" $ do
       lookForDeprecatedOptions ["-multi"]
         `shouldBe` ["-multi is deprecated, use --multilingual instead\n"]
 
+  describe "parseMode" $ do
+    it "parses random generated modes" $
+      forAll arbitrary $ \mode ->
+        not( isUsageError mode) ==>parseMode (words (show mode)) `shouldBe` mode
+
+-- ~~~ Arbitrary instances ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+--  import BNFC.Options
+--  import Test.QuickCheck
+--  import System.FilePath ((<.>))
+
+-- Helper function that generates a string of random length using the given
+-- set of characters. Not that the type signature explicitely uses
+-- [Char] and not String for documentation purposes
+stringOf :: [Char] -> Gen String
+stringOf = listOf . elements
+
+-- | Same as stringOf but only generates non empty strings
+stringOf1 :: [Char] -> Gen String
+stringOf1 = listOf1 . elements
+
+-- | Picks a target at random
+arbitraryTarget :: Gen Target
+arbitraryTarget = elements [minBound .. ]
+
+-- creates a filepath with the given extension
+arbitraryFilePath :: String -> Gen FilePath
+arbitraryFilePath ext = do
+  path <- listOf1 $ stringOf1 ['a'..'z']
+  return $ intercalate "/" path <.> ext
+
+-- Generates unix command line options. Can be in long form (ex: --option)
+-- or short form (ex: -o)
+arbitraryOption :: Gen String
+arbitraryOption = oneof [arbitraryShortOption, arbitraryLongOption]
+  where arbitraryShortOption = liftM (('-':) . (:[])) (elements ['a'..'z'])
+        arbitraryLongOption  = liftM ("--" ++) (stringOf1 ['a'..'z'])
+
+-- Arbitrary instance for Mode
+instance Arbitrary Mode where
+  arbitrary = oneof
+    [ return Help
+    , return Version
+    , liftM UsageError arbitrary          -- generates a random error message
+    , do target <- arbitraryTarget        -- random target
+         cfFile <- arbitraryFilePath "cf"
+         args <- listOf arbitraryOption
+         return $ Target target (args ++ [cfFile])
+    ]

@@ -4,7 +4,8 @@ import System.Console.GetOpt
 
 -- For the old parser
 import Data.Char
-import Data.List (elemIndex, foldl')
+import Data.Maybe (listToMaybe)
+import Data.List (elemIndex, foldl', sort)
 import Control.Monad (when,unless)
 import System.FilePath (takeFileName)
 import Control.Monad (liftM)
@@ -12,7 +13,7 @@ import BNFC.WarningM
 import Text.Printf (printf)
 import Data.List (intercalate)
 import Data.Maybe (catMaybes)
-
+import ErrM
 -- Allowed extensions for grammar files
 allowed_exts = [ "cf", "bnf", "lbnf", "bnfc" ]
 
@@ -29,137 +30,137 @@ type Namespace = String
 -- Java options
 data JavaVersion = Java4 | Java5
   deriving (Show,Eq)
-data Mode
-  -- |
-  = Haskell HaskellVariant AlexVersion Bool Namespace Makefile
-  | Java JavaVersion Namespace Makefile
-  | C Makefile
-  -- | C++ options: the first boolean
-  | Cpp Bool Namespace Makefile
-  | Csharp Namespace Makefile
-  | OCaml Makefile
+-- data Mode
+--   -- |
+--   = Haskell HaskellVariant AlexVersion Bool Namespace Makefile
+--   | Java JavaVersion Namespace Makefile
+--   | C Makefile
+--   -- | C++ options: the first boolean
+--   | Cpp Bool Namespace Makefile
+--   | Csharp Namespace Makefile
+--   | OCaml Makefile
 
 -- * Options getters
-getGenMakefile :: Mode -> Bool
-getGenMakefile (Haskell _ _ _ _ b) = b
-getGenMakefile (Java _ _ b) = b
-getGenMakefile (C b) = b
-getGenMakefile (Cpp _ _ b) = b
-getGenMakefile (Csharp _ b) = b
-getGenMakefile (OCaml b) = b
-
-getHaskellVariant :: Mode -> HaskellVariant
-getHaskellVariant (Haskell v _ _ _ _) = v
-
-getAlexVersion :: Mode -> AlexVersion
-getAlexVersion (Haskell _ v _ _ _) = v
-
-getGLR :: Mode -> Bool
-getGLR (Haskell _ _ glr _ _) = glr
-
-getNamespace :: Mode -> Namespace
-getNamespace (Haskell _ _ _ ns _) = ns
-getNamespace (Java _ ns _) = ns
-getNamespace (Cpp _ ns _) = ns
-getNamespace (Csharp ns _) = ns
-
-getJavaVersion :: Mode -> JavaVersion
-getJavaVersion (Java jv _ _) = jv
-
-
--- * options setters
-setGenMakefile :: Bool -> Mode -> Mode
-setGenMakefile mk (Haskell hv av glr ns _) = Haskell hv av glr ns mk
-setGenMakefile mk (Java jv ns _) = Java jv ns mk
-setGenMakefile mk (C _) = C mk
-setGenMakefile mk (Cpp li ns _) = Cpp li ns mk
-setGenMakefile mk (Csharp ns _) = Csharp ns mk
-setGenMakefile mk (OCaml _) = OCaml mk
-
-setHaskellVariant :: HaskellVariant -> Mode -> Mode
-setHaskellVariant hv (Haskell _ av glr ns mk) = Haskell hv av glr ns mk
-
-setAlexVersion :: AlexVersion -> Mode -> Mode
-setAlexVersion av (Haskell hv _ glr ns mk) = Haskell hv av glr ns mk
-
-setGLR :: Bool -> Mode -> Mode
-setGLR glr (Haskell hv av _ ns mk) = Haskell hv av glr ns mk
-
-setNamespace :: Namespace -> Mode -> Mode
-setNamespace ns (Haskell hv av glr _ mk) = Haskell hv av glr ns mk
-setNamespace ns (Java jv _ mk) = Java jv ns mk
-setNamespace ns (Cpp li _ mk) = Cpp li ns mk
-setNamespace ns (Csharp _ mk) = Csharp ns mk
-
--- * Option parsing
-
-options :: [ OptDescr Mode ]
-options =
-  -- | Mahor modes
-  [ Option "" ["java4"]   (NoArg $ Java Java4 "" False)
-    "Output Java 1.4 code for use with JLex and CUP (before 2.5 was: -java)"
-  , Option "" ["java5"]   (NoArg $ Java Java5 "" False)
-    "Output Java 1.5 code for use with JLex and CUP"
-  , Option "" ["haskell"] (NoArg $ Haskell StandardHaskell Alex3 False "" False)
-    "Output Haskell code for use with Alex and Happy (default)"
-  , Option "" ["c"]       (NoArg $ C False)
-    "Output C code for use with FLex and Bison"
-  , Option "" ["cpp"]     (NoArg $ Cpp False "" False)
-    "Output C++ code for use with FLex and Bison"
-  , Option "" ["csharp"]  (NoArg $ Csharp "" False)
-    "Output C# code for use with GPLEX and GPPG"
-  , Option "" ["ocaml"]   (NoArg $ OCaml False)
-    "Output OCaml code for use with ocamllex and ocamlyacc" ]
-
-haskellOptions :: [ OptDescr (Mode -> Mode) ]
-haskellOptions =
-  [ Option "d" [""]             (NoArg undefined)
-    "Put Haskell code in modules Lang.* instead of Lang*"
-  , Option "p" [""]             (ReqArg setNamespace "<name>")
-    "Prepend <name> to the Haskell module names. Dots in the module name create hierarchical modules."
-  , Option "" ["alex1"]         (NoArg $ setAlexVersion Alex1)
-    "Use Alex 1.1 as Haskell lexer tool"
-  , Option "" ["alex2"]         (NoArg $ setAlexVersion Alex2)
-    "Use Alex 2 as haskell lexer tool"
-  , Option "" ["alex3"]         (NoArg $ setAlexVersion Alex3)
-    "Use Alex 3 as Haskell lexer tool (default)"
-  , Option "" ["sharestrings"]  (NoArg undefined)
-    "Use string sharing in Alex 2 lexer"
-  , Option "" ["bytestrings"]   (NoArg undefined)
-    "Use byte string in Alex 2 lexer"
-  , Option "" ["glr"]           (NoArg undefined)
-    "Output Happy GLR parser"
-  , Option "" ["xml"]           (NoArg undefined)
-    "Also generate a DTD and an XML printer"
-  , Option "" ["xmlt"]          (NoArg undefined)
-    "DTD and an XML printer, another encoding" ]
-
-cppOptions :: [ OptDescr (Mode -> Mode) ]
-cppOptions =
-  [ Option "l" [""]             (NoArg undefined)
-    "Add and set line_number field for all syntax classes"
-  , Option "p" [""]             (NoArg undefined)
-    "Use <namespace> as the C++ namespace" ]
-
-javaOptions :: [ OptDescr (Mode -> Mode) ]
-javaOptions =
-  [ Option "p" [""]             (NoArg undefined)
-    "Prepend <package> to the Java package name" ]
-
-csharpOptions :: [ OptDescr (Mode -> Mode) ]
-csharpOptions =
-  [ Option "p" [""]             (NoArg undefined)
-    "Use <namespace> as the C# namespace"
-  , Option "" ["vs"]            (NoArg undefined)
-    "Generate Visual Studio solution/project files"
-  , Option "" ["wcf"]           (NoArg undefined)
-    "Add support for Windows Communication Foundation, by marking abstract syntax classes as DataContracts" ]
-
-
+-- getGenMakefile :: Mode -> Bool
+-- getGenMakefile (Haskell _ _ _ _ b) = b
+-- getGenMakefile (Java _ _ b) = b
+-- getGenMakefile (C b) = b
+-- getGenMakefile (Cpp _ _ b) = b
+-- getGenMakefile (Csharp _ b) = b
+-- getGenMakefile (OCaml b) = b
+-- 
+-- getHaskellVariant :: Mode -> HaskellVariant
+-- getHaskellVariant (Haskell v _ _ _ _) = v
+-- 
+-- getAlexVersion :: Mode -> AlexVersion
+-- getAlexVersion (Haskell _ v _ _ _) = v
+-- 
+-- getGLR :: Mode -> Bool
+-- getGLR (Haskell _ _ glr _ _) = glr
+-- 
+-- getNamespace :: Mode -> Namespace
+-- getNamespace (Haskell _ _ _ ns _) = ns
+-- getNamespace (Java _ ns _) = ns
+-- getNamespace (Cpp _ ns _) = ns
+-- getNamespace (Csharp ns _) = ns
+-- 
+-- getJavaVersion :: Mode -> JavaVersion
+-- getJavaVersion (Java jv _ _) = jv
+-- 
+-- 
+-- -- * options setters
+-- setGenMakefile :: Bool -> Mode -> Mode
+-- setGenMakefile mk (Haskell hv av glr ns _) = Haskell hv av glr ns mk
+-- setGenMakefile mk (Java jv ns _) = Java jv ns mk
+-- setGenMakefile mk (C _) = C mk
+-- setGenMakefile mk (Cpp li ns _) = Cpp li ns mk
+-- setGenMakefile mk (Csharp ns _) = Csharp ns mk
+-- setGenMakefile mk (OCaml _) = OCaml mk
+-- 
+-- setHaskellVariant :: HaskellVariant -> Mode -> Mode
+-- setHaskellVariant hv (Haskell _ av glr ns mk) = Haskell hv av glr ns mk
+-- 
+-- setAlexVersion :: AlexVersion -> Mode -> Mode
+-- setAlexVersion av (Haskell hv _ glr ns mk) = Haskell hv av glr ns mk
+-- 
+-- setGLR :: Bool -> Mode -> Mode
+-- setGLR glr (Haskell hv av _ ns mk) = Haskell hv av glr ns mk
+-- 
+-- setNamespace :: Namespace -> Mode -> Mode
+-- setNamespace ns (Haskell hv av glr _ mk) = Haskell hv av glr ns mk
+-- setNamespace ns (Java jv _ mk) = Java jv ns mk
+-- setNamespace ns (Cpp li _ mk) = Cpp li ns mk
+-- setNamespace ns (Csharp _ mk) = Csharp ns mk
+-- 
+-- -- * Option parsing
+-- 
+-- options :: [ OptDescr Mode ]
+-- options =
+--   -- | Mahor modes
+--   [ Option "" ["java4"]   (NoArg $ Java Java4 "" False)
+--     "Output Java 1.4 code for use with JLex and CUP (before 2.5 was: -java)"
+--   , Option "" ["java5"]   (NoArg $ Java Java5 "" False)
+--     "Output Java 1.5 code for use with JLex and CUP"
+--   , Option "" ["haskell"] (NoArg $ Haskell StandardHaskell Alex3 False "" False)
+--     "Output Haskell code for use with Alex and Happy (default)"
+--   , Option "" ["c"]       (NoArg $ C False)
+--     "Output C code for use with FLex and Bison"
+--   , Option "" ["cpp"]     (NoArg $ Cpp False "" False)
+--     "Output C++ code for use with FLex and Bison"
+--   , Option "" ["csharp"]  (NoArg $ Csharp "" False)
+--     "Output C# code for use with GPLEX and GPPG"
+--   , Option "" ["ocaml"]   (NoArg $ OCaml False)
+--     "Output OCaml code for use with ocamllex and ocamlyacc" ]
+-- 
+-- haskellOptions :: [ OptDescr (Mode -> Mode) ]
+-- haskellOptions =
+--   [ Option "d" [""]             (NoArg undefined)
+--     "Put Haskell code in modules Lang.* instead of Lang*"
+--   , Option "p" [""]             (ReqArg setNamespace "<name>")
+--     "Prepend <name> to the Haskell module names. Dots in the module name create hierarchical modules."
+--   , Option "" ["alex1"]         (NoArg $ setAlexVersion Alex1)
+--     "Use Alex 1.1 as Haskell lexer tool"
+--   , Option "" ["alex2"]         (NoArg $ setAlexVersion Alex2)
+--     "Use Alex 2 as haskell lexer tool"
+--   , Option "" ["alex3"]         (NoArg $ setAlexVersion Alex3)
+--     "Use Alex 3 as Haskell lexer tool (default)"
+--   , Option "" ["sharestrings"]  (NoArg undefined)
+--     "Use string sharing in Alex 2 lexer"
+--   , Option "" ["bytestrings"]   (NoArg undefined)
+--     "Use byte string in Alex 2 lexer"
+--   , Option "" ["glr"]           (NoArg undefined)
+--     "Output Happy GLR parser"
+--   , Option "" ["xml"]           (NoArg undefined)
+--     "Also generate a DTD and an XML printer"
+--   , Option "" ["xmlt"]          (NoArg undefined)
+--     "DTD and an XML printer, another encoding" ]
+-- 
+-- cppOptions :: [ OptDescr (Mode -> Mode) ]
+-- cppOptions =
+--   [ Option "l" [""]             (NoArg undefined)
+--     "Add and set line_number field for all syntax classes"
+--   , Option "p" [""]             (NoArg undefined)
+--     "Use <namespace> as the C++ namespace" ]
+-- 
+-- javaOptions :: [ OptDescr (Mode -> Mode) ]
+-- javaOptions =
+--   [ Option "p" [""]             (NoArg undefined)
+--     "Prepend <package> to the Java package name" ]
+-- 
+-- csharpOptions :: [ OptDescr (Mode -> Mode) ]
+-- csharpOptions =
+--   [ Option "p" [""]             (NoArg undefined)
+--     "Use <namespace> as the C# namespace"
+--   , Option "" ["vs"]            (NoArg undefined)
+--     "Generate Visual Studio solution/project files"
+--   , Option "" ["wcf"]           (NoArg undefined)
+--     "Add support for Windows Communication Foundation, by marking abstract syntax classes as DataContracts" ]
+-- 
+-- 
 data Target = TargetC | TargetCPP |TargetCPP_STL
                 | TargetCSharp |TargetHaskell |TargetHaskellGADT
                 | TargetJava |TargetOCAML |TargetProfile
-  deriving (Eq,Show)
+    deriving (Eq,Show, Bounded, Enum)
 
 -- | Which version of Alex is targeted?
 
@@ -320,3 +321,92 @@ lookForDeprecatedOptions = catMaybes . map msg
         msg arg = do
           newArg <- lookup arg deprecated
           return $ printf "%s is deprecated, use %s instead\n" arg newArg
+
+-- | To decouple the option parsing from the execution of the program,
+-- we introduce here a new data structure that holds the result of the
+-- parsing of the arguments.
+data Mode
+  -- An error has been made by the user
+  -- e.g. invalid argument/combination of arguments
+  = UsageError String
+  -- Basic modes: print some info and exits
+  | Help | Version
+  -- Normal mode, specifying the back end to use,
+  -- a list of un-parsed arguments to be passed to the backend
+  -- and the path of the input grammar file
+  | Target Target [String]
+  -- multi-mode: same as above except that more than one backend may be
+  -- specified
+  -- | Multi [(Target,[String])] FilePath
+  deriving (Eq)
+instance Show Mode where
+  show Help = "--help"
+  show Version = "--version"
+  show (Target t args) = unwords $ showTarget t:args
+  show (UsageError msg) = "Error " ++ show msg
+
+isUsageError :: Mode -> Bool
+isUsageError (UsageError _) = True
+isUsageError _ = False
+
+showTarget :: Target -> String
+showTarget TargetC = "c"
+showTarget TargetCPP = "cpp"
+showTarget TargetCPP_STL = "cpp-stl"
+showTarget TargetCSharp = "c-sharp"
+showTarget TargetHaskell = "haskell"
+showTarget TargetHaskellGADT = "haskell-gadt"
+showTarget TargetJava ="java"
+showTarget TargetOCAML ="ocaml"
+showTarget TargetProfile ="profile"
+
+
+-- ~~~ Option parsing
+-- This defines bnfc's "global" options, i.e. the options that are allowed
+-- before the sub-command
+data BnfcOption = OptHelp | OptVersion | OptMultilingual
+  deriving (Show, Eq, Ord)
+bnfcOptions :: [ OptDescr BnfcOption ]
+bnfcOptions = [
+  Option [] ["help"]          (NoArg OptHelp)         "show help",
+  Option [] ["version"]       (NoArg OptVersion)      "show version number",
+  Option [] ["multilingual"]  (NoArg OptMultilingual) "multilingual BNF" ]
+
+parseMode :: [String] -> Mode
+parseMode args = fromErrM $ do
+  unless (null errors) $ fail (head errors)
+  case global of
+    Just OptHelp -> return Help
+    Just OptVersion -> return Version
+    Just OptMultilingual -> undefined
+    Nothing | null args' -> return Help
+    Nothing -> case target of
+      Just t -> return $ Target t args''
+      Nothing -> fail $ "Invalid target " ++ head args' -- safe: args' is not null
+  where fromErrM (Bad msg)  = UsageError msg
+        fromErrM (Ok a)     = a
+        -- we use getOpt with RequireOrder which makel getOpt stop option
+        -- processing after the first non-option.
+        -- The returned tuple consist of:
+        -- - the list of processed options
+        -- - a list with the remaining arguments
+        -- - a list of errors
+        (opts,args',errors) =  getOpt RequireOrder bnfcOptions args
+        -- The order in which BnfcOption are defined set their
+        -- priority
+        global = listToMaybe (sort opts)
+        -- The code below relies on haskell's lazyness:
+        -- we assumes that target will only be needed if args' have
+        -- been checked to be non empty
+        target = lookup (head args') targetMap
+        args'' = tail args'
+        targetMap = [ ( "haskell", TargetHaskell )
+                    , ( "c", TargetC )
+                    , ( "cpp", TargetCPP )
+                    , ( "cpp-stl", TargetCPP_STL )
+                    , ( "java", TargetJava )
+                    , ( "c-sharp", TargetCSharp )
+                    , ( "ocaml", TargetOCAML )
+                    , ( "haskell-gadt", TargetHaskellGADT )
+                    , ( "profile", TargetProfile )
+                    ]
