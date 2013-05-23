@@ -50,7 +50,26 @@ spec = describe "BNFC.Options" $ do
   describe "parseMode" $ do
     it "parses random generated modes" $
       forAll arbitrary $ \mode ->
-        not( isUsageError mode) ==>parseMode (words (show mode)) `shouldBe` mode
+        not( isUsageError mode) ==> parseMode (words (show mode)) `shouldBe` mode
+    it "returns Help on an empty list of arguments" $
+      parseMode [] `shouldBe` Help
+    it "returns Help if given --help" $
+      parseMode ["--help"] `shouldBe` Help
+    it "returns Version if given --version" $
+      parseMode ["--version"] `shouldBe` Version
+    it "prioritize --help over --version, no mater the order" $
+      (parseMode ["--version", "--help"], parseMode ["--help", "--version"])
+        `shouldBe` (Help, Help)
+    it "returns an error if help is given an argument" $
+      isUsageError (parseMode ["--help=2"]) `shouldBe` True
+    it "returns an error if the grammar file is missing" $
+      parseMode["--haskell"] `shouldBe` UsageError "Missing grammar file"
+    it "returns an error if multiple grammar files are given" $
+      parseMode["--haskell", "file1.cf", "file2.cf"]
+        `shouldBe` UsageError "only one grammar file is allowed"
+    it "returns an error if multiple target languages are given" $
+      parseMode["--haskell", "--c", "file.cf"]
+        `shouldBe` UsageError "only one target language is allowed"
 
 -- ~~~ Arbitrary instances ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -80,10 +99,12 @@ arbitraryFilePath ext = do
 
 -- Generates unix command line options. Can be in long form (ex: --option)
 -- or short form (ex: -o)
+-- Note: we only use letters x,y,z to make (almost) sure that we are not
+-- going to generate accidentally an global/target language option
 arbitraryOption :: Gen String
 arbitraryOption = oneof [arbitraryShortOption, arbitraryLongOption]
-  where arbitraryShortOption = liftM (('-':) . (:[])) (elements ['a'..'z'])
-        arbitraryLongOption  = liftM ("--" ++) (stringOf1 ['a'..'z'])
+  where arbitraryShortOption = liftM (('-':) . (:[])) (elements ['x'..'z'])
+        arbitraryLongOption  = liftM ("--" ++) (stringOf1 ['x'..'z'])
 
 -- Arbitrary instance for Mode
 instance Arbitrary Mode where
@@ -94,5 +115,5 @@ instance Arbitrary Mode where
     , do target <- arbitraryTarget        -- random target
          cfFile <- arbitraryFilePath "cf"
          args <- listOf arbitraryOption
-         return $ Target target (args ++ [cfFile])
+         return $ Target target args cfFile
     ]

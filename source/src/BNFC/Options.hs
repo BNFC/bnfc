@@ -17,153 +17,21 @@ import ErrM
 -- Allowed extensions for grammar files
 allowed_exts = [ "cf", "bnf", "lbnf", "bnfc" ]
 
--- Haskell options
-data HaskellVariant = StandardHaskell | GADTHaskell | ProfHaskell
-  deriving (Show,Eq)
 data AlexVersion = Alex1 | Alex2 | Alex3
   deriving (Show,Eq,Ord)
-type Makefile = Bool
-type UseGLR = Bool
-data XMLPrinter = NoXML | XML | XMLT
-  deriving (Show,Eq)
-type Namespace = String
--- Java options
-data JavaVersion = Java4 | Java5
-  deriving (Show,Eq)
--- data Mode
---   -- |
---   = Haskell HaskellVariant AlexVersion Bool Namespace Makefile
---   | Java JavaVersion Namespace Makefile
---   | C Makefile
---   -- | C++ options: the first boolean
---   | Cpp Bool Namespace Makefile
---   | Csharp Namespace Makefile
---   | OCaml Makefile
 
--- * Options getters
--- getGenMakefile :: Mode -> Bool
--- getGenMakefile (Haskell _ _ _ _ b) = b
--- getGenMakefile (Java _ _ b) = b
--- getGenMakefile (C b) = b
--- getGenMakefile (Cpp _ _ b) = b
--- getGenMakefile (Csharp _ b) = b
--- getGenMakefile (OCaml b) = b
--- 
--- getHaskellVariant :: Mode -> HaskellVariant
--- getHaskellVariant (Haskell v _ _ _ _) = v
--- 
--- getAlexVersion :: Mode -> AlexVersion
--- getAlexVersion (Haskell _ v _ _ _) = v
--- 
--- getGLR :: Mode -> Bool
--- getGLR (Haskell _ _ glr _ _) = glr
--- 
--- getNamespace :: Mode -> Namespace
--- getNamespace (Haskell _ _ _ ns _) = ns
--- getNamespace (Java _ ns _) = ns
--- getNamespace (Cpp _ ns _) = ns
--- getNamespace (Csharp ns _) = ns
--- 
--- getJavaVersion :: Mode -> JavaVersion
--- getJavaVersion (Java jv _ _) = jv
--- 
--- 
--- -- * options setters
--- setGenMakefile :: Bool -> Mode -> Mode
--- setGenMakefile mk (Haskell hv av glr ns _) = Haskell hv av glr ns mk
--- setGenMakefile mk (Java jv ns _) = Java jv ns mk
--- setGenMakefile mk (C _) = C mk
--- setGenMakefile mk (Cpp li ns _) = Cpp li ns mk
--- setGenMakefile mk (Csharp ns _) = Csharp ns mk
--- setGenMakefile mk (OCaml _) = OCaml mk
--- 
--- setHaskellVariant :: HaskellVariant -> Mode -> Mode
--- setHaskellVariant hv (Haskell _ av glr ns mk) = Haskell hv av glr ns mk
--- 
--- setAlexVersion :: AlexVersion -> Mode -> Mode
--- setAlexVersion av (Haskell hv _ glr ns mk) = Haskell hv av glr ns mk
--- 
--- setGLR :: Bool -> Mode -> Mode
--- setGLR glr (Haskell hv av _ ns mk) = Haskell hv av glr ns mk
--- 
--- setNamespace :: Namespace -> Mode -> Mode
--- setNamespace ns (Haskell hv av glr _ mk) = Haskell hv av glr ns mk
--- setNamespace ns (Java jv _ mk) = Java jv ns mk
--- setNamespace ns (Cpp li _ mk) = Cpp li ns mk
--- setNamespace ns (Csharp _ mk) = Csharp ns mk
--- 
--- -- * Option parsing
--- 
--- options :: [ OptDescr Mode ]
--- options =
---   -- | Mahor modes
---   [ Option "" ["java4"]   (NoArg $ Java Java4 "" False)
---     "Output Java 1.4 code for use with JLex and CUP (before 2.5 was: -java)"
---   , Option "" ["java5"]   (NoArg $ Java Java5 "" False)
---     "Output Java 1.5 code for use with JLex and CUP"
---   , Option "" ["haskell"] (NoArg $ Haskell StandardHaskell Alex3 False "" False)
---     "Output Haskell code for use with Alex and Happy (default)"
---   , Option "" ["c"]       (NoArg $ C False)
---     "Output C code for use with FLex and Bison"
---   , Option "" ["cpp"]     (NoArg $ Cpp False "" False)
---     "Output C++ code for use with FLex and Bison"
---   , Option "" ["csharp"]  (NoArg $ Csharp "" False)
---     "Output C# code for use with GPLEX and GPPG"
---   , Option "" ["ocaml"]   (NoArg $ OCaml False)
---     "Output OCaml code for use with ocamllex and ocamlyacc" ]
--- 
--- haskellOptions :: [ OptDescr (Mode -> Mode) ]
--- haskellOptions =
---   [ Option "d" [""]             (NoArg undefined)
---     "Put Haskell code in modules Lang.* instead of Lang*"
---   , Option "p" [""]             (ReqArg setNamespace "<name>")
---     "Prepend <name> to the Haskell module names. Dots in the module name create hierarchical modules."
---   , Option "" ["alex1"]         (NoArg $ setAlexVersion Alex1)
---     "Use Alex 1.1 as Haskell lexer tool"
---   , Option "" ["alex2"]         (NoArg $ setAlexVersion Alex2)
---     "Use Alex 2 as haskell lexer tool"
---   , Option "" ["alex3"]         (NoArg $ setAlexVersion Alex3)
---     "Use Alex 3 as Haskell lexer tool (default)"
---   , Option "" ["sharestrings"]  (NoArg undefined)
---     "Use string sharing in Alex 2 lexer"
---   , Option "" ["bytestrings"]   (NoArg undefined)
---     "Use byte string in Alex 2 lexer"
---   , Option "" ["glr"]           (NoArg undefined)
---     "Output Happy GLR parser"
---   , Option "" ["xml"]           (NoArg undefined)
---     "Also generate a DTD and an XML printer"
---   , Option "" ["xmlt"]          (NoArg undefined)
---     "DTD and an XML printer, another encoding" ]
--- 
--- cppOptions :: [ OptDescr (Mode -> Mode) ]
--- cppOptions =
---   [ Option "l" [""]             (NoArg undefined)
---     "Add and set line_number field for all syntax classes"
---   , Option "p" [""]             (NoArg undefined)
---     "Use <namespace> as the C++ namespace" ]
--- 
--- javaOptions :: [ OptDescr (Mode -> Mode) ]
--- javaOptions =
---   [ Option "p" [""]             (NoArg undefined)
---     "Prepend <package> to the Java package name" ]
--- 
--- csharpOptions :: [ OptDescr (Mode -> Mode) ]
--- csharpOptions =
---   [ Option "p" [""]             (NoArg undefined)
---     "Use <namespace> as the C# namespace"
---   , Option "" ["vs"]            (NoArg undefined)
---     "Generate Visual Studio solution/project files"
---   , Option "" ["wcf"]           (NoArg undefined)
---     "Add support for Windows Communication Foundation, by marking abstract syntax classes as DataContracts" ]
--- 
--- 
-data Target = TargetC | TargetCPP |TargetCPP_STL
-                | TargetCSharp |TargetHaskell |TargetHaskellGADT
-                | TargetJava |TargetOCAML |TargetProfile
-    deriving (Eq,Show, Bounded, Enum)
+data Target = TargetC
+            | TargetCPP
+            | TargetCPP_STL
+            | TargetCSharp
+            | TargetHaskell
+            | TargetHaskellGADT
+            | TargetJava
+            | TargetOCAML
+            | TargetProfile
+  deriving (Eq,Show, Bounded, Enum)
 
 -- | Which version of Alex is targeted?
-
 data HappyMode = Standard | GLR
   deriving (Eq,Show)
 
@@ -334,7 +202,7 @@ data Mode
   -- Normal mode, specifying the back end to use,
   -- a list of un-parsed arguments to be passed to the backend
   -- and the path of the input grammar file
-  | Target Target [String]
+  | Target Target [String] FilePath
   -- multi-mode: same as above except that more than one backend may be
   -- specified
   -- | Multi [(Target,[String])] FilePath
@@ -342,7 +210,7 @@ data Mode
 instance Show Mode where
   show Help = "--help"
   show Version = "--version"
-  show (Target t args) = unwords $ showTarget t:args
+  show (Target t args f) = unwords $ showTarget t:args ++ [f]
   show (UsageError msg) = "Error " ++ show msg
 
 isUsageError :: Mode -> Bool
@@ -350,15 +218,15 @@ isUsageError (UsageError _) = True
 isUsageError _ = False
 
 showTarget :: Target -> String
-showTarget TargetC = "c"
-showTarget TargetCPP = "cpp"
-showTarget TargetCPP_STL = "cpp-stl"
-showTarget TargetCSharp = "c-sharp"
-showTarget TargetHaskell = "haskell"
-showTarget TargetHaskellGADT = "haskell-gadt"
-showTarget TargetJava ="java"
-showTarget TargetOCAML ="ocaml"
-showTarget TargetProfile ="profile"
+showTarget TargetC = "--c"
+showTarget TargetCPP = "--cpp-nostl"
+showTarget TargetCPP_STL = "--cpp"
+showTarget TargetCSharp = "--csharp"
+showTarget TargetHaskell = "--haskell"
+showTarget TargetHaskellGADT = "--haskell-gadt"
+showTarget TargetJava ="--java"
+showTarget TargetOCAML ="--ocaml"
+showTarget TargetProfile ="--profile"
 
 
 -- ~~~ Option parsing
@@ -366,47 +234,71 @@ showTarget TargetProfile ="profile"
 -- before the sub-command
 data BnfcOption = OptHelp | OptVersion | OptMultilingual
   deriving (Show, Eq, Ord)
-bnfcOptions :: [ OptDescr BnfcOption ]
-bnfcOptions = [
+globalOptions :: [ OptDescr BnfcOption ]
+globalOptions = [
   Option [] ["help"]          (NoArg OptHelp)         "show help",
   Option [] ["version"]       (NoArg OptVersion)      "show version number",
   Option [] ["multilingual"]  (NoArg OptMultilingual) "multilingual BNF" ]
 
+targetOptions :: [ OptDescr Target ]
+targetOptions =
+  [ Option "" ["java"]   (NoArg TargetJava)
+    "Output Java code for use with JLex and CUP"
+  , Option "" ["haskell"] (NoArg TargetHaskell)
+    "Output Haskell code for use with Alex and Happy (default)"
+  , Option "" ["haskell-gadt"] (NoArg TargetHaskellGADT)
+    "Output Haskell code which uses GADTs"
+  , Option "" ["c"]       (NoArg TargetC)
+    "Output C code for use with FLex and Bison"
+  , Option "" ["cpp"]     (NoArg TargetCPP_STL)
+    "Output C++ code for use with FLex and Bison"
+  , Option "" ["cpp-nostl"]     (NoArg TargetCPP)
+    "Output C++ code (without STL) for use with FLex and Bison"
+  , Option "" ["csharp"]  (NoArg TargetCSharp)
+    "Output C# code for use with GPLEX and GPPG"
+  , Option "" ["ocaml"]   (NoArg TargetOCAML)
+    "Output OCaml code for use with ocamllex and ocamlyacc"
+  , Option "" ["profile"]   (NoArg TargetProfile)
+    "Output Haskell code for rules with permutation profiles" ]
+
 parseMode :: [String] -> Mode
-parseMode args = fromErrM $ do
-  unless (null errors) $ fail (head errors)
+parseMode args = either id (const Help) $ do
+  -- we use getOpt' which will ignore any argument it doesn't recognize
+  -- This allows us to split the parsing of options in several 'layers'
+  -- (first global options, then the target language. then each backend is
+  -- responsible for parsing its own options)
+  -- The returned tuple consist of:
+  -- - option arguments
+  -- - a list of non-options
+  -- - a list of unrecognized options
+  -- - and a list of error messages
+  let (opts, files, args', errors) =  getOpt' Permute globalOptions args
+  -- If getOpt' produces errors, we return the first one and stop
+  unless (null errors) $ usageError (head errors)
+  -- The order in which BnfcOption are defined set their
+  -- priority
+  let global = listToMaybe (sort opts)
   case global of
-    Just OptHelp -> return Help
-    Just OptVersion -> return Version
+    Just OptHelp -> Left Help
+    Just OptVersion -> Left Version
     Just OptMultilingual -> undefined
-    Nothing | null args' -> return Help
-    Nothing -> case target of
-      Just t -> return $ Target t args''
-      Nothing -> fail $ "Invalid target " ++ head args' -- safe: args' is not null
-  where fromErrM (Bad msg)  = UsageError msg
-        fromErrM (Ok a)     = a
-        -- we use getOpt with RequireOrder which makel getOpt stop option
-        -- processing after the first non-option.
-        -- The returned tuple consist of:
-        -- - the list of processed options
-        -- - a list with the remaining arguments
-        -- - a list of errors
-        (opts,args',errors) =  getOpt RequireOrder bnfcOptions args
-        -- The order in which BnfcOption are defined set their
-        -- priority
-        global = listToMaybe (sort opts)
-        -- The code below relies on haskell's lazyness:
-        -- we assumes that target will only be needed if args' have
-        -- been checked to be non empty
-        target = lookup (head args') targetMap
-        args'' = tail args'
-        targetMap = [ ( "haskell", TargetHaskell )
-                    , ( "c", TargetC )
-                    , ( "cpp", TargetCPP )
-                    , ( "cpp-stl", TargetCPP_STL )
-                    , ( "java", TargetJava )
-                    , ( "c-sharp", TargetCSharp )
-                    , ( "ocaml", TargetOCAML )
-                    , ( "haskell-gadt", TargetHaskellGADT )
-                    , ( "profile", TargetProfile )
-                    ]
+    Nothing -> return () -- continue analysing
+  -- No arguments left to analyse --> print help
+  when (null args') $ Left Help
+  -- time to parse the arguments again to find the target language.
+  -- Note that we know that we will get an empty list of non-options because
+  -- they should all have been extracted by the last getOpt' call.
+  let (targets, [], args'', errors') =  getOpt' Permute targetOptions args'
+  unless (null errors')   $ usageError (head errors')
+  case (targets,files) of
+    -- Base case: exactly one target language and one file
+    ([target],[file]) -> Left $ Target target args'' file
+    -- no target defaults to haskell
+    ([], [file])      -> Left $ Target TargetHaskell args'' file
+    -- too many targets
+    (_,[_])           -> usageError "only one target language is allowed"
+    -- no file
+    (_, [])           -> usageError "Missing grammar file"
+    -- too many files
+    (_,_)             -> usageError "only one grammar file is allowed"
+  where usageError = Left . UsageError
