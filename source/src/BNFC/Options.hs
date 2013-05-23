@@ -26,6 +26,7 @@ data Target = TargetC
             | TargetCSharp
             | TargetHaskell
             | TargetHaskellGadt
+            | TargetLatex
             | TargetJava
             | TargetOCaml
             | TargetProfile
@@ -229,12 +230,13 @@ showTarget TargetCpp = "--cpp"
 showTarget TargetCSharp = "--csharp"
 showTarget TargetHaskell = "--haskell"
 showTarget TargetHaskellGadt = "--haskell-gadt"
+showTarget TargetLatex = "--latex"
 showTarget TargetJava ="--java"
 showTarget TargetOCaml ="--ocaml"
 showTarget TargetProfile ="--profile"
 
 
--- ~~~ Option parsing
+-- ~~~ Option parsing ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 -- This defines bnfc's "global" options, i.e. the options that are allowed
 -- before the sub-command
 data BnfcOption = OptHelp | OptVersion | OptMultilingual
@@ -253,6 +255,8 @@ targetOptions =
     "Output Haskell code for use with Alex and Happy (default)"
   , Option "" ["haskell-gadt"]  (NoArg TargetHaskellGadt)
     "Output Haskell code which uses GADTs"
+  , Option "" ["latex"]  (NoArg TargetHaskellGadt)
+    "Output LaTeX code to generate a PDF description of the language"
   , Option "" ["c"]             (NoArg TargetC)
     "Output C code for use with FLex and Bison"
   , Option "" ["cpp"]           (NoArg TargetCpp)
@@ -298,8 +302,8 @@ parseMode args = either id (const Help) $ do
   case (targets,files) of
     -- Base case: exactly one target language and one file
     ([target],[file]) -> Left $ Target target args'' file
-    -- no target defaults to haskell
-    ([], [file])      -> Left $ Target TargetHaskell args'' file
+    -- no target
+    ([], _)      -> usageError "Missing target language"
     -- too many targets
     (_,[_])           -> usageError "only one target language is allowed"
     -- no file
