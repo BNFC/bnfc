@@ -70,6 +70,9 @@ spec = describe "BNFC.Options" $ do
     it "returns an error if multiple target languages are given" $
       parseMode["--haskell", "--c", "file.cf"]
         `shouldBe` UsageError "only one target language is allowed"
+    it "accept latex as a target language" $
+      parseMode["--latex", "--makefile", "file.cf"]
+        `shouldBe` Target TargetLatex ["--makefile"] "file.cf"
 
 -- ~~~ Arbitrary instances ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
