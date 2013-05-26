@@ -1,7 +1,10 @@
- {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ExtendedDefaultRules #-}
 {-# OPTIONS_GHC -fno-warn-type-defaults #-}
-module BNFC.Backend.Latex.Test where
+{- This modules contains helper function ta make it easier to integrate
+ - shelly in hspec tests
+ -}
+module ShellyTesting where
 
 import Shelly
 import Test.Hspec
@@ -10,6 +13,7 @@ import Prelude hiding (FilePath)
 import Data.Monoid (mappend)
 import Test.HUnit (assertBool)
 import qualified Data.Text.Lazy as LT
+import BNFC.Backend.Latex -- SUT
 default (LT.Text)
 
 -- | This is a wrapper arround shelly that provides an easy environment
@@ -18,7 +22,7 @@ default (LT.Text)
 -- to the PATH environment variable.
 shTest :: Sh a -> IO a
 shTest cmds = do
-  shelly $ withTmpDir $ \temp -> do
+  shelly $ silently $ withTmpDir $ \temp -> do
   -- We assume that the tests are run from the directory where the .cabal
   -- file is and that it is still the current working dir so we can compute
   -- the path to the needed files
@@ -33,29 +37,16 @@ shTest cmds = do
   cd temp
   cmds
 
+-- | Because of a bug in shelly, we cannot simply call bnfc
+-- with `cmd "bnfc"`. Instead we have to use this `env` trick.
+-- This is a shortcut that does exactly that.
+bnfc :: [LT.Text] -> Sh LT.Text
 bnfc args = run "env" ("bnfc":args)
 
+-- | A custom expectation that runs a Shelly script and check afterwards that
+-- the specified files are present in the temporary directory
 shouldCreate :: Sh a -> [FilePath] -> Expectation
 shouldCreate command fpaths = shTest $ command >> mapM_ assertExists_sh fpaths
   where assertBool_sh msg b = liftIO $ assertBool msg b
         assertExists_sh fp
           = test_e fp >>= assertBool_sh ("File " ++ show fp ++ " wasn't created")
-
-spec = describe "BNFC.Backend.Latex" $ do
-  describe "LaTeX backend" $ do
-    it "creates the .tex file" $
-      bnfc ["--latex", "Calc.cf"] `shouldCreate` ["Calc.tex"]
-    context "given option --makefile" $ it "creates the Makefile" $
-        bnfc ["--latex", "--makefile", "Calc.cf"]
-          `shouldCreate` ["Calc.tex", "Makefile"]
-
-  describe "Haskell backend" $ do
-
-    it "creates the correct set of files" $
-      bnfc ["-haskell", "Calc.cf"]
-        `shouldCreate` ["AbsCalc.hs", "LexCalc.x", "ParCalc.y", "SkelCalc.hs",
-                        "PrintCalc.hs", "TestCalc.hs", "ErrM.hs" ]
-
-    it "creates a Makefile with --makefile" $
-      (bnfc ["-haskell", "-m", "Calc.cf"] >> cmd "ls")
-        `shouldCreate` ["Makefile"]

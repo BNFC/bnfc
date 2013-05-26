@@ -16,8 +16,8 @@ import Filesystem.Path
 
 default (Text)
 
-haskellBackend :: Backend
-haskellBackend bnfc cfFile testFile =
+latexBackend :: Backend
+latexBackend bnfc cfFile testFile =
   shelly $ print_commands True $ withTmpDir $ \temp -> do
     cd temp
     -- Preconditions: testing for the existence of the input files
@@ -39,4 +39,4 @@ haskellBackend bnfc cfFile testFile =
         pdffile = replaceExtension texfile "pdf"
 
 -- Main is defined in SystemTesting, we just pass our backend as a parameter
-main = systemTestMain haskellBackend
+main = systemTestMain latexBackend

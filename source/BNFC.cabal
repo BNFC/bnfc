@@ -261,8 +261,7 @@ Test-suite unit-tests
   Build-Depends: base>=4 && <5, mtl, directory, array, process, filepath, pretty,
                  hspec, QuickCheck == 2.6.*, shelly, text, HUnit
   Main-is: unit-tests.hs
-  HS-source-dirs: src test/unit src/formats
-    src/formats/java
+  HS-source-dirs: src test/src
   Other-modules:
    BNFC.Backend.Common.MakefileSpec
    BNFC.OptionsSpec
