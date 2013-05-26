@@ -259,7 +259,7 @@ Test-suite system-tests-latex
 Test-suite unit-tests
   Type: exitcode-stdio-1.0
   Build-Depends: base>=4 && <5, mtl, directory, array, process, filepath, pretty,
-                 hspec, QuickCheck == 2.6.*
+                 hspec, QuickCheck == 2.6.*, shelly, text, HUnit
   Main-is: unit-tests.hs
   HS-source-dirs: src test/unit src/formats
     src/formats/java

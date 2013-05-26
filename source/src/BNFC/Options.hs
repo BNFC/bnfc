@@ -14,6 +14,9 @@ import Text.Printf (printf)
 import Data.List (intercalate)
 import Data.Maybe (catMaybes)
 import ErrM
+import Paths_BNFC ( version )
+import Data.Version ( showVersion )
+import System.IO (stderr, hPutStrLn,hPutStr)
 -- Allowed extensions for grammar files
 allowed_exts = [ "cf", "bnf", "lbnf", "bnfc" ]
 
@@ -303,7 +306,7 @@ parseMode args = either id (const Help) $ do
     -- Base case: exactly one target language and one file
     ([target],[file]) -> Left $ Target target args'' file
     -- no target
-    ([], _)      -> usageError "Missing target language"
+    ([], _)           -> usageError "Missing target language"
     -- too many targets
     (_,[_])           -> usageError "only one target language is allowed"
     -- no file
@@ -311,3 +314,21 @@ parseMode args = either id (const Help) $ do
     -- too many files
     (_,_)             -> usageError "only one grammar file is allowed"
   where usageError = Left . UsageError
+
+-- ~~~ Help strings ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+title = unlines [
+  "The BNF Converter, "++showVersion version,
+  "(c) Jonas Almström Duregård, Krasimir Angelov, Jean-Philippe Bernardy, Björn Bringert, Johan Broberg, Paul Callaghan, ",
+  "    Grégoire Détrez, Markus Forsberg, Ola Frid, Peter Gammie, Thomas Hallgren, Patrik Jansson, ",
+  "    Kristofer Johannisson, Antti-Juhani Kaijanaho, Ulf Norell, ",
+  "    Michael Pellauer and Aarne Ranta 2002 - 2013.",
+  "Free software under GNU General Public License (GPL).",
+  "Bug reports to bnfc-dev@googlegroups.com."
+ ]
+
+usage :: String
+usage = "usage: bnfc [--version] [--help] <target language> [<args>] file.cf"
+
+help :: String
+help = unlines  [ usage , "" , usageInfo "Global options" globalOptions
+                , usageInfo "Target languages" targetOptions ]

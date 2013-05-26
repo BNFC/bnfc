@@ -23,7 +23,7 @@ haskellBackend bnfc cfFile testFile =
     -- Preconditions: testing for the existence of the input files
     assertExists cfFile
     -- run bnfc on the cf file
-    cmd bnfc "latex" "--makefile" cfFile
+    cmd bnfc "--latex" "--makefile" cfFile
     -- Here we only test that the latex file is produced
     assertExists texfile
     assertExists "Makefile"

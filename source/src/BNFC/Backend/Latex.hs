@@ -17,7 +17,7 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 -}
 
-module BNFC.Backend.Latex (main,makefile) where
+module BNFC.Backend.Latex (backend,makefile) where
 
 import AbsBNF (Reg (..))
 import Control.Monad (unless,when)
@@ -27,37 +27,30 @@ import System.FilePath ((<.>),replaceExtension)
 import Text.Printf
 import System.Exit (exitSuccess)
 import System.FilePath (takeBaseName)
-import BNFC.Options (defaultOptions)
+import BNFC.Options
 import BNFC.Backend.Common.Makefile as Makefile
 import BNFC.CF
 import BNFC.GetCF
 import BNFC.Utils
 
-data Flags = Makefile | Help
+data Flags = Makefile
   deriving (Eq,Show)
 
-latexOptions = [ Option ['m'] ["makefile"] (NoArg Makefile) "generate makefile",
-                 Option ['h'] ["help"] (NoArg Help) "print help" ]
+latexOptions = [ Option ['m'] ["makefile"] (NoArg Makefile) "generate makefile" ]
 
-main ::[String] -> IO ()
-main args = do
+backend ::[String] -> String -> CF -> IO ()
+backend args name cf = do
     let (flags,cffile,errs) = getOpt Permute latexOptions args
 
     -- if help is requested, print mode usage and exti
-    when (Help `elem` flags) $ do
-      putStrLn $ usageInfo
-        "Usage: bnfc latex [-h|--help] [-m|--makefile] file.cf"
-        latexOptions
-      exitSuccess
+    -- when (Help `elem` flags) $ do
+    --   putStrLn $ usageInfo
+    --     "Usage: bnfc latex [-h|--help] [-m|--makefile] file.cf"
+    --     latexOptions
+    --   exitSuccess
 
     -- if the option parser reports an error, fails directly
     unless (null errs) $ fail (concat errs)
-
-    -- read cf file
-    let name = takeBaseName (head cffile)           -- FIXME: don't use head
-    (cfp, isOk) <- tryReadCFP defaultOptions (head cffile) -- FIXME: remove need to pass options
-    let cf = cfp2cf cfp
-    unless isOk $ fail "Error: Failed"
 
     let texfile = name <.> "tex"
     writeFile texfile (cfToLatex name cf)

@@ -31,7 +31,7 @@ module Main where
 -- import Utils
 import BNFC.CF (cfp2cf)
 import qualified BNFC.Backend.Latex as Latex
-import BNFC.Backend.Haskell
+import qualified BNFC.Backend.Haskell as Haskell
 import BNFC.Backend.HaskellGADT
 import BNFC.Backend.HaskellProfile
 import BNFC.Backend.Java
@@ -53,34 +53,18 @@ import System.Cmd (system)
 import Data.Char
 import Data.List (elemIndex, foldl')
 import Control.Monad (when,unless)
-
 import Paths_BNFC ( version )
 import Data.Version ( showVersion )
+
 import System.FilePath
 import System.IO (stderr, hPutStrLn,hPutStr)
-import BNFC.Options (lookForDeprecatedOptions)
+import BNFC.Options
 import System.Console.GetOpt
-
-title = unlines [
-  "The BNF Converter, "++showVersion version,
-  "(c) Jonas Almström Duregård, Krasimir Angelov, Jean-Philippe Bernardy, Björn Bringert, Johan Broberg, Paul Callaghan, ",
-  "    Grégoire Détrez, Markus Forsberg, Ola Frid, Peter Gammie, Thomas Hallgren, Patrik Jansson, ",
-  "    Kristofer Johannisson, Antti-Juhani Kaijanaho, Ulf Norell, ",
-  "    Michael Pellauer and Aarne Ranta 2002 - 2013.",
-  "Free software under GNU General Public License (GPL).",
-  "Bug reports to bnfc-dev@googlegroups.com."
- ]
-
-data Flags = Version | Multilingual | Help
-
--- Print erre message and a (short) usage help and exit
--- note that the argument is a list of error messages like
--- those returned from getOpt and are expected to contain newline
--- characters already.
+-- Print an error message and a (short) usage help and exit
 printUsageErrors :: [String] -> IO ()
-printUsageErrors msgs = do
-  mapM_ (hPutStr stderr) msgs
-  hPutStrLn stderr "usage: bnfc [--version] [-m] <mode> [<args>] file.cf"
+printUsageErrors msg = do
+  mapM_ (hPutStrLn stderr) msg
+  hPutStrLn stderr usage
   exitFailure
 
 main :: IO ()
@@ -93,31 +77,47 @@ main = do
     [] -> return ()
     msgs -> printUsageErrors msgs
 
-  -- next, we parse global options such as --version
-  let bnfcOptions = [
-        Option [] ["help"] (NoArg Help) "show help",
-        Option [] ["version"] (NoArg Version) "show version number",
-        Option [] ["multilingual"] (NoArg Multilingual) "multilingual BNF" ]
-  case getOpt' RequireOrder bnfcOptions args of
-    -- if --version is present, we print the version and exit
-    (Version:_,_,_,_) -> putStrLn (showVersion version) >> exitSuccess
-    -- if --help is present, we print usage and exit
-    (Help:_,_,_,_) -> printUsage >> exitSuccess
-    -- Mystery 'multilingual BNF' preprocessing (doc?)
-    ([Multilingual],_,_,[]) ->
-      do putStrLn "preprocessing multilingual BNF"
-         let file = last args
-         (files,entryp) <- preprocessMCF file
-         mapM_ mkOne [init args ++ [f] | f <- files]
-         mkTestMulti entryp args file files
-         mkMakefileMulti args file files
-    -- LaTeX backend
-    ([],"latex":args',[],[]) -> do
-      Latex.main args'
-    -- standard case
-    ([],_,_,[]) -> mkOne args
-    -- Anything else: print usage message
-    (_,_,_,errs) -> printUsageErrors errs
+  case parseMode args of
+    -- FIXME As long as we are falling back on the old option parser for
+    -- some modes, we cannot trust those error messages
+    -- UsageError e -> printUsageErrors [e]
+    Help -> putStrLn help >> exitSuccess
+    Version ->  putStrLn (showVersion version) >> exitSuccess
+    Target TargetLatex args' f ->
+      readFile f >>= parseLbnf TargetLatex >>= Latex.backend args' (name f)
+    _ -> mkOne args
+  where name = takeBaseName
+
+
+
+-- next, we parse global options such as --version
+--  let bnfcOptions = [
+--        Option [] ["help"] (NoArg Help) "show help",
+--        Option [] ["version"] (NoArg Version) "show version number",
+--        Option [] ["multilingual"] (NoArg Multilingual) "multilingual BNF" ]
+--  case getOpt' RequireOrder bnfcOptions args of
+--    -- if --version is present, we print the version and exit
+--    (Version:_,_,_,_) -> putStrLn (showVersion version) >> exitSuccess
+--    -- if --help is present, we print usage and exit
+--    (Help:_,_,_,_) -> printUsage >> exitSuccess
+--    -- Mystery 'multilingual BNF' preprocessing (doc?)
+--    ([Multilingual],_,_,[]) ->
+--      do putStrLn "preprocessing multilingual BNF"
+--         let file = last args
+--         (files,entryp) <- preprocessMCF file
+--         mapM_ mkOne [init args ++ [f] | f <- files]
+--         mkTestMulti entryp args file files
+--         mkMakefileMulti args file files
+--    -- LaTeX backend
+--    ([],"latex":args',[],[]) -> do
+--      Latex.main args'
+--    -- standard case
+--    ([],_,_,[]) -> mkOne args
+--    -- Anything else: print usage message
+--    (_,_,_,errs) -> printUsageErrors errs
+
+
+
 
 mkOne :: [String] -> IO ()
 mkOne xx =
@@ -126,7 +126,7 @@ mkOne xx =
     Right (options,file) -> do
       let name = takeWhile (/= '.') $ takeFileName file
       putStrLn title
-      (cfp, isOk) <- tryReadCFP options file
+      (cfp, isOk) <- tryReadCFP (head $ O.targets options ++ [TargetHaskell]) file
       let cf = cfp2cf cfp
       unless isOk $
         fail "Error: Failed"
@@ -152,7 +152,7 @@ mkOne xx =
                                                     False
                                                     (O.xml options)  name cfp
            [ O.TargetHaskellGadt] -> makeAllGADT options cf
-           _                      -> makeAll options cf
+           _                      -> Haskell.makeAll options cf
       when (O.make options && O.multi options) $ do
             system ("cp Makefile Makefile_" ++ name)
             return ()
