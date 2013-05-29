@@ -21,7 +21,7 @@ module BNFC.Backend.HaskellGADT.CFtoAbstractGADT (cf2Abstract) where
 
 import BNFC.CF
 import BNFC.Utils((+++),(++++))
-import Data.List(intersperse,nub)
+import Data.List(intersperse,intercalate,nub)
 
 import BNFC.Backend.HaskellGADT.HaskellGADTCommon
 
@@ -30,7 +30,7 @@ import Data.Maybe (catMaybes)
 -- to produce a Haskell module
 cf2Abstract :: Bool -> String -> CF -> String -> String
 cf2Abstract byteStrings name cf composOpMod = unlines $ [
-  "{-# LANGUAGE GADTs, KindSignatures #-}",
+  "{-# LANGUAGE GADTs, KindSignatures, DataKinds #-}",
   "module" +++ name +++ "(" ++ concat (intersperse ", " exports) ++ ")" +++ "where",
   "",
   "import " ++ composOpMod,
@@ -60,16 +60,17 @@ getTreeCats :: CF -> [String]
 getTreeCats cf = nub $ filter (not . isList) $ map consCat $ cf2cons cf
 
 prDummyTypes :: CF -> [String]
-prDummyTypes cf = concatMap prDummyType $ getTreeCats cf
+prDummyTypes cf = [prDummyData] ++ map prDummyType cats
   where
-  prDummyType cat = ["data" +++ t, "type" +++ cat +++ "= Tree" +++ t ]
-   where t = mkRealType cat
+  cats = getTreeCats cf
+  prDummyData = "data Tag =" +++ intercalate " | " (map mkRealType cats)
+  prDummyType cat = "type" +++ cat +++ "= Tree" +++ mkRealType cat
 
 mkRealType :: Cat -> String
 mkRealType cat = cat ++ "_" -- FIXME: make sure that there is no such category already
 
 prTreeType :: Bool -> CF -> [String]
-prTreeType byteStrings cf = ["data Tree :: * -> * where"] ++ map (("    "++) . prTreeCons) (cf2cons cf)
+prTreeType byteStrings cf = ["data Tree :: Tag -> * where"] ++ map (("    "++) . prTreeCons) (cf2cons cf)
  where
  prTreeCons c
       | isPositionCat cf cat = fun +++ ":: ((Int,Int),"++stringType++") -> Tree" +++ mkRealType cat
