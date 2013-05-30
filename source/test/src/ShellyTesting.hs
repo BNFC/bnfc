@@ -8,7 +8,7 @@ module ShellyTesting where
 
 import Shelly
 import Test.Hspec
-import Control.Monad (liftM)
+import Control.Monad (liftM, (>=>))
 import Prelude hiding (FilePath)
 import Data.Monoid (mappend)
 import Test.HUnit (assertBool)
@@ -27,7 +27,7 @@ shTest cmds = do
   -- file is and that it is still the current working dir so we can compute
   -- the path to the needed files
   -- 1. Add bnfc's build dir to the current path
-  absPath ( "dist"</>"build"</>"bnfc") >>= appendToPath
+  absPath ( "dist"</>"build"</>"bnfc") >>= prependToPath
   -- cmd "export" ("PATH=" `mappend` bnfcPath `mappend` ":$PATH")
   -- 2. now we copy the Calc grammar to the temporary dir
   calc <- absPath (".." </> "examples" </> "Calc.cf")
@@ -50,3 +50,12 @@ shouldCreate command fpaths = shTest $ command >> mapM_ assertExists_sh fpaths
   where assertBool_sh msg b = liftIO $ assertBool msg b
         assertExists_sh fp
           = test_e fp >>= assertBool_sh ("File " ++ show fp ++ " wasn't created")
+
+-- | Same as appendToPath but put the new path first
+prependToPath :: FilePath -> Sh ()
+prependToPath = absPath >=> \filepath -> do
+  tp <- toTextWarn filepath
+  pe <- get_env_text path_env
+  setenv path_env $ tp `mappend` ":" `mappend` pe
+  where
+    path_env = "PATH"
