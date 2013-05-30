@@ -237,7 +237,7 @@ lift_parser
 composOp :: String -> String
 composOp composOpMod = unlines
     [
-     "{-# LANGUAGE Rank2Types#-}",
+     "{-# LANGUAGE Rank2Types, PolyKinds #-}",
      "module " ++ composOpMod ++ " (Compos(..),composOp,composOpM,composOpM_,composOpMonoid,",
      "                 composOpMPlus,composOpFold) where",
      "",
