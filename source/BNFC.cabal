@@ -178,6 +178,18 @@ Test-suite system-tests-haskell
   else
     Buildable: False
 
+Test-suite system-tests-haskell-gadt
+  Type: exitcode-stdio-1.0
+  Build-Depends:  base>=4 && <5,
+    HUnit, test-framework, test-framework-hunit,
+    shelly, system-filepath, text
+  Main-is: system-tests-haskell-gadt.hs
+  HS-source-dirs: test/src
+  if flag(haskell-tests)
+    Buildable: True
+  else
+    Buildable: False
+
 Flag java-tests
   Description: Enable/disable testing using the java backend
   Default:     True
