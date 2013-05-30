@@ -1,7 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ExtendedDefaultRules #-}
 {-# OPTIONS_GHC -fno-warn-type-defaults #-}
-module BNFC.Backend.Latex.Test where
+module BNFC.Backend.LatexSpec where
 
 import Shelly
 import ShellyTesting
@@ -11,7 +11,7 @@ import qualified Data.Text.Lazy as LT
 import BNFC.Backend.Latex -- SUT
 default (LT.Text)
 
-spec = describe "BNFC.Backend.Latex" $ do
+spec = do
 
   describe "makefile" $ do
     it "creates a makefile for the given tex file" $
