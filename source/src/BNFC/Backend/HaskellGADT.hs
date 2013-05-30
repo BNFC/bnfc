@@ -237,7 +237,7 @@ lift_parser
 composOp :: String -> String
 composOp composOpMod = unlines
     [
-     "{-# OPTIONS_GHC -fglasgow-exts #-}",
+     "{-# LANGUAGE Rank2Types#-}",
      "module " ++ composOpMod ++ " (Compos(..),composOp,composOpM,composOpM_,composOpMonoid,",
      "                 composOpMPlus,composOpFold) where",
      "",
