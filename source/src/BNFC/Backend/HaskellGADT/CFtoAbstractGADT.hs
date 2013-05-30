@@ -30,7 +30,7 @@ import Data.Maybe (catMaybes)
 -- to produce a Haskell module
 cf2Abstract :: Bool -> String -> CF -> String -> String
 cf2Abstract byteStrings name cf composOpMod = unlines $ [
-  "{-# OPTIONS_GHC -fglasgow-exts #-}",
+  "{-# LANGUAGE GADTs, KindSignatures #-}",
   "module" +++ name +++ "(" ++ concat (intersperse ", " exports) ++ ")" +++ "where",
   "",
   "import " ++ composOpMod,
