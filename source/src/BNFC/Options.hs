@@ -52,6 +52,7 @@ data SharedOptions = Options
      inPackage :: Maybe String, -- ^ The hierarchical package to put
 	                        --   the modules in, or Nothing.
      lang :: String, -- ^ Prefix to use in module names
+     file :: FilePath, -- ^ Path of the input file 
      multi :: Bool,
      cnf :: Bool -- ^ Generate CNF-like tables?
     }
@@ -60,12 +61,15 @@ data SharedOptions = Options
 defaultOptions = Options 
   { make = False, alexMode = Alex3, inDir = False, shareStrings = False
   , byteStrings = False, glr = Standard, xml = 0, inPackage = Nothing
-  , lang = "", multi = False, cnf = False, targets = [TargetHaskell] }
+  , file="", lang = "", multi = False, cnf = False, targets = [TargetHaskell] }
 
 anyTarget opts vs = any (isOpt opts) vs
   where isOpt     opts v  = elem v $ targets opts
 
-parseArguments :: Monad m => [String] -> m (SharedOptions,FilePath)
+name :: SharedOptions -> String
+name = lang
+
+parseArguments :: Monad m => [String] -> m SharedOptions
 parseArguments args' = do
   let args = (map (filter (not . isSpace)) args')
   let file = last args
@@ -115,6 +119,7 @@ parseArguments args' = do
                              xml = xml,
                              inPackage = inPackage,
                              lang = name,
+                             file = file,
                              multi = multi,
                              cnf = elem "-cnf" args,
                              targets = targets
@@ -132,7 +137,7 @@ parseArguments args' = do
         fail "Error: only one language mode may be chosen"
       unless (isCfFile file) $
         fail "Error: the input file must end with .cf"
-      return (options,file)
+      return options
 
 isCfFile = isCF . reverse
   where isCF ('f':'c':'.':_)     = True
