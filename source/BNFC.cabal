@@ -60,6 +60,7 @@ Executable bnfc
     -- BNFC core
     BNFC.Utils,
     BNFC.CF,
+    BNFC.ToCNFCore,
     BNFC.MultiView,
     BNFC.TypeChecker,
     BNFC.GetCF,
