@@ -44,6 +44,7 @@ import System.Exit      ( exitFailure )
 import System.FilePath (pathSeparator)
 import BNFC.Utils
 import BNFC.CF
+import qualified BNFC.Options as O
 import BNFC.Backend.Java.CFtoCup15       	( cf2Cup )
 import BNFC.Backend.Java.CFtoJLex15
 import BNFC.Backend.Java.CFtoJavaAbs15	( cf2JavaAbs )
@@ -61,15 +62,10 @@ import qualified BNFC.Backend.Common.Makefile as Makefile
 -- FIXME: get everything to put the files in the right places.
 -- Adapt Makefile to do the business.
 -------------------------------------------------------------------
-makeJava15 :: Bool
-	  -> Maybe String -- ^ Java package name to put the classes in
-	  -> String -- ^ Name of grammar
+makeJava15 :: O.SharedOptions -- ^ Options
 	  -> CF -- ^ Grammar file
 	  -> IO ()
-makeJava15 = mkFiles
-
-mkFiles :: Bool -> Maybe String -> String -> CF -> IO ()
-mkFiles make inPackage name cf =
+makeJava15 options cf =
     do -- Create the package directories if necessary.
        let packageBase = case inPackage of
                              Nothing -> name
@@ -112,7 +108,9 @@ mkFiles make inPackage name cf =
 
       pkgToDir :: String -> FilePath
       pkgToDir s = replace '.' pathSeparator s ++ [pathSeparator]
-
+      make = O.make options
+      inPackage = O.inPackage options
+      name = O.lang options
 
 -- FIXME get filenames right.
 -- FIXME It's almost certainly better to just feed all the Java source

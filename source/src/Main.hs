@@ -123,8 +123,9 @@ mkOne :: [String] -> IO ()
 mkOne xx =
   case O.parseArguments xx of
     Left err -> printUsageErrors [err ++ "\n"]
-    Right (options,file) -> do
-      let name = takeWhile (/= '.') $ takeFileName file
+    Right options -> do
+      let name = O.lang options
+          file = O.file options
       putStrLn title
       (cfp, isOk) <- tryReadCFP (head $ O.targets options ++ [TargetHaskell]) file
       let cf = cfp2cf cfp
@@ -144,8 +145,7 @@ mkOne xx =
                                                 -- FIXME: should be an option
                                                 False
                                                 (O.inPackage options)  cf file
-           [ O.TargetJava ]       -> makeJava15 (O.make options)
-                                                (O.inPackage options)  name cf
+           [ O.TargetJava ]       -> makeJava15 options cf
            [ O.TargetOCaml ]      -> makeOCaml options cf
            [ O.TargetProfile ]    -> makeAllProfile (O.make options)
                                                     (O.alexMode options == O.Alex1)
