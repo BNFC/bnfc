@@ -69,6 +69,8 @@ anyTarget opts vs = any (isOpt opts) vs
 name :: SharedOptions -> String
 name = lang
 
+-- This should most certainly be changed to use the optparse-applicative package:
+-- http://hackage.haskell.org/package/optparse-applicative
 parseArguments :: Monad m => [String] -> m SharedOptions
 parseArguments args' = do
   let args = (map (filter (not . isSpace)) args')
