@@ -1,7 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ExtendedDefaultRules #-}
 {-# OPTIONS_GHC -fno-warn-type-defaults #-}
-module BNFC.Backend.Haskell.Test where
+module BNFC.Backend.HaskellSpec where
 
 import Shelly
 import ShellyTesting
@@ -11,7 +11,7 @@ import qualified Data.Text.Lazy as LT
 import BNFC.Backend.Latex -- SUT
 default (LT.Text)
 
-spec = describe "BNFC.Backend.Haskell" $ do
+spec = do
 
   it "creates the correct set of files" $
     bnfc ["-haskell", "Calc.cf"]
