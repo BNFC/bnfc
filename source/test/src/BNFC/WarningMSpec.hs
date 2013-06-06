@@ -5,7 +5,7 @@ import Test.Hspec
 import BNFC.WarningM -- SUT
 
 spec :: Spec
-spec = describe "BNFC.WarningM" $ do
+spec = do
 
   describe "run" $ do
 

@@ -10,7 +10,7 @@ import Data.List (intercalate)
 import BNFC.Options -- SUT
 
 spec :: Spec
-spec = describe "BNFC.Options" $ do
+spec = do
 
   describe "isCfFile" $ do
 

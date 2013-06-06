@@ -5,7 +5,7 @@ import Test.Hspec
 import BNFC.Backend.Common.Makefile -- SUT
 
 spec :: Spec
-spec = describe "BNFC.Backend.Common.Makefile" $ do
+spec = do
   describe "mkRule" $ do
 
     it "prduce makefile rules correctly" $
