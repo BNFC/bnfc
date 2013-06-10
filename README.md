@@ -1,6 +1,6 @@
 # What is the BNF Converter?
 
-The BNF Converter is a compiler construction tool generating a compiler front-end from a Labelled BNF grammar. It is currently able to generate C, C++, C#, F#, Haskell, Java, and OCaml, as well as XML representations.
+The BNF Converter is a compiler construction tool generating a compiler front-end from a Labelled BNF grammar. It is currently able to generate C, C++, C#, Haskell, Java, and OCaml, as well as XML representations.
 
 Given a Labelled BNF grammar the tool produces:
 - an abstract syntax implementation
