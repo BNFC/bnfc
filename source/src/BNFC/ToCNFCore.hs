@@ -20,7 +20,7 @@
 
 {-# LANGUAGE OverloadedStrings #-}
 
-module BNFC.ToCNFCore (toCNF, isCat, genNeighborSet, group', catTag, punctuate', onRules, isUnitRule, splitOptim, second, lookupMulti,
+module BNFC.ToCNFCore (toCNF, isCat, neighborSet, group', catTag, punctuate', onRules, isUnitRule, splitOptim, second, lookupMulti,
                        Set, CatDescriptions, UnitRel, RHSEl, Exp(..), prettyExp, appMany, app',after)  where
 
 {-
@@ -250,13 +250,6 @@ lkCat (Left c) s = Left c:lookupMulti c s
 neighborSet cf = map (second (nub . sort)) $ group' [(x',lkCat y leftSet) | Rule _ _ [x,y] <- rulesOfCF cf, x' <- lkCat x rightSet]
   where leftSet  = fixpointOnGrammar "left set"  (leftRight head) cf
         rightSet = fixpointOnGrammar "right set" (leftRight last) cf
-
-genNeighborSet cf = vcat
-              ["neighbors " <> catTag x <> " = " <> ppList (map catTag y)
-              | (x,y) <- neighborSet cf] $$
-               "neighbors _ = []"
-
-ppList = brackets . punctuate' ", "
 
 data Exp = Id -- identity function
           | Con String -- constructor or variable

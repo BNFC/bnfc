@@ -181,6 +181,13 @@ genTokEntry cf units (tok,x) =
              [(Left c,prettyExp (unsafeCoerce' f)) | (f,c) <- lookupMulti (Right tok) units]
         tokVal = "error" <> (text $ show $ "cannot access value of token: " ++ tok)
 
+ppList = brackets . punctuate' ", "
+
+genNeighborSet cf = vcat
+              ["neighbors " <> catTag x <> " = " <> ppList (map catTag y)
+              | (x,y) <- neighborSet cf] $$
+               "neighbors _ = []"
+
 ------------------------
 -- Test file generation
 
