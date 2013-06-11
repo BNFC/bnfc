@@ -2,6 +2,9 @@
 
 set -e
 set -x
+set -u
+
+CABAL=cabal-dev
 
 if [ -f "/usr/share/java/JLex.jar" ]
 then
@@ -35,11 +38,11 @@ export CLASSPATH
 # put it directly in the command.
 flags="$@"
 
-cabal-dev install --only-dependencies --enable-tests
+${CABAL} install --only-dependencies --enable-tests
 if [ -z "$flags" ]; then
-  cabal-dev configure --enable-tests
+  ${CABAL} configure --enable-tests
 else
-  cabal-dev configure --enable-tests -f "$flags"
+  ${CABAL} configure --enable-tests -f "$flags"
 fi
-cabal build
-cabal test
+${CABAL} build
+${CABAL} test
