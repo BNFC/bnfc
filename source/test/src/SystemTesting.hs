@@ -3,17 +3,17 @@
 {-# OPTIONS_GHC -fno-warn-type-defaults #-}
 module SystemTesting where
 
-import Test.HUnit (assertBool, (@=?), Assertion, assertEqual)
-import Test.Framework (defaultMain, testGroup, Test)
-import Test.Framework.Providers.HUnit (testCase)
+import Paths_BNFC
+
+import Control.Exception (assert)
+import Data.Text.Lazy (Text)
 import Filesystem.Path (basename, filename)
 import Filesystem.Path.CurrentOS (decodeString, encodeString)
-import Text.Printf (printf)
-import Shelly
 import Prelude hiding (FilePath)
-import Data.Text.Lazy (Text)
-import Control.Exception (assert)
-import Paths_BNFC
+import Shelly
+import System.Exit (exitFailure,exitSuccess)
+import Test.HUnit
+import Text.Printf (printf)
 
 default (Text)
 
@@ -35,10 +35,14 @@ testCases = do
     , ( "ocl/ocl.cf",   "ocl/test.ocl" ) ]
 
 systemTestMain :: Backend -> IO ()
-systemTestMain backend = testFactory backend >>= defaultMain
+systemTestMain backend = do
+  tests <- testFactory backend
+  counts <- runTestTT tests
+  when (errors counts > 0 || failures counts > 0) exitFailure
+  exitSuccess
 
 -- | Build The Test Suite
-testFactory :: Backend -> IO [Test]
+testFactory :: Backend -> IO Test
 testFactory backend = do
   -- first we have to find where bnfc is. To do that,
   -- we use the getBinDir exposed by cabal and turn the returned
@@ -52,11 +56,11 @@ testFactory backend = do
   cases <- testCases
   -- Then we build a list of test groups (one for each backend)
   -- using the List monad
-  return $ do
+  return $ test $ do
     testC <- cases
     let name = testName testC
     let (cf,test) = testC
-    return $ testCase name (backend bnfcPath cf test)
+    return $ name ~: (backend bnfcPath cf test)
 
 -- | A backend test the given test file (source code corresponding to the
 -- grammar) given a grammar and a binary of bnfc.
