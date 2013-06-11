@@ -38,7 +38,7 @@ import BNFC.Backend.Java
 import BNFC.Backend.CPP.NoSTL
 import BNFC.Backend.CSharp
 import BNFC.Backend.CPP.STL
-import BNFC.Backend.C
+import qualified BNFC.Backend.C as C
 import BNFC.Backend.OCaml
 import BNFC.Backend.XML
 import BNFC.Utils
@@ -85,6 +85,8 @@ main = do
     Version ->  putStrLn (showVersion version) >> exitSuccess
     Target TargetLatex args' f ->
       readFile f >>= parseLbnf TargetLatex >>= Latex.backend args' (name f)
+    Target TargetC args' f ->
+      readFile f >>= parseLbnf TargetC >>= C.backend args' (name f)
     _ -> mkOne args
   where name = takeBaseName
 
@@ -132,7 +134,7 @@ mkOne xx =
       unless isOk $
         fail "Error: Failed"
       case O.targets options of
-           [ O.TargetC ]          -> makeC (O.make options) name cf
+           -- [ O.TargetC ]          -> makeC (O.make options) name cf
            [ O.TargetCppNoStl ]   -> makeCPP (O.make options) name cf
            [ O.TargetCpp ]        -> makeSTL (O.make options)
                                              -- FIXME: should be an option
