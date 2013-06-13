@@ -23,7 +23,7 @@ javaBackend bnfcBin cfFile testFile =
     assertExists cfFile
     assertExists testFile
     -- TODO test existance and executability of bnf
-    bnfc "-m" "-java" cfFile
+    bnfc "-m" "--java" cfFile
     make
     -- Now we run the test programme, passing the content of
     -- the test source file on stdin

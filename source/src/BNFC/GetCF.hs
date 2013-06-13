@@ -18,7 +18,7 @@
 -}
 
 
-module BNFC.GetCF(tryReadCFP, parseLbnf) where
+module BNFC.GetCF(parseCF, parseCFP) where
 
 import Control.Monad		( when )
 
@@ -34,8 +34,12 @@ import Data.Char
 import BNFC.TypeChecker
 import BNFC.Options
 
-parseLbnf :: Target -> String -> IO CF
-parseLbnf target content = do
+
+parseCF :: Target -> String -> IO CF
+parseCF t s = parseCFP t s >>= return . cfp2cf
+
+parseCFP :: Target -> String -> IO CFP
+parseCFP target content = do
   let (cfp,msgs1) = getCFP False content -- TODO this False should be an option
       cf = cfp2cf cfp
       msgs2 = case checkDefinitions cf of
@@ -68,7 +72,7 @@ parseLbnf target content = do
            putStrLn
              "Warning: comment delimiters longer than 2 characters ignored in Haskell:"
            mapM_ putStrLn [b +++ "-" +++ e | (b,e) <- c3s]
-         return cf
+         return cfp
 
 
 readCF :: Target -> FilePath -> IO CFP

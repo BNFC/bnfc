@@ -1,57 +1,26 @@
+{-# LANGUAGE FlexibleInstances, UndecidableInstances #-}
 module BNFC.OptionsSpec where
 
 import Test.Hspec
 import Test.QuickCheck
+import System.Console.GetOpt
 import System.FilePath ((<.>))
 import BNFC.WarningM
 import Control.Monad (liftM, liftM2)
 import Data.List (intercalate)
+import Data.Maybe (fromJust)
+import System.FilePath (takeBaseName)
 
 import BNFC.Options -- SUT
 
 spec :: Spec
 spec = do
 
-  describe "isCfFile" $ do
-
-    it "returns True for any file name ending with one of the allowed extensions" $
-      forAll (elements allowed_exts >>= arbitraryFilePath) isCfFile
-
-  describe "translateArguments" $ do
-    it "has warnings iff one of the arguments is deprecated" $
-      let genArguments = listOf $ elements (deprecated ++ others)
-          deprecated =  [ "-java","-java1.5","-java1.4","-c","-cpp","-cpp_stl"
-                        , "-cpp_no_stl","-csharp","-ocaml","-haskell"
-                        , "-prof","-gadt","-alex1","-alex1","-alex3"
-                        , "-sharestrings","-bytestrings","-glr","-xml","-xmlt"
-                        , "-vs","-wcf" ]
-          others =  [ "--java","--java5","--java4","--c","--cpp","--stl"
-                    , "--no-stl","--csharp","--ocaml","--haskell"
-                    , "--prof","--gadt","--alex1","--alex2","--alex3"
-                    , "--sharestrings","--bytestrings","--glr","--xml","--xmlt"
-                    , "--vs","--wcf", "-d", "-p", "-l" ]
-      in
-      forAll genArguments $ \args ->
-        any (`elem` deprecated) args == hasWarnings (translateArguments args)
-
-  describe "lookForDeprecatedOptions" $ do
-
-    it "returns nothing on the empty list" $
-      lookForDeprecatedOptions [] `shouldBe` []
-
-    it "returns an error message if the arguments contain '--numeric-version'" $
-      lookForDeprecatedOptions ["--numeric-version"]
-        `shouldBe` ["--numeric-version is deprecated, use --version instead\n"]
-
-    it "returns an error message if the arguments contain '-multi'" $
-      lookForDeprecatedOptions ["-multi"]
-        `shouldBe` ["-multi is deprecated, use --multilingual instead\n"]
-
   describe "parseMode" $ do
 
     it "parses random generated modes" $
       forAll arbitrary $ \mode ->
-        not( isUsageError mode) ==> parseMode (words (show mode)) `shouldBe` mode
+        not(isUsageError mode) ==> parseMode (linearize mode) `shouldBe` mode
 
     it "returns Help on an empty list of arguments" $
       parseMode [] `shouldBe` Help
@@ -74,21 +43,61 @@ spec = do
 
     it "returns an error if multiple grammar files are given" $
       parseMode["--haskell", "file1.cf", "file2.cf"]
-        `shouldBe` UsageError "only one grammar file is allowed"
+        `shouldBe` UsageError "Too many arguments"
 
     it "returns an error if multiple target languages are given" $
       parseMode["--haskell", "--c", "file.cf"]
         `shouldBe` UsageError "only one target language is allowed"
 
-    it "accept latex as a target language" $
-      parseMode["--latex", "--makefile", "file.cf"]
-        `shouldBe` Target TargetLatex ["--makefile"] "file.cf"
+    it "accept latex as a target language" $ do
+      parseMode["--latex", "-m", "file.cf"]
+        `shouldBe` Target TargetLatex (defaultOptions {make = True, lang = "file"}) "file.cf"
+
+  describe "myGetOpt'" $
+    it "returns the input arguments if it cannot parse any options" $
+      forAll (listOf randomOption) $ \args ->
+        myGetOpt' [] args `shouldBe` ([]::[()],args,[])
+
+  describe "OptParse monad" $ do
+    it "returns Help if no other mode is selected" $
+      forAll (listOf arbitraryOption) $ \args ->
+        runOptParse [] (return ()) `shouldBe` Help
+
+    it "returns any declared mode" $
+      forAll arbitrary $ \m ->
+        runOptParse [] (setmode m) `shouldBe` m
+
+    it "always returns the first declared mode" $
+      forAll arbitrary $ \(m1,m2) ->
+        runOptParse [] (setmode m1 >> setmode m2) `shouldBe` m1
+
+-- ~~~ Useful functions ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+-- Turn a mode in a list of argiments
+-- FIXME: only generate the backend flag currently
+linearize :: Mode -> [String]
+linearize mode = case mode of
+    Help            -> [o "help"]
+    Version         -> [o "version"]
+    Target t _ file -> [lin t, file]
+  where lin t = fromJust $ lookup t targets
+        targets = map (\(Option _ [s] (NoArg t) _ ) -> (t,o s)) targetOptions
+        o = ("--"++)
+
 
 -- ~~~ Arbitrary instances ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 --  import BNFC.Options
 --  import Test.QuickCheck
 --  import System.FilePath ((<.>))
+
+randomOption :: Gen String
+randomOption = oneof [ nonOption, noArg, withArg ]
+  where nonOption = stringOf1 ['a'..'z'] -- non-option argument
+        noArg     = nonOption >>= return . ("--"++) -- flag
+        withArg   = do
+          arg   <- nonOption
+          flag  <- noArg
+          return $ flag ++ "=" ++ arg
 
 -- Helper function that generates a string of random length using the given
 -- set of characters. Not that the type signature explicitely uses
@@ -100,9 +109,8 @@ stringOf = listOf . elements
 stringOf1 :: [Char] -> Gen String
 stringOf1 = listOf1 . elements
 
--- | Picks a target at random
-arbitraryTarget :: Gen Target
-arbitraryTarget = elements [minBound .. ]
+
+instance Arbitrary Target where arbitrary = elements [minBound .. ]
 
 -- creates a filepath with the given extension
 arbitraryFilePath :: String -> Gen FilePath
@@ -125,8 +133,8 @@ instance Arbitrary Mode where
     [ return Help
     , return Version
     , liftM UsageError arbitrary          -- generates a random error message
-    , do target <- arbitraryTarget        -- random target
+    , do target <- arbitrary              -- random target
          cfFile <- arbitraryFilePath "cf"
-         args <- listOf arbitraryOption
+         let args = defaultOptions { lang = takeBaseName cfFile}
          return $ Target target args cfFile
     ]

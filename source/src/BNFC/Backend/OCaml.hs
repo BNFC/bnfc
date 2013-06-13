@@ -44,18 +44,18 @@ import Control.Monad(when)
 
 -- naming conventions
 
-noLang :: Options -> String -> String
+noLang :: SharedOptions -> String -> String
 noLang _ name = name
 
-withLang :: Options -> String -> String
+withLang :: SharedOptions -> String -> String
 withLang opts name = name ++ lang opts
 
-mkMod :: (Options -> String -> String) -> String -> Options -> String
+mkMod :: (SharedOptions -> String -> String) -> String -> SharedOptions -> String
 mkMod addLang name opts =
     pref ++ if inDir opts then lang opts ++ "." ++ name else addLang opts name
         where pref = maybe "" (++".") (inPackage opts)
 
-mkFile :: (Options -> String -> String) -> String -> String -> Options -> FilePath
+mkFile :: (SharedOptions -> String -> String) -> String -> String -> SharedOptions -> FilePath
 mkFile addLang name ext opts =
     pref ++ if inDir opts
        then lang opts </> name ++ ext'
@@ -68,7 +68,7 @@ absFile, absFileM, ocamllexFile, ocamllexFileM,
  utilFile, utilFileM,
  templateFile, templateFileM,
  printerFile, printerFileM,
- tFile, tFileM :: Options -> String
+ tFile, tFileM :: SharedOptions -> String
 absFile       = mkFile withLang "Abs" "ml"
 absFileM      = mkMod  withLang "Abs"
 ocamllexFile      = mkFile withLang "Lex" "mll"
@@ -87,10 +87,7 @@ utilFile       = mkFile noLang   "BNFC_Util" "ml"
 utilFileM      = mkMod  noLang   "BNFC_Util"
 xmlFileM      = mkMod  withLang "XML"
 
-type Options = SharedOptions
-
--- FIXME: we probably don't need all these arguments
-makeOCaml :: Options -> CF -> IO ()
+makeOCaml :: Backend
 makeOCaml opts cf = do
   let absMod = absFileM opts
       lexMod = ocamllexFileM opts
@@ -122,7 +119,7 @@ makeOCaml opts cf = do
 pkgToDir :: String -> FilePath
 pkgToDir s = replace '.' pathSeparator s
 
-codeDir :: Options -> FilePath
+codeDir :: SharedOptions -> FilePath
 codeDir opts = let pref = maybe "" pkgToDir (inPackage opts)
                    dir = if inDir opts then lang opts else ""
                    sep = if null pref || null dir then "" else [pathSeparator]

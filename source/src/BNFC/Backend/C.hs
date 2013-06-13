@@ -16,12 +16,13 @@
     along with this program; if not, write to the Free Software
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 -}
-module BNFC.Backend.C (backend) where
+module BNFC.Backend.C (makeC) where
 
 import BNFC.Utils
 import Control.Monad (unless,when)
 import System.Console.GetOpt
 import BNFC.CF
+import BNFC.Options
 import BNFC.Backend.C.CFtoCAbs
 import BNFC.Backend.C.CFtoFlexC
 import BNFC.Backend.C.CFtoBisonC
@@ -31,18 +32,8 @@ import Data.Char
 import System.Exit (exitFailure)
 import qualified BNFC.Backend.Common.Makefile as Makefile
 
-data Flags = Makefile
-  deriving (Eq,Show)
-
-cOptions = [ Option ['m'] ["makefile"] (NoArg Makefile) "generate makefile" ]
-
-backend ::[String] -> String -> CF -> IO ()
-backend args name cf = do
-    let (flags,_,errs) = getOpt Permute cOptions args
-
-    -- if the option parser reports an error, fails directly
-    unless (null errs) $ fail (concat errs)
-
+makeC :: Backend
+makeC opts cf = do
     let (hfile, cfile) = cf2CAbs prefix cf
     writeFileRep "Absyn.h" hfile
     writeFileRep "Absyn.c" cfile
@@ -61,7 +52,7 @@ backend args name cf = do
     writeFileRep "Printer.h" prinH
     writeFileRep "Printer.c" prinC
     writeFileRep "Test.c" (ctest cf)
-    when (Makefile `elem` flags) $ writeFileRep "Makefile" (makefile name prefix)
+    when (make opts) $ writeFileRep "Makefile" (makefile name prefix)
   where prefix :: String  -- The prefix is a string used by flex and bison
                           -- that is prepended to generated function names.
                           -- In most cases we want the grammar name as the prefix
@@ -69,6 +60,7 @@ backend args name cf = do
                           -- with existing functions
         prefix = if name `elem` ["m","c","re","std","str"]
                   then name ++ "_" else name
+        name = lang opts
 
 
 makefile :: String -> String -> String
