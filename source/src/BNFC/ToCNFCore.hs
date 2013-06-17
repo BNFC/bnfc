@@ -20,7 +20,7 @@
 
 {-# LANGUAGE OverloadedStrings #-}
 
-module BNFC.ToCNFCore (toCNF, isCat, neighborSet, group', catTag, punctuate', onRules, isUnitRule, splitOptim, second, lookupMulti,
+module BNFC.ToCNFCore (toCNF, isCat, group', catTag, punctuate', onRules, isUnitRule, splitOptim, second, lookupMulti,
                        Set, CatDescriptions, UnitRel, RHSEl, Exp(..), prettyExp, appMany, app',after)  where
 
 {-
@@ -50,12 +50,13 @@ second g = id *** g
 
 onRules f (CFG (exts,rules)) = CFG (exts,f rules)
 
-toCNF cf0 = (cf1,cf2,units,descriptions)
+toCNF cf0 = (cf1,cf2,units,descriptions,neighbors)
   where cf01@(CFG (exts01,_)) = funToExp . onRules delInternal $ cf0
         (rules',descriptions) = toBin (rulesOfCF cf01)
         cf1 = CFG (exts01,rules')
         cf2 = delNull cf1
         units = unitSet cf2
+        neighbors = neighborSet cf2
 
 funToExp :: CFG Fun -> CFG Exp
 funToExp = fmap toExp
@@ -246,7 +247,7 @@ leftRight pos s (Rule f c rhs) = M.singleton c (lkCat x s)
 lkCat (Right t) s = [Right t]
 lkCat (Left c) s = Left c:lookupMulti c s
 
--- neighbors A B = ∃ A' B'.  A ∈ rightOf A'  ∧  B ∈ leftOf B
+-- neighbors A B = ∃ A' B'. P ::= A' B' ∧  A ∈ rightOf A'  ∧  B ∈ leftOf B
 neighborSet cf = map (second (nub . sort)) $ group' [(x',lkCat y leftSet) | Rule _ _ [x,y] <- rulesOfCF cf, x' <- lkCat x rightSet]
   where leftSet  = fixpointOnGrammar "left set"  (leftRight head) cf
         rightSet = fixpointOnGrammar "right set" (leftRight last) cf

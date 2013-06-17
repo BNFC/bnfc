@@ -52,7 +52,7 @@ generate opts cf0 = render $ vcat [header opts
                                   ,genShowFunction cf0
                                   ,genCatTags cf1
                                   ,genDesc cf1 descriptions
-                                  ,genNeighborSet cf1
+                                  ,genNeighborSet neighbors
                                   ,genCombTable units (onRules (filter (not . isUnitRule)) cf)
                                   ,genTokTable units cf
                                   ,incomment $ vcat
@@ -62,7 +62,7 @@ generate opts cf0 = render $ vcat [header opts
                                    ,prettyUnitSet units
                                    ]
                                   ]
-  where (cf1,cf,units,descriptions) = toCNF cf0
+  where (cf1,cf,units,descriptions,neighbors) = toCNF cf0
 
 class Pretty a where
   pretty :: a -> Doc
@@ -183,9 +183,9 @@ genTokEntry cf units (tok,x) =
 
 ppList = brackets . punctuate' ", "
 
-genNeighborSet cf = vcat
+genNeighborSet ns = vcat
               ["neighbors " <> catTag x <> " = " <> ppList (map catTag y)
-              | (x,y) <- neighborSet cf] $$
+              | (x,y) <- ns] $$
                "neighbors _ = []"
 
 ------------------------
