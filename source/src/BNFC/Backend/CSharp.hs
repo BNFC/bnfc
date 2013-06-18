@@ -39,6 +39,7 @@ module BNFC.Backend.CSharp (makeCSharp) where
 
 import BNFC.Utils
 import BNFC.CF
+import BNFC.Options
 import BNFC.Backend.Common.OOAbstract
 import BNFC.Backend.CSharp.CAbstoCSharpAbs
 import BNFC.Backend.CSharp.CFtoGPLEX
@@ -57,19 +58,14 @@ import System.Process
 import Data.Maybe
 import Data.Char
 import Control.Monad.ST
+import Control.Monad (when)
 import qualified BNFC.Backend.Common.Makefile as Makefile
 import System.FilePath ((<.>),takeFileName)
 -- Control.Monad.State
 
-makeCSharp :: Bool -- Makefile
-           -> Bool -- Visual Studio files
-           -> Bool -- Windows Communication Foundation support
-           -> Maybe Namespace -- C# namespace to use
-           -> CF
-           -> FilePath
-           -> IO ()
-makeCSharp make vsfiles wcfSupport maybenamespace cf file = do
-      let namespace    = fromMaybe (filepathtonamespace file) maybenamespace
+makeCSharp :: Backend
+makeCSharp opts cf = do
+      let namespace    = fromMaybe (lang opts) maybenamespace
           cabs         = cf2cabs cf
           absyn        = cabs2csharpabs namespace cabs wcfSupport
           (gplex, env) = cf2gplex namespace cf
@@ -86,8 +82,12 @@ makeCSharp make vsfiles wcfSupport maybenamespace cf file = do
       writeFileRep "VisitSkeleton.cs" skeleton
       writeFileRep "Printer.cs" printer
       writeFileRep "Test.cs" (csharptest namespace cf)
-      if vsfiles then (writeVisualStudioFiles namespace) else return ()
-      if make then (writeMakefile namespace) else return ()
+      when vsfiles (writeVisualStudioFiles namespace)
+      when makefile (writeMakefile namespace)
+  where makefile = make opts
+        vsfiles = visualStudio opts
+        wcfSupport = wcf opts
+        maybenamespace = inPackage opts
 
 writeMakefile :: Namespace -> IO ()
 writeMakefile namespace = do

@@ -17,9 +17,10 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 -}
 
-module BNFC.Backend.CPP.NoSTL (makeCPP) where
+module BNFC.Backend.CPP.NoSTL (makeCppNoStl) where
 
 import BNFC.Utils
+import BNFC.Options
 import BNFC.CF
 import BNFC.Backend.CPP.NoSTL.CFtoCPPAbs
 import BNFC.Backend.CPP.NoSTL.CFtoFlex
@@ -28,10 +29,11 @@ import BNFC.Backend.CPP.NoSTL.CFtoCVisitSkel
 import BNFC.Backend.CPP.NoSTL.CFtoCPPPrinter
 import Data.Char
 import System.Exit (exitFailure)
+import Control.Monad (when)
 import qualified BNFC.Backend.Common.Makefile as Makefile
 
-makeCPP :: Bool -> String -> CF -> IO ()
-makeCPP make name cf = do
+makeCppNoStl :: Backend
+makeCppNoStl opts cf = do
     let (hfile, cfile) = cf2CPPAbs name cf
     writeFileRep "Absyn.H" hfile
     writeFileRep "Absyn.C" cfile
@@ -50,7 +52,8 @@ makeCPP make name cf = do
     writeFileRep "Printer.H" prinH
     writeFileRep "Printer.C" prinC
     writeFileRep "Test.C" (cpptest cf)
-    if make then (writeFileRep "Makefile" $ makefile name) else return ()
+    when (make opts) $ writeFileRep "Makefile" $ makefile name
+  where name = lang opts
 
 makefile :: String -> String
 makefile name =

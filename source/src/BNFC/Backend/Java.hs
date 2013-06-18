@@ -33,21 +33,21 @@
 -- > $Id: JavaTop15.hs,v 1.12 2007/01/08 18:20:23 aarne Exp $
 -------------------------------------------------------------------
 
-module BNFC.Backend.Java ( makeJava15 ) where
+module BNFC.Backend.Java ( makeJava ) where
 
 -------------------------------------------------------------------
 -- Dependencies.
 -------------------------------------------------------------------
-import System.Directory	( createDirectory )
-import System.IO.Error	( isAlreadyExistsError )
-import System.Exit      ( exitFailure )
+import System.Directory ( createDirectory )
+import System.IO.Error ( isAlreadyExistsError )
+import System.Exit ( exitFailure )
 import System.FilePath (pathSeparator)
 import BNFC.Utils
 import BNFC.CF
-import qualified BNFC.Options as O
-import BNFC.Backend.Java.CFtoCup15       	( cf2Cup )
+import BNFC.Options as Options
+import BNFC.Backend.Java.CFtoCup15 ( cf2Cup )
 import BNFC.Backend.Java.CFtoJLex15
-import BNFC.Backend.Java.CFtoJavaAbs15	( cf2JavaAbs )
+import BNFC.Backend.Java.CFtoJavaAbs15 ( cf2JavaAbs )
 import BNFC.Backend.Java.CFtoJavaPrinter15
 import BNFC.Backend.Java.CFtoVisitSkel15
 import BNFC.Backend.Java.CFtoComposVisitor
@@ -62,10 +62,8 @@ import qualified BNFC.Backend.Common.Makefile as Makefile
 -- FIXME: get everything to put the files in the right places.
 -- Adapt Makefile to do the business.
 -------------------------------------------------------------------
-makeJava15 :: O.SharedOptions -- ^ Options
-	  -> CF -- ^ Grammar file
-	  -> IO ()
-makeJava15 options cf =
+makeJava :: Backend
+makeJava options cf =
     do -- Create the package directories if necessary.
        let packageBase = case inPackage of
                              Nothing -> name
@@ -108,9 +106,9 @@ makeJava15 options cf =
 
       pkgToDir :: String -> FilePath
       pkgToDir s = replace '.' pathSeparator s ++ [pathSeparator]
-      make = O.make options
-      inPackage = O.inPackage options
-      name = O.lang options
+      make = Options.make options
+      inPackage = Options.inPackage options
+      name = Options.lang options
 
 -- FIXME get filenames right.
 -- FIXME It's almost certainly better to just feed all the Java source

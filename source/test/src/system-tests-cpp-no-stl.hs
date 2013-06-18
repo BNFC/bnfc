@@ -23,7 +23,7 @@ cBackend bnfcBin cfFile testFile =
     assertExists cfFile
     assertExists testFile
     -- TODO test existance and executability of bnf
-    bnfc "-m" "-cpp_no_stl" cfFile
+    bnfc "-m" "--cpp-nostl" cfFile
     make
     -- Now we run the test programme, passing the content of
     -- the test source file on stdin

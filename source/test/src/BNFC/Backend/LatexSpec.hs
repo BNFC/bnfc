@@ -29,5 +29,5 @@ spec = do
     it "creates the .tex file" $
       bnfc ["--latex", "Calc.cf"] `shouldCreate` ["Calc.tex"]
     it "creates the Makefile" $
-      bnfc ["--latex", "--makefile", "Calc.cf"]
+      bnfc ["--latex", "-m", "Calc.cf"]
         `shouldCreate` ["Calc.tex", "Makefile"]

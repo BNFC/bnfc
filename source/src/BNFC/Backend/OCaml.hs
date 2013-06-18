@@ -23,6 +23,7 @@
 module BNFC.Backend.OCaml (makeOCaml) where
 
 import BNFC.CF
+import BNFC.Backend.Common.Makefile
 import BNFC.Backend.OCaml.CFtoOCamlYacc
 import BNFC.Backend.OCaml.CFtoOCamlLex
 import BNFC.Backend.OCaml.CFtoOCamlAbs
@@ -43,18 +44,18 @@ import Control.Monad(when)
 
 -- naming conventions
 
-noLang :: Options -> String -> String
+noLang :: SharedOptions -> String -> String
 noLang _ name = name
 
-withLang :: Options -> String -> String
+withLang :: SharedOptions -> String -> String
 withLang opts name = name ++ lang opts
 
-mkMod :: (Options -> String -> String) -> String -> Options -> String
+mkMod :: (SharedOptions -> String -> String) -> String -> SharedOptions -> String
 mkMod addLang name opts =
     pref ++ if inDir opts then lang opts ++ "." ++ name else addLang opts name
         where pref = maybe "" (++".") (inPackage opts)
 
-mkFile :: (Options -> String -> String) -> String -> String -> Options -> FilePath
+mkFile :: (SharedOptions -> String -> String) -> String -> String -> SharedOptions -> FilePath
 mkFile addLang name ext opts =
     pref ++ if inDir opts
        then lang opts </> name ++ ext'
@@ -62,37 +63,31 @@ mkFile addLang name ext opts =
     where pref = maybe "" (\p->pkgToDir p </> "") (inPackage opts)
           ext' = if null ext then "" else "." ++ ext
 
-absFile, absFileM, ocamllexFile, ocamllexFileM, dviFile,
+absFile, absFileM, ocamllexFile, ocamllexFileM,
  ocamlyaccFile, ocamlyaccFileM,
- latexFile, utilFile, utilFileM,
+ utilFile, utilFileM,
  templateFile, templateFileM,
  printerFile, printerFileM,
- psFile, tFile, tFileM :: Options -> String
+ tFile, tFileM :: SharedOptions -> String
 absFile       = mkFile withLang "Abs" "ml"
 absFileM      = mkMod  withLang "Abs"
 ocamllexFile      = mkFile withLang "Lex" "mll"
 ocamllexFileM     = mkMod  withLang "Lex"
 ocamlyaccFile     = mkFile withLang "Par" "mly"
 ocamlyaccFileM    = mkMod  withLang "Par"
-latexFile     = mkFile withLang "Doc" "tex"
 templateFile  = mkFile withLang "Skel" "ml"
 templateFileM = mkMod  withLang "Skel"
 printerFile   = mkFile withLang "Print" "ml"
 printerFileM  = mkMod  withLang "Print"
 showFile      = mkFile  withLang "Show" "ml"
 showFileM     = mkMod  withLang "Show"
-dviFile       = mkFile withLang "Doc" "dvi"
-psFile        = mkFile withLang "Doc" "ps"
 tFile         = mkFile withLang "Test" "ml"
 tFileM        = mkMod  withLang "Test"
 utilFile       = mkFile noLang   "BNFC_Util" "ml"
 utilFileM      = mkMod  noLang   "BNFC_Util"
 xmlFileM      = mkMod  withLang "XML"
 
-type Options = SharedOptions
-
--- FIXME: we probably don't need all these arguments
-makeOCaml :: Options -> CF -> IO ()
+makeOCaml :: Backend
 makeOCaml opts cf = do
   let absMod = absFileM opts
       lexMod = ocamllexFileM opts
@@ -124,57 +119,41 @@ makeOCaml opts cf = do
 pkgToDir :: String -> FilePath
 pkgToDir s = replace '.' pathSeparator s
 
-codeDir :: Options -> FilePath
+codeDir :: SharedOptions -> FilePath
 codeDir opts = let pref = maybe "" pkgToDir (inPackage opts)
                    dir = if inDir opts then lang opts else ""
                    sep = if null pref || null dir then "" else [pathSeparator]
                  in pref ++ sep ++ dir
 
-makefile :: Options -> String
-makefile opts = makeA where
-  dir = let d = codeDir opts in if null d then "" else d ++ [pathSeparator]
-  cd c = if null dir then c else "(cd " ++ dir ++ "; " ++ c ++ ")"
-  makeA = unlines
-                [
-                 "all:",
-                 "\tocamlyacc " ++ ocamlyaccFile opts,
-                 "\tocamllex "  ++ ocamllexFile opts,
-                 "\t" ++ cd ("latex " ++ takeFileName (latexFile opts)
-                             ++ "; " ++ "dvips " ++ takeFileName (dviFile opts)
-                             ++ " -o " ++ takeFileName (psFile opts)),
-                 "\tocamlc -o " ++ mkFile withLang "Test" "" opts +++
-                    utilFile opts +++
-                    absFile opts +++ templateFile opts +++
-                    showFile opts +++ printerFile opts +++
-                    mkFile withLang "Par" "mli" opts +++
-                    mkFile withLang "Par" "ml" opts +++
-                    mkFile withLang "Lex" "ml" opts +++
-                    tFile opts,
-                 "",
-                 "clean:",
-                 "\t-rm -f " ++ unwords (map (dir++) [
-                                                       "*.log", "*.aux", "*.cmi",
-                                                       "*.cmo", "*.o", "*.dvi"
-                                                      ]),
-                 "\t-rm -f " ++ psFile opts,
-                 "",
-                 "distclean: clean",
-                 "\t-rm -f " ++ unwords [
-                                         mkFile withLang "Doc" "*" opts,
-                                         mkFile withLang "Lex" "*" opts,
-                                         mkFile withLang "Par" "*" opts,
-                                         mkFile withLang "Layout" "*" opts,
-                                         mkFile withLang "Skel" "*" opts,
-                                         mkFile withLang "Print" "*" opts,
-                                         mkFile withLang "Show" "*" opts,
-                                         mkFile withLang "Test" "*" opts,
-                                         mkFile withLang "Abs" "*" opts,
-                                         mkFile withLang "Test" "" opts,
-                                         utilFile opts,
-                                         "Makefile*"
-                                        ]
-                ]
-
+makefile :: SharedOptions -> String
+makefile opts =
+    mkRule "all" []
+      [ "ocamlyacc " ++ ocamlyaccFile opts
+      , "ocamllex "  ++ ocamllexFile opts
+      , "ocamlc -o " ++ mkFile withLang "Test" "" opts +++
+                        utilFile opts +++
+                        absFile opts +++ templateFile opts +++
+                        showFile opts +++ printerFile opts +++
+                        mkFile withLang "Par" "mli" opts +++
+                        mkFile withLang "Par" "ml" opts +++
+                        mkFile withLang "Lex" "ml" opts +++
+                        tFile opts ]
+  $ mkRule "clean" []
+      [ "-rm -f " ++ unwords (map (dir++) [ "*.cmi", "*.cmo", "*.o" ]) ]
+  $ mkRule "distclean" ["clean"]
+      [ "-rm -f " ++ unwords [ mkFile withLang "Lex" "*" opts,
+                               mkFile withLang "Par" "*" opts,
+                               mkFile withLang "Layout" "*" opts,
+                               mkFile withLang "Skel" "*" opts,
+                               mkFile withLang "Print" "*" opts,
+                               mkFile withLang "Show" "*" opts,
+                               mkFile withLang "Test" "*" opts,
+                               mkFile withLang "Abs" "*" opts,
+                               mkFile withLang "Test" "" opts,
+                               utilFile opts,
+                               "Makefile*" ]]
+  ""
+  where dir = let d = codeDir opts in if null d then "" else d ++ [pathSeparator]
 
 utilM :: String
 utilM = unlines
