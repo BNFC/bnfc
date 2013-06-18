@@ -22,7 +22,7 @@ haskellBackendCNF bnfcBin cfFile testFile =
     
     assertExists cfFile
     assertExists testFile
-    bnfc "-m" "-cnf" "-haskell" cfFile
+    bnfc "-m" "--cnf" "--haskell" cfFile
     make
     readfile testFile >>= setStdin
     test
