@@ -17,10 +17,11 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 -}
 
-module BNFC.Backend.HaskellProfile (makeAllProfile) where
+module BNFC.Backend.HaskellProfile (makeHaskellProfile) where
 
 -- import Utils
 import BNFC.CF
+import BNFC.Options
 import BNFC.Backend.HaskellProfile.CFtoHappyProfile
 import BNFC.Backend.Haskell.CFtoAlex
 import BNFC.Backend.Haskell.CFtoAlex2
@@ -69,43 +70,44 @@ layoutFileM   = nameMod  "Layout"
 xmlFileM      = nameMod  "XML"
 layoutFile    = nameFile "Layout" "hs"
 
-makeAllProfile :: Bool -> Bool -> Bool -> Int -> String -> CFP -> IO ()
-makeAllProfile make alex1 inDir xml name cfp = do
-  let absMod = absFileM      inDir name
-      lexMod = alexFileM     inDir name
-      parMod = happyFileM    inDir name
-      prMod  = printerFileM  inDir name
-      layMod = layoutFileM   inDir name
-      tplMod = templateFileM inDir name
-      errMod = errFileM      inDir name
+makeHaskellProfile :: SharedOptions -> CFP -> IO ()
+makeHaskellProfile opts cfp = do
+  let absMod = absFileM      (inDir opts) name
+      lexMod = alexFileM     (inDir opts) name
+      parMod = happyFileM    (inDir opts) name
+      prMod  = printerFileM  (inDir opts) name
+      layMod = layoutFileM   (inDir opts) name
+      tplMod = templateFileM (inDir opts) name
+      errMod = errFileM      (inDir opts) name
   let cf = cfp2cf cfp
   do
-    when inDir (prepareDir name)
-----    writeFileRep (absFile  inDir name) $ cf2Abstract (absFileM inDir name) cf
-    if (alex1) then do
-		    writeFileRep (alexFile inDir name) $ cf2alex lexMod errMod cf
+    when (inDir opts) (prepareDir name)
+----    writeFileRep (absFile  (inDir opts) name) $ cf2Abstract (absFileM (inDir opts) name) cf
+    if (alexMode opts == Alex1) then do
+		    writeFileRep (alexFile (inDir opts) name) $ cf2alex lexMod errMod cf
 		    putStrLn "   (Use Alex 1.1 to compile.)"
 	       else do
-		    writeFileRep (alexFile inDir name) $ cf2alex2 lexMod errMod "" False False cf
+		    writeFileRep (alexFile (inDir opts) name) $ cf2alex2 lexMod errMod "" False False cf
                     putStrLn "   (Use Alex 2.0 to compile.)"
-    writeFileRep (happyFile inDir name) $
+    writeFileRep (happyFile (inDir opts) name) $
 		 cf2HappyProfileS parMod absMod lexMod errMod cfp
     putStrLn "   (Tested with Happy 1.13)"
-----    writeFileRep (templateFile inDir name) $
+----    writeFileRep (templateFile (inDir opts) name) $
 ----		 cf2Template tplMod absMod errMod cf
-----    writeFileRep (printerFile inDir name)  $ cf2Printer prMod absMod cf
+----    writeFileRep (printerFile (inDir opts) name)  $ cf2Printer prMod absMod cf
 ----    if hasLayout cf then
-----      writeFileRep (layoutFile inDir name) $ cf2Layout alex1 inDir layMod lexMod cf
+----      writeFileRep (layoutFile (inDir opts) name) $ cf2Layout alex1 (inDir opts) layMod lexMod cf
 ----      else return ()
-    writeFileRep (tFile inDir name)        $ testfile inDir name (xml>0) cf
-    writeFileRep (errFile inDir name)      $ errM errMod cf
-    if make
-       then (writeFileRep (mFile inDir name) $ makefile inDir name)
+    writeFileRep (tFile (inDir opts) name)        $ testfile (inDir opts) name (xml opts>0) cf
+    writeFileRep (errFile (inDir opts) name)      $ errM errMod cf
+    if (make opts)
+       then (writeFileRep (mFile (inDir opts) name) $ makefile (inDir opts) name)
        else return ()
 ----    case xml of
 ----      2 -> makeXML name True cf
 ----      1 -> makeXML name False cf
 ----      _ -> return ()
+  where name = lang opts
 
 makefile :: Bool -> String -> String
 makefile inDir name = makeA where

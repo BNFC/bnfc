@@ -14,10 +14,10 @@ default (LT.Text)
 spec = do
 
   it "creates the correct set of files" $
-    bnfc ["-haskell", "Calc.cf"]
+    bnfc ["--haskell", "Calc.cf"]
       `shouldCreate` ["AbsCalc.hs", "LexCalc.x", "ParCalc.y", "SkelCalc.hs",
                       "PrintCalc.hs", "TestCalc.hs", "ErrM.hs" ]
 
   it "creates a Makefile with --makefile" $
-    (bnfc ["-haskell", "-m", "Calc.cf"] >> cmd "ls")
+    (bnfc ["--haskell", "-m", "Calc.cf"] >> cmd "ls")
       `shouldCreate` ["Makefile"]

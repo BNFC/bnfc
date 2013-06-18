@@ -17,7 +17,7 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 -}
 
-module BNFC.Backend.Haskell (makeAll, AlexVersion(..), makefile) where
+module BNFC.Backend.Haskell (makeHaskell, AlexVersion(..), makefile) where
 
 
 
@@ -53,8 +53,8 @@ import System.FilePath (takeFileName)
 
 
 
-makeAll :: Options -> CF -> IO ()
-makeAll opts cf = do
+makeHaskell :: Backend
+makeHaskell opts cf = do
   let absMod = absFileM opts
       lexMod = alexFileM opts
       parMod = happyFileM opts
@@ -65,8 +65,8 @@ makeAll opts cf = do
   do
     let dir = codeDir opts
     unless (null dir) $ do
-			    putStrLn $ "Creating directory " ++ dir
-			    prepareDir dir
+      putStrLn $ "Creating directory " ++ dir
+      prepareDir dir
     writeFileRep (absFile opts) $ cf2Abstract (byteStrings opts) absMod cf
     case alexMode opts of
       Alex1 -> do

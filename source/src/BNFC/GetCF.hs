@@ -18,7 +18,7 @@
 -}
 
 
-module BNFC.GetCF(tryReadCFP, parseLbnf) where
+module BNFC.GetCF(parseCF, parseCFP) where
 
 import Control.Monad		( when )
 
@@ -34,9 +34,13 @@ import Data.Char
 import BNFC.TypeChecker
 import BNFC.Options
 
-parseLbnf :: Target -> String -> IO CF
-parseLbnf target content = do
-  let (cfp,msgs1) = getCFP False content -- TODO this False should be an option
+
+parseCF :: SharedOptions -> Target -> String -> IO CF
+parseCF opts t s = parseCFP opts t s >>= return . cfp2cf
+
+parseCFP :: SharedOptions -> Target -> String -> IO CFP
+parseCFP opts target content = do
+  let (cfp,msgs1) = getCFP (cnf opts) content
       cf = cfp2cf cfp
       msgs2 = case checkDefinitions cf of
         Bad err -> [err]
@@ -45,9 +49,8 @@ parseLbnf target content = do
       msg = msgs1++msgs2 -- ++ msgs3 -- in a future version
       ret = cfp
 
-  -- let reserved = if target == TargetJava
-  --                 then [takeWhile (/='.') file] else []
-      reserved = []
+  let reserved = [lang opts | target == TargetJava ]
+
   case filter (not . isDefinedRule) $ notUniqueNames reserved cf of
     ns@(_:_)
       | not (target `elem` [TargetHaskell,TargetHaskellGadt,TargetOCaml]) -> do
@@ -68,50 +71,7 @@ parseLbnf target content = do
            putStrLn
              "Warning: comment delimiters longer than 2 characters ignored in Haskell:"
            mapM_ putStrLn [b +++ "-" +++ e | (b,e) <- c3s]
-         return cf
-
-
-readCF :: Target -> FilePath -> IO CFP
-readCF target f = tryReadCFP target f >>= return . fst
-
-tryReadCFP :: Target -> FilePath -> IO (CFP,Bool)
-tryReadCFP target file = do
-  putStrLn $ "\nReading grammar from " ++ file
-  s <- readFile file
-  let (cfp,msgs1) = getCFP False s -- TODO this False should be an option
-      cf = cfp2cf cfp
-      msgs2 = case checkDefinitions cf of
-		Bad err	-> [err]
-		Ok ()	-> []
-      msgs3 = checkTokens cf
-      msg = msgs1++msgs2 -- ++ msgs3 -- in a future version
-      ret = cfp
-
-  let reserved = if target == TargetJava
-                   then [takeWhile (/='.') file] else []
-  case filter (not . isDefinedRule) $ notUniqueNames reserved cf of
-    ns@(_:_)
-      | not (target `elem` [TargetHaskell,TargetHaskellGadt,TargetOCaml]) -> do
-        putStrLn $ "ERROR: names not unique: " ++ unwords ns
-        return (ret,False)
-    ns -> do
-      case ns of
-        _:_ -> do
-          putStrLn $ "Warning: names not unique: " ++ unwords ns
-          putStrLn "This can be an error in other back ends."
-        _ -> return ()
-      putStrLn $ unlines msgs3
-      if not (null msg) then do
-         putStrLn $ unlines msg
-         return (ret,False)
-       else do
-         putStrLn $ show (length (rulesOfCF cf)) +++ "rules accepted\n"
-         let c3s = [(b,e) | (b,e) <- fst (comments cf), length b > 2 || length e > 2]
-         if null c3s then return () else do
-           putStrLn
-             "Warning: comment delimiters longer than 2 characters ignored in Haskell:"
-           mapM_ putStrLn [b +++ "-" +++ e | (b,e) <- c3s]
-         return (ret,True)
+         return cfp
 
 {-
     case filter (not . isDefinedRule) $ notUniqueFuns cf of

@@ -57,9 +57,7 @@ withLang opts name = name ++ lang opts
 withLangAbs :: Options -> String -> String
 withLangAbs opts name = postp $ name ++ lang opts
   where
-    postp nam = if multi opts
-                   then takeWhile (/='_') nam
-                   else nam
+    postp nam = nam -- if multi opts then takeWhile (/='_') nam else nam
 
 pkgToDir :: String -> FilePath
 pkgToDir s = replace '.' pathSeparator s
