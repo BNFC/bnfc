@@ -113,11 +113,10 @@ genCatTags cf = "data CATEGORY = " <> punctuate' "|" (map catTag (allSyms cf)) $
                 "  deriving (Eq,Ord,Show)"
 
 genDesc :: CFG Exp -> CatDescriptions -> Doc
-genDesc cf descs = vcat ["describe " <> catTag s <> " = " <> doubleQuotes (descOf s) | s <- allSyms cf]
-  where descOf (Right x) = "token " <> text x
-        descOf (Left x) = maybe (text x) id $ M.lookup x descs
-
-
+genDesc cf descs = vcat ["describe " <> catTag s <> " = " <> text (show (descOf s)) | s <- allSyms cf]
+  where descOf :: Either String String -> String
+        descOf (Right x) = "token " <> x
+        descOf (Left x) = maybe x render $ M.lookup x descs
 
 genCombTable :: UnitRel Cat -> CFG Exp -> Doc
 genCombTable units cf =
