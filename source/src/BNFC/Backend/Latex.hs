@@ -16,44 +16,27 @@
     along with this program; if not, write to the Free Software
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 -}
-module BNFC.Backend.Latex (backend,makefile) where
+module BNFC.Backend.Latex (makeLatex,makefile) where
 
 import AbsBNF (Reg (..))
-import Control.Monad (unless,when)
-import Data.List (nub,intersperse)
-import System.Console.GetOpt
-import System.FilePath ((<.>),replaceExtension)
-import Text.Printf
-import System.Exit (exitSuccess)
-import System.FilePath (takeBaseName)
 import BNFC.Options
 import BNFC.Backend.Common.Makefile as Makefile
 import BNFC.CF
 import BNFC.GetCF
 import BNFC.Utils
+import Control.Monad (unless,when)
+import Data.List (nub,intersperse)
+import System.Console.GetOpt
+import System.Exit (exitSuccess)
+import System.FilePath ((<.>),replaceExtension, takeBaseName)
+import Text.Printf
 
-data Flags = Makefile
-  deriving (Eq,Show)
-
-latexOptions = [ Option ['m'] ["makefile"] (NoArg Makefile) "generate makefile" ]
-
-backend ::[String] -> String -> CF -> IO ()
-backend args name cf = do
-    let (flags,cffile,errs) = getOpt Permute latexOptions args
-
-    -- if help is requested, print mode usage and exti
-    -- when (Help `elem` flags) $ do
-    --   putStrLn $ usageInfo
-    --     "Usage: bnfc latex [-h|--help] [-m|--makefile] file.cf"
-    --     latexOptions
-    --   exitSuccess
-
-    -- if the option parser reports an error, fails directly
-    unless (null errs) $ fail (concat errs)
-
+makeLatex :: Backend
+makeLatex opts cf = do
     let texfile = name <.> "tex"
     writeFile texfile (cfToLatex name cf)
-    when (Makefile `elem` flags) $ writeFile "Makefile" (makefile texfile)
+    when (make opts) $ writeFile "Makefile" (makefile texfile)
+  where name = lang opts
 
 cfToLatex :: String -> CF -> String
 cfToLatex name cf = unlines [

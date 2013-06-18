@@ -23,7 +23,18 @@ cBackend bnfcBin cfFile testFile =
     assertExists cfFile
     assertExists testFile
     -- TODO test existance and executability of bnf
-    bnfc "-m" "-c" cfFile
+    bnfc "-m" "--c" cfFile
+    assertExists "Absyn.h"
+    assertExists "Absyn.c"
+    assertExists (basename cfFile <.> "l")
+    assertExists (basename cfFile <.> "y")
+    assertExists "Parser.h"
+    assertExists "Skeleton.h"
+    assertExists "Skeleton.c"
+    assertExists "Printer.h"
+    assertExists "Printer.c"
+    assertExists "Test.c"
+    assertExists "Makefile"
     make
     -- Now we run the test programme, passing the content of
     -- the test source file on stdin
@@ -34,7 +45,7 @@ cBackend bnfcBin cfFile testFile =
     test
   where make = cmd "make"
         bnfc = cmd bnfcBin
-        testProg = decodeString ("Test" ++ (encodeString $ basename cfFile))
+        testProg = decodeString ("Test" ++ encodeString (basename cfFile))
         test = cmd ("." </> testProg)
 
 -- Main is defined in SystemTesting, we just pass our backend as a parameter

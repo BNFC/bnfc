@@ -18,7 +18,7 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 -}
 
-module BNFC.Backend.HaskellGADT (makeAllGADT) where
+module BNFC.Backend.HaskellGADT (makeHaskellGadt) where
 
 
 
@@ -49,8 +49,8 @@ import System.FilePath (pathSeparator)
 import Control.Monad(when)
 
 
-makeAllGADT :: Options -> CF -> IO ()
-makeAllGADT opts cf = do
+makeHaskellGadt :: Backend
+makeHaskellGadt opts cf = do
   let absMod = absFileM opts
       composOpMod = composOpFileM opts
       lexMod = alexFileM opts

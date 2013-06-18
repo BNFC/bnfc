@@ -19,41 +19,45 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 -}
 
-module BNFC.Backend.CPP.STL (makeSTL) where
+module BNFC.Backend.CPP.STL (makeCppStl,) where
 
-import BNFC.Utils
-import BNFC.CF
-import BNFC.Backend.CPP.STL.CFtoSTLAbs
+import BNFC.Options
+import qualified BNFC.Backend.Common.Makefile as Makefile
 import BNFC.Backend.CPP.NoSTL.CFtoFlex
 import BNFC.Backend.CPP.STL.CFtoBisonSTL
 import BNFC.Backend.CPP.STL.CFtoCVisitSkelSTL
+import BNFC.Backend.CPP.STL.CFtoSTLAbs
 import BNFC.Backend.CPP.STL.CFtoSTLPrinter
-import System.Exit (exitFailure)
-import Data.Char
 import BNFC.Backend.CPP.STL.STLUtils
-import qualified BNFC.Backend.Common.Makefile as Makefile
+import BNFC.CF
+import BNFC.Utils
+import Control.Monad (unless, when)
+import Data.Char
+import System.Console.GetOpt
+import System.Exit (exitFailure)
 
-makeSTL :: Bool -> Bool -> Maybe String -> String -> CF -> IO ()
-makeSTL make linenumbers inPackage name cf = do
-    let (hfile, cfile) = cf2CPPAbs linenumbers inPackage name cf
+makeCppStl :: Backend
+makeCppStl opts cf = do
+    let (hfile, cfile) = cf2CPPAbs (linenumbers opts) (inPackage opts) name cf
     writeFileRep "Absyn.H" hfile
     writeFileRep "Absyn.C" cfile
-    let (flex, env) = cf2flex inPackage name cf
+    let (flex, env) = cf2flex (inPackage opts) name cf
     writeFileRep (name ++ ".l") flex
     putStrLn "   (Tested with flex 2.5.31)"
-    let bison = cf2Bison linenumbers inPackage name cf env
+    let bison = cf2Bison (linenumbers opts) (inPackage opts) name cf env
     writeFileRep (name ++ ".y") bison
     putStrLn "   (Tested with bison 1.875a)"
-    let header = mkHeaderFile inPackage cf (allCats cf) (allEntryPoints cf) env
+    let header = mkHeaderFile (inPackage opts) cf (allCats cf) (allEntryPoints cf) env
     writeFileRep "Parser.H" header
-    let (skelH, skelC) = cf2CVisitSkel inPackage cf
+    let (skelH, skelC) = cf2CVisitSkel (inPackage opts) cf
     writeFileRep "Skeleton.H" skelH
     writeFileRep "Skeleton.C" skelC
-    let (prinH, prinC) = cf2CPPPrinter inPackage cf
+    let (prinH, prinC) = cf2CPPPrinter (inPackage opts) cf
     writeFileRep "Printer.H" prinH
     writeFileRep "Printer.C" prinC
-    writeFileRep "Test.C" (cpptest inPackage cf)
-    if make then (writeFileRep "Makefile" $ makefile name) else return ()
+    writeFileRep "Test.C" (cpptest (inPackage opts) cf)
+    when (make opts) $ writeFileRep "Makefile" $ makefile name
+  where name = lang opts
 
 makefile :: String -> String
 makefile name =
