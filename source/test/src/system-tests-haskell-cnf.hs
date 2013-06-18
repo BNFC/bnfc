@@ -24,11 +24,9 @@ haskellBackendCNF bnfcBin cfFile testFile =
     assertExists testFile
     bnfc "-m" "-cnf" "-haskell" cfFile
     make
-    makeCNF "--make" "TestCNF.hs"
     readfile testFile >>= setStdin
     test
   where make = cmd "make"
-        makeCNF = cmd "ghc"
         bnfc = cmd bnfcBin
         testProg = "TestCNF"
         test = cmd ("." </> testProg)

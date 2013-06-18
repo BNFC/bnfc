@@ -110,9 +110,10 @@ makefile opts = makeA where
   dir = let d = codeDir opts in if null d then "" else d ++ [pathSeparator]
   cd c = if null dir then c else "(cd " ++ dir ++ "; " ++ c ++ ")"
   makeA = Makefile.mkRule "all" []
-            [ "happy -gca " ++ glr_params ++ happyFile opts
+           ([ "happy -gca " ++ glr_params ++ happyFile opts
             , "alex -g " ++ alexFile opts
-            , "ghc --make " ++ tFile opts ++ " -o " ++ mkFile withLang "Test" "" opts]
+            , "ghc --make " ++ tFile opts ++ " -o " ++ mkFile withLang "Test" "" opts] ++
+            [ "ghc --make TestCNF" | cnf opts])
         $ Makefile.mkRule "clean" []
             [ "-rm -f "  ++ unwords
                 (map (dir++) [ "*.log", "*.aux", "*.hi", "*.o", "*.dvi" ])
