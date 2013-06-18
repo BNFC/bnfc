@@ -273,3 +273,18 @@ Test-suite unit-tests
    BNFC.Backend.Common.MakefileSpec
    BNFC.OptionsSpec
    BNFC.WarningMSpec
+
+Flag haskell-tests-cnf
+  Description: Enable/disable testing using haskell CNF backend
+  Default: True
+
+Test-suite system-tests-haskell-cnf
+  Type: exitcode-stdio-1.0
+  Build-Depends:  base>=4 && <5,
+    HUnit, shelly, system-filepath, text
+  Main-is: system-tests-haskell.hs
+  HS-source-dirs: test/src
+  if flag(haskell-tests)
+    Buildable: True
+  else
+    Buildable: False
