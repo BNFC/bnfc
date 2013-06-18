@@ -172,6 +172,8 @@ specificOptions target = case target of
     TargetJava ->
       [ Option ['p'] [] (ReqArg (\n o -> o {inPackage = Just n}) "<package>")
           "Prepend <package> to the Java package name" ]
+    TargetHaskellGadt -> specificOptions TargetHaskell
+    TargetProfile     -> specificOptions TargetHaskell
     _ -> []
 
 makefileOption =
@@ -198,7 +200,7 @@ help = unlines $
     :usageInfo "Make option"      makefileOption
     :usageInfo "Target languages" targetOptions
     :map targetUsage targets
-  where targets = [ t | t <- [minBound .. ], not (null (specificOptions t))]
+  where targets = [TargetHaskell, TargetJava, TargetCpp, TargetCSharp ]
         targetUsage t = usageInfo
                         (printf "Special options for the %s backend" (show t))
                         (specificOptions t)
