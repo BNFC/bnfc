@@ -28,7 +28,8 @@ testCases = do
   dataPath <- shelly $ absPath ("test" </> "data")
   return $ map (\(f1,f2) -> (dataPath </> f1, dataPath </> f2))
     [ -- ( "alfa/alfa.cf",       "alfa/test.alfa" ) Broken
-      ( "c/c.cf",       "c/test.c" )
+      ( "cnf/c.cf",     "cnf/small.c" )
+    , ( "c/c.cf",       "c/test.c" )
     , ( "cpp/cpp.cf",   "cpp/test.cpp" )
     , ( "gf/gf.cf",     "gf/test.gf" )
     , ( "lbnf/lbnf.cf", "lbnf/test.lbnf" )

@@ -78,14 +78,15 @@ makeHaskell opts cf = do
       Alex3 -> do
         writeFileRep (alexFile opts) $ cf2alex3 lexMod errMod shareMod (shareStrings opts) (byteStrings opts) cf
         putStrLn "   (Use Alex 3.0 to compile.)"
-    writeFileRep (happyFile opts) $
-		 cf2HappyS parMod absMod lexMod errMod (glr opts) (byteStrings opts) cf
-    putStrLn "   (Tested with Happy 1.15)"
+    unless (cnf opts) $ do        
+      writeFileRep (happyFile opts) $
+          	 cf2HappyS parMod absMod lexMod errMod (glr opts) (byteStrings opts) cf
+      putStrLn "   (Tested with Happy 1.15)"
+      writeFileRep (tFile opts)        $ testfile opts cf
     writeFileRep (txtFile opts)      $ cfToTxt (lang opts) cf
     writeFileRep (templateFile opts) $ cf2Template (templateFileM opts) absMod errMod cf
     writeFileRep (printerFile opts)  $ cf2Printer (byteStrings opts) prMod absMod cf
     when (hasLayout cf) $ writeFileRep (layoutFile opts) $ cf2Layout (alex1 opts) (inDir opts) layMod lexMod cf
-    writeFileRep (tFile opts)        $ testfile opts cf
     writeFileRep (errFile opts)      $ errM errMod cf
     when (shareStrings opts) $ writeFileRep (shareFile opts)    $ sharedString shareMod (byteStrings opts) cf
     when (make opts) $ writeFileRep "Makefile" $ makefile opts
@@ -110,9 +111,11 @@ makefile opts = makeA where
   dir = let d = codeDir opts in if null d then "" else d ++ [pathSeparator]
   cd c = if null dir then c else "(cd " ++ dir ++ "; " ++ c ++ ")"
   makeA = Makefile.mkRule "all" []
-            [ "happy -gca " ++ glr_params ++ happyFile opts
-            , "alex -g " ++ alexFile opts
-            , "ghc --make " ++ tFile opts ++ " -o " ++ mkFile withLang "Test" "" opts]
+           ([ "happy -gca " ++ glr_params ++ happyFile opts | not (cnf opts) ] ++
+            [ "alex -g " ++ alexFile opts ] ++
+            [ if cnf opts 
+              then "ghc --make TestCNF.hs"
+              else "ghc --make " ++ tFile opts ++ " -o " ++ mkFile withLang "Test" "" opts])
         $ Makefile.mkRule "clean" []
             [ "-rm -f "  ++ unwords
                 (map (dir++) [ "*.log", "*.aux", "*.hi", "*.o", "*.dvi" ])
