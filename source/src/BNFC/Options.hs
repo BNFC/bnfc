@@ -168,7 +168,9 @@ specificOptions target = case target of
       , Option []    ["xml"] (NoArg (\o -> o {xml = 1}))
           "Also generate a DTD and an XML printer"
       , Option []    ["xmlt"] (NoArg (\o -> o {xml = 2}))
-          "DTD and an XML printer, another encoding" ]
+          "DTD and an XML printer, another encoding"
+      , Option []    ["cnf"] (NoArg (\o -> o {cnf = True}))
+          "Use the CNF parser instead of happy" ]
     TargetJava ->
       [ Option ['p'] [] (ReqArg (\n o -> o {inPackage = Just n}) "<package>")
           "Prepend <package> to the Java package name" ]
