@@ -75,9 +75,9 @@ main = do
     Help    -> putStrLn help >> exitSuccess
     Version ->  putStrLn (showVersion version) >> exitSuccess
     Target TargetProfile options file ->
-      readFile file >>= parseCFP TargetProfile >>= makeHaskellProfile options
+      readFile file >>= parseCFP options TargetProfile >>= makeHaskellProfile options
     Target target options file ->
-      readFile file >>= parseCF target >>= make target options
+      readFile file >>= parseCF options target >>= make target options
   where make TargetC = makeC
         make TargetCpp = makeCppStl
         make TargetCppNoStl = makeCppNoStl
