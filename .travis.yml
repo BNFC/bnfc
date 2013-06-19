@@ -1,4 +1,7 @@
 language: haskell
+script:
+    - cabal install
+    - cabal configure --enable-tests && cabal build && cabal test
 before_install:
   - sudo apt-get update -qq
   - sudo apt-get install jlex cup openjdk-6-jdk
