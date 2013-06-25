@@ -38,6 +38,9 @@ export CLASSPATH
 # put it directly in the command.
 flags="$@"
 
+# To install the runtime.
+${CABAL} install 
+
 ${CABAL} install --only-dependencies --enable-tests
 if [ -z "$flags" ]; then
   ${CABAL} configure --enable-tests
