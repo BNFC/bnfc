@@ -1,5 +1,5 @@
 Name: BNFC
-Version: 2.5
+Version: 2.5.0.0
 cabal-version: >= 1.8
 build-type: Simple
 category: Development
@@ -267,7 +267,7 @@ Test-suite system-tests-latex
 Test-suite unit-tests
   Type: exitcode-stdio-1.0
   Build-Depends: base>=4 && <5, mtl, directory, array, process, filepath, pretty,
-                 hspec, QuickCheck == 2.6.*, shelly, text, HUnit
+                 hspec, QuickCheck >= 2.5, shelly, text, HUnit
   Main-is: unit-tests.hs
   HS-source-dirs: src test/src
   Other-modules:
