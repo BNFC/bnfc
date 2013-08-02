@@ -329,7 +329,12 @@ instance Print a => Print [a] where
   prt _ = prtList
 
 instance Print Char where
-  prt _ c = if isAlphaNum c then [[c]] else ['\\':[c]]
+  prt _ c = case c of
+             '\n' -> ["\\n"]
+             '\t' -> ["\\t"]
+             c | isAlphaNum c -> [[c]] 
+             c | isPrint c    -> ['\\':[c]]
+             c | otherwise    -> ['\\':show (ord c)]
   prtList s = map (concat . prt 0) s
 
 prPrec :: Int -> Int -> [String] -> [String]
