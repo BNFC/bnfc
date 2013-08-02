@@ -1,0 +1,87 @@
+-- A Grammar is a sequence of definitions
+
+Grammar . Grammar ::= [Def] ;
+
+[]  . [Def] ::= ;
+(:) . [Def] ::= Def ";" [Def] ;
+
+[]  . [Item] ::= ;
+(:) . [Item] ::= Item [Item] ;
+
+--The rules of the grammar
+Rule . Def ::= Label "." Cat "::=" [Item] ;
+
+-- Items
+Terminal  . Item ::= String ;
+NTerminal . Item ::= Cat ;
+
+-- Categories
+ListCat  . Cat ::= "[" Cat "]" ;
+IdCat    . Cat ::= Ident ;
+
+-- functional labels
+Id       . Label ::= Ident ; 
+Wild     . Label ::= "_" ; 
+ListE    . Label ::= "[" "]" ;
+ListCons . Label ::= "(" ":" ")" ; 
+ListOne  . Label ::= "(" ":" "[" "]" ")" ;
+
+-- Pragmas
+Comment  .  Def ::= "comment" String ;
+Comments .  Def ::= "comment" String String ;
+Internal .  Def ::= "internal" Label "." Cat "::=" [Item] ; 
+Token.      Def ::= "token" Ident Reg ;
+Entryp.     Def ::= "entrypoints" [Ident] ;
+Separator.  Def ::= "separator" MinimumSize Cat String ;
+Terminator. Def ::= "terminator" MinimumSize Cat String ;
+Coercions.  Def ::= "coercions" Ident Integer ;
+Rules.      Def ::= "rules" Ident "::=" [RHS] ;
+
+Layout.     Def ::= "layout" [String] ;
+LayoutStop. Def ::= "layout" "stop" [String] ;
+LayoutTop.  Def ::= "layout" "toplevel" ;
+
+separator nonempty String "," ;
+
+separator nonempty RHS "|" ;
+RHS. RHS ::= [Item] ;
+
+-- List size condition
+MNonempty.  MinimumSize ::= "nonempty" ;
+MEmpty.     MinimumSize ::=  ;
+
+-- regular expressions
+RSeq.   Reg2 ::= Reg2 Reg3 ;
+RAlt.   Reg1 ::= Reg1 "|" Reg2 ;
+RMinus. Reg1 ::= Reg2 "-" Reg2 ;
+
+RStar.  Reg3 ::= Reg3 "*" ;
+RPlus.  Reg3 ::= Reg3 "+" ;
+ROpt.   Reg3 ::= Reg3 "?" ;
+
+REps.   Reg3 ::= "eps" ;
+
+RChar.  Reg3 ::= Char ;           -- single character
+RAlts.  Reg3 ::= "[" String "]" ; -- list of alternative characters
+RSeqs.  Reg3 ::= "{" String "}" ; -- character sequence
+
+RDigit.  Reg3 ::= "digit" ;
+RLetter. Reg3 ::= "letter" ;
+RUpper.  Reg3 ::= "upper" ;
+RLower.  Reg3 ::= "lower" ;
+RAny.    Reg3 ::= "char" ;
+
+_. Reg  ::= Reg1 ;
+_. Reg1 ::= Reg2 ;
+_. Reg2 ::= Reg3 ;
+_. Reg3 ::= "(" Reg ")" ;
+
+-- list of categories in the entrypoint pragma
+(:[]).  [Ident] ::= Ident ;
+(:).    [Ident] ::= Ident "," [Ident] ;
+
+-- comments in BNF source
+comment "--" ;
+comment "{-" "-}" ;
+
+
