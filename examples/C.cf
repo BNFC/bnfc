@@ -1,0 +1,346 @@
+-- Ansi C, following Kernighan & Ritchie (Second Edition).
+-- (c) Ulf Persson 2003
+-- part of BSc thesis at Chalmers University of Technology
+--
+-- NOTICE: the C program may need to be preprocessed by cpp. Also types defined
+-- by typedefs have to be eliminated (these are known problems with the 
+-- BNF grammar of Ansi C).
+
+entrypoints Program, Stm, Exp ;
+
+Progr.  Program ::= [External_declaration] ;
+
+(:[]).    [External_declaration] ::= External_declaration;
+(:).      [External_declaration] ::= External_declaration [External_declaration];
+
+
+Afunc.  External_declaration ::= Function_def ;
+Global. External_declaration ::= Dec ;
+
+OldFunc.     Function_def ::= [Declaration_specifier] Declarator [Dec] Compound_stm ;
+NewFunc.     Function_def ::= [Declaration_specifier] Declarator Compound_stm ;
+OldFuncInt.  Function_def ::= Declarator [Dec] Compound_stm ;
+NewFuncInt.  Function_def ::= Declarator Compound_stm ;
+
+
+NoDeclarator.  Dec ::= [Declaration_specifier] ";";
+Declarators.   Dec ::= [Declaration_specifier] [Init_declarator] ";" ;
+
+(:[]).    [Dec] ::= Dec;
+(:).      [Dec] ::= Dec [Dec];  
+
+(:[]).  [Declaration_specifier] ::= Declaration_specifier ;
+(:).    [Declaration_specifier] ::= Declaration_specifier [Declaration_specifier] ;
+
+Type.     Declaration_specifier ::= Type_specifier ;
+Storage.  Declaration_specifier ::= Storage_class_specifier ;
+SpecProp. Declaration_specifier ::= Type_qualifier;
+
+(:[]).   [Init_declarator] ::= Init_declarator ;
+(:).     [Init_declarator] ::= Init_declarator "," [Init_declarator] ;
+
+OnlyDecl.  Init_declarator ::= Declarator ;
+InitDecl.  Init_declarator ::= Declarator "=" Initializer;
+
+
+Tvoid.        Type_specifier ::= "void";
+Tchar.        Type_specifier ::= "char";
+Tshort.       Type_specifier ::= "short";
+Tint.         Type_specifier ::= "int";
+Tlong.        Type_specifier ::= "long";
+Tfloat.       Type_specifier ::= "float";
+Tdouble.      Type_specifier ::= "double";
+Tsigned.      Type_specifier ::= "signed";
+Tunsigned.    Type_specifier ::= "unsigned";
+Tstruct.      Type_specifier ::= Struct_or_union_spec;
+Tenum.        Type_specifier ::= Enum_specifier;
+Tname.        Type_specifier ::= "Typedef_name";
+
+
+MyType.         Storage_class_specifier ::= "typedef";
+GlobalPrograms. Storage_class_specifier ::= "extern" ;
+LocalProgram.   Storage_class_specifier ::= "static" ;
+LocalBlock.     Storage_class_specifier ::= "auto" ;
+LocalReg.       Storage_class_specifier ::= "register" ;
+
+
+Const  . Type_qualifier ::= "const" ;
+NoOptim.  Type_qualifier ::= "volatile";
+
+Tag.      Struct_or_union_spec ::= Struct_or_union Ident "{" [Struct_dec] "}" ;
+Unique.   Struct_or_union_spec ::= Struct_or_union "{" [Struct_dec] "}";
+TagType.  Struct_or_union_spec ::= Struct_or_union Ident ;
+
+Struct.   Struct_or_union ::= "struct";
+Union.    Struct_or_union ::= "union";
+
+(:[]).   [Struct_dec] ::= Struct_dec ;
+(:).     [Struct_dec] ::= Struct_dec [Struct_dec] ;
+
+Structen. Struct_dec ::= [Spec_qual] [Struct_declarator] ";" ;
+
+(:[]).  [Spec_qual] ::= Spec_qual ;
+(:).    [Spec_qual] ::= Spec_qual [Spec_qual];
+
+TypeSpec.  Spec_qual ::= Type_specifier ;
+QualSpec.  Spec_qual ::= Type_qualifier;
+
+(:[]).    [Struct_declarator] ::= Struct_declarator;
+(:).      [Struct_declarator] ::= Struct_declarator "," [Struct_declarator];
+
+Decl.      Struct_declarator ::= Declarator;
+Field.     Struct_declarator ::= ":" Constant_expression;
+DecField.  Struct_declarator ::= Declarator ":" Constant_expression ;
+
+
+EnumDec.   Enum_specifier ::= "enum" "{" [Enumerator] "}" ;
+EnumName.  Enum_specifier ::= "enum" Ident "{" [Enumerator] "}" ;
+EnumVar.   Enum_specifier ::= "enum" Ident ;
+
+(:[]).     [Enumerator] ::= Enumerator ;
+(:).       [Enumerator] ::= Enumerator "," [Enumerator] ;
+
+Plain.     Enumerator ::= Ident ;
+EnumInit.  Enumerator ::= Ident "=" Constant_expression ;
+
+
+BeginPointer.   Declarator ::= Pointer Direct_declarator ;
+NoPointer.      Declarator ::= Direct_declarator ;
+
+Name.        Direct_declarator ::= Ident ;
+ParenDecl.   Direct_declarator ::= "(" Declarator ")" ;
+InnitArray.  Direct_declarator ::= Direct_declarator "[" Constant_expression "]" ;
+Incomplete.  Direct_declarator ::= Direct_declarator "[" "]" ;
+NewFuncDec.  Direct_declarator ::= Direct_declarator "(" Parameter_type ")" ;
+OldFuncDef.  Direct_declarator ::= Direct_declarator "(" [Ident] ")" ;
+OldFuncDec.  Direct_declarator ::= Direct_declarator "(" ")" ;
+
+Point.          Pointer ::= "*" ;
+PointQual.      Pointer ::= "*" [Type_qualifier] ;
+PointPoint.     Pointer ::= "*" Pointer ;
+PointQualPoint. Pointer ::= "*" [Type_qualifier] Pointer ;
+
+
+(:[]).   [Type_qualifier] ::= Type_qualifier ;
+(:).     [Type_qualifier] ::= Type_qualifier [Type_qualifier] ;
+
+
+AllSpec.  Parameter_type ::= Parameter_declarations ;
+More.     Parameter_type ::= Parameter_declarations "," "..." ;
+
+ParamDec.     Parameter_declarations ::= Parameter_declaration ;                   
+MoreParamDec. Parameter_declarations ::= Parameter_declarations "," Parameter_declaration ;
+
+OnlyType.      Parameter_declaration ::= [Declaration_specifier] ;
+TypeAndParam.  Parameter_declaration ::= [Declaration_specifier] Declarator ;
+Abstract.      Parameter_declaration ::= [Declaration_specifier] Abstract_declarator ;
+
+
+(:[]).   [Ident] ::= Ident ;
+(:).     [Ident] ::= Ident "," [Ident] ;
+
+InitExpr.    Initializer ::= Exp2 ;
+InitListOne. Initializer ::= "{" Initializers "}" ;
+InitListTwo. Initializer ::= "{" Initializers "," "}" ;
+
+
+AnInit.   Initializers ::= Initializer ;
+MoreInit. Initializers ::= Initializers "," Initializer ;
+
+
+PlainType.    Type_name ::= [Spec_qual] ;
+ExtendedType. Type_name ::= [Spec_qual] Abstract_declarator ;
+
+PointerStart.    Abstract_declarator ::= Pointer ;
+Advanced.        Abstract_declarator ::= Dir_abs_dec ;
+PointAdvanced.   Abstract_declarator ::= Pointer Dir_abs_dec ;
+
+
+WithinParentes.  Dir_abs_dec ::= "(" Abstract_declarator ")" ;
+Array.           Dir_abs_dec ::= "[" "]" ;
+InitiatedArray.  Dir_abs_dec ::= "[" Constant_expression "]" ;
+UnInitiated.     Dir_abs_dec ::= Dir_abs_dec "[" "]" ;
+Initiated.       Dir_abs_dec ::= Dir_abs_dec "[" Constant_expression "]" ;
+OldFunction.     Dir_abs_dec ::= "(" ")" ;
+NewFunction.     Dir_abs_dec ::= "(" Parameter_type ")" ;
+OldFuncExpr.     Dir_abs_dec ::= Dir_abs_dec "(" ")" ;
+NewFuncExpr.     Dir_abs_dec ::= Dir_abs_dec "(" Parameter_type ")" ;
+
+
+
+LabelS.   Stm ::= Labeled_stm ;
+CompS.    Stm ::= Compound_stm ;
+ExprS.    Stm ::= Expression_stm ;
+SelS.     Stm ::= Selection_stm ;
+IterS.    Stm ::= Iter_stm ;
+JumpS.    Stm ::= Jump_stm ;
+
+SlabelOne.   Labeled_stm ::= Ident ":" Stm ;
+SlabelTwo.   Labeled_stm ::= "case" Constant_expression ":" Stm ;
+SlabelThree. Labeled_stm ::= "default" ":" Stm;
+
+ScompOne.   Compound_stm ::= "{" "}" ;
+ScompTwo.   Compound_stm ::= "{" [Stm] "}" ;
+ScompThree. Compound_stm ::= "{" [Dec] "}" ;
+ScompFour.  Compound_stm ::= "{" [Dec] [Stm] "}" ;
+
+SexprOne.   Expression_stm ::= ";" ;
+SexprTwo.   Expression_stm ::= Exp ";" ;
+
+SselOne.    Selection_stm ::= "if" "(" Exp ")" Stm ;
+SselTwo.    Selection_stm ::= "if" "(" Exp ")" Stm "else" Stm ;
+SselThree.  Selection_stm ::= "switch" "(" Exp ")" Stm ;
+
+SiterOne.   Iter_stm ::= "while" "(" Exp ")" Stm;
+SiterTwo.   Iter_stm ::= "do" Stm "while" "(" Exp ")" ";" ;
+SiterThree. Iter_stm ::= "for" "(" Expression_stm Expression_stm ")" Stm ;
+SiterFour.  Iter_stm ::= "for" "(" Expression_stm Expression_stm Exp ")" Stm;
+
+SjumpOne.   Jump_stm ::= "goto" Ident ";" ;
+SjumpTwo.   Jump_stm ::= "continue" ";" ;
+SjumpThree. Jump_stm ::= "break" ";" ;
+SjumpFour.  Jump_stm ::= "return" ";" ;
+SjumpFive.  Jump_stm ::= "return" Exp ";" ;
+
+
+(:[]).   [Stm] ::= Stm ;
+(:).     [Stm] ::= Stm [Stm];
+
+token Unsigned ["123456789"] digit * ('u'|'U');
+
+token Long ["123456789"] digit * ('l'|'L');
+
+token UnsignedLong ["123456789"] digit * (('u''l')|('U''L'));
+
+token Hexadecimal '0' ('x'|'X') (digit | ["abcdef"] | ["ABCDEF"])+;
+
+token HexUnsigned '0' ('x'|'X') (digit | ["abcdef"] | ["ABCDEF"])+ ('u'|'U');
+
+token HexLong '0' ('x'|'X') (digit | ["abcdef"] | ["ABCDEF"])+ ('l'|'L');
+
+token HexUnsLong '0' ('x'|'X') (digit | ["abcdef"] | ["ABCDEF"])+ (('u''l')|('U''L'));
+
+token Octal '0'["01234567"]*;
+
+token OctalUnsigned '0'["01234567"]*('u'|'U');
+
+token OctalLong '0'["01234567"]* ('l'|'L');
+
+token OctalUnsLong '0'["01234567"]* (('u''l')|('U''L'));
+
+token CDouble (((digit+ '.')|('.' digit+))(('e'|'E') ('-')? digit+)?)|
+              (digit+ ('e'|'E') ('-')? digit+)|(digit+ '.' digit+ 'E' ('-')? digit+);
+
+token CFloat (((digit+ '.' digit+)|(digit+ '.')|('.' digit+))(('e'|'E')('-')? digit+)?
+                               ('f'|'F'))|((digit+ ('e'|'E')('-')? digit+)('f'|'F'));
+
+token CLongDouble (((digit+ '.' digit+)|(digit+ '.')|('.' digit+))(('e'|'E')('-')? 
+                   digit+)?('l'|'L'))|((digit+ ('e'|'E')('-')? digit+)('l'|'L'));
+
+
+
+Ecomma.      Exp   ::= Exp "," Exp2;
+Eassign.     Exp2  ::= Exp15 Assignment_op Exp2;
+Econdition.  Exp3  ::= Exp4 "?" Exp ":" Exp3;
+Elor.        Exp4  ::= Exp4 "||" Exp5;
+Eland.       Exp5  ::= Exp5 "&&" Exp6;
+Ebitor.      Exp6  ::= Exp6 "|" Exp7;
+Ebitexor.    Exp7  ::= Exp7 "^" Exp8;
+Ebitand.     Exp8  ::= Exp8 "&" Exp9;
+Eeq.         Exp9  ::= Exp9 "==" Exp10;
+Eneq.        Exp9  ::= Exp9 "!=" Exp10;
+Elthen.      Exp10 ::= Exp10 "<" Exp11;
+Egrthen.     Exp10 ::= Exp10 ">" Exp11;
+Ele.         Exp10 ::= Exp10 "<=" Exp11;
+Ege.         Exp10 ::= Exp10 ">=" Exp11;
+Eleft.       Exp11 ::= Exp11 "<<" Exp12;
+Eright.      Exp11 ::= Exp11 ">>" Exp12;
+Eplus.       Exp12 ::= Exp12 "+" Exp13;
+Eminus.      Exp12 ::= Exp12 "-" Exp13;
+Etimes.      Exp13 ::= Exp13 "*" Exp14;
+Ediv.        Exp13 ::= Exp13 "/" Exp14;
+Emod.        Exp13 ::= Exp13 "%" Exp14;
+Etypeconv.   Exp14 ::= "(" Type_name ")" Exp14;
+Epreinc.     Exp15 ::= "++" Exp15;
+Epredec.     Exp15 ::= "--" Exp15;
+Epreop.      Exp15 ::= Unary_operator Exp14;
+Ebytesexpr.  Exp15 ::= "sizeof" Exp15;
+Ebytestype.  Exp15 ::= "sizeof" "(" Type_name ")";
+Earray.      Exp16 ::= Exp16 "[" Exp "]" ;
+Efunk.       Exp16 ::= Exp16 "(" ")";
+Efunkpar.    Exp16 ::= Exp16 "(" [Exp2] ")";
+Eselect.     Exp16 ::= Exp16 "." Ident;
+Epoint.      Exp16 ::= Exp16 "->" Ident;
+Epostinc.    Exp16 ::= Exp16 "++";
+Epostdec.    Exp16 ::= Exp16 "--";
+Evar.        Exp17 ::= Ident;
+Econst.      Exp17 ::= Constant;
+Estring.     Exp17 ::= String;
+
+Efloat.        Constant ::= Double;
+Echar.         Constant ::= Char;
+Eunsigned.     Constant ::= Unsigned;
+Elong.         Constant ::= Long;
+Eunsignlong.   Constant ::= UnsignedLong;
+Ehexadec.      Constant ::= Hexadecimal;
+Ehexaunsign.   Constant ::= HexUnsigned;
+Ehexalong.     Constant ::= HexLong;
+Ehexaunslong.  Constant ::= HexUnsLong;
+Eoctal.        Constant ::= Octal;
+Eoctalunsign.  Constant ::= OctalUnsigned;
+Eoctallong.    Constant ::= OctalLong;
+Eoctalunslong. Constant ::= OctalUnsLong;
+Ecdouble.      Constant ::= CDouble;
+Ecfloat.       Constant ::= CFloat;
+Eclongdouble.  Constant ::= CLongDouble;
+Eint.          Constant ::= Integer;  
+
+internal Elonger. Constant ::= Integer;
+internal Edouble. Constant ::= Double;
+
+Especial. Constant_expression ::= Exp3;
+
+_. Exp   ::= Exp2 ;
+_. Exp2  ::= Exp3 ;
+_. Exp3  ::= Exp4 ;
+_. Exp4  ::= Exp5 ;
+_. Exp5  ::= Exp6 ;
+_. Exp6  ::= Exp7 ;
+_. Exp7  ::= Exp8 ;
+_. Exp8  ::= Exp9 ;
+_. Exp9  ::= Exp10 ;
+_. Exp10 ::= Exp11 ;
+_. Exp11 ::= Exp12 ;
+_. Exp12 ::= Exp13 ;
+_. Exp13 ::= Exp14 ;
+_. Exp14 ::= Exp15 ;
+_. Exp15 ::= Exp16 ;
+_. Exp16 ::= Exp17 ;
+_. Exp17 ::= "(" Exp ")" ;
+
+
+Address.     Unary_operator ::= "&" ;
+Indirection. Unary_operator ::= "*" ;
+Plus.        Unary_operator ::= "+" ;
+Negative.    Unary_operator ::= "-" ;
+Complement.  Unary_operator ::= "~" ;
+Logicalneg.  Unary_operator ::= "!" ;
+
+(:[]).   [Exp2] ::= Exp2 ;
+(:).     [Exp2] ::= Exp2 "," [Exp2];
+
+Assign.       Assignment_op ::= "=" ;
+AssignMul.    Assignment_op ::= "*=" ;
+AssignDiv.    Assignment_op ::= "/=" ;
+AssignMod.    Assignment_op ::= "%=" ;
+AssignAdd.    Assignment_op ::= "+=" ;
+AssignSub.    Assignment_op ::= "-=" ;
+AssignLeft.   Assignment_op ::= "<<=" ;
+AssignRight.  Assignment_op ::= ">>=" ;
+AssignAnd.    Assignment_op ::= "&=" ;
+AssignXor.    Assignment_op ::= "^=" ;
+AssignOr.     Assignment_op ::= "|=" ;
+
+comment "/*" "*/" ;
+comment "//";
+comment "#";

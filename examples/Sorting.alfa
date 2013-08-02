@@ -1,0 +1,537 @@
+{- \section{Introduction}
+
+In this document, we prove the correctness of insertion sort.
+
+\subsection{Preliminaries}
+
+In the sections below, we rely on various definitions stated in the
+following separate documents:
+-}
+
+--#include "Sorting/predikatlogik.alfa"
+
+--#include "Sorting/satslogik.alfa"
+
+--#include "Sorting/decide.alfa"
+
+--#include "Sorting/nat.alfa"
+
+{- \section{Miscellaneuos definitions and lemmas}
+
+Here we define what a list is, what it means for a list to be sorted (ordered)
+and how to insert a new element at the right position in a sorted list.
+
+-}
+
+List (A::Set) :: Set
+  = data Nil | Cons (x::A) (xs::List A)
+
+singleton (A::Set)(x::A) :: List A
+  = Cons@_ x Nil@_
+
+IsLeAll (x::Nat)(xs::List Nat) :: Prop
+  = case xs of {
+      (Nil) -> Triviality;
+      (Cons x' xs') -> And (LeNat x x') (IsLeAll x xs');}
+
+IsSorted (xs::List Nat) :: Prop
+  = case xs of {
+      (Nil) -> Triviality;
+      (Cons x xs') -> And (IsLeAll x xs') (IsSorted xs');}
+
+{-
+Regarding the above definition of what it means for a list to be sorted, it is
+worth noting that, for empty lists, there is nothing to prove, and for
+non-empty lists, there are two things to prove.
+-}
+
+insert (x::Nat)(xs::List Nat) :: List Nat
+  = case xs of {
+      (Nil) -> singleton Nat x;
+      (Cons x' xs') -> ifLt (List Nat) x x' (Cons@_ x xs) (Cons@_ x' (insert x xs'));}
+
+IsLeFirst (a::Nat)
+          (x::Nat)
+          (xs::List Nat)
+          (ax::LeNat a x)
+          (p::IsSorted (Cons@_ x xs))
+  :: IsLeAll a (Cons@_ x xs)
+  = case xs of {
+      (Nil) ->
+        let ndgoal :: IsLeAll a (Cons@_ x Nil@_)
+              = AndIntro (LeNat a x) (IsLeAll a Nil@_)
+                  (let ndgoal :: LeNat a x
+                         = ax
+                   in  ndgoal)
+                  (let ndgoal :: IsLeAll a Nil@_
+                         = trivial
+                   in  ndgoal)
+        in  ndgoal;
+      (Cons x' xs') ->
+        let ndgoal :: IsLeAll a (Cons@_ x (Cons@_ x' xs'))
+              = AndIntro (LeNat a x) (IsLeAll a (Cons@_ x' xs'))
+                  (let ndgoal :: LeNat a x
+                         = ax
+                   in  ndgoal)
+                  (let ndgoal :: IsLeAll a (Cons@_ x' xs')
+                         = AndElim (IsLeAll x (Cons@_ x' xs')) (IsSorted (Cons@_ x' xs'))
+                             (IsLeAll a (Cons@_ x' xs'))
+                             (let ndgoal :: IsSorted (Cons@_ x xs)
+                                    = p
+                              in  ndgoal)
+                             (\(h::IsLeAll x (Cons@_ x' xs')) ->
+                              \(h'::IsSorted (Cons@_ x' xs')) ->
+                              let ndgoal :: IsLeAll a (Cons@_ x' xs')
+                                    = AndElim (LeNat x x') (IsLeAll x xs')
+                                        (IsLeAll a (Cons@_ x' xs'))
+                                        (let ndgoal :: And (LeNat x x') (IsLeAll x xs')
+                                               = h
+                                         in  ndgoal)
+                                        (\(h0::LeNat x x') ->
+                                         \(h1::IsLeAll x xs') ->
+                                         let ndgoal :: IsLeAll a (Cons@_ x' xs')
+                                               = IsLeFirst a x' xs'
+                                                   (let ndgoal :: LeNat a x'
+                                                          = letrans a x x'
+                                                              (let ndgoal :: LeNat a x
+                                                                     = ax
+                                                               in  ndgoal)
+                                                              (let ndgoal :: LeNat x x'
+                                                                     = h0
+                                                               in  ndgoal)
+                                                    in  ndgoal)
+                                                   (let ndgoal :: IsSorted (Cons@_ x' xs')
+                                                          = h'
+                                                    in  ndgoal)
+                                         in  ndgoal)
+                              in  ndgoal)
+                   in  ndgoal)
+        in  ndgoal;}
+
+ThInsertInSorted (x::Nat)(xs::List Nat)(p::IsSorted xs)
+  :: IsSorted (insert x xs)
+  = case xs of {
+      (Nil) ->
+        let ndgoal :: IsSorted (insert x Nil@_)
+              = AndIntro (IsLeAll x Nil@_) (IsSorted Nil@_)
+                  (let ndgoal :: IsLeAll x Nil@_
+                         = trivial
+                   in  ndgoal)
+                  (let ndgoal :: IsSorted Nil@_
+                         = trivial
+                   in  ndgoal)
+        in  ndgoal;
+      (Cons x' xs') ->
+        ifLtCase (List Nat) (\(h::List Nat) -> IsSorted h) x x'
+          (Cons@_ x (Cons@_ x' xs'))
+          (Cons@_ x' (insert x xs'))
+          (\(h::LeNat x x') ->
+           let ndgoal :: IsSorted (Cons@_ x (Cons@_ x' xs'))
+                 = AndIntro (IsLeAll x (Cons@_ x' xs')) (IsSorted (Cons@_ x' xs'))
+                     (let ndgoal :: IsLeAll x (Cons@_ x' xs')
+                            = IsLeFirst x x' xs'
+                                (let ndgoal :: LeNat x x'
+                                       = h
+                                 in  ndgoal)
+                                (let ndgoal :: IsSorted (Cons@_ x' xs')
+                                       = p
+                                 in  ndgoal)
+                      in  ndgoal)
+                     (let ndgoal :: IsSorted (Cons@_ x' xs')
+                            = p
+                      in  ndgoal)
+           in  ndgoal)
+          (\(h::Not (LeNat x x')) ->
+           let indhyp :: IsSorted (insert x xs')
+                 = let ndgoal :: IsSorted (insert x xs')
+                         = ThInsertInSorted x xs'
+                             (let ndgoal :: IsSorted xs'
+                                    = And2Elim (IsLeAll x' xs') (IsSorted xs')
+                                        (let ndgoal :: And (IsLeAll x' xs') (IsSorted xs')
+                                               = p
+                                         in  ndgoal)
+                              in  ndgoal)
+                   in  ndgoal
+               lemma1 :: LeNat x' x
+                 = leSym x x' h
+               lemma2 (x'::Nat)(x::Nat)(xs'::List Nat)(px::LeNat x' x)(pxs::IsLeAll x' xs')
+                 :: IsLeAll x' (insert x xs')
+                 = case xs' of {
+                     (Nil) ->
+                       let ndgoal :: IsLeAll x' (insert x Nil@_)
+                             = AndIntro (LeNat x' x) (IsLeAll x' Nil@_) px trivial
+                       in  ndgoal;
+                     (Cons x0 xs0) ->
+                       ifLtCase (List Nat) (\(h'::List Nat) -> IsLeAll x' h') x x0
+                         (Cons@_ x (Cons@_ x0 xs0))
+                         (Cons@_ x0 (insert x xs0))
+                         (\(h'::LeNat x x0) ->
+                          let ndgoal :: IsLeAll x' (Cons@_ x (Cons@_ x0 xs0))
+                                = AndIntro (LeNat x' x) (IsLeAll x' (Cons@_ x0 xs0))
+                                    (let ndgoal :: LeNat x' x
+                                           = px
+                                     in  ndgoal)
+                                    (let ndgoal :: IsLeAll x' (Cons@_ x0 xs0)
+                                           = pxs
+                                     in  ndgoal)
+                          in  ndgoal)
+                         (\(h'::Not (LeNat x x0)) ->
+                          let ndgoal :: IsLeAll x' (Cons@_ x0 (insert x xs0))
+                                = AndElim (LeNat x' x0) (IsLeAll x' xs0)
+                                    (IsLeAll x' (Cons@_ x0 (insert x xs0)))
+                                    (let ndgoal :: And (LeNat x' x0) (IsLeAll x' xs0)
+                                           = pxs
+                                     in  ndgoal)
+                                    (\(h0::LeNat x' x0) ->
+                                     \(h1::IsLeAll x' xs0) ->
+                                     let ndgoal :: IsLeAll x' (Cons@_ x0 (insert x xs0))
+                                           = AndIntro (LeNat x' x0) (IsLeAll x' (insert x xs0))
+                                               (let ndgoal :: LeNat x' x0
+                                                      = h0
+                                                in  ndgoal)
+                                               (let ndgoal :: IsLeAll x' (insert x xs0)
+                                                      = lemma2 x' x xs0
+                                                          (let ndgoal :: LeNat x' x
+                                                                 = px
+                                                           in  ndgoal)
+                                                          (let ndgoal :: IsLeAll x' xs0
+                                                                 = h1
+                                                           in  ndgoal)
+                                                in  ndgoal)
+                                     in  ndgoal)
+                          in  ndgoal);}
+           in  let ndgoal :: IsSorted (Cons@_ x' (insert x xs'))
+                     = AndIntro (IsLeAll x' (insert x xs')) (IsSorted (insert x xs'))
+                         (let ndgoal :: IsLeAll x' (insert x xs')
+                                = lemma2 x' x xs'
+                                    (let ndgoal :: LeNat x' x
+                                           = lemma1
+                                     in  ndgoal)
+                                    (let ndgoal :: IsLeAll x' xs'
+                                           = And1Elim (IsLeAll x' xs') (IsSorted xs')
+                                               (let ndgoal :: And (IsLeAll x' xs') (IsSorted xs')
+                                                      = p
+                                                in  ndgoal)
+                                     in  ndgoal)
+                          in  ndgoal)
+                         (let ndgoal :: IsSorted (insert x xs')
+                                = indhyp
+                          in  ndgoal)
+               in  ndgoal);}
+
+{- \section{Definitions and lemmas relating to permutations}
+-}
+
+count (x::Nat)(xs::List Nat) :: Nat
+  = case xs of {
+      (Nil) -> Zero@_;
+      (Cons x' xs') -> ifEq Nat x x' (Succ@_ (count x xs')) (count x xs');}
+
+Permutation (xs::List Nat)(ys::List Nat) :: Prop
+  = ForAll Nat (\(n::Nat) -> EqNat (count n xs) (count n ys))
+
+ThPermNil :: Permutation Nil@_ Nil@_
+  = let ndgoal :: Permutation Nil@_ Nil@_
+          = ForAllIntro Nat (\(n::Nat) -> EqNat (count n Nil@_) (count n Nil@_))
+              (\(any::Nat) ->
+               let ndgoal :: EqNat (count any Nil@_) (count any Nil@_)
+                     = trivial
+               in  ndgoal)
+    in  ndgoal
+
+ThPermCons (x::Nat)(ys::List Nat)(zs::List Nat)(p::Permutation ys zs)
+  :: Permutation (Cons@_ x ys) (Cons@_ x zs)
+  = {-#H#-}ForAllIntro Nat
+             (\(n::Nat) -> EqNat (count n (Cons@_ x ys)) (count n (Cons@_ x zs)))
+             (\(n::Nat) ->
+              ifEqCase Nat (\(h::Nat) -> EqNat h (count n (Cons@_ x zs))) n x
+                (Succ@_ (count n ys))
+                (count n ys)
+                (\(h::EqNat n x) ->
+                 ifEqCase Nat (\(h'::Nat) -> EqNat (Succ@_ (count n ys)) h') n x
+                   (Succ@_ (count n zs))
+                   (count n zs)
+                   (\(h'::EqNat n x) ->
+                    ForAllElim Nat (\(h0::Nat) -> EqNat (count h0 ys) (count h0 zs)) n p)
+                   (\(h'::Not (EqNat n x)) ->
+                    AbsurdityElim (EqNat (Succ@_ (count n ys)) (count n zs))
+                      (ImpliesElim (EqNat n x) Absurdity h' h)))
+                (\(h::Not (EqNat n x)) ->
+                 ifEqCase Nat (\(h'::Nat) -> EqNat (count n ys) h') n x (Succ@_ (count n zs))
+                   (count n zs)
+                   (\(h'::EqNat n x) ->
+                    AbsurdityElim (EqNat (count n ys) (Succ@_ (count n zs)))
+                      (ImpliesElim (EqNat n x) Absurdity h h'))
+                   (\(h'::Not (EqNat n x)) ->
+                    ForAllElim Nat (\(h0::Nat) -> EqNat (count h0 ys) (count h0 zs)) n p)))
+
+ThPermTrans (xs::List Nat)
+            (ys::List Nat)
+            (zs::List Nat)
+            (xy::Permutation xs ys)
+            (yz::Permutation ys zs)
+  :: Permutation xs zs
+  = ForAllIntro Nat (\(n::Nat) -> EqNat (count n xs) (count n zs))
+      (\(any::Nat) ->
+       trans (count any xs) (count any ys) (count any zs)
+         (ForAllElim Nat (\(h::Nat) -> EqNat (count h xs) (count h ys)) any xy)
+         (ForAllElim Nat (\(h::Nat) -> EqNat (count h ys) (count h zs)) any yz))
+
+ThPermSwap (x1::Nat)(x2::Nat)(xs::List Nat)
+  :: Permutation (Cons@_ x1 (Cons@_ x2 xs)) (Cons@_ x2 (Cons@_ x1 xs))
+  = {-#H#-}ForAllIntro Nat
+             (\(n::Nat) ->
+              EqNat (count n (Cons@_ x1 (Cons@_ x2 xs))) (count n (Cons@_ x2 (Cons@_ x1 xs))))
+             (\(any::Nat) ->
+              ifEqCase Nat (\(h'::Nat) -> EqNat h' (count any (Cons@_ x2 (Cons@_ x1 xs)))) any
+                x1
+                (Succ@_ (count any (Cons@_ x2 xs)))
+                (count any (Cons@_ x2 xs))
+                (\(h'::EqNat any x1) ->
+                 ifEqCase Nat (\(h::Nat) -> EqNat (Succ@_ (count any (Cons@_ x2 xs))) h) any x2
+                   (Succ@_ (count any (Cons@_ x1 xs)))
+                   (count any (Cons@_ x1 xs))
+                   (\(h::EqNat any x2) ->
+                    ifEqCase Nat (\(h0::Nat) -> EqNat h0 (count any (Cons@_ x1 xs))) any x2
+                      (Succ@_ (count any xs))
+                      (count any xs)
+                      (\(h0::EqNat any x2) ->
+                       ifEqCase Nat (\(h1::Nat) -> EqNat (Succ@_ (count any xs)) h1) any x1
+                         (Succ@_ (count any xs))
+                         (count any xs)
+                         (\(h1::EqNat any x1) -> refl (count any xs))
+                         (\(h1::Not (EqNat any x1)) ->
+                          AbsurdityElim (EqNat (Succ@_ (count any xs)) (count any xs))
+                            (ImpliesElim (EqNat any x1) Absurdity h1 h')))
+                      (\(h0::Not (EqNat any x2)) ->
+                       AbsurdityElim (EqNat (count any xs) (count any (Cons@_ x1 xs)))
+                         (ImpliesElim (EqNat any x2) Absurdity h0 h)))
+                   (\(h::Not (EqNat any x2)) ->
+                    ifEqCase Nat (\(h0::Nat) -> EqNat (Succ@_ (count any (Cons@_ x2 xs))) h0) any x1
+                      (Succ@_ (count any xs))
+                      (count any xs)
+                      (\(h0::EqNat any x1) ->
+                       ifEqCase Nat (\(h1::Nat) -> EqNat h1 (count any xs)) any x2
+                         (Succ@_ (count any xs))
+                         (count any xs)
+                         (\(h1::EqNat any x2) ->
+                          AbsurdityElim (EqNat (Succ@_ (count any xs)) (count any xs))
+                            (ImpliesElim (EqNat any x2) Absurdity h h1))
+                         (\(h1::Not (EqNat any x2)) -> refl (count any xs)))
+                      (\(h0::Not (EqNat any x1)) ->
+                       AbsurdityElim (EqNat (Succ@_ (count any (Cons@_ x2 xs))) (count any xs))
+                         (ImpliesElim (EqNat any x1) Absurdity h0 h'))))
+                (\(h'::Not (EqNat any x1)) ->
+                 ifEqCase Nat (\(h0::Nat) -> EqNat (count any (Cons@_ x2 xs)) h0) any x2
+                   (Succ@_ (count any (Cons@_ x1 xs)))
+                   (count any (Cons@_ x1 xs))
+                   (\(h0::EqNat any x2) ->
+                    ifEqCase Nat (\(h::Nat) -> EqNat h (Succ@_ (count any (Cons@_ x1 xs)))) any x2
+                      (Succ@_ (count any xs))
+                      (count any xs)
+                      (\(h::EqNat any x2) ->
+                       ifEqCase Nat (\(h1::Nat) -> EqNat (count any xs) h1) any x1
+                         (Succ@_ (count any xs))
+                         (count any xs)
+                         (\(h1::EqNat any x1) ->
+                          AbsurdityElim (EqNat (count any xs) (Succ@_ (count any xs)))
+                            (ImpliesElim (EqNat any x1) Absurdity h' h1))
+                         (\(h1::Not (EqNat any x1)) -> refl (count any xs)))
+                      (\(h::Not (EqNat any x2)) ->
+                       AbsurdityElim (EqNat (count any xs) (Succ@_ (count any (Cons@_ x1 xs))))
+                         (ImpliesElim (EqNat any x2) Absurdity h h0)))
+                   (\(h::Not (EqNat any x2)) ->
+                    ifEqCase Nat (\(h0::Nat) -> EqNat h0 (count any (Cons@_ x1 xs))) any x2
+                      (Succ@_ (count any xs))
+                      (count any xs)
+                      (\(h0::EqNat any x2) ->
+                       AbsurdityElim (EqNat (Succ@_ (count any xs)) (count any (Cons@_ x1 xs)))
+                         (ImpliesElim (EqNat any x2) Absurdity h h0))
+                      (\(h0::Not (EqNat any x2)) ->
+                       ifEqCase Nat (\(h1::Nat) -> EqNat (count any xs) h1) any x1
+                         (Succ@_ (count any xs))
+                         (count any xs)
+                         (\(h1::EqNat any x1) ->
+                          AbsurdityElim (EqNat (count any xs) (Succ@_ (count any xs)))
+                            (ImpliesElim (EqNat any x1) Absurdity h' h1))
+                         (\(h1::Not (EqNat any x1)) -> refl (count any xs))))))
+
+ThPermInsert (x::Nat)(xs::List Nat) :: Permutation (Cons@_ x xs) (insert x xs)
+  = case xs of {
+      (Nil) ->
+        ForAllIntro Nat
+          (\(n::Nat) -> EqNat (count n (Cons@_ x Nil@_)) (count n (insert x Nil@_)))
+          (\(any::Nat) -> refl (count any (Cons@_ x Nil@_)));
+      (Cons x' xs') ->
+        ifLtCase (List Nat) (\(h::List Nat) -> Permutation (Cons@_ x (Cons@_ x' xs')) h)
+          x
+          x'
+          (Cons@_ x (Cons@_ x' xs'))
+          (Cons@_ x' (insert x xs'))
+          (\(h::LeNat x x') ->
+           ForAllIntro Nat
+             (\(n::Nat) ->
+              EqNat (count n (Cons@_ x (Cons@_ x' xs'))) (count n (Cons@_ x (Cons@_ x' xs'))))
+             (\(any::Nat) -> refl (count any (Cons@_ x (Cons@_ x' xs')))))
+          (\(h::Not (LeNat x x')) ->
+           let indhyp :: Permutation (Cons@_ x xs') (insert x xs')
+                 = ThPermInsert x xs'
+           in  let it :: Permutation (Cons@_ x (Cons@_ x' xs')) (Cons@_ x' (insert x xs'))
+                     = ThPermTrans (Cons@_ x (Cons@_ x' xs')) (Cons@_ x' (Cons@_ x xs'))
+                         (Cons@_ x' (insert x xs'))
+                         (ThPermSwap x x' xs')
+                         (ThPermCons x' (Cons@_ x xs') (insert x xs') indhyp)
+               in  it);}
+
+{-
+\section{The sorting algorithm, the correctness criterion and
+the correctness proof}
+-}
+
+sort (xs::List Nat) :: List Nat
+  = case xs of {
+      (Nil) -> Nil@_;
+      (Cons x xs') -> insert x (sort xs');}
+
+SortSpec (xs::List Nat)(ys::List Nat) :: Prop
+  = And (Permutation xs ys) (IsSorted ys)
+
+-- %% Although SortLemma is only used in ThSortIsCorrect, I made it global to be able to specify linearization properties for it.
+
+SortLemma (x::Nat)(xs'::List Nat)(h::Permutation xs' (sort xs'))
+  :: Permutation (Cons@_ x xs') (sort (Cons@_ x xs'))
+  = let ndgoal :: Permutation (Cons@_ x xs') (sort (Cons@_ x xs'))
+          = ThPermTrans (Cons@_ x xs') (Cons@_ x (sort xs')) (sort (Cons@_ x xs'))
+              (let ndgoal :: Permutation (Cons@_ x xs') (Cons@_ x (sort xs'))
+                     = ThPermCons x xs' (sort xs')
+                         (let ndgoal :: Permutation xs' (sort xs')
+                                = h
+                          in  ndgoal)
+               in  ndgoal)
+              (let ndgoal :: Permutation (Cons@_ x (sort xs')) (sort (Cons@_ x xs'))
+                     = ThPermInsert x (sort xs')
+               in  ndgoal)
+    in  ndgoal
+
+ThSortIsCorrect (xs::List Nat) :: SortSpec xs (sort xs)
+  = case xs of {
+      (Nil) ->
+        let ndgoal :: SortSpec Nil@_ (sort Nil@_)
+              = AndIntro (Permutation Nil@_ (sort Nil@_)) (IsSorted (sort Nil@_))
+                  (let ndgoal :: Permutation Nil@_ (sort Nil@_)
+                         = ThPermNil
+                   in  ndgoal)
+                  (let ndgoal :: IsSorted (sort Nil@_)
+                         = trivial
+                   in  ndgoal)
+        in  ndgoal;
+      (Cons x xs') ->
+        let indhyp :: SortSpec xs' (sort xs')
+              = ThSortIsCorrect xs'
+        in  let ndgoal :: SortSpec (Cons@_ x xs') (sort (Cons@_ x xs'))
+                  = AndElim (Permutation xs' (sort xs')) (IsSorted (sort xs'))
+                      (SortSpec (Cons@_ x xs') (sort (Cons@_ x xs')))
+                      (let ndgoal :: SortSpec xs' (sort xs')
+                             = indhyp
+                       in  ndgoal)
+                      (\(h::Permutation xs' (sort xs')) ->
+                       \(h'::IsSorted (sort xs')) ->
+                       let ndgoal :: SortSpec (Cons@_ x xs') (sort (Cons@_ x xs'))
+                             = AndIntro (Permutation (Cons@_ x xs') (sort (Cons@_ x xs')))
+                                 (IsSorted (sort (Cons@_ x xs')))
+                                 (let ndgoal :: Permutation (Cons@_ x xs') (sort (Cons@_ x xs'))
+                                        = SortLemma x xs'
+                                            (let ndgoal :: Permutation xs' (sort xs')
+                                                   = h
+                                             in  ndgoal)
+                                  in  ndgoal)
+                                 (let ndgoal :: IsSorted (sort (Cons@_ x xs'))
+                                        = ThInsertInSorted x (sort xs')
+                                            (let ndgoal :: IsSorted (sort xs')
+                                                   = h'
+                                             in  ndgoal)
+                                  in  ndgoal)
+                       in  ndgoal)
+            in  ndgoal;}
+
+-- \section{A simple corollary}
+
+ThSorting
+  :: ForAll (List Nat)
+       (\(xs::List Nat) -> Exists (List Nat) (\(ys::List Nat) -> SortSpec xs ys))
+  = let ndgoal
+          :: ForAll (List Nat)
+               (\(xs::List Nat) -> Exists (List Nat) (\(ys::List Nat) -> SortSpec xs ys))
+          = ForAllIntro (List Nat)
+              (\(xs::List Nat) -> Exists (List Nat) (\(ys::List Nat) -> SortSpec xs ys))
+              (\(xs::List Nat) ->
+               let ndgoal :: Exists (List Nat) (\(ys::List Nat) -> SortSpec xs ys)
+                     = ExistsIntro (List Nat) (\(ys::List Nat) -> SortSpec xs ys) (sort xs)
+                         (let ndgoal :: SortSpec xs (sort xs)
+                                = ThSortIsCorrect xs
+                          in  ndgoal)
+               in  ndgoal)
+    in  ndgoal
+
+sortfun :: List Nat -> List Nat
+  = \(xs::List Nat) -> sort xs
+
+ThSorting2 =
+  ExistsIntro (List Nat -> List Nat)
+    (\(f::List Nat -> List Nat) ->
+     ForAll (List Nat) (\(xs::List Nat) -> SortSpec xs (f xs)))
+    sortfun
+    (ForAllIntro (List Nat) (\(xs::List Nat) -> SortSpec xs (sort xs))
+       (\(any::List Nat) -> ThSortIsCorrect any))
+{-# Alfa hiding on
+var "if" hide 2
+con "Nil" as "[]"
+con "Cons" infix rightassoc 5 as ":"
+var "ThPermTrans" hide 3
+var "ThPermCons" hide 3
+var "ThPermInsert" hide 2
+var "ThInsertInSorted" hide 2
+var "Permutation" infix 4 as "~" with symbolfont
+var "List" mixfix 0 as "[_]"
+var "IsLeFirst" hide 3
+var "singleton" hide 1 mixfix 0 as "[_]"
+var "listInd" hide 2
+var "SortLemma" hide 2
+ #-}
+{-# GF Eng insert x xs = mkPN (["the list with"]++x.s!pnv++["inserted into"]++xs.s!pnv) #-}
+{-# GF Eng IsLeAll x xs = mkSent (x.s!pnv++["is less than or equal to all the elements of"]++xs.s!pnv) #-}
+{-# GF Eng IsLeFirst a x xs ax p =
+  mkText (ax.s!text++"."++p.s!text++
+          [". This means that "]++
+          a.s!pnv++["is less than or equal to all the elements of the list with"]++
+          x.s!pnv++["prepended to"]++xs.s!pnv) #-}
+{-# GF Eng SortLemma x xs' h =
+  mkText (h.s!text++[". Use SortLemma"]) #-}
+{-# GF Eng ThInsertInSorted x xs p =
+  mkText (p.s!text++[". Use the correctness of insertion"]) #-}
+{-# GF Eng ThPermNil  = mkThm ["the permutation of empty list theorem"] #-}
+{-# GF Eng ThPermCons x ys zs p =
+  mkText (p.s!text++
+          [". We can now use the theorem about prepending an element to permutations"]) #-}
+{-# GF Eng ThPermTrans xs ys zs xy yz = 
+  mkText (indent("·"++xy.s!text++"."++newParagraph++"·"++yz.s!text)++
+          [". By the transitivity of the permutation relation,"]++
+          zs.s!pnv++"is a permutation of"++xs.s!pnv) #-}
+{-# GF Eng ThPermInsert x xs = mkThm ["the theorem that inserting yields a permutation of prepending"] #-}
+{-# GF Sve IsLeAll x xs = mkSent (x.s!pn++["är mindre än alla element i"]++xs.s!pn) #-}
+{-# GF Sve CCCons x xs = mkPN (["listan med"]++x.s!pn++["insatt först i"]++xs.s!pn) en #-}
+{-# GF Sve singleton A x = mkPN (["enelementslistan med"]++x.s!pn) en #-}
+{-# GF Sve CCNil  = mkPN ["den tomma listan"] en #-}
+{-# GF Sve List A = {s = tbl {n => ("list"+nomReg1!n)++"av" ++ A.s ! (cn pl)} ; form = CN en} #-}
+{-# GF Eng ThSortIsCorrect xs = mkThm(["the correctness of insertion sort applied to"]++xs.s!pnv) #-}
+{-# GF Eng ThSorting  = mkThm ["a sorting theorem"] #-}
+{-# GF Eng SortSpec xs ys = mkSent(ys.s!pnv++["is a sorted version of"]++xs.s!pnv) #-}
+{-# GF Eng sort xs = mkPN(["insertion sort applied to"]++xs.s!pnv) #-}
+{-# GF Eng sortfun xs = mkPN(["insertion sort"]) #-}
+{-# GF Eng List A = mkCN(tbl {n=>("list"+nomReg!n)++"of"++A.s!(cn pl)}) #-}
+{-# GF Eng Permutation xs ys = mkSent(ys.s!pnv++["is a permutation of"]++xs.s!pnv) #-}
+{-# GF Eng count x xs = mkPN(["the number of occurences of"]++x.s!pnv++"in"++xs.s!pnv) #-}
+{-# GF Eng singleton A x = mkPN(["the singleton list containing"]++x.s!pnv) #-}
+{-# GF Eng IsSorted xs = mkSent (xs.s!pnv ++ ["is sorted"]) #-}
+{-# GF Eng CCCons x xs = mkPN (["the list with"]++x.s!pnv++["prepended to"]++xs.s!pnv) #-}
+{-# GF Eng CCNil  = mkPN ["the empty list"] #-}

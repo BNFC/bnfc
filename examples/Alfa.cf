@@ -1,0 +1,149 @@
+-- layout rules
+
+layout "of", "let", "where", "sig", "struct", "mutual" ;
+layout stop "in" ;
+layout toplevel ;
+
+-- top level
+
+Module.  Module ::= "{" [Decl] "}" ;
+
+separator  Decl ";" ;
+separator  Def ";" ;
+
+-- declarations/definitions
+
+DDef.    Decl ::= [DefAttr] Def ;
+DImp.    Decl ::= Import ;
+
+Value.   Def  ::= AIdent [VarDecl] "::" Exp "=" Exp ;
+Binding. Def  ::= AIdent "=" Exp ;
+Package. Def  ::= "package" AIdent [Typing] "where" PackageBody ;
+Open.    Def  ::= "open" Exp "use" [OpenArg] ;
+Data.    Def  ::= "data" AIdent [Typing] "=" [Constructor] ;
+Type.    Def  ::= "type" AIdent [Typing] "=" Exp ;
+Axiom.   Def  ::= "postulate" AIdent [Typing] "::" Exp ;
+Mutual.  Def  ::= "mutual" "{" [Def] "}" ;
+Commt.   Def  ::= Comment ;
+
+-- expressions
+
+EVar.    Exp4 ::= AIdent ;
+ECon.    Exp4 ::= AIdent "@_" ;
+ESet.    Exp4 ::= "Set" ;
+EType.   Exp4 ::= "Type" ;
+EMeta.   Exp4 ::= "?" ;
+EStar.   Exp4 ::= "#" Integer ;
+EMetaU.  Exp4 ::= "_" ;
+EString. Exp4 ::= String ;
+EChar.   Exp4 ::= Char ;
+EInt.    Exp4 ::= Integer ;
+EDouble. Exp4 ::= Double ;
+EProj.   Exp3 ::= Exp3 "." AIdent ;
+EApp.    Exp1 ::= Exp1 Exp2 ;
+EInfix.  Exp  ::= Exp1 Infix Exp1 ;
+ESig.    Exp1 ::= "sig" "{" [FieldDecl] "}" ;
+EStr.    Exp1 ::= "struct" "{" [Binding] "}" ;
+ESum.    Exp  ::= "data" [Constructor] ;
+EPi.     Exp  ::= VarDecl Arrow Exp ;
+EFun.    Exp  ::= Exp1 Arrow Exp ;
+EAbs.    Exp  ::= "\\" VarDecl Arrow Exp ;
+EAbsUnt. Exp  ::= "\\" [AIdent] Arrow Exp ;
+ELet.    Exp  ::= "let" "{" [Decl] "}" "in" Exp ;
+EOpen.   Exp  ::= "open" Exp "use" [OpenArg] "in" Exp ; ---- "in" does not parse
+ECase.   Exp  ::= "case" Exp "of" "{" [Branch] "}" ;
+EIData.  Exp  ::= "idata" [VarDecl] [IndConstructor] ;  --- [Typing]
+
+ECommL.  Exp  ::= Comment Exp1 ;
+ECommR.  Exp  ::= Exp1 Comment ;
+
+internal EConst. Exp4 ::= AIdent ;
+internal EMetaN. Exp4 ::= "?" Integer ;
+
+coercions Exp 4 ;
+
+-- shown/hidden arguments
+
+AShow.  Arrow ::= "->" ;
+AHide.  Arrow ::= "|->" ;
+
+-- typings/hypotheses
+
+TDecl. Typing  ::= VarDecl ;
+TExp.  Typing  ::= Exp2 ;
+
+terminator Typing "" ;  
+
+VDecl. VarDecl ::= "(" [Bound] "::" Exp ")" ;
+
+BVar.  Bound ::= AIdent ;
+BHide. Bound ::= "|" AIdent ;
+
+separator nonempty Bound "," ;
+
+terminator VarDecl "" ;
+
+FDecl. FieldDecl ::= AIdent "::" Exp ;
+
+separator FieldDecl ";" ;
+
+-- case branches
+
+BranchCon . Branch ::= "(" AIdent [AIdent] ")" "->" Exp ; --- no deeper patterns?
+BranchInf . Branch ::= "(" AIdent Infix AIdent ")" "->" Exp ;
+BranchVar . Branch ::= AIdent "->" Exp ;
+
+separator Branch   ";" ;
+
+-- constructions in data definitions
+
+Cnstr . Constructor ::= AIdent [Typing] ;
+separator  Constructor "|" ;
+
+ICnstr . IndConstructor ::= AIdent [Typing] "::" "_" [Exp2] ;
+separator  IndConstructor "|" ;
+terminator Exp2 "" ;
+
+-- bindings in structures
+
+Bind . Binding ::= AIdent "=" Exp ;
+separator Binding  ";" ;
+
+
+PackageDef .  PackageBody ::= "{" [Decl] "}" ;
+PackageInst . PackageBody ::= Exp ;
+
+OArg .  OpenArg ::= [DefAttr] AIdent ;
+OArgT . OpenArg ::= [DefAttr] AIdent "::" Exp ;
+OArgD . OpenArg ::= [DefAttr] AIdent "=" Exp ;
+OArgTD. OpenArg ::= [DefAttr] AIdent "::" Exp "=" Exp ;
+
+Private  . DefAttr ::= "private" ;
+Public   . DefAttr ::= "public" ;
+Abstract . DefAttr ::= "abstract" ;
+Concrete . DefAttr ::= "concrete" ;
+
+Import  .  Import  ::= "import" String ";" ;
+
+separator  DefAttr     "" ;
+separator  AIdent      "" ;
+separator  OpenArg     "," ; 
+
+-- two kinds of comments; preserve enclosed ones
+
+comment "--" ;
+
+--- comment "{-" "-}" ;
+
+token Comment ('{' '-' ((char - '-') | '-' (char - '}'))* ('-')+ '}') ;
+
+--- identifiers, including infix in parentheses
+
+token Infix ([".:-^*+=<>&%$!#%|/\\"]+) ;
+
+I. AIdent ::= "(" Infix ")" ;
+F. AIdent ::= PIdent ;
+
+-- ordinary identifiers now have position
+
+position token PIdent (letter (letter|digit|'_'|'\'')*) ;
