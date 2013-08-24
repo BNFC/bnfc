@@ -1,3 +1,5 @@
+.PHONY: install
+
 all: build
 
 build:
