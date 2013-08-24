@@ -78,8 +78,8 @@ module BNFC.CF (
             listCat,
 	    catOfList,
 	    comments,       -- translates the pragmas into two list containing the s./m. comments
-            tokenPragmas,
-            tokenNames,
+            tokenPragmas,   -- get the user-defined regular expression tokens
+            tokenNames,     -- get the names of all user-defined tokens
 	    precCat,        -- get the precendence level of a Cat C1 => 1, C => 0
 	    precLevels,     -- get all precendence levels in the grammar, sorted in increasing order.
 	    precRule,       -- get the precendence level of the value category of a rule.
