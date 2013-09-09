@@ -98,7 +98,8 @@ hashtables cf = ht "symbol_table" (symbols cf )  ++ "\n" ++
 definitions :: CF -> [String]
 definitions cf = concat [
         cMacros,
-        rMacros cf
+        rMacros cf,
+        uMacros cf
     ]
 
 
@@ -124,7 +125,16 @@ rMacros cf =
   mkEsc s = "\"" ++ concat (map f s) ++ "\""
   f x = if x `elem` ['"','\\'] then  "\\" ++ [x] else [x]
 
+-- user macros, derived from the user-defined tokens
+uMacros :: CF -> [String]
+uMacros cf = ["let " ++ name ++ " = " ++ rep | (name, rep, _) <- userTokens cf]
 
+-- returns the tuple of (reg_name, reg_representation, token_name)
+userTokens :: CF -> [(String, String, String)]
+userTokens cf =
+  let regName = map toLower in
+  [(regName name, printRegOCaml reg, name) | (name, reg) <- tokenPragmas cf]
+      
 
 rules :: CF -> [String]
 rules cf = oneRule $ concat [
@@ -138,6 +148,7 @@ rules cf = oneRule $ concat [
         ["d+ {let i = lexeme lexbuf in TOK_Integer (int_of_string i)}"],
         ["d+ '.' d+ ('e' ('-')? d+)? {let f = lexeme lexbuf in TOK_Double (float_of_string f)}"],
         ["'\\\"' ((u # ['\\\"' '\\\\' '\\n']) | ('\\\\' ('\\\"' | '\\\\' | '\\\'' | 'n' | 't')))* '\\\"' {let s = lexeme lexbuf in TOK_String (unescapeInitTail s)}"],
+        userTokenRules,
         ["[' ' '\\t'] {token lexbuf}"],
         ["'\\n' {incr_lineno lexbuf; token lexbuf}"],
         ["eof { TOK_EOF }"]
@@ -159,6 +170,8 @@ rules cf = oneRule $ concat [
             ]) :
             lexComments (xs, [])
         lexComments ((_:xs),[]) = lexComments (xs,[])
+        userTokenRules = [ name ++ " as x { TOK_" ++ token ++ " x }" | (name, _, token) <- userTokens cf]
+            
 
 
 -------------------------------------------------------------------
@@ -213,18 +226,18 @@ instance Print Ident where
 
 instance Print Reg where
   prt i e = case e of
-   RSeq reg0 reg -> prPrec i 2 (concat [prt 2 reg0 , prt 3 reg])
-   RAlt reg0 reg -> prPrec i 1 (concat [prt 1 reg0 , ["|"] , prt 2 reg])
+   RSeq reg0 reg   -> prPrec i 2 (concat [prt 2 reg0 , prt 3 reg])
+   RAlt reg0 reg   -> prPrec i 1 (concat [prt 1 reg0 , ["|"] , prt 2 reg])
    RMinus reg0 reg -> prPrec i 1 (concat [prt 2 reg0 , ["#"] , prt 2 reg])
-   RStar reg -> prPrec i 3 (concat [prt 3 reg , ["*"]])
-   RPlus reg -> prPrec i 3 (concat [prt 3 reg , ["+"]])
-   ROpt reg  -> prPrec i 3 (concat [prt 3 reg , ["?"]])
-   REps  -> prPrec i 3 (["\"\""])  -- special construct for eps in ocamllex?
-   RChar c -> prPrec i 3 (concat [prt 0 c])
-   RAlts str -> prPrec i 3 (concat [["["],prt 0 (concatMap show str),["]"]])
-   RSeqs str -> prPrec i 2 (concat (map (prt 0) str))
-   RDigit  -> prPrec i 3 (concat [["digit"]])
-   RLetter  -> prPrec i 3 (concat [["letter"]])
-   RUpper  -> prPrec i 3 (concat [["upper"]])
-   RLower  -> prPrec i 3 (concat [["lower"]])
-   RAny  -> prPrec i 3 (concat [["univ"]])
+   RStar reg       -> prPrec i 3 (concat [prt 3 reg , ["*"]])
+   RPlus reg       -> prPrec i 3 (concat [prt 3 reg , ["+"]])
+   ROpt reg        -> prPrec i 3 (concat [prt 3 reg , ["?"]])
+   REps            -> prPrec i 3 (["\"\""])  -- special construct for eps in ocamllex?
+   RChar c         -> prPrec i 3 (concat [prt 0 c])
+   RAlts str       -> prPrec i 3 (concat [["["], [concatMap show str], ["]"]])
+   RSeqs str       -> prPrec i 2 (concat (map (prt 0) str))
+   RDigit          -> prPrec i 3 (concat [["digit"]])
+   RLetter         -> prPrec i 3 (concat [["letter"]])
+   RUpper          -> prPrec i 3 (concat [["upper"]])
+   RLower          -> prPrec i 3 (concat [["lower"]])
+   RAny            -> prPrec i 3 (concat [["univ"]])
