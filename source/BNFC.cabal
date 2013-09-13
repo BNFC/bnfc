@@ -22,7 +22,7 @@ Description:
   a Happy, CUP, or Bison parser generator file,
   a pretty-printer as a Haskell/Java/C++/C module,
   a Latex file containing a readable specification of the language.
-Extra-source-files: src/BNF.cf
+Extra-source-files: src/BNF.cf TODO
 
 Library
   hs-source-dirs: runtime, src
@@ -45,6 +45,7 @@ Executable bnfc
     containers,
     pretty >=1.1 && <1.2,
     filepath
+  build-tools:         alex, happy
   Main-is: Main.hs
   HS-source-dirs: src/
   ghc-options:     -fwarn-incomplete-patterns
@@ -64,9 +65,12 @@ Executable bnfc
     BNFC.MultiView,
     BNFC.TypeChecker,
     BNFC.GetCF,
+    BNFC.Backend.Common.Makefile,
     BNFC.Backend.Common.NamedVariables,
     BNFC.Backend.Common.OOAbstract,
     BNFC.Options,
+    BNFC.WarningM,
+    Data.Pair,
 
     -- Documentation backends
     BNFC.Backend.Latex,
