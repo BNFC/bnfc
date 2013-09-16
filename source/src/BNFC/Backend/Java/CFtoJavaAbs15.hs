@@ -56,7 +56,7 @@ import Data.Maybe(catMaybes,fromMaybe)
 --These follow Appel's "non-object oriented" version.
 --They also allow users to use the Visitor design pattern.
 
-type IVar = (String, Int, Maybe String)
+type IVar = (String, Int, String)
 --The type of an instance variable
 --a # unique to that type
 --and an optional name (handles typedefs).
@@ -198,7 +198,7 @@ prInstVars vars@((t,n,nm):vs) =
 				else (t2,n,nm) : (remType t ts)
 
 iVarName :: IVar -> String
-iVarName (t,n,nm) = varName t nm ++ showNum n
+iVarName (t,n,nm) = varName nm ++ showNum n
 
 --The constructor just assigns the parameters to the corresponding instance variables.
 prConstructor :: String -> [UserDef] -> [IVar] -> [Cat] -> String
@@ -226,30 +226,26 @@ prAssigns _ [] = []
 prAssigns ((t,n,nm):vs) (p:ps) =
  if n == 1 then
   case findIndices (\x -> case x of (l,r,_) -> l == t) vs of
-    [] -> (varName t nm) +++ "=" +++ p ++ ";" +++ (prAssigns vs ps)
-    z -> ((varName t nm) ++ (showNum n)) +++ "=" +++ p ++ ";" +++ (prAssigns vs ps)
- else ((varName t nm) ++ (showNum n)) +++ "=" +++ p ++ ";" +++ (prAssigns vs ps)
+    [] -> (varName nm) +++ "=" +++ p ++ ";" +++ (prAssigns vs ps)
+    z -> ((varName nm) ++ (showNum n)) +++ "=" +++ p ++ ";" +++ (prAssigns vs ps)
+ else ((varName nm) ++ (showNum n)) +++ "=" +++ p ++ ";" +++ (prAssigns vs ps)
 
---Different than the standard BNFC.Backend.Common.NamedVariables version because of the user-defined
---types.
+-- Different than the standard BNFC.Backend.Common.NamedVariables version
+-- because of the user-defined types.
 getVars :: [Cat] -> [UserDef] -> [IVar]
 getVars cs user = reverse $ singleToZero $ foldl addVar [] (map identCat cs)
  where
-  addVar is c = (c', n, nm):is
+  addVar is c = (c', n, c):is
     where c' = typename c user
-          nm = if c == c' then Nothing else Just c
-          n = maximum (1:[n'+1 | (t,n',_) <- is, t == c'])
+          n = maximum (1:[n'+1 | (t,n',c'') <- is, c'' == c])
   singleToZero is = [(t,n',nm) | (t,n,nm) <- is,
-                     let n' = if length (filter (hasType t) is) == 1
+                     let n' = if length [n | (_,_,n) <- is, n == nm] == 1
                                then 0 else n]
   hasType t (t',_,_) = t == t'
 
-varName :: String -- ^ Category
-	-> Maybe String -- ^ Java type name
+varName :: String -- ^ category name
 	-> String -- ^ Variable name
-varName c jt = (map toLower c') ++ "_"
- where
-  c' = fromMaybe c jt
+varName c = (map toLower c) ++ "_"
 
 --This makes up for the fact that there's no typedef in Java
 typename :: String -> [UserDef] -> String
