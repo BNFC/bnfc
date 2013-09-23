@@ -11,6 +11,7 @@ module BNFC.Backend.Base
 
 import BNFC.Options hiding (Backend)
 import BNFC.CF (CF)
+import BNFC.Utils (writeFileRep)
 import Control.Monad.Writer
 import Control.Monad.Trans
 import System.Directory (doesDirectoryExist, createDirectoryIfMissing)
@@ -69,4 +70,4 @@ writeFiles root fw = do
   where writeFile' :: FilePath -> String -> IO ()
         writeFile' path content =
           createDirectoryIfMissing True (dropFileName path)
-          >> writeFile path content
+          >> writeFileRep path content
