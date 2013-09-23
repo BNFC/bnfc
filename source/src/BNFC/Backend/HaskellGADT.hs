@@ -88,8 +88,8 @@ makeHaskellGadt opts cf = do
     when (shareStrings opts) $ writeFileRep (shareFile opts)    $ sharedString shareMod (byteStrings opts) cf
     when (make opts) $ writeFileRep "Makefile" $ makefile opts
     case xml opts of
-      2 -> writeFiles "." $ makeXML (lang opts) True cf
-      1 -> writeFiles "." $ makeXML (lang opts) False cf
+      2 -> writeFiles "." $ makeXML opts True cf
+      1 -> writeFiles "." $ makeXML opts False cf
       _ -> return ()
 
 codeDir :: Options -> FilePath

@@ -93,8 +93,8 @@ makeHaskell opts cf = do
     when (shareStrings opts) $ mkfile (shareFile opts)    $ sharedString shareMod (byteStrings opts) cf
     when (make opts) $ mkfile "Makefile" $ makefile opts
     case xml opts of
-      2 -> makeXML (lang opts) True cf
-      1 -> makeXML (lang opts) False cf
+      2 -> makeXML opts True cf
+      1 -> makeXML opts False cf
       _ -> return ()
     when (cnf opts) $ do
       mkfile (cnfTablesFile opts) $ ToCNF.generate opts cf
