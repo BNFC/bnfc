@@ -22,8 +22,9 @@ module BNFC.Backend.Haskell (makeHaskell, AlexVersion(..), makefile) where
 
 
 -- import BNFC.Utils
-import BNFC.Options
+import BNFC.Options hiding (Backend)
 import BNFC.CF
+import BNFC.Backend.Base
 import BNFC.Backend.Haskell.CFtoHappy
 import BNFC.Backend.Haskell.CFtoAlex
 import BNFC.Backend.Haskell.CFtoAlex2
@@ -47,13 +48,14 @@ import System.Exit (exitFailure)
 import System.FilePath (pathSeparator,(</>))
 import Control.Monad(when,unless)
 import System.FilePath (takeFileName)
+import Text.Printf (printf)
 
 -- naming conventions
 
 
 
 
-makeHaskell :: Backend
+makeHaskell :: SharedOptions -> CF -> Backend
 makeHaskell opts cf = do
   let absMod = absFileM opts
       lexMod = alexFileM opts
@@ -64,40 +66,40 @@ makeHaskell opts cf = do
       shareMod = shareFileM opts
   do
     let dir = codeDir opts
-    unless (null dir) $ do
-      putStrLn $ "Creating directory " ++ dir
-      prepareDir dir
-    writeFileRep (absFile opts) $ cf2Abstract (byteStrings opts) absMod cf
+    -- unless (null dir) $ do
+    --  putStrLn $ "Creating directory " ++ dir
+    --  prepareDir dir
+    mkfile (absFile opts) $ cf2Abstract (byteStrings opts) absMod cf
     case alexMode opts of
       Alex1 -> do
-        writeFileRep (alexFile opts) $ cf2alex lexMod errMod cf
-        putStrLn "   (Use Alex 1.1 to compile.)"
+        mkfile (alexFile opts) $ cf2alex lexMod errMod cf
+        liftIO $ printf "Use Alex 1.1 to compile %s.\n" (alexFile opts)
       Alex2 -> do
-        writeFileRep (alexFile opts) $ cf2alex2 lexMod errMod shareMod (shareStrings opts) (byteStrings opts) cf
-        putStrLn "   (Use Alex 2.0 to compile.)"
+        mkfile (alexFile opts) $ cf2alex2 lexMod errMod shareMod (shareStrings opts) (byteStrings opts) cf
+        liftIO $ printf "Use Alex 2.0 to compile %s.\n" (alexFile opts)
       Alex3 -> do
-        writeFileRep (alexFile opts) $ cf2alex3 lexMod errMod shareMod (shareStrings opts) (byteStrings opts) cf
-        putStrLn "   (Use Alex 3.0 to compile.)"
+        mkfile (alexFile opts) $ cf2alex3 lexMod errMod shareMod (shareStrings opts) (byteStrings opts) cf
+        liftIO $ printf "Use Alex 3.0 to compile %s.\n" (alexFile opts)
     unless (cnf opts) $ do        
-      writeFileRep (happyFile opts) $
-          	 cf2HappyS parMod absMod lexMod errMod (glr opts) (byteStrings opts) cf
-      putStrLn "   (Tested with Happy 1.15)"
-      writeFileRep (tFile opts)        $ testfile opts cf
-    writeFileRep (txtFile opts)      $ cfToTxt (lang opts) cf
-    writeFileRep (templateFile opts) $ cf2Template (templateFileM opts) absMod errMod cf
-    writeFileRep (printerFile opts)  $ cf2Printer (byteStrings opts) prMod absMod cf
-    when (hasLayout cf) $ writeFileRep (layoutFile opts) $ cf2Layout (alex1 opts) (inDir opts) layMod lexMod cf
-    writeFileRep (errFile opts)      $ errM errMod cf
-    when (shareStrings opts) $ writeFileRep (shareFile opts)    $ sharedString shareMod (byteStrings opts) cf
-    when (make opts) $ writeFileRep "Makefile" $ makefile opts
+      mkfile (happyFile opts) $
+        cf2HappyS parMod absMod lexMod errMod (glr opts) (byteStrings opts) cf
+      liftIO $ printf "%s Tested with Happy 1.15\n" (happyFile opts)
+    mkfile (tFile opts)        $ testfile opts cf
+    mkfile (txtFile opts)      $ cfToTxt (lang opts) cf
+    mkfile (templateFile opts) $ cf2Template (templateFileM opts) absMod errMod cf
+    mkfile (printerFile opts)  $ cf2Printer (byteStrings opts) prMod absMod cf
+    when (hasLayout cf) $ mkfile (layoutFile opts) $ cf2Layout (alex1 opts) (inDir opts) layMod lexMod cf
+    mkfile (errFile opts)      $ errM errMod cf
+    when (shareStrings opts) $ mkfile (shareFile opts)    $ sharedString shareMod (byteStrings opts) cf
+    when (make opts) $ mkfile "Makefile" $ makefile opts
     case xml opts of
-      2 -> makeXML (lang opts) True cf
-      1 -> makeXML (lang opts) False cf
+      2 -> makeXML opts True cf
+      1 -> makeXML opts False cf
       _ -> return ()
     when (cnf opts) $ do
-      writeFileRep (cnfTablesFile opts) $ ToCNF.generate opts cf
-      writeFileRep "TestCNF.hs" $ ToCNF.genTestFile opts cf
-      writeFileRep "BenchCNF.hs" $ ToCNF.genBenchmark opts
+      mkfile (cnfTablesFile opts) $ ToCNF.generate opts cf
+      mkfile "TestCNF.hs" $ ToCNF.genTestFile opts cf
+      mkfile "BenchCNF.hs" $ ToCNF.genBenchmark opts
 
 codeDir :: Options -> FilePath
 codeDir opts = let pref = maybe "" pkgToDir (inPackage opts)

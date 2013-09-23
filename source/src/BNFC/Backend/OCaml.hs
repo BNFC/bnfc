@@ -23,6 +23,7 @@
 module BNFC.Backend.OCaml (makeOCaml) where
 
 import BNFC.CF
+import BNFC.Backend.Base hiding (Backend)
 import BNFC.Backend.Common.Makefile
 import BNFC.Backend.OCaml.CFtoOCamlYacc
 import BNFC.Backend.OCaml.CFtoOCamlLex
@@ -112,8 +113,8 @@ makeOCaml opts cf = do
     writeFileRep (utilFile opts)      $ utilM
     when (make opts) $ writeFileRep "Makefile" $ makefile opts
     case xml opts of
-      2 -> makeXML (lang opts) True cf
-      1 -> makeXML (lang opts) False cf
+      2 -> writeFiles "." $ makeXML opts True cf
+      1 -> writeFiles "." $ makeXML opts False cf
       _ -> return ()
 
 pkgToDir :: String -> FilePath
