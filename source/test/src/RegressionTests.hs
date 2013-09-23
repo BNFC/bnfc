@@ -24,5 +24,14 @@ tests = [
         , "token SECOND 'b';" ]
       cmd bnfc "--java" "-m" "multiple_token.cf"
       cmd "make"
+  , testCase "#30 With -d option XML module is not generated inside the directorty" $ do
+        shelly $ silently $ withTmpDir $ \tmp -> do
+          bnfc <- absPath ( "dist"</>"build"</>"bnfc"</>"bnfc")
+          cd tmp
+          writefile "Test.cf" $ T.unlines
+            [ "Start. S ::= S \"a\" ;"
+            , "End.   S ::= ;" ]
+          cmd bnfc "--haskell" "--xml" "-m" "-d" "Test.cf"
+          test_f "Test/XML.hs" >>= liftIO . assertBool "can't find file Test/XML.hs"
+          cmd "make"
   ]
-
