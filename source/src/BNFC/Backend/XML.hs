@@ -22,17 +22,18 @@ module BNFC.Backend.XML ---- (cf2DTD, cf2XML)
 
 import BNFC.CF
 import BNFC.Utils
+import BNFC.Backend.Base
 import BNFC.Backend.Haskell.CFtoTemplate
 import Data.List (intersperse, nub)
 import Data.Char(toLower)
 
 type Coding = Bool ---- change to at least three values
 
-makeXML :: FilePath -> Coding -> CF -> IO ()
+makeXML :: FilePath -> Coding -> CF -> Backend
 makeXML name typ cf = do
-  writeFileRep (name ++ ".dtd") $ cf2DTD typ name cf
+  mkfile (name ++ ".dtd") $ cf2DTD typ name cf
   let absmod = "XML" ++ name
-  writeFileRep (absmod ++ ".hs") $ cf2XMLPrinter typ name absmod cf
+  mkfile (absmod ++ ".hs") $ cf2XMLPrinter typ name absmod cf
 
 -- derive a DTD from a BNF grammar. AR 21/8/2004
 cf2DTD :: Coding -> String -> CF -> String

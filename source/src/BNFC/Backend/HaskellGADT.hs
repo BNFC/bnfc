@@ -24,6 +24,7 @@ module BNFC.Backend.HaskellGADT (makeHaskellGadt) where
 
 -- import Utils
 import BNFC.Options
+import BNFC.Backend.Base hiding (Backend)
 import BNFC.Backend.Haskell.HsOpts
 import BNFC.CF
 import BNFC.Backend.Haskell.CFtoHappy
@@ -87,8 +88,8 @@ makeHaskellGadt opts cf = do
     when (shareStrings opts) $ writeFileRep (shareFile opts)    $ sharedString shareMod (byteStrings opts) cf
     when (make opts) $ writeFileRep "Makefile" $ makefile opts
     case xml opts of
-      2 -> makeXML (lang opts) True cf
-      1 -> makeXML (lang opts) False cf
+      2 -> writeFiles "." $ makeXML (lang opts) True cf
+      1 -> writeFiles "." $ makeXML (lang opts) False cf
       _ -> return ()
 
 codeDir :: Options -> FilePath

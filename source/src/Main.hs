@@ -30,6 +30,7 @@ module Main where
 
 -- import Utils
 import BNFC.CF (cfp2cf)
+import BNFC.Backend.Base hiding (Backend)
 import BNFC.Backend.Latex
 import BNFC.Backend.Haskell
 import BNFC.Backend.HaskellGADT
@@ -78,13 +79,13 @@ main = do
       readFile file >>= parseCFP options TargetProfile >>= makeHaskellProfile options
     Target target options file ->
       readFile file >>= parseCF options target >>= make target options
-  where make TargetC = makeC
-        make TargetCpp = makeCppStl
-        make TargetCppNoStl = makeCppNoStl
-        make TargetCSharp = makeCSharp
-        make TargetHaskell = makeHaskell
-        make TargetHaskellGadt = makeHaskellGadt
-        make TargetLatex = makeLatex
-        make TargetJava = makeJava
-        make TargetOCaml = makeOCaml
-        make TargetProfile = fail ""
+  where make TargetC            opts cf = makeC opts cf
+        make TargetCpp          opts cf = makeCppStl opts cf
+        make TargetCppNoStl     opts cf = makeCppNoStl opts cf
+        make TargetCSharp       opts cf = makeCSharp opts cf
+        make TargetHaskell      opts cf = writeFiles "." $ makeHaskell opts cf
+        make TargetHaskellGadt  opts cf = makeHaskellGadt opts cf
+        make TargetLatex        opts cf = makeLatex opts cf
+        make TargetJava         opts cf = makeJava opts cf
+        make TargetOCaml        opts cf = makeOCaml opts cf
+        make TargetProfile      opts cf = fail "" opts cf
