@@ -19,7 +19,8 @@
 module BNFC.Backend.Latex (makeLatex,makefile) where
 
 import AbsBNF (Reg (..))
-import BNFC.Options
+import BNFC.Options hiding (Backend)
+import BNFC.Backend.Base
 import BNFC.Backend.Common.Makefile as Makefile
 import BNFC.CF
 import BNFC.GetCF
@@ -31,11 +32,11 @@ import System.Exit (exitSuccess)
 import System.FilePath ((<.>),replaceExtension, takeBaseName)
 import Text.Printf
 
-makeLatex :: Backend
+makeLatex :: SharedOptions -> CF -> Backend
 makeLatex opts cf = do
     let texfile = name <.> "tex"
-    writeFile texfile (cfToLatex name cf)
-    when (make opts) $ writeFile "Makefile" (makefile texfile)
+    mkfile texfile (cfToLatex name cf)
+    when (make opts) $ mkfile "Makefile" (makefile texfile)
   where name = lang opts
 
 cfToLatex :: String -> CF -> String

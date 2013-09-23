@@ -5,9 +5,9 @@ import ShellyTesting
 import Test.Hspec
 import qualified Data.Text.Lazy as LT
 import BNFC.GetCF
+import BNFC.Hspec
 import BNFC.Options hiding (Backend)
 import BNFC.Backend.Base -- SUT
-import Test.HUnit ((@?))
 import Text.Printf (printf)
 
 import BNFC.Backend.Haskell -- SUT
@@ -21,14 +21,6 @@ getCalc = parseCF  calcOptions TargetHaskell $
           , "EDiv. Exp1  ::= Exp1  \"/\" Exp2  ;"
           , "EInt. Exp2  ::= Integer ;"
           , "coercions Exp 2 ;" ]
-
--- | Special expectation that a backend generate a particular file
-shouldGenerate :: Backend -> String -> Expectation
-backend `shouldGenerate` file = do
-  files <- execBackend backend
-  let filenames = map fst files
-  file `elem` filenames
-    @? printf "file %s not found in %s" file (show filenames)
 
 spec = do
 

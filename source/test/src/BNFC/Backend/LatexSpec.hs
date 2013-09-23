@@ -1,15 +1,21 @@
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE ExtendedDefaultRules #-}
-{-# OPTIONS_GHC -fno-warn-type-defaults #-}
 module BNFC.Backend.LatexSpec where
 
-import Shelly
-import ShellyTesting
+import BNFC.Options
+import BNFC.GetCF
+
 import Test.Hspec
-import qualified Data.Text.Lazy as LT
+import BNFC.Hspec
 
 import BNFC.Backend.Latex -- SUT
-default (LT.Text)
+
+calcOptions = defaultOptions { lang = "Calc" }
+getCalc = parseCF  calcOptions TargetLatex $
+  unlines [ "EAdd. Exp ::= Exp \"+\" Exp1  ;"
+          , "ESub. Exp ::= Exp \"-\" Exp1  ;"
+          , "EMul. Exp1  ::= Exp1  \"*\" Exp2  ;"
+          , "EDiv. Exp1  ::= Exp1  \"/\" Exp2  ;"
+          , "EInt. Exp2  ::= Integer ;"
+          , "coercions Exp 2 ;" ]
 
 spec = do
 
@@ -24,10 +30,13 @@ spec = do
                   "cleanall: clean",
                   "\t-rm Makefile myFile.tex",
                   "" ]
-  describe "LaTeX backend" $ do
 
-    it "creates the .tex file" $
-      bnfc ["--latex", "Calc.cf"] `shouldCreate` ["Calc.tex"]
-    it "creates the Makefile" $
-      bnfc ["--latex", "-m", "Calc.cf"]
-        `shouldCreate` ["Calc.tex", "Makefile"]
+  describe "LaTeX backend" $ do
+    it "creates the .tex file" $ do
+      calc <- getCalc
+      makeLatex calcOptions calc `shouldGenerate` "Calc.tex"
+
+    it "creates the Makefile" $ do
+      calc <- getCalc
+      let options = calcOptions { make = True }
+      makeLatex options calc `shouldGenerate` "Makefile"
