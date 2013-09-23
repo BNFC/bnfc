@@ -33,6 +33,36 @@
     Author        : Michael Pellauer (pellauer@cs.chalmers.se)
 
    **************************************************************
+
+The idea of this module is the following (if I got it correctly):
+
+In some target languages (e.g. java or C) you need to create a variable name
+for each non terminal in a given rule. For instance, the following rules:
+> SomeFunction. A ::= B C D ;
+could be represented in C by a structure like:
+
+@
+struct A {
+  B b_;
+  C c_;
+  D d_;
+}
+@
+(note that this is not exactly the representation produced by bnfc)
+
+but if there is several non terminal of the same category, we need to number
+them. Eg:
+> SomeFunction. A = B B ;
+
+Should become something like:
+@
+struct A {
+  B b_1, b_2;
+}
+@
+
+This is what this module does.
+
 -}
 
 module BNFC.Backend.Common.NamedVariables where
@@ -51,7 +81,13 @@ type UserDef = String --user-defined types
 --A symbol-mapping environment.
 type SymEnv = [(String, String)]
 
---Converts a list of categories into their types to be used as instance variables.
+-- | Converts a list of categories into their types to be used as instance
+-- variables. If a category appears only once, it is given the number 0,
+-- if it appears more than once, its occurrences are numbered from 1. ex:
+--
+-- >>> getVars ["A", "B", "A"]
+-- [("A", 1), ("B", 0), ("A", 2)]
+--
 getVars :: [Cat] -> [IVar]
 getVars [] = []
 getVars cs = foldl addVar [] (map identCat cs)
@@ -80,6 +116,7 @@ numVars env ((Left f) : fs) =
 --If there's only one variable of a type we drop the redundant _1 label.
 --(Actually here we add _1 labels to variables that need it, but the effect
 -- is the same.)
+fixOnes :: Eq b => [Either String b] -> [Either String b]
 fixOnes [] = []
 fixOnes ((Right f): fs) = (Right f) : (fixOnes fs)
 fixOnes ((Left f) : fs) =

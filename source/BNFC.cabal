@@ -279,6 +279,19 @@ Test-suite unit-tests
    BNFC.OptionsSpec
    BNFC.WarningMSpec
 
+-- Regression tests are specific tests implemented from reported issues
+test-suite regression-tests
+  type:           exitcode-stdio-1.0
+  main-is:        RegressionTests.hs
+  hs-source-dirs: test/src
+  build-depends:  base == 4.*,
+                  test-framework == 0.8.*,
+                  test-framework-hunit ==  0.3.*,
+                  HUnit == 1.2.*,
+                  shelly,
+                  text
+
+
 Flag haskell-tests-cnf
   Description: Enable/disable testing using haskell CNF backend
   Default: True
