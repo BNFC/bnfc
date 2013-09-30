@@ -289,7 +289,7 @@ test-suite regression-tests
                   test-framework == 0.8.*,
                   test-framework-hunit ==  0.3.*,
                   HUnit == 1.2.*,
-                  shelly,
+                  shelly == 0.15.*,
                   text
 
 
