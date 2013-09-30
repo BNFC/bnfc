@@ -1,4 +1,4 @@
-.PHONY: install
+.PHONY: build install doc
 
 all: build
 
@@ -8,3 +8,5 @@ build:
 install:
 	cabal install
 
+doc:
+	cabal haddock --executables --internal
