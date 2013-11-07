@@ -351,7 +351,7 @@ instance Print Reg where
    RStar reg -> prPrec i 3 (concat [prt 3 reg , ["*"]])
    RPlus reg -> prPrec i 3 (concat [prt 3 reg , ["+"]])
    ROpt reg  -> prPrec i 3 (concat [prt 3 reg , ["?"]])
-   REps  -> prPrec i 3 (["$"])
+   REps  -> prPrec i 3 (["()"])
    RChar c -> prPrec i 3 (concat [prt 0 c])
    RAlts str -> prPrec i 3 (concat [["["],prt 0 str,["]"]])
    RSeqs str -> prPrec i 2 (concat (map (prt 0) str))
