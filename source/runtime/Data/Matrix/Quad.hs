@@ -1,4 +1,4 @@
-{-# LANGUAGE GADTs, DataKinds, ScopedTypeVariables, KindSignatures #-}
+{-# LANGUAGE GADTs, DataKinds, ScopedTypeVariables, KindSignatures, MultiParamTypeClasses, FlexibleInstances, RankNTypes #-}
 
 module Data.Matrix.Quad where
 
@@ -138,8 +138,6 @@ mkSing (Bin' _ x1 x2) Leaf' a = row (mkSing x1 Leaf' a) Zero
 data SomeTri a where
   T :: Shape' s -> Pair (Mat s s a) -> SomeTri a
 
-type Q a = SomeTri a
-
 mkUpDiag :: AbelianGroupZ a => [a] -> Shape' s -> Mat s s a
 mkUpDiag [] Leaf' = Zero
 mkUpDiag xs (Bin' _ s s') = Quad (mkUpDiag a s) (mkSing s' s c) Zero (mkUpDiag b s')
@@ -161,6 +159,47 @@ quad' a b c d = quad <$> a <*> b <*> c <*> d
 mergein :: RingP a => Bool -> SomeTri a -> Pair a -> SomeTri a -> SomeTri a
 mergein p (T y a) c (T x b) = T (bin' y x) (quad' a (closeDisjointP p (leftOf a) c' (rightOf b)) zero b)
   where c' = mkSing x y c
+
+-- class ChopLast (x :: Shape) (y :: Shape) where
+--   chopRow :: Mat x x a -> Mat x y a
+
+-- instance ChopLast (Bin x Leaf) x where
+--   chopRow (Quad a b c d) = Row a b
+
+-- class ChopFirst (x :: Shape) (y :: Shape) where
+--   chopCol :: Mat x x a -> Mat y x a
+
+-- instance ChopFirst (Bin Leaf x) x where
+--   chopCol (Quad a b c d) = Col b d
+
+chopFirst :: Shape' x -> Mat x x a -> ((forall x'. Shape' x' -> Mat x' Leaf a -> Mat x' x' a -> k) -> k)
+chopFirst Leaf' _ k = error "can't chop!"
+chopFirst (Bin' _ Leaf' x) (Quad a b c d) k = k x b d
+
+
+chopLast :: Shape' x -> Mat x x a -> ((forall x'. Shape' x' -> Mat x' x' a -> Mat Leaf x' a -> k) -> k)
+chopLast Leaf' _ k = error "can't chop!"
+chopLast (Bin' _ x Leaf') (Quad a b c d) k = k x a b
+
+chopFirst' :: Shape' x -> Pair (Mat x x a) -> ((forall x'. Shape' x' -> Pair (Mat x' x a) -> k) -> k)
+chopFirst' = undefined
+
+chopLast' :: Shape' x -> Pair (Mat x x a) -> ((forall x'. Shape' x' -> Pair (Mat x x' a) -> k) -> k)
+chopLast' = undefined
+
+-- merge :: RingP a => Bool -> SomeTri a -> SomeTri a -> SomeTri a
+-- merge p (T Leaf' _zero) x = x
+-- merge p x (T Leaf' _zero) = x
+-- merge p (T y a) (T x b) = chopFirst' x b $ \x' b' ->
+--                           chopLast'  y a $ \y' a' ->
+--                           T (bin' x' y')
+--                           (quad' a' undefined undefined undefined)
+--                           -- (quad' a' zero zero b')                          
+--                           -- undefined
+
+-- (closeDisjointP p (leftOf a') zero (rightOf b'))
+
+
 
 -- | A variant of zipWith on vectors
 zw :: (AbelianGroup a, AbelianGroup b) => (a -> b -> c) -> Vec y a -> Vec y b -> Vec y c
