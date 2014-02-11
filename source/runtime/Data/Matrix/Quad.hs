@@ -25,7 +25,7 @@ data Mat :: Shape -> Shape -> * -> * where
   Zero :: Mat x y a
   One :: !a -> Mat Leaf Leaf a
   Row :: Mat x1 Leaf a -> Mat x2 Leaf a -> Mat (Bin x1 x2) Leaf a
-  Col :: Mat Leaf y1 a -> Mat Leaf y2 a -> Mat Leaf (Bin y1 y2) a
+  Col :: Mat x y1 a -> Mat x y2 a -> Mat x (Bin y1 y2) a
 
 data Vec :: Shape -> * -> * where
   Z :: Vec s a
@@ -36,7 +36,7 @@ data Vec :: Shape -> * -> * where
 row Zero Zero = Zero
 row x y = Row x y
 
-col :: Mat Leaf y1 a -> Mat Leaf y2 a -> Mat Leaf (Bin y1 y2) a
+-- col :: Mat Leaf y1 a -> Mat Leaf y2 a -> Mat Leaf (Bin y1 y2) a
 col Zero Zero = Zero
 col x y = Col x y
 
@@ -160,44 +160,59 @@ mergein :: RingP a => Bool -> SomeTri a -> Pair a -> SomeTri a -> SomeTri a
 mergein p (T y a) c (T x b) = T (bin' y x) (quad' a (closeDisjointP p (leftOf a) c' (rightOf b)) zero b)
   where c' = mkSing x y c
 
--- class ChopLast (x :: Shape) (y :: Shape) where
---   chopRow :: Mat x x a -> Mat x y a
-
--- instance ChopLast (Bin x Leaf) x where
---   chopRow (Quad a b c d) = Row a b
-
--- class ChopFirst (x :: Shape) (y :: Shape) where
---   chopCol :: Mat x x a -> Mat y x a
-
--- instance ChopFirst (Bin Leaf x) x where
---   chopCol (Quad a b c d) = Col b d
-
-chopFirst :: Shape' x -> Mat x x a -> ((forall x'. Shape' x' -> Mat x' Leaf a -> Mat x' x' a -> k) -> k)
-chopFirst Leaf' _ k = error "can't chop!"
-chopFirst (Bin' _ Leaf' x) (Quad a b c d) k = k x b d
+chopFirst' :: Shape' x -> Pair (Mat x x a) -> ((forall x'. Shape' x' -> Pair (Mat x' Leaf a) -> Pair (Mat x' x' a) -> k) -> k)
+chopFirst' Leaf' _ k = error "can't chop!"
+chopFirst' (Bin' _ Leaf' x) (Quad a b c d :/: Quad a' b' c' d') k = k x (b :/: b') (d :/: d') 
+-- FIXME: recursive case??
 
 
-chopLast :: Shape' x -> Mat x x a -> ((forall x'. Shape' x' -> Mat x' x' a -> Mat Leaf x' a -> k) -> k)
-chopLast Leaf' _ k = error "can't chop!"
-chopLast (Bin' _ x Leaf') (Quad a b c d) k = k x a b
+data Chop x x' where
+  Stop :: Chop (Bin x Leaf) x
+  Continue :: Chop x x' -> Chop (Bin x0 x) (Bin x0 x')
 
-chopFirst' :: Shape' x -> Pair (Mat x x a) -> ((forall x'. Shape' x' -> Pair (Mat x' x a) -> k) -> k)
-chopFirst' = undefined
+chopLast :: Chop x x' -> Pair (Mat x y a) -> (Pair (Mat x' y a), Pair (Mat Leaf y a))
+chopLast Stop (Quad a b c d :/: Quad a' b' c' d') = (Col a c :/: Col a' c',Col b d :/: undefined)
+-- FIXME: continue case
 
-chopLast' :: Shape' x -> Pair (Mat x x a) -> ((forall x'. Shape' x' -> Pair (Mat x x' a) -> k) -> k)
-chopLast' = undefined
+chopLast' :: RingP a => Shape' x -> Pair (Mat x x a) -> ((forall x'. Chop x x' -> Shape' x' -> Pair (Mat x' x' a) -> Pair (Mat Leaf x' a) -> k) -> k)
+chopLast' Leaf' _ k = error "can't chop!"
+chopLast' (Bin' _ x Leaf') (Quad a b c d :/: Quad a' b' c' d') k = k Stop x (a :/: a') (b :/: b')
+chopLast' (Bin' _ x1 x2) (Quad a b c d :/: Quad a' b' c' d') k =
+  chopLast' x2 (d :/: d') $ \ q x2' d'' f -> 
+  let (b'',e) = chopLast q (b :/: b') 
+  in k (Continue q) (bin' x1 x2') (quad' (a :/: a') b'' zero d'') (Col <$> e <*> f)
 
--- merge :: RingP a => Bool -> SomeTri a -> SomeTri a -> SomeTri a
--- merge p (T Leaf' _zero) x = x
--- merge p x (T Leaf' _zero) = x
--- merge p (T y a) (T x b) = chopFirst' x b $ \x' b' ->
---                           chopLast'  y a $ \y' a' ->
---                           T (bin' x' y')
---                           (quad' a' undefined undefined undefined)
---                           -- (quad' a' zero zero b')                          
---                           -- undefined
+mkLast :: RingP a => Shape' y -> Mat x Leaf a -> Mat x y a
+mkLast Leaf' m = m
+mkLast (Bin' _ _y y) (Row a b) = Quad zero zero (mkLast y a) (mkLast y b)
 
--- (closeDisjointP p (leftOf a') zero (rightOf b'))
+instance Traversable Pair where
+  traverse f (x :/: y) = (:/:) <$> f x <*> f y
+  
+instance Foldable Pair where
+  foldMap = foldMapDefault
+
+instance Functor (Mat x y) where
+  
+instance Applicative (Mat x y) where
+  Quad f g h i <*> Quad a b c d = Quad (f <*> a) (g <*> b) (h <*> c) (i <*> d)
+  
+  
+instance RingP a => RingP (Pair a) where
+  -- TODO
+  
+mkLast' :: RingP a => Shape' y -> Mat x Leaf (Pair a) -> Mat x y (Pair a)
+mkLast' Leaf' m = m
+mkLast' (Bin' _ _y y) (Row a b) = Quad zero zero (mkLast y a) (mkLast y b)
+
+merge :: RingP a => Bool -> SomeTri a -> SomeTri a -> SomeTri a
+merge p (T Leaf' _zero) x = x
+merge p x (T Leaf' _zero) = x
+merge p (T y l) (T x r) = chopFirst' x r $ \x' c d ->
+                          -- chopLast'  y l $ \y' a b ->
+                          T (bin' y x')
+                            (quad' l (closeDisjointP p (leftOf l) (mkLast' y $ sequenceA c) (rightOf d)) zero d)
+
 
 
 
