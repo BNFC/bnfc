@@ -167,7 +167,7 @@ testfile opts cf
 	         "import " ++ absFileM      opts,
 	         if lay then "import " ++ layoutFileM opts else "",
 	         if use_xml then "import " ++ xmlFileM opts else "",
-	         if_glr "import Data.FiniteMap(FiniteMap, lookupFM, fmToList)",
+	         if_glr "import qualified Data.Map(Map, lookup, toList)",
 	         if_glr "import Data.Maybe(fromJust)",
 	         "import " ++ errFileM      opts,
 		 "",
@@ -253,7 +253,7 @@ run_glr
 
 lift_parser
  = unlines
-   [ "type Forest = FiniteMap ForestId [Branch]      -- omitted in ParX export."
+   [ "type Forest = Data.Map.Map ForestId [Branch]      -- omitted in ParX export."
    , "data GLR_Output a"
    , " = GLR_Result { pruned_decode     :: (Forest -> Forest) -> [a]"
    , "              , semantic_result   :: [a]"
@@ -273,8 +273,8 @@ lift_parser
    , "                                 (\"Tokens: \" ++ show ts)"
    , "     ParseEOF   f    -> GLR_Fail \"Parse failed, unexpected EOF\\n\""
    , "                                 (\"Partial forest:\\n\""
-   , "                                    ++ unlines (map show $ fmToList f))"
-   , "     ParseOK r f     -> let find   f = fromJust . lookupFM f"
+   , "                                    ++ unlines (map show $ Data.Map.toList f))"
+   , "     ParseOK r f     -> let find   f = fromJust . ((flip Data.Map.lookup) f)"
    , "                            dec_fn f = decode (find f) r"
    , "                        in GLR_Result (\\ff -> dec_fn $ ff f) (dec_fn f)"
    ]
