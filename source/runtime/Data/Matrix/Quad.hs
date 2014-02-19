@@ -25,18 +25,16 @@ data Mat :: Shape -> Shape -> * -> * where
   Zero :: Mat x y a
   One :: !a -> Mat Leaf Leaf a
   Row :: Mat x1 Leaf a -> Mat x2 Leaf a -> Mat (Bin x1 x2) Leaf a
-  Col :: Mat x y1 a -> Mat x y2 a -> Mat x (Bin y1 y2) a
+  Col :: Mat Leaf y1 a -> Mat Leaf y2 a -> Mat Leaf (Bin y1 y2) a
 
 data Vec :: Shape -> * -> * where
   Z :: Vec s a
   O :: a -> Vec Leaf a
   (:!) :: Vec s a -> Vec s' a -> Vec (Bin s s') a
 
-
 row Zero Zero = Zero
 row x y = Row x y
 
--- col :: Mat Leaf y1 a -> Mat Leaf y2 a -> Mat Leaf (Bin y1 y2) a
 col Zero Zero = Zero
 col x y = Col x y
 
@@ -160,27 +158,70 @@ mergein :: RingP a => Bool -> SomeTri a -> Pair a -> SomeTri a -> SomeTri a
 mergein p (T y a) c (T x b) = T (bin' y x) (quad' a (closeDisjointP p (leftOf a) c' (rightOf b)) zero b)
   where c' = mkSing x y c
 
-chopFirst' :: Shape' x -> Pair (Mat x x a) -> ((forall x'. Shape' x' -> Pair (Mat x' Leaf a) -> Pair (Mat x' x' a) -> k) -> k)
-chopFirst' Leaf' _ k = error "can't chop!"
-chopFirst' (Bin' _ Leaf' x) (Quad a b c d :/: Quad a' b' c' d') k = k x (b :/: b') (d :/: d') 
--- FIXME: recursive case??
+data ChopFirst x x' where
+  StopY :: ChopFirst (Bin Leaf x) x
+  ContinueY :: ChopFirst x x' -> ChopFirst (Bin x x0) (Bin x' x0)
 
+-- Given two matrices with the same y component, create one with the combined x
+-- component as its shape. 
+-- TODO: Are these really all the cases?
+mkMat :: Shape' y -> Mat x y a -> Mat x' y a -> Mat (Bin x x') y a
+mkMat _ Zero Zero = Zero
+mkMat Leaf' Zero (One a) = row Zero (One a)
+mkMat Leaf' (One a) Zero = row (One a) Zero
+mkMat Leaf' (One a) (One b) = row (One a) (One b)
+mkMat Leaf' rl@(Row _ _) rr@(Row _ _) = row rl rr
+mkMat (Bin' _ Leaf' x) (Col a b) (Col c d) = quad a c b d
+mkMat (Bin' _ x1 x2) (Quad a b c d) (Quad e f g h) = quad (mkMat x1 a b) (mkMat x1 e f)
+                                                          (mkMat x2 c d) (mkMat x2 g h)
 
-data Chop x x' where
-  Stop :: Chop (Bin x Leaf) x
-  Continue :: Chop x x' -> Chop (Bin x0 x) (Bin x0 x')
+-- FIXME: How to get the shape in the call to mkMat?
+chopFirstRow :: ChopFirst y y' -> Pair (Mat x y a) -> (Pair (Mat x y' a), Pair (Mat x Leaf a))
+chopFirstRow StopY (Quad a b c d :/: Quad a' b' c' d') = (mkMat undefined c d :/: undefined, undefined)
+chopFirstRow (ContinueY ch) (Quad a b c d :/: Quad a' b' c' d') = 
+    let ((e :/: e'),topleft)  = chopFirstRow ch (a :/: a')
+        ((f :/: f'),topright) = chopFirstRow ch (b :/: b')
+    in (quad e f c d :/: quad e' f' c' d', row <$> topleft <*> topright)
 
-chopLast :: Chop x x' -> Pair (Mat x y a) -> (Pair (Mat x' y a), Pair (Mat Leaf y a))
-chopLast Stop (Quad a b c d :/: Quad a' b' c' d') = (Col a c :/: Col a' c',Col b d :/: undefined)
--- FIXME: continue case
+chopFirst :: RingP a => Shape' x -> Pair (Mat x x a) -> ((forall x'. ChopFirst x x' -> Shape' x' -> Pair (Mat x' Leaf a) -> Pair (Mat x' x' a) -> k) -> k)
+chopFirst Leaf' _ k = error "can't chop!"
+chopFirst (Bin' _ Leaf' x) (Quad a b c d :/: Quad a' b' c' d') k = k StopY x (b :/: b') (d :/: d') 
+chopFirst (Bin' _ x1 x2) (Quad a b c d :/: Quad a' b' c' d') k = 
+    chopFirst x1 (a :/: a') $ \q x1' e a'' -> 
+    let (b'', f) = chopFirstRow q (b :/: b')
+    in k (ContinueY q) (bin' x1' x2) (Row <$> e <*> f) (quad' a'' b'' zero (d :/: d'))
 
-chopLast' :: RingP a => Shape' x -> Pair (Mat x x a) -> ((forall x'. Chop x x' -> Shape' x' -> Pair (Mat x' x' a) -> Pair (Mat Leaf x' a) -> k) -> k)
-chopLast' Leaf' _ k = error "can't chop!"
-chopLast' (Bin' _ x Leaf') (Quad a b c d :/: Quad a' b' c' d') k = k Stop x (a :/: a') (b :/: b')
-chopLast' (Bin' _ x1 x2) (Quad a b c d :/: Quad a' b' c' d') k =
-  chopLast' x2 (d :/: d') $ \ q x2' d'' f -> 
-  let (b'',e) = chopLast q (b :/: b') 
-  in k (Continue q) (bin' x1 x2') (quad' (a :/: a') b'' zero d'') (Col <$> e <*> f)
+data ChopLast x x' where
+  StopX :: ChopLast (Bin x Leaf) x
+  ContinueX :: ChopLast x x' -> ChopLast (Bin x0 x) (Bin x0 x') 
+
+-- Grows a matrix in y-direction, keeping the same x shape.
+-- TODO: Are these really all the cases?
+mkMat' :: Shape' x -> Mat x y a -> Mat x y' a -> Mat x (Bin y y') a
+mkMat' _ Zero Zero = Zero
+mkMat' Leaf' Zero (One a) = col Zero (One a)
+mkMat' Leaf' (One a) Zero = col (One a) Zero
+mkMat' Leaf' (One a) (One b) = col (One a) (One b)
+mkMat' Leaf' cu@(Col _ _) cl@(Col _ _) = col cu cl
+mkMat' (Bin' _ x Leaf') (Row a b) (Row c d) = quad a b c d
+mkMat' (Bin' _ x1 x2) (Quad a b c d) (Quad e f g h) = quad (mkMat' x1 a c) (mkMat' x2 b d)
+                                                           (mkMat' x1 e g) (mkMat' x2 f h)
+
+-- FIXME: How to send in the shapes into mkMat'?
+chopLastCol :: ChopLast x x' -> Pair (Mat x y a) -> (Pair (Mat x' y a), Pair (Mat Leaf y a))
+chopLastCol StopX (Quad a b c d :/: Quad a' b' c' d') = (mkMat' undefined a c :/: undefined, Col b d :/: Col b' d')
+chopLastCol (ContinueX ch) (Quad a b c d :/: Quad a' b' c' d') = 
+    let (e :/: e', upperRight) = chopLastCol ch (b :/: b')
+        (f :/: f', lowerRight) = chopLastCol ch (d :/: d') 
+    in (quad a e c f :/: quad a' e' c' f', col <$> upperRight <*> lowerRight)
+
+chopLast :: RingP a => Shape' x -> Pair (Mat x x a) -> ((forall x'. ChopLast x x' -> Shape' x' -> Pair (Mat x' x' a) -> Pair (Mat Leaf x' a) -> k) -> k)
+chopLast Leaf' _ k = error "can't chop!"
+chopLast (Bin' _ x Leaf') (Quad a b c d :/: Quad a' b' c' d') k = k StopX x (a :/: a') (b :/: b')
+chopLast (Bin' _ x1 x2) (Quad a b c d :/: Quad a' b' c' d') k =
+  chopLast x2 (d :/: d') $ \q x2' d'' f -> 
+  let (b'',e) = chopLastCol q (b :/: b') 
+  in k (ContinueX q) (bin' x1 x2') (quad' (a :/: a') b'' zero d'') (Col <$> e <*> f)
 
 mkLast :: RingP a => Shape' y -> Mat x Leaf a -> Mat x y a
 mkLast Leaf' m = m
@@ -193,12 +234,18 @@ instance Foldable Pair where
   foldMap = foldMapDefault
 
 instance Functor (Mat x y) where
+    fmap f (Quad a b c d) = Quad (fmap f a) (fmap f b) (fmap f c) (fmap f d)
+    fmap f Zero = Zero
+    fmap f (One a) = One (f a)
+    fmap f (Row a b) = Row (fmap f a) (fmap f b) 
+    fmap f (Col a b) = Col (fmap f a) (fmap f b)
   
 instance Applicative (Mat x y) where
   Quad f g h i <*> Quad a b c d = Quad (f <*> a) (g <*> b) (h <*> c) (i <*> d)
-  
+  pure a = undefined
   
 instance RingP a => RingP (Pair a) where
+    mul b (p :/: q) (x :/: y) = mul b p x :/: mul b q y
   -- TODO
   
 mkLast' :: RingP a => Shape' y -> Mat x Leaf (Pair a) -> Mat x y (Pair a)
@@ -208,13 +255,10 @@ mkLast' (Bin' _ _y y) (Row a b) = Quad zero zero (mkLast y a) (mkLast y b)
 merge :: RingP a => Bool -> SomeTri a -> SomeTri a -> SomeTri a
 merge p (T Leaf' _zero) x = x
 merge p x (T Leaf' _zero) = x
-merge p (T y l) (T x r) = chopFirst' x r $ \x' c d ->
-                          -- chopLast'  y l $ \y' a b ->
+merge p (T y l) (T x r) = chopFirst x r $ \ch x' c d ->
+                          chopLast  y l $ \ch' y' a b ->
                           T (bin' y x')
                             (quad' l (closeDisjointP p (leftOf l) (mkLast' y $ sequenceA c) (rightOf d)) zero d)
-
-
-
 
 -- | A variant of zipWith on vectors
 zw :: (AbelianGroup a, AbelianGroup b) => (a -> b -> c) -> Vec y a -> Vec y b -> Vec y c
