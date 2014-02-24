@@ -164,20 +164,19 @@ data ChopFirst x x' where
 
 -- Given two matrices with the same y component, create one with the combined x
 -- component as its shape. 
--- TODO: Are these really all the cases?
-mkMat :: Shape' y -> Mat x y a -> Mat x' y a -> Mat (Bin x x') y a
-mkMat _ Zero Zero = Zero
-mkMat Leaf' Zero (One a) = row Zero (One a)
-mkMat Leaf' (One a) Zero = row (One a) Zero
-mkMat Leaf' (One a) (One b) = row (One a) (One b)
-mkMat Leaf' rl@(Row _ _) rr@(Row _ _) = row rl rr
-mkMat (Bin' _ Leaf' x) (Col a b) (Col c d) = quad a c b d
-mkMat (Bin' _ x1 x2) (Quad a b c d) (Quad e f g h) = quad (mkMat x1 a b) (mkMat x1 e f)
-                                                          (mkMat x2 c d) (mkMat x2 g h)
+mkRow :: Mat x y a -> Mat x' y a -> Mat (Bin x x') y a
+mkRow Zero Zero = Zero
+mkRow Zero (One a) = row Zero (One a)
+mkRow (One a) Zero = row (One a) Zero
+mkRow (One a) (One b) = row (One a) (One b)
+mkRow rl@(Row _ _) rr@(Row _ _) = row rl rr
+mkRow (Col a b) (Col c d) = quad a c b d
+mkRow (Quad a b c d) (Quad e f g h) = quad (mkRow a b) (mkRow e f)
+                                           (mkRow c d) (mkRow g h)
 
 -- FIXME: How to get the shape in the call to mkMat?
 chopFirstRow :: ChopFirst y y' -> Pair (Mat x y a) -> (Pair (Mat x y' a), Pair (Mat x Leaf a))
-chopFirstRow StopY (Quad a b c d :/: Quad a' b' c' d') = (mkMat undefined c d :/: undefined, undefined)
+chopFirstRow StopY (Quad a b c d :/: Quad a' b' c' d') = (mkRow c d :/: mkRow c' d', Row a b :/: Row a' b')
 chopFirstRow (ContinueY ch) (Quad a b c d :/: Quad a' b' c' d') = 
     let ((e :/: e'),topleft)  = chopFirstRow ch (a :/: a')
         ((f :/: f'),topright) = chopFirstRow ch (b :/: b')
@@ -198,19 +197,19 @@ data ChopLast x x' where
 
 -- Grows a matrix in y-direction, keeping the same x shape.
 -- TODO: Are these really all the cases?
-mkMat' :: Shape' x -> Mat x y a -> Mat x y' a -> Mat x (Bin y y') a
-mkMat' _ Zero Zero = Zero
-mkMat' Leaf' Zero (One a) = col Zero (One a)
-mkMat' Leaf' (One a) Zero = col (One a) Zero
-mkMat' Leaf' (One a) (One b) = col (One a) (One b)
-mkMat' Leaf' cu@(Col _ _) cl@(Col _ _) = col cu cl
-mkMat' (Bin' _ x Leaf') (Row a b) (Row c d) = quad a b c d
-mkMat' (Bin' _ x1 x2) (Quad a b c d) (Quad e f g h) = quad (mkMat' x1 a c) (mkMat' x2 b d)
-                                                           (mkMat' x1 e g) (mkMat' x2 f h)
+mkCol :: Mat x y a -> Mat x y' a -> Mat x (Bin y y') a
+mkCol Zero Zero = Zero
+mkCol Zero (One a) = col Zero (One a)
+mkCol Zero (Row a b) = quad Zero Zero a b
+mkCol (One a) Zero = col (One a) Zero
+mkCol (One a) (One b) = col (One a) (One b)
+mkCol cu@(Col _ _) cl@(Col _ _) = col cu cl
+mkCol (Row a b) (Row c d) = quad a b c d
+mkCol (Quad a b c d) (Quad e f g h) = quad (mkCol a c) (mkCol b d) (mkCol e g) (mkCol f h)
 
 -- FIXME: How to send in the shapes into mkMat'?
 chopLastCol :: ChopLast x x' -> Pair (Mat x y a) -> (Pair (Mat x' y a), Pair (Mat Leaf y a))
-chopLastCol StopX (Quad a b c d :/: Quad a' b' c' d') = (mkMat' undefined a c :/: undefined, Col b d :/: Col b' d')
+chopLastCol StopX (Quad a b c d :/: Quad a' b' c' d') = (mkCol a c :/: mkCol a' c', Col b d :/: Col b' d')
 chopLastCol (ContinueX ch) (Quad a b c d :/: Quad a' b' c' d') = 
     let (e :/: e', upperRight) = chopLastCol ch (b :/: b')
         (f :/: f', lowerRight) = chopLastCol ch (d :/: d') 
@@ -249,7 +248,6 @@ instance Applicative (Mat x y) where
   
 instance RingP a => RingP (Pair a) where
     mul b (p :/: q) (x :/: y) = mul b p x :/: mul b q y
-  -- TODO: What is this function supposed to do?
   
 mkLast' :: RingP a => Shape' y -> Mat x Leaf (Pair a) -> Mat x y (Pair a)
 mkLast' Leaf' m = m
