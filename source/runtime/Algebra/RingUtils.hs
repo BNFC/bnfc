@@ -38,7 +38,6 @@ class AbelianGroupZ a => Ring a where
 
 class (AbelianGroupZ a) => RingP a where
     mul :: Bool -> a -> a -> Pair a
---    mul _ x y = pure $ x * y
 
 mulDefault x y = leftOf (mul False x y)
 
@@ -60,6 +59,9 @@ instance AbelianGroup a => AbelianGroup (Pair a) where
 instance AbelianGroupZ a => AbelianGroupZ (Pair a) where
   isZero (a:/:b)  = isZero a && isZero b
 
+instance RingP a => RingP (Pair a) where
+    mul b (p :/: q) (x :/: y) = mul b p x :/: mul b q y
+  
 instance Ring Int where
     (*)  = (P.*)
 

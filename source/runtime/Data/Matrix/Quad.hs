@@ -175,6 +175,16 @@ mkMat (Bin' _ Leaf' x) (Col a b) (Col c d) = quad a c b d
 mkMat (Bin' _ x1 x2) (Quad a b c d) (Quad e f g h) = quad (mkMat x1 a b) (mkMat x1 e f)
                                                           (mkMat x2 c d) (mkMat x2 g h)
 
+mkRow :: Mat x y a -> Mat x' y a -> Mat (Bin x x') y a
+mkRow Zero Zero = Zero
+mkRow Zero (One a) = row Zero (One a)
+mkRow (One a) Zero = row (One a) Zero
+mkRow (One a) (One b) = row (One a) (One b)
+mkRow rl@(Row _ _) rr@(Row _ _) = row rl rr
+mkRow (Col a b) (Col c d) = quad a c b d
+mkRow (Quad a b c d) (Quad e f g h) = quad (mkRow a b) (mkRow e f)
+                                           (mkRow c d) (mkRow g h)
+
 -- FIXME: How to get the shape in the call to mkMat?
 chopFirstRow :: ChopFirst y y' -> Pair (Mat x y a) -> (Pair (Mat x y' a), Pair (Mat x Leaf a))
 chopFirstRow StopY (Quad a b c d :/: Quad a' b' c' d') = (mkMat undefined c d :/: undefined, undefined)
@@ -243,10 +253,6 @@ instance Functor (Mat x y) where
 instance Applicative (Mat x y) where
   Quad f g h i <*> Quad a b c d = Quad (f <*> a) (g <*> b) (h <*> c) (i <*> d)
   pure a = undefined
-  
-instance RingP a => RingP (Pair a) where
-    mul b (p :/: q) (x :/: y) = mul b p x :/: mul b q y
-  -- TODO
   
 mkLast' :: RingP a => Shape' y -> Mat x Leaf (Pair a) -> Mat x y (Pair a)
 mkLast' Leaf' m = m
