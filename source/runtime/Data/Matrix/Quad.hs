@@ -183,6 +183,7 @@ chopFirstRow (ContinueY ch) (Quad a b c d :/: Quad a' b' c' d') =
         ((f :/: f'),topright) = chopFirstRow ch (b :/: b')
     in (quad e f c d :/: quad e' f' c' d', row <$> topleft <*> topright)
 
+-- TODO: Get rid of the CPS
 chopFirst :: RingP a => Shape' x -> Pair (Mat x x a) -> ((forall x'. ChopFirst x x' -> Shape' x' -> Pair (Mat x' Leaf a) -> Pair (Mat x' x' a) -> k) -> k)
 chopFirst Leaf' _ k = error "can't chop!"
 chopFirst (Bin' _ Leaf' x) (Quad a b c d :/: Quad a' b' c' d') k = k StopY x (b :/: b') (d :/: d') 
@@ -215,6 +216,7 @@ chopLastCol (ContinueX ch) (Quad a b c d :/: Quad a' b' c' d') =
         (f :/: f', lowerRight) = chopLastCol ch (d :/: d') 
     in (quad a e c f :/: quad a' e' c' f', col <$> upperRight <*> lowerRight)
 
+-- TODO: Get rid of the CPS
 chopLast :: RingP a => Shape' x -> Pair (Mat x x a) -> ((forall x'. ChopLast x x' -> Shape' x' -> Pair (Mat x' x' a) -> Pair (Mat Leaf x' a) -> k) -> k)
 chopLast Leaf' _ k = error "can't chop!"
 chopLast (Bin' _ x Leaf') (Quad a b c d :/: Quad a' b' c' d') k = k StopX x (a :/: a') (b :/: b')
@@ -223,6 +225,7 @@ chopLast (Bin' _ x1 x2) (Quad a b c d :/: Quad a' b' c' d') k =
   let (b'',e) = chopLastCol q (b :/: b') 
   in k (ContinueX q) (bin' x1 x2') (quad' (a :/: a') b'' zero d'') (Col <$> e <*> f)
 
+-- TODO: Understand this
 mkLast :: RingP a => Shape' y -> Mat x Leaf a -> Mat x y a
 mkLast Leaf' m = m
 mkLast (Bin' _ _y y) (Row a b) = Quad zero zero (mkLast y a) (mkLast y b)
@@ -242,16 +245,17 @@ instance Functor (Mat x y) where
   
 instance Applicative (Mat x y) where
   Quad f g h i <*> Quad a b c d = Quad (f <*> a) (g <*> b) (h <*> c) (i <*> d)
-  pure a = undefined
+  pure a = undefined -- TODO
   
 instance RingP a => RingP (Pair a) where
     mul b (p :/: q) (x :/: y) = mul b p x :/: mul b q y
-  -- TODO
+  -- TODO: What is this function supposed to do?
   
 mkLast' :: RingP a => Shape' y -> Mat x Leaf (Pair a) -> Mat x y (Pair a)
 mkLast' Leaf' m = m
 mkLast' (Bin' _ _y y) (Row a b) = Quad zero zero (mkLast y a) (mkLast y b)
 
+-- Merge two upper triangular matricies without a middle element.
 merge :: RingP a => Bool -> SomeTri a -> SomeTri a -> SomeTri a
 merge p (T Leaf' _zero) x = x
 merge p x (T Leaf' _zero) = x
