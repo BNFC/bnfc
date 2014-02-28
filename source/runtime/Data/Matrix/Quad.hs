@@ -261,9 +261,6 @@ instance Applicative (Mat x y) where
   Quad f g h i <*> Quad a b c d = Quad (f <*> a) (g <*> b) (h <*> c) (i <*> d)
   pure a = error "cannot lift value a to Mat x y a"
   
-instance RingP a => RingP (Pair a) where
-    mul b (p :/: q) (x :/: y) = mul b p x :/: mul b q y
-  
 mkLast' :: RingP a => Shape' y -> Mat x Leaf (Pair a) -> Mat x y (Pair a)
 mkLast' Leaf' m = m
 mkLast' (Bin' _ _y y) (Row a b) = Quad zero zero (mkLast y a) (mkLast y b)
