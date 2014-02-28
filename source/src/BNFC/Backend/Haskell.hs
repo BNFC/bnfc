@@ -28,6 +28,7 @@ import BNFC.Backend.Haskell.CFtoHappy
 import BNFC.Backend.Haskell.CFtoAlex
 import BNFC.Backend.Haskell.CFtoAlex2
 import BNFC.Backend.Haskell.CFtoAlex3
+import BNFC.Backend.Haskell.CFtoAlex3Incremental
 import BNFC.Backend.Txt2Tag
 import BNFC.Backend.Haskell.CFtoAbstract
 import BNFC.Backend.Haskell.CFtoTemplate
@@ -77,6 +78,10 @@ makeHaskell opts cf = do
         putStrLn "   (Use Alex 2.0 to compile.)"
       Alex3 -> do
         writeFileRep (alexFile opts) $ cf2alex3 lexMod errMod shareMod (shareStrings opts) (byteStrings opts) cf
+        putStrLn "   (Use Alex 3.0 to compile.)"
+      Alex3Inc -> do
+        writeFileRep (alexFile opts) $ cf2alex3inc lexMod errMod shareMod (shareStrings opts) (byteStrings opts) cf
+        putStrLn "   (Generating incremental lexer)"
         putStrLn "   (Use Alex 3.0 to compile.)"
     unless (cnf opts) $ do        
       writeFileRep (happyFile opts) $

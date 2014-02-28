@@ -10,7 +10,7 @@ import Data.List (elemIndex, foldl', sort, intercalate)
 import Data.Maybe (catMaybes, listToMaybe)
 import Data.Version ( showVersion )
 import ErrM
-import Paths_BNFC ( version )
+-- import Paths_BNFC ( version )
 import System.Console.GetOpt
 import System.FilePath (takeBaseName, takeFileName)
 import System.IO (stderr, hPutStrLn,hPutStr)
@@ -51,7 +51,7 @@ instance Show Target where
   show TargetProfile      = "Haskell (with permutation profiles)"
 
 -- | Which version of Alex is targeted?
-data AlexVersion = Alex1 | Alex2 | Alex3
+data AlexVersion = Alex1 | Alex2 | Alex3 | Alex3Inc
   deriving (Show,Eq,Ord,Bounded,Enum)
 
 -- | Happy modes
@@ -159,6 +159,8 @@ specificOptions target = case target of
           "Use Alex 2 as Haskell lexer tool"
       , Option []    ["alex3"] (NoArg (\o -> o {alexMode = Alex3}))
           "Use Alex 3 as Haskell lexer tool (default)"
+      , Option []    ["alex3inc"] (NoArg (\o -> o {alexMode = Alex3Inc}))
+          "Use Incremental Alex 3 as Haskell lexer tool"
       , Option []    ["sharestrings"] (NoArg (\o -> o {shareStrings = True}))
           "Use string sharing in Alex 2 lexer"
       , Option []    ["bytestrings"] (NoArg (\o -> o {byteStrings = True}))
@@ -183,7 +185,7 @@ makefileOption =
 
 -- ~~~ Help strings ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 title = unlines [
-  "The BNF Converter, "++showVersion version,
+--  "The BNF Converter, "++showVersion version,
   "(c) Jonas Almström Duregård, Krasimir Angelov, Jean-Philippe Bernardy, Björn Bringert, Johan Broberg, Paul Callaghan, ",
   "    Grégoire Détrez, Markus Forsberg, Ola Frid, Peter Gammie, Thomas Hallgren, Patrik Jansson, ",
   "    Kristofer Johannisson, Antti-Juhani Kaijanaho, Ulf Norell, ",
