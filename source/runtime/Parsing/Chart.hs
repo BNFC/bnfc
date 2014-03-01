@@ -30,6 +30,7 @@ mkTreeHelp alt s = sweeps (map single s)
   alts = cycle alt
   -}
 
+{-
 -- mkTree2 :: (AbelianGroupZ (c a), RingP a, IsChart c) => Bool -> [Pair a] -> c a
 mkTree2 :: RingP a => Bool -> [Pair a] -> Q.Q a
 mkTree2 p [] = error "can't parse the empty string, sorry"
@@ -38,11 +39,11 @@ mkTree2 p [x,y] = Q.square3 p x y
 mkTree2 p leaves = Q.mergein p (mkTree2 False xs) y (mkTree2 True zs)
  where (xs,y:zs) = splitAt n2 leaves
        n2 = length leaves `div` 2
-
+-}
 
 -- mkTree :: (RingP a, IsChart c) => [Pair a] -> c a
-mkTree = mkTree2 False -- mkTreeHelp [False,True]
-mkTree' = mkTree2 True -- mkTreeHelp [True,False]
+-- mkTree = mkTree2 False -- mkTreeHelp [False,True]
+-- mkTree' = mkTree2 True -- mkTreeHelp [True,False]
 
 
 type Set a = [a]
@@ -55,7 +56,7 @@ instance AbelianGroup (Set a) where
 instance AbelianGroupZ (Set a) where
     isZero = null
 
-type MT2 a = Q.Q a
+-- type MT2 a = Q.Q a
 
 genXPM xs@(h:_) = unlines $
   ["! XPM2",
