@@ -53,6 +53,10 @@ spec = do
       parseMode["--latex", "-m", "file.cf"]
         `shouldBe` Target TargetLatex (defaultOptions {make = True, lang = "file"}) "file.cf"
 
+    it "accept 'old style' options" $
+      parseMode["-haskell", "-m", "-glr", "file.cf"]
+        `shouldBe` Target TargetHaskell (defaultOptions {make = True, lang = "file", glr = GLR}) "file.cf"
+
   describe "myGetOpt'" $
     it "returns the input arguments if it cannot parse any options" $
       forAll (listOf randomOption) $ \args ->
@@ -70,6 +74,10 @@ spec = do
     it "always returns the first declared mode" $
       forAll arbitrary $ \(m1,m2) ->
         runOptParse [] (setmode m1 >> setmode m2) `shouldBe` m1
+
+  describe "Old option translation" $
+    it "translate -haskell to --haskell" $
+      translateOldOptions ["-haskell"] `shouldBe` ["--haskell"]
 
 -- ~~~ Useful functions ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 -- Turn a mode in a list of argiments

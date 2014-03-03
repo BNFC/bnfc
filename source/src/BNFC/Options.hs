@@ -211,7 +211,7 @@ help = unlines $
 
 -- | Main parsing function
 parseMode :: [String] -> Mode
-parseMode args = runOptParse args $ do
+parseMode args = runOptParse (translateOldOptions args) $ do
     -- Firts, if the list of args is empty, it is not considered an error
     -- and we simply print the help screen
     when (null args) $ setmode Help
@@ -293,3 +293,33 @@ myGetOpt' descr args = case getOpt' RequireOrder descr args of
 isUsageError :: Mode -> Bool
 isUsageError (UsageError _) = True
 isUsageError _ = False
+
+-- ~~~ Backward compatibility ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+-- A translating function to maintain backward compatiblicy
+-- with the old option syntay
+translateOldOptions :: [String] -> [String]
+translateOldOptions opts = concatMap translateOne opts
+  where translateOne "-java" = return "--java"
+        translateOne "-java1.5"       = return "--java"
+        translateOne "-c"             = return "--c"
+        translateOne "-cpp"           = return "--cpp"
+        translateOne "-cpp_stl"       = return "--cpp"
+        translateOne "-cpp_no_stl"    = return "--cpp-nostl"
+        translateOne "-csharp"        = return "--csharp"
+        translateOne "-ocaml"         = return "--ocaml"
+        translateOne "-fsharp"        = return "fsharp"
+        translateOne "-haskell"       = return "--haskell"
+        translateOne "-prof"          = return "--profile"
+        translateOne "-gadt"          = return "--haskell-gadt"
+        translateOne "-alex1"         = return "--alex1"
+        translateOne "-alex2"         = return "--alex2"
+        translateOne "-alex3"         = return "--alex3"
+        translateOne "-sharestrings"  = return "--sharestring"
+        translateOne "-bytestrings"   = return "--bytestring"
+        translateOne "-glr"           = return "--glr"
+        translateOne "-xml"           = return "--xml"
+        translateOne "-xmlt"          = return "--xmlt"
+        translateOne "-vs"            = return "--vs"
+        translateOne "-wcf"           = return "--wcf"
+        translateOne other            = return other
+
