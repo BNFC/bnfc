@@ -229,7 +229,7 @@ parseMode args = runOptParse (translateOldOptions args) $ do
     target <- do
       targets <- parseOpt targetOptions
       case targets of
-        []  -> usageError "Missing target language"
+        []  -> return TargetHaskell
         [t] -> return t
         _   -> usageError "only one target language is allowed"
 

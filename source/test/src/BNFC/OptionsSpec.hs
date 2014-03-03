@@ -38,6 +38,10 @@ spec = do
     it "returns an error if help is given an argument" $
       isUsageError (parseMode ["--help=2"]) `shouldBe` True
 
+    it "If no language is specified, it should default to haskell" $
+      parseMode["file.cf"]
+        `shouldBe` Target TargetHaskell (defaultOptions {lang = "file"}) "file.cf"
+
     it "returns an error if the grammar file is missing" $
       parseMode["--haskell"] `shouldBe` UsageError "Missing grammar file"
 
