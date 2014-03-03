@@ -30,6 +30,7 @@ Lange, Martin; Leiß, Hans (2009), "To CNF or not to CNF? An Efficient
 Yet Presentable Version of the CYK Algorithm", Informatica Didactica
 
 -}
+import BNFC.Options
 import BNFC.ToCNFCore
 import BNFC.CF hiding (App,Exp)
 import BNFC.Backend.Haskell.HsOpts
@@ -80,7 +81,7 @@ instance Pretty String where
 prettyUnitSet units = vcat [prettyExp f <> " : " <> catTag cat <> " --> " <> text cat' | (cat,x) <- M.assocs units, (f,cat') <- x]
 
 header opts
-       = vcat ["{-# LANGUAGE MagicHash, FlexibleInstances #-}"
+       = vcat $ ["{-# LANGUAGE MagicHash, FlexibleInstances #-}"
               ,"module " <> text (cnfTablesFileM opts) <> " where"
               ,"import GHC.Prim"
               ,"import GHC.Exts"
@@ -89,12 +90,22 @@ header opts
               ,"import Parsing.Chart ()"
               ,"import " <> text (absFileM  opts)
               ,"import " <> text (alexFileM opts)
-              ,"import " <> text ( printerFileM  opts)
-              ,"readInteger :: String -> Integer"
+              ,"import " <> text ( printerFileM  opts)] ++ 
+              if (alexMode opts == Alex3Inc) then
+              ["import qualified Data.Sequence as S"
+              ,"import qualified Data.Foldable as F"
+              ,"readInteger :: S.Seq Char -> Integer"
+              ,"readInteger = read . F.toList"
+              ,"readDouble :: S.Seq Char -> Double"
+              ,"readDouble = read . F.toList"
+              ]
+              else
+              ["readInteger :: String -> Integer"
               ,"readInteger = read"
               ,"readDouble :: String -> Double"
               ,"readDouble = read"
-              ,"instance RingP [(CATEGORY,Any)] where"
+              ] ++
+              ["instance RingP [(CATEGORY,Any)] where"
               ,"  mul p a b = trav [map (app tx ty) l :/: map (app tx ty) r | (x,tx) <- a, (y,ty) <- b, let l:/:r = combine p x y]"
               ,"    where trav :: [Pair [a]] -> Pair [a]"
               ,"          trav [] = pure []"
