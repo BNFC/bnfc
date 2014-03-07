@@ -91,7 +91,7 @@ header opts
               ,"import " <> text (absFileM  opts)
               ,"import " <> text (alexFileM opts)
               ,"import " <> text ( printerFileM  opts)] ++ 
-              if (alexMode opts == Alex3Inc) then
+              (if (alexMode opts == Alex3Inc) then
               ["import qualified Data.Sequence as S"
               ,"import qualified Data.Foldable as F"
               ,"readInteger :: S.Seq Char -> Integer"
@@ -104,7 +104,7 @@ header opts
               ,"readInteger = read"
               ,"readDouble :: String -> Double"
               ,"readDouble = read"
-              ] ++
+              ]) ++
               ["instance RingP [(CATEGORY,Any)] where"
               ,"  mul p a b = trav [map (app tx ty) l :/: map (app tx ty) r | (x,tx) <- a, (y,ty) <- b, let l:/:r = combine p x y]"
               ,"    where trav :: [Pair [a]] -> Pair [a]"
