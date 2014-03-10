@@ -204,6 +204,7 @@ chopFirstRow StopY (Zero :/: Col a b) = (Zero :/: b, Zero :/: a)
 chopFirstRow StopY (Zero :/: Quad a b c d) = (Zero :/: mkRow c d, Zero :/: Row a b)
 chopFirstRow StopY (Col a b :/: Zero) = (b :/: Zero, a :/: Zero)
 chopFirstRow StopY (Col a b :/: Col a' b') = (b :/: b', a :/: a')
+chopFirstRow StopY (Quad a b c d :/: Zero) = (mkRow c d :/: Zero, Row a b :/: Zero)
 chopFirstRow StopY (Quad a b c d :/: Quad a' b' c' d') = (mkRow c d :/: mkRow c' d', Row a b :/: Row a' b')
 chopFirstRow StopY mat = error $ "chopFirstRow: " ++ show mat -- DEBUG
 chopFirstRow (ContinueY ch) (Zero :/: Zero) = (Zero :/: Zero, Zero :/: Zero)
@@ -214,6 +215,16 @@ chopFirstRow (ContinueY ch) (Zero :/: Quad a b c d) =
     let (_ :/: e, topleft)  = chopFirstRow ch (Zero :/: a)
         (_ :/: f, topright) = chopFirstRow ch (Zero :/: b)
     in (Zero :/: quad e f c d, row <$> topleft <*> topright)
+chopFirstRow (ContinueY ch) (Col a b :/: Zero) = 
+    let (a' :/: _, top) = chopFirstRow ch (a :/: Zero)
+    in (Col a' b :/: Zero, top)
+chopFirstRow (ContinueY ch) (Col a b :/: Col a' b') = 
+    let (c :/: c', top) = chopFirstRow ch (a :/: a')
+    in (Col c b :/: Col c' b', top)
+chopFirstRow (ContinueY ch) (Quad a b c d :/: Zero) = 
+    let ((e :/: _),topleft)  = chopFirstRow ch (a :/: Zero)
+        ((f :/: _),topright) = chopFirstRow ch (b :/: Zero)
+    in (quad e f c d :/: Zero, row <$> topleft <*> topright)
 chopFirstRow (ContinueY ch) (Quad a b c d :/: Quad a' b' c' d') = 
     let ((e :/: e'),topleft)  = chopFirstRow ch (a :/: a')
         ((f :/: f'),topright) = chopFirstRow ch (b :/: b')
