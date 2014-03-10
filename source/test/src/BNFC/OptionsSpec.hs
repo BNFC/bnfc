@@ -38,6 +38,10 @@ spec = do
     it "returns an error if help is given an argument" $
       isUsageError (parseMode ["--help=2"]) `shouldBe` True
 
+    it "If no language is specified, it should default to haskell" $
+      parseMode["file.cf"]
+        `shouldBe` Target TargetHaskell (defaultOptions {lang = "file"}) "file.cf"
+
     it "returns an error if the grammar file is missing" $
       parseMode["--haskell"] `shouldBe` UsageError "Missing grammar file"
 
@@ -52,6 +56,10 @@ spec = do
     it "accept latex as a target language" $ do
       parseMode["--latex", "-m", "file.cf"]
         `shouldBe` Target TargetLatex (defaultOptions {make = True, lang = "file"}) "file.cf"
+
+    it "accept 'old style' options" $
+      parseMode["-haskell", "-m", "-glr", "file.cf"]
+        `shouldBe` Target TargetHaskell (defaultOptions {make = True, lang = "file", glr = GLR}) "file.cf"
 
   describe "myGetOpt'" $
     it "returns the input arguments if it cannot parse any options" $
@@ -70,6 +78,10 @@ spec = do
     it "always returns the first declared mode" $
       forAll arbitrary $ \(m1,m2) ->
         runOptParse [] (setmode m1 >> setmode m2) `shouldBe` m1
+
+  describe "Old option translation" $
+    it "translate -haskell to --haskell" $
+      translateOldOptions ["-haskell"] `shouldBe` ["--haskell"]
 
 -- ~~~ Useful functions ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 -- Turn a mode in a list of argiments
