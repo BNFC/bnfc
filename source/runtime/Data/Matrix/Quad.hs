@@ -15,6 +15,11 @@ data Shape' :: Shape -> * where
   Bin' :: !Int -> Shape' s -> Shape' s' -> Shape' (Bin s s')
   Leaf' :: Shape' Leaf
 
+-- Debug
+instance Show (Shape' s) where
+    show (Bin' i s1 s2) = "Bin " ++ (show i) ++ " (" ++ show s1 ++ ") (" ++ show s2 ++ ")"
+    show Leaf' = "Leaf'"
+
 data SomeShape where
   S :: Shape' s -> SomeShape
 
@@ -26,6 +31,14 @@ data Mat :: Shape -> Shape -> * -> * where
   One :: !a -> Mat Leaf Leaf a
   Row :: Mat x1 Leaf a -> Mat x2 Leaf a -> Mat (Bin x1 x2) Leaf a
   Col :: Mat Leaf y1 a -> Mat Leaf y2 a -> Mat Leaf (Bin y1 y2) a
+
+-- DEBUG
+instance Show (Mat x y a) where
+    show (Quad m1 m2 m3 m4) = "Quad " ++ "("++show m1++") ("++show m2++") ("++show m3++") ("++show m4++")"
+    show Zero = "Zero"
+    show (One _) = "One <val>"
+    show (Row r1 r2) = "Row " ++ "("++show r1++") ("++show r2++")"
+    show (Col c1 c2) = "Col " ++ "("++show c1++") ("++show c2++")"
 
 data Vec :: Shape -> * -> * where
   Z :: Vec s a
@@ -186,14 +199,29 @@ mkRow (Quad a b c d) (Quad e f g h) = quad (mkRow a b) (mkRow e f)
 
 -- Chops off the topmost row in a matrix pair.
 chopFirstRow :: ChopFirst y y' -> Pair (Mat x y a) -> (Pair (Mat x y' a), Pair (Mat x Leaf a))
+chopFirstRow StopY (Zero :/: Zero) = (Zero :/: Zero, Zero :/: Zero)
+chopFirstRow StopY (Zero :/: Col a b) = (Zero :/: b, Zero :/: a)
+chopFirstRow StopY (Zero :/: Quad a b c d) = (Zero :/: mkRow c d, Zero :/: Row a b)
+chopFirstRow StopY (Col a b :/: Zero) = (b :/: Zero, a :/: Zero)
+chopFirstRow StopY (Col a b :/: Col a' b') = (b :/: b', a :/: a')
 chopFirstRow StopY (Quad a b c d :/: Quad a' b' c' d') = (mkRow c d :/: mkRow c' d', Row a b :/: Row a' b')
+chopFirstRow StopY mat = error $ "chopFirstRow: " ++ show mat -- DEBUG
+chopFirstRow (ContinueY ch) (Zero :/: Zero) = (Zero :/: Zero, Zero :/: Zero)
+chopFirstRow (ContinueY ch) (Zero :/: Col a b) = 
+    let (_ :/: a', top) = chopFirstRow ch (Zero :/: a)
+    in (Zero :/: Col a' b, top)
+chopFirstRow (ContinueY ch) (Zero :/: Quad a b c d) =
+    let (_ :/: e, topleft)  = chopFirstRow ch (Zero :/: a)
+        (_ :/: f, topright) = chopFirstRow ch (Zero :/: b)
+    in (Zero :/: quad e f c d, row <$> topleft <*> topright)
 chopFirstRow (ContinueY ch) (Quad a b c d :/: Quad a' b' c' d') = 
     let ((e :/: e'),topleft)  = chopFirstRow ch (a :/: a')
         ((f :/: f'),topright) = chopFirstRow ch (b :/: b')
     in (quad e f c d :/: quad e' f' c' d', row <$> topleft <*> topright)
+chopFirstRow (ContinueY ch) pmat = error $ "chopFirstRow: " ++ show pmat -- DEBUG
 
 chopFirst :: RingP a => Shape' x -> Pair (Mat x x a) -> ((forall x'. ChopFirst x x' -> Shape' x' -> Pair (Mat x' Leaf a) -> Pair (Mat x' x' a) -> k) -> k)
-chopFirst Leaf' _ k = error "can't chop!"
+chopFirst Leaf' _ k = error "chopFirst: can't chop!"
 chopFirst (Bin' _ Leaf' x) (Quad a b c d :/: Quad a' b' c' d') k = k StopY x (b :/: b') (d :/: d') 
 chopFirst (Bin' _ x1 x2) (Quad a b c d :/: Quad a' b' c' d') k = 
     chopFirst x1 (a :/: a') $ \q x1' e a'' -> 
@@ -233,16 +261,21 @@ chopLastCol (ContinueX ch) (Quad a b c d :/: Quad a' b' c' d') =
     in (quad a e c f :/: quad a' e' c' f', col <$> upperRight <*> lowerRight)
 
 chopLast :: RingP a => Shape' x -> Pair (Mat x x a) -> ((forall x'. ChopLast x x' -> Shape' x' -> Pair (Mat x' x' a) -> Pair (Mat Leaf x' a) -> k) -> k)
-chopLast Leaf' _ k = error "can't chop!"
+chopLast Leaf' _ k = error "chopLast: can't chop!"
 chopLast (Bin' _ x Leaf') (Quad a b c d :/: Quad a' b' c' d') k = k StopX x (a :/: a') (b :/: b')
+chopLast (Bin' _ x Leaf') (Zero :/: Quad a b c d) k = k StopX x (Zero :/: a) (Zero :/: b)
+chopLast (Bin' _ x Leaf') (Quad a b c d :/: Zero) k = k StopX x (a :/: Zero) (b :/: Zero)
 chopLast (Bin' _ x1 x2) (Quad a b c d :/: Quad a' b' c' d') k =
-  chopLast x2 (d :/: d') $ \q x2' d'' f -> 
-  let (b'',e) = chopLastCol q (b :/: b') 
-  in k (ContinueX q) (bin' x1 x2') (quad' (a :/: a') b'' zero d'') (Col <$> e <*> f)
+    chopLast x2 (d :/: d') $ \q x2' d'' f -> 
+    let (b'',e) = chopLastCol q (b :/: b') 
+    in k (ContinueX q) (bin' x1 x2') (quad' (a :/: a') b'' zero d'') (Col <$> e <*> f)
+chopLast sh mat k = error $ "shape: " ++ show sh ++ ", matrix: " ++ show mat -- DEBUG
 
 mkLast :: RingP a => Shape' y -> Mat x Leaf a -> Mat x y a
 mkLast Leaf' m = m
-mkLast (Bin' _ _y y) (Row a b) = Quad zero zero (mkLast y a) (mkLast y b)
+mkLast (Bin' _ _ y) Zero = Zero
+mkLast (Bin' _ _ y) (One a) = Col zero (mkLast y $ One a)
+mkLast (Bin' _ _ y) (Row a b) = Quad zero zero (mkLast y a) (mkLast y b)
 
 instance Traversable Pair where
   traverse f (x :/: y) = (:/:) <$> f x <*> f y
@@ -258,15 +291,27 @@ instance Functor (Mat x y) where
     fmap f (Col a b) = Col (fmap f a) (fmap f b)
   
 instance Applicative (Mat x y) where
+  Zero <*> _ = Zero
+  One a <*> Zero = Zero
+  One a <*> One b = One (a b)
+  Row a b <*> Row c d = Row (a <*> c) (b <*> d)
+  Row a b <*> Zero = Zero
+  Col a b <*> Col c d = Col (a <*> c) (b <*> d)
+  Col a b <*> Zero = Zero
   Quad f g h i <*> Quad a b c d = Quad (f <*> a) (g <*> b) (h <*> c) (i <*> d)
+  a <*> b = error $ "Applicative: " ++ (show a) ++ " <*> " ++ (show b)
   pure a = error "cannot lift value a to Mat x y a"
   
 mkLast' :: RingP a => Shape' y -> Mat x Leaf (Pair a) -> Mat x y (Pair a)
 mkLast' Leaf' m = m
-mkLast' (Bin' _ _y y) (Row a b) = Quad zero zero (mkLast y a) (mkLast y b)
+mkLast' (Bin' _ _ y) Zero = Zero
+mkLast' (Bin' _ _ y) (One a) = Col zero (mkLast y $ One a)
+mkLast' (Bin' _ _ y) (Row a b) = Quad zero zero (mkLast y a) (mkLast y b)
 
 -- Merge two upper triangular matricies without a middle element.
 merge :: RingP a => Bool -> SomeTri a -> SomeTri a -> SomeTri a
+merge p (T s (Zero :/: Zero)) x = x
+merge p x (T s (Zero :/: Zero)) = x
 merge p (T Leaf' _zero) x = x
 merge p x (T Leaf' _zero) = x
 merge p (T y l) (T x r) = chopFirst x r $ \_ x' c d ->
