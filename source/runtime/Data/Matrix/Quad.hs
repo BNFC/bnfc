@@ -15,7 +15,7 @@ data Shape' :: Shape -> * where
   Bin' :: !Int -> Shape' s -> Shape' s' -> Shape' (Bin s s')
   Leaf' :: Shape' Leaf
 
--- Debug
+-- DEBUG
 instance Show (Shape' s) where
     show (Bin' i s1 s2) = "Bin " ++ (show i) ++ " (" ++ show s1 ++ ") (" ++ show s2 ++ ")"
     show Leaf' = "Leaf'"
@@ -188,14 +188,15 @@ mkRow (One a) Zero      = row (One a) Zero
 mkRow (One a) (One b)   = row (One a) (One b)
 mkRow (One a) (Row b c) = row (One a) (row b c)
 mkRow (Row a b) Zero    = row (row a b) Zero
+mkRow (Row a b) (One c) = row (row a b) (One c)
 mkRow rl@(Row _ _) rr@(Row _ _) = row rl rr
 mkRow (Col a b) Zero           = quad a Zero b Zero
 mkRow (Col a b) (Col c d)      = quad a c b d
 mkRow (Col a b) (Quad c d e f) = quad a (mkRow c d) b (mkRow e f)
 mkRow (Quad a b c d) Zero      = quad (mkRow a b) Zero (mkRow c d) Zero
 mkRow (Quad a b c d) (Col e f) = quad (mkRow a b) e (mkRow c d) f
-mkRow (Quad a b c d) (Quad e f g h) = quad (mkRow a b) (mkRow e f)
-                                           (mkRow c d) (mkRow g h)
+mkRow (Quad a b c d) (Quad e f g h) = quad (mkRow a b) (mkRow e f) (mkRow c d) (mkRow g h)
+mkRow m1 m2 = error $ "mkRow: " ++ show m1 ++ show m2
 
 -- Chops off the topmost row in a matrix pair.
 chopFirstRow :: ChopFirst y y' -> Pair (Mat x y a) -> (Pair (Mat x y' a), Pair (Mat x Leaf a))
@@ -254,8 +255,9 @@ mkCol Zero (Quad a b c d) = quad Zero Zero (mkCol a c) (mkCol b d)
 mkCol (One a) Zero = col (One a) Zero
 mkCol (One a) (One b) = col (One a) (One b)
 mkCol (One a) (Col b c) = col (One a) (col b c)
-mkCol cu@(Col _ _) cl@(Col _ _) = col cu cl
 mkCol (Col a b) Zero = col (col a b) Zero
+mkCol (Col a b) (One c) = col (col a b) (One c)
+mkCol cu@(Col _ _) cl@(Col _ _) = col cu cl
 mkCol (Row a b) Zero = quad a b Zero Zero
 mkCol (Row a b) (Row c d) = quad a b c d
 mkCol (Row a b) (Quad c d e f) = quad a b (mkCol c e) (mkCol d f)
