@@ -320,6 +320,12 @@ contents s Z = []
 contents s (O a) = [(0,a)]
 contents (Bin' _ s s') (xs :! xs') = contents s xs ++ map (first (+sz' s)) (contents s' xs')
 
+unsparse :: AbelianGroup a => [(Int,a)] -> Int -> [a]
+unsparse [] n = replicate n zero
+unsparse ((ix,v):rs) n = replicate ix zero ++ v : unsparse (map (first (\x -> x - ix - 1)) rs) (n - ix - 1)
+
+denseContents :: AbelianGroup a => Shape' x -> Vec x a -> [a]
+denseContents s v = unsparse (contents s v) (sz' s)
 
 first f (a,b) = (f a,b)
 second f (a,b) = (a,f b)
@@ -392,17 +398,8 @@ sz' :: Shape' s -> Int
 sz' Leaf' = 1
 sz' (Bin' x l r) = x -- sz' l + sz' r
 
-
-(|+|) = zipWith (++)
-(-+-) = (++)
-
--- TODO: reimplement using lin'
 lin :: AbelianGroup a => Shape' x -> Shape' y -> Mat x y a -> [[a]]
-lin x y Zero = replicate (sz' y) $ replicate (sz' x) zero
-lin _ _ (One x) = [[x]]
-lin (Bin' _ x x') (Bin' _ y y') (Quad a b c d) = (lin x y a |+| lin x' y b) -+- (lin x y' c |+| lin x' y' d)
-lin Leaf' (Bin' _ y y') (Col a b) = lin Leaf' y a -+- lin Leaf' y' b
-lin (Bin' _ x x') Leaf' (Row a b) = (lin x Leaf' a) |+| (lin x' Leaf' b)
+lin s1 s2 m = fmap (denseContents s1) $ denseContents s2 $ lin' m
 
 sparse :: AbelianGroup a => Shape' x -> Shape' y -> Mat x y a -> [(Int,Int,a)]
 sparse x y Zero = []
