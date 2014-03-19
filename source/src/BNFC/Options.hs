@@ -73,6 +73,8 @@ data SharedOptions = Options
   , byteStrings :: Bool
   , glr :: HappyMode
   , xml :: Int
+  , deriveDataTypeable :: Bool
+  , deriveGeneric :: Bool
   -- C++ specific
   , linenumbers :: Bool       -- ^ Add and set line_number field for syntax classes
   -- C# specific
@@ -95,6 +97,8 @@ defaultOptions = Options
   , byteStrings = False
   , glr = Standard
   , xml = 0
+  , deriveDataTypeable = False
+  , deriveGeneric = False
   , lang = ""
   , linenumbers = False
   , visualStudio = False
@@ -170,7 +174,11 @@ specificOptions target = case target of
       , Option []    ["xmlt"] (NoArg (\o -> o {xml = 2}))
           "DTD and an XML printer, another encoding"
       , Option []    ["cnf"] (NoArg (\o -> o {cnf = True}))
-          "Use the CNF parser instead of happy" ]
+          "Use the CNF parser instead of happy"
+      , Option []    ["deriveDataTypeable"] (NoArg (\o -> o {deriveDataTypeable = True}))
+          "Derive Data and Typeable instances for AST types"
+      , Option []    ["deriveGeneric"] (NoArg (\o -> o {deriveGeneric = True}))
+          "Derive Generic instances for AST types" ]
     TargetJava ->
       [ Option ['p'] [] (ReqArg (\n o -> o {inPackage = Just n}) "<package>")
           "Prepend <package> to the Java package name" ]
