@@ -77,8 +77,8 @@ mult p a b = a & b where
   Zero & x = Zero
   x & Zero = Zero
   One x & One x' = one (mul p x x')
-  One x & Row a b = row (One x & a) (One x & b)
-  Col a b & One x = col (a & One x) (b & One x)
+  One x & Row a b = row (one x & a) (one x & b)
+  Col a b & One x = col (a & one x) (b & one x)
   Row a b & Col a' b' = a & a' + b & b'
   Col a b & Row a' b' = quad (a & a') (a & b') (b & a') (b & b')
   Row a b & Quad a' b' c' d' = row (a & a' + b & c') (a & b' + b & d')
@@ -151,7 +151,7 @@ data SomeTri a where
 
 mkUpDiag :: AbelianGroupZ a => [a] -> Shape' s -> Mat s s a
 mkUpDiag [] Leaf' = Zero
-mkUpDiag xs (Bin' _ s s') = Quad (mkUpDiag a s) (mkSing s' s c) Zero (mkUpDiag b s')
+mkUpDiag xs (Bin' _ s s') = quad (mkUpDiag a s) (mkSing s' s c) Zero (mkUpDiag b s')
   where (a,c:b) = splitAt (sz' s - 1) xs
 
 close :: RingP a => Bool -> Mat s s (Pair a) -> Pair (Mat s s a)
@@ -177,18 +177,17 @@ data ChopFirst x x' where
 
 -- Given two matrices with the same y component, create one with the combined x
 -- component as its shape. 
--- TODO: Should this also have AbelianGroupZ as constraint?
-mkRow :: Mat x y a -> Mat x' y a -> Mat (Bin x x') y a
+mkRow :: AbelianGroupZ a => Mat x y a -> Mat x' y a -> Mat (Bin x x') y a
 mkRow Zero Zero      = Zero
-mkRow Zero (One a)   = row Zero (One a)
+mkRow Zero (One a)   = row Zero (one a)
 mkRow Zero (Col a b) = quad Zero a Zero b
 mkRow Zero (Row a b) = row Zero (row a b)
 mkRow Zero (Quad a b c d) = quad Zero (mkRow a b) Zero (mkRow c d)
-mkRow (One a) Zero      = row (One a) Zero
-mkRow (One a) (One b)   = row (One a) (One b)
-mkRow (One a) (Row b c) = row (One a) (row b c)
+mkRow (One a) Zero      = row (one a) Zero
+mkRow (One a) (One b)   = row (one a) (one b)
+mkRow (One a) (Row b c) = row (one a) (row b c)
 mkRow (Row a b) Zero    = row (row a b) Zero
-mkRow (Row a b) (One c) = row (row a b) (One c)
+mkRow (Row a b) (One c) = row (row a b) (one c) 
 mkRow rl@(Row _ _) rr@(Row _ _) = row rl rr
 mkRow (Col a b) Zero           = quad a Zero b Zero
 mkRow (Col a b) (Col c d)      = quad a c b d
@@ -199,29 +198,29 @@ mkRow (Quad a b c d) (Quad e f g h) = quad (mkRow a b) (mkRow e f) (mkRow c d) (
 mkRow m1 m2 = error $ "mkRow: " ++ show m1 ++ show m2
 
 -- Chops off the topmost row in a matrix pair.
-chopFirstRow :: ChopFirst y y' -> Pair (Mat x y a) -> (Pair (Mat x y' a), Pair (Mat x Leaf a))
+chopFirstRow :: AbelianGroupZ a => ChopFirst y y' -> Pair (Mat x y a) -> (Pair (Mat x y' a), Pair (Mat x Leaf a))
 chopFirstRow Stop (Zero :/: Zero) = (Zero :/: Zero, Zero :/: Zero)
 chopFirstRow Stop (Zero :/: Col a b) = (Zero :/: b, Zero :/: a)
-chopFirstRow Stop (Zero :/: Quad a b c d) = (Zero :/: mkRow c d, Zero :/: Row a b)
+chopFirstRow Stop (Zero :/: Quad a b c d) = (Zero :/: mkRow c d, Zero :/: row a b)
 chopFirstRow Stop (Col a b :/: Zero) = (b :/: Zero, a :/: Zero)
 chopFirstRow Stop (Col a b :/: Col a' b') = (b :/: b', a :/: a')
-chopFirstRow Stop (Quad a b c d :/: Zero) = (mkRow c d :/: Zero, Row a b :/: Zero)
-chopFirstRow Stop (Quad a b c d :/: Quad a' b' c' d') = (mkRow c d :/: mkRow c' d', Row a b :/: Row a' b')
+chopFirstRow Stop (Quad a b c d :/: Zero) = (mkRow c d :/: Zero, row a b :/: Zero)
+chopFirstRow Stop (Quad a b c d :/: Quad a' b' c' d') = (mkRow c d :/: mkRow c' d', row a b :/: row a' b')
 chopFirstRow Stop mat = error $ "chopFirstRow: " ++ show mat -- DEBUG
 chopFirstRow (Continue ch) (Zero :/: Zero) = (Zero :/: Zero, Zero :/: Zero)
 chopFirstRow (Continue ch) (Zero :/: Col a b) = 
     let (_ :/: a', top) = chopFirstRow ch (Zero :/: a)
-    in (Zero :/: Col a' b, top)
+    in (Zero :/: col a' b, top)
 chopFirstRow (Continue ch) (Zero :/: Quad a b c d) =
     let (_ :/: e, topleft)  = chopFirstRow ch (Zero :/: a)
         (_ :/: f, topright) = chopFirstRow ch (Zero :/: b)
     in (Zero :/: quad e f c d, row <$> topleft <*> topright)
 chopFirstRow (Continue ch) (Col a b :/: Zero) = 
     let (a' :/: _, top) = chopFirstRow ch (a :/: Zero)
-    in (Col a' b :/: Zero, top)
+    in (col a' b :/: Zero, top)
 chopFirstRow (Continue ch) (Col a b :/: Col a' b') = 
     let (c :/: c', top) = chopFirstRow ch (a :/: a')
-    in (Col c b :/: Col c' b', top)
+    in (col c b :/: col c' b', top)
 chopFirstRow (Continue ch) (Quad a b c d :/: Zero) = 
     let ((e :/: _),topleft)  = chopFirstRow ch (a :/: Zero)
         ((f :/: _),topright) = chopFirstRow ch (b :/: Zero)
@@ -237,10 +236,19 @@ chopFirst Leaf' _ k = error "chopFirst: can't chop!"
 chopFirst (Bin' _ Leaf' y) (Zero :/: Quad a b c d) k = k Stop y (Zero :/: b) (Zero :/: d)
 chopFirst (Bin' _ Leaf' y) (Quad a b c d :/: Zero) k = k Stop y (b :/: Zero) (d :/: Zero)
 chopFirst (Bin' _ Leaf' y) (Quad a b c d :/: Quad a' b' c' d') k = k Stop y (b :/: b') (d :/: d') 
+chopFirst (Bin' _ y1 y2) (Zero :/: Quad a b c d) k = 
+    chopFirst y1 (Zero :/: a) $ \q y1' e a' ->
+    let (b',f) = chopFirstRow q (Zero :/: b)
+    in k (Continue q) (bin' y1' y2) (row <$> e <*> f) (quad' a' b' zero (zero :/: d))
+chopFirst (Bin' _ y1 y2) (Quad a b c d :/: Zero) k = 
+    chopFirst y1 (a :/: Zero) $ \q y1' e a' ->
+    let (b',f) = chopFirstRow q (b :/: Zero)
+    in k (Continue q) (bin' y1' y2) (row <$> e <*> f) (quad' a' b' zero (d :/: zero))
 chopFirst (Bin' _ y1 y2) (Quad a b c d :/: Quad a' b' c' d') k = 
     chopFirst y1 (a :/: a') $ \q y1' e a'' -> 
     let (b'', f) = chopFirstRow q (b :/: b')
-    in k (Continue q) (bin' y1' y2) (Row <$> e <*> f) (quad' a'' b'' zero (d :/: d'))
+    in k (Continue q) (bin' y1' y2) (row <$> e <*> f) (quad' a'' b'' zero (d :/: d'))
+chopFirst s ms k = error $ show ms -- DEBUG
 
 instance Traversable Pair where
   traverse f (x :/: y) = (:/:) <$> f x <*> f y
@@ -249,11 +257,11 @@ instance Foldable Pair where
   foldMap = foldMapDefault
 
 instance Functor (Mat x y) where
-    fmap f (Quad a b c d) = Quad (fmap f a) (fmap f b) (fmap f c) (fmap f d)
+    fmap f (Quad a b c d) = quad (fmap f a) (fmap f b) (fmap f c) (fmap f d)
     fmap f Zero = Zero
     fmap f (One a) = One (f a)
-    fmap f (Row a b) = Row (fmap f a) (fmap f b) 
-    fmap f (Col a b) = Col (fmap f a) (fmap f b)
+    fmap f (Row a b) = row (fmap f a) (fmap f b) 
+    fmap f (Col a b) = col (fmap f a) (fmap f b)
   
 instance Applicative (Mat x y) where
   Zero <*> _ = Zero
@@ -275,7 +283,7 @@ mkLast' (Bin' _ _ y) (Row a b) = quad zero zero (mkLast y a) (mkLast y b)
 mkLast :: RingP a => Shape' y -> Mat x Leaf a -> Mat x y a
 mkLast Leaf' m = m
 mkLast (Bin' _ _ y) Zero = zero
-mkLast (Bin' _ _ y) (One a) = col zero (mkLast y $ One a)
+mkLast (Bin' _ _ y) (One a) = col zero (mkLast y $ one a)
 mkLast (Bin' _ _ y) (Row a b) = quad zero zero (mkLast y a) (mkLast y b)
 
 -- Merge two upper triangular matricies without a middle element.
@@ -340,7 +348,7 @@ data Path :: Shape -> * where
   High :: Path s -> Path (Bin s' s)
 
 (<||>) :: Maybe (a,Path x) -> Maybe (a,Path x') -> Maybe (a,Path (Bin x x'))
-x <||> y =  (second High <$> y) <|> (second Low <$> x)
+x <||> y = (second High <$> y) <|> (second Low <$> x)
 
 -- | What is, and where is the rightmost non-zero element on a given
 -- line of the matrix?
@@ -391,7 +399,7 @@ single x = T Leaf' (one <$> x)
 square2 x = T (bin' Leaf' Leaf') $ quad' zero (one <$> x) zero zero
 
 square3 p x y = T (bin' (bin' Leaf' Leaf') (Leaf'))
-  (quad' (quad' zero (one <$> x) zero zero) (Col <$> (one <$> mul p (leftOf x) (rightOf y)) <*> (one <$> y)) zero zero)
+  (quad' (quad' zero (one <$> x) zero zero) (col <$> (one <$> mul p (leftOf x) (rightOf y)) <*> (one <$> y)) zero zero)
 
 
 sz' :: Shape' s -> Int
