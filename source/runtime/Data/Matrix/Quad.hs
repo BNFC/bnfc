@@ -110,8 +110,8 @@ closeDisjointP p l c r = close l c r
                  x11 = close a11 (a12 & rightOf x21 + c11) b11
                  x22 = close a22 (leftOf  x21 & b12 + c22) b22
                  x12 = close a11 (a12 & rightOf x22 + leftOf x11 & b12 + c12) b22
-         close Zero (Quad c11 c12 c21 c22) (Quad b11 b12 Zero b22) = close q0 (Quad c11 c12 c21 c22) (Quad b11 b12 Zero b22)
-         close (Quad a11 a12 Zero a22) (Quad c11 c12 c21 c22) Zero = close (Quad a11 a12 Zero a22) (Quad c11 c12 c21 c22) q0
+         close Zero (Quad c11 c12 c21 c22) (Quad b11 b12 Zero b22) = close q0 (quad c11 c12 c21 c22) (quad b11 b12 Zero b22)
+         close (Quad a11 a12 Zero a22) (Quad c11 c12 c21 c22) Zero = close (quad a11 a12 Zero a22) (quad c11 c12 c21 c22) q0
          close (Quad a11 a12 Zero a22) (Col c1 c2) (Zero) = col <$> x1 <*> x2
            where x2 = close a22 c2 Zero
                  x1 = close a11 (mult p a12 (rightOf x2) + c1) Zero
@@ -271,15 +271,9 @@ instance Applicative (Mat x y) where
   Col a b <*> Col c d = col (a <*> c) (b <*> d)
   Quad f g h i <*> Quad a b c d = quad (f <*> a) (g <*> b) (h <*> c) (i <*> d)
   a <*> b = error $ "Applicative: " ++ (show a) ++ " <*> " ++ (show b) -- DEBUG
-  pure a = error "cannot lift value a to Mat x y a"
+  pure a = error "pure: cannot lift a value to Mat x y a"
   
--- Push a value down
-mkLast' :: RingP a => Shape' y -> Mat x Leaf (Pair a) -> Mat x y (Pair a)
-mkLast' Leaf' m = m
-mkLast' (Bin' _ _ y) Zero = zero
-mkLast' (Bin' _ _ y) (One a) = col zero (mkLast y $ one a)
-mkLast' (Bin' _ _ y) (Row a b) = quad zero zero (mkLast y a) (mkLast y b)
-
+-- Extend a matrix along the y axis
 mkLast :: RingP a => Shape' y -> Mat x Leaf a -> Mat x y a
 mkLast Leaf' m = m
 mkLast (Bin' _ _ y) Zero = zero
@@ -293,7 +287,7 @@ merge p x (T s (Zero :/: Zero)) = x
 merge p (T Leaf' _zero) x = x
 merge p x (T Leaf' _zero) = x
 merge p (T y l) (T x r) = chopFirst x r $ \_ x' firstRow r' ->
-                          let cdp = closeDisjointP p (leftOf l) (mkLast' y $ sequenceA firstRow) (rightOf r')
+                          let cdp = closeDisjointP p (leftOf l) (mkLast y $ sequenceA firstRow) (rightOf r')
                           in T (bin' y x') (quad' l cdp zero r')
 
 -- | A variant of zipWith on vectors
