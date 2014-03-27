@@ -40,6 +40,22 @@ instance Show (Mat x y a) where
     show (Row r1 r2) = "Row " ++ "("++show r1++") ("++show r2++")"
     show (Col c1 c2) = "Col " ++ "("++show c1++") ("++show c2++")"
 
+instance Functor (Mat x y) where
+    fmap f (Quad a b c d) = quad (fmap f a) (fmap f b) (fmap f c) (fmap f d)
+    fmap f Zero = Zero
+    fmap f (One a) = One (f a)
+    fmap f (Row a b) = row (fmap f a) (fmap f b) 
+    fmap f (Col a b) = col (fmap f a) (fmap f b)
+  
+instance Applicative (Mat x y) where
+  Zero <*> _ = Zero
+  _ <*> Zero = Zero
+  One a <*> One b = One (a b)
+  Row a b <*> Row c d = row (a <*> c) (b <*> d)
+  Col a b <*> Col c d = col (a <*> c) (b <*> d)
+  Quad f g h i <*> Quad a b c d = quad (f <*> a) (g <*> b) (h <*> c) (i <*> d)
+  pure a = error "pure: cannot lift a value to Mat x y a"
+  
 data Vec :: Shape -> * -> * where
   Z :: Vec s a
   O :: a -> Vec Leaf a
@@ -248,31 +264,8 @@ chopFirst (Bin' _ y1 y2) (Quad a b c d :/: Quad a' b' c' d') k =
     chopFirst y1 (a :/: a') $ \q y1' e a'' -> 
     let (b'', f) = chopFirstRow q (b :/: b')
     in k (Continue q) (bin' y1' y2) (row <$> e <*> f) (quad' a'' b'' zero (d :/: d'))
-chopFirst s ms k = error $ show ms -- DEBUG
+chopFirst s ms k = error $ "chopFirst: " ++ show ms -- DEBUG
 
-instance Traversable Pair where
-  traverse f (x :/: y) = (:/:) <$> f x <*> f y
-  
-instance Foldable Pair where
-  foldMap = foldMapDefault
-
-instance Functor (Mat x y) where
-    fmap f (Quad a b c d) = quad (fmap f a) (fmap f b) (fmap f c) (fmap f d)
-    fmap f Zero = Zero
-    fmap f (One a) = One (f a)
-    fmap f (Row a b) = row (fmap f a) (fmap f b) 
-    fmap f (Col a b) = col (fmap f a) (fmap f b)
-  
-instance Applicative (Mat x y) where
-  Zero <*> _ = Zero
-  _ <*> Zero = Zero
-  One a <*> One b = One (a b)
-  Row a b <*> Row c d = row (a <*> c) (b <*> d)
-  Col a b <*> Col c d = col (a <*> c) (b <*> d)
-  Quad f g h i <*> Quad a b c d = quad (f <*> a) (g <*> b) (h <*> c) (i <*> d)
-  a <*> b = error $ "Applicative: " ++ (show a) ++ " <*> " ++ (show b) -- DEBUG
-  pure a = error "pure: cannot lift a value to Mat x y a"
-  
 -- Extend a matrix along the y axis
 mkLast :: RingP a => Shape' y -> Mat x Leaf a -> Mat x y a
 mkLast Leaf' m = m
@@ -285,12 +278,11 @@ merge :: RingP a => Bool -> SomeTri a -> SomeTri a -> SomeTri a
 merge p (T s (Zero :/: Zero)) x = x
 merge p x (T s (Zero :/: Zero)) = x
 -- Values should be ABOVE the diagonal, hence 1x1 can be discarded
-merge p (T Leaf' _zero) x = x 
+merge p (T Leaf' _zero) x = x
 merge p x (T Leaf' _zero) = x
--- The general case
 merge p (T y l) (T x r) = chopFirst x r $ \_ x' firstRow r' ->
-                          let cdp = closeDisjointP p (leftOf l) (mkLast y $ sequenceA firstRow) (rightOf r')
-                          in T (bin' y x') (quad' l cdp zero r')
+    let cdp = closeDisjointP p (leftOf l) (mkLast y $ sequenceA firstRow) (rightOf r')
+    in T (bin' y x') (quad' l cdp zero r')
 
 -- | A variant of zipWith on vectors
 zw :: (AbelianGroup a, AbelianGroup b) => (a -> b -> c) -> Vec y a -> Vec y b -> Vec y c
