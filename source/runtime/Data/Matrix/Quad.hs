@@ -284,8 +284,10 @@ mkLast (Bin' _ _ y) (Row a b) = quad zero zero (mkLast y a) (mkLast y b)
 merge :: RingP a => Bool -> SomeTri a -> SomeTri a -> SomeTri a
 merge p (T s (Zero :/: Zero)) x = x
 merge p x (T s (Zero :/: Zero)) = x
-merge p (T Leaf' _zero) x = x
+-- Values should be ABOVE the diagonal, hence 1x1 can be discarded
+merge p (T Leaf' _zero) x = x 
 merge p x (T Leaf' _zero) = x
+-- The general case
 merge p (T y l) (T x r) = chopFirst x r $ \_ x' firstRow r' ->
                           let cdp = closeDisjointP p (leftOf l) (mkLast y $ sequenceA firstRow) (rightOf r')
                           in T (bin' y x') (quad' l cdp zero r')
