@@ -229,24 +229,41 @@ chopFirstRow' chop (m1 :/: m2) = (m1' :/: m2', m1l :/: m2l)
   where (m1', m1l) = chopFirstRow chop m1
         (m2', m2l) = chopFirstRow chop m2
 
-chopFirst' :: RingP a => Shape' x -> Pair (Mat x x a) -> ((forall x'. ChopFirst x x' -> Shape' x' -> Pair (Mat x' Leaf a) -> Pair (Mat x' x' a) -> k) -> k)
-chopFirst' Leaf' _ k = error "chopFirst': can't chop!"
-chopFirst' (Bin' _ Leaf' y) (Zero :/: Quad a b c d) k = k Stop y (Zero :/: b) (Zero :/: d)
-chopFirst' (Bin' _ Leaf' y) (Quad a b c d :/: Zero) k = k Stop y (b :/: Zero) (d :/: Zero)
-chopFirst' (Bin' _ Leaf' y) (Quad a b c d :/: Quad a' b' c' d') k = k Stop y (b :/: b') (d :/: d') 
-chopFirst' (Bin' _ y1 y2) (Zero :/: Quad a b c d) k = 
-    chopFirst' y1 (Zero :/: a) $ \q y1' e a' ->
-    let (b',f) = chopFirstRow' q (Zero :/: b)
-    in k (Continue q) (bin' y1' y2) (row <$> e <*> f) (quad' a' b' zero (zero :/: d))
-chopFirst' (Bin' _ y1 y2) (Quad a b c d :/: Zero) k = 
-    chopFirst' y1 (a :/: Zero) $ \q y1' e a' ->
-    let (b',f) = chopFirstRow' q (b :/: Zero)
-    in k (Continue q) (bin' y1' y2) (row <$> e <*> f) (quad' a' b' zero (d :/: zero))
-chopFirst' (Bin' _ y1 y2) (Quad a b c d :/: Quad a' b' c' d') k = 
-    chopFirst' y1 (a :/: a') $ \q y1' e a'' -> 
-    let (b'', f) = chopFirstRow' q (b :/: b')
-    in k (Continue q) (bin' y1' y2) (row <$> e <*> f) (quad' a'' b'' zero (d :/: d'))
-chopFirst' s ms k = error $ "chopFirst: " ++ show ms -- DEBUG
+chopFirstShape :: Shape' x -> (forall x'. ChopFirst x x' -> Shape' x' -> k) -> k
+chopFirstShape Leaf' k = error "chopFirst': can't chop!"
+chopFirstShape (Bin' _ Leaf' y) k = k Stop y
+chopFirstShape (Bin' _ y1 y2) k = 
+    chopFirstShape y1 $ \q y1' ->
+    k (Continue q) (bin' y1' y2) 
+chopFirstShape s k = error $ "chopFirst: " ++ show s -- DEBUG
+
+chopFirst'' :: RingP a => ChopFirst x x' -> Mat x x a  -> (Mat x' Leaf a,Mat x' x' a)
+chopFirst'' _ Zero = (Zero,Zero)
+chopFirst'' Stop (Quad a b c d) = (b,d)
+chopFirst'' (Continue q) (Quad a b c d) =
+  let  (e, a') = chopFirst'' q a
+       (b',f)  = chopFirstRow q b
+  in (row e f,quad a' b' zero d)
+chopFirst'' k ms = error $ "chopFirst: "  -- DEBUG
+
+-- chopFirst' :: RingP a => Shape' x -> Pair (Mat x x a) -> ((forall x'. ChopFirst x x' -> Shape' x' -> Pair (Mat x' Leaf a) -> Pair (Mat x' x' a) -> k) -> k)
+-- chopFirst' Leaf' _ k = error "chopFirst': can't chop!"
+-- chopFirst' (Bin' _ Leaf' y) (Zero :/: Quad a b c d) k = k Stop y (Zero :/: b) (Zero :/: d)
+-- chopFirst' (Bin' _ Leaf' y) (Quad a b c d :/: Zero) k = k Stop y (b :/: Zero) (d :/: Zero)
+-- chopFirst' (Bin' _ Leaf' y) (Quad a b c d :/: Quad a' b' c' d') k = k Stop y (b :/: b') (d :/: d') 
+-- chopFirst' (Bin' _ y1 y2) (Zero :/: Quad a b c d) k = 
+--     chopFirst' y1 (Zero :/: a) $ \q y1' e a' ->
+--     let (b',f) = chopFirstRow' q (Zero :/: b)
+--     in k (Continue q) (bin' y1' y2) (row <$> e <*> f) (quad' a' b' zero (zero :/: d))
+-- chopFirst' (Bin' _ y1 y2) (Quad a b c d :/: Zero) k = 
+--     chopFirst' y1 (a :/: Zero) $ \q y1' e a' ->
+--     let (b',f) = chopFirstRow' q (b :/: Zero)
+--     in k (Continue q) (bin' y1' y2) (row <$> e <*> f) (quad' a' b' zero (d :/: zero))
+-- chopFirst' (Bin' _ y1 y2) (Quad a b c d :/: Quad a' b' c' d') k = 
+--     chopFirst' y1 (a :/: a') $ \q y1' e a'' -> 
+--     let (b'', f) = chopFirstRow' q (b :/: b')
+--     in k (Continue q) (bin' y1' y2) (row <$> e <*> f) (quad' a'' b'' zero (d :/: d'))
+-- chopFirst' s ms k = error $ "chopFirst: " ++ show ms -- DEBUG
 
 -- Extend a matrix along the y axis
 mkLast :: RingP a => Shape' y -> Mat x Leaf a -> Mat x y a
@@ -262,9 +279,12 @@ merge p x (T s (Zero :/: Zero)) = x
 -- Values should be ABOVE the diagonal, hence 1x1 can be discarded
 merge p (T Leaf' _zero) x = x
 merge p x (T Leaf' _zero) = x
-merge p (T y l) (T x r) = chopFirst' x r $ \_ x' firstRow r' ->
-    let cdp = closeDisjointP p (leftOf l) (mkLast y $ sequenceA firstRow) (rightOf r')
-    in T (bin' y x') (quad' l cdp zero r')
+merge p (T y l) (T x r) = -- chopFirst' x r $ \_ x' firstRow r' ->
+    chopFirstShape x $ \chopper x' ->
+    let (rTopL, rL') = chopFirst'' chopper (leftOf r)
+        (rTopR, rR') = chopFirst'' chopper (rightOf r)
+        cdp = closeDisjointP p (leftOf l) (mkLast y $ sequenceA (rTopL :/: rTopR)) rR'
+    in T (bin' y x') (quad' l cdp zero (rL' :/: rR'))
 
 -- | A variant of zipWith on vectors
 zw :: (AbelianGroup a, AbelianGroup b) => (a -> b -> c) -> Vec y a -> Vec y b -> Vec y c
