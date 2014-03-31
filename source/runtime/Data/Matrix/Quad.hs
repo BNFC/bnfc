@@ -213,58 +213,40 @@ mkRow (Quad a b c d) (Col e f) = quad (mkRow a b) e (mkRow c d) f
 mkRow (Quad a b c d) (Quad e f g h) = quad (mkRow a b) (mkRow e f) (mkRow c d) (mkRow g h)
 mkRow m1 m2 = error $ "mkRow: " ++ show m1 ++ show m2
 
--- Chops off the topmost row in a matrix pair.
-chopFirstRow :: AbelianGroupZ a => ChopFirst y y' -> Pair (Mat x y a) -> (Pair (Mat x y' a), Pair (Mat x Leaf a))
-chopFirstRow Stop (Zero :/: Zero) = (Zero :/: Zero, Zero :/: Zero)
-chopFirstRow Stop (Zero :/: Col a b) = (Zero :/: b, Zero :/: a)
-chopFirstRow Stop (Zero :/: Quad a b c d) = (Zero :/: mkRow c d, Zero :/: row a b)
-chopFirstRow Stop (Col a b :/: Zero) = (b :/: Zero, a :/: Zero)
-chopFirstRow Stop (Col a b :/: Col a' b') = (b :/: b', a :/: a')
-chopFirstRow Stop (Quad a b c d :/: Zero) = (mkRow c d :/: Zero, row a b :/: Zero)
-chopFirstRow Stop (Quad a b c d :/: Quad a' b' c' d') = (mkRow c d :/: mkRow c' d', row a b :/: row a' b')
-chopFirstRow Stop mat = error $ "chopFirstRow: " ++ show mat -- DEBUG
-chopFirstRow (Continue ch) (Zero :/: Zero) = (Zero :/: Zero, Zero :/: Zero)
-chopFirstRow (Continue ch) (Zero :/: Col a b) = 
-    let (_ :/: a', top) = chopFirstRow ch (Zero :/: a)
-    in (Zero :/: col a' b, top)
-chopFirstRow (Continue ch) (Zero :/: Quad a b c d) =
-    let (_ :/: e, topleft)  = chopFirstRow ch (Zero :/: a)
-        (_ :/: f, topright) = chopFirstRow ch (Zero :/: b)
-    in (Zero :/: quad e f c d, row <$> topleft <*> topright)
-chopFirstRow (Continue ch) (Col a b :/: Zero) = 
-    let (a' :/: _, top) = chopFirstRow ch (a :/: Zero)
-    in (col a' b :/: Zero, top)
-chopFirstRow (Continue ch) (Col a b :/: Col a' b') = 
-    let (c :/: c', top) = chopFirstRow ch (a :/: a')
-    in (col c b :/: col c' b', top)
-chopFirstRow (Continue ch) (Quad a b c d :/: Zero) = 
-    let ((e :/: _),topleft)  = chopFirstRow ch (a :/: Zero)
-        ((f :/: _),topright) = chopFirstRow ch (b :/: Zero)
-    in (quad e f c d :/: Zero, row <$> topleft <*> topright)
-chopFirstRow (Continue ch) (Quad a b c d :/: Quad a' b' c' d') = 
-    let ((e :/: e'),topleft)  = chopFirstRow ch (a :/: a')
-        ((f :/: f'),topright) = chopFirstRow ch (b :/: b')
-    in (quad e f c d :/: quad e' f' c' d', row <$> topleft <*> topright)
-chopFirstRow (Continue ch) pmat = error $ "chopFirstRow: " ++ show pmat -- DEBUG
+-- Chop off the topmost row in a matrix
+chopFirstRow :: AbelianGroupZ a => ChopFirst y y' -> Mat x y a -> (Mat x y' a, Mat x Leaf a)
+chopFirstRow _ Zero              = (Zero, Zero)
+chopFirstRow Stop (Col a b)      = (b, a)
+chopFirstRow Stop (Quad a b c d) = (mkRow c d, row a b)
+chopFirstRow (Continue ch) (Col a b) = first (\a' -> col a' b) $ chopFirstRow ch a
+chopFirstRow (Continue ch) (Quad a b c d) =
+    let (a', topleft)  = chopFirstRow ch a
+        (b', topright) = chopFirstRow ch b
+    in (quad a' b' c d, row topleft topright)
 
-chopFirst :: RingP a => Shape' x -> Pair (Mat x x a) -> ((forall x'. ChopFirst x x' -> Shape' x' -> Pair (Mat x' Leaf a) -> Pair (Mat x' x' a) -> k) -> k)
-chopFirst Leaf' _ k = error "chopFirst: can't chop!"
-chopFirst (Bin' _ Leaf' y) (Zero :/: Quad a b c d) k = k Stop y (Zero :/: b) (Zero :/: d)
-chopFirst (Bin' _ Leaf' y) (Quad a b c d :/: Zero) k = k Stop y (b :/: Zero) (d :/: Zero)
-chopFirst (Bin' _ Leaf' y) (Quad a b c d :/: Quad a' b' c' d') k = k Stop y (b :/: b') (d :/: d') 
-chopFirst (Bin' _ y1 y2) (Zero :/: Quad a b c d) k = 
-    chopFirst y1 (Zero :/: a) $ \q y1' e a' ->
-    let (b',f) = chopFirstRow q (Zero :/: b)
+chopFirstRow' :: AbelianGroupZ a => ChopFirst y y' -> Pair (Mat x y a) -> (Pair (Mat x y' a), Pair (Mat x Leaf a))
+chopFirstRow' chop (m1 :/: m2) = (m1' :/: m2', m1l :/: m2l)
+  where (m1', m1l) = chopFirstRow chop m1
+        (m2', m2l) = chopFirstRow chop m2
+
+chopFirst' :: RingP a => Shape' x -> Pair (Mat x x a) -> ((forall x'. ChopFirst x x' -> Shape' x' -> Pair (Mat x' Leaf a) -> Pair (Mat x' x' a) -> k) -> k)
+chopFirst' Leaf' _ k = error "chopFirst': can't chop!"
+chopFirst' (Bin' _ Leaf' y) (Zero :/: Quad a b c d) k = k Stop y (Zero :/: b) (Zero :/: d)
+chopFirst' (Bin' _ Leaf' y) (Quad a b c d :/: Zero) k = k Stop y (b :/: Zero) (d :/: Zero)
+chopFirst' (Bin' _ Leaf' y) (Quad a b c d :/: Quad a' b' c' d') k = k Stop y (b :/: b') (d :/: d') 
+chopFirst' (Bin' _ y1 y2) (Zero :/: Quad a b c d) k = 
+    chopFirst' y1 (Zero :/: a) $ \q y1' e a' ->
+    let (b',f) = chopFirstRow' q (Zero :/: b)
     in k (Continue q) (bin' y1' y2) (row <$> e <*> f) (quad' a' b' zero (zero :/: d))
-chopFirst (Bin' _ y1 y2) (Quad a b c d :/: Zero) k = 
-    chopFirst y1 (a :/: Zero) $ \q y1' e a' ->
-    let (b',f) = chopFirstRow q (b :/: Zero)
+chopFirst' (Bin' _ y1 y2) (Quad a b c d :/: Zero) k = 
+    chopFirst' y1 (a :/: Zero) $ \q y1' e a' ->
+    let (b',f) = chopFirstRow' q (b :/: Zero)
     in k (Continue q) (bin' y1' y2) (row <$> e <*> f) (quad' a' b' zero (d :/: zero))
-chopFirst (Bin' _ y1 y2) (Quad a b c d :/: Quad a' b' c' d') k = 
-    chopFirst y1 (a :/: a') $ \q y1' e a'' -> 
-    let (b'', f) = chopFirstRow q (b :/: b')
+chopFirst' (Bin' _ y1 y2) (Quad a b c d :/: Quad a' b' c' d') k = 
+    chopFirst' y1 (a :/: a') $ \q y1' e a'' -> 
+    let (b'', f) = chopFirstRow' q (b :/: b')
     in k (Continue q) (bin' y1' y2) (row <$> e <*> f) (quad' a'' b'' zero (d :/: d'))
-chopFirst s ms k = error $ "chopFirst: " ++ show ms -- DEBUG
+chopFirst' s ms k = error $ "chopFirst: " ++ show ms -- DEBUG
 
 -- Extend a matrix along the y axis
 mkLast :: RingP a => Shape' y -> Mat x Leaf a -> Mat x y a
@@ -280,7 +262,7 @@ merge p x (T s (Zero :/: Zero)) = x
 -- Values should be ABOVE the diagonal, hence 1x1 can be discarded
 merge p (T Leaf' _zero) x = x
 merge p x (T Leaf' _zero) = x
-merge p (T y l) (T x r) = chopFirst x r $ \_ x' firstRow r' ->
+merge p (T y l) (T x r) = chopFirst' x r $ \_ x' firstRow r' ->
     let cdp = closeDisjointP p (leftOf l) (mkLast y $ sequenceA firstRow) (rightOf r')
     in T (bin' y x') (quad' l cdp zero r')
 
