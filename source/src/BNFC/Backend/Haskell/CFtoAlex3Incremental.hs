@@ -72,14 +72,14 @@ cMacros = [
 
 rMacros :: CF -> [String]
 rMacros cf =
-  let symbs = symbols cf
+  let symbs = cfTokens cf
   in
   (if null symbs then [] else [
    "@rsyms =    -- symbols and non-identifier-like reserved words",
    "   " ++ unwords (intersperse "|" (map mkEsc symbs))
    ])
  where
-  mkEsc = unwords . esc
+  mkEsc = unwords . esc . fst
   esc s = if null a then rest else show a : rest
       where (a,r) = span isAlphaNum s
             rest = case r of
@@ -93,7 +93,7 @@ restOfAlex shareMod shareStrings byteStrings cf = [
   ":-",
   lexComments (comments cf),
   "$white+ ;",
-  pTSpec (symbols cf),
+  pTSpec (cfTokens cf),
 
   userDefTokenTypes,
   ident,
