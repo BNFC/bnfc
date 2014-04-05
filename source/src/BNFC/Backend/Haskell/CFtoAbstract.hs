@@ -41,7 +41,7 @@ prData (cat,rules) =
 
 prSpecialData :: Bool -> CF -> Cat -> String
 prSpecialData byteStrings cf cat =
-  unwords ["newtype",cat,"=",cat,contentSpec byteStrings cf cat,"deriving (Eq,Ord,Show)"]
+  unwords ["newtype",cat,"=",cat,contentSpec byteStrings cf cat,"deriving (Eq,Ord,Read,Show)"]
 
 contentSpec :: Bool -> CF -> Cat -> String
 contentSpec byteStrings cf cat = if isPositionCat cf cat then "((Int,Int),"++stringType++")" else stringType
