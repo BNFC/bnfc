@@ -44,7 +44,8 @@ Executable bnfc
     process,
     containers,
     pretty >=1.1 && <1.2,
-    filepath
+    filepath,
+    deepseq
   build-tools:         alex, happy
   Main-is: Main.hs
   HS-source-dirs: src/
