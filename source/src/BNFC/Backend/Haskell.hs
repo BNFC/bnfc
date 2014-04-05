@@ -66,9 +66,6 @@ makeHaskell opts cf = do
       shareMod = shareFileM opts
   do
     let dir = codeDir opts
-    -- unless (null dir) $ do
-    --  putStrLn $ "Creating directory " ++ dir
-    --  prepareDir dir
     mkfile (absFile opts) $ cf2Abstract (byteStrings opts) (ghcExtensions opts) absMod cf
     case alexMode opts of
       Alex1 -> do
@@ -91,7 +88,7 @@ makeHaskell opts cf = do
     when (hasLayout cf) $ mkfile (layoutFile opts) $ cf2Layout (alex1 opts) (inDir opts) layMod lexMod cf
     mkfile (errFile opts)      $ errM errMod cf
     when (shareStrings opts) $ mkfile (shareFile opts)    $ sharedString shareMod (byteStrings opts) cf
-    when (make opts) $ mkfile "Makefile" $ makefile opts
+    Makefile.mkMakefile opts $ makefile opts
     case xml opts of
       2 -> makeXML opts True cf
       1 -> makeXML opts False cf

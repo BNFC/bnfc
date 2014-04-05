@@ -41,6 +41,8 @@ import BNFC.Utils
 import BNFC.CF
 import BNFC.Options
 import BNFC.Backend.Common.OOAbstract
+import BNFC.Backend.Common.Makefile
+import BNFC.Backend.Base
 import BNFC.Backend.CSharp.CAbstoCSharpAbs
 import BNFC.Backend.CSharp.CFtoGPLEX
 import BNFC.Backend.CSharp.CFtoGPPG
@@ -63,7 +65,7 @@ import qualified BNFC.Backend.Common.Makefile as Makefile
 import System.FilePath ((<.>),takeFileName)
 -- Control.Monad.State
 
-makeCSharp :: Backend
+makeCSharp :: SharedOptions -> CF -> MkFiles ()
 makeCSharp opts cf = do
       let namespace    = fromMaybe (lang opts) maybenamespace
           cabs         = cf2cabs cf
@@ -73,34 +75,34 @@ makeCSharp opts cf = do
           skeleton     = cabs2csharpvisitskeleton namespace cabs
           absSkeleton  = cabs2csharpAbstractVisitSkeleton namespace cabs
           printer      = cf2csharpprinter namespace cf
-      writeFileRep "Absyn.cs" absyn
-      writeFileRep (namespace ++ ".l") gplex
-      putStrLn "   (Tested with GPLEX RC1)"
-      writeFileRep (namespace ++ ".y") gppg
-      putStrLn "   (Tested with GPPG 1.0)"
-      writeFileRep "AbstractVisitSkeleton.cs" absSkeleton
-      writeFileRep "VisitSkeleton.cs" skeleton
-      writeFileRep "Printer.cs" printer
-      writeFileRep "Test.cs" (csharptest namespace cf)
+      mkfile "Absyn.cs" absyn
+      mkfile (namespace ++ ".l") gplex
+      liftIO $ putStrLn "   (Tested with GPLEX RC1)"
+      mkfile (namespace ++ ".y") gppg
+      liftIO $ putStrLn "   (Tested with GPPG 1.0)"
+      mkfile "AbstractVisitSkeleton.cs" absSkeleton
+      mkfile "VisitSkeleton.cs" skeleton
+      mkfile "Printer.cs" printer
+      mkfile "Test.cs" (csharptest namespace cf)
       when vsfiles (writeVisualStudioFiles namespace)
-      when makefile (writeMakefile namespace)
-  where makefile = make opts
+      when makefile (writeMakefile opts namespace)
+  where makefile = isJust $ make opts
         vsfiles = visualStudio opts
         wcfSupport = wcf opts
         maybenamespace = inPackage opts
 
-writeMakefile :: Namespace -> IO ()
-writeMakefile namespace = do
-  writeFileRep "Makefile" makefile
-  putStrLn ""
-  putStrLn "-----------------------------------------------------------------------------"
-  putStrLn "Generated Makefile, which uses mono. You may want to modify the paths to"
-  putStrLn "GPLEX and GPPG - unless you are sure that they are globally accessible (the"
-  putStrLn "default commands are \"mono gplex.exe\" and \"mono gppg.exe\", respectively."
-  putStrLn "The Makefile assumes that ShiftReduceParser.dll is located in ./bin and that"
-  putStrLn "is also where test.exe will be generated."
-  putStrLn "-----------------------------------------------------------------------------"
-  putStrLn ""
+writeMakefile :: SharedOptions -> Namespace -> MkFiles ()
+writeMakefile opts namespace = do
+  mkMakefile opts makefile
+  liftIO $ putStrLn ""
+  liftIO $ putStrLn "-----------------------------------------------------------------------------"
+  liftIO $ putStrLn "Generated Makefile, which uses mono. You may want to modify the paths to"
+  liftIO $ putStrLn "GPLEX and GPPG - unless you are sure that they are globally accessible (the"
+  liftIO $ putStrLn "default commands are \"mono gplex.exe\" and \"mono gppg.exe\", respectively."
+  liftIO $ putStrLn "The Makefile assumes that ShiftReduceParser.dll is located in ./bin and that"
+  liftIO $ putStrLn "is also where test.exe will be generated."
+  liftIO $ putStrLn "-----------------------------------------------------------------------------"
+  liftIO $ putStrLn ""
   where
     makefile =
       (unlines [ "MONO = mono", "MONOC = gmcs"
@@ -128,24 +130,24 @@ writeMakefile namespace = do
         [ "${GPPG} /gplex " ++ namespace <.> "y > Parser.cs" ]
       ""
 
-writeVisualStudioFiles :: Namespace -> IO ()
+writeVisualStudioFiles :: Namespace -> MkFiles ()
 writeVisualStudioFiles namespace = do
   guid <- projectguid
-  writeFileRep (namespace ++ ".csproj") (csproj guid)
-  writeFileRep (namespace ++ ".sln") (sln guid)
-  writeFileRep "run-gp.bat" batchfile
-  putStrLn ""
-  putStrLn "-----------------------------------------------------------------------------"
-  putStrLn "Visual Studio solution (.sln) and project (.csproj) files were written."
-  putStrLn "The project file has a reference to GPLEX/GPPG's ShiftReduceParser. You will"
-  putStrLn "have to either copy this file to bin\\ShiftReduceParser.dll or change the"
-  putStrLn "reference so that it points to the right location (you can do this from"
-  putStrLn "within Visual Studio)."
-  putStrLn "Additionally, the project includes Parser.cs and Scanner.cs. These have not"
-  putStrLn "been generated yet. You can use the run-gp.bat file to generate them, but"
-  putStrLn "note that it requires gppg and gplex to be in your PATH."
-  putStrLn "-----------------------------------------------------------------------------"
-  putStrLn ""
+  mkfile (namespace ++ ".csproj") (csproj guid)
+  mkfile (namespace ++ ".sln") (sln guid)
+  mkfile "run-gp.bat" batchfile
+  liftIO $ putStrLn ""
+  liftIO $ putStrLn "-----------------------------------------------------------------------------"
+  liftIO $ putStrLn "Visual Studio solution (.sln) and project (.csproj) files were written."
+  liftIO $ putStrLn "The project file has a reference to GPLEX/GPPG's ShiftReduceParser. You will"
+  liftIO $ putStrLn "have to either copy this file to bin\\ShiftReduceParser.dll or change the"
+  liftIO $ putStrLn "reference so that it points to the right location (you can do this from"
+  liftIO $ putStrLn "within Visual Studio)."
+  liftIO $ putStrLn "Additionally, the project includes Parser.cs and Scanner.cs. These have not"
+  liftIO $ putStrLn "been generated yet. You can use the run-gp.bat file to generate them, but"
+  liftIO $ putStrLn "note that it requires gppg and gplex to be in your PATH."
+  liftIO $ putStrLn "-----------------------------------------------------------------------------"
+  liftIO $ putStrLn ""
   where
     batchfile = unlines [
       "@echo off",
@@ -314,27 +316,27 @@ csharptest namespace cf = unlines [
 filepathtonamespace :: FilePath -> Namespace
 filepathtonamespace file = take (length file - 3) (takeFileName file)
 
-projectguid :: IO String
+projectguid :: MkFiles String
 projectguid = do
   maybeFilePath <- findDirectory
   guid <- maybe getBadGUID getGoodGUID maybeFilePath
   return guid
   where
-    getBadGUID :: IO String
+    getBadGUID :: MkFiles String
     getBadGUID = do
-      putStrLn "-----------------------------------------------------------------------------"
-      putStrLn "Could not find Visual Studio tool uuidgen.exe to generate project GUID!"
-      putStrLn "You might want to put this tool in your PATH."
-      putStrLn "-----------------------------------------------------------------------------"
+      liftIO $ putStrLn "-----------------------------------------------------------------------------"
+      liftIO $ putStrLn "Could not find Visual Studio tool uuidgen.exe to generate project GUID!"
+      liftIO $ putStrLn "You might want to put this tool in your PATH."
+      liftIO $ putStrLn "-----------------------------------------------------------------------------"
       return "{00000000-0000-0000-0000-000000000000}"
-    getGoodGUID :: FilePath -> IO String
-    getGoodGUID filepath = do
+    getGoodGUID :: FilePath -> MkFiles String
+    getGoodGUID filepath = liftIO $ do
       let filepath' = "\"" ++ filepath ++ "\""
       (hIn, hOut, hErr, processHandle) <- runInteractiveCommand filepath'
       guid <- hGetLine hOut
       return ('{' : init guid ++ "}")
-    findDirectory :: IO (Maybe FilePath)
-    findDirectory = do
+    findDirectory :: MkFiles (Maybe FilePath)
+    findDirectory = liftIO $ do
       -- This works with Visual Studio 2005.
       -- We will probably have to be modify this to include another environment variable name for Orcas.
       -- I doubt there is any need to support VS2003? (I doubt they have patched it up to have 2.0 support?)

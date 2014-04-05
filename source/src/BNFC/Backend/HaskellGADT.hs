@@ -27,6 +27,7 @@ import BNFC.Options
 import BNFC.Backend.Base hiding (Backend)
 import BNFC.Backend.Haskell.HsOpts
 import BNFC.CF
+import BNFC.Backend.Base
 import BNFC.Backend.Haskell.CFtoHappy
 import BNFC.Backend.Haskell.CFtoAlex
 import BNFC.Backend.Haskell.CFtoAlex2
@@ -50,7 +51,7 @@ import System.FilePath (pathSeparator)
 import Control.Monad(when)
 
 
-makeHaskellGadt :: Backend
+makeHaskellGadt :: SharedOptions -> CF -> MkFiles ()
 makeHaskellGadt opts cf = do
   let absMod = absFileM opts
       composOpMod = composOpFileM opts
@@ -62,34 +63,31 @@ makeHaskellGadt opts cf = do
       shareMod = shareFileM opts
   do
     let dir = codeDir opts
-    when (not (null dir)) $ do
-			    putStrLn $ "Creating directory " ++ dir
-			    prepareDir dir
-    writeFileRep (absFile opts) $ cf2Abstract (byteStrings opts) absMod cf composOpMod
-    writeFileRep (composOpFile opts) $ composOp composOpMod
+    mkfile (absFile opts) $ cf2Abstract (byteStrings opts) absMod cf composOpMod
+    mkfile (composOpFile opts) $ composOp composOpMod
     case alexMode opts of
       Alex1 -> do
-        writeFileRep (alexFile opts) $ cf2alex lexMod errMod cf
-        putStrLn "   (Use Alex 1.1 to compile.)"
+        mkfile (alexFile opts) $ cf2alex lexMod errMod cf
+        liftIO $ putStrLn "   (Use Alex 1.1 to compile.)"
       Alex2 -> do
-        writeFileRep (alexFile opts) $ cf2alex2 lexMod errMod shareMod (shareStrings opts) (byteStrings opts) cf
-        putStrLn "   (Use Alex 2.0 to compile.)"
+        mkfile (alexFile opts) $ cf2alex2 lexMod errMod shareMod (shareStrings opts) (byteStrings opts) cf
+        liftIO $ putStrLn "   (Use Alex 2.0 to compile.)"
       Alex3 -> do
-        writeFileRep (alexFile opts) $ cf2alex3 lexMod errMod shareMod (shareStrings opts) (byteStrings opts) cf
-        putStrLn "   (Use Alex 3.0 to compile.)"
-    writeFileRep (happyFile opts) $
+        mkfile (alexFile opts) $ cf2alex3 lexMod errMod shareMod (shareStrings opts) (byteStrings opts) cf
+        liftIO $ putStrLn "   (Use Alex 3.0 to compile.)"
+    mkfile (happyFile opts) $
 		 cf2HappyS parMod absMod lexMod errMod (glr opts) (byteStrings opts) cf
-    putStrLn "   (Tested with Happy 1.15)"
-    writeFileRep (templateFile opts) $ cf2Template (templateFileM opts) absMod errMod cf
-    writeFileRep (printerFile opts)  $ cf2Printer prMod absMod cf
-    when (hasLayout cf) $ writeFileRep (layoutFile opts) $ cf2Layout (alexMode opts == Alex1) (inDir opts) layMod lexMod cf
-    writeFileRep (tFile opts)        $ testfile opts cf
-    writeFileRep (errFile opts)      $ errM errMod cf
-    when (shareStrings opts) $ writeFileRep (shareFile opts)    $ sharedString shareMod (byteStrings opts) cf
-    when (make opts) $ writeFileRep "Makefile" $ makefile opts
+    liftIO $ putStrLn "   (Tested with Happy 1.15)"
+    mkfile (templateFile opts) $ cf2Template (templateFileM opts) absMod errMod cf
+    mkfile (printerFile opts)  $ cf2Printer prMod absMod cf
+    when (hasLayout cf) $ mkfile (layoutFile opts) $ cf2Layout (alexMode opts == Alex1) (inDir opts) layMod lexMod cf
+    mkfile (tFile opts)        $ testfile opts cf
+    mkfile (errFile opts)      $ errM errMod cf
+    when (shareStrings opts) $ mkfile (shareFile opts)    $ sharedString shareMod (byteStrings opts) cf
+    Makefile.mkMakefile opts $ makefile opts
     case xml opts of
-      2 -> writeFiles "." $ makeXML opts True cf
-      1 -> writeFiles "." $ makeXML opts False cf
+      2 -> makeXML opts True cf
+      1 -> makeXML opts False cf
       _ -> return ()
 
 codeDir :: Options -> FilePath

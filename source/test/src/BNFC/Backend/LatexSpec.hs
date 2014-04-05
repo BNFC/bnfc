@@ -38,5 +38,5 @@ spec = do
 
     it "creates the Makefile" $ do
       calc <- getCalc
-      let options = calcOptions { make = True }
+      let options = calcOptions { make = Just "Makefile" }
       makeLatex options calc `shouldGenerate` "Makefile"

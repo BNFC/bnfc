@@ -29,6 +29,7 @@ import BNFC.Backend.Haskell.MkErrM
 import BNFC.Utils
 
 import Data.Char
+import Data.Maybe (isJust)
 import System.Exit(exitFailure)
 import Control.Monad(when)
 
@@ -100,7 +101,7 @@ makeHaskellProfile opts cfp = do
 ----      else return ()
     writeFileRep (tFile (inDir opts) name)        $ testfile (inDir opts) name (xml opts>0) cf
     writeFileRep (errFile (inDir opts) name)      $ errM errMod cf
-    if (make opts)
+    if (isJust $ make opts)
        then (writeFileRep (mFile (inDir opts) name) $ makefile (inDir opts) name)
        else return ()
 ----    case xml of

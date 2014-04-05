@@ -23,6 +23,7 @@ module BNFC.Backend.CPP.STL (makeCppStl,) where
 
 import BNFC.Options
 import qualified BNFC.Backend.Common.Makefile as Makefile
+import BNFC.Backend.Base
 import BNFC.Backend.CPP.NoSTL.CFtoFlex
 import BNFC.Backend.CPP.STL.CFtoBisonSTL
 import BNFC.Backend.CPP.STL.CFtoCVisitSkelSTL
@@ -36,27 +37,25 @@ import Data.Char
 import System.Console.GetOpt
 import System.Exit (exitFailure)
 
-makeCppStl :: Backend
+makeCppStl :: SharedOptions -> CF -> MkFiles ()
 makeCppStl opts cf = do
     let (hfile, cfile) = cf2CPPAbs (linenumbers opts) (inPackage opts) name cf
-    writeFileRep "Absyn.H" hfile
-    writeFileRep "Absyn.C" cfile
+    mkfile "Absyn.H" hfile
+    mkfile "Absyn.C" cfile
     let (flex, env) = cf2flex (inPackage opts) name cf
-    writeFileRep (name ++ ".l") flex
-    putStrLn "   (Tested with flex 2.5.31)"
+    mkfile (name ++ ".l") flex
     let bison = cf2Bison (linenumbers opts) (inPackage opts) name cf env
-    writeFileRep (name ++ ".y") bison
-    putStrLn "   (Tested with bison 1.875a)"
+    mkfile (name ++ ".y") bison
     let header = mkHeaderFile (inPackage opts) cf (allCats cf) (allEntryPoints cf) env
-    writeFileRep "Parser.H" header
+    mkfile "Parser.H" header
     let (skelH, skelC) = cf2CVisitSkel (inPackage opts) cf
-    writeFileRep "Skeleton.H" skelH
-    writeFileRep "Skeleton.C" skelC
+    mkfile "Skeleton.H" skelH
+    mkfile "Skeleton.C" skelC
     let (prinH, prinC) = cf2CPPPrinter (inPackage opts) cf
-    writeFileRep "Printer.H" prinH
-    writeFileRep "Printer.C" prinC
-    writeFileRep "Test.C" (cpptest (inPackage opts) cf)
-    when (make opts) $ writeFileRep "Makefile" $ makefile name
+    mkfile "Printer.H" prinH
+    mkfile "Printer.C" prinC
+    mkfile "Test.C" (cpptest (inPackage opts) cf)
+    Makefile.mkMakefile opts $ makefile name
   where name = lang opts
 
 makefile :: String -> String

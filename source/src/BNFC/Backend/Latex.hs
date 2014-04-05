@@ -36,7 +36,7 @@ makeLatex :: SharedOptions -> CF -> Backend
 makeLatex opts cf = do
     let texfile = name <.> "tex"
     mkfile texfile (cfToLatex name cf)
-    when (make opts) $ mkfile "Makefile" (makefile texfile)
+    Makefile.mkMakefile opts (makefile texfile)
   where name = lang opts
 
 cfToLatex :: String -> CF -> String

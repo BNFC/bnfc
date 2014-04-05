@@ -88,7 +88,7 @@ utilFile       = mkFile noLang   "BNFC_Util" "ml"
 utilFileM      = mkMod  noLang   "BNFC_Util"
 xmlFileM      = mkMod  withLang "XML"
 
-makeOCaml :: Backend
+makeOCaml :: SharedOptions -> CF -> MkFiles ()
 makeOCaml opts cf = do
   let absMod = absFileM opts
       lexMod = ocamllexFileM opts
@@ -99,22 +99,19 @@ makeOCaml opts cf = do
       utilMod = utilFileM opts
   do
     let dir = codeDir opts
-    when (not (null dir)) $ do
-                            putStrLn $ "Creating directory " ++ dir
-                            prepareDir dir
-    writeFileRep (absFile opts) $ cf2Abstract absMod cf
-    writeFileRep (ocamllexFile opts) $ cf2ocamllex lexMod parMod cf
-    writeFileRep (ocamlyaccFile opts) $
+    mkfile (absFile opts) $ cf2Abstract absMod cf
+    mkfile (ocamllexFile opts) $ cf2ocamllex lexMod parMod cf
+    mkfile (ocamlyaccFile opts) $
                  cf2ocamlyacc parMod absMod lexMod  cf
-    writeFileRep (templateFile opts) $ cf2Template (templateFileM opts) absMod cf
-    writeFileRep (printerFile opts)  $ cf2Printer prMod absMod cf
-    writeFileRep (showFile opts)  $ cf2show showMod absMod cf
-    writeFileRep (tFile opts)        $ ocamlTestfile absMod lexMod parMod prMod showMod cf
-    writeFileRep (utilFile opts)      $ utilM
-    when (make opts) $ writeFileRep "Makefile" $ makefile opts
+    mkfile (templateFile opts) $ cf2Template (templateFileM opts) absMod cf
+    mkfile (printerFile opts)  $ cf2Printer prMod absMod cf
+    mkfile (showFile opts)  $ cf2show showMod absMod cf
+    mkfile (tFile opts)        $ ocamlTestfile absMod lexMod parMod prMod showMod cf
+    mkfile (utilFile opts)      $ utilM
+    mkMakefile opts $ makefile opts
     case xml opts of
-      2 -> writeFiles "." $ makeXML opts True cf
-      1 -> writeFiles "." $ makeXML opts False cf
+      2 -> makeXML opts True cf
+      1 -> makeXML opts False cf
       _ -> return ()
 
 pkgToDir :: String -> FilePath
