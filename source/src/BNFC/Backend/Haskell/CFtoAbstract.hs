@@ -36,7 +36,7 @@ cf2Abstract byteStrings ghcExtensions name cf = unlines $
   (map (prSpecialData byteStrings cf derivingClasses) (specialCats cf) ++ map (prData derivingClasses) (cf2data cf))
   where
     derivingClasses = prParenth . intercalate "," $ concat
-        [ ["Eq","Ord","Show"]
+        [ ["Eq","Ord","Show","Read"]
         , (if ghcExtensions then ["Data","Typeable","Generic"] else [])
         ]
 
