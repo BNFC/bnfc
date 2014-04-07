@@ -19,7 +19,9 @@
 
 module BNFC.Utils where
 
+import Control.DeepSeq (rnf)
 import Control.Monad (unless)
+import System.IO (IOMode(ReadMode),hClose,hGetContents,openFile)
 import System.IO.Error (tryIOError)
 import System.Directory (createDirectory, doesDirectoryExist, renameFile,
                          removeFile, doesFileExist)
@@ -114,7 +116,7 @@ writeFileRep1 f s =
 -- keep the old file and don't create a .bak file.
 writeFileRep2 :: FilePath -> String -> IO ()
 writeFileRep2 path s =
-    either newFile updateFile =<< tryIOError (readFile path)
+    either newFile updateFile =<< tryIOError (readFile' path)
   where
     newFile _ =
         do putStrLn $ "writing new file "++path
@@ -122,7 +124,7 @@ writeFileRep2 path s =
     updateFile old =
         do let tmp=path++".tmp"
            writeFile tmp s
-           new <- readFile tmp
+           new <- readFile' tmp
            if new==old  -- test is O(1) space, O(n) time
               then do putStrLn $ "no change to file "++path
                       removeFile tmp
@@ -131,3 +133,16 @@ writeFileRep2 path s =
                                    ++" (saving old file as "++bak++")"
                       renameFile path bak
                       renameFile tmp path
+
+    -- force reading of contents of files to achieve compatibility with
+    -- Windows IO handling as combining lazy IO with `readFile` and
+    -- 2x `renameFile` on the open `path` file complains with
+    -- "bnfc.exe: Makefile: MoveFileEx "Makefile" "Makefile.bak": permission
+    -- denied (The process cannot access the file because it is being used
+    -- by another process.)"
+    readFile' :: FilePath -> IO String
+    readFile' path =
+        do inFile <- openFile path ReadMode
+           contents <- hGetContents inFile
+           rnf contents `seq` hClose inFile
+	   return contents
