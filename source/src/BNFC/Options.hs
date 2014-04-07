@@ -73,6 +73,7 @@ data SharedOptions = Options
   , byteStrings :: Bool
   , glr :: HappyMode
   , xml :: Int
+  , ghcExtensions :: Bool
   -- C++ specific
   , linenumbers :: Bool       -- ^ Add and set line_number field for syntax classes
   -- C# specific
@@ -95,6 +96,7 @@ defaultOptions = Options
   , byteStrings = False
   , glr = Standard
   , xml = 0
+  , ghcExtensions = False
   , lang = ""
   , linenumbers = False
   , visualStudio = False
@@ -170,7 +172,10 @@ specificOptions target = case target of
       , Option []    ["xmlt"] (NoArg (\o -> o {xml = 2}))
           "DTD and an XML printer, another encoding"
       , Option []    ["cnf"] (NoArg (\o -> o {cnf = True}))
-          "Use the CNF parser instead of happy" ]
+          "Use the CNF parser instead of happy"
+      , Option []    ["ghc"] (NoArg (\o -> o {ghcExtensions = True}))
+          "Use ghc-specific language extensions"
+      ]
     TargetJava ->
       [ Option ['p'] [] (ReqArg (\n o -> o {inPackage = Just n}) "<package>")
           "Prepend <package> to the Java package name" ]

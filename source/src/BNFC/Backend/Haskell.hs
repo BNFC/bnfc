@@ -69,7 +69,7 @@ makeHaskell opts cf = do
     -- unless (null dir) $ do
     --  putStrLn $ "Creating directory " ++ dir
     --  prepareDir dir
-    mkfile (absFile opts) $ cf2Abstract (byteStrings opts) absMod cf
+    mkfile (absFile opts) $ cf2Abstract (byteStrings opts) (ghcExtensions opts) absMod cf
     case alexMode opts of
       Alex1 -> do
         mkfile (alexFile opts) $ cf2alex lexMod errMod cf
