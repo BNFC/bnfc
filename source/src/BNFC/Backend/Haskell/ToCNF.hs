@@ -98,12 +98,19 @@ header opts
               ,"readInteger = read . F.toList"
               ,"readDouble :: S.Seq Char -> Double"
               ,"readDouble = read . F.toList"
+              ,"getHead :: S.Seq Char -> Char"
+              ,"getHead s = let (a S.:< _) = S.viewl s in a"
+              ,"toString :: S.Seq Char -> [Char]"
+              ,"toString = F.toList"
               ]
               else
               ["readInteger :: String -> Integer"
               ,"readInteger = read"
               ,"readDouble :: String -> Double"
               ,"readDouble = read"
+              ,"getHead :: String -> Char"
+              ,"getHead = head"
+              ,"toString = id"
               ]) ++
               ["instance RingP [(CATEGORY,Any)] where"
               ,"  mul p a b = trav [map (app tx ty) l :/: map (app tx ty) r | (x,tx) <- a, (y,ty) <- b, let l:/:r = combine p x y]"
@@ -169,10 +176,11 @@ genTokTable units cf = "tokenToCats :: Bool -> Token -> Pair [(CATEGORY,Any)]" $
                        vcat (map (genTokEntry cf units) (cfTokens cf)) $$
                        "tokenToCats p t = error (\"unknown token: \" ++ show t)"
 
-tokInfo cf = ("Char","TC",Con "head"):
-             ("String","TL",Id):("Integer","TI",Con "readInteger"):
+tokInfo cf = ("Char","TC",Con "getHead"):
+             ("String","TL",Con "toString"):
+             ("Integer","TI",Con "readInteger"):
              ("Double","TD",Con "readDouble"):
-             [("Ident","TV",Con "Ident")|hasIdent cf] ++
+             [("Ident","TV",Con "Ident") | hasIdent cf] ++
              [(t,"T_" <> text t,(Con t)) | t <- tokenNames cf]
 
 genTokCommon cf xs = prettyPair (gen <$> splitOptim fst cf xs)

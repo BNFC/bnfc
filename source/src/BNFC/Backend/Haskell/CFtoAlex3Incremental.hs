@@ -455,7 +455,7 @@ restOfAlex shareMod shareStrings byteStrings cf = [
       " { tok (\\p s -> PT p (eitherResIdent (T_"  ++ name ++ " . share) s)) }"
       | (name,exp) <- tokenPragmas cf]
    userDefTokenConstrs = unlines $
-     [" | T_" ++ name ++ " !"++stringType | (name,_) <- tokenPragmas cf]
+     [" | T_" ++ name ++ " !("++stringType++")" | (name,_) <- tokenPragmas cf]
    userDefTokenPrint = unlines $
      ["  PT _ (T_" ++ name ++ " s) -> s" | (name,_) <- tokenPragmas cf]
 
