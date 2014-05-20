@@ -52,11 +52,13 @@ header opts = vcat $
     ,"import Data.Monoid hiding (Any)"
     ,"import System.IO.Unsafe (unsafePerformIO)"
     ,"import System.Random"
+    ,"import Data.FingerTree"
     ,""
     ,"import Algebra.RingUtils"
     ,"import Parsing.Chart ()"
+    ,"import Data.Matrix.Quad"
     ,"import " <> text (absFileM  opts)
-    ,"import " <> text (alexFileM opts)
+    ,"import " <> text (alexFileM opts) <> " hiding (One)"
     ,"import " <> text (cnfTablesFileM opts)
     ,""
     ]
@@ -92,7 +94,8 @@ measured opts = vcat $
 -- one to use.
 toAST cf = vcat $ 
     [ vcat $ 
-      ["get" <> text c <> " ("<>text c<>",ast) = Just $ ((unsafeCoerce# ast)::"<> text c <> ")"
+      ["get" <> text c <> " :: (CATEGORY,Any) -> Maybe " <> text c
+      ,"get" <> text c <> " ("<>catTag (Left c)<>",ast) = Just $ ((unsafeCoerce# ast)::"<> text c <> ")"
       ,"get" <> text c <> " _ = Nothing"
       ,""
       ] | c <- allEntryPoints cf

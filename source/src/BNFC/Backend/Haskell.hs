@@ -37,6 +37,7 @@ import BNFC.Backend.Haskell.CFtoLayout
 import BNFC.Backend.XML
 import BNFC.Backend.Haskell.HsOpts
 import BNFC.Backend.Haskell.ToCNF as ToCNF
+import BNFC.Backend.Haskell.ToCYK as ToCYK
 import BNFC.Backend.Haskell.MkErrM
 import BNFC.Backend.Haskell.MkSharedString
 import BNFC.Utils
@@ -63,13 +64,13 @@ makeHaskell opts cf = do
       layMod = layoutFileM opts
       errMod = errFileM opts
       shareMod = shareFileM opts
-      incremental = alexMode opts == Alex3Inc
+      inc = alexMode opts == Alex3Inc
   do
     let dir = codeDir opts
     unless (null dir) $ do
       putStrLn $ "Creating directory " ++ dir
       prepareDir dir
-    writeFileRep (absFile opts) $ cf2Abstract incremental (byteStrings opts) absMod cf
+    writeFileRep (absFile opts) $ cf2Abstract inc (byteStrings opts) absMod cf
     case alexMode opts of
       Alex1 -> do
         writeFileRep (alexFile opts) $ cf2alex lexMod errMod cf
@@ -91,7 +92,7 @@ makeHaskell opts cf = do
       writeFileRep (tFile opts)        $ testfile opts cf
     writeFileRep (txtFile opts)      $ cfToTxt (lang opts) cf
     writeFileRep (templateFile opts) $ cf2Template (templateFileM opts) absMod errMod cf
-    writeFileRep (printerFile opts)  $ cf2Printer incremental (byteStrings opts) prMod absMod cf
+    writeFileRep (printerFile opts)  $ cf2Printer inc (byteStrings opts) prMod absMod cf
     when (hasLayout cf) $ writeFileRep (layoutFile opts) $ cf2Layout (alex1 opts) (inDir opts) layMod lexMod cf
     writeFileRep (errFile opts)      $ errM errMod cf
     when (shareStrings opts) $ writeFileRep (shareFile opts)    $ sharedString shareMod (byteStrings opts) cf
@@ -104,6 +105,8 @@ makeHaskell opts cf = do
       writeFileRep (cnfTablesFile opts) $ ToCNF.generate opts cf
       writeFileRep "TestCNF.hs" $ ToCNF.genTestFile opts cf
       writeFileRep "BenchCNF.hs" $ ToCNF.genBenchmark opts
+    when (incremental opts) $ do
+        writeFileRep (incCykFile opts) $ ToCYK.generate opts cf
 
 codeDir :: Options -> FilePath
 codeDir opts = let pref = maybe "" pkgToDir (inPackage opts)

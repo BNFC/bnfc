@@ -67,6 +67,7 @@ data SharedOptions = Options
   , cnf :: Bool               -- ^ Generate CNF-like tables?
   , lang :: String
   -- Haskell specific:
+  , incremental :: Bool
   , alexMode :: AlexVersion
   , inDir :: Bool
   , shareStrings :: Bool
@@ -87,6 +88,7 @@ type Backend = SharedOptions  -- ^ options
 
 defaultOptions = Options
   { cnf = False
+  , incremental = False
   , inPackage = Nothing
   , make = False
   , alexMode = Alex3
@@ -172,7 +174,10 @@ specificOptions target = case target of
       , Option []    ["xmlt"] (NoArg (\o -> o {xml = 2}))
           "DTD and an XML printer, another encoding"
       , Option []    ["cnf"] (NoArg (\o -> o {cnf = True}))
-          "Use the CNF parser instead of happy" ]
+          "Use the CNF parser instead of happy"
+      , Option []    ["incremental"] (NoArg (\o -> o {incremental = True, cnf = True, alexMode = Alex3Inc}))
+          "Use the incremental parser and lexer (implies --cnf and --alex3inc)"
+      ]
     TargetJava ->
       [ Option ['p'] [] (ReqArg (\n o -> o {inPackage = Just n}) "<package>")
           "Prepend <package> to the Java package name" ]
@@ -189,7 +194,7 @@ title = unlines [
   "(c) Jonas Almström Duregård, Krasimir Angelov, Jean-Philippe Bernardy, Björn Bringert, Johan Broberg, Paul Callaghan, ",
   "    Grégoire Détrez, Markus Forsberg, Ola Frid, Peter Gammie, Thomas Hallgren, Patrik Jansson, ",
   "    Kristofer Johannisson, Antti-Juhani Kaijanaho, Ulf Norell, ",
-  "    Michael Pellauer and Aarne Ranta 2002 - 2013.",
+  "    Tobias Olausson, Michael Pellauer and Aarne Ranta 2002 - 2014.",
   "Free software under GNU General Public License (GPL).",
   "Bug reports to bnfc-dev@googlegroups.com."
  ]
