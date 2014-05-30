@@ -38,14 +38,14 @@ import Text.PrettyPrint.HughesPJ hiding (first,(<>))
 
 -- We don't have to run the CNF conversion since the names of any entrypoints
 -- will stay the same anyway (they are top-level definitions).
-generate opts cf0 = render $ vcat [header opts
+generate opts cf0 = render $ vcat [header opts cf0
                                   ,measured opts
                                   ,toAST cf0
                                   ]
 
-header opts = vcat $ 
+header opts cf = vcat $ 
     ["{-# LANGUAGE MagicHash, FlexibleInstances, MultiParamTypeClasses #-}"
-    ,"module " <> text (incCykFileM opts) <> " where"
+    ,"module " <> text (incCykFileM opts) <> "("<> exports cf <> ") where"
     ,"import GHC.Prim"
     ,"import GHC.Exts"
     ,"import Control.Applicative"
@@ -92,12 +92,20 @@ measured opts = vcat $
 
 -- Create one function for each entrypoint category, so user can decide on which
 -- one to use.
-toAST cf = vcat $ 
+toAST cf = vcat $
+    "--use these functions to convert from parser-internal state to AST" : 
     [ vcat $ 
       ["get" <> text c <> " :: (CATEGORY,Any) -> Maybe " <> text c
       ,"get" <> text c <> " ("<>catTag (Left c)<>",ast) = Just $ ((unsafeCoerce# ast)::"<> text c <> ")"
       ,"get" <> text c <> " _ = Nothing"
       ,""
+      ,"getAll" <> text c <> " :: [(a,[(CATEGORY,Any)],a)] -> [Maybe " <> text c <> "]"
+      ,"getAll" <> text c <> " = concatMap (\\(_,cs,_) -> map get" <> text c <> " cs)"
+      ,""
       ] | c <- allEntryPoints cf
     ]
+
+-- Make sure all entrypoint functions are exported, together with needed types
+exports cf = cat e <> "CATEGORY, Any, parse"
+  where e = ["get" <> text c <> ", getAll" <> text c <> "," | c <- allEntryPoints cf]
 
