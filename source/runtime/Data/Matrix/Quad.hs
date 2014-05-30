@@ -224,6 +224,8 @@ chopFirstRow (Continue ch) (Quad a b c d) =
         (b', topright) = chopFirstRow ch b
     in (quad a' b' c d, row topleft topright)
 
+-- Chop off the first col (which we discard) and the first row (which we return)
+-- of a matrix.
 chopFirst :: RingP a => ChopFirst x x' -> Mat x x a  -> (Mat x' Leaf a,Mat x' x' a)
 chopFirst _ Zero = (Zero,Zero)
 chopFirst Stop (Quad a b c d) = (b,d)
@@ -238,31 +240,25 @@ chopShape Leaf' k = error "chopShape: can't chop!"
 chopShape (Bin' _ Leaf' y) k = k Stop y
 chopShape (Bin' _ y1 y2) k = chopShape y1 $ \q y1' -> k (Continue q) (bin' y1' y2) 
 
--- | Extend a single line matrix along the y axis
+-- | Extend a single row matrix along the y axis, and discard all but one element
 mkLast :: RingP a => Shape' y -> Mat x Leaf a -> Mat x y a
 mkLast Leaf' m = m
 mkLast (Bin' _ _ y) Zero = zero
 mkLast (Bin' _ _ y) (One a) = col zero (mkLast y $ one a)
-mkLast (Bin' _ _ y) (Row a b) = quad zero zero (mkLast y a) (mkLast y b)
-
--- | Extend a single row matrix along the y axis, and discard all but one element
-mkLast' :: RingP a => Shape' y -> Mat x Leaf a -> Mat x y a
-mkLast' Leaf' m = m
-mkLast' (Bin' _ _ y) Zero = zero
-mkLast' (Bin' _ _ y) (One a) = col zero (mkLast' y $ one a)
-mkLast' (Bin' _ _ y) (Row a b) = quad zero zero (mkLast' y a) zero
+mkLast (Bin' _ _ y) (Row a b) = quad zero zero (mkLast y a) zero
 
 -- | Merge two upper triangular matricies without a middle element.
 merge :: RingP a => Bool -> SomeTri a -> SomeTri a -> SomeTri a
 merge p (T s (Zero :/: Zero)) x = x
 merge p x (T s (Zero :/: Zero)) = x
 -- Values should be ABOVE the diagonal, hence 1x1 can be discarded
-merge p (T Leaf' _zero) x = x
-merge p x (T Leaf' _zero) = x
+-- merge p (T Leaf' _zero) x = x
+-- merge p x (T Leaf' _zero) = x
+-- General case
 merge p (T y l) (T x r) = chopShape x $ \chopper x' ->
     let (rTopL, rL') = chopFirst chopper (leftOf r)
         (rTopR, rR') = chopFirst chopper (rightOf r)
-        cdp = closeDisjointP p (leftOf l) (mkLast' y $ sequenceA (rTopL :/: rTopR)) rR'
+        cdp = closeDisjointP p (leftOf l) (mkLast y $ sequenceA (rTopL :/: rTopR)) rR'
     in T (bin' y x') (quad' l cdp zero (rL' :/: rR'))
 
 -- | A variant of zipWith on vectors
