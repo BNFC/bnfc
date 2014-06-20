@@ -40,3 +40,7 @@ spec = do
       calc <- getCalc
       let options = calcOptions { make = Just "Makefile" }
       makeLatex options calc `shouldGenerate` "Makefile"
+
+  describe "prt" $ do
+    it "correctly converts ^^ into latex \textasciicircum\textasciicircum" $
+      prt "^^" `shouldBe` "{\\textasciicircum}{\\textasciicircum}"

@@ -16,7 +16,7 @@
     along with this program; if not, write to the Free Software
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 -}
-module BNFC.Backend.Latex (makeLatex,makefile) where
+module BNFC.Backend.Latex where
 
 import AbsBNF (Reg (..))
 import BNFC.Options hiding (Backend)
@@ -217,14 +217,15 @@ prtSymbols xs = foldr (+++) [] (map p xs)
  where p (Left  r) = nonterminal r --- (prt r)
        p (Right r) = terminal    (prt r)
 
+
 prt :: String -> String
-prt [] = []
-prt (c:xs)
-        | elem c "$&%#_{}^"  = "\\" ++ [c] ++ prt xs
-	| elem c "+=|<>-"    = "{$"  ++ [c] ++ "$}" ++ prt xs
-	| c == '\\'          = "$\\backslash$"
-	| c == '~'           = "\\~{}"
-	| otherwise          = c : prt xs
+prt = concatMap escape
+  where escape '\\'                   = "$\\backslash$"
+        escape '~'                    = "\\~{}"
+        escape '^'                    = "{\\textasciicircum}"
+        escape c | c `elem` "$&%#_{}" = ['\\', c]
+        escape c | c `elem` "+=|<>-"  = "{$"  ++ [c] ++ "$}"
+        escape c                      = [c]
 
 macros :: String
 macros =
