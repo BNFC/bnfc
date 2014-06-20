@@ -147,7 +147,5 @@ showsFun c = case c of
     '[':xs -> case break (== ']') xs of
         (t,"]") -> "showList" +++ showsFun t -- showFun t ++ "List"
         _ -> c -- should not occur (this means an invariant of the type Cat is broken)
-    _ -> if precCat c > 0 -- precedence-level cats are not in abstract syntax
-            then "show" ++ (fixTypeUpper $ reverse (dropWhile isDigit (reverse c)))
-            else "show" ++ (fixTypeUpper c)
+    _ -> "show" ++ (fixTypeUpper $ normCat c)
 

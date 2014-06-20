@@ -194,7 +194,5 @@ prtFun c = case c of
     '[':xs -> case break (== ']') xs of
         (t,"]") -> prtFun t ++ "ListBNFC"
         _ -> c -- should not occur (this means an invariant of the type Cat is broken)
-    _ -> if precCat c > 0 -- precedence-level cats are not in abstract syntax
-            then "prt" ++ (fixTypeUpper $ reverse (dropWhile isDigit (reverse c)))
-            else "prt" ++ (fixTypeUpper c)
+    _ -> "prt" ++ (fixTypeUpper $ normCat c)
 
