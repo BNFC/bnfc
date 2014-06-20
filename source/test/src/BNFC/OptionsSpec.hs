@@ -13,14 +13,15 @@ import System.FilePath (takeBaseName)
 
 import BNFC.Options -- SUT
 
+
+-- Expectation that a particular option has a particular value
+shouldSet :: (Eq a, Show a) => Mode -> (SharedOptions -> a, a) -> Expectation
+shouldSet (Target opts _) (option, value) = option opts `shouldBe` value
+
 spec :: Spec
 spec = do
 
   describe "parseMode" $ do
-
-    it "parses random generated modes" $
-      forAll arbitrary $ \mode ->
-        not(isUsageError mode) ==> parseMode (linearize mode) `shouldBe` mode
 
     it "returns Help on an empty list of arguments" $
       parseMode [] `shouldBe` Help
@@ -31,16 +32,11 @@ spec = do
     it "returns Version if given --version" $
       parseMode ["--version"] `shouldBe` Version
 
-    it "prioritize --help over --version, no mater the order" $
-      (parseMode ["--version", "--help"], parseMode ["--help", "--version"])
-        `shouldBe` (Help, Help)
-
     it "returns an error if help is given an argument" $
       isUsageError (parseMode ["--help=2"]) `shouldBe` True
 
     it "If no language is specified, it should default to haskell" $
-      parseMode["file.cf"]
-        `shouldBe` Target TargetHaskell (defaultOptions {lang = "file"}) "file.cf"
+      parseMode["file.cf"] `shouldSet` (target, TargetHaskell)
 
     it "returns an error if the grammar file is missing" $
       parseMode["--haskell"] `shouldBe` UsageError "Missing grammar file"
@@ -49,58 +45,38 @@ spec = do
       parseMode["--haskell", "file1.cf", "file2.cf"]
         `shouldBe` UsageError "Too many arguments"
 
-    it "returns an error if multiple target languages are given" $
-      parseMode["--haskell", "--c", "file.cf"]
-        `shouldBe` UsageError "only one target language is allowed"
+    it "sets the language name to the basename of the grammar file" $
+      parseMode["foo.cf"] `shouldSet` (lang, "foo")
 
-    it "accept latex as a target language" $ do
-      parseMode["--latex", "-m", "file.cf"]
-        `shouldBe` Target TargetLatex (defaultOptions {make = True, lang = "file"}) "file.cf"
-
-    it "accept 'old style' options" $
+    it "accept 'old style' options" $ do
       parseMode["-haskell", "-m", "-glr", "file.cf"]
-        `shouldBe` Target TargetHaskell (defaultOptions {make = True, lang = "file", glr = GLR}) "file.cf"
+        `shouldSet` (target, TargetHaskell)
+      parseMode["-haskell", "-m", "-glr", "file.cf"]
+        `shouldSet` (make, Just "Makefile")
+      parseMode["-haskell", "-m", "-glr", "file.cf"]
+        `shouldSet` (glr, GLR)
 
-  describe "myGetOpt'" $
-    it "returns the input arguments if it cannot parse any options" $
-      forAll (listOf randomOption) $ \args ->
-        myGetOpt' [] args `shouldBe` ([]::[()],args,[])
+  it "accept latex as a target language" $
+    parseMode["--latex", "file.cf"] `shouldSet` (target, TargetLatex)
 
-  describe "OptParse monad" $ do
-    it "returns Help if no other mode is selected" $
-      forAll (listOf arbitraryOption) $ \args ->
-        runOptParse [] (return ()) `shouldBe` Help
-
-    it "returns any declared mode" $
-      forAll arbitrary $ \m ->
-        runOptParse [] (setmode m) `shouldBe` m
-
-    it "always returns the first declared mode" $
-      forAll arbitrary $ \(m1,m2) ->
-        runOptParse [] (setmode m1 >> setmode m2) `shouldBe` m1
-
-  describe "Old option translation" $
+  describe "Old option translation" $ do
     it "translate -haskell to --haskell" $
       translateOldOptions ["-haskell"] `shouldBe` ["--haskell"]
 
--- ~~~ Useful functions ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
--- Turn a mode in a list of argiments
--- FIXME: only generate the backend flag currently
-linearize :: Mode -> [String]
-linearize mode = case mode of
-    Help            -> [o "help"]
-    Version         -> [o "version"]
-    Target t _ file -> [lin t, file]
-  where lin t = fromJust $ lookup t targets
-        targets = map (\(Option _ [s] (NoArg t) _ ) -> (t,o s)) targetOptions
-        o = ("--"++)
+    describe "--makefile" $ do
 
+      it "is off by default" $
+        parseMode["--c", "foo.cf"] `shouldSet` (make, Nothing)
+
+      it "uses the file name 'Makefile' by default" $
+        parseMode["--c", "-m", "foo.cf"] `shouldSet` (make, Just "Makefile")
+
+      context "when using the option with an argument" $
+        it "uses the argument as Makefile name" $
+          parseMode["--c", "-mMyMakefile", "foo.cf"]
+            `shouldSet` (make, Just "MyMakefile")
 
 -- ~~~ Arbitrary instances ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
---  import BNFC.Options
---  import Test.QuickCheck
---  import System.FilePath ((<.>))
 
 randomOption :: Gen String
 randomOption = oneof [ nonOption, noArg, withArg ]
@@ -145,8 +121,8 @@ instance Arbitrary Mode where
     [ return Help
     , return Version
     , liftM UsageError arbitrary          -- generates a random error message
-    , do target <- arbitrary              -- random target
+    , do target' <- arbitrary              -- random target
          cfFile <- arbitraryFilePath "cf"
-         let args = defaultOptions { lang = takeBaseName cfFile}
-         return $ Target target args cfFile
+         let args = defaultOptions { lang = takeBaseName cfFile, target = target'}
+         return $ Target args cfFile
     ]

@@ -7,7 +7,7 @@ import Control.Monad.State
 import Control.Monad.Trans (lift)
 import Data.Char
 import Data.List (elemIndex, foldl', sort, intercalate)
-import Data.Maybe (catMaybes, listToMaybe)
+import Data.Maybe (catMaybes, listToMaybe, isJust, fromMaybe)
 import Data.Version ( showVersion )
 import ErrM
 import Paths_BNFC ( version )
@@ -29,7 +29,7 @@ data Mode
     -- Normal mode, specifying the back end to use,
     -- the option record to be passed to the backend
     -- and the path of the input grammar file
-    | Target Target SharedOptions FilePath
+    | Target SharedOptions FilePath
   deriving (Eq,Show,Ord)
 
 -- | Target languages
@@ -37,6 +37,10 @@ data Target = TargetC | TargetCpp | TargetCppNoStl | TargetCSharp
             | TargetHaskell | TargetHaskellGadt | TargetLatex
             | TargetJava | TargetOCaml | TargetProfile
   deriving (Eq,Bounded, Enum,Ord)
+
+-- Create a list of all target using the enum and bounded classes
+targets :: [Target]
+targets = [minBound..]
 
 instance Show Target where
   show TargetC            = "C"
@@ -61,7 +65,9 @@ data HappyMode = Standard | GLR
 -- | This is the option record that is passed to the different backends
 data SharedOptions = Options
   -- Option shared by at least 2 backends
-  { make :: Bool
+  { target :: Target
+  , make :: Maybe String     -- ^ The name of the Makefile to generate
+  -- or Nothing for no Makefile.
   , inPackage :: Maybe String -- ^ The hierarchical package to put
                               --   the modules in, or Nothing.
   , cnf :: Bool               -- ^ Generate CNF-like tables?
@@ -88,8 +94,9 @@ type Backend = SharedOptions  -- ^ options
 
 defaultOptions = Options
   { cnf = False
+  , target = TargetHaskell
   , inPackage = Nothing
-  , make = False
+  , make = Nothing
   , alexMode = Alex3
   , inDir = False
   , shareStrings = False
@@ -97,7 +104,7 @@ defaultOptions = Options
   , glr = Standard
   , xml = 0
   , ghcExtensions = False
-  , lang = ""
+  , lang = error "lang not set"
   , linenumbers = False
   , visualStudio = False
   , wcf = False }
@@ -110,81 +117,88 @@ globalOptions = [
   Option [] ["version"]       (NoArg Version)      "show version number"]
 
 -- | Options for the target languages
-targetOptions :: [ OptDescr Target ]
-targetOptions =
-  [ Option "" ["java"]          (NoArg TargetJava)
+-- targetOptions :: [ OptDescr Target ]
+targetOptions :: [ OptDescr (SharedOptions -> SharedOptions)]
+targetOptions = 
+  [ Option "" ["java"]          (NoArg (\o -> o {target = TargetJava}))
     "Output Java code for use with JLex and CUP"
-  , Option "" ["haskell"]       (NoArg TargetHaskell)
+  , Option "" ["haskell"]       (NoArg (\o -> o {target = TargetHaskell}))
     "Output Haskell code for use with Alex and Happy (default)"
-  , Option "" ["haskell-gadt"]  (NoArg TargetHaskellGadt)
+  , Option "" ["haskell-gadt"]  (NoArg (\o -> o {target = TargetHaskellGadt}))
     "Output Haskell code which uses GADTs"
-  , Option "" ["latex"]         (NoArg TargetLatex)
+  , Option "" ["latex"]         (NoArg (\o -> o {target = TargetLatex}))
     "Output LaTeX code to generate a PDF description of the language"
-  , Option "" ["c"]             (NoArg TargetC)
+  , Option "" ["c"]             (NoArg (\o -> o {target = TargetC}))
     "Output C code for use with FLex and Bison"
-  , Option "" ["cpp"]           (NoArg TargetCpp)
+  , Option "" ["cpp"]           (NoArg (\o -> o {target = TargetCpp}))
     "Output C++ code for use with FLex and Bison"
-  , Option "" ["cpp-nostl"]     (NoArg TargetCppNoStl)
+  , Option "" ["cpp-nostl"]     (NoArg (\o -> o {target = TargetCppNoStl}))
     "Output C++ code (without STL) for use with FLex and Bison"
-  , Option "" ["csharp"]        (NoArg TargetCSharp)
+  , Option "" ["csharp"]        (NoArg (\o -> o {target = TargetCSharp}))
     "Output C# code for use with GPLEX and GPPG"
-  , Option "" ["ocaml"]         (NoArg TargetOCaml)
+  , Option "" ["ocaml"]         (NoArg (\o -> o {target = TargetOCaml}))
     "Output OCaml code for use with ocamllex and ocamlyacc"
-  , Option "" ["profile"]       (NoArg TargetProfile)
+  , Option "" ["profile"]       (NoArg (\o -> o {target = TargetProfile}))
     "Output Haskell code for rules with permutation profiles" ]
 
--- | For each target, describes the allowed options
-specificOptions :: Target -> [ OptDescr (SharedOptions -> SharedOptions)]
-specificOptions target = case target of
-    TargetCpp ->
-      [ Option ['l'] [] (NoArg (\o -> o {linenumbers = True}))
-          "Add and set line_number field for all syntax classes"
-      , Option ['p'] []
-          (ReqArg (\n o -> o {inPackage = Just n}) "<namespace>")
-          "Use <namespace> as the C++ namespace" ]
-    TargetCSharp  ->
-      [ Option ['p'] []
-          (ReqArg (\n o -> o {inPackage = Just n}) "<namespace>")
-          "Use <namespace> as the C# namespace"
-      , Option [] ["vs"] (NoArg (\o -> o {visualStudio = True}))
+-- | A list of the options and for each of them, the target language
+-- they apply to.
+specificOptions :: [(OptDescr (SharedOptions -> SharedOptions), [Target])]
+specificOptions =
+  [ ( Option ['l'] [] (NoArg (\o -> o {linenumbers = True}))
+        "Add and set line_number field for all syntax classes"
+    , [TargetCpp] )
+  , ( Option ['p'] []
+      (ReqArg (\n o -> o {inPackage = Just n}) "<namespace>")
+      "Prepend <namespace> to the package/module name"
+    , [TargetCpp, TargetCSharp, TargetHaskell, TargetHaskellGadt, TargetProfile, TargetJava] )
+  , ( Option [] ["vs"] (NoArg (\o -> o {visualStudio = True}))
           "Generate Visual Studio solution/project files"
-      , Option [] ["wcf"] (NoArg (\o -> o {wcf = True}))
-          "Add support for Windows Communication Foundation,\n by marking abstract syntax classes as DataContracts" ]
-    TargetHaskell ->
-      [ Option ['d'] [] (NoArg (\o -> o {inDir = True}))
+    , [TargetCSharp] )
+  , ( Option [] ["wcf"] (NoArg (\o -> o {wcf = True}))
+          "Add support for Windows Communication Foundation,\n by marking abstract syntax classes as DataContracts"
+    , [TargetCSharp] )
+  , ( Option ['d'] [] (NoArg (\o -> o {inDir = True}))
           "Put Haskell code in modules Lang.* instead of Lang*"
-      , Option ['p'] [] (ReqArg (\n o -> o {inPackage = Just n}) "<name>")
-          "Prepend <name> to the Haskell module names."
-      , Option []    ["alex1"] (NoArg (\o -> o {alexMode = Alex1}))
+    , [TargetHaskell, TargetHaskellGadt, TargetProfile] )
+  , ( Option []    ["alex1"] (NoArg (\o -> o {alexMode = Alex1}))
           "Use Alex 1.1 as Haskell lexer tool"
-      , Option []    ["alex2"] (NoArg (\o -> o {alexMode = Alex2}))
+    , [TargetHaskell, TargetHaskellGadt, TargetProfile] )
+  , ( Option []    ["alex2"] (NoArg (\o -> o {alexMode = Alex2}))
           "Use Alex 2 as Haskell lexer tool"
-      , Option []    ["alex3"] (NoArg (\o -> o {alexMode = Alex3}))
+    , [TargetHaskell, TargetHaskellGadt, TargetProfile] )
+  , ( Option []    ["alex3"] (NoArg (\o -> o {alexMode = Alex3}))
           "Use Alex 3 as Haskell lexer tool (default)"
-      , Option []    ["sharestrings"] (NoArg (\o -> o {shareStrings = True}))
+    , [TargetHaskell, TargetHaskellGadt, TargetProfile] )
+  , ( Option []    ["sharestrings"] (NoArg (\o -> o {shareStrings = True}))
           "Use string sharing in Alex 2 lexer"
-      , Option []    ["bytestrings"] (NoArg (\o -> o {byteStrings = True}))
+    , [TargetHaskell, TargetHaskellGadt, TargetProfile] )
+  , ( Option []    ["bytestrings"] (NoArg (\o -> o {byteStrings = True}))
           "Use byte string in Alex 2 lexer"
-      , Option []    ["glr"] (NoArg (\o -> o {glr = GLR}))
+    , [TargetHaskell, TargetHaskellGadt, TargetProfile] )
+  , ( Option []    ["glr"] (NoArg (\o -> o {glr = GLR}))
           "Output Happy GLR parser"
-      , Option []    ["xml"] (NoArg (\o -> o {xml = 1}))
+    , [TargetHaskell, TargetHaskellGadt, TargetProfile] )
+  , ( Option []    ["xml"] (NoArg (\o -> o {xml = 1}))
           "Also generate a DTD and an XML printer"
-      , Option []    ["xmlt"] (NoArg (\o -> o {xml = 2}))
+    , [TargetHaskell, TargetHaskellGadt, TargetProfile] )
+  , ( Option []    ["xmlt"] (NoArg (\o -> o {xml = 2}))
           "DTD and an XML printer, another encoding"
-      , Option []    ["cnf"] (NoArg (\o -> o {cnf = True}))
+    , [TargetHaskell, TargetHaskellGadt, TargetProfile] )
+  , ( Option []    ["cnf"] (NoArg (\o -> o {cnf = True}))
           "Use the CNF parser instead of happy"
-      , Option []    ["ghc"] (NoArg (\o -> o {ghcExtensions = True}))
+    , [TargetHaskell, TargetHaskellGadt, TargetProfile] )
+  , ( Option []    ["ghc"] (NoArg (\o -> o {ghcExtensions = True}))
           "Use ghc-specific language extensions"
-      ]
-    TargetJava ->
-      [ Option ['p'] [] (ReqArg (\n o -> o {inPackage = Just n}) "<package>")
-          "Prepend <package> to the Java package name" ]
-    TargetHaskellGadt -> specificOptions TargetHaskell
-    TargetProfile     -> specificOptions TargetHaskell
-    _ -> []
+    , [TargetHaskell, TargetHaskellGadt, TargetProfile] )
+  ]
 
 makefileOption =
-  [ Option "m" [] (NoArg True) "generate Makefile" ]
+  [ Option "m" ["makefile"] (OptArg (setMakefile . fromMaybe "Makefile") "MAKEFILE")
+      "generate Makefile" ]
+  where setMakefile = \mf -> \o -> o { make = Just mf }
+
+allOptions = targetOptions ++ makefileOption ++ map fst specificOptions
 
 -- ~~~ Help strings ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 title = unlines [
@@ -210,90 +224,25 @@ help = unlines $
   where targets = [TargetHaskell, TargetJava, TargetCpp, TargetCSharp ]
         targetUsage t = usageInfo
                         (printf "Special options for the %s backend" (show t))
-                        (specificOptions t)
+                        (map fst $ filter(elem t . snd)specificOptions)
 
 -- ~~~ Parsing machinery ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 -- | Main parsing function
 parseMode :: [String] -> Mode
-parseMode args = runOptParse (translateOldOptions args) $ do
-    -- Firts, if the list of args is empty, it is not considered an error
-    -- and we simply print the help screen
-    when (null args) $ setmode Help
-
-    -- Next we check the presence of --help or --version
-    -- and, if found, we return the corresponding mode and ignore the rest of
-    -- the options
-    opts <- parseOpt globalOptions
-    -- The order in which Mode constructors are defined set their priority
-    case listToMaybe (sort opts) of
-      Just mode -> setmode mode
-      Nothing -> return () -- continue analysing
-
-    -- Now we look for the target language in the options:
-    target <- do
-      targets <- parseOpt targetOptions
-      case targets of
-        []  -> return TargetHaskell
-        [t] -> return t
-        _   -> usageError "only one target language is allowed"
-
-    -- makefile option
-    makefile <- parseOpt makefileOption >>= return . or
-
-    -- Now we can parse the target specific options and
-    -- build the SharedOption record
-    options <- do
-      optionsUpdates <- parseOpt (specificOptions target)
-      return $ foldl (.) id optionsUpdates defaultOptions
-
-    -- Finally, we get the cf file from the remaining arguments
-    args <- get
-    cfFile <- case getOpt' Permute [] args of
-      (_,[f],[],_) -> return f
-      (_,_,o:_,_)  -> usageError $ "Unrecognized option " ++ o
-      (_,[],_,_)   -> usageError "Missing grammar file"
-      (_,_,_,_)    -> usageError "Too many arguments"
-    setmode $ Target target (options {lang = takeBaseName cfFile, make = makefile}) cfFile
-
--- Option parsing monad:
-type OptParse = StateT [String] (Either Mode)
-
--- run a computation in the OptParse monad
-runOptParse :: [String] -> OptParse () -> Mode
-runOptParse args c = case runStateT c args of
-  Left  mode      -> mode
-  Right ((), _)  -> Help
-
--- Set the mode and interupt the parsing
-setmode :: Mode -> OptParse a
-setmode = lift . Left
--- Shortcut to set the mode to UsageError
-usageError :: String -> OptParse a
-usageError = setmode . UsageError
-
--- Lift myGetOpt' in the option parsing monad
-parseOpt :: [OptDescr a] -> OptParse [a]
-parseOpt optDescr = do
-    args <- get
-    let (as, arg', errors) = myGetOpt' optDescr args
-    unless (null errors) $ usageError (head errors)
-    put arg'
-    return as
-
--- Variant of getOpt' that does not separate non-options from unrecognized options
-myGetOpt' :: [OptDescr a] -> [String] -> ([a], [String], [String])
-myGetOpt' descr args = case getOpt' RequireOrder descr args of
-  -- getOpt' returns 4 lists: the first one is the list of parsed values
-  --  the second one is the list of everything after the first non-option
-  --  the 3rd is the list of unrecognized options
-  --  the last is the list of error messages
-  -- Here we are going to call getOpt' multiple times until the second list
-  -- is empty
-  (as, [], skipped, err) -> (as, skipped, err)
-  (as, nonopt, skipped, err) ->
-    let (as', skipped', err') = myGetOpt' descr (tail nonopt) in
-    (as ++ as', skipped ++ [head nonopt] ++ skipped', err ++ err')
+parseMode args =
+  case args' of
+    [] -> Help
+    _ -> case getOpt' Permute globalOptions args' of
+      (mode:_,_,_,_) -> mode
+      _ -> case getOpt Permute allOptions args' of
+        (_,_,e:_) -> UsageError e
+        (_,[],_)   -> UsageError "Missing grammar file"
+        (optionsUpdates, [grammar], []) ->
+          let options = foldl (.) id optionsUpdates defaultOptions in
+          Target (options {lang = takeBaseName grammar}) grammar
+        (_,_,_)    -> UsageError "Too many arguments"
+  where args' = translateOldOptions args
 
 isUsageError :: Mode -> Bool
 isUsageError (UsageError _) = True
@@ -303,7 +252,7 @@ isUsageError _ = False
 -- A translating function to maintain backward compatiblicy
 -- with the old option syntay
 translateOldOptions :: [String] -> [String]
-translateOldOptions opts = concatMap translateOne opts
+translateOldOptions = concatMap translateOne
   where translateOne "-java" = return "--java"
         translateOne "-java1.5"       = return "--java"
         translateOne "-c"             = return "--c"

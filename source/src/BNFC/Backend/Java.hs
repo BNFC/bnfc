@@ -45,6 +45,7 @@ import System.FilePath (pathSeparator)
 import BNFC.Utils
 import BNFC.CF
 import BNFC.Options as Options
+import BNFC.Backend.Base
 import BNFC.Backend.Java.CFtoCup15 ( cf2Cup )
 import BNFC.Backend.Java.CFtoJLex15
 import BNFC.Backend.Java.CFtoJavaAbs15 ( cf2JavaAbs )
@@ -62,7 +63,7 @@ import qualified BNFC.Backend.Common.Makefile as Makefile
 -- FIXME: get everything to put the files in the right places.
 -- Adapt Makefile to do the business.
 -------------------------------------------------------------------
-makeJava :: Backend
+makeJava :: SharedOptions -> CF -> MkFiles ()
 makeJava options cf =
     do -- Create the package directories if necessary.
        let packageBase = case inPackage of
@@ -71,33 +72,29 @@ makeJava options cf =
 	   packageAbsyn = packageBase ++ "." ++ "Absyn"
 	   dirBase = pkgToDir packageBase
 	   dirAbsyn = pkgToDir packageAbsyn
-       prepareDir dirBase
-       prepareDir dirAbsyn
        let absynFiles = remDups $ cf2JavaAbs packageBase packageAbsyn cf
 	   absynBaseNames = map fst absynFiles
 	   absynFileNames = map (dirAbsyn ++) absynBaseNames
 	   absynFuns = [ f | (_,ps) <- cf2data cf, (f,_) <- ps ]
        let writeAbsyn (filename, contents) =
-	       writeFileRep (dirAbsyn ++ filename ++ ".java") contents
+	       mkfile (dirAbsyn ++ filename ++ ".java") contents
        mapM writeAbsyn absynFiles
-       writeFileRep (dirBase ++ "PrettyPrinter.java") $ cf2JavaPrinter packageBase packageAbsyn cf
-       writeFileRep (dirBase ++ "VisitSkel.java") $ cf2VisitSkel packageBase packageAbsyn cf
-       writeFileRep (dirBase ++ "ComposVisitor.java") $ cf2ComposVisitor packageBase packageAbsyn cf
-       writeFileRep (dirBase ++ "AbstractVisitor.java") $ cf2AbstractVisitor packageBase packageAbsyn cf
-       writeFileRep (dirBase ++ "FoldVisitor.java") $ cf2FoldVisitor packageBase packageAbsyn cf
-       writeFileRep (dirBase ++ "AllVisitor.java") $ cf2AllVisitor packageBase packageAbsyn cf
-       writeFileRep (dirBase ++ "Test.java") $ javaTest packageBase packageAbsyn cf
----       writeFileRep ("Test" ++ name) $ "java " ++ dirBase ++ "Test $(1)"
+       mkfile (dirBase ++ "PrettyPrinter.java") $ cf2JavaPrinter packageBase packageAbsyn cf
+       mkfile (dirBase ++ "VisitSkel.java") $ cf2VisitSkel packageBase packageAbsyn cf
+       mkfile (dirBase ++ "ComposVisitor.java") $ cf2ComposVisitor packageBase packageAbsyn cf
+       mkfile (dirBase ++ "AbstractVisitor.java") $ cf2AbstractVisitor packageBase packageAbsyn cf
+       mkfile (dirBase ++ "FoldVisitor.java") $ cf2FoldVisitor packageBase packageAbsyn cf
+       mkfile (dirBase ++ "AllVisitor.java") $ cf2AllVisitor packageBase packageAbsyn cf
+       mkfile (dirBase ++ "Test.java") $ javaTest packageBase packageAbsyn cf
+---       mkfile ("Test" ++ name) $ "java " ++ dirBase ++ "Test $(1)"
        let (lex, env) = cf2jlex packageBase packageAbsyn cf
-       writeFileRep (dirBase ++ "Yylex") lex
-       putStrLn "   (Tested with JLex 1.2.6.)"
-       writeFileRep (dirBase ++ name ++ ".cup") $ cf2Cup packageBase packageAbsyn cf env
+       mkfile (dirBase ++ "Yylex") lex
+       liftIO $ putStrLn "   (Tested with JLex 1.2.6.)"
+       mkfile (dirBase ++ name ++ ".cup") $ cf2Cup packageBase packageAbsyn cf env
        -- FIXME: put in a doc directory?
-       putStrLn $ "   (Parser created for category " ++ firstEntry cf ++ ")"
-       putStrLn "   (Tested with CUP 0.10k)"
-       if make
-         then writeFileRep "Makefile" $ makefile name dirBase dirAbsyn absynFileNames
-	 else return ()
+       liftIO $ putStrLn $ "   (Parser created for category " ++ firstEntry cf ++ ")"
+       liftIO $ putStrLn "   (Tested with CUP 0.10k)"
+       Makefile.mkMakefile options $ makefile name dirBase dirAbsyn absynFileNames
     where
       remDups [] = []
       remDups ((a,b):as) = case lookup a as of

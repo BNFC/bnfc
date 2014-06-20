@@ -29,6 +29,16 @@ To install bnfc from git:
 
 To download the latest realease, see the bnfc website: http://bnfc.digitalgrammars.com/
 
+Run tests
+---------
+
+Here is how to build and run the different test suites for bnfc.
+
+    cabal sandbox init # Cabal >= 1.18 only
+    cabal install --only-dependencies --enable-tests
+    cabal configure --enable-tests
+    cabal test
+
 Contribute
 ----------
 

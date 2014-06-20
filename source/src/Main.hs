@@ -75,17 +75,17 @@ main = do
     UsageError e -> printUsageErrors [e]
     Help    -> putStrLn help >> exitSuccess
     Version ->  putStrLn (showVersion version) >> exitSuccess
-    Target TargetProfile options file ->
+    Target options file | target options == TargetProfile ->
       readFile file >>= parseCFP options TargetProfile >>= makeHaskellProfile options
-    Target target options file ->
-      readFile file >>= parseCF options target >>= make target options
-  where make TargetC            opts cf = makeC opts cf
-        make TargetCpp          opts cf = makeCppStl opts cf
-        make TargetCppNoStl     opts cf = makeCppNoStl opts cf
-        make TargetCSharp       opts cf = makeCSharp opts cf
+    Target options file ->
+      readFile file >>= parseCF options (target options) >>= make (target options) options
+  where make TargetC            opts cf = writeFiles "." $ makeC opts cf
+        make TargetCpp          opts cf = writeFiles "." $ makeCppStl opts cf
+        make TargetCppNoStl     opts cf = writeFiles "." $ makeCppNoStl opts cf
+        make TargetCSharp       opts cf = writeFiles "." $ makeCSharp opts cf
         make TargetHaskell      opts cf = writeFiles "." $ makeHaskell opts cf
-        make TargetHaskellGadt  opts cf = makeHaskellGadt opts cf
+        make TargetHaskellGadt  opts cf = writeFiles "." $ makeHaskellGadt opts cf
         make TargetLatex        opts cf = writeFiles "." $ makeLatex opts cf
-        make TargetJava         opts cf = makeJava opts cf
-        make TargetOCaml        opts cf = makeOCaml opts cf
+        make TargetJava         opts cf = writeFiles "." $ makeJava opts cf
+        make TargetOCaml        opts cf = writeFiles "." $ makeOCaml opts cf
         make TargetProfile      opts cf = fail "" opts cf

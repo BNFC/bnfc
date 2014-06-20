@@ -55,8 +55,8 @@ spec = do
       calc <- getCalc
       makeHaskell calcOptions calc `shouldGenerate` "ErrM.hs"
 
-  context "with option -m and the Calc grammar" $ do
+  context "with option -mMyMakefile and the Calc grammar" $ do
     it "generates a Makefile" $ do
       calc <- getCalc
-      let options = calcOptions { make = True }
-      makeHaskell options calc `shouldGenerate` "Makefile"
+      let options = calcOptions { make = Just "MyMakefile" }
+      makeHaskell options calc `shouldGenerate` "MyMakefile"

@@ -22,6 +22,7 @@ module BNFC.Backend.CPP.NoSTL (makeCppNoStl) where
 import BNFC.Utils
 import BNFC.Options
 import BNFC.CF
+import BNFC.Backend.Base
 import BNFC.Backend.CPP.NoSTL.CFtoCPPAbs
 import BNFC.Backend.CPP.NoSTL.CFtoFlex
 import BNFC.Backend.CPP.NoSTL.CFtoBison
@@ -32,27 +33,25 @@ import System.Exit (exitFailure)
 import Control.Monad (when)
 import qualified BNFC.Backend.Common.Makefile as Makefile
 
-makeCppNoStl :: Backend
+makeCppNoStl :: SharedOptions -> CF -> MkFiles ()
 makeCppNoStl opts cf = do
     let (hfile, cfile) = cf2CPPAbs name cf
-    writeFileRep "Absyn.H" hfile
-    writeFileRep "Absyn.C" cfile
+    mkfile "Absyn.H" hfile
+    mkfile "Absyn.C" cfile
     let (flex, env) = cf2flex Nothing name cf
-    writeFileRep (name ++ ".l") flex
-    putStrLn "   (Tested with flex 2.5.31)"
+    mkfile (name ++ ".l") flex
     let bison = cf2Bison name cf env
-    writeFileRep (name ++ ".y") bison
-    putStrLn "   (Tested with bison 1.875a)"
+    mkfile (name ++ ".y") bison
     let header = mkHeaderFile cf (allCats cf) (allEntryPoints cf) env
-    writeFileRep "Parser.H" header
+    mkfile "Parser.H" header
     let (skelH, skelC) = cf2CVisitSkel cf
-    writeFileRep "Skeleton.H" skelH
-    writeFileRep "Skeleton.C" skelC
+    mkfile "Skeleton.H" skelH
+    mkfile "Skeleton.C" skelC
     let (prinH, prinC) = cf2CPPPrinter cf
-    writeFileRep "Printer.H" prinH
-    writeFileRep "Printer.C" prinC
-    writeFileRep "Test.C" (cpptest cf)
-    when (make opts) $ writeFileRep "Makefile" $ makefile name
+    mkfile "Printer.H" prinH
+    mkfile "Printer.C" prinC
+    mkfile "Test.C" (cpptest cf)
+    Makefile.mkMakefile opts $ makefile name
   where name = lang opts
 
 makefile :: String -> String

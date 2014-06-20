@@ -23,6 +23,7 @@ import Control.Monad (unless,when)
 import System.Console.GetOpt
 import BNFC.CF
 import BNFC.Options
+import BNFC.Backend.Base
 import BNFC.Backend.C.CFtoCAbs
 import BNFC.Backend.C.CFtoFlexC
 import BNFC.Backend.C.CFtoBisonC
@@ -32,27 +33,25 @@ import Data.Char
 import System.Exit (exitFailure)
 import qualified BNFC.Backend.Common.Makefile as Makefile
 
-makeC :: Backend
+makeC :: SharedOptions -> CF -> MkFiles ()
 makeC opts cf = do
     let (hfile, cfile) = cf2CAbs prefix cf
-    writeFileRep "Absyn.h" hfile
-    writeFileRep "Absyn.c" cfile
+    mkfile "Absyn.h" hfile
+    mkfile "Absyn.c" cfile
     let (flex, env) = cf2flex prefix cf
-    writeFileRep (name ++ ".l") flex
-    putStrLn "   (Tested with flex 2.5.31)"
+    mkfile (name ++ ".l") flex
     let bison = cf2Bison prefix cf env
-    writeFileRep (name ++ ".y") bison
-    putStrLn "   (Tested with bison 1.875a)"
+    mkfile (name ++ ".y") bison
     let header = mkHeaderFile cf (allCats cf) (allEntryPoints cf) env
-    writeFileRep "Parser.h" header
+    mkfile "Parser.h" header
     let (skelH, skelC) = cf2CSkel cf
-    writeFileRep "Skeleton.h" skelH
-    writeFileRep "Skeleton.c" skelC
+    mkfile "Skeleton.h" skelH
+    mkfile "Skeleton.c" skelC
     let (prinH, prinC) = cf2CPrinter cf
-    writeFileRep "Printer.h" prinH
-    writeFileRep "Printer.c" prinC
-    writeFileRep "Test.c" (ctest cf)
-    when (make opts) $ writeFileRep "Makefile" (makefile name prefix)
+    mkfile "Printer.h" prinH
+    mkfile "Printer.c" prinC
+    mkfile "Test.c" (ctest cf)
+    Makefile.mkMakefile opts (makefile name prefix)
   where prefix :: String  -- The prefix is a string used by flex and bison
                           -- that is prepended to generated function names.
                           -- In most cases we want the grammar name as the prefix
