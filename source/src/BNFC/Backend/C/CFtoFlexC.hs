@@ -155,7 +155,7 @@ restOfFlex cf env = concat
      "<CHARESC>.      \t BEGIN CHAREND; yylval.char_ = yytext[0]; return _CHAR_;",
      "<CHAREND>\"'\"      \t BEGIN YYINITIAL;"
     ]
-   footer = "void initialize_lexer(FILE *inp) { yyin = inp; BEGIN YYINITIAL; }"
+   footer = "void initialize_lexer(FILE *inp) { yyrestart(inp); BEGIN YYINITIAL; }"
 
 lexComments :: ([(String, String)], [String]) -> String
 lexComments (m,s) =
