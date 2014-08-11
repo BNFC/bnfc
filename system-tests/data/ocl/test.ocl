@@ -1,0 +1,170 @@
+package javacard::framework
+
+context OwnerPIN 
+def: let tryCounter = self.triesLeft->at(1)
+inv:
+	 self.maxPINSize > 0
+inv:
+      self.maxTries > 0
+inv:
+      self.tryCounter >= 0
+inv:
+      self.tryCounter <= self.maxTries
+inv:
+      self.pin <> null
+inv:
+      self.pin->size() <= self.maxPINSize
+
+context OwnerPIN::OwnerPIN(tryLimit:Integer, maxPINSize:Integer)
+pre:
+    maxPINSize > 0
+pre:
+    	 tryLimit > 0
+post:
+not excThrown(java::lang::Exception)
+post:	
+         self.maxPINSize = maxPINSize
+post:
+    	 self.maxTries = tryLimit
+post:
+    	 self.tryCounter = tryLimit
+post:
+    	 not self.isValidated()
+
+context OwnerPIN::update(pin:Sequence(Integer), offset:Integer, length:Integer)
+pre:
+pin <> null
+pre:
+        offset >= 0
+pre:
+        offset+length <= pin->size()
+pre:
+        length >= 0
+post:
+(
+           not excThrown(java::lang::Exception)
+           and
+           Util.arrayCompare(self.pin, 0, pin, offset, length) = 0
+        ) 
+        or
+        (
+           excThrown(PINException)
+           and
+           length > self.maxPINSize
+        )
+        or
+        (
+           excThrown(TransactionException)
+           and
+           TransactionException.systemInstance.getReason()
+              = TransactionException.BUFFER_FULL
+        )
+
+context OwnerPIN::resetAndUnblock()
+post:
+not excThrown(java::lang::Exception)
+post:
+         not self.isValidated()
+post:
+     	 self.tryCounter = self.maxTries
+
+context OwnerPIN::isValidated() : Boolean
+post:
+not excThrown(java::lang::Exception)
+post:
+         result = true -- used to be "self.isValidated", but that is not type correct
+
+
+context OwnerPIN::getTriesRemaining() : Integer
+post:
+not excThrown(java::lang::Exception)
+post:
+         result = self.tryCounter
+
+
+context OwnerPIN::check(pin: Sequence(Integer), 
+                        offset: Integer,
+                        length: Integer): Boolean
+
+  post: (
+              self.tryCounter = 0
+           implies
+              result = false
+        )
+        
+  post :
+        (
+           
+           (
+              self.tryCounter > 0
+              and
+              pin <> null
+              and
+              offset >= 0
+              and
+              length >= 0
+              and
+              offset+length <= pin->size()
+              and
+              Util.arrayCompare(self.pin, 0, pin, offset, length) = 0
+           )
+           implies
+           (
+              result = true
+              and
+              self.isValidated()
+              and
+              self.tryCounter = self.maxTries
+           )
+        )
+        
+  post :
+        (
+           (
+              self.tryCounter > 0
+              and
+              not
+              (
+                 pin <> null
+                 and
+                 offset >= 0
+                 and
+                 length >= 0
+                 and
+                 offset+length <= pin->size()
+                 and
+                 Util.arrayCompare(self.pin, 0, pin, offset, length) = 0
+              )
+           )
+           implies
+           (
+              not self.isValidated()
+              and
+              self.tryCounter = tryCounter@pre - 1
+              and
+              (
+                 (
+                    not excThrown(java::lang::Exception)
+                    and
+                    result = false
+                 )
+                 or
+                 excThrown(java::lang::NullPointerException)
+                 or
+                 excThrown(java::lang::ArrayIndexOutOfBoundsException)
+              )
+           )
+        )
+  
+
+context OwnerPIN::reset()
+  pre : self.isValidated()
+  post: not excThrown(java::lang::Exception)
+post:
+        not self.isValidated()
+post:
+    self.tryCounter = tryCounter@pre
+    
+endpackage
+
+

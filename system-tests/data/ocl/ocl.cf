@@ -1,0 +1,255 @@
+-- Based on EBNF grammar for OCL 1.4
+-- with some help from the grammar from the Dresden OCL compiler.
+--
+-- problems with lexer: OCL strings are delimited by single quotes, not double. 
+--   Also, for floating point numbers, OCL allows both 3e7 as well as 3E7.  
+--   Escaped string constants (e.g. "\\n") do not seem to work
+--
+-- notes: 
+--   no nested let-expressions according to OCL 1.4
+--
+
+entrypoints OCLfile, Constrnt, Expression;
+
+comment "--";
+comment "/*" "*/" ; -- OCL2
+
+
+
+--
+-- overall file structure
+--
+
+OCLf . OCLfile ::= [OCLPackage];
+separator nonempty OCLPackage "";
+
+Pack. OCLPackage ::= "package" PackageName OCLExpressions "endpackage";
+
+PackName. PackageName ::= PathName;
+
+
+--
+-- constraints
+--
+
+Constraints. OCLExpressions ::= [Constrnt];
+separator Constrnt "";
+
+Constr. Constrnt ::= ContextDeclaration [ConstrBody];
+
+separator nonempty ConstrBody "";
+
+CBDefNamed. ConstrBody ::= "def" Ident ":" [LetExpression];
+CBDef. ConstrBody ::= "def" ":" [LetExpression];
+
+CBNamed. ConstrBody ::= Stereotype Ident ":" OCLExpression;
+CB. ConstrBody ::= Stereotype ":" OCLExpression;
+
+CDOper. ContextDeclaration ::= "context" OperationContext;
+CDClassif. ContextDeclaration ::= "context" ClassifierContext;
+
+CCType. ClassifierContext ::= Ident ":" Ident;
+CC. ClassifierContext ::= Ident;
+
+OpC. OperationContext ::= Ident "::" OperationName "(" [FormalParameter] ")";
+OpCRT. OperationContext ::= Ident "::" OperationName "(" [FormalParameter] ")" ":" ReturnType;
+
+Pre. Stereotype ::= "pre";
+Post. Stereotype ::= "post";
+Inv. Stereotype ::= "inv";
+
+OpName . OperationName ::= Ident;
+Eq. OperationName ::= "=";
+Add. OperationName ::= "+";
+Sub. OperationName ::= "-";
+LST. OperationName ::= "<";
+LSTE. OperationName ::= "<=";
+GRT. OperationName ::= ">";
+GRTE. OperationName ::= ">=";
+Div. OperationName ::= "/";
+Mult. OperationName ::= "*";
+NEq. OperationName ::= "<>";
+Impl. OperationName ::= "implies";
+Not. OperationName ::= "not";
+Or. OperationName ::= "or";
+Xor. OperationName ::= "xor";
+And. OperationName ::= "and";
+
+separator  FormalParameter ",";
+FP. FormalParameter ::= Ident ":" TypeSpecifier;
+
+TSsimple. TypeSpecifier ::= SimpleTypeSpecifier;
+TScoll. TypeSpecifier ::= CollectionType;
+
+CT. CollectionType ::= CollectionKind "(" SimpleTypeSpecifier ")";
+
+RT. ReturnType ::= TypeSpecifier;
+
+
+--
+-- Expressions
+--
+
+OCLExp. OCLExpression ::= Expression;
+OCLExpLet. OCLExpression ::= [LetExpression] "in" Expression;
+
+LENoParam. LetExpression ::= "let" Ident "=" Expression;
+LENoParamType. LetExpression ::= "let" Ident ":" TypeSpecifier "=" Expression;
+LE. LetExpression ::= "let" Ident "(" [FormalParameter] ")" "=" Expression;
+LEType. LetExpression ::= "let" Ident "(" [FormalParameter] ")" ":" TypeSpecifier "=" Expression;
+separator nonempty LetExpression "";
+
+
+IfExp. IfExpression ::= "if" Expression "then" Expression "else" Expression "endif";
+
+EOpImpl. Expression ::= Expression "implies" Expression1;  -- make implication right-associative
+EOpLog. Expression1 ::= Expression1 LogicalOperator Expression2;
+EOpEq. Expression2 ::= Expression2 EqualityOperator Expression3;
+EOpRel. Expression3 ::= Expression3 RelationalOperator Expression4;
+EOpAdd. Expression4 ::= Expression4 AddOperator Expression5;
+EOpMul. Expression5 ::= Expression5 MultiplyOperator Expression6;
+EOpUn. Expression6 ::= UnaryOperator Expression7 ; -- this requires paren. for -(-3), not (not true), ...
+
+EExplPropCall. Expression7 ::= Expression7 PostfixOperator PropertyCall;
+
+-- OCL2.0 messages: to start with we support only "^", not "^^"
+EMessage. Expression7 ::= Expression7 "^" PathName "(" [MessageArg] ")";
+
+EImplPropCall. Expression8 ::= PropertyCall; -- remove after parsing
+
+
+ELitColl. Expression8 ::= LiteralCollection;
+ELit. Expression8 ::= OCLLiteral;
+EIfExp. Expression8 ::= IfExpression;
+ENull. Expression8 ::= "null";  -- null value for Java/KeY:
+
+coercions Expression 8;
+
+
+--
+-- Messag arguments may be ? or an expression
+--
+MAExpr. MessageArg ::= Expression;
+MAUnspec. MessageArg ::= "?";
+MAUnspecTyped. MessageArg ::= "?" ":" TypeSpecifier;
+separator MessageArg ",";
+--
+-- "Property calls"
+--
+
+PCall. PropertyCall ::=  PathName PossTimeExpression PossQualifiers PossPropCallParam;
+
+
+
+PathN . PathName ::= [PName];
+PN . PName ::= Ident;
+separator nonempty PName "::";
+
+NoQual. PossQualifiers ::=;
+Qual. PossQualifiers ::= Qualifiers;
+Quals. Qualifiers ::= "[" [Expression] "]";
+
+NoTE. PossTimeExpression ::= ;
+AtPre. PossTimeExpression ::= "@" "pre";
+
+
+NoPCP. PossPropCallParam ::= ;
+PCPs. PossPropCallParam ::= PropertyCallParameters;
+
+Decl. Declarator ::= DeclaratorVarList "|";
+DeclAcc. Declarator ::= DeclaratorVarList ";" Ident ":" TypeSpecifier "=" Expression "|";
+
+
+DVL. DeclaratorVarList ::= [Ident];
+DVLType. DeclaratorVarList ::= [Ident] ":" SimpleTypeSpecifier;
+separator nonempty Ident ",";
+
+-- introduce changes in line with the Dresden OCL grammar
+internal PCPDecl. PropertyCallParameters ::= "(" Declarator [Expression] ")";
+internal PCP. PropertyCallParameters ::=  "(" [Expression] ")";
+separator  Expression "," ;   -- nonempty
+
+
+
+-- remove the following two rules and all PCPHelper rules as a first step after parsing:
+PCPNoDeclNoParam. PropertyCallParameters ::= "(" ")";
+PCPConcrete. PropertyCallParameters ::= "(" Expression [PCPHelper] ")";
+
+PCPComma. PCPHelper ::= "," Expression;
+PCPColon. PCPHelper ::= ":" SimpleTypeSpecifier;
+PCPIterate. PCPHelper ::= ";" Ident ":" TypeSpecifier "=" Expression;
+PCPBar. PCPHelper ::= "|" Expression;
+separator PCPHelper "";
+
+
+--
+-- Literals
+--
+
+LitStr. OCLLiteral ::=  String;  -- ***NB: OCL uses single quotes for strings, fix this in lexer?
+LitNum. OCLLiteral ::= OCLNumber;
+LitBoolTrue. OCLLiteral ::= "true"; -- boolean literals missing from spec.
+LitBoolFalse. OCLLiteral ::= "false";
+{-------------------
+   enumerations unsupported for now. Note that they give rise to a shift/reduce
+   ambiguity: is "java::lang::Exception" a class literal or an enumeration literal?
+   
+   just make these rules internal?
+   
+LitEnum. OCLLiteral ::= EnumLiteral;
+
+
+EnumLit. EnumLiteral ::= Ident "::" [EnumElem] ;
+EnumElem. EnumElem ::= Ident;
+separator nonempty EnumElem "::";
+-----------------}
+
+STSpec. SimpleTypeSpecifier ::= PathName;
+
+LCollection. LiteralCollection ::= CollectionKind "{" [CollectionItem] "}";
+LCollectionEmpty. LiteralCollection ::= CollectionKind "{" "}";
+separator nonempty CollectionItem ",";
+
+CI. CollectionItem ::= Expression;
+CIRange. CollectionItem ::= Expression ".." Expression;
+
+NumInt. OCLNumber ::= Integer;
+NumDouble. OCLNumber ::= Double; -- *** lexer does not handle capital 'E' (just 'e')
+
+
+
+
+--
+-- (in-/pre-/postfix) Operators
+--
+
+LAnd. LogicalOperator ::= "and";
+LOr. LogicalOperator ::= "or";
+LXor. LogicalOperator ::= "xor";
+
+Set. CollectionKind ::= "Set";
+Bag. CollectionKind ::= "Bag";
+Sequence. CollectionKind ::= "Sequence";
+Collection. CollectionKind ::= "Collection";
+
+EEq. EqualityOperator ::= "=";
+ENEq. EqualityOperator ::= "<>";
+
+RGT. RelationalOperator ::= ">";
+RGTE. RelationalOperator ::= ">=";
+RLT. RelationalOperator ::= "<";
+RLTE. RelationalOperator ::= "<=";
+
+AAdd. AddOperator ::= "+";
+ASub. AddOperator ::= "-";
+
+MMult. MultiplyOperator ::= "*";
+MDiv. MultiplyOperator ::= "/";
+
+UMin. UnaryOperator ::= "-";
+UNot. UnaryOperator ::= "not";
+
+PDot. PostfixOperator ::= ".";
+PArrow. PostfixOperator ::= "->";
+
+
