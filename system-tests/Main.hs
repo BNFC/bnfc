@@ -3,13 +3,14 @@
 {-# OPTIONS_GHC -fno-warn-type-defaults #-}
 module Main where
 
-import Test.HUnit
-import Shelly
-import Prelude hiding (FilePath)
+import Data.Monoid ((<>))
+import Data.Text (Text)
 import Filesystem.Path (filename, basename)
 import Filesystem.Path.CurrentOS (encodeString)
-import Data.Text (Text)
-import Data.Monoid ((<>))
+import Prelude hiding (FilePath)
+import Shelly
+import System.Exit (exitFailure,exitSuccess)
+import Test.HUnit
 
 foo x = (1,3)
 
@@ -80,5 +81,8 @@ mkTestSuite :: TestContext -> Test
 mkTestSuite context =
   TestLabel (tcName context) $ TestList (map (mkTest context) testData)
 
-main = runTestTT $ TestList (map mkTestSuite settings)
+main = do
+  counts <- runTestTT $ TestList (map mkTestSuite settings)
+  when (errors counts > 0 || failures counts > 0) exitFailure
+  exitSuccess
 
