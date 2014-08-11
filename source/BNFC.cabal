@@ -66,6 +66,7 @@ Executable bnfc
     BNFC.MultiView,
     BNFC.TypeChecker,
     BNFC.GetCF,
+    BNFC.Backend.Base
     BNFC.Backend.Common.Makefile,
     BNFC.Backend.Common.NamedVariables,
     BNFC.Backend.Common.OOAbstract,
