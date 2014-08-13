@@ -109,7 +109,7 @@ regressionTests = makeTestSuite "Regression tests"
                 , "token SECOND 'b';" ]
             cmd "bnfc" "--java" "-m" "multiple_token.cf"
             cmd "make"
-  , makeShellyTest "#30 With -d option XML module is not generated inside the directorty" $ do
+  , makeShellyTest "#30 With -d option XML module is not generated inside the directorty" $
         withTmpDir $ \tmp -> do
             cd tmp
             writefile "Test.cf" $ T.unlines
