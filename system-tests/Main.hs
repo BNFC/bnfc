@@ -5,17 +5,29 @@ module Main where
 
 import Data.Monoid ((<>))
 import Data.Text (Text)
+import qualified Data.Text as T
 import Filesystem.Path (filename, basename)
 import Filesystem.Path.CurrentOS (encodeString)
 import Prelude hiding (FilePath)
 import Shelly
 import System.Exit (exitFailure,exitSuccess)
-import Test.HUnit
+import Test.HUnit hiding (Test)
+import Test.Framework
+import Test.Framework.TestTypes
+import Test.Framework.TestManager
 
-foo x = (1,3)
+main = htfMain [blackBoxTests, regressionTests]
 
-test1 = TestCase (assertEqual "for (foo 3)," (1,2) (foo 3))
+{- ----------------------------------------------------------------------------
+ - BLACK BOX TESTS
+ -
+ - In those tests, we generates parsers from some grammars using different
+ - backends and check that it compiles and accepts an example program
+ - -}
 
+-- A test context is the combination of some bnfc options (that define the
+-- backend to use) a build command to compile the resulting parser and a run
+-- command to run the test program.
 data TestContext = TestContext
   { -- | Name of the test settings, ex 'Haskell with GADT'
     tcName        :: String
@@ -25,8 +37,6 @@ data TestContext = TestContext
     tcMake        :: Sh ()
   , -- | Command for running the test executable
     tcRun         :: Text -> Sh () }
-
-data TestData = TestData { testGrammar :: FilePath, testExample :: FilePath }
 
 settings :: [TestContext]
 settings =
@@ -44,7 +54,7 @@ settings =
          , tcBnfcOptions = ["--cpp-nostl", "-m"] }
   , base { tcName = "Java"
          , tcBnfcOptions = ["--java", "-m"]
-         , tcRun = \lang -> cmd ("." </> lang </> "Test") }
+         , tcRun = \lang -> cmd "java" (lang </> "Test") }
   ]
   where base = TestContext undefined -- name
                            undefined -- bnfc options
@@ -54,15 +64,16 @@ settings =
 testData :: [(FilePath, FilePath)]
 testData =
   [ ("data"</>"cnf"</>"c.cf", "data"</>"cnf"</>"small.c" )
-  , ("data"</>"c"</>"c.cf", "data"</>"c"</>"test.c" )
-  , ("data"</>"cpp"</>"cpp.cf", "data"</>"cpp"</>"test.cpp" )
-  , ("data"</>"gf"</>"gf.cf", "data"</>"gf"</>"test.gf" )
-  , ("data"</>"ocl"</>"ocl.cf", "data"</>"ocl"</>"test.ocl" )
-  , ("data"</>"lbnf"</>"lbnf.cf", "data"</>"lbnf"</>"test.lbnf" ) ]
+  , ("data"</>"c"</>"c.cf", "data"</>"c"</>"example.c" )
+  , ("data"</>"cpp"</>"cpp.cf", "data"</>"cpp"</>"example.cpp" )
+  , ("data"</>"gf"</>"gf.cf", "data"</>"gf"</>"example.gf" )
+  , ("data"</>"ocl"</>"ocl.cf", "data"</>"ocl"</>"example.ocl" )
+  , ("data"</>"lbnf"</>"lbnf.cf", "data"</>"lbnf"</>"example.lbnf" ) ]
 
-mkTest :: TestContext -> (FilePath, FilePath) -> Test
-mkTest context (grammar, example) =
-  TestLabel label $ TestCase $ shelly $ silently $ withTmpDir $ \tmp -> do
+-- A shelly function that, given a test context and a pair grammar+example,
+-- runs a complete test in a temp directory
+testScript :: TestContext -> (FilePath, FilePath) -> Sh ()
+testScript context (grammar, example) = withTmpDir $ \tmp -> do
     cp grammar tmp
     cp example tmp
     cd tmp
@@ -70,19 +81,53 @@ mkTest context (grammar, example) =
     run_ "bnfc" args
     tcMake context
     readfile (filename example) >>= setStdin
-    tcRun context lang
-  where label = encodeString grammar
-        lang = toTextArg (basename grammar)
-        silently = print_commands False
-                 . print_stdout False
-                 . print_stderr False
+    tcRun context language
+  where language = toTextArg (basename grammar)
 
-mkTestSuite :: TestContext -> Test
-mkTestSuite context =
-  TestLabel (tcName context) $ TestList (map (mkTest context) testData)
+blackBoxTests :: TestSuite
+blackBoxTests =
+    makeTestSuite "Black box tests" $ map makeTestSuiteForContext settings
+  where makeTestSuiteForContext c = CompoundTest $ 
+            makeTestSuite (tcName c) $ map (makeOneTest c) testData
+        makeOneTest tc td = makeShellyTest (getLanguage td) $ testScript tc td
+        getLanguage (grammar,_) = encodeString (filename grammar)
 
-main = do
-  counts <- runTestTT $ TestList (map mkTestSuite settings)
-  when (errors counts > 0 || failures counts > 0) exitFailure
-  exitSuccess
+{- ------------------------------------------------------------------------- -
+ - REGRESSION TESTS
+ - ------------------------------------------------------------------------- -
+ -
+ - Tests specific to some reported issues -}
+regressionTests :: TestSuite
+regressionTests = makeTestSuite "Regression tests"
+  [ makeShellyTest "#60 Compilation error in Java when a production uses more than one user-defined tokens" $
+        withTmpDir $ \tmp -> do
+            cd tmp
+            writefile "multiple_token.cf" $ T.unlines
+                [ "Label. Category ::= FIRST SECOND;"
+                , "token FIRST 'a';"
+                , "token SECOND 'b';" ]
+            cmd "bnfc" "--java" "-m" "multiple_token.cf"
+            cmd "make"
+  , makeShellyTest "#30 With -d option XML module is not generated inside the directorty" $ do
+        withTmpDir $ \tmp -> do
+            cd tmp
+            writefile "Test.cf" $ T.unlines
+                [ "Start. S ::= S \"a\" ;"
+                , "End.   S ::= ;" ]
+            cmd "bnfc" "--haskell" "--xml" "-m" "-d" "Test.cf"
+            assertFileExists "Test/XML.hs"
+            cmd "make"
+   ]
 
+
+-- ------------------------------------------------------------------------- --
+-- TEST UTILS
+-- ------------------------------------------------------------------------- --
+-- Shortcut function to create a (black box) test from a shelly script
+makeShellyTest :: TestID -> Sh () -> Test
+makeShellyTest label = makeBlackBoxTest label . shelly . silently
+
+-- A (Shelly) assertion to check the existense of a file
+assertFileExists :: FilePath -> Sh ()
+assertFileExists p = test_f p >>= liftIO . assertBool errorMessage
+  where errorMessage = "Can't find file " ++ encodeString p

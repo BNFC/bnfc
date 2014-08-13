@@ -61,7 +61,8 @@ executable bnfc-system-tests
                        HUnit == 1.2.*,
                        shelly == 1.5.*,
                        system-filepath,
-                       text
+                       text,
+                       HTF == 0.11.*
 
   -- Directories containing source files.
   -- hs-source-dirs:
