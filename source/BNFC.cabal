@@ -174,7 +174,7 @@ Test-suite unit-tests
                  hspec, QuickCheck >= 2.5, HUnit,
                  temporary, containers, deepseq
   Main-is: unit-tests.hs
-  HS-source-dirs: src test/src
+  HS-source-dirs: src test/
   Other-modules:
    BNFC.Backend.Common.MakefileSpec
    BNFC.OptionsSpec
