@@ -116,7 +116,7 @@ doubleRule cf = showsPrintRule cf "Double"
 showsPrintRule cf t = unlines $ [
   "instance Print " ++ t ++ " where",
   "  prt _ x = doc (shows x)",
-  ""] ++ ifList cf t
+  ""]
 
 ownPrintRule cf own = unlines $ [
   "instance Print " ++ own ++ " where",
