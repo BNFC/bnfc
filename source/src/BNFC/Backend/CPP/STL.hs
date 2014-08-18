@@ -137,7 +137,7 @@ cpptest inPackage cf =
     ""
    ]
   where
-   def = head (allEntryPoints cf)
+   def = show (head (allEntryPoints cf))
    scope = nsScope inPackage
 
 mkHeaderFile inPackage cf cats eps env = unlines
@@ -175,21 +175,21 @@ mkHeaderFile inPackage cf cats eps env = unlines
   mkVar _ = ""
   mkDefines n [] = mkString n
   mkDefines n ((_,s):ss) = ("#define " ++ s +++ (show n) ++ "\n") ++ (mkDefines (n+1) ss) -- "nsDefine inPackage s" not needed (see cf2flex::makeSymEnv)
-  mkString n =  if isUsedCat cf "String"
+  mkString n =  if isUsedCat cf catString
    then ("#define " ++ nsDefine inPackage "_STRING_ " ++ show n ++ "\n") ++ mkChar (n+1)
    else mkChar n
-  mkChar n =  if isUsedCat cf "Char"
+  mkChar n =  if isUsedCat cf catChar
    then ("#define " ++ nsDefine inPackage "_CHAR_ " ++ show n ++ "\n") ++ mkInteger (n+1)
    else mkInteger n
-  mkInteger n =  if isUsedCat cf "Integer"
+  mkInteger n =  if isUsedCat cf catInteger
    then ("#define " ++ nsDefine inPackage "_INTEGER_ " ++ show n ++ "\n") ++ mkDouble (n+1)
    else mkDouble n
-  mkDouble n =  if isUsedCat cf "Double"
+  mkDouble n =  if isUsedCat cf catDouble
    then ("#define " ++ nsDefine inPackage "_DOUBLE_ " ++ show n ++ "\n") ++ mkIdent(n+1)
    else mkIdent n
-  mkIdent n =  if isUsedCat cf "Ident"
+  mkIdent n =  if isUsedCat cf catIdent
    then ("#define " ++ nsDefine inPackage "_IDENT_ " ++ show n ++ "\n")
    else ""
-  mkFuncs s | (normCat s == s) = (identCat s) ++ "*" +++ "p" ++ (identCat s) ++ "(FILE *inp);\n" ++
-                                 (identCat s) ++ "*" +++ "p" ++ (identCat s) ++ "(const char *str);\n"
+  mkFuncs s | normCat s == s = identCat s ++ "*" +++ "p" ++ identCat s ++ "(FILE *inp);\n" ++
+                               identCat s ++ "*" +++ "p" ++ identCat s ++ "(const char *str);\n"
   mkFuncs _ = ""

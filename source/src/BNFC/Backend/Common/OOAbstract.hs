@@ -50,25 +50,25 @@ import Data.Char(toLower)
 -- A datastructure more appropriate than CF
 
 data CAbs = CAbs {
-  tokentypes :: [Cat],               -- user non-position token types
-  listtypes  :: [(Cat,Bool)],        -- list types used, whether of classes
-  absclasses :: [Cat],               -- grammar-def cats, normalized names
+  tokentypes :: [String],               -- user non-position token types
+  listtypes  :: [(String,Bool)],        -- list types used, whether of classes
+  absclasses :: [String],               -- grammar-def cats, normalized names
   conclasses :: [Fun],               -- constructors, except list ones
-  signatures :: [(Cat,[CAbsRule])],  -- rules for each class, incl. pos tokens
-  postokens  :: [Cat],               -- position token types
+  signatures :: [(String,[CAbsRule])],  -- rules for each class, incl. pos tokens
+  postokens  :: [String],               -- position token types
   defineds   :: [Fun]                -- defined (non-)constructors
   }
 
 -- (valcat,(constr,args)), True = is class (not basic), class variable stored
-type CAbsRule = (Fun,[(Cat,Bool,String)])
+type CAbsRule = (Fun,[(String,Bool,String)])
 
 -- all those names that denote classes in C++
-allClasses :: CAbs -> [Cat]
+allClasses :: CAbs -> [String]
 allClasses ca =
   absclasses ca ++ conclasses ca ++ map fst (listtypes ca) ++ postokens ca
 
 -- all those names that denote non-class types in C++
-allNonClasses :: CAbs -> [Cat]
+allNonClasses :: CAbs -> [String]
 allNonClasses ca =
   map fst basetypes ++ tokentypes ca
 
@@ -76,17 +76,17 @@ cf2cabs :: CF -> CAbs
 cf2cabs cf = CAbs {
   tokentypes = toks,
   listtypes  = [(c, snd (status (drop 4 c))) | -- remove "List" from "ListC"
-                  c <- map (normCat . identCat) lists],
-  absclasses = nub $ map normCat cats,
+                  c <- map (identCat . normCat) lists],
+  absclasses = nub $ map (show.normCat) cats,
   conclasses = [f | Just f <- map testRule (rulesOfCF cf)],
   signatures = posdata ++ map normSig (cf2data cf),
-  postokens  = pos,
+  postokens  = map show pos,
   defineds   = defs
   }
  where
   (pos,base) = partition (isPositionCat cf) $ fst (unzip (tokenPragmas cf))
   (lists,cats) = partition isList $ allCats cf
-  toks = map normCat base
+  toks = map (show.normCat) base
   testRule (Rule f c r)
    | isList c  = Nothing
    | f == "_"  = Nothing
@@ -95,11 +95,11 @@ cf2cabs cf = CAbs {
     (identCat c,[(f, classVars (map (status . identCat) cs)) | (f,cs) <- fcs])
   posdata =
     [("Visitable",  -- to give superclass
-     [(c,[("String",False,"string_"),("Integer",False,"integer_")])]) | c<-pos]
+     [(show c,[("String",False,"string_"),("Integer",False,"integer_")])]) | c<-pos]
   status cat = (cat, notElem cat (map fst basetypes ++ toks))
   defs = [f | FunDef f _ _ <- pragmasOfCF cf]
 
-  classVars :: [(Cat,Bool)] -> [(Cat,Bool,String)]
+  classVars :: [(String,Bool)] -> [(String,Bool,String)]
   classVars cs =
     [(c,b,s) | ((c,b),s) <- zip cs (vars [] (map (classVar . fst) cs))]
   --- creating new names is quadratic, but parameter lists are short
@@ -119,10 +119,10 @@ basetypes = [
   ("Ident",  "std::string")
   ]
 
-isBaseType :: CAbs -> Cat -> Bool
+isBaseType :: CAbs -> String -> Bool
 isBaseType cf c = elem c $ tokentypes cf ++ map fst basetypes
 
-classVar :: Cat -> String
+classVar :: String -> String
 classVar c = map toLower c ++ "_"
 
 pointerIf :: Bool -> String -> String

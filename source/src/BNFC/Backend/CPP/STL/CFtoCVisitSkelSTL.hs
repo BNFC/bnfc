@@ -70,7 +70,7 @@ mkHFile inPackage cf = unlines [
   "public:",
   unlines ["  void visit" ++ b ++ "(" ++ b ++ "* p);" |
                               b <- classes, notElem b (defineds cf)],
-  unlines ["  void visit" ++ b ++ "(" ++ b ++  " x);" | b <- basics],
+  unlines ["  void visit" ++ show b ++ "(" ++ show b ++  " x);" | b <- basics],
   "};",
   nsEnd inPackage,
   "",

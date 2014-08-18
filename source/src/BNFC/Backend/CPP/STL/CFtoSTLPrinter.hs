@@ -37,7 +37,7 @@ cf2CPPPrinter inPackage cf = (mkHFile inPackage cf groups, mkCFile inPackage cf 
 
 positionRules :: CF -> [(Cat,[Rule])]
 positionRules cf =
-      [(cat,[Rule cat cat [Left "String", Left "Integer"]]) |
+      [(cat,[Rule (show cat) cat [Left catString, Left catInteger]]) |
         cat <- filter (isPositionCat cf) $ fst (unzip (tokenPragmas cf))]
 
 {- **** Header (.H) File Methods **** -}
@@ -176,7 +176,7 @@ prDataH (cat, rules) =
  else abstract ++ (concatMap prRuleH rules)
  where
    cl = identCat (normCat cat)
-   abstract = case lookupRule cat rules of
+   abstract = case lookupRule (show cat) rules of
     Just x -> ""
     Nothing ->  "  void visit" ++ cl ++ "(" ++ cl ++ " *p); /* abstract class */\n"
 
@@ -376,7 +376,7 @@ prPrintData inPackage cf user (cat, rules) =
  ] --Not a list:
  -- a position token
  else if isPositionCat cf cat then unlines [
-   "void PrintAbsyn::visit" ++ cat ++ "(" ++ cat ++ "* p)",
+   "void PrintAbsyn::visit" ++ show cat ++ "(" ++ show cat ++ "* p)",
    "{",
    "  visitIdent(p->string_);",
    "}"
@@ -399,7 +399,7 @@ prPrintData inPackage cf user (cat, rules) =
        then "    if (i != " ++ vname ++ "->end() - 1) "
        else "    "
      )   ++ "render(" ++ sep ++ ");"
-   abstract = case lookupRule cat rules of
+   abstract = case lookupRule (show cat) rules of
     Just x -> ""
     Nothing ->  "void PrintAbsyn::visit" ++ cl ++ "(" ++ cl ++ "*p) {} //abstract class\n\n"
 
@@ -428,7 +428,7 @@ prPrintRule inPackage user r@(Rule fun c cats) | isProperLabel fun = unlines
 prPrintRule _ _ _ = ""
 
 --This goes on to recurse to the instance variables.
-prPrintCat :: [UserDef] -> String -> (Either Cat String, Int) -> String
+prPrintCat :: [UserDef] -> String -> (Either String String, Integer) -> String
 prPrintCat user fnm (c,p) = case c of
   (Right t) -> "  render(" ++ t' ++ ");\n"
     where
@@ -475,7 +475,7 @@ prShowData user (cat, rules) =
    visitMember = if isBasic user member
      then "      visit" ++ (funName member) ++ "(" ++ vname ++ "->" ++ member ++ ");"
      else "      " ++ vname ++ "->" ++ member ++ "->accept(this);"
-   abstract = case lookupRule cat rules of
+   abstract = case lookupRule (show cat) rules of
     Just x -> ""
     Nothing ->  "void ShowAbsyn::visit" ++ cl ++ "(" ++ cl ++ "* p) {} //abstract class\n\n"
 
@@ -511,7 +511,7 @@ prShowRule user (Rule fun c cats) | isProperLabel fun = concat
 prShowRule _ _ = ""
 
 --This recurses to the instance variables of a class.
-prShowCat :: [UserDef] -> String -> Either Cat String -> String
+prShowCat :: [UserDef] -> String -> Either String String -> String
 prShowCat user fnm c =
   case c of
     (Right t) -> ""
@@ -520,7 +520,7 @@ prShowCat user fnm c =
        then "  visit" ++ (funName nt) ++ "(" ++ fnm ++ "->" ++ nt ++ ");\n"
        else if nt == "#_" --internal category
        then "/* Internal Category */\n"
-       else if ((normCat nt) /= nt)
+       else if ((show $normCat$strToCat nt) /= nt)
           then accept
  	  else concat
 	  [
@@ -547,7 +547,7 @@ isBasic user v =
     else if "ident_" `isPrefixOf` v then True
     else False
   where
-   user' = map (map toLower) user
+   user' = map (map toLower.show) user
 
 -- from listident to ident_
 isBase user vn = isBasic user (baseName vn ++ "_")
@@ -566,7 +566,7 @@ funName v =
     else "Ident" --User-defined type
 
 --Just sets the coercion level for parentheses in the Pretty Printer.
-setI :: Int -> String
+setI :: Integer -> String
 setI n = "_i_ = " ++ (show n) ++ "; "
 
 --Helper function that escapes characters in strings

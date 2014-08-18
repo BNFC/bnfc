@@ -54,7 +54,7 @@ cf2flex name cf = (unlines
  ], env')
   where
    env = makeSymEnv (symbols cf ++ reservedWords cf) (0 :: Int)
-   env' = env ++ (makeSymEnv (fst (unzip (tokenPragmas cf))) (length env))
+   env' = env ++ (makeSymEnv (tokenNames cf) (length env))
    makeSymEnv [] _ = []
    makeSymEnv (s:symbs) n = (s, "_SYMB_" ++ (show n)) : (makeSymEnv symbs (n+1))
 
@@ -113,11 +113,11 @@ restOfFlex cf env = concat
   [
    lexComments (comments cf),
    userDefTokens,
-   ifC "String" strStates,
-   ifC "Char" chStates,
-   ifC "Double" "<YYINITIAL>{DIGIT}+\".\"{DIGIT}+(\"e\"(\\-)?{DIGIT}+)?      \t yylval.double_ = atof(yytext); return _DOUBLE_;\n",
-   ifC "Integer" "<YYINITIAL>{DIGIT}+      \t yylval.int_ = atoi(yytext); return _INTEGER_;\n",
-    ifC "Ident" "<YYINITIAL>{LETTER}{IDENT}*      \t yylval.string_ = strdup(yytext); return _IDENT_;\n"
+   ifC catString  strStates,
+   ifC catChar    chStates,
+   ifC catDouble  "<YYINITIAL>{DIGIT}+\".\"{DIGIT}+(\"e\"(\\-)?{DIGIT}+)?      \t yylval.double_ = atof(yytext); return _DOUBLE_;\n",
+   ifC catInteger "<YYINITIAL>{DIGIT}+      \t yylval.int_ = atoi(yytext); return _INTEGER_;\n",
+   ifC catIdent   "<YYINITIAL>{LETTER}{IDENT}*      \t yylval.string_ = strdup(yytext); return _IDENT_;\n"
    , "<YYINITIAL>[ \\t\\r\\n\\f]      \t /* ignore white space. */;\n",
    "<YYINITIAL>.      \t return _ERROR_;\n",
    "%%\n",
@@ -130,9 +130,9 @@ restOfFlex cf env = concat
       "     \t yylval.string_ = strdup(yytext); return " ++ sName name ++ ";"
        | (name, exp) <- tokenPragmas cf]
       where
-          sName n = case lookup n env of
+          sName n = case lookup (show n) env of
               Just x -> x
-              Nothing -> n
+              Nothing -> show n
    strStates = unlines --These handle escaped characters in Strings.
     [
      "<YYINITIAL>\"\\\"\"      \t BEGIN STRING;",

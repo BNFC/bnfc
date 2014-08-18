@@ -151,7 +151,7 @@ ctest cf =
     ""
    ]
   where
-   def = head (allEntryPoints cf)
+   def = show $ head (allEntryPoints cf)
 
 mkHeaderFile :: CF -> [Cat] -> [Cat] -> [(a, String)] -> String
 mkHeaderFile cf cats eps env = unlines
@@ -181,21 +181,21 @@ mkHeaderFile cf cats eps env = unlines
   mkVar _ = ""
   mkDefines n [] = mkString n
   mkDefines n ((_,s):ss) = ("#define " ++ s +++ (show n) ++ "\n") ++ (mkDefines (n+1) ss)
-  mkString n =  if isUsedCat cf "String"
+  mkString n =  if isUsedCat cf catString
    then ("#define _STRING_ " ++ show n ++ "\n") ++ mkChar (n+1)
    else mkChar n
-  mkChar n =  if isUsedCat cf "Char"
+  mkChar n =  if isUsedCat cf catChar
    then ("#define _CHAR_ " ++ show n ++ "\n") ++ mkInteger (n+1)
    else mkInteger n
-  mkInteger n =  if isUsedCat cf "Integer"
+  mkInteger n =  if isUsedCat cf catInteger
    then ("#define _INTEGER_ " ++ show n ++ "\n") ++ mkDouble (n+1)
    else mkDouble n
-  mkDouble n =  if isUsedCat cf "Double"
+  mkDouble n =  if isUsedCat cf catDouble
    then ("#define _DOUBLE_ " ++ show n ++ "\n") ++ mkIdent(n+1)
    else mkIdent n
-  mkIdent n =  if isUsedCat cf "Ident"
+  mkIdent n =  if isUsedCat cf catIdent
    then ("#define _IDENT_ " ++ show n ++ "\n")
    else ""
-  mkFunc s | (normCat s == s) = (identCat s) ++ " p" ++ (identCat s) ++ "(FILE *inp);\n"
+  mkFunc s | normCat s == s = identCat s ++ " p" ++ identCat s ++ "(FILE *inp);\n"
   mkFunc _ = ""
 

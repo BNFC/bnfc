@@ -36,7 +36,6 @@ import BNFC.Backend.OCaml.OCamlUtil
 -- Type declarations
 
 type Rules       = [(NonTerminal,[(Pattern,Action)])]
-type NonTerminal = String
 type Pattern     = String
 type Action      = String
 type MetaVar     = String
@@ -103,7 +102,7 @@ nonterminal c = map spaceToUnderscore (fixType c)
           spaceToUnderscore x = x
 
 specialTokens :: CF -> String
-specialTokens cf = unlines ("%token TOK_EOF" : map aux (nub $ ["Ident","String","Integer","Double","Char"] ++ literals cf))
+specialTokens cf = unlines ("%token TOK_EOF" : map aux (nub $ ["Ident","String","Integer","Double","Char"] ++ map show (literals cf)))
     where aux cat = "%token" +++ (case cat of
             "Ident"  -> "<string>"
             "String" -> "<string>"
@@ -123,8 +122,11 @@ entryPoints absName cf = unlines $
     where eps = (nub $ map normCat (allEntryPoints cf))
           typing :: Cat -> String
           typing c = "%type" +++ "<" ++ qualify c ++ ">" +++ epName c
-          qualify c = if c `elem` ["Integer","Double","Char","String",
-                                   "[Integer]","[Double]","[Char]","[String]"]
+          qualify c = if c `elem` [ Cat "Integer", Cat "Double", Cat "Char",
+                                    Cat "String", ListCat (Cat "Integer"),
+                                    ListCat (Cat "Double"),
+                                    ListCat (Cat "Char"),
+                                    ListCat (Cat "String") ]
                       then fixType c
                       else absName ++ "." ++ fixType c
 
@@ -137,7 +139,7 @@ epName c = "p" ++ capitalize (nonterminal c)
 entryPointRules :: CF -> String
 entryPointRules cf = unlines $ map mkRule (nub $ map normCat (allEntryPoints cf))
     where
-        mkRule :: String -> String
+        mkRule :: Cat -> String
         mkRule s = unlines [
             epName s ++ " : " ++ nonterminal s ++ " TOK_EOF { $1 }",
             "  | error { raise (BNFC_Util.Parse_error (Parsing.symbol_start_pos (), Parsing.symbol_end_pos ())) };"
@@ -217,13 +219,13 @@ specialRules cf = unlines $
  where
    aux cat =
      case cat of
-         "Ident"   -> "ident : TOK_Ident  { Ident $1 };"
-         "String"  -> "string : TOK_String { $1 };"
-         "Integer" -> "int :  TOK_Integer  { $1 };"
-         "Double"  -> "float : TOK_Double  { $1 };"
-         "Char"    -> "char : TOK_Char { $1 };"
-         own       -> (fixType own) ++ " : TOK_" ++ own ++
-                      " { " ++ own ++ " ("++ posn ++ "$1)};"
+         Cat "Ident"   -> "ident : TOK_Ident  { Ident $1 };"
+         Cat "String"  -> "string : TOK_String { $1 };"
+         Cat "Integer" -> "int :  TOK_Integer  { $1 };"
+         Cat "Double"  -> "float : TOK_Double  { $1 };"
+         Cat "Char"    -> "char : TOK_Char { $1 };"
+         own       -> (fixType own) ++ " : TOK_" ++ show own ++
+                      " { " ++ show own ++ " ("++ posn ++ "$1)};"
                 -- PCC: take "own" as type name? (manual says newtype)
       where -- ignore position categories for now
          posn = "" -- if isPositionCat cf cat then "mkPosToken " else ""

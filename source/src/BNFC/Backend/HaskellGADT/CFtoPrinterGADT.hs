@@ -116,17 +116,17 @@ doubleRule cf = showsPrintRule cf "Double"
 showsPrintRule cf t = unlines $ [
   "instance Print " ++ t ++ " where",
   "  prt _ x = doc (shows x)",
-  ""] ++ ifList cf t
+  ""]
 
 ownPrintRule cf own = unlines $ [
-  "instance Print " ++ own ++ " where",
-  "  prt _ (" ++ own ++ posn ++ ") = doc (showString i)",
+  "instance Print " ++ show own ++ " where",
+  "  prt _ (" ++ show own ++ posn ++ ") = doc (showString i)",
   ""] ++ ifList cf own
  where
    posn = if isPositionCat cf own then " (_,i)" else " i"
 
 ifList :: CF -> Cat -> [String]
-ifList cf cat = prPrtList cf ("["++cat++"]") -- FIXME: hackish
+ifList cf cat = prPrtList cf (ListCat cat) -- FIXME: hackish
 
 prPrt :: CF -> [String]
 prPrt cf = ["instance Print (Tree c) where",
@@ -151,7 +151,7 @@ prPrtList cf cat = mkListRule (nil ++ one ++ cons)
   cons = ["   x:xs -> " ++ mkRhs ["x","xs"] its |
                          Rule f _ its <- rules, isConsFun f]
   mkListRule [] = []
-  mkListRule rs = ["instance Print" +++ cat +++ "where",
+  mkListRule rs = ["instance Print" +++ show cat +++ "where",
 		 "  prt _" +++ "es = case es of"] ++ rs
   rules = rulesForCat cf cat
 
@@ -159,7 +159,7 @@ mkRhs :: [String] -> [Either Cat String] -> String
 mkRhs args its =
   "(concatD [" ++ unwords (intersperse "," (mk args its)) ++ "])"
  where
-  mk args (Left "#" : items)      = mk args items
+  mk args (Left InternalCat : items)      = mk args items
   mk (arg:args) (Left c : items)  = (prt c +++ arg) : mk args items
   mk args       (Right s : items) = ("doc (showString" +++ show s ++ ")") : mk args items
   mk _ _                          = []

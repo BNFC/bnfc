@@ -51,7 +51,6 @@ import Data.Char
 
 -- Type declarations
 type Rules       = [(NonTerminal,[(Pattern,Action)])]
-type NonTerminal = String
 type Pattern     = String
 type Action      = String
 type MetaVar     = String
@@ -101,7 +100,7 @@ definedRules packageAbsyn cf =
 	list = LC (\t -> "List" ++ unBase t) (const "cons")
 	    where
 		unBase (ListT t) = unBase t
-		unBase (BaseT x) = normCat x
+		unBase (BaseT x) = show$normCat$strToCat x
 
 	rule f xs e =
 	    case checkDefinition' list ctx f xs e of
@@ -115,11 +114,11 @@ definedRules packageAbsyn cf =
 	    where
 
 		javaType :: Base -> String
-		javaType (ListT (BaseT x)) = packageAbsyn ++ ".List" ++ normCat x
+		javaType (ListT (BaseT x)) = packageAbsyn ++ ".List" ++ (show$normCat$strToCat x)
 		javaType (ListT t)	   = javaType t
 		javaType (BaseT x)
 		    | isToken x ctx = "String"
-		    | otherwise	    = packageAbsyn ++ "." ++ normCat x
+		    | otherwise	    = packageAbsyn ++ "." ++ (show$normCat$strToCat x)
 
 		javaArg :: (String, Base) -> String
 		javaArg (x,t) = javaType t ++ " " ++ x ++ "_"
@@ -143,7 +142,7 @@ definedRules packageAbsyn cf =
 
 -- peteg: FIXME JavaCUP can only cope with one entry point AFAIK.
 prEntryPoint :: CF -> String
-prEntryPoint cf = unlines ["", "start with " ++ firstEntry cf ++ ";", ""]
+prEntryPoint cf = unlines ["", "start with " ++ show (firstEntry cf) ++ ";", ""]
 --		    [ep]  -> unlines ["", "start with " ++ ep ++ ";", ""]
 --		    eps   -> error $ "FIXME multiple entry points." ++ show eps
 
@@ -164,7 +163,7 @@ parseMethod packageAbsyn cat =
     where cat' = identCat (normCat cat)
 
 --non-terminal types
-declarations :: String -> [NonTerminal] -> String
+declarations :: String -> [Cat] -> String
 declarations packageAbsyn ns = unlines (map (typeNT packageAbsyn) ns)
  where
    typeNT _nm nt = "nonterminal" +++ packageAbsyn ++ "."
@@ -178,11 +177,11 @@ tokens ts = unlines (map declTok ts)
 
 specialToks :: CF -> String
 specialToks cf = unlines [
-  ifC "String" "terminal String _STRING_;",
-  ifC "Char" "terminal Character _CHAR_;",
-  ifC "Integer" "terminal Integer _INTEGER_;",
-  ifC "Double" "terminal Double _DOUBLE_;",
-  ifC "Ident" "terminal String _IDENT_;"
+  ifC catString "terminal String _STRING_;",
+  ifC catChar "terminal Character _CHAR_;",
+  ifC catInteger "terminal Integer _INTEGER_;",
+  ifC catDouble "terminal Double _DOUBLE_;",
+  ifC catIdent "terminal String _IDENT_;"
   ]
    where
     ifC cat s = if isUsedCat cf cat then s else ""
@@ -191,7 +190,7 @@ specialToks cf = unlines [
 -- FIXME
 specialRules:: CF -> String
 specialRules cf =
-    unlines ["terminal String " ++ name ++ ";" | (name, _) <- tokenPragmas cf]
+    unlines ["terminal String " ++ name ++ ";" | name <- tokenNames cf]
 
 --The following functions are a (relatively) straightforward translation
 --of the ones in CFtoHappy.hs
@@ -249,11 +248,11 @@ generatePatterns cf env r = case rhsRule r of
      Left c -> c' ++ ":p_" ++ (show (n :: Int)) +++ (mkIt env (n+1) is)
                   where
 		   c' = case c of
-      			 "Ident"   -> "_IDENT_"
-      			 "Integer" -> "_INTEGER_"
-     			 "Char"    -> "_CHAR_"
-  			 "Double"  -> "_DOUBLE_"
-    			 "String"  -> "_STRING_"
+      			 Cat "Ident"   -> "_IDENT_"
+      			 Cat "Integer" -> "_INTEGER_"
+     			 Cat "Char"    -> "_CHAR_"
+  			 Cat "Double"  -> "_DOUBLE_"
+    			 Cat "String"  -> "_STRING_"
 		         _         -> identCat c
      Right s -> case (lookup s env) of
      		(Just x) -> x +++ (mkIt env (n+1) is)

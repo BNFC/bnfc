@@ -40,11 +40,11 @@ buildContext cf@(CFG(_,rules)) =
     ("Ident" : tokenNames cf)
   where
 
-    mkType cat args = FunT [ mkBase t | Left t <- args, t /= internalCat ]
+    mkType cat args = FunT [ mkBase t | Left t <- args, t /= InternalCat ]
 			   (mkBase cat)
     mkBase t
 	| isList t  = ListT $ mkBase $ normCatOfList t
-	| otherwise = BaseT $ normCat t
+	| otherwise = BaseT $ show $ normCat t
 
 isToken :: String -> Context -> Bool
 isToken x ctx = elem x $ ctxTokens ctx

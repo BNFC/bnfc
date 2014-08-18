@@ -57,7 +57,7 @@ cf2Abstract byteStrings name cf composOpMod = unlines $ [
                  ++ ["module " ++ composOpMod]
 
 getTreeCats :: CF -> [String]
-getTreeCats cf = nub $ filter (not . isList) $ map consCat $ cf2cons cf
+getTreeCats cf = nub $ map show $ filter (not . isList) $ map consCat $ cf2cons cf
 
 prDummyTypes :: CF -> [String]
 prDummyTypes cf = [prDummyData] ++ map prDummyType cats
@@ -66,15 +66,15 @@ prDummyTypes cf = [prDummyData] ++ map prDummyType cats
   prDummyData = "data Tag =" +++ intercalate " | " (map mkRealType cats)
   prDummyType cat = "type" +++ cat +++ "= Tree" +++ mkRealType cat
 
-mkRealType :: Cat -> String
+mkRealType :: String -> String
 mkRealType cat = cat ++ "_" -- FIXME: make sure that there is no such category already
 
 prTreeType :: Bool -> CF -> [String]
 prTreeType byteStrings cf = ["data Tree :: Tag -> * where"] ++ map (("    "++) . prTreeCons) (cf2cons cf)
  where
  prTreeCons c
-      | isPositionCat cf cat = fun +++ ":: ((Int,Int),"++stringType++") -> Tree" +++ mkRealType cat
-      | otherwise = fun +++ "::" +++ concat [c +++ "-> " | (c,_) <- consVars c] ++ "Tree" +++ mkRealType cat
+      | isPositionCat cf cat = fun +++ ":: ((Int,Int),"++stringType++") -> Tree" +++ mkRealType (show cat)
+      | otherwise = fun +++ "::" +++ concat [show c +++ "-> " | (c,_) <- consVars c] ++ "Tree" +++ mkRealType (show cat)
   where (cat,fun) = (consCat c, consFun c)
         stringType
           | byteStrings = "BS.ByteString"

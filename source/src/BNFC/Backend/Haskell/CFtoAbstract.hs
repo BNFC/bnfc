@@ -42,15 +42,16 @@ cf2Abstract byteStrings ghcExtensions name cf = unlines $
 
 prData :: String -> Data -> String
 prData derivingClasses (cat,rules) =
-  "data" +++ cat +++ "=\n   " ++
+  "data" +++ show cat +++ "=\n   " ++
   concat (intersperse "\n | " (map prRule rules)) ++++
   "  deriving" +++ derivingClasses ++ "\n"
  where
-   prRule (fun,cats) = unwords (fun:cats)
+   prRule (fun,cats) = unwords (fun:map show cats)
 
 prSpecialData :: Bool -> CF -> String -> Cat -> String
 prSpecialData byteStrings cf derivingClasses cat =
-  unwords ["newtype",cat,"=",cat,contentSpec byteStrings cf cat,"deriving",derivingClasses]
+  unwords [ "newtype", show cat, "=", show cat, contentSpec byteStrings cf cat
+          , "deriving", derivingClasses ]
 
 contentSpec :: Bool -> CF -> Cat -> String
 contentSpec byteStrings cf cat = if isPositionCat cf cat then "((Int,Int),"++stringType++")" else stringType

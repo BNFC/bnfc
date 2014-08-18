@@ -1,4 +1,0 @@
-
-
--- We probably don't even want this to parse...
-Letter_λ ::= Lam ::= "Lam";

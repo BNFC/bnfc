@@ -79,7 +79,7 @@ prRule packageAbsyn user cat (Rule fun _ cats)
     cats' = if allTerms cats
         then []
     	else [ (c,v) |
-	       (Left c, Left v) <- zip cats (fixOnes (numVars [] cats)), c /= internalCat ]
+	       (Left c, Left v) <- zip cats (fixOnes (numVars [] cats)), c /= InternalCat ]
     cls = packageAbsyn ++ "." ++ fun
     allTerms [] = True
     allTerms ((Left z):zs) = False
@@ -99,9 +99,9 @@ prCat user cat nt
     | otherwise = [decl (var ++ ".accept(this, arg)")]
       where
       var = "p." ++ nt
-      varType = typename (normCat (identCat cat)) user
+      varType = typename (identCat (normCat cat)) user
       accept = var ++ ".accept(this, arg);"
-      et = typename (normCatOfList cat) user
+      et = typename (show$normCatOfList cat) user
       decl v = varType +++ nt +++ "=" +++ v ++ ";"
       listAccept = [decl ("new"+++varType++"()"),
                     "for (" ++ et ++ " x : " ++ var ++ ") {",
@@ -113,5 +113,5 @@ isListType nt = "List" `isPrefixOf` nt
 
 --Just checks if something is a basic or user-defined type.
 isBasicType :: [UserDef] -> String -> Bool
-isBasicType user v = v `elem` (user ++ ["Integer","Character","String","Double"])
+isBasicType user v = v `elem` (map show user ++ ["Integer","Character","String","Double"])
 
