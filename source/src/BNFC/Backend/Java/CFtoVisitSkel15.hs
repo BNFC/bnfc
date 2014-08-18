@@ -59,7 +59,7 @@ cf2VisitSkel packageBase packageAbsyn cf =
     "}"]
   where
     user = fst (unzip (tokenPragmas cf))
-    groups = (fixCoercions (ruleGroups cf))
+    groups = fixCoercions (ruleGroups cf)
     header = unlines [
       "package" +++ packageBase ++ ";",
       "import" +++ packageAbsyn ++ ".*;",
@@ -119,9 +119,9 @@ prCat user cat nt | isBasic user nt = "      //" ++ var ++ ";\n"
 		  | otherwise = "      " ++ accept ++ "\n"
       where
       var = "p." ++ nt
-      varType = typename (normCat (identCat cat)) user
+      varType = typename (identCat (normCat cat)) user
       accept = var ++ ".accept(new " ++ varType ++ "Visitor<R,A>(), arg);"
-      et = typename (normCatOfList cat) user
+      et = typename (show $normCatOfList cat) user
       listAccept = unlines ["      for (" ++ et ++ " x : " ++ var ++ ") {",
 			    "      }"]
 
@@ -138,4 +138,4 @@ isBasic user v =
     else if "ident_" `isPrefixOf` v then True
     else False
   where
-   user' = map (map toLower) user
+   user' = map (map toLower.show) user

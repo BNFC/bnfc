@@ -61,6 +61,6 @@ catEq :: Constructor -> Constructor -> Bool
 catEq c1 c2 = consCat c1 == consCat c2
 
 prCatTrans :: Cat -> [Constructor] -> [String]
-prCatTrans cat cs = ["trans" ++ cat +++ "::" +++ cat +++ "-> Result",
-		     "trans" ++ cat +++ "t = case t of"]
+prCatTrans cat cs = ["trans" ++ show cat +++ "::" +++ show cat +++ "-> Result",
+		     "trans" ++ show cat +++ "t = case t of"]
 		    ++ map prConsCase cs

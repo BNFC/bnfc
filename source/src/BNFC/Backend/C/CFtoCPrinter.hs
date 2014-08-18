@@ -51,7 +51,7 @@ import Data.Char(toLower, toUpper)
 cf2CPrinter :: CF -> (String, String)
 cf2CPrinter cf = (mkHFile cf groups, mkCFile cf groups)
  where
-    groups = (fixCoercions (ruleGroupsInternals cf))
+    groups = fixCoercions (ruleGroupsInternals cf)
 
 {- **** Header (.h) File Methods **** -}
 
@@ -364,7 +364,7 @@ prPrintData user (cat, rules) =
    "  {",
    concatMap (prPrintRule user) rules,
    "  default:",
-   "    fprintf(stderr, \"Error: bad kind field when printing " ++ cat ++ "!\\n\");",
+   "    fprintf(stderr, \"Error: bad kind field when printing " ++ show cat ++ "!\\n\");",
    "    exit(1);",
    "  }",
    "}\n"
@@ -397,12 +397,12 @@ prPrintRule user r@(Rule fun c cats) | not (isCoercion fun) = unlines
       ("    if (_i_ > " ++ (show p) ++ ") renderC(_L_PAREN);",
        "    if (_i_ > " ++ (show p) ++ ") renderC(_R_PAREN);")
     cats' = (concatMap (prPrintCat user fun) (zip3 (fixOnes (numVars [] cats)) cats (map getPrec cats)))
-    getPrec (Right s) = (0 :: Int)
+    getPrec (Right s) = 0 :: Integer
     getPrec (Left c) = precCat c
 prPrintRule _ _ = ""
 
 --This goes on to recurse to the instance variables.
-prPrintCat :: [UserDef] -> String -> (Either Cat String, Either Cat String, Int) -> String
+prPrintCat :: [UserDef] -> String -> (Either String String, Either Cat String, Integer) -> String
 prPrintCat user fnm (c,o,p) = case c of
   (Right t) -> "    render" ++ sc ++ "(" ++ t' ++ ");\n"
     where
@@ -415,10 +415,10 @@ prPrintCat user fnm (c,o,p) = case c of
          then "    /* Internal Category */\n"
          else "    pp" ++ o' ++ "(_p_->u." ++ v ++ "_." ++ nt ++ ", " ++ (show p) ++ ");\n"
  where
-  v = map toLower (identCat (normCat fnm))
+  v = map toLower (normFun fnm)
   o' = case o of
     Right x -> x
-    Left x -> normCat (identCat x)
+    Left x -> identCat (normCat x)
 
 {- **** Abstract Syntax Tree Printer **** -}
 
@@ -471,7 +471,7 @@ prShowData user (cat, rules) =
    "  {",
    concatMap (prShowRule user) rules,
    "  default:",
-   "    fprintf(stderr, \"Error: bad kind field when showing " ++ cat ++ "!\\n\");",
+   "    fprintf(stderr, \"Error: bad kind field when showing " ++ show cat ++ "!\\n\");",
    "    exit(1);",
    "  }",
    "}\n"
@@ -513,14 +513,14 @@ prShowRule user r@(Rule fun c cats) | not (isCoercion fun) = unlines
 prShowRule _ _ = ""
 
 --This goes on to recurse to the instance variables.
-prShowCat :: [UserDef] -> String -> (Either Cat String, Either Cat String) -> String
+prShowCat :: [UserDef] -> Fun -> (Either String String, Either Cat String) -> String
 prShowCat user fnm (c,o) = case c of
   (Right t) -> ""
   (Left nt) -> if isBasic user nt
        then "    sh" ++ (basicFunName nt) ++ "(_p_->u." ++ v ++ "_." ++ nt ++ ");\n"
        else if nt == "#_" --Internal category
          then "    /* Internal Category */\n"
-         else if ((normCat nt) /= nt)
+         else if ((show $ normCat $ strToCat nt) /= nt)
           then "    sh" ++ o' ++ "(_p_->u." ++ v ++ "_." ++ nt ++ ");\n"
           else concat
           [
@@ -529,10 +529,10 @@ prShowCat user fnm (c,o) = case c of
 	   "    bufAppendC(']');\n"
           ]
  where
-  v = map toLower (identCat (normCat fnm))
+  v = map toLower (normFun fnm)
   o' = case o of
     Right x -> x
-    Left x -> normCat (identCat x)
+    Left x -> identCat (normCat x)
 
 {- **** Helper Functions Section **** -}
 
@@ -550,7 +550,7 @@ isBasic user v =
     else if "ident_" `isPrefixOf` v then True
     else False
   where
-   user' = map (map toLower) user
+   user' = map (map toLower . show) user
 
 --The visit-function name of a basic type
 basicFunName :: String -> String

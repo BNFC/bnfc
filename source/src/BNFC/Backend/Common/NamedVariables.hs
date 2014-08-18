@@ -75,7 +75,7 @@ type IVar = (String, Int)
 --The type of an instance variable
 --and a # unique to that type
 
-type UserDef = String --user-defined types
+type UserDef = Cat --user-defined types
 
 
 --A symbol-mapping environment.
@@ -85,8 +85,8 @@ type SymEnv = [(String, String)]
 -- variables. If a category appears only once, it is given the number 0,
 -- if it appears more than once, its occurrences are numbered from 1. ex:
 --
--- >>> getVars ["A", "B", "A"]
--- [("A", 1), ("B", 0), ("A", 2)]
+-- >>> getVars [Cat "A", Cat "B", Cat "A"]
+-- [("A",1),("B",0),("A",2)]
 --
 getVars :: [Cat] -> [IVar]
 getVars [] = []
@@ -102,7 +102,7 @@ getVars cs = foldl addVar [] (map identCat cs)
       else i : (addVar' is n c)
 
 --Given a rule's definition, it goes through and nicely the variables by type.
-numVars :: [(String, Int)] -> [Either String b] -> [Either String b]
+numVars :: [(String, Int)] -> [Either Cat b] -> [Either String b]
 numVars _env [] = []
 numVars env ((Right f) : fs) = (Right f) : (numVars env fs)
 numVars env ((Left f) : fs) =
@@ -110,7 +110,7 @@ numVars env ((Left f) : fs) =
      Nothing -> (Left f') : (numVars ((f',1):env) fs)
      Just n -> (Left $ f' ++ (show $ n + 1)) : (numVars ((f',n+1):env) fs)
  where
-   f' = varName (normCat (identCat f))
+   f' = varName (identCat (normCat f))
 
 --This makes numbers a little nicer.
 --If there's only one variable of a type we drop the redundant _1 label.
@@ -135,7 +135,7 @@ fixCoercions rs = nub (fixAll rs rs)
     else fixCoercion cat cats
   fixAll :: [(Cat, [Rule])] -> [(Cat, [Rule])] -> [(Cat, [Rule])]
   fixAll _ [] = []
-  fixAll top ((cat,rules):cats) = if isCoercion cat
+  fixAll top ((cat,rules):cats) = if isCoercion (show cat) -- This is weird: isCoercion is supposed to be applied to functions!!!!
     then fixAll top cats
     else (normCat cat, fixCoercion cat top) : (fixAll top cats)
 

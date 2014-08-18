@@ -205,4 +205,4 @@ testfile inDir name xml cf = makeA where
 		 "            _   -> do progName <- getProgName",
 		 "                      putStrLn $ progName ++ \": excess arguments.\""
 		 ]
-		  where firstParser = 'p' : firstEntry cf
+		  where firstParser = 'p' : show (firstEntry cf)

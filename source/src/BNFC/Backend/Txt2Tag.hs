@@ -74,11 +74,11 @@ prtIdentifiers = unlines
 prtLiterals :: String -> CF -> String
 prtLiterals name cf =
   unlines $ map stringLit $
-    filter (`notElem` ["Ident"]) $
+    filter (`notElem` [Cat "Ident"]) $
       literals cf
 
-stringLit :: String -> String
-stringLit cat = unlines $ case cat of
+stringLit :: Cat -> String
+stringLit cat = unlines $ case (show cat) of
   "Char" -> ["Character literals //Char// have the form",
              "``'``//c//``'``, where //c// is any single character.",
              ""
@@ -98,7 +98,7 @@ stringLit cat = unlines $ case cat of
   _ -> []
 
 prtOwnToken (name,reg) = unlines
-  [name +++ "literals are recognized by the regular expression",
+  [show name +++ "literals are recognized by the regular expression",
    "```" ++
    latexRegExp reg ++
    "```"
@@ -206,8 +206,8 @@ tabular n xs = unlines [unwords (intersperse "|" (" " : x)) | x <- xs]
 terminal :: String -> String
 terminal s = "``" ++ s ++ "``"
 
-nonterminal :: String -> String
-nonterminal s = "//" ++ s ++ "//"
+nonterminal :: Cat -> String
+nonterminal s = "//" ++ show s ++ "//"
 
 arrow :: String
 arrow = "->"

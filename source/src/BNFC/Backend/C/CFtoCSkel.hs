@@ -74,9 +74,9 @@ mkHFile cf groups = unlines
     "#include \"Absyn.h\"",
     ""
    ]
-  prUserH u = "void visit" ++ u' ++ "(" ++ u ++ " p);"
+  prUserH user = "void visit" ++ u' ++ "(" ++ show user ++ " p);"
     where
-     u' = ((toUpper (head u)) : (map toLower (tail u))) --this is a hack to fix a potential capitalization problem.
+     u' = let u = show user in ((toUpper (head u)) : (map toLower (tail u))) --this is a hack to fix a potential capitalization problem.
   footer = unlines
    [
     "void visitIdent(Ident i);",
@@ -104,7 +104,7 @@ mkCFile cf groups = concat
    [
     header,
     concatMap (prData user) groups,
-    concatMap prUser user,
+    concatMap (prUser.show) user,
     footer
    ]
   where
@@ -201,7 +201,7 @@ prPrintRule user (Rule fun _c cats) | not (isCoercion fun) = unlines
 prPrintRule _user (Rule _fun _ _) = ""
 
 -- Prints the actual instance-variable visiting.
-prCat :: [UserDef] -> String -> (Either Cat Cat, Either Cat Cat) -> String
+prCat :: [UserDef] -> Fun -> (Either String String, Either Cat String) -> String
 prCat user fnm (c, o) =
     case c of
       Right {} -> ""
@@ -209,10 +209,10 @@ prCat user fnm (c, o) =
         if isBasic user nt
 	  then "    visit" ++ basicFunName nt ++ "(_p_->u." ++ v ++ "_." ++ nt ++ ");\n"
 	  else "    visit" ++ o' ++ "(_p_->u." ++ v ++ "_." ++ nt ++ ");\n"
-    where v = map toLower $ identCat $ normCat fnm
+    where v = map toLower $ normFun fnm
 	  o' = case o of
 	         Right x -> x
-		 Left x  -> normCat $ identCat x
+		 Left x  -> identCat $ normCat x
 
 --Just checks if something is a basic or user-defined type.
 --This is because you don't -> a basic non-pointer type.
@@ -227,7 +227,7 @@ isBasic user v =
     else if "ident_" `isPrefixOf` v then True
     else False
   where
-   user' = map (map toLower) user
+   user' = map (map toLower . show) user
 
 --The visit-function name of a basic type
 basicFunName :: String -> String

@@ -55,7 +55,8 @@ mkTupleType [c] = fixType c
 mkTupleType (c:cs) = fixType c +++ "*" +++ mkTupleType cs
 
 prSpecialData :: CF -> Cat -> String
-prSpecialData cf cat = fixType cat +++ "=" +++ cat +++ "of" +++ contentSpec cf cat
+prSpecialData cf cat = fixType cat +++ "=" +++ show cat +++ "of" +++ contentSpec cf cat
+
 --  unwords ["newtype",cat,"=",cat,contentSpec cf cat,"deriving (Eq,Ord,Show)"]
 
 contentSpec :: CF -> Cat -> String

@@ -71,13 +71,13 @@ instance (Pretty k, Pretty v) => Pretty (Set k v) where
   pretty s = sep [pretty k <> " --> " <> pretty v | (k,x) <- M.assocs s, v <- x]
 
 instance Pretty (Either Cat String) where
-  pretty (Left x) = text x
+  pretty (Left x) = text $ show x
   pretty (Right x) = quotes $ text x
 
 instance Pretty String where
   pretty = text
 
-prettyUnitSet units = vcat [prettyExp f <> " : " <> catTag cat <> " --> " <> text cat' | (cat,x) <- M.assocs units, (f,cat') <- x]
+prettyUnitSet units = vcat [prettyExp f <> " : " <> catTag cat <> " --> " <> text (show cat') | (cat,x) <- M.assocs units, (f,cat') <- x]
 
 header opts
        = vcat ["{-# LANGUAGE MagicHash, FlexibleInstances #-}"
@@ -103,7 +103,7 @@ header opts
               ]
 
 genShowFunction cf = hang "showAst (cat,ast) = case cat of " 6
-       (vcat [catTag (Left cat) <> " -> printTree ((unsafeCoerce# ast)::" <> text cat <> ")"
+       (vcat [catTag (Left cat) <> " -> printTree ((unsafeCoerce# ast)::" <> text (show cat) <> ")"
              | cat <- filter isDataCat $ allCats cf] $$
         "_ -> \"Unprintable category\"")
 
@@ -114,9 +114,9 @@ genCatTags cf = "data CATEGORY = " <> punctuate' "|" (map catTag (allSyms cf)) $
 
 genDesc :: CFG Exp -> CatDescriptions -> Doc
 genDesc cf descs = vcat ["describe " <> catTag s <> " = " <> text (show (descOf s)) | s <- allSyms cf]
-  where descOf :: Either String String -> String
+  where descOf :: Either Cat String -> String
         descOf (Right x) = "token " <> x
-        descOf (Left x) = maybe x render $ M.lookup x descs
+        descOf (Left x) = maybe (show x) render $ M.lookup x descs
 
 genCombTable :: UnitRel Cat -> CFG Exp -> Doc
 genCombTable units cf =
@@ -124,7 +124,7 @@ genCombTable units cf =
   $$ genCombine units cf
   $$ "combine _ _ _ = pure []"
 
-allSyms :: CFG Exp -> [Either String String]
+allSyms :: CFG Exp -> [Either Cat String]
 allSyms cf = map Left (allCats cf  ++ literals cf) ++ map (Right . fst) (cfTokens cf)
 
 
@@ -158,11 +158,12 @@ genTokTable units cf = "tokenToCats :: Bool -> Token -> Pair [(CATEGORY,Any)]" $
                        vcat (map (genTokEntry cf units) (cfTokens cf)) $$
                        "tokenToCats p t = error (\"unknown token: \" ++ show t)"
 
-tokInfo cf = ("Char","TC",Con "head"):
-             ("String","TL",Id):("Integer","TI",Con "readInteger"):
-             ("Double","TD",Con "readDouble"):
-             [("Ident","TV",Con "Ident")|hasIdent cf] ++
-             [(t,"T_" <> text t,(Con t)) | t <- tokenNames cf]
+tokInfo cf = (catChar,"TC",Con "head"):
+             (catString,"TL",Id):
+             (catInteger,"TI",Con "readInteger"):
+             (catDouble,"TD",Con "readDouble"):
+             [(catIdent,"TV",Con "Ident")|hasIdent cf] ++
+             [(t,"T_" <> text (show t),(Con (show t))) | (t,_) <- tokenPragmas cf]
 
 genTokCommon cf xs = prettyPair (gen <$> splitOptim fst cf xs)
   where gen ys = prettyListFun [p (ppPair (catTag x,y)) | ((x,y),p) <- ys]

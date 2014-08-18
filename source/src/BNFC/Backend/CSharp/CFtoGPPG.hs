@@ -52,7 +52,6 @@ import BNFC.Backend.CSharp.CSharpUtils
 
 -- Type declarations
 type Rules       = [(NonTerminal,[(Pattern,Action)])]
-type NonTerminal = String
 type Pattern     = String
 type Action      = String
 type MetaVar     = String
@@ -61,7 +60,7 @@ type MetaVar     = String
 cf2gppg :: Namespace -> CF -> SymEnv -> String
 cf2gppg namespace cf env = unlines [
   header namespace cf,
-  union namespace (positionCats cf ++ allCats cf ++ tokentypes (cf2cabs cf)),
+  union namespace (positionCats cf ++ allCats cf ++ map strToCat (tokentypes (cf2cabs cf))),
   tokens user env,
   declarations cf,
   "",
@@ -82,7 +81,7 @@ header namespace cf = unlines [
   "%namespace " ++ namespace,
   "%{",
   definedRules namespace cf,
-  unlinesInline $ map (parseMethod namespace) (allCatsIdNorm cf ++ positionCats cf),
+  unlinesInline $ map (parseMethod namespace) (allCatsNorm cf ++ positionCats cf),
   "%}"
   ]
 
@@ -98,7 +97,7 @@ definedRules namespace cf = unlinesInline [
     list = LC (const "[]") (\t -> "List" ++ unBase t)
       where
         unBase (ListT t) = unBase t
-        unBase (BaseT x) = normCat x
+        unBase (BaseT x) = show$normCat$strToCat x
 
     rule f xs e =
       case checkDefinition' list ctx f xs e of
@@ -143,32 +142,32 @@ union namespace cats = unlines $ filter (\x -> x /= "\n") [
   "}"
   ]
   where --This is a little weird because people can make [Exp2] etc.
-    catline cat | (identCat cat /= cat) || (normCat cat == cat) =
-      "  public " ++ identifier namespace (identCat (normCat cat)) +++ (varName (normCat cat)) ++ ";"
+    catline cat | (identCat cat /= show cat) || ((normCat cat) == cat) =
+      "  public " ++ identifier namespace (identCat (normCat cat)) +++ (varName (show$normCat cat)) ++ ";"
     catline cat = ""
 
 --declares non-terminal types.
 declarations :: CF -> String
 declarations cf = unlinesInline $ map (typeNT cf) (positionCats cf ++ allCats cf)
  where --don't define internal rules
-   typeNT cf nt | (isPositionCat cf nt || rulesForCat cf nt /= []) = "%type <" ++ (varName (normCat nt)) ++ "> " ++ (identCat nt)
+   typeNT cf nt | (isPositionCat cf nt || rulesForCat cf nt /= []) = "%type <" ++ (varName (show$normCat nt)) ++ "> " ++ (show$normCat nt)
    typeNT cf nt = ""
 
 --declares terminal types.
 tokens :: [UserDef] -> SymEnv -> String
 tokens user ts = concatMap (declTok user) ts
   where
-    declTok u (s,r) = if elem s u
-      then "%token<" ++ varName (normCat s) ++ "> " ++ r ++ "   //   " ++ s ++ "\n"
-      else "%token " ++ r ++ "    //   " ++ s ++ "\n"
+    declTok u (s,r) = if elem s (map show u)
+      then "%token<" ++ varName (show$normCat$strToCat s) ++ "> " ++ r ++ "   //   " ++ show s ++ "\n"
+      else "%token " ++ r ++ "    //   " ++ show s ++ "\n"
 
 specialToks :: CF -> String
 specialToks cf = unlinesInline [
-  ifC "String"  "%token<string_> STRING_",
-  ifC "Char"    "%token<char_> CHAR_",
-  ifC "Integer" "%token<int_> INTEGER_",
-  ifC "Double"  "%token<double_> DOUBLE_",
-  ifC "Ident"   "%token<string_> IDENT_"
+  ifC catString  "%token<string_> STRING_",
+  ifC catChar    "%token<char_> CHAR_",
+  ifC catInteger "%token<int_> INTEGER_",
+  ifC catDouble  "%token<double_> DOUBLE_",
+  ifC catIdent   "%token<string_> IDENT_"
   ]
   where
     ifC cat s = if isUsedCat cf cat then s else ""
@@ -179,8 +178,8 @@ rulesForGPPG :: Namespace -> CF -> SymEnv -> Rules
 rulesForGPPG namespace cf env = (map mkOne $ ruleGroups cf) ++ posRules where
   mkOne (cat,rules) = constructRule namespace cf env rules cat
   posRules = map mkPos $ positionCats cf
-  mkPos cat = (cat, [(maybe cat id (lookup cat env),
-    "$$ = new " ++ cat ++ "($1);")])
+  mkPos cat = (cat, [(maybe (show cat) id (lookup (show cat) env),
+    "$$ = new " ++ show cat ++ "($1);")])
 
 -- For every non-terminal, we construct a set of rules.
 constructRule :: Namespace ->
@@ -200,7 +199,7 @@ constructRule namespace cf env rules nt =
     revs = reversibleCats cf
     eps = allEntryPoints cf
     isEntry nt = if elem nt eps then True else False
-    result = if isEntry nt then (resultName (normCat (identCat nt))) ++ "= $$;" else ""
+    result = if isEntry nt then (resultName (identCat (normCat nt))) ++ "= $$;" else ""
 
 -- Generates a string containing the semantic action.
 -- This was copied from CFtoCup15, with only a few small modifications
@@ -230,9 +229,9 @@ generatePatterns cf env r revv = case rhsRule r of
   its -> (unwords (map mkIt its), metas its)
   where
     mkIt i = case i of
-      Left c -> case lookup c env of
+      Left c -> case lookup (show c) env of
         -- This used to be x, but that didn't work if we had a symbol "String" in env, and tried to use a normal String - it would use the symbol...
-        Just x | not (isPositionCat cf c) && c `notElem` (map fst basetypes) -> x
+        Just x | not (isPositionCat cf c) && (show c) `notElem` (map fst basetypes) -> x
         _ -> typeName (identCat c)
       Right s -> case lookup s env of
         Just x -> x
@@ -241,7 +240,7 @@ generatePatterns cf env r revv = case rhsRule r of
 
     -- notice: reversibility with push_back vectors is the opposite
     -- of right-recursive lists!
-    revert c = (head c == '[') &&
+    revert c = (isList c) &&
                not (isConsFun (funRule r)) && notElem c revs
     revs = reversibleCats cf
 
@@ -264,7 +263,7 @@ resultName s = "YY_RESULT_" ++ s ++ "_"
 
 --slightly stronger than the NamedVariable version.
 varName :: String -> String
-varName s = (map toLower (identCat s)) ++ "_"
+varName s = (map toLower (identCat $ strToCat s)) ++ "_"
 
 typeName :: String -> String
 typeName "Ident" = "IDENT_"

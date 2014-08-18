@@ -80,7 +80,7 @@ prBasic namespace c = unlinesInline [
   "  }"
   ]
 
-prCon :: Namespace -> (Cat, [CAbsRule]) -> String
+prCon :: Namespace -> (String, [CAbsRule]) -> String
 prCon namespace (c,fs) = unlinesInline [
   "  public class " ++ c ++ "Visitor<R,A> : Abstract" ++ c ++ "Visitor<R,A>",
   "  {",
@@ -99,7 +99,7 @@ prVisit namespace (f,cs) = unlinesInline [
   "    }"
   ]
 
-prVisitArg :: Namespace -> String -> (Cat, Bool, VariableName, PropertyName) -> String
+prVisitArg :: Namespace -> String -> (String, Bool, VariableName, PropertyName) -> String
 prVisitArg namespace vname (cat, isPt, var, prop)
   | cat `elem` (map fst basetypes)            = "      // " ++ vname ++ "." ++ prop
   -- var /= "list_" is a dummy fix to make sure that a category named "List" doesn't get interpreted as a List.

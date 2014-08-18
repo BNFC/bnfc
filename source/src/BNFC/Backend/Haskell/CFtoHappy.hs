@@ -31,7 +31,6 @@ import BNFC.Options (HappyMode(..))
 -- Type declarations
 
 type Rules       = [(NonTerminal,[(Pattern,Action)])]
-type NonTerminal = String
 type Pattern     = String
 type Action      = String
 type MetaVar     = String
@@ -105,7 +104,7 @@ header name = unlines
 -}
 
 -- The declarations of a happy file.
-declarations :: HappyMode -> [NonTerminal] -> String
+declarations :: HappyMode -> [Cat] -> String
 declarations mode ns = unlines
                  [generateP ns,
           	  case mode of
@@ -192,7 +191,7 @@ prRules = unlines . map prOne
   where
     prOne (nt,[]) = [] -- nt has only internal use
     prOne (nt,((p,a):ls)) =
-      unwords [nt', "::", "{", normCat nt, "}\n" ++
+      unwords [nt', "::", "{", show $ normCat nt, "}\n" ++
                nt', ":" , p, "{", a, "}", "\n" ++ pr ls] ++ "\n"
      where
        nt' = identCat nt
@@ -246,7 +245,7 @@ specialToks cf = unlines $
 		 (map aux (literals cf))
 		  ++ ["L_err    { _ }"]
  where aux cat =
-        case cat of
+        case show cat of
           "Ident"  -> "L_ident  { PT _ (TV $$) }"
           "String" -> "L_quoted { PT _ (TL $$) }"
           "Integer" -> "L_integ  { PT _ (TI $$) }"
@@ -261,7 +260,7 @@ specialRules byteStrings cf = unlines $
                   map aux (literals cf)
  where
    aux cat =
-     case cat of
+     case show cat of
          "Ident"   -> "Ident   :: { Ident }   : L_ident  { Ident $1 }"
 	 "String"  -> "String  :: { String }  : L_quoted { "++stringUnpack++" $1 }"
 	 "Integer" -> "Integer :: { Integer } : L_integ  { (read ("++stringUnpack++" $1)) :: Integer }"
