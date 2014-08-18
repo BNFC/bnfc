@@ -296,11 +296,11 @@ lookupRule f = lookup f . map unRule
 
 -- | Returns all normal rules that constructs the given Cat.
 rulesForCat :: CF -> Cat -> [Rule]
-rulesForCat cf cat = [normRuleFun r | r <- rulesOfCF cf, isParsable r, valCat r == cat]
+rulesForCat cf cat = [r | r <- rulesOfCF cf, isParsable r, valCat r == cat]
 
 -- | As rulesForCat, but this version doesn't exclude internal rules.
 rulesForCat' :: CF -> Cat -> [Rule]
-rulesForCat' cf cat = [normRuleFun r | r <- rulesOfCF cf, valCat r == cat]
+rulesForCat' cf cat = [r | r <- rulesOfCF cf, valCat r == cat]
 
 -- | Get all categories of a grammar. (No Cat w/o production returned; No duplicates)
 allCats :: CFG f -> [Cat]
@@ -392,7 +392,7 @@ cf2data' predicate cf =
                               not (isCoercion f), eqCat cat (valCat r)]))
       | cat <- filter predicate (allCats cf)]
  where
-  mkData (Rule f _ its) = (normFun f,[normCat c | Left c <- its, c /= internalCat])
+  mkData (Rule f _ its) = (f,[normCat c | Left c <- its, c /= internalCat])
 
 cf2data :: CF -> [Data]
 cf2data = cf2data' isDataCat
@@ -453,12 +453,7 @@ identCat c = case c of
   '[':cs -> "List" ++ identCat (init cs)
   _ -> c
 
-{-# DEPRECATED normFun "It's just the identity function" #-}
-normFun :: Fun -> Fun
-normFun = id -- takeWhile (not . isDigit)
 
-normRuleFun :: Rule -> Rule
-normRuleFun (Rule f p rhs) = Rule (normFun f) p rhs
 
 
 -- | Checks if the rule is parsable.
