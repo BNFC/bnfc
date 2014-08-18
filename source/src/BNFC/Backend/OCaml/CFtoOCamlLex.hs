@@ -132,8 +132,8 @@ uMacros cf = ["let " ++ name ++ " = " ++ rep | (name, rep, _) <- userTokens cf]
 -- returns the tuple of (reg_name, reg_representation, token_name)
 userTokens :: CF -> [(String, String, String)]
 userTokens cf =
-  let regName = map toLower in
-  [(regName name, printRegOCaml reg, name) | (name, reg) <- tokenPragmas cf]
+  let regName = map toLower . show in
+  [(regName name, printRegOCaml reg, show name) | (name, reg) <- tokenPragmas cf]
       
 
 rules :: CF -> [String]

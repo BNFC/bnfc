@@ -51,7 +51,6 @@ import BNFC.Utils ((+++), (++++))
 
 -- Type declarations
 type Rules       = [(NonTerminal,[(Pattern,Action)])]
-type NonTerminal = String
 type Pattern     = String
 type Action      = String
 type MetaVar     = String
@@ -90,7 +89,7 @@ header name cf = unlines
           "}",
 	  "",
           -- M.F. 2004-09-17 changed allEntryPoints to allCatsIdNorm. Seems to fix the [Ty2] bug.
-	  unlines $ map (parseMethod name) (allCatsIdNorm cf), -- (allEntryPoints cf),
+	  unlines $ map (parseMethod name) (allCatsNorm cf), -- (allEntryPoints cf),
 	  concatMap reverseList (filter isList (allCats cf)),
 	  "%}"
 	  ]
@@ -157,7 +156,7 @@ union cats = unlines
   "}"
  ]
  where --This is a little weird because people can make [Exp2] etc.
- mkPointer s | identCat s /= s = --list. add it even if it refers to a coercion.
+ mkPointer s | identCat s /= show s = --list. add it even if it refers to a coercion.
    "  " ++ (identCat (normCat s)) +++ (varName (normCat s)) ++ ";\n"
  mkPointer s | normCat s == s = --normal cat
    "  " ++ (identCat (normCat s)) +++ (varName (normCat s)) ++ ";\n"
@@ -174,17 +173,17 @@ declarations cf = concatMap (typeNT cf) (allCats cf)
 tokens :: [UserDef] -> SymEnv -> String
 tokens user ts = concatMap (declTok user) ts
  where
-  declTok u (s,r) = if elem s u
+  declTok u (s,r) = if elem s (map show u)
     then "%token<string_> " ++ r ++ "    /*   " ++ s ++ "   */\n"
     else "%token " ++ r ++ "    /*   " ++ s ++ "   */\n"
 
 specialToks :: CF -> String
 specialToks cf = concat [
-  ifC "String" "%token<string_> _STRING_\n",
-  ifC "Char" "%token<char_> _CHAR_\n",
-  ifC "Integer" "%token<int_> _INTEGER_\n",
-  ifC "Double" "%token<double_> _DOUBLE_\n",
-  ifC "Ident" "%token<string_> _IDENT_\n"
+  ifC catString "%token<string_> _STRING_\n",
+  ifC catChar "%token<char_> _CHAR_\n",
+  ifC catInteger "%token<int_> _INTEGER_\n",
+  ifC catDouble "%token<double_> _DOUBLE_\n",
+  ifC catIdent "%token<string_> _IDENT_\n"
   ]
    where
     ifC cat s = if isUsedCat cf cat then s else ""
@@ -197,7 +196,7 @@ rulesForBison cf env = map mkOne $ ruleGroups cf where
 
 -- For every non-terminal, we construct a set of rules.
 constructRule :: CF -> SymEnv -> [Rule] -> NonTerminal -> (NonTerminal,[(Pattern,Action)])
-constructRule cf env rules nt = (nt,[(p,(generateAction (normCat (identCat nt)) (ruleName r) b m) +++ result) |
+constructRule cf env rules nt = (nt,[(p,(generateAction (identCat (normCat nt)) (ruleName r) b m) +++ result) |
      r0 <- rules,
      let (b,r) = if isConsFun (funRule r0) && elem (valCat r0) revs
                    then (True,revSepListRule r0)
@@ -210,10 +209,10 @@ constructRule cf env rules nt = (nt,[(p,(generateAction (normCat (identCat nt)) 
    revs = reversibleCats cf
    eps = allEntryPoints cf
    isEntry nt = if elem nt eps then True else False
-   result = if isEntry nt then (resultName (normCat (identCat nt))) ++ "= $$;" else ""
+   result = if isEntry nt then (resultName (identCat (normCat nt))) ++ "= $$;" else ""
 
 -- Generates a string containing the semantic action.
-generateAction :: NonTerminal -> Fun -> Bool -> [MetaVar] -> Action
+generateAction :: String -> Fun -> Bool -> [MetaVar] -> Action
 generateAction nt f b ms =
   if isCoercion f
   then (unwords ms) ++ ";"
@@ -221,7 +220,7 @@ generateAction nt f b ms =
   then "0;"
   else if isOneFun f
   then concat ["make_", nt, "(", (concat (intersperse ", " ms')), ", 0);"]
-  else concat ["make_", normCat f, "(", (concat (intersperse ", " ms')), ");"]
+  else concat ["make_", normFun f, "(", (concat (intersperse ", " ms')), ");"]
  where
   ms' = if b then reverse ms else ms
 
@@ -233,7 +232,7 @@ generatePatterns cf env r = case rhsRule r of
   its -> (unwords (map mkIt its), metas its)
  where
    mkIt i = case i of
-     Left c -> case lookup c env of
+     Left c -> case lookup (show c) env of
        Just x -> x
        Nothing -> typeName (identCat c)
      Right s -> case lookup s env of
@@ -262,9 +261,11 @@ prRules ((nt,((p,a):ls)):rs) =
 resultName :: String -> String
 resultName s = "YY_RESULT_" ++ s ++ "_"
 
---slightly stronger than the NamedVariable version.
-varName :: String -> String
-varName s = (map toLower (identCat s)) ++ "_"
+-- | slightly stronger than the NamedVariable version.
+-- >>> varName (Cat "Abc")
+-- "abc_"
+varName :: Cat -> String
+varName = (++ "_") . map toLower . identCat . normCat
 
 typeName :: String -> String
 typeName "Ident" = "_IDENT_"

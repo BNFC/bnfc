@@ -55,7 +55,7 @@ cf2gplex namespace cf = (unlines [
   ], env')
   where
     env = makeSymEnv (symbols cf ++ reservedWords cf) (0 :: Int)
-    env' = env ++ (makeSymEnv (fst (unzip (tokenPragmas cf))) (length env))
+    env' = env ++ (makeSymEnv (tokenNames cf) (length env))
     -- GPPG doesn't seem to like tokens beginning with an underscore, so they (the underscores, nothing else) have been removed.
     makeSymEnv [] _ = []
     makeSymEnv (s:symbs) n = (s, "SYMB_" ++ (show n)) : (makeSymEnv symbs (n+1))
@@ -155,11 +155,11 @@ gplex :: Namespace -> CF -> SymEnv -> [(String, String)]
 gplex namespace cf env = concat [
   lexComments (comments cf),
   userDefTokens,
-  ifC "String" strStates,
-  ifC "Char" charStates,
-  ifC "Double"  [("<YYINITIAL>{digit}+\".\"{digit}+(\"e\"(\\-)?{digit}+)?" , "if(Trace) System.Console.Error.WriteLine(yytext); yylval.double_ = Double.Parse(yytext, InvariantFormatInfo); return (int)Tokens.DOUBLE_;")],
-  ifC "Integer" [("<YYINITIAL>{digit}+"                                    , "if(Trace) System.Console.Error.WriteLine(yytext); yylval.int_    = Int32.Parse(yytext,  InvariantFormatInfo); return (int)Tokens.INTEGER_;")],
-  ifC "Ident"   [("<YYINITIAL>{alpha}{ident}*"                             , "if(Trace) System.Console.Error.WriteLine(yytext); yylval.string_ = yytext; return (int)Tokens.IDENT_;")],
+  ifC catString strStates,
+  ifC catChar charStates,
+  ifC catDouble  [("<YYINITIAL>{digit}+\".\"{digit}+(\"e\"(\\-)?{digit}+)?" , "if(Trace) System.Console.Error.WriteLine(yytext); yylval.double_ = Double.Parse(yytext, InvariantFormatInfo); return (int)Tokens.DOUBLE_;")],
+  ifC catInteger [("<YYINITIAL>{digit}+"                                    , "if(Trace) System.Console.Error.WriteLine(yytext); yylval.int_    = Int32.Parse(yytext,  InvariantFormatInfo); return (int)Tokens.INTEGER_;")],
+  ifC catIdent   [("<YYINITIAL>{alpha}{ident}*"                             , "if(Trace) System.Console.Error.WriteLine(yytext); yylval.string_ = yytext; return (int)Tokens.IDENT_;")],
   [("<YYINITIAL>[ \\t\\r\\n\\f]" , "/* ignore white space. */;")],
   [("<YYINITIAL>."               , "return (int)Tokens.error;")]
   ]
@@ -168,10 +168,10 @@ gplex namespace cf env = concat [
    userDefTokens = map tokenline (tokenPragmas cf)
      where
        tokenline (name, exp) = ("<YYINITIAL>" ++ printRegGPLEX exp , action name)
-       action n = "if(Trace) System.Console.Error.WriteLine(yytext); yylval." ++ varName (normCat n) ++ " = new " ++ identifier namespace n ++ "(yytext); return (int)Tokens." ++ sName n ++ ";"
-       sName n = case lookup n env of
+       action n = "if(Trace) System.Console.Error.WriteLine(yytext); yylval." ++ varName (show$normCat n) ++ " = new " ++ identifier namespace (show n) ++ "(yytext); return (int)Tokens." ++ sName n ++ ";"
+       sName n = case lookup (show n) env of
          Just x -> x
-         Nothing -> n
+         Nothing -> show n
    -- These handle escaped characters in Strings.
    strStates = [
      ("<YYINITIAL>\"\\\"\"" , "BEGIN(STRING);"),

@@ -85,11 +85,11 @@ integerRule cf = "let showInt (i:int) : showable = s2s (string_of_int i)"
 doubleRule cf = "let showFloat (f:float) : showable = s2s (string_of_float f)"
 
 
-identRule cf = ownPrintRule cf "Ident"
+identRule cf = ownPrintRule cf (Cat "Ident")
 
 ownPrintRule cf own = unlines $ [
-  "let rec" +++ showsFun own +++ "(" ++ own ++ posn ++ ") : showable = s2s \""
-  ++ own ++ " \" >> showString i"
+  "let rec" +++ showsFun own +++ "(" ++ show own ++ posn ++ ") : showable = s2s \""
+  ++ show own ++ " \" >> showString i"
   ]
  where
    posn = if isPositionCat cf own then " (_,i)" else " i"
@@ -106,13 +106,13 @@ rules cf = unlines $ mutualDefs $
    names (x:xs) n
      | elem x xs = (x ++ show n) : names xs (n+1)
      | otherwise = x             : names xs n
-   var ('[':xs)  = var (init xs) ++ "s"
-   var "Ident"   = "id"
-   var "Integer" = "n"
-   var "String"  = "str"
-   var "Char"    = "c"
-   var "Double"  = "d"
-   var xs        = map toLower xs
+   var (ListCat c)      = var c ++ "s"
+   var (Cat "Ident")    = "id"
+   var (Cat "Integer")  = "n"
+   var (Cat "String")   = "str"
+   var (Cat "Char")     = "c"
+   var (Cat "Double")   = "d"
+   var cat              = map toLower (show cat)
    checkRes s
         | elem s reservedOCaml = s ++ "'"
         | otherwise              = s
@@ -136,7 +136,7 @@ mkRhs args its =
     [] -> ""
     str -> "c2s '(' >> " ++ str ++ " >> c2s ')'"
  where
-  mk args (Left "#" : items)      = mk args items
+  mk args (Left InternalCat : items)      = mk args items
   mk (arg:args) (Left c : items)  = (showsFun c +++ arg)        : mk args items
   mk args       (Right s : items) = mk args items
   mk _ _ = []
@@ -144,8 +144,6 @@ mkRhs args its =
 
 showsFun :: Cat -> String
 showsFun c = case c of
-    '[':xs -> case break (== ']') xs of
-        (t,"]") -> "showList" +++ showsFun t -- showFun t ++ "List"
-        _ -> c -- should not occur (this means an invariant of the type Cat is broken)
+    ListCat t -> "showList" +++ showsFun t
     _ -> "show" ++ (fixTypeUpper $ normCat c)
 

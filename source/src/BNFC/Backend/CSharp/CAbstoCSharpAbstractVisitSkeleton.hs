@@ -83,7 +83,7 @@ prBasic namespace c = unlinesInline [
   "  }"
   ]
 
-prCon :: Namespace -> (Cat, [CAbsRule]) -> String
+prCon :: Namespace -> (String, [CAbsRule]) -> String
 prCon namespace (c,fs) = unlinesInline [
   "  public abstract class Abstract" ++ c ++ "Visitor<R,A> : " ++ identifier namespace c ++ ".Visitor<R,A>",
   "  {",
@@ -91,7 +91,7 @@ prCon namespace (c,fs) = unlinesInline [
   "  }"
   ]
 
-prVisit :: Namespace -> (Fun, [(Cat, Bool, String)]) -> String
+prVisit :: Namespace -> (Fun, [(String, Bool, String)]) -> String
 prVisit namespace (f,cs) = unlinesInline [
   "    public abstract R Visit(" ++ identifier namespace f +++ varname f ++ ", A arg);"
   ]

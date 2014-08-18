@@ -107,10 +107,10 @@ escapeChars ('\\':xs) = '\\' : ('\\' : (escapeChars xs))
 escapeChars ('\"':xs) = '\\' : ('\"' : (escapeChars xs))
 escapeChars (x:xs) = x : (escapeChars xs)
 
-isAlsoCategory :: Fun -> Cat -> Bool
+isAlsoCategory :: Fun -> String -> Bool
 isAlsoCategory f c = f == c
 
-flattenSignatures :: CAbs -> [(Cat, CSharpAbsRule)]
+flattenSignatures :: CAbs -> [(String, CSharpAbsRule)]
 flattenSignatures cabs = [(c,r) | (c,rs) <- signatures cabs, r <- map cabsrule2csharpabsrule rs]
 
 type VariableName = String
@@ -118,14 +118,14 @@ type PropertyName = String
 
 -- Just like CAbsRule in OOAbstract, except this also has PropertyName.
 -- (valcat,(constr,args)), True = is class (not basic), class variable stored
-type CSharpAbsRule = (Fun,[(Cat,Bool,VariableName,PropertyName)])
+type CSharpAbsRule = (Fun,[(String,Bool,VariableName,PropertyName)])
 
 cabsrule2csharpabsrule :: CAbsRule -> CSharpAbsRule
 cabsrule2csharpabsrule (f, cabsrule) = (f, addPropertyNames cabsrule)
 
 -- This generates names for properties. It's done the same way as generation of variable names in OOAbstract->cf2cabs
 -- A property name uses the same casing as its category, but has an underscore at the end
-addPropertyNames :: [(Cat, Bool, String)] -> [(Cat, Bool, VariableName, PropertyName)]
+addPropertyNames :: [(String, Bool, String)] -> [(String, Bool, VariableName, PropertyName)]
 addPropertyNames cs = [(c,b,v,p) | ((c,b,v),p) <- zip cs (properties [] (map propertyName [c | (c,_,_) <- cs]))]
   --- creating new names is quadratic, but parameter lists are short
   --- this should conform with Michael's naming
@@ -137,12 +137,12 @@ addPropertyNames cs = [(c,b,v,p) | ((c,b,v),p) <- zip cs (properties [] (map pro
         0             -> v         : properties (v:seen) vs
         n             -> (v ++ show (n+1)) : properties (v:seen) vs
 
-propertyName :: Cat -> PropertyName
+propertyName :: String -> PropertyName
 propertyName c = c ++ "_"
 
 -- Given a rule's definition, it goes through and nicely the properties by type.
 -- Does the same thing as numVars in NamedVariables, except the varName part
-numProps :: [(String, Int)] -> [Either String b] -> [Either String b]
+numProps :: [(String, Int)] -> [Either Cat b] -> [Either String b]
 numProps _env [] = []
 numProps env ((Right f) : fs) = (Right f) : (numProps env fs)
 numProps env ((Left f) : fs) =
@@ -150,5 +150,5 @@ numProps env ((Left f) : fs) =
      Nothing -> (Left f') : (numProps ((f',1):env) fs)
      Just n -> (Left $ f' ++ (show $ n + 1)) : (numProps ((f',n+1):env) fs)
  where
-   f' = propertyName (normCat (identCat f))
+   f' = propertyName (identCat (normCat f))
 

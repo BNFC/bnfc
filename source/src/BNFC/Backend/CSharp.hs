@@ -311,7 +311,7 @@ csharptest namespace cf = unlines [
   "}"
   ]
   where
-   def = head (allEntryPoints cf)
+   def = show (head (allEntryPoints cf))
 
 filepathtonamespace :: FilePath -> Namespace
 filepathtonamespace file = take (length file - 3) (takeFileName file)

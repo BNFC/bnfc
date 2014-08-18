@@ -45,7 +45,7 @@
 module BNFC.Backend.CPP.STL.CFtoBisonSTL (cf2Bison) where
 
 import BNFC.CF
-import Data.List (intersperse, isPrefixOf)
+import Data.List (intersperse, isPrefixOf, nub)
 import BNFC.Backend.Common.NamedVariables hiding (varName)
 import Data.Char (toLower,isUpper,isDigit)
 import BNFC.Utils ((+++), (++++))
@@ -57,7 +57,6 @@ import BNFC.Backend.CPP.STL.STLUtils
 
 -- Type declarations
 type Rules       = [(NonTerminal,[(Pattern,Action)])]
-type NonTerminal = String
 type Pattern     = String
 type Action      = String
 type MetaVar     = String
@@ -111,7 +110,7 @@ header inPackage name cf = unlines
 	  "",
 	  definedRules cf,
 	  nsStart inPackage,
-	  unlines $ map (parseMethod inPackage name) (allCatsIdNorm cf ++ positionCats cf),  -- (allEntryPoints cf), M.F. 2004-09-14 fix of [Ty2] bug.
+	  unlines $ map (parseMethod inPackage name) (allCatsNorm cf ++ positionCats cf),  -- (allEntryPoints cf), M.F. 2004-09-14 fix of [Ty2] bug.
 	  nsEnd inPackage,
 	  "%}"
 	  ]
@@ -127,7 +126,7 @@ definedRules cf =
 	list = LC (const "[]") (\t -> "List" ++ unBase t)
 	    where
 		unBase (ListT t) = unBase t
-		unBase (BaseT x) = normCat x
+		unBase (BaseT x) = show $ normCat $ strToCat x
 
 	rule f xs e =
 	    case checkDefinition' list ctx f xs e of
@@ -141,11 +140,11 @@ definedRules cf =
 	    where
 
 		cppType :: Base -> String
-		cppType (ListT (BaseT x)) = "List" ++ normCat x ++ " *"
+		cppType (ListT (BaseT x)) = "List" ++ show (normCat $ strToCat x) ++ " *"
 		cppType (ListT t)	   = cppType t ++ " *"
 		cppType (BaseT x)
 		    | isToken x ctx = "String"
-		    | otherwise	    = normCat x ++ " *"
+		    | otherwise	    = (show $ normCat $ strToCat x) ++ " *"
 
 		cppArg :: (String, Base) -> String
 		cppArg (x,t) = cppType t ++ " " ++ x ++ "_"
@@ -228,10 +227,10 @@ union inPackage cats = unlines
   "}"
  ]
  where --This is a little weird because people can make [Exp2] etc.
- mkPointer s | identCat s /= s = --list. add it even if it refers to a coercion.
-   "  " ++ scope ++ (identCat (normCat s)) ++ "*" +++ (varName (normCat s)) ++ ";\n"
+ mkPointer s | identCat s /= show s = --list. add it even if it refers to a coercion.
+   "  " ++ scope ++ (identCat (normCat s)) ++ "*" +++ (varName s) ++ ";\n"
  mkPointer s | normCat s == s = --normal cat
-   "  " ++ scope ++ (identCat (normCat s)) ++ "*" +++ (varName (normCat s)) ++ ";\n"
+   "  " ++ scope ++ (identCat (normCat s)) ++ "*" +++ (varName s) ++ ";\n"
  mkPointer s = ""
  scope = nsScope inPackage
 
@@ -239,24 +238,24 @@ union inPackage cats = unlines
 declarations :: CF -> String
 declarations cf = concatMap (typeNT cf) (positionCats cf ++ allCats cf)
  where --don't define internal rules
-   typeNT cf nt | (isPositionCat cf nt || rulesForCat cf nt /= []) = "%type <" ++ (varName (normCat nt)) ++ "> " ++ (identCat nt) ++ "\n"
+   typeNT cf nt | (isPositionCat cf nt || rulesForCat cf nt /= []) = "%type <" ++ (varName nt) ++ "> " ++ (identCat nt) ++ "\n"
    typeNT cf nt = ""
 
 --declares terminal types.
 tokens :: [UserDef] -> SymEnv -> String
 tokens user ts = concatMap (declTok user) ts
  where
-  declTok u (s,r) = if elem s u
+  declTok u (s,r) = if elem s (map show u)
     then "%token<string_> " ++ r ++ "    //   " ++ s ++ "\n"
     else "%token " ++ r ++ "    //   " ++ s ++ "\n"
 
 specialToks :: CF -> String
 specialToks cf = concat [
-  ifC "String" "%token<string_> _STRING_\n",
-  ifC "Char" "%token<char_> _CHAR_\n",
-  ifC "Integer" "%token<int_> _INTEGER_\n",
-  ifC "Double" "%token<double_> _DOUBLE_\n",
-  ifC "Ident" "%token<string_> _IDENT_\n"
+  ifC catString "%token<string_> _STRING_\n",
+  ifC catChar "%token<char_> _CHAR_\n",
+  ifC catInteger "%token<int_> _INTEGER_\n",
+  ifC catDouble "%token<double_> _DOUBLE_\n",
+  ifC catIdent "%token<string_> _IDENT_\n"
   ]
    where
     ifC cat s = if isUsedCat cf cat then s else ""
@@ -267,9 +266,9 @@ rulesForBison :: Bool -> Maybe String -> String -> CF -> SymEnv -> Rules
 rulesForBison ln inPackage name cf env = (map mkOne $ ruleGroups cf) ++ posRules where
   mkOne (cat,rules) = constructRule ln inPackage cf env rules cat
   posRules = map mkPos $ positionCats cf
-  mkPos cat = (cat, [(maybe cat id (lookup cat env),
-   "$$ = new " ++ cat ++ "($1," ++ nsString inPackage ++ "yy_mylinenumber) ; YY_RESULT_" ++
-   cat ++ "_= $$ ;")])
+  mkPos cat = (cat, [(maybe (show cat) id (lookup (show cat) env),
+   "$$ = new " ++ show cat ++ "($1," ++ nsString inPackage ++ "yy_mylinenumber) ; YY_RESULT_" ++
+   show cat ++ "_= $$ ;")])
 
 -- For every non-terminal, we construct a set of rules.
 constructRule ::
@@ -289,7 +288,7 @@ constructRule ln inPackage cf env rules nt =
    revs = reversibleCats cf
    eps = allEntryPoints cf
    isEntry nt = if elem nt eps then True else False
-   result = if isEntry nt then (nsScope inPackage ++ resultName (normCat (identCat nt))) ++ "= $$;" else ""
+   result = if isEntry nt then (nsScope inPackage ++ resultName (identCat (normCat nt))) ++ "= $$;" else ""
 
 -- Generates a string containing the semantic action.
 generateAction :: Bool -> Maybe String -> NonTerminal -> Fun -> Bool -> [(MetaVar,Bool)] -> Action
@@ -314,7 +313,7 @@ generateAction ln inPackage cat f b mbs =
   ms' = ms
   addLn ln = if ln then " $$->line_number = " ++ nsString inPackage ++ "yy_mylinenumber;" else ""  -- O.F.
   lastms = last ms
-  identCatV cat = reverse $ dropWhile isDigit $ reverse $ identCat cat
+  identCatV = identCat . normCat
   reverses = unwords [
     "std::reverse(" ++ m ++"->begin(),"++m++"->end()) ;" |
        (m,True) <- mbs]
@@ -328,7 +327,7 @@ generatePatterns cf env r revv = case rhsRule r of
   its -> (unwords (map mkIt its), metas its)
  where
    mkIt i = case i of
-     Left c -> case lookup c env of
+     Left c -> case lookup (show c) env of
        Just x | not (isPositionCat cf c) -> x
        _ -> typeName (identCat c)
      Right s -> case lookup s env of
@@ -338,7 +337,7 @@ generatePatterns cf env r revv = case rhsRule r of
 
    -- notice: reversibility with push_back vectors is the opposite
    -- of right-recursive lists!
-   revert c = (head c == '[') &&
+   revert c = (isList c) &&
               not (isConsFun (funRule r)) && notElem c revs
    revs = reversibleCats cf
 
@@ -360,8 +359,8 @@ resultName :: String -> String
 resultName s = "YY_RESULT_" ++ s ++ "_"
 
 --slightly stronger than the NamedVariable version.
-varName :: String -> String
-varName s = (map toLower (identCat s)) ++ "_"
+varName :: Cat -> String
+varName = (++ "_") . map toLower . identCat . normCat
 
 typeName :: String -> String
 typeName "Ident" = "_IDENT_"

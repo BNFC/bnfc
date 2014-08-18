@@ -65,7 +65,7 @@ toExp f | isCoercion f = Id
         | otherwise = Con f
 
 delInternal = filter (not . isInternalRhs . rhsRule)
-  where isInternalRhs (Left c:_) = c == internalCat
+  where isInternalRhs (Left c:_) = c == InternalCat
         isInternalRhs _ = False
 
 isCat (Right _) = False
@@ -80,8 +80,8 @@ group0 ((a,bs):xs) = (a,bs ++ concatMap snd ys) : group0 zs
 group' :: Ord a => [(a,[b])] -> [(a,[b])]
 group' = group0 . sortBy (compare `on` fst)
 
-catTag :: Either String String -> Doc
-catTag (Left c) = "CAT_" <> text (concatMap escape c)
+catTag :: Either Cat String -> Doc
+catTag (Left c) = "CAT_" <> text (concatMap escape (show c))
 catTag (Right t) = "TOK_" <> text (concatMap escape t)
 
 escape c | isAlphaNum c || c == '_' = [c]
@@ -112,7 +112,7 @@ type CatDescriptions = M.Map Cat Doc
 -- Also writes an explanation of what new categories are.
 toBinRul :: Rul Exp -> RWS () CatDescriptions Int [Rul Exp]
 toBinRul (Rule f cat rhs) | length rhs > 2 = do
-  cat' <- allocateCatName
+  cat' <- liftM Cat allocateCatName
   r' <- toBinRul $ Rule f cat' p
   tell $ M.singleton cat' (int (length p) <> "-prefix of " <> prettyExp f <> " " <> parens (prettyRHS p))
   return $ Rule (Con "($)") cat [Left cat',l]
@@ -124,7 +124,7 @@ toBinRul (Rule f cat rhs) | length rhs > 2 = do
           Right _ -> Con "const" -- in this case the 2nd argument must be ignored (it is not present in the result).
 toBinRul r = return [r]
 
-prettyRHS = hcat . punctuate " " . map (either text (quotes . text))
+prettyRHS = hcat . punctuate " " . map (either (text . show) (quotes . text))
 
 ---------------------------
 -- Fixpoint utilities
@@ -222,7 +222,7 @@ splitLROn f cf xs = filt <*> pure xs
   where filt = filter (\c -> occurs isOnLeft  (f c) cf || isEntryPoint cf (f c)) :/:
                filter (\c -> occurs isOnRight (f c) cf)
 
-isSpecial (Left ('@':'@':_)) = True
+isSpecial (Left (Cat ('@':'@':_))) = True
 isSpecial _ = False
 
 optim :: (a -> RHSEl) -> Pair [a] -> Pair [(a,Doc -> Doc)]
@@ -241,11 +241,11 @@ splitOptim f cf xs = optim f $ splitLROn f cf $ xs
 -- Error reporting
 
 -- leftOf C = ⋃ { {X} ∪ leftOf X | C ::= X B ∈ Grammar or C ::= X ∈ Grammar }
-leftRight pos s (Rule f c rhs) = M.singleton c (lkCat x s)
+leftRight pos s (Rule f c rhs) = M.singleton (show c) (lkCat x s)
   where x = pos rhs
 
 lkCat (Right t) s = [Right t]
-lkCat (Left c) s = Left c:lookupMulti c s
+lkCat (Left c) s = Left c:lookupMulti (show c) s
 
 -- neighbors A B = ∃ A' B'. P ::= A' B' ∧  A ∈ rightOf A'  ∧  B ∈ leftOf B
 neighborSet cf = map (second (nub . sort)) $ group' [(x',lkCat y leftSet) | Rule _ _ [x,y] <- rulesOfCF cf, x' <- lkCat x rightSet]

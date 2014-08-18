@@ -108,18 +108,18 @@ restOfJLex cf =
   [
    lexComments (comments cf),
    userDefTokens,
-   ifC "String" strStates,
-   ifC "Char" chStates,
-   ifC "Double" "<YYINITIAL>{DIGIT}+\".\"{DIGIT}+(\"e\"(\\-)?{DIGIT}+)? { return new Symbol(sym._DOUBLE_, new Double(yytext())); }",
-   ifC "Integer" "<YYINITIAL>{DIGIT}+ { return new Symbol(sym._INTEGER_, new Integer(yytext())); }",
-    ifC "Ident" "<YYINITIAL>{LETTER}{IDENT}* { return new Symbol(sym._IDENT_, yytext().intern()); }"
+   ifC catString strStates,
+   ifC catChar chStates,
+   ifC catDouble "<YYINITIAL>{DIGIT}+\".\"{DIGIT}+(\"e\"(\\-)?{DIGIT}+)? { return new Symbol(sym._DOUBLE_, new Double(yytext())); }",
+   ifC catInteger "<YYINITIAL>{DIGIT}+ { return new Symbol(sym._INTEGER_, new Integer(yytext())); }",
+   ifC catIdent "<YYINITIAL>{LETTER}{IDENT}* { return new Symbol(sym._IDENT_, yytext().intern()); }"
    , "<YYINITIAL>[ \\t\\r\\n\\f] { /* ignore white space. */ }"
    ]
   where
    ifC cat s = if isUsedCat cf cat then s else ""
    userDefTokens = unlines $
      ["<YYINITIAL>" ++ printRegJLex exp +++
-      "{ return new Symbol(sym." ++ name ++ ", yytext().intern()); }"
+      "{ return new Symbol(sym." ++ show name ++ ", yytext().intern()); }"
        | (name, exp) <- tokenPragmas cf]
    strStates = unlines --These handle escaped characters in Strings.
     [

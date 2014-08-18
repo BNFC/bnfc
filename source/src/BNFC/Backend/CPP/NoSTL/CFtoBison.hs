@@ -61,7 +61,7 @@
 module BNFC.Backend.CPP.NoSTL.CFtoBison (cf2Bison) where
 
 import BNFC.CF
-import Data.List (intersperse, isPrefixOf)
+import Data.List (intersperse, isPrefixOf, nub)
 import BNFC.Backend.Common.NamedVariables hiding (varName)
 import Data.Char (toLower,isUpper)
 import BNFC.Utils ((+++), (++++))
@@ -72,7 +72,6 @@ import ErrM
 
 -- Type declarations
 type Rules       = [(NonTerminal,[(Pattern,Action)])]
-type NonTerminal = String
 type Pattern     = String
 type Action      = String
 type MetaVar     = String
@@ -117,7 +116,7 @@ header name cf = unlines
           "}",
 	  "",
 	  definedRules cf,
-	  unlines $ map (parseMethod name) (allCatsIdNorm cf),  -- (allEntryPoints cf), M.F. 2004-09-14 fix of [Ty2] bug.
+	  unlines $ map (parseMethod name) (allCatsNorm cf),  -- (allEntryPoints cf), M.F. 2004-09-14 fix of [Ty2] bug.
 	  concatMap reverseList (filter isList (allCats cf)),
 	  "%}"
 	  ]
@@ -131,7 +130,7 @@ definedRules cf =
 	list = LC (const "[]") (\t -> "List" ++ unBase t)
 	    where
 		unBase (ListT t) = unBase t
-		unBase (BaseT x) = normCat x
+		unBase (BaseT x) = show$normCat$strToCat x
 
 	rule f xs e =
 	    case checkDefinition' list ctx f xs e of
@@ -145,11 +144,11 @@ definedRules cf =
 	    where
 
 		cppType :: Base -> String
-		cppType (ListT (BaseT x)) = "List" ++ normCat x ++ " *"
+		cppType (ListT (BaseT x)) = "List" ++ show (normCat (strToCat x)) ++ " *"
 		cppType (ListT t)	   = cppType t ++ " *"
 		cppType (BaseT x)
 		    | isToken x ctx = "String"
-		    | otherwise	    = normCat x ++ " *"
+		    | otherwise	    = show (normCat (strToCat x)) ++ " *"
 
 		cppArg :: (String, Base) -> String
 		cppArg (x,t) = cppType t ++ " " ++ x ++ "_"
@@ -233,34 +232,34 @@ union cats = unlines
   "}"
  ]
  where --This is a little weird because people can make [Exp2] etc.
- mkPointer s | identCat s /= s = --list. add it even if it refers to a coercion.
-   "  " ++ (identCat (normCat s)) ++ "*" +++ (varName (normCat s)) ++ ";\n"
+ mkPointer s | identCat s /= show s = --list. add it even if it refers to a coercion.
+   "  " ++ identCat (normCat s) ++ "*" +++ varName s ++ ";\n"
  mkPointer s | normCat s == s = --normal cat
-   "  " ++ (identCat (normCat s)) ++ "*" +++ (varName (normCat s)) ++ ";\n"
+   "  " ++ identCat (normCat s) ++ "*" +++ varName s ++ ";\n"
  mkPointer s = ""
 
 --declares non-terminal types.
 declarations :: CF -> String
 declarations cf = concatMap (typeNT cf) (allCats cf)
  where --don't define internal rules
-   typeNT cf nt | rulesForCat cf nt /= [] = "%type <" ++ (varName (normCat nt)) ++ "> " ++ (identCat nt) ++ "\n"
+   typeNT cf nt | rulesForCat cf nt /= [] = "%type <" ++ varName nt ++ "> " ++ identCat nt ++ "\n"
    typeNT cf nt = ""
 
 --declares terminal types.
 tokens :: [UserDef] -> SymEnv -> String
 tokens user ts = concatMap (declTok user) ts
  where
-  declTok u (s,r) = if elem s u
+  declTok u (s,r) = if elem s (map show u)
     then "%token<string_> " ++ r ++ "    //   " ++ s ++ "\n"
     else "%token " ++ r ++ "    //   " ++ s ++ "\n"
 
 specialToks :: CF -> String
 specialToks cf = concat [
-  ifC "String" "%token<string_> _STRING_\n",
-  ifC "Char" "%token<char_> _CHAR_\n",
-  ifC "Integer" "%token<int_> _INTEGER_\n",
-  ifC "Double" "%token<double_> _DOUBLE_\n",
-  ifC "Ident" "%token<string_> _IDENT_\n"
+  ifC catString "%token<string_> _STRING_\n",
+  ifC catChar "%token<char_> _CHAR_\n",
+  ifC catInteger "%token<int_> _INTEGER_\n",
+  ifC catDouble "%token<double_> _DOUBLE_\n",
+  ifC catIdent "%token<string_> _IDENT_\n"
   ]
    where
     ifC cat s = if isUsedCat cf cat then s else ""
@@ -287,7 +286,7 @@ constructRule cf env rules nt = (nt,[(p,(generateAction (ruleName r) b m) +++ re
    revs = reversibleCats cf
    eps = allEntryPoints cf
    isEntry nt = if elem nt eps then True else False
-   result = if isEntry nt then (resultName (normCat (identCat nt))) ++ "= $$;" else ""
+   result = if isEntry nt then (resultName (identCat (normCat nt))) ++ "= $$;" else ""
 
 -- Generates a string containing the semantic action.
 generateAction :: Fun -> Bool -> [MetaVar] -> Action
@@ -298,7 +297,7 @@ generateAction f b ms =
   then "0;"
   else if isDefinedRule f
   then concat [ f, "_", "(", concat $ intersperse ", " ms', ");" ]
-  else concat ["new ", normCat f, "(", (concat (intersperse ", " ms')), ");"]
+  else concat ["new ", normFun f, "(", (concat (intersperse ", " ms')), ");"]
  where
   ms' = if b then reverse ms else ms
 
@@ -310,7 +309,7 @@ generatePatterns cf env r = case rhsRule r of
   its -> (unwords (map mkIt its), metas its)
  where
    mkIt i = case i of
-     Left c -> case lookup c env of
+     Left c -> case lookup (show c) env of
        Just x -> x
        Nothing -> typeName (identCat c)
      Right s -> case lookup s env of
@@ -340,8 +339,8 @@ resultName :: String -> String
 resultName s = "YY_RESULT_" ++ s ++ "_"
 
 --slightly stronger than the NamedVariable version.
-varName :: String -> String
-varName s = (map toLower (identCat s)) ++ "_"
+varName :: Cat -> String
+varName = (++ "_") . map toLower . identCat . normCat
 
 typeName :: String -> String
 typeName "Ident" = "_IDENT_"

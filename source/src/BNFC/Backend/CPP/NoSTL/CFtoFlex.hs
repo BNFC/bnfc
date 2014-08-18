@@ -55,7 +55,7 @@ cf2flex inPackage name cf = (unlines
  ], env')
   where
    env = makeSymEnv (symbols cf ++ reservedWords cf) (0 :: Int)
-   env' = env ++ (makeSymEnv (fst (unzip (tokenPragmas cf))) (length env))
+   env' = env ++ (makeSymEnv (tokenNames cf) (length env))
    makeSymEnv [] _ = []
    makeSymEnv (s:symbs) n = (s, nsDefine inPackage "_SYMB_" ++ (show n)) : (makeSymEnv symbs (n+1))
 
@@ -110,11 +110,11 @@ restOfFlex inPackage cf env = concat
   [
    lexComments inPackage (comments cf),
    userDefTokens,
-   ifC "String" strStates,
-   ifC "Char" chStates,
-   ifC "Double" ("<YYINITIAL>{DIGIT}+\".\"{DIGIT}+(\"e\"(\\-)?{DIGIT}+)?      \t " ++ ns ++ "yylval.double_ = atof(yytext); return " ++ nsDefine inPackage "_DOUBLE_" ++ ";\n"),
-   ifC "Integer" ("<YYINITIAL>{DIGIT}+      \t " ++ ns ++ "yylval.int_ = atoi(yytext); return " ++ nsDefine inPackage "_INTEGER_" ++ ";\n"),
-   ifC "Ident" ("<YYINITIAL>{LETTER}{IDENT}*      \t " ++ ns ++ "yylval.string_ = strdup(yytext); return " ++ nsDefine inPackage "_IDENT_" ++ ";\n"),
+   ifC catString strStates,
+   ifC catChar chStates,
+   ifC catDouble ("<YYINITIAL>{DIGIT}+\".\"{DIGIT}+(\"e\"(\\-)?{DIGIT}+)?      \t " ++ ns ++ "yylval.double_ = atof(yytext); return " ++ nsDefine inPackage "_DOUBLE_" ++ ";\n"),
+   ifC catInteger ("<YYINITIAL>{DIGIT}+      \t " ++ ns ++ "yylval.int_ = atoi(yytext); return " ++ nsDefine inPackage "_INTEGER_" ++ ";\n"),
+   ifC catIdent ("<YYINITIAL>{LETTER}{IDENT}*      \t " ++ ns ++ "yylval.string_ = strdup(yytext); return " ++ nsDefine inPackage "_IDENT_" ++ ";\n"),
    "\\n  ++" ++ ns ++ "yy_mylinenumber ;\n",
    "<YYINITIAL>[ \\t\\r\\n\\f]      \t /* ignore white space. */;\n",
    "<YYINITIAL>.      \t return " ++ nsDefine inPackage "_ERROR_" ++ ";\n",
@@ -129,9 +129,9 @@ restOfFlex inPackage cf env = concat
       "     \t " ++ ns ++ "yylval.string_ = strdup(yytext); return " ++ sName name ++ ";"
        | (name, exp) <- tokenPragmas cf]
       where
-          sName n = case lookup n env of
+          sName n = case lookup (show n) env of
               Just x -> x
-              Nothing -> n
+              Nothing -> (show n)
    strStates = unlines --These handle escaped characters in Strings.
     [
      "<YYINITIAL>\"\\\"\"      \t BEGIN STRING;",

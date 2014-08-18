@@ -264,7 +264,7 @@ header namespace cf = unlinesInline [
   "    #endregion"
   ]
 
-prToken :: Namespace -> Cat -> String
+prToken :: Namespace -> String -> String
 prToken namespace token = unlinesInline [
   "    private static void PrintInternal(" ++ identifier namespace token ++ " token, int _i_)",
   "    {",
@@ -274,7 +274,7 @@ prToken namespace token = unlinesInline [
   "    }"
   ]
 
-shToken :: Namespace -> Cat -> String
+shToken :: Namespace -> String -> String
 shToken namespace token = unlinesInline [
   "    private static void ShowInternal(" ++ identifier namespace token ++ " token)",
   "    {",
@@ -373,7 +373,7 @@ prList user c rules = unlinesInline [
   "      }"
   ]
   where
-    et = typename (normCatOfList c)
+    et = typename (show$ normCatOfList c)
     sep = getCons rules
     optsep = if hasOneFunc rules then "" else escapeChars sep
 
@@ -438,7 +438,7 @@ shList user c _rules = unlinesInline [
   "      }"
   ]
   where
-    et = typename (normCatOfList c)
+    et = typename (show $ normCatOfList c)
 
 shCat fnm c =
   case c of
@@ -452,4 +452,4 @@ shCat fnm c =
       | isInternalVar nt       -> ""
       | otherwise              -> "        ShowInternal(" ++ fnm ++ "." ++ nt ++ ");"
 
-isInternalVar x = x == internalCat ++ "_"
+isInternalVar x = x == show InternalCat ++ "_"

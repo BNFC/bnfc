@@ -31,7 +31,6 @@ import Data.Char
 -- Type declarations
 
 type Rules       = [(NonTerminal,[(Pattern,Action)])]
-type NonTerminal = String
 type Pattern     = String
 type Action      = String
 type MetaVar     = String
@@ -73,7 +72,7 @@ header modName absName lexName errName = unlines
 
 
 -- The declarations of a happy file.
-declarations :: [NonTerminal] -> String
+declarations :: [Cat] -> String
 declarations ns = unlines
                  [generateP ns,
                   "%monad { Err } { thenM } { returnM }",
@@ -198,12 +197,12 @@ specialToks cf = unlines $
 		  ++ ["L_err    { _ }"]
  where aux cat =
         case cat of
-          "Ident"  -> "L_ident  { PT _ (TV $$) }"
-          "String" -> "L_quoted { PT _ (TL $$) }"
-          "Integer" -> "L_integ  { PT _ (TI $$) }"
-          "Double" -> "L_doubl  { PT _ (TD $$) }"
-          "Char"   -> "L_charac { PT _ (TC $$) }"
-          own      -> "L_" ++ own ++ " { PT _ (T_" ++ own ++ " " ++ posn ++ ") }"
+          Cat "Ident"  -> "L_ident  { PT _ (TV $$) }"
+          Cat "String" -> "L_quoted { PT _ (TL $$) }"
+          Cat "Integer" -> "L_integ  { PT _ (TI $$) }"
+          Cat "Double" -> "L_doubl  { PT _ (TD $$) }"
+          Cat "Char"   -> "L_charac { PT _ (TC $$) }"
+          own      -> "L_" ++ show own ++ " { PT _ (T_" ++ show own ++ " " ++ posn ++ ") }"
          where
            posn = if isPositionCat cf cat then "_" else "$$"
 
@@ -213,11 +212,11 @@ specialRules cf = unlines $
  where
    aux cat =
      case cat of
-         "Ident"   -> "Ident   : L_ident  { mkAtTree (AV (Ident $1)) }"
-	 "String"  -> "String  : L_quoted { mkAtTree (AS $1) }"
-	 "Integer" -> "Integer : L_integ  { mkAtTree (AI ((read $1) :: Integer)) }"
-	 "Double"  -> "Double  : L_doubl  { (read $1) :: Double }" ----
-	 "Char"    -> "Char    : L_charac { (read $1) :: Char }"   ----
-	 own       -> own ++ "    : L_" ++ own ++ " { " ++ own ++ " ("++ posn ++ "$1)}"
+         Cat "Ident"   -> "Ident   : L_ident  { mkAtTree (AV (Ident $1)) }"
+	 Cat "String"  -> "String  : L_quoted { mkAtTree (AS $1) }"
+	 Cat "Integer" -> "Integer : L_integ  { mkAtTree (AI ((read $1) :: Integer)) }"
+	 Cat "Double"  -> "Double  : L_doubl  { (read $1) :: Double }" ----
+	 Cat "Char"    -> "Char    : L_charac { (read $1) :: Char }"   ----
+	 own       -> show own ++ "    : L_" ++ show own ++ " { " ++ show own ++ " ("++ posn ++ "$1)}"
       where
          posn = if isPositionCat cf cat then "mkPosToken " else ""

@@ -127,9 +127,9 @@ prVisitor cf = unlines [
   "};"
  ]
 
-prAbs :: Bool -> Cat -> String
+prAbs :: Bool -> String -> String
 prAbs ln c = unlines [
-  "class " ++c++ " : public Visitable",
+  "class " ++ c ++ " : public Visitable",
   "{",
   "public:",
   "  virtual " ++ c ++ " *clone() const = 0;",
@@ -137,7 +137,7 @@ prAbs ln c = unlines [
   "};"
   ]
 
-prCon :: (Cat,CAbsRule) -> String
+prCon :: (String, CAbsRule) -> String
 prCon (c,(f,cs)) = unlines [
   "class " ++f++ " : public " ++ c,
   "{",
@@ -158,7 +158,7 @@ prCon (c,(f,cs)) = unlines [
    conargs = concat $ intersperse ", "
      [x +++ pointerIf st ("p" ++ show i) | ((x,st,_),i) <- zip cs [1..]]
 
-prList :: (Cat,Bool) -> String
+prList :: (String,Bool) -> String
 prList (c,b) = unlines [
   "class " ++c++ " : public Visitable, public std::vector<" ++bas++ ">",
   "{",
@@ -199,7 +199,7 @@ prConC fcs@(f,cs) = unlines [
   ""
  ]
 
-prListC :: Cat -> String
+prListC :: String -> String
 prListC c = unlines [
   "/********************   " ++ c ++ "    ********************/",
   "",
@@ -210,7 +210,7 @@ prListC c = unlines [
 
 
 --The standard accept function for the Visitor pattern
-prAcceptC :: Cat -> String
+prAcceptC :: String -> String
 prAcceptC ty = unlines [
   "void " ++ ty ++ "::accept(Visitor *v)",
   "{",
@@ -219,7 +219,7 @@ prAcceptC ty = unlines [
   ]
 
 --The cloner makes a new deep copy of the object
-prCloneC :: Cat -> String
+prCloneC :: String -> String
 prCloneC c = unlines [
   c +++ "*" ++ c ++ "::clone() const",
   "{",
