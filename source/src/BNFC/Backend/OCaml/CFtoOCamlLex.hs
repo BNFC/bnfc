@@ -148,6 +148,7 @@ rules cf = oneRule $ concat [
         ["d+ {let i = lexeme lexbuf in TOK_Integer (int_of_string i)}"],
         ["d+ '.' d+ ('e' ('-')? d+)? {let f = lexeme lexbuf in TOK_Double (float_of_string f)}"],
         ["'\\\"' ((u # ['\\\"' '\\\\' '\\n']) | ('\\\\' ('\\\"' | '\\\\' | '\\\'' | 'n' | 't')))* '\\\"' {let s = lexeme lexbuf in TOK_String (unescapeInitTail s)}"],
+        ["'\\'' ((u # ['\\\'' '\\\\']) | ('\\\\' ('\\\\' | '\\\'' | 'n' | 't'))) '\\\'' {let s = lexeme lexbuf in TOK_Char s.[1]}"],
         userTokenRules,
         ["[' ' '\\t'] {token lexbuf}"],
         ["'\\n' {incr_lineno lexbuf; token lexbuf}"],
