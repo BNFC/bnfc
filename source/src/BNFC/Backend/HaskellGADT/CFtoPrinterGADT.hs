@@ -151,7 +151,7 @@ prPrtList cf cat = mkListRule (nil ++ one ++ cons)
   cons = ["   x:xs -> " ++ mkRhs ["x","xs"] its |
                          Rule f _ its <- rules, isConsFun f]
   mkListRule [] = []
-  mkListRule rs = ["instance Print" +++ show cat +++ "where",
+  mkListRule rs = ["instance Print" +++ show (normCat cat) +++ "where",
 		 "  prt _" +++ "es = case es of"] ++ rs
   rules = rulesForCat cf cat
 
