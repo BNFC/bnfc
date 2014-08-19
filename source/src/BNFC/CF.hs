@@ -1,4 +1,4 @@
-{-# LANGUAGE PatternGuards, DeriveFunctor, StandaloneDeriving #-}
+{-# LANGUAGE PatternGuards, DeriveFunctor #-}
 {-
     BNF Converter: Abstract syntax
     Copyright (C) 2004  Author:  Markus Forberg, Michael Pellauer, Aarne Ranta
@@ -106,7 +106,7 @@ module BNFC.CF (
            ) where
 
 import BNFC.Utils (prParenth,(+++))
-import Data.List (nub, intersperse, partition, sort,sort,group,intercalate)
+import Data.List (nub, intersperse, partition, sort, group, intercalate, find)
 import Data.Char
 import AbsBNF (Reg())
 import ParBNF (pCat)
@@ -137,7 +137,8 @@ data Rul function = Rule { funRule :: function
                 deriving (Eq,Functor)
 
 instance (Show function) => Show (Rul function) where
-  show (Rule f cat rhs) = show f ++ ". " ++ show cat ++ " ::= " ++ intercalate " " (map (either show id) rhs)
+  show (Rule f cat rhs) =
+      unwords (show f : "." : show cat : "::=" : map (either show id) rhs)
 
 -- | Polymorphic CFG type for common type signatures for CF and CFP
 newtype CFG function = CFG { unCFG :: (Exts,[Rul function]) }
@@ -152,7 +153,7 @@ type Exts = ([Pragma],Info)
 -- | Info is information extracted from the CF, for easy access.
 -- Literals - Char, String, Ident, Integer, Double
 --            Strings are quoted strings, and Ident are unquoted.
--- Symbols  - symbols in the grammar, e.g. ´*´, '->'.
+-- Symbols  - symbols in the grammar, e.g. â€œ*â€, '->'.
 -- KeyWord  - reserved words, e.g. 'if' 'while'
 type Info = ([Literal],[Symbol],[KeyWord],[Cat])
 
@@ -334,7 +335,7 @@ notUniqueFuns cf = let xss = group $ sort [ f | f <- map funRule (rulesOfCF cf),
 badInheritence :: CF -> [Cat]
 badInheritence cf = concatMap checkGroup (ruleGroups cf)
  where
-  checkGroup (cat, rs) = if (length rs <= 1)
+  checkGroup (cat, rs) = if length rs <= 1
                            then []
                            else case lookupRule (show cat) rs of
                              Nothing -> []
@@ -365,7 +366,7 @@ allCats = nub . map valCat . rulesOfCF
 
 -- | Gets all normalized identified Categories
 allCatsIdNorm :: CF -> [String]
-allCatsIdNorm = nub . map identCat . map normCat . allCats
+allCatsIdNorm = nub . map (identCat . normCat) . allCats
 
 -- | Get all normalized Cat
 allCatsNorm :: CF -> [Cat]
@@ -373,7 +374,7 @@ allCatsNorm = nub . map normCat . allCats
 
 -- | Is the category is used on an rhs?
 isUsedCat :: CFG f -> Cat -> Bool
-isUsedCat cf cat = elem cat [c | r <- (rulesOfCF cf), Left c <- rhsRule r]
+isUsedCat cf cat = cat `elem` [c | r <- rulesOfCF cf, Left c <- rhsRule r]
 
 -- | Group all categories with their rules.
 ruleGroups :: CF -> [(Cat,[Rule])]
@@ -441,7 +442,7 @@ specialCatsP = map Cat $ words "Ident Integer String Char Double"
 prTree :: Tree -> String
 prTree (Tree (fun,[])) = fun
 prTree (Tree (fun,trees)) = fun +++ unwords (map pr2 trees) where
-  pr2 t@(Tree (_,ts)) = (if (null ts) then id else prParenth) (prTree t)
+  pr2 t@(Tree (_,ts)) = (if null ts then id else prParenth) (prTree t)
 
 -- abstract syntax trees: data type definitions
 
@@ -484,6 +485,7 @@ isCoercion = (== "_") -- perhaps this should be changed to "id"?
 
 isDefinedRule :: Fun -> Bool
 isDefinedRule (x:_) = isLower x
+isDefinedRule [] = error "isDefinedRule: empty function name"
 
 isProperLabel :: Fun -> Bool
 isProperLabel f = not (isCoercion f || isDefinedRule f)
@@ -572,14 +574,14 @@ hasOneFunc = any (isOneFun . funRule)
 
 -- | Gets the separator for a list.
 getCons :: [Rule] -> String
-getCons (Rule f c cats:rs) =
- if isConsFun f
-   then seper cats
-   else getCons rs
- where
+getCons rs = case find (isConsFun . funRule) rs of
+    Just (Rule _ _ cats) -> seper cats
+    Nothing              -> error $ "getCons: no construction function found in "
+                                  ++ intercalate ", " (map (show . funRule) rs)
+  where
     seper [] = []
-    seper ((Right x):xs) = x
-    seper ((Left x):xs) = seper xs
+    seper (Right x:xs) = x
+    seper (Left x:xs) = seper xs
 
 
 isEmptyListCat :: CF -> Cat -> Bool
@@ -599,9 +601,7 @@ findAllReversibleCats cf = [c | (c,r) <- ruleGroups cf, isRev c r] where
   isRev c rs = case rs of
      [r1,r2] | isList c -> if isConsFun (funRule r2)
                              then tryRev r2 r1
-                           else if isConsFun (funRule r1)
-                             then tryRev r1 r2
-                           else False
+                           else isConsFun (funRule r1) && tryRev r1 r2
      _ -> False
   tryRev (Rule f _ ts@(x:_:xs)) r = isEmptyNilRule r &&
                                         isConsFun f && isNonterm x && isNonterm (last ts)
@@ -629,7 +629,7 @@ precRule :: Rule -> Integer
 precRule = precCat . valCat
 
 precLevels :: CF -> [Integer]
-precLevels cf = sort $ nub $ [ precCat c | c <- allCats cf]
+precLevels cf = sort $ nub [ precCat c | c <- allCats cf]
 
 precCF :: CF -> Bool
 precCF cf = length (precLevels cf) > 1
@@ -640,7 +640,7 @@ isPositionCat :: CFG f -> Cat -> Bool
 isPositionCat cf cat =  or [b | TokenReg name b _ <- pragmasOfCF cf, Cat name == cat]
 
 
--- | Grammar with permutation profile à la GF. AR 22/9/2004
+-- | Grammar with permutation profile Ã  la GF. AR 22/9/2004
 type CFP   = CFG FunP -- (Exts,[RuleP])
 type FunP  = (Fun,Prof)
 type RuleP = Rul FunP -- (FunP, (Cat, [Either Cat String]))

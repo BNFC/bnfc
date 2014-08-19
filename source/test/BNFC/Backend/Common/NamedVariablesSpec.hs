@@ -1,5 +1,6 @@
 module BNFC.Backend.Common.NamedVariablesSpec where
 
+import Control.Monad (liftM)
 import Test.Hspec
 import Test.QuickCheck
 
@@ -10,7 +11,7 @@ import BNFC.Backend.Common.NamedVariables -- SUT
 genCat:: Gen Cat
 genCat = frequency [(10,simpleCat), (1,listCat)]
   where simpleCat = elements [Cat "Cat1", Cat "Cat2", Cat "Cat3"]
-        listCat   = simpleCat >>= return . ListCat
+        listCat   = liftM ListCat simpleCat
 
 spec :: Spec
 spec = do

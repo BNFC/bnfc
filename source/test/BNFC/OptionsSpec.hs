@@ -1,17 +1,16 @@
 {-# LANGUAGE FlexibleInstances, UndecidableInstances #-}
 module BNFC.OptionsSpec where
 
-import Test.Hspec
-import Test.QuickCheck
-import System.Console.GetOpt
-import System.FilePath ((<.>))
-import BNFC.WarningM
 import Control.Monad (liftM, liftM2)
 import Data.List (intercalate)
 import Data.Maybe (fromJust)
-import System.FilePath (takeBaseName)
+import System.Console.GetOpt
+import System.FilePath ((<.>), takeBaseName)
+import Test.Hspec
+import Test.QuickCheck
 
 import BNFC.Options -- SUT
+import BNFC.WarningM
 
 
 -- Expectation that a particular option has a particular value
@@ -81,7 +80,7 @@ spec = do
 randomOption :: Gen String
 randomOption = oneof [ nonOption, noArg, withArg ]
   where nonOption = stringOf1 ['a'..'z'] -- non-option argument
-        noArg     = nonOption >>= return . ("--"++) -- flag
+        noArg     = liftM ("--"++) nonOption -- flag
         withArg   = do
           arg   <- nonOption
           flag  <- noArg

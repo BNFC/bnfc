@@ -1,15 +1,14 @@
 {-# LANGUAGE FlexibleInstances, UndecidableInstances #-}
 module BNFC.Backend.BaseSpec where
 
-import Test.Hspec
-import Test.QuickCheck
-import System.FilePath ((<.>))
 import Control.Monad (liftM, liftM2)
 import Data.List (intercalate)
 import Data.Maybe (fromJust)
-import System.FilePath (takeBaseName)
-import System.IO.Temp (withSystemTempDirectory)
 import System.Directory
+import System.FilePath ((<.>), takeBaseName)
+import System.IO.Temp (withSystemTempDirectory)
+import Test.Hspec
+import Test.QuickCheck
 
 import BNFC.Backend.Base -- SUT
 
