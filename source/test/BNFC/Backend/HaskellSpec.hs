@@ -1,17 +1,13 @@
 module BNFC.Backend.HaskellSpec where
 
-import Shelly
-import ShellyTesting
 import Test.Hspec
-import qualified Data.Text.Lazy as LT
 import BNFC.GetCF
 import BNFC.Hspec
 import BNFC.Options hiding (Backend)
-import BNFC.Backend.Base -- SUT
+import BNFC.Backend.Base
 import Text.Printf (printf)
 
 import BNFC.Backend.Haskell -- SUT
-default (LT.Text)
 
 calcOptions = defaultOptions { lang = "Calc" }
 getCalc = parseCF  calcOptions TargetHaskell $
