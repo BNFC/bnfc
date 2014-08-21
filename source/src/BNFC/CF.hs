@@ -391,8 +391,6 @@ literals cf = lits ++ owns
    (lits,_,_,_) = infoOfCF cf
    owns = map fst (tokenPragmas cf)
 
-{-# DEPRECATED symbols, reservedWords "Almost certainly, you should treat symbols and reserved words uniformly, so use cfTokens instead." #-}
-
 -- | Get all symbols
 symbols :: CFG f -> [String]
 symbols cf = syms
