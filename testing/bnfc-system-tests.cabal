@@ -57,12 +57,12 @@ executable bnfc-system-tests
   -- other-extensions:
 
   -- Other library packages from which modules are imported.
-  build-depends:       base >=4.5 && <4.6,
+  build-depends:       base >=4.5 && <4.8,
                        HUnit == 1.2.*,
                        shelly == 1.5.*,
                        system-filepath,
                        text,
-                       HTF == 0.11.*
+                       HTF
 
   -- Directories containing source files.
   -- hs-source-dirs:
