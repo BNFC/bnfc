@@ -12,6 +12,7 @@ Contents:
    :maxdepth: 2
 
    lbnf
+   changes
 
 
 Indices and tables
