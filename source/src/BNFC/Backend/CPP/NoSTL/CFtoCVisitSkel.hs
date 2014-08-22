@@ -49,7 +49,7 @@ import Data.Char(toLower, toUpper)
 cf2CVisitSkel :: CF -> (String, String)
 cf2CVisitSkel cf = (mkHFile cf groups, mkCFile cf groups)
  where
-    groups = (fixCoercions (ruleGroups cf))
+    groups = fixCoercions (ruleGroups cf)
 
 
 {- **** Header (.H) File Functions **** -}
@@ -60,7 +60,7 @@ mkHFile cf groups = unlines
  [
   header,
   concatMap prDataH groups,
-  concatMap prUserH user,
+  concatMap (prUserH.show) user,
   footer
  ]
  where
@@ -101,7 +101,7 @@ prDataH (cat, rules) =
  where
    cl = identCat (normCat cat)
    vname = map toLower cl
-   abstract = case lookupRule cat rules of
+   abstract = case lookupRule (show cat) rules of
     Just x -> ""
     Nothing ->  "  void visit" ++ cl ++ "(" ++ cl ++ "*" +++ vname ++ "); /* abstract class */\n"
 
@@ -122,7 +122,7 @@ mkCFile cf groups = concat
    [
     header,
     concatMap (prData user) groups,
-    concatMap prUser user,
+    concatMap (prUser.show) user,
     footer
    ]
   where
@@ -197,7 +197,7 @@ prData user (cat, rules) =
    visitMember = if isBasic user member
      then "    visit" ++ (funName member) ++ "(" ++ vname ++ "->" ++ member ++ ");"
      else "    " ++ vname ++ "->" ++ member ++ "->accept(this);"
-   abstract = case lookupRule cat rules of
+   abstract = case lookupRule (show cat) rules of
     Just x -> ""
     Nothing ->  "void Skeleton::visit" ++ cl ++ "(" ++ cl ++ "*" +++ vname ++ ") {} //abstract class\n\n"
 
@@ -246,7 +246,7 @@ isBasic user v =
     else if "ident_" `isPrefixOf` v then True
     else False
   where
-   user' = map (map toLower) user
+   user' = map (map toLower.show) user
 
 --The visit-function name of a basic type
 funName :: String -> String

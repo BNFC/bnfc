@@ -132,12 +132,12 @@ removeDelims xs = (ys ++ map delimToSep ds,
     
     inlineDelim :: Abs.Def -> Either Cat String ->  [Either Cat String]
     inlineDelim (Abs.Delimiters cat open close separ sz) (Left c)
-      | c == listCat (transCat cat) = [Right open, Left c, Right close]
+      | c == ListCat (transCat cat) = [Right open, Left c, Right close]
     inlineDelim _ x = [x]
     
     inlineDelim' :: Abs.Def -> RuleP -> RuleP
     inlineDelim' d@(Abs.Delimiters cat _ _ _ _) r@(Rule f c rhs) 
-      | c == listCat (transCat cat) = r
+      | c == ListCat (transCat cat) = r
       | otherwise = Rule f c (concatMap (inlineDelim d) rhs)
 
 
@@ -154,9 +154,9 @@ transDef x = case x of
  Abs.Comments str0 str         -> [Left $ CommentM (str0,str)]
  Abs.Token ident reg           -> [Left $ TokenReg (transIdent ident) False reg]
  Abs.PosToken ident reg        -> [Left $ TokenReg (transIdent ident) True reg]
- Abs.Entryp idents             -> [Left $ EntryPoints (map transIdent idents)]
+ Abs.Entryp idents             -> [Left $ EntryPoints (map (strToCat .transIdent) idents)]
  Abs.Internal label cat items  ->
-   [Right $ Rule (transLabel label) (transCat cat) (Left internalCat:(map transItem items))]
+   [Right $ Rule (transLabel label) (transCat cat) (Left InternalCat:(map transItem items))]
  Abs.Separator size ident str -> map  (Right . cf2cfpRule) $ separatorRules size ident str
  Abs.Terminator size ident str -> map  (Right . cf2cfpRule) $ terminatorRules size ident str
  Abs.Delimiters a b c d e -> map  (Right . cf2cfpRule) $ delimiterRules a b c d e
@@ -172,30 +172,30 @@ delimiterRules a0 l r (Abs.SepTerm  "") size = delimiterRules a0 l r Abs.SepNone
 delimiterRules a0 l r (Abs.SepSepar "") size = delimiterRules a0 l r Abs.SepNone size
 delimiterRules a0 l r sep size = [
    -- recognizing a single element
-  Rule "(:[])"  a'  (Left a : termin), -- optional terminator/separator
+  Rule "(:[])"  (strToCat a')  (Left a : termin), -- optional terminator/separator
 
   -- glueing two sublists
-  Rule "(++)"   a'  [Left a', Left a'],
+  Rule "(++)"   (strToCat a')  [Left (strToCat a'), Left (strToCat a')],
 
    -- starting on either side with a delimiter
-  Rule "[]"     c   [Right l],
+  Rule "[]"     (strToCat c)   [Right l],
   Rule (if optFinal then "(:[])" else
                          "[]")
-                d   ([Left a | optFinal] ++ [Right r]),
+                (strToCat d)   ([Left a | optFinal] ++ [Right r]),
 
    -- gathering chains
-  Rule "(++)"   c   [Left c, Left a'],
-  Rule "(++)"   d   [Left a', Left d],
+  Rule "(++)"   (strToCat c)   [Left (strToCat c), Left (strToCat a')],
+  Rule "(++)"   (strToCat d)   [Left (strToCat a'), Left (strToCat d)],
 
    -- finally, put together left and right chains
-  Rule "(++)"   as  [Left c,Left d]] ++ [
+  Rule "(++)"   as  [Left (strToCat c),Left (strToCat d)]] ++ [
   -- special rule for the empty list if necessary
   Rule "[]"     as  [Right l,Right r] | optEmpty]
  where a = transCat a0
-       as = listCat a
-       a' = '@':'@':a
-       c  = '@':'{':a
-       d  = '@':'}':a
+       as = ListCat a
+       a' = '@':'@':(show a)
+       c  = '@':'{':(show a)
+       d  = '@':'}':(show a)
        -- optionally separated concat. of x and y categories.
        x // y = (Left x :
                  [Right t | Abs.SepSepar t <- [sep]] ++
@@ -227,7 +227,7 @@ separatorRules size c s = if null s then terminatorRules size c s else ifEmpty [
   ]
  where
    c' = transCat c
-   cs = listCat c'
+   cs = ListCat c'
    ifEmpty rs = if (size == Abs.MNonempty)
                 then rs
                 else Rule "[]" cs [] : rs
@@ -239,7 +239,7 @@ terminatorRules size c s = [
   ]
  where
    c' = transCat c
-   cs = listCat c'
+   cs = ListCat c'
    s' its = if null s then its else (Right s : its)
    ifEmpty = if (size == Abs.MNonempty)
                 then Rule "(:[])" cs ([Left c'] ++ if null s then [] else [Right s])
@@ -247,13 +247,13 @@ terminatorRules size c s = [
 
 coercionRules :: Abs.Ident -> Integer -> [Rule]
 coercionRules (Abs.Ident c) n =
-   Rule "_" c                  [Left (c ++ "1")] :
-  [(Rule "_" (c ++ show (i-1)) [Left (c ++ show i)]) | i <- [2..n]] ++
-  [(Rule "_" (c ++ show n)     [Right "(", Left c, Right ")"])]
+   Rule "_" (Cat c)            [Left (CoercCat c 1)] :
+  [Rule "_" (CoercCat c (i-1)) [Left (CoercCat c i)] | i <- [2..n]] ++
+  [Rule "_" (CoercCat c n)     [Right "(", Left (Cat c), Right ")"]]
 
 ebnfRules :: Abs.Ident -> [Abs.RHS] -> [Rule]
 ebnfRules (Abs.Ident c) rhss =
-  [Rule (mkFun k c its) c (map transItem its)
+  [Rule (mkFun k c its) (strToCat c) (map transItem its)
      | (k, Abs.RHS its) <- zip [1 :: Int ..] rhss]
  where
    mkFun k c i = case i of
@@ -271,8 +271,8 @@ transItem x = case x of
 
 transCat :: Abs.Cat -> Cat
 transCat x = case x of
- Abs.ListCat cat  -> "[" ++ (transCat cat) ++ "]"
- Abs.IdCat id     -> transIdent id
+ Abs.ListCat cat  -> ListCat (transCat cat)
+ Abs.IdCat (Abs.Ident c)     -> strToCat c
 
 transLabel :: Abs.Label -> (Fun,Prof)
 transLabel y = case y of
@@ -322,7 +322,7 @@ checkTokens cf =
           "    "++unwords ns,
           "  This is error-prone and will not be supported in the future."]
   where
-    ns = map fst . filter (nullable.snd) $ tokenPragmas cf
+    ns = map (show.fst) . filter (nullable.snd) $ tokenPragmas cf
 
 -- | Check if a regular expression is nullable (accepts the empty string)
 nullable :: Abs.Reg -> Bool
@@ -350,7 +350,7 @@ nullable r =
 -- (2) no other digits are used
 
 checkRule :: CF -> RuleP -> Maybe String
-checkRule cf (Rule _ ('@':_) rhs) = Nothing -- Generated by a pragma; it's a trusted category
+checkRule cf (Rule _ (Cat ('@':_)) rhs) = Nothing -- Generated by a pragma; it's a trusted category
 checkRule cf (Rule (f,_) cat rhs)
   | badCoercion    = Just $ "Bad coercion in rule" +++ s
   | badNil         = Just $ "Bad empty list rule" +++ s
@@ -358,13 +358,13 @@ checkRule cf (Rule (f,_) cat rhs)
   | badCons        = Just $ "Bad list construction rule" +++ s
   | badList        = Just $ "Bad list formation rule" +++ s
   | badSpecial     = Just $ "Bad special category rule" +++ s
-  | badTypeName    = Just $ "Bad type name" +++ unwords badtypes +++ "in" +++ s
+  | badTypeName    = Just $ "Bad type name" +++ unwords (map show badtypes) +++ "in" +++ s
   | badFunName     = Just $ "Bad constructor name" +++ f +++ "in" +++ s
   | badMissing     = Just $ "No production for" +++ unwords missing ++
                              ", appearing in rule" +++ s
   | otherwise      = Nothing
  where
-   s  = f ++ "." +++ cat +++ "::=" +++ unwords (map (either id show) rhs) -- Todo: consider using the show instance of Rule
+   s  = f ++ "." +++ show cat +++ "::=" +++ unwords (map (either show show) rhs) -- Todo: consider using the show instance of Rule
    c  = normCat cat
    cs = [normCat c | Left c <- rhs]
    badCoercion = isCoercion f && not ([c] == cs) 
@@ -376,12 +376,16 @@ checkRule cf (Rule (f,_) cat rhs)
    badSpecial  = elem c specialCatsP && not (isCoercion f)
 
    badMissing  = not (null missing)
-   missing     = filter nodef [c | Left c <- rhs]
+   missing     = filter nodef [show c | Left c <- rhs]
    nodef t = notElem t defineds
    defineds =
-    internalCat : tokenNames cf ++ specialCatsP ++ map valCat (rulesOfCF cf)
+    show InternalCat : tokenNames cf ++ (map show specialCatsP) ++ map (show . valCat) (rulesOfCF cf)
    badTypeName = not (null badtypes)
    badtypes = filter isBadType $ cat : [c | Left c <- rhs]
-   isBadType c = not (isUpper (head c) || isList c || c == internalCat || (head c == '@') )
+   isBadType (ListCat c) = isBadType c
+   isBadType InternalCat = False
+   isBadType (CoercCat c _) = isBadCatName c
+   isBadType (Cat s) = isBadCatName s
+   isBadCatName s = not (isUpper (head s) || s == show InternalCat || (head s == '@'))
    badFunName = not (all (\c -> isAlphaNum c || c == '_') f {-isUpper (head f)-}
                        || isCoercion f || isNilCons f)

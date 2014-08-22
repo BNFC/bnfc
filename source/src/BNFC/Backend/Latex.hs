@@ -109,31 +109,31 @@ prtIdentifiers = unlines
 prtLiterals :: String -> CF -> String
 prtLiterals name cf =
   unlines $ map stringLit $
-    filter (`notElem` ["Ident"]) $
+    filter (`notElem` [Cat "Ident"]) $
       literals cf
 
-stringLit :: String -> String
+stringLit :: Cat -> String
 stringLit cat = unlines $ case cat of
-  "Char" -> ["Character literals \\nonterminal{Char}\\ have the form",
-             "\\terminal{'}$c$\\terminal{'}, where $c$ is any single character.",
-             ""
-            ]
-  "String" -> ["String literals \\nonterminal{String}\\ have the form",
-             "\\terminal{\"}$x$\\terminal{\"}, where $x$ is any sequence of any characters",
-             "except \\terminal{\"}\\ unless preceded by \\verb6\\6.",
-             ""]
-  "Integer" -> ["Integer literals \\nonterminal{Int}\\ are nonempty sequences of digits.",
-             ""]
-  "Double" -> ["Double-precision float literals \\nonterminal{Double}\\ have the structure",
-               "indicated by the regular expression" +++
-                  "$\\nonterminal{digit}+ \\mbox{{\\it `.'}} \\nonterminal{digit}+ (\\mbox{{\\it `e'}} \\mbox{{\\it `-'}}? \\nonterminal{digit}+)?$ i.e.\\",
-               "two sequences of digits separated by a decimal point, optionally",
-               "followed by an unsigned or negative exponent.",
-               ""]
+  Cat "Char" -> ["Character literals \\nonterminal{Char}\\ have the form",
+                 "\\terminal{'}$c$\\terminal{'}, where $c$ is any single character.",
+                 ""
+                ]
+  Cat "String" -> ["String literals \\nonterminal{String}\\ have the form",
+                 "\\terminal{\"}$x$\\terminal{\"}, where $x$ is any sequence of any characters",
+                 "except \\terminal{\"}\\ unless preceded by \\verb6\\6.",
+                 ""]
+  Cat "Integer" -> ["Integer literals \\nonterminal{Int}\\ are nonempty sequences of digits.",
+                 ""]
+  Cat "Double" -> ["Double-precision float literals \\nonterminal{Double}\\ have the structure",
+                   "indicated by the regular expression" +++
+                      "$\\nonterminal{digit}+ \\mbox{{\\it `.'}} \\nonterminal{digit}+ (\\mbox{{\\it `e'}} \\mbox{{\\it `-'}}? \\nonterminal{digit}+)?$ i.e.\\",
+                   "two sequences of digits separated by a decimal point, optionally",
+                   "followed by an unsigned or negative exponent.",
+                   ""]
   _ -> []
 
 prtOwnToken (name,reg) = unlines
-  [name +++ "literals are recognized by the regular expression",
+  [ show name +++ "literals are recognized by the regular expression",
    "\\(" ++
    latexRegExp reg ++
    "\\)"
@@ -258,8 +258,8 @@ tabular n xs = "\n\\begin{tabular}{" ++ concat (replicate n "l") ++ "}\n" ++
 terminal :: String -> String
 terminal s = "{\\terminal{" ++ s ++ "}}"
 
-nonterminal :: String -> String
-nonterminal s = "{\\nonterminal{" ++ identCat (mkId s) ++ "}}" where
+nonterminal :: Cat -> String
+nonterminal s = "{\\nonterminal{" ++ mkId (identCat s) ++ "}}" where
  mkId = map mk
  mk c = case c of
    '_' -> '-' ---

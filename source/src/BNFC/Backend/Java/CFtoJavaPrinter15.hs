@@ -266,7 +266,7 @@ prList user c rules = unlines
    "     }"
   ]
  where
-    et = typename (normCatOfList c) user
+    et = typename (show $ normCatOfList c) user
     sep = escapeChars $ getCons rules
     optsep = if hasOneFunc rules then "" else sep
 
@@ -339,7 +339,7 @@ shList user c _rules = unlines
    "     }"
   ]
     where
-    et = typename (normCatOfList c) user
+    et = typename (show $ normCatOfList c) user
 
 shCat fnm c =
     case c of
@@ -358,4 +358,4 @@ escapeChars ('\\':xs) = '\\' : ('\\' : (escapeChars xs))
 escapeChars ('\"':xs) = '\\' : ('\"' : (escapeChars xs))
 escapeChars (x:xs) = x : (escapeChars xs)
 
-isInternalVar x = x == internalCat ++ "_"
+isInternalVar x = x == show InternalCat ++ "_"

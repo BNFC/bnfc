@@ -116,14 +116,14 @@ doubleRule cf = showsPrintRule cf "Double"
 showsPrintRule cf t = unlines $ [
   "instance Print " ++ t ++ " where",
   "  prt _ x = doc (shows x)",
-  ifList cf t
+  ifList cf (Cat t)
   ]
 
-identRule byteStrings cf = ownPrintRule byteStrings cf "Ident"
+identRule byteStrings cf = ownPrintRule byteStrings cf catIdent
 
 ownPrintRule byteStrings cf own = unlines $ [
-  "instance Print " ++ own ++ " where",
-  "  prt _ (" ++ own ++ posn ++ ") = doc (showString ("++stringUnpack++" i))",
+  "instance Print " ++ show own ++ " where",
+  "  prt _ (" ++ show own ++ posn ++ ") = doc (showString ("++stringUnpack++" i))",
   ifList cf own
   ]
  where
@@ -143,13 +143,13 @@ rules cf = unlines $
    names (x:xs) n
      | elem x xs = (x ++ show n) : names xs (n+1)
      | otherwise = x             : names xs n
-   var ('[':xs)  = var (init xs) ++ "s"
-   var "Ident"   = "id"
-   var "Integer" = "n"
-   var "String"  = "str"
-   var "Char"    = "c"
-   var "Double"  = "d"
-   var xs        = map toLower xs
+   var (ListCat c)  = var c ++ "s"
+   var (Cat "Ident")   = "id"
+   var (Cat "Integer") = "n"
+   var (Cat "String")  = "str"
+   var (Cat "Char")    = "c"
+   var (Cat "Double")  = "d"
+   var xs        = map toLower $ show xs
    checkRes s
         | elem s reservedHaskell = s ++ "'"
 	| otherwise              = s
@@ -160,7 +160,7 @@ rules cf = unlines $
 
 --- case_fun :: Cat -> [(Constructor,Rule)] -> String
 case_fun cat xs = unlines [
-  "instance Print" +++ cat +++ "where",
+  "instance Print" +++ show cat +++ "where",
   "  prt i" +++ "e = case e of",
   unlines $ map (\ ((c,xx),r) ->
     "   " ++ c +++ unwords xx +++ "->" +++
@@ -181,7 +181,7 @@ ifList cf cat = mkListRule $ nil cat ++ one cat ++ cons cat where
 mkRhs args its =
   "(concatD [" ++ unwords (intersperse "," (mk args its)) ++ "])"
  where
-  mk args (Left "#" : items)      = mk args items
+  mk args (Left InternalCat : items)      = mk args items
   mk (arg:args) (Left c : items)  = (prt c +++ arg)        : mk args items
   mk args       (Right s : items) = ("doc (showString" +++ show s ++ ")") : mk args items
   mk _ _ = []

@@ -106,32 +106,32 @@ prologue name absMod = unlines [
 
 charRule cf = unlines [
     "let rec prtChar (_:int) (c:char) : doc = render (\"'\" ^ Char.escaped c ^ \"'\")",
-    ifList cf "Char",
+    ifList cf (Cat "Char"),
     ""
     ]
 
 integerRule cf = unlines [
     "let rec prtInt (_:int) (i:int) : doc = render (string_of_int i)",
-    ifList cf "Integer",
+    ifList cf (Cat "Integer"),
     ""
     ]
 
 doubleRule cf = unlines [
     "let rec prtFloat (_:int) (f:float) : doc = render (sprintf \"%f\" f)",
-    ifList cf "Double",
+    ifList cf (Cat "Double"),
     ""
     ]
 
 stringRule cf = unlines [
     "let rec prtString (_:int) (s:string) : doc = render (\"\\\"\" ^ String.escaped s ^ \"\\\"\")",
-    ifList cf "String",
+    ifList cf (Cat "String"),
     ""
     ]
 
-identRule cf = ownPrintRule cf "Ident"
+identRule cf = ownPrintRule cf (Cat "Ident")
 
 ownPrintRule cf own = unlines $ [
-  "let rec" +++ prtFun own +++ "_ (" ++ own ++ posn ++ ") : doc = render i",
+  "let rec" +++ prtFun own +++ "_ (" ++ show own ++ posn ++ ") : doc = render i",
   ifList cf own
   ]
  where
@@ -148,13 +148,13 @@ rules cf = unlines $ mutualDefs $
    names (x:xs) n
      | elem x xs = (x ++ show n) : names xs (n+1)
      | otherwise = x             : names xs n
-   var ('[':xs)  = var (init xs) ++ "s"
-   var "Ident"   = "id"
-   var "Integer" = "n"
-   var "String"  = "str"
-   var "Char"    = "c"
-   var "Double"  = "d"
-   var xs        = map toLower xs
+   var (ListCat c)  = var c ++ "s"
+   var (Cat "Ident")   = "id"
+   var (Cat "Integer") = "n"
+   var (Cat "String")  = "str"
+   var (Cat "Char")    = "c"
+   var (Cat "Double")  = "d"
+   var xs        = map toLower (show xs)
    checkRes s
         | elem s reservedOCaml = s ++ "'"
         | otherwise              = s
@@ -183,16 +183,13 @@ ifList cf cat = mkListRule $ nil cat ++ one cat ++ cons cat where
 mkRhs args its =
   "(concatD [" ++ unwords (intersperse ";" (mk args its)) ++ "])"
  where
-  mk args (Left "#" : items)      = mk args items
+  mk args (Left InternalCat : items)      = mk args items
   mk (arg:args) (Left c : items)  = (prt c +++ arg)        : mk args items
   mk args       (Right s : items) = ("render " ++ show s) : mk args items
   mk _ _ = []
   prt c = prtFun c +++ show (precCat c)
 
 prtFun :: Cat -> String
-prtFun c = case c of
-    '[':xs -> case break (== ']') xs of
-        (t,"]") -> prtFun t ++ "ListBNFC"
-        _ -> c -- should not occur (this means an invariant of the type Cat is broken)
-    _ -> "prt" ++ (fixTypeUpper $ normCat c)
+prtFun (ListCat c) = prtFun c ++ "ListBNFC"
+prtFun c = "prt" ++ fixTypeUpper (normCat c)
 

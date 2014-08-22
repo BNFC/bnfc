@@ -1,16 +1,17 @@
 module BNFC.Backend.Common.NamedVariablesSpec where
 
+import Control.Monad (liftM)
 import Test.Hspec
 import Test.QuickCheck
 
-import BNFC.CF (Cat)
+import BNFC.CF (Cat(..),isList)
 
 import BNFC.Backend.Common.NamedVariables -- SUT
 
 genCat:: Gen Cat
 genCat = frequency [(10,simpleCat), (1,listCat)]
-  where simpleCat = elements ["Cat1", "Cat2", "Cat3"]
-        listCat   = simpleCat >>= \c -> return ("[" ++ c ++ "]")
+  where simpleCat = elements [Cat "Cat1", Cat "Cat2", Cat "Cat3"]
+        listCat   = liftM ListCat simpleCat
 
 spec :: Spec
 spec = do
@@ -21,7 +22,7 @@ spec = do
 
     it "leaves the name of the (non list) category untouched" $
       forAll (listOf genCat) $ \l ->
-        all (notElem '[') l ==> l == map fst (getVars l)
+        all (not.isList) l ==> map show l == map fst (getVars l)
 
     it "give the output described in the example" $
-      getVars ["A", "B", "A"] `shouldBe` [("A", 1), ("B", 0), ("A", 2)]
+      getVars [Cat "A", Cat "B", Cat "A"] `shouldBe` [("A", 1), ("B", 0), ("A", 2)]

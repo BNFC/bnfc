@@ -92,7 +92,7 @@ makeJava options cf =
        liftIO $ putStrLn "   (Tested with JLex 1.2.6.)"
        mkfile (dirBase ++ name ++ ".cup") $ cf2Cup packageBase packageAbsyn cf env
        -- FIXME: put in a doc directory?
-       liftIO $ putStrLn $ "   (Parser created for category " ++ firstEntry cf ++ ")"
+       liftIO $ putStrLn $ "   (Parser created for category " ++ show (firstEntry cf) ++ ")"
        liftIO $ putStrLn "   (Tested with CUP 0.10k)"
        Makefile.mkMakefile options $ makefile name dirBase dirAbsyn absynFileNames
     where
@@ -220,8 +220,8 @@ javaTest packageBase packageAbsyn cf =
      "    /* " ++ (concat (intersperse ", " (showOpts (tail eps)))) ++ " */",
      "    try",
      "    {",
-     "      " ++ packageAbsyn ++ "." ++ def +++ "parse_tree = p.p"
-     ++ def ++ "();",
+     "      " ++ packageAbsyn ++ "." ++ show def +++ "parse_tree = p.p"
+     ++ show def ++ "();",
      "      System.out.println();",
      "      System.out.println(\"Parse Succesful!\");",
      "      System.out.println();",

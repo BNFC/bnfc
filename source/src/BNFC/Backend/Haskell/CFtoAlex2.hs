@@ -101,11 +101,11 @@ restOfAlex shareMod shareStrings byteStrings cf = [
   userDefTokenTypes,
   ident,
 
-  ifC "String" ("\\\" ([$u # [\\\" \\\\ \\n]] | (\\\\ (\\\" | \\\\ | \\' | n | t)))* \\\"" ++
+  ifC catString ("\\\" ([$u # [\\\" \\\\ \\n]] | (\\\\ (\\\" | \\\\ | \\' | n | t)))* \\\"" ++
                   "{ tok (\\p s -> PT p (TL $ share $ unescapeInitTail s)) }"),
-  ifC "Char"    "\\\' ($u # [\\\' \\\\] | \\\\ [\\\\ \\\' n t]) \\'  { tok (\\p s -> PT p (TC $ share s))  }",
-  ifC "Integer" "$d+      { tok (\\p s -> PT p (TI $ share s))    }",
-  ifC "Double"  "$d+ \\. $d+ (e (\\-)? $d+)? { tok (\\p s -> PT p (TD $ share s)) }",
+  ifC catChar    "\\\' ($u # [\\\' \\\\] | \\\\ [\\\\ \\\' n t]) \\'  { tok (\\p s -> PT p (TC $ share s))  }",
+  ifC catInteger "$d+      { tok (\\p s -> PT p (TI $ share s))    }",
+  ifC catDouble  "$d+ \\. $d+ (e (\\-)? $d+)? { tok (\\p s -> PT p (TD $ share s)) }",
   "",
   "{",
   "",
@@ -239,12 +239,12 @@ restOfAlex shareMod shareStrings byteStrings cf = [
 
    userDefTokenTypes = unlines $
      [printRegAlex exp ++
-      " { tok (\\p s -> PT p (eitherResIdent (T_"  ++ name ++ " . share) s)) }"
+      " { tok (\\p s -> PT p (eitherResIdent (T_"  ++ show name ++ " . share) s)) }"
       | (name,exp) <- tokenPragmas cf]
    userDefTokenConstrs = unlines $
-     [" | T_" ++ name ++ " !"++stringType | (name,_) <- tokenPragmas cf]
+     [" | T_" ++ name ++ " !"++stringType | name <- tokenNames cf]
    userDefTokenPrint = unlines $
-     ["  PT _ (T_" ++ name ++ " s) -> s" | (name,_) <- tokenPragmas cf]
+     ["  PT _ (T_" ++ name ++ " s) -> s" | name <- tokenNames cf]
 
    ident =
      "$l $i*   { tok (\\p s -> PT p (eitherResIdent (TV . share) s)) }"

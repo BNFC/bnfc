@@ -26,15 +26,12 @@ import Data.Char (toLower, toUpper)
 -- Translate Haskell types to OCaml types
 -- Note: OCaml (data-)types start with lowercase letter
 fixType :: Cat -> String
-fixType s = case s of
-    '[':xs -> case break (== ']') xs of
-        (t,"]") -> fixType t +++ "list"
-        _ -> s -- should not occur (this means an invariant of the type Cat is broken)
-    "Integer" -> "int"
-    "Double" -> "float"
-    c:cs -> let ls = toLower c : cs in
-            if (elem ls reservedOCaml) then (ls ++ "T") else ls
-    _ -> s
+fixType (ListCat c) = fixType c +++ "list"
+fixType (Cat "Integer") = "int"
+fixType (Cat "Double") = "float"
+fixType cat = let c:cs = show cat in
+                let ls = toLower c : cs in
+                  if (elem ls reservedOCaml) then (ls ++ "T") else ls
 
 -- as fixType, but leave first character in upper case
 fixTypeUpper :: Cat -> String

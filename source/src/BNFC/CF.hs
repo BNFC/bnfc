@@ -1,4 +1,4 @@
-{-# LANGUAGE PatternGuards, DeriveFunctor, StandaloneDeriving #-}
+{-# LANGUAGE PatternGuards, DeriveFunctor #-}
 {-
     BNF Converter: Abstract syntax
     Copyright (C) 2004  Author:  Markus Forberg, Michael Pellauer, Aarne Ranta
@@ -28,7 +28,9 @@ module BNFC.CF (
 	    Literal,
 	    Symbol,
 	    KeyWord,
-	    Cat,
+            Cat(..), strToCat,
+            catString, catInteger, catDouble, catChar, catIdent,
+            NonTerminal,
 	    Fun,
 	    Tree(..),
 	    prTree,         -- print an abstract syntax tree
@@ -45,6 +47,7 @@ module BNFC.CF (
 	    isDefinedRule,  -- defined rules (allows syntactic sugar)
 	    isProperLabel,  -- not coercion or defined rule
 	    allCats,        -- all categories of a grammar
+            allCatsNorm,
 	    allCatsIdNorm,
 	    allEntryPoints,
 	    reservedWords,
@@ -75,7 +78,6 @@ module BNFC.CF (
 	    normCat,
             isDataCat,
 	    normCatOfList,  -- Removes precendence information and enclosed List. C1 => C, C2 => C
-            listCat,
 	    catOfList,
 	    comments,       -- translates the pragmas into two list containing the s./m. comments
             tokenPragmas,   -- get the user-defined regular expression tokens
@@ -85,11 +87,11 @@ module BNFC.CF (
 	    precRule,       -- get the precendence level of the value category of a rule.
 	    precCF,         -- Check if the CF consists of precendence levels.
             isUsedCat,
-	    internalCat,
             isPositionCat,
             hasIdent,
             hasLayout,
             layoutPragmas,
+            normFun,
 
             CFP,            -- CF with profiles
             RuleP,
@@ -104,9 +106,13 @@ module BNFC.CF (
            ) where
 
 import BNFC.Utils (prParenth,(+++))
-import Data.List (nub, intersperse, partition, sort,sort,group,intercalate)
+import Data.List (nub, intersperse, partition, sort, group, intercalate, find)
 import Data.Char
 import AbsBNF (Reg())
+import ParBNF (pCat)
+import LexBNF (tokens)
+import qualified AbsBNF
+import ErrM
 
 -- | A context free grammar consists of a set of rules and some extended
 -- information (e.g. pragmas, literals, symbols, keywords)
@@ -131,7 +137,8 @@ data Rul function = Rule { funRule :: function
                 deriving (Eq,Functor)
 
 instance (Show function) => Show (Rul function) where
-  show (Rule f cat rhs) = show f ++ ". " ++ cat ++ " ::= " ++ intercalate " " (map (either show id) rhs)
+  show (Rule f cat rhs) =
+      unwords (show f : "." : show cat : "::=" : map (either show id) rhs)
 
 -- | Polymorphic CFG type for common type signatures for CF and CFP
 newtype CFG function = CFG { unCFG :: (Exts,[Rul function]) }
@@ -146,7 +153,7 @@ type Exts = ([Pragma],Info)
 -- | Info is information extracted from the CF, for easy access.
 -- Literals - Char, String, Ident, Integer, Double
 --            Strings are quoted strings, and Ident are unquoted.
--- Symbols  - symbols in the grammar, e.g. ´*´, '->'.
+-- Symbols  - symbols in the grammar, e.g. â€œ*â€, '->'.
 -- KeyWord  - reserved words, e.g. 'if' 'while'
 type Info = ([Literal],[Symbol],[KeyWord],[Cat])
 
@@ -199,12 +206,12 @@ data Pragma = CommentS  String -- ^ for single line comments
 	      deriving (Show)
 
 -- | User-defined regular expression tokens
-tokenPragmas :: CFG f -> [(String,Reg)]
-tokenPragmas cf = [(name,exp) | TokenReg name _ exp <- pragmasOfCF cf]
+tokenPragmas :: CFG f -> [(Cat,Reg)]
+tokenPragmas cf = [(Cat name,exp) | TokenReg name _ exp <- pragmasOfCF cf]
 
 -- | The names of all user-defined tokens
 tokenNames :: CFG f -> [String]
-tokenNames cf = map fst (tokenPragmas cf)
+tokenNames cf = map (show.fst) (tokenPragmas cf)
 
 layoutPragmas :: CF -> (Bool,[String],[String])
 layoutPragmas cf = let ps = pragmasOfCF cf in (
@@ -222,18 +229,69 @@ type Literal = Cat
 type Symbol  = String
 type KeyWord = String
 
--- | Cat is the Non-terminals of the grammar.
-type Cat     = String
+-- | Categories are the Non-terminals of the grammar.
+data Cat = InternalCat           -- | Internal category, inserted in 1st
+                                      -- position in "internal" rules,
+                                      -- essentially ensuring that they are
+                                      -- never parsed.
+              | Cat String
+              | ListCat Cat
+              | CoercCat String Integer
+  deriving (Eq, Ord)
+-- An alias for Cat used in many backends:
+type NonTerminal = Cat
+
+-- | Show instance for category symbols
+-- >>> show (Cat "Def")
+-- "Def"
+-- >>> show (ListCat (Cat "Thing"))
+-- "[Thing]"
+-- >>> show (CoercCat "Expr" 3)
+-- "Expr3"
+-- >>> show (ListCat (CoercCat "Expr" 2))
+-- "[Expr2]"
+instance Show Cat where
+  show InternalCat = "#"
+  show (Cat s) = s
+  show (ListCat c) = "[" ++ show c ++ "]"
+  show (CoercCat s i) = s ++ show i
+
+-- | Reads a string into a category. This should only needs to handle
+-- the case of simple categories (with or without coercion) since list
+-- categories are parsed in the grammar already. To be on the safe side here,
+-- we still call the parser function that parses categries.
+-- >>> strToCat "Abc" == Cat "Abc"
+-- True
+-- >>> strToCat "Abc123" == CoercCat "Abc" 123
+-- True
+-- >>> strToCat "[Expr2]" == ListCat (CoercCat "Expr" 2)
+-- True
+strToCat :: String -> Cat
+strToCat "#" = InternalCat
+strToCat s =
+    case pCat (tokens s) of
+        Ok c -> cat2cat c
+        Bad e -> Cat s -- error $ "Error parsing cat " ++ s ++ " (" ++ e ++ ")"
+                       -- Might be one of the "Internal cat" which are not
+                       -- really parsable...
+  where cat2cat (AbsBNF.IdCat (AbsBNF.Ident s)) =
+            case span isDigit (reverse s) of
+                ([],c') -> Cat (reverse c')
+	        (d,c') ->  CoercCat (reverse c') (read (reverse d))
+        cat2cat (AbsBNF.ListCat c) = ListCat (cat2cat c)
+
+-- Build-in categories contants
+catString, catInteger, catDouble, catChar, catIdent :: Cat
+catString  = Cat "String"
+catInteger = Cat "Integer"
+catDouble  = Cat "Double"
+catChar    = Cat "Char"
+catIdent   = Cat "Ident"
+
 -- | Fun is the function name of a rule.
 type Fun     = String
 -- | Either Cat or Fun
 type Name = String
-
--- | The category '#'. It is inserted in 1st position in "internal"
--- rules, essentially ensuring that they are never parsed.
-internalCat :: Cat
-internalCat = "#"
-
 
 -- | Abstract syntax tree.
 newtype Tree = Tree (Fun,[Tree])
@@ -277,9 +335,9 @@ notUniqueFuns cf = let xss = group $ sort [ f | f <- map funRule (rulesOfCF cf),
 badInheritence :: CF -> [Cat]
 badInheritence cf = concatMap checkGroup (ruleGroups cf)
  where
-  checkGroup (cat, rs) = if (length rs <= 1)
+  checkGroup (cat, rs) = if length rs <= 1
                            then []
-                           else case lookupRule cat rs of
+                           else case lookupRule (show cat) rs of
                              Nothing -> []
                              Just x -> [cat]
 
@@ -296,23 +354,27 @@ lookupRule f = lookup f . map unRule
 
 -- | Returns all normal rules that constructs the given Cat.
 rulesForCat :: CF -> Cat -> [Rule]
-rulesForCat cf cat = [normRuleFun r | r <- rulesOfCF cf, isParsable r, valCat r == cat]
+rulesForCat cf cat = [r | r <- rulesOfCF cf, isParsable r, valCat r == cat]
 
 -- | As rulesForCat, but this version doesn't exclude internal rules.
 rulesForCat' :: CF -> Cat -> [Rule]
-rulesForCat' cf cat = [normRuleFun r | r <- rulesOfCF cf, valCat r == cat]
+rulesForCat' cf cat = [r | r <- rulesOfCF cf, valCat r == cat]
 
 -- | Get all categories of a grammar. (No Cat w/o production returned; No duplicates)
 allCats :: CFG f -> [Cat]
 allCats = nub . map valCat . rulesOfCF
 
 -- | Gets all normalized identified Categories
-allCatsIdNorm :: CF -> [Cat]
-allCatsIdNorm = nub . map identCat . map normCat . allCats
+allCatsIdNorm :: CF -> [String]
+allCatsIdNorm = nub . map (identCat . normCat) . allCats
+
+-- | Get all normalized Cat
+allCatsNorm :: CF -> [Cat]
+allCatsNorm = nub . map normCat . allCats
 
 -- | Is the category is used on an rhs?
 isUsedCat :: CFG f -> Cat -> Bool
-isUsedCat cf cat = elem cat [c | r <- (rulesOfCF cf), Left c <- rhsRule r]
+isUsedCat cf cat = cat `elem` [c | r <- rulesOfCF cf, Left c <- rhsRule r]
 
 -- | Group all categories with their rules.
 ruleGroups :: CF -> [(Cat,[Rule])]
@@ -323,13 +385,11 @@ ruleGroupsInternals :: CF -> [(Cat,[Rule])]
 ruleGroupsInternals cf = [(c, rulesForCat' cf c) | c <- allCats cf]
 
 -- | Get all literals of a grammar. (e.g. String, Double)
-literals :: CFG f -> [String]
+literals :: CFG f -> [Cat]
 literals cf = lits ++ owns
  where
    (lits,_,_,_) = infoOfCF cf
-   owns = tokenNames cf
-
-{-# DEPRECATED symbols, reservedWords "Almost certainly, you should treat symbols and reserved words uniformly, so use cfTokens instead." #-}
+   owns = map fst (tokenPragmas cf)
 
 -- | Get all symbols
 symbols :: CFG f -> [String]
@@ -362,7 +422,7 @@ comments cf = case commentPragmas (pragmasOfCF cf) of
 
 -- | Whether the grammar uses the predefined Ident type.
 hasIdent :: CFG f -> Bool
-hasIdent cf = isUsedCat cf "Ident"
+hasIdent cf = isUsedCat cf catIdent
 
 
 -- these need new datatypes
@@ -370,17 +430,17 @@ hasIdent cf = isUsedCat cf "Ident"
 -- | Categories corresponding to tokens. These end up in the
 -- AST. (unlike tokens returned by 'cfTokens')
 specialCats :: CF -> [Cat]
-specialCats cf = (if hasIdent cf then ("Ident":) else id) (tokenNames cf)
+specialCats cf = (if hasIdent cf then (Cat "Ident":) else id) (map fst (tokenPragmas cf))
 
 -- the parser needs these
 specialCatsP :: [Cat]
-specialCatsP = words "Ident Integer String Char Double"
+specialCatsP = map Cat $ words "Ident Integer String Char Double"
 
 -- to print parse trees
 prTree :: Tree -> String
 prTree (Tree (fun,[])) = fun
 prTree (Tree (fun,trees)) = fun +++ unwords (map pr2 trees) where
-  pr2 t@(Tree (_,ts)) = (if (null ts) then id else prParenth) (prTree t)
+  pr2 t@(Tree (_,ts)) = (if null ts then id else prParenth) (prTree t)
 
 -- abstract syntax trees: data type definitions
 
@@ -392,23 +452,25 @@ cf2data' predicate cf =
                               not (isCoercion f), eqCat cat (valCat r)]))
       | cat <- filter predicate (allCats cf)]
  where
-  mkData (Rule f _ its) = (normFun f,[normCat c | Left c <- its, c /= internalCat])
+  mkData (Rule f _ its) = (f,[normCat c | Left c <- its, c /= InternalCat])
 
 cf2data :: CF -> [Data]
 cf2data = cf2data' isDataCat
 
 -- | Does the category correspond to a data type?
+isDataCat :: Cat -> Bool
 isDataCat c = isDataOrListCat c && not (isList c)
 
-isDataOrListCat c = not (isDigit (last c) || head c == '@')
+isDataOrListCat :: Cat -> Bool
+isDataOrListCat (CoercCat _ _)  = False
+isDataOrListCat (Cat ('@':_))   = False
+isDataOrListCat _               = True
 
 cf2dataLists :: CF -> [Data]
 cf2dataLists = cf2data' isDataOrListCat
 
 specialData :: CF -> [Data]
-specialData cf = [(c,[(c,[arg c])]) | c <- specialCats cf] where
-  arg c = case c of
-    _ -> "String"
+specialData cf = [(c,[(show c,[Cat "String"])]) | c <- specialCats cf] where
 
 
 -- to deal with coercions
@@ -421,26 +483,36 @@ isCoercion = (== "_") -- perhaps this should be changed to "id"?
 
 isDefinedRule :: Fun -> Bool
 isDefinedRule (x:_) = isLower x
+isDefinedRule [] = error "isDefinedRule: empty function name"
 
 isProperLabel :: Fun -> Bool
 isProperLabel f = not (isCoercion f || isDefinedRule f)
 
--- categories C1, C2,... (one digit in end) are variants of C
-
+-- | Categories C1, C2,... (one digit in end) are variants of C. This function
+-- returns true if two category are variants of the same abstract category.
+-- E.g.
+--
+-- >>> eqCat (Cat "Abc") (Cat "Abc")
+-- True
+-- >>> eqCat (CoercCat "Abc" 3) (CoercCat "Abc" 5)
+-- True
+-- >>> eqCat (CoercCat "Acb" 4) (CoercCat "Abc" 4)
+-- False
+-- >>> eqCat (Cat "Abc") (CoercCat "Abc" 44)
+-- True
 eqCat :: Cat -> Cat -> Bool
-eqCat c c1 = catCat c == catCat c1
-  where catCat :: Cat -> Cat
-        catCat = fst . analyseCat
+eqCat (CoercCat c1 _) (CoercCat c2 _) = c1 == c2
+eqCat (Cat c1 ) (CoercCat c2 _) = c1 == c2
+eqCat (CoercCat c1 _) (Cat c2) = c1 == c2
+eqCat c1 c2 = c1 == c2
 
 
 
 -- | Removes precendence information. C1 => C, [C2] => [C]
 normCat :: Cat -> Cat
-normCat c = case c of
-  '[':cs -> "[" ++ norm (init cs) ++ "]"
-  _     -> unList $ norm c -- to be deprecated
- where
-   norm = reverse . dropWhile isDigit . reverse
+normCat (ListCat c) = ListCat (normCat c)
+normCat (CoercCat c _) = Cat c
+normCat c = c
 
 normCatOfList :: Cat -> Cat
 normCatOfList = normCat . catOfList
@@ -448,40 +520,44 @@ normCatOfList = normCat . catOfList
 -- | When given a list Cat, i.e. '[C]', it removes the square
 -- brackets, and adds the prefix List, i.e. 'ListC'.  (for Happy and
 -- Latex)
-identCat :: Cat -> Cat
-identCat c = case c of
-  '[':cs -> "List" ++ identCat (init cs)
-  _ -> c
+-- >>> identCat (ListCat (Cat "C")) -- [C]
+-- "ListC"
+-- >>> identCat (CoercCat "C" 3)
+-- "C3"
+identCat :: Cat -> String
+identCat (ListCat c) = "List" ++ identCat c
+identCat c = show c
 
-{-# DEPRECATED normFun "It's just the identity function" #-}
+-- | FIXME: This is a copy of the old normCat function that some backend use
+-- on Fun. Now that the type of Cat has changed, this is no longer possible
+-- so this is added for those odd cases. It should be verified if this is
+-- really necessary.
 normFun :: Fun -> Fun
-normFun = id -- takeWhile (not . isDigit)
-
-normRuleFun :: Rule -> Rule
-normRuleFun (Rule f p rhs) = Rule (normFun f) p rhs
+normFun f = case f of
+    '[':cs -> "[" ++ norm (init cs) ++ "]"
+    _     -> norm f
+  where norm = reverse . dropWhile isDigit . reverse
 
 
 -- | Checks if the rule is parsable.
 isParsable :: Rul f -> Bool
-isParsable (Rule _ _ (Left c:_)) = c /= internalCat
+isParsable (Rule _ _ (Left c:_)) = c /= InternalCat
 isParsable _ = True
 
 isList :: Cat -> Bool
-isList c = head c == '['
+isList (ListCat _) = True
+isList _ = False
 
-{-# DEPRECATED unList "It's just the identity function" #-}
-unList :: Cat -> Cat
-unList c = c
-
--- | Adds list constructor
-listCat :: Cat -> Cat
-listCat c = "[" ++ c ++ "]"
 
 -- | Unwraps the list constructor from the category name. Eg. [C1] => C1
+-- E.g.
+-- >>> catOfList (ListCat (Cat "A"))
+-- A
+-- >>> catOfList (Cat "B")
+-- B
 catOfList :: Cat -> Cat
-catOfList c = case c of
-  '[':_:_ -> init (tail c)
-  _ -> c
+catOfList (ListCat c) = c
+catOfList c = c
 
 isNilFun, isOneFun, isConsFun, isNilCons,isConcatFun :: Fun -> Bool
 isNilCons f = isNilFun f || isOneFun f || isConsFun f || isConcatFun f
@@ -496,14 +572,14 @@ hasOneFunc = any (isOneFun . funRule)
 
 -- | Gets the separator for a list.
 getCons :: [Rule] -> String
-getCons (Rule f c cats:rs) =
- if isConsFun f
-   then seper cats
-   else getCons rs
- where
+getCons rs = case find (isConsFun . funRule) rs of
+    Just (Rule _ _ cats) -> seper cats
+    Nothing              -> error $ "getCons: no construction function found in "
+                                  ++ intercalate ", " (map (show . funRule) rs)
+  where
     seper [] = []
-    seper ((Right x):xs) = x
-    seper ((Left x):xs) = seper xs
+    seper (Right x:xs) = x
+    seper (Left x:xs) = seper xs
 
 
 isEmptyListCat :: CF -> Cat -> Bool
@@ -523,9 +599,7 @@ findAllReversibleCats cf = [c | (c,r) <- ruleGroups cf, isRev c r] where
   isRev c rs = case rs of
      [r1,r2] | isList c -> if isConsFun (funRule r2)
                              then tryRev r2 r1
-                           else if isConsFun (funRule r1)
-                             then tryRev r1 r2
-                           else False
+                           else isConsFun (funRule r1) && tryRev r1 r2
      _ -> False
   tryRev (Rule f _ ts@(x:_:xs)) r = isEmptyNilRule r &&
                                         isConsFun f && isNonterm x && isNonterm (last ts)
@@ -533,34 +607,38 @@ findAllReversibleCats cf = [c | (c,r) <- ruleGroups cf, isRev c r] where
 
 isEmptyNilRule (Rule f _ ts) = isNilFun f && null ts
 
-precCat :: Cat -> Int
-precCat = snd . analyseCat
+-- | Returns the precedence of a category symbol.
+-- E.g.
+--
+-- >>> precCat (Cat "Abc")
+-- 0
+--
+-- >>> precCat (CoercCat "Abc" 4)
+-- 4
+--
+-- But!
+-- >>> precCat (ListCat (CoercCat "Abc" 2))
+-- 0
+precCat :: Cat -> Integer
+precCat (CoercCat _ i) = i
+precCat _ = 0
 
-precRule :: Rule -> Int
+precRule :: Rule -> Integer
 precRule = precCat . valCat
 
-precLevels :: CF -> [Int]
-precLevels cf = sort $ nub $ [ precCat c | c <- allCats cf]
+precLevels :: CF -> [Integer]
+precLevels cf = sort $ nub [ precCat c | c <- allCats cf]
 
 precCF :: CF -> Bool
 precCF cf = length (precLevels cf) > 1
 
 
-analyseCat :: Cat -> (Cat,Int)
-analyseCat c = if (isList c) then list c else noList c
- where
-  list   cat = let (rc,n) = noList (init (tail cat)) in (listCat rc,n)
-  noList cat = case span isDigit (reverse cat) of
-	        ([],c') -> (reverse c', 0)
-	        (d,c') ->  (reverse c', read (reverse d))
-
-
 -- | Does the category have a position stored in AST?
 isPositionCat :: CFG f -> Cat -> Bool
-isPositionCat cf cat =  or [b | TokenReg name b _ <- pragmasOfCF cf, name == cat]
+isPositionCat cf cat =  or [b | TokenReg name b _ <- pragmasOfCF cf, Cat name == cat]
 
 
--- | Grammar with permutation profile à la GF. AR 22/9/2004
+-- | Grammar with permutation profile Ã  la GF. AR 22/9/2004
 type CFP   = CFG FunP -- (Exts,[RuleP])
 type FunP  = (Fun,Prof)
 type RuleP = Rul FunP -- (FunP, (Cat, [Either Cat String]))

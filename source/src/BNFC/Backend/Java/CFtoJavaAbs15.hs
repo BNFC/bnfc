@@ -78,7 +78,7 @@ prData header packageAbsyn user (cat, rules) =
       where
       funs = map fst rules
       categoryClass
-	  | cat `elem` funs = [] -- the catgory is also a function, skip abstract class
+	  | show cat `elem` funs = [] -- the catgory is also a function, skip abstract class
 	  | otherwise = [(identCat cat, header ++++
 			 unlines [
 				  "public abstract class" +++ cls
@@ -104,7 +104,7 @@ prVisitor packageAbsyn funs =
 prRule :: String   -- ^ Header
        -> String   -- ^ Abstract syntax package name
        -> [String] -- ^ Names of all constructors in the category
-       -> [UserDef] -> String -> (Fun, [Cat]) -> Maybe (String, String)
+       -> [UserDef] -> Cat -> (Fun, [Cat]) -> Maybe (String, String)
 prRule h packageAbsyn funs user c (fun, cats) =
     if isNilFun fun || isOneFun fun
     then Nothing  --these are not represented in the AbSyn
@@ -132,15 +132,15 @@ prRule h packageAbsyn funs user c (fun, cats) =
    where
      vs = getVars cats user
      fun' = identCat (normCat c)
-     isAlsoCategory = fun == c
+     isAlsoCategory = fun == show c
      --This handles the case where a LBNF label is the same as the category.
      ext = if isAlsoCategory then "" else " extends" +++ (identCat c)
-     et = typename (normCatOfList c) user
+     et = typename (show $ normCatOfList c) user
 
 
 --The standard accept function for the Visitor pattern
-prAccept :: String -> String -> String -> String
-prAccept pack cat _ = "\n  public <R,A> R accept(" ++ pack ++ "." ++ cat
+prAccept :: String -> Cat -> String -> String
+prAccept pack cat _ = "\n  public <R,A> R accept(" ++ pack ++ "." ++ show cat
 		      ++ ".Visitor<R,A> v, A arg) { return v.visit(this, arg); }\n"
 
 -- Creates the equals() method.
@@ -214,10 +214,8 @@ prConstructor c u vs cats =
 --Prints the parameters to the constructors.
 prParams :: [Cat] -> [UserDef] -> Int -> Int -> [(String,String)]
 prParams [] _ _ _ = []
-prParams (c:cs) u n m = (identCat c',"p" ++ (show (m-n)))
+prParams (c:cs) u n m = (typename (identCat c) u,"p" ++ (show (m-n)))
 			: (prParams cs u (n-1) m)
-     where
-      c' = typename c u
 
 --This algorithm peeks ahead in the list so we don't use map or fold
 prAssigns :: [IVar] -> [String] -> String
@@ -254,6 +252,6 @@ typename t user =
   then "String"
   else if t == "Char"
   then "Character"
-  else if elem t user
+  else if elem t (map show user)
   then "String"
   else t

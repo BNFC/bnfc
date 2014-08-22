@@ -96,11 +96,11 @@ restOfAlex cf = [
   userDefTokenTypes,
   identAndRes,
 
-  ifC "String" "<string>  ::= ^\" ([^u # [^\"^\\^n]] | (^\\ (^\" | ^\\ | ^' | n | t)))* ^\"" ++
+  ifC catString "<string>  ::= ^\" ([^u # [^\"^\\^n]] | (^\\ (^\" | ^\\ | ^' | n | t)))* ^\"" ++
                   "%{ string p = PT p . TL . unescapeInitTail %}",
-  ifC "Char"   "<char>    ::= ^\' (^u # [^\'^\\] | ^\\ [^\\ ^\' n t]) ^'  %{ char   p = PT p . TC    %}",
-  ifC "Integer" "<int>    ::= ^d+      %{ int    p = PT p . TI    %}",
-  ifC "Double"
+  ifC catChar   "<char>    ::= ^\' (^u # [^\'^\\] | ^\\ [^\\ ^\' n t]) ^'  %{ char   p = PT p . TC    %}",
+  ifC catInteger "<int>    ::= ^d+      %{ int    p = PT p . TI    %}",
+  ifC catDouble
       "<double>   ::= ^d+ ^. ^d+ (e (^-)? ^d+)? %{ double  p = PT p . TD %}",
   "",
   "%{ ",
@@ -200,13 +200,13 @@ restOfAlex cf = [
      --- precompile to search tree!
 
    userDefTokenTypes = unlines $
-     ["<mk_" ++ name ++ "> ::= " ++ printRegAlex exp ++
-      "%{ mk_" ++ name ++ " p = PT p . eitherResIdent T_"  ++ name ++ " %}"
+     ["<mk_" ++ show name ++ "> ::= " ++ printRegAlex exp ++
+      "%{ mk_" ++ show name ++ " p = PT p . eitherResIdent T_"  ++ show name ++ " %}"
                                         | (name,exp) <- tokenPragmas cf]
    userDefTokenConstrs = unlines $
-     [" | T_" ++ name ++ " String" | (name,_) <- tokenPragmas cf]
+     [" | T_" ++ name ++ " String" | name <- tokenNames cf]
    userDefTokenPrint = unlines $
-     ["  PT _ (T_" ++ name ++ " s) -> s" | (name,_) <- tokenPragmas cf]
+     ["  PT _ (T_" ++ name ++ " s) -> s" | name <- tokenNames cf]
 
    identAndRes = --This has to be there for Reserved Words. Michael
      "<ident>   ::= ^l ^i*   %{ ident  p = PT p . eitherResIdent TV %}"
