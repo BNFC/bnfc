@@ -17,6 +17,7 @@ BNFC 2.7.0.0
   (``Makefile``.) Add a long version of the option (``--makefile``)
 * Add a ``--ghc`` option to derive Data, Typeable, Generic in the Haskell
   backend
+* New online documentation (https://bnfc.readthedocs.org)
 * Derive ``Read`` for newtype decls in Haskell backend.  E.g.
   ::
 
