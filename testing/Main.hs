@@ -71,7 +71,17 @@ testData =
   , ("data"</>"cpp"</>"cpp.cf", "data"</>"cpp"</>"example.cpp" )
   , ("data"</>"gf"</>"gf.cf", "data"</>"gf"</>"example.gf" )
   , ("data"</>"ocl"</>"ocl.cf", "data"</>"ocl"</>"example.ocl" )
-  , ("data"</>"lbnf"</>"lbnf.cf", "data"</>"lbnf"</>"example.lbnf" ) ]
+  , ("data"</>"lbnf"</>"lbnf.cf", "data"</>"lbnf"</>"example.lbnf" )
+  , (examples</>"prolog"</>"Prolog.cf", examples</>"prolog"</>"small.pl" )
+  , (examples</>"Alfa"</>"Alfa.cf", examples</>"Alfa"</>"Sorting.alfa")
+  , (examples</>"C"</>"C.cf", examples</>"C"</>"runtime.c")
+  , (examples</>"C"</>"C.cf", examples</>"C"</>"koe2.c")
+  , (examples</>"C4.cf", examples</>"C"</>"runtime.c")
+  , (examples</>"C4.cf", examples</>"C"</>"koe2.c")
+  , (examples</>"Javalette"</>"JavaletteLight.cf", examples</>"Javalette"</>"koe.jll")
+  , (examples</>"LBNF"</>"LBNF.cf", examples</>"LBNF"</>"LBNF.cf")
+  ]
+  where examples = ".."</>"examples"
 
 -- A shelly function that, given a test context and a pair grammar+example,
 -- runs a complete test in a temp directory
