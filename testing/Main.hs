@@ -103,10 +103,11 @@ testData =
   , ( examples</>"LBNF"</>"LBNF.cf"
     , [examples</>"LBNF"</>"LBNF.cf"])
 
-  , ( examples</>"Java"</>"java.cf", [] )
+  -- , ( examples</>"Java"</>"java.cf", [] ) -- Cannot be used for testing as
+  -- it has duplicate names
+
   , ( examples</>"Calc.cf", [] )
   , ( examples</>"fstStudio.cf", [] )
-  , ( examples</>"DefinedRules.cf", [] )
   ]
   where examples = ".."</>"examples"
 
