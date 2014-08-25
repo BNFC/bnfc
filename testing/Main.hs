@@ -73,13 +73,7 @@ settings =
 -- successfully (i.e. exit code 0).
 testData :: [(FilePath, [FilePath])]
 testData =
-  [ ( "data"</>"cnf"</>"c.cf"
-    , [ "data"</>"cnf"</>"small.c" ] )
-
-  , ( "data"</>"c"</>"c.cf"
-    , [ "data"</>"c"</>"example.c"] )
-
-  , ( "data"</>"cpp"</>"cpp.cf"
+  [ ( "data"</>"cpp"</>"cpp.cf"
     , [ "data"</>"cpp"</>"example.cpp"] )
 
   , ( "data"</>"gf"</>"gf.cf"
@@ -95,16 +89,16 @@ testData =
     , [ examples</>"prolog"</>"small.pl"
       , examples</>"prolog"</>"simpsons.pl" ] )
 
-  , ( examples</>"Alfa"</>"Alfa.cf"
-    , [ examples</>"Alfa"</>"Sorting.alfa"])
-
   , ( examples</>"C"</>"C.cf"
     , [ examples</>"C"</>"runtime.c"
       , examples</>"C"</>"koe2.c" ] )
 
-  , ( examples</>"C4.cf"
-    , [ examples</>"C"</>"runtime.c"
-      , examples</>"C"</>"koe2.c"])
+  , ( examples</>"C"</>"C4.cf"
+    , [ examples</>"C"</>"koe2.c"])
+
+  , ( examples</>"C"</>"C_with_delimiters.cf"
+    , [ examples</>"C"</>"small.c"
+      , examples</>"C"</>"core.c" ] )
 
   , ( examples</>"Javalette"</>"JavaletteLight.cf"
     , [examples</>"Javalette"</>"koe.jll"])
