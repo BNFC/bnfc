@@ -303,16 +303,15 @@ generateAction ln inPackage cat f b mbs =
   else if (f == "(:)" && b)
   then "$1->push_back("++ lastms ++ ") ; $$ = $1 ;"
   else if (f == "(:)")
-  then lastms ++ "->push_back($1) ; $$ = " ++ lastms ++ " ;" ---- not left rec
+  then lastms ++ "->push_back(" ++ head ms ++ ") ; $$ = " ++ lastms ++ " ;" ---- not left rec
   else if isDefinedRule f
-  then concat ["$$ = ", scope, f, "_", "(", concat $ intersperse ", " ms', ");" ]
+  then concat ["$$ = ", scope, f, "_", "(", concat $ intersperse ", " ms, ");" ]
   else concat
-    ["$$ = ", "new ", scope, f, "(", (concat (intersperse ", " ms')), ");" ++ addLn ln]
+    ["$$ = ", "new ", scope, f, "(", (concat (intersperse ", " ms)), ");" ++ addLn ln]
  where
   ms = map fst mbs
-  ms' = ms
-  addLn ln = if ln then " $$->line_number = " ++ nsString inPackage ++ "yy_mylinenumber;" else ""  -- O.F.
   lastms = last ms
+  addLn ln = if ln then " $$->line_number = " ++ nsString inPackage ++ "yy_mylinenumber;" else ""  -- O.F.
   identCatV = identCat . normCat
   reverses = unwords [
     "std::reverse(" ++ m ++"->begin(),"++m++"->end()) ;" |
