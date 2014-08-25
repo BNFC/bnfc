@@ -73,14 +73,14 @@ settings =
 -- successfully (i.e. exit code 0).
 testData :: [(FilePath, [FilePath])]
 testData =
-  [ ( "data"</>"cpp"</>"cpp.cf"
-    , [ "data"</>"cpp"</>"example.cpp"] )
+  [ ( examples</>"cpp"</>"cpp.cf"
+    , [ examples</>"cpp"</>"example.cpp"] )
 
-  , ( "data"</>"gf"</>"gf.cf"
-    , [ "data"</>"gf"</>"example.gf"] )
+  , ( examples</>"GF"</>"gf.cf"
+    , [ examples</>"GF"</>"example.gf"] )
 
-  , ( "data"</>"ocl"</>"ocl.cf"
-    , [ "data"</>"ocl"</>"example.ocl"] )
+  , ( examples</>"OCL"</>"OCL.cf"
+    , [ examples</>"OCL"</>"example.ocl"] )
 
   , ( examples</>"prolog"</>"Prolog.cf"
     , [ examples</>"prolog"</>"small.pl"
