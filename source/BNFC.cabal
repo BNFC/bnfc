@@ -70,6 +70,7 @@ Executable bnfc
     BNFC.Backend.Common.Makefile,
     BNFC.Backend.Common.NamedVariables,
     BNFC.Backend.Common.OOAbstract,
+    BNFC.Backend.Common.StrUtils,
     BNFC.Options,
     BNFC.WarningM,
     Data.Pair,
