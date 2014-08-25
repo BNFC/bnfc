@@ -82,9 +82,6 @@ testData =
   , ( "data"</>"ocl"</>"ocl.cf"
     , [ "data"</>"ocl"</>"example.ocl"] )
 
-  , ( "data"</>"lbnf"</>"lbnf.cf"
-    , [ "data"</>"lbnf"</>"example.lbnf"] )
-
   , ( examples</>"prolog"</>"Prolog.cf"
     , [ examples</>"prolog"</>"small.pl"
       , examples</>"prolog"</>"simpsons.pl" ] )
