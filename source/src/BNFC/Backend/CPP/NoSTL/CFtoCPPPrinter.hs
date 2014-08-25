@@ -25,8 +25,10 @@ module BNFC.Backend.CPP.NoSTL.CFtoCPPPrinter (cf2CPPPrinter) where
 import BNFC.CF
 import BNFC.Utils ((+++), (++++))
 import BNFC.Backend.Common.NamedVariables
+import BNFC.Backend.Common.StrUtils (renderCharOrString)
 import Data.List
 import Data.Char(toLower, toUpper)
+import Text.PrettyPrint
 
 --Produces (.H file, .C file)
 cf2CPPPrinter :: CF -> (String, String)
@@ -343,7 +345,7 @@ prPrintData user (cat, rules) =
    visitMember = if isBasic user member
      then "      visit" ++ (funName member) ++ "(" ++ vname ++ "->" ++ member ++ ");"
      else "      " ++ vname ++ "->" ++ member ++ "->accept(this);"
-   sep = renderCharOrString sep'
+   sep = snd (renderCharOrString sep')
    sep' = getCons rules
    optsep = if hasOneFunc rules then "" else ("      render(" ++ sep ++ ");")
    abstract = case lookupRule (show cat) rules of
@@ -379,7 +381,7 @@ prPrintCat :: [UserDef] -> String -> (Either String String, Integer) -> String
 prPrintCat user fnm (c,p) = case c of
   (Right t) -> "  render(" ++ t' ++ ");\n"
     where
-     t' = renderCharOrString t
+     t' = snd (renderCharOrString t)
   (Left nt) -> if isBasic user nt
        then "  visit" ++ (funName nt) ++ "(" ++ fnm ++ "->" ++ nt ++ ");\n"
        else if "list" `isPrefixOf` nt
@@ -389,21 +391,6 @@ prPrintCat user fnm (c,p) = case c of
        accept = if nt == "#_" --Internal category
          then "/* Internal Category */\n"
          else (setI p) ++ fnm ++ "->" ++ nt ++ "->accept(this);"
-
--- | Function that, given an input string, renders it either as a char (if
--- it has legth 1) or a string. It should also excape characters correctly.
--- e.g.
--- >>> renderCharOrString "a"
--- "'a'"
--- >>> renderCharOrString "abc"
--- "\"abc\""
--- >>> renderCharOrString "'"
--- "'\\''"
--- >>> renderCharOrString "\"\\'"
--- "\"\\\"\\\\'\""
-renderCharOrString :: String -> String
-renderCharOrString [char] = show char     -- using show shoud quote '
-renderCharOrString s = "\"" ++ escapeChars s ++ "\""
 
 
 {- **** Abstract Syntax Tree Printer **** -}
@@ -529,13 +516,6 @@ funName v =
 --Just sets the coercion level for parentheses in the Pretty Printer.
 setI :: Integer -> String
 setI n = "_i_ = " ++ (show n) ++ "; "
-
---Helper function that escapes characters in strings
-escapeChars :: String -> String
-escapeChars [] = []
-escapeChars ('\\':xs) = '\\' : ('\\' : (escapeChars xs))
-escapeChars ('\"':xs) = '\\' : ('\"' : (escapeChars xs))
-escapeChars (x:xs) = x : (escapeChars xs)
 
 --An extremely simple renderer for terminals.
 prRender :: String
