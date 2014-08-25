@@ -102,6 +102,11 @@ testData =
 
   , ( examples</>"LBNF"</>"LBNF.cf"
     , [examples</>"LBNF"</>"LBNF.cf"])
+
+  , ( examples</>"Java"</>"java.cf", [] )
+  , ( examples</>"Calc.cf", [] )
+  , ( examples</>"fstStudio.cf", [] )
+  , ( examples</>"DefinedRules.cf", [] )
   ]
   where examples = ".."</>"examples"
 
