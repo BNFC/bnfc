@@ -12,4 +12,4 @@ artificial intelligence and computational linguistics. (More on Wikipedia_)
   longer example
 
 
-.. _Wikipedia https://en.wikipedia.org/wiki/Prolog
+.. _Wikipedia: https://en.wikipedia.org/wiki/Prolog
