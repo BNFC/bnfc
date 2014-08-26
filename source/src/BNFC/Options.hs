@@ -113,8 +113,8 @@ defaultOptions = Options
 -- This defines bnfc's "global" options, like --help
 globalOptions :: [ OptDescr Mode ]
 globalOptions = [
-  Option [] ["help"]          (NoArg Help)         "show help",
-  Option [] ["version"]       (NoArg Version)      "show version number"]
+  Option [] ["help"]                      (NoArg Help)         "show help",
+  Option [] ["version","numeric-version"] (NoArg Version)      "show version number"]
 
 -- | Options for the target languages
 -- targetOptions :: [ OptDescr Target ]

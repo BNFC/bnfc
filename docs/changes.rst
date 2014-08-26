@@ -5,7 +5,7 @@ BNFC 2.7.0.0
 ============
 
 * Add token support for Ocaml
-* New option parser: the options now follow the standard convention f using two
+* New option parser: the options now follow the standard convention of using two
   dashes for long options (e.g. ``--haskell``). Old options with a single dash (e.g.
   ``-haskell``) are still accepted but all newly introduced options use only the new
   format.
@@ -28,11 +28,12 @@ BNFC 2.7.0.0
 
       LangX.IdentExp ident -> LangY.IdentExp (read (show ident))
 
-* The option to get the version number is now simply ``--version``
+* New option to get the version number: ``--version`` (the old one,
+  ``--numeric-version`` still works).
 * Remove the F# backend
 * Remove the Java4 backend
 * New Applicative and Alternative instances to ``Err``
-* Remove the coopling between building the parser and the pdf from
+* Remove the coupling between building the parser and the pdf from
   latex: this was causing a lot of confusion in the course because it
   would fail to build the test program if the student didn't have latex
   installed.  Add a separate target for the latex document (``--latex``).
