@@ -223,9 +223,10 @@ restOfAlex shareMod shareStrings byteStrings cf = [
    lexComments (([l1,l2],[r1,r2]):xs,[]) = concat $
 					[
 					('\"':l1:l2:"\" ([$u # \\"), -- FIXME quotes or escape?
-					(l2:"] | \\"),
-					(r1:" [$u # \\"),
-					(r2:"])* (\""),
+					(r1:"] | \\"),
+					(r1:"+ [$u # [\\"),
+					(r1:" \\"),
+					(r2:"]])* (\""),
 					(r1:"\")+ \""),
 					(r2:"\" ; \n"),
 					lexComments (xs, [])
