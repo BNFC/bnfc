@@ -120,6 +120,18 @@ regressionTests = makeTestSuite "Regression tests"
             cmd "bnfc" "--haskell" "--xml" "-m" "-d" "Test.cf"
             assertFileExists "Test/XML.hs"
             cmd "make"
+  , makeShellyTest "#108 C like comments and alex" $
+        withTmpDir $ \tmp -> do
+            cp "../examples/C.cf" tmp
+            cd tmp
+            cmd "bnfc" "--haskell" "-m" "C.cf"
+            cmd "make"
+            setStdin "int a; /* **/ int b; /* */"
+            out <- cmd "./TestC"
+            liftIO $ print out
+            liftIO $ assertBool "Couldn't find `int b` in output"
+                                ("int b ;" `T.isInfixOf` out)
+
    ]
 
 
