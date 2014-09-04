@@ -161,7 +161,7 @@ regressionTests = makeTestSuite "Regression tests"
             cmd "make"
   , makeShellyTest "#108 C like comments and alex" $
         withTmpDir $ \tmp -> do
-            cp "../examples/C.cf" tmp
+            cp "../examples/C/C.cf" tmp
             cd tmp
             cmd "bnfc" "--haskell" "-m" "C.cf"
             cmd "make"
