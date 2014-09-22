@@ -45,10 +45,10 @@ LabPF    . Label ::= LabelId LabelId [ProfItem] ;
 LabF     . Label ::= LabelId LabelId ;
 
 -- functional labels
-Id       . LabelId ::= Ident ; 
-Wild     . LabelId ::= "_" ; 
+Id       . LabelId ::= Ident ;
+Wild     . LabelId ::= "_" ;
 ListE    . LabelId ::= "[" "]" ;
-ListCons . LabelId ::= "(" ":" ")" ; 
+ListCons . LabelId ::= "(" ":" ")" ;
 ListOne  . LabelId ::= "(" ":" "[" "]" ")" ;
 
 -- profiles (= permutation and binding patterns)
@@ -63,7 +63,7 @@ terminator nonempty ProfItem "" ;
 -- Pragmas
 Comment  .  Def ::= "comment" String ;
 Comments .  Def ::= "comment" String String ;
-Internal .  Def ::= "internal" Label "." Cat "::=" [Item] ; 
+Internal .  Def ::= "internal" Label "." Cat "::=" [Item] ;
 Token.      Def ::= "token" Ident Reg ;
 PosToken.   Def ::= "position" "token" Ident Reg ;
 Entryp.     Def ::= "entrypoints" [Ident] ;

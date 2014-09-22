@@ -44,6 +44,7 @@ module BNFC.Backend.C.CFtoCPrinter (cf2CPrinter) where
 import BNFC.CF
 import BNFC.Utils ((+++), (++++))
 import BNFC.Backend.Common.NamedVariables
+import BNFC.Backend.Common.StrUtils (renderCharOrString)
 import Data.List
 import Data.Char(toLower, toUpper)
 
@@ -349,7 +350,7 @@ prPrintData user (cat, rules) =
   "    else",
   "    {",
   visitMember,
-  "      render" ++ sc ++ "(" ++ sep ++ ");",
+  "      render" ++ [sc] ++ "(" ++ sep ++ ");",
   "      " ++ vname +++ "=" +++ vname ++ "->" ++ vname ++ "_;",
   "    }",
   "  }",
@@ -375,11 +376,9 @@ prPrintData user (cat, rules) =
    vname = map toLower cl
    member = map toLower ecl
    visitMember = "      pp" ++ ecl ++ "(" ++ vname ++ "->" ++ member ++ "_, 0);"
-   (sc, sep) = if length sep' == 1
-     then ("C", "'" ++ escapeChars sep' ++ "'")
-     else ("S", "\"" ++ escapeChars sep' ++ "\"")
+   (sc, sep) = renderCharOrString sep'
    sep' = getCons rules
-   optsep = if hasOneFunc rules then "" else ("      render" ++ sc ++ "(" ++ sep ++ ");")
+   optsep = if hasOneFunc rules then "" else "      render" ++ [sc] ++ "(" ++ sep ++ ");"
 
 --Pretty Printer methods for a rule.
 prPrintRule :: [UserDef] -> Rule -> String
@@ -404,11 +403,9 @@ prPrintRule _ _ = ""
 --This goes on to recurse to the instance variables.
 prPrintCat :: [UserDef] -> String -> (Either String String, Either Cat String, Integer) -> String
 prPrintCat user fnm (c,o,p) = case c of
-  (Right t) -> "    render" ++ sc ++ "(" ++ t' ++ ");\n"
+  (Right t) -> "    render" ++ [sc] ++ "(" ++ t' ++ ");\n"
     where
-     (sc,t') = if length t == 1
-       then ("C", "'" ++ (escapeChars t) ++ "'")
-       else ("S", "\"" ++ (escapeChars t) ++ "\"")
+     (sc,t') = renderCharOrString t
   (Left nt) -> if isBasic user nt
        then "    pp" ++ (basicFunName nt) ++ "(_p_->u." ++ v ++ "_." ++ nt ++ ", " ++ (show p) ++ ");\n"
        else if nt == "#_" --Internal category
@@ -565,13 +562,6 @@ basicFunName v =
 --Just sets the coercion level for parentheses in the Pretty Printer.
 setI :: Int -> String
 setI n = "_i_ = " ++ (show n) ++ "; "
-
---Helper function that escapes characters in strings
-escapeChars :: String -> String
-escapeChars [] = []
-escapeChars ('\\':xs) = '\\' : ('\\' : (escapeChars xs))
-escapeChars ('\"':xs) = '\\' : ('\"' : (escapeChars xs))
-escapeChars (x:xs) = x : (escapeChars xs)
 
 --An extremely simple renderCer for terminals.
 prRender :: String

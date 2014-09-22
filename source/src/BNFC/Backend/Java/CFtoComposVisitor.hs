@@ -94,8 +94,8 @@ prCat :: [UserDef]
       -> String    -- ^ Variable name
       -> [String]  -- ^ Code for visiting the variable
 prCat user cat nt
-    | isBasicType user varType || (isListType varType && isBasicType user et) = [decl var]
-    | isListType varType = listAccept
+    | isBasicType user varType || (isList cat && isBasicType user et) = [decl var]
+    | isList cat = listAccept
     | otherwise = [decl (var ++ ".accept(this, arg)")]
       where
       var = "p." ++ nt
@@ -107,9 +107,6 @@ prCat user cat nt
                     "for (" ++ et ++ " x : " ++ var ++ ") {",
                     "  " ++ nt ++ ".add(x.accept(this,arg));",
 	            "}"]
-
-isListType :: String -> Bool
-isListType nt = "List" `isPrefixOf` nt
 
 --Just checks if something is a basic or user-defined type.
 isBasicType :: [UserDef] -> String -> Bool

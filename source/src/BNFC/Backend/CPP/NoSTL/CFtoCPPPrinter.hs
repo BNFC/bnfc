@@ -25,8 +25,10 @@ module BNFC.Backend.CPP.NoSTL.CFtoCPPPrinter (cf2CPPPrinter) where
 import BNFC.CF
 import BNFC.Utils ((+++), (++++))
 import BNFC.Backend.Common.NamedVariables
+import BNFC.Backend.Common.StrUtils (renderCharOrString)
 import Data.List
 import Data.Char(toLower, toUpper)
+import Text.PrettyPrint
 
 --Produces (.H file, .C file)
 cf2CPPPrinter :: CF -> (String, String)
@@ -160,7 +162,7 @@ mkHFile cf groups = unlines
 --Prints all the required method names and their parameters.
 prDataH :: (Cat, [Rule]) -> String
 prDataH (cat, rules) =
- if "List" `isPrefixOf` (identCat cat)
+ if isList cat
  then concat ["  void visit", cl, "(", cl, "* p);\n"]
  else abstract ++ (concatMap prRuleH rules)
  where
@@ -311,7 +313,7 @@ mkCFile cf groups = concat
 --Generates methods for the Pretty Printer
 prPrintData :: [UserDef] -> (Cat, [Rule]) -> String
 prPrintData user (cat, rules) =
- if "List" `isPrefixOf` (identCat cat)
+ if isList cat
  then unlines
  [
   "void PrintAbsyn::visit" ++ cl ++ "("++ cl ++ " *" ++ vname ++ ")",
@@ -343,9 +345,7 @@ prPrintData user (cat, rules) =
    visitMember = if isBasic user member
      then "      visit" ++ (funName member) ++ "(" ++ vname ++ "->" ++ member ++ ");"
      else "      " ++ vname ++ "->" ++ member ++ "->accept(this);"
-   sep = if (length sep') == 1
-     then "'" ++ (escapeChars sep') ++ "'"
-     else "\"" ++ (escapeChars sep') ++ "\""
+   sep = snd (renderCharOrString sep')
    sep' = getCons rules
    optsep = if hasOneFunc rules then "" else ("      render(" ++ sep ++ ");")
    abstract = case lookupRule (show cat) rules of
@@ -381,9 +381,7 @@ prPrintCat :: [UserDef] -> String -> (Either String String, Integer) -> String
 prPrintCat user fnm (c,p) = case c of
   (Right t) -> "  render(" ++ t' ++ ");\n"
     where
-     t' = if length t == 1
-       then "'" ++ (escapeChars t) ++ "'"
-       else "\"" ++ (escapeChars t) ++ "\""
+     t' = snd (renderCharOrString t)
   (Left nt) -> if isBasic user nt
        then "  visit" ++ (funName nt) ++ "(" ++ fnm ++ "->" ++ nt ++ ");\n"
        else if "list" `isPrefixOf` nt
@@ -394,12 +392,13 @@ prPrintCat user fnm (c,p) = case c of
          then "/* Internal Category */\n"
          else (setI p) ++ fnm ++ "->" ++ nt ++ "->accept(this);"
 
+
 {- **** Abstract Syntax Tree Printer **** -}
 
 --This prints the functions for Abstract Syntax tree printing.
 prShowData :: [UserDef] -> (Cat, [Rule]) -> String
 prShowData user (cat, rules) =
- if "List" `isPrefixOf` (identCat cat)
+ if isList cat
  then unlines
  [
   "void ShowAbsyn::visit" ++ cl ++ "("++ cl ++ " *" ++ vname ++ ")",
@@ -517,13 +516,6 @@ funName v =
 --Just sets the coercion level for parentheses in the Pretty Printer.
 setI :: Integer -> String
 setI n = "_i_ = " ++ (show n) ++ "; "
-
---Helper function that escapes characters in strings
-escapeChars :: String -> String
-escapeChars [] = []
-escapeChars ('\\':xs) = '\\' : ('\\' : (escapeChars xs))
-escapeChars ('\"':xs) = '\\' : ('\"' : (escapeChars xs))
-escapeChars (x:xs) = x : (escapeChars xs)
 
 --An extremely simple renderer for terminals.
 prRender :: String

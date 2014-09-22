@@ -6,6 +6,7 @@ module Main where
 import Data.Monoid ((<>))
 import Data.Text (Text)
 import qualified Data.Text as T
+import Control.Monad (forM_)
 import Filesystem.Path (filename, basename)
 import Filesystem.Path.CurrentOS (encodeString)
 import Prelude hiding (FilePath)
@@ -64,27 +65,65 @@ settings =
                            (run_ "make" []) -- make command
                            (\lang -> cmd ("." </> ("Test" <> lang))) -- run
 
-testData :: [(FilePath, FilePath)]
+-- The data to test the different backends with. The first file should be
+-- a lbnf grammar and the list contains example programs written in this
+-- languague. The list can contain zero, one or more example files. If there
+-- is zero, we only test that the grammar is correctly compiled. If there is
+-- ore or more, they are fed to the test program and we expect that it exits
+-- successfully (i.e. exit code 0).
+testData :: [(FilePath, [FilePath])]
 testData =
-  [ ("data"</>"cnf"</>"c.cf", "data"</>"cnf"</>"small.c" )
-  , ("data"</>"c"</>"c.cf", "data"</>"c"</>"example.c" )
-  , ("data"</>"cpp"</>"cpp.cf", "data"</>"cpp"</>"example.cpp" )
-  , ("data"</>"gf"</>"gf.cf", "data"</>"gf"</>"example.gf" )
-  , ("data"</>"ocl"</>"ocl.cf", "data"</>"ocl"</>"example.ocl" )
-  , ("data"</>"lbnf"</>"lbnf.cf", "data"</>"lbnf"</>"example.lbnf" ) ]
+  [ ( examples</>"cpp"</>"cpp.cf"
+    , [ examples</>"cpp"</>"example.cpp"] )
+
+  , ( examples</>"GF"</>"gf.cf"
+    , [ examples</>"GF"</>"example.gf"] )
+
+  , ( examples</>"OCL"</>"OCL.cf"
+    , [ examples</>"OCL"</>"example.ocl"] )
+
+  , ( examples</>"prolog"</>"Prolog.cf"
+    , [ examples</>"prolog"</>"small.pl"
+      , examples</>"prolog"</>"simpsons.pl" ] )
+
+  , ( examples</>"C"</>"C.cf"
+    , [ examples</>"C"</>"runtime.c"
+      , examples</>"C"</>"koe2.c" ] )
+
+  , ( examples</>"C"</>"C4.cf"
+    , [ examples</>"C"</>"koe2.c"])
+
+  , ( examples</>"C"</>"C_with_delimiters.cf"
+    , [ examples</>"C"</>"small.c" ] )
+      -- , examples</>"C"</>"core.c" ] ) -- Fail with CNF!!!
+
+  , ( examples</>"Javalette"</>"JavaletteLight.cf"
+    , [examples</>"Javalette"</>"koe.jll"])
+
+  , ( examples</>"LBNF"</>"LBNF.cf"
+    , [examples</>"LBNF"</>"LBNF.cf"])
+
+  -- , ( examples</>"Java"</>"java.cf", [] ) -- Cannot be used for testing as
+  -- it has duplicate names
+
+  , ( examples</>"Calc.cf", [] )
+  , ( examples</>"fstStudio.cf", [] )
+  ]
+  where examples = ".."</>"examples"
 
 -- A shelly function that, given a test context and a pair grammar+example,
 -- runs a complete test in a temp directory
-testScript :: TestContext -> (FilePath, FilePath) -> Sh ()
-testScript context (grammar, example) = withTmpDir $ \tmp -> do
+testScript :: TestContext -> (FilePath, [FilePath]) -> Sh ()
+testScript context (grammar, examples) = withTmpDir $ \tmp -> do
     cp grammar tmp
-    cp example tmp
+    forM_ examples $ flip cp tmp
     cd tmp
     let args = tcBnfcOptions context ++ [toTextArg (filename grammar)]
     run_ "bnfc" args
     tcMake context
-    readfile (filename example) >>= setStdin
-    tcRun context language
+    forM_ examples $ \example -> do
+      readfile (filename example) >>= setStdin
+      tcRun context language
   where language = toTextArg (basename grammar)
 
 blackBoxTests :: TestSuite
@@ -122,7 +161,7 @@ regressionTests = makeTestSuite "Regression tests"
             cmd "make"
   , makeShellyTest "#108 C like comments and alex" $
         withTmpDir $ \tmp -> do
-            cp "../examples/C.cf" tmp
+            cp "../examples/C/C.cf" tmp
             cd tmp
             cmd "bnfc" "--haskell" "-m" "C.cf"
             cmd "make"
@@ -133,7 +172,6 @@ regressionTests = makeTestSuite "Regression tests"
                                 ("int b ;" `T.isInfixOf` out)
 
    ]
-
 
 -- ------------------------------------------------------------------------- --
 -- TEST UTILS
