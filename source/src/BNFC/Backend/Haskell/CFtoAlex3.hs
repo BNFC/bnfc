@@ -116,7 +116,7 @@ restOfAlex shareMod shareStrings byteStrings cf = [
   userDefTokenConstrs,
   " deriving (Eq,Show,Ord)",
   "",
-  "data Token = ",
+  "data Token =",
   "   PT  Posn Tok",
   " | Err Posn",
   "  deriving (Eq,Show,Ord)",
@@ -249,7 +249,7 @@ restOfAlex shareMod shareStrings byteStrings cf = [
 					(r1:" \\"),
 					(r2:"]])* (\""),
 					(r1:"\")+ \""),
-					(r2:"\" ; \n"),
+					(r2:"\" ;\n"),
 					lexComments (xs, [])
 					]
    lexComments ((_:xs),[]) = lexComments (xs,[])
@@ -333,7 +333,7 @@ instance Print Char where
   prt _ c = case c of
              '\n' -> ["\\n"]
              '\t' -> ["\\t"]
-             c | isAlphaNum c -> [[c]] 
+             c | isAlphaNum c -> [[c]]
              c | isPrint c    -> ['\\':[c]]
              c | otherwise    -> ['\\':show (ord c)]
   prtList s = map (concat . prt 0) s
