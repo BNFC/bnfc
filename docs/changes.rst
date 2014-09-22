@@ -41,7 +41,7 @@ BNFC 2.7.0.0
 * Bug fixes in different backends: Ocaml (#92, #21), GADT (#34, #33),
   Latex (#90), XML (#30), Java (#60)
 
-Thanks to everyone who has contributed to this release: Adam
-Sandberg Eriksson, Alex Rozenshteyn, Caleb Welton, Cubit, Grégoire
-Détrez, Jean-Philippe Bernardy, Jeff Chen, John Lato, Josef
-Svenningsson, Oliver Bunting, Rob Stewart, emptylambda, joe, runoshun
+Thanks to everyone who has contributed to this release: Adam Sandberg Eriksson,
+Alex Rozenshteyn, Caleb Welton, Cubit, Grégoire Détrez, Jean-Philippe Bernardy,
+Jeff Chen, John Lato, Josef Svenningsson, Oliver Bunting, Rob Stewart, Wictor
+Lund, emptylambda, joe, runoshun
