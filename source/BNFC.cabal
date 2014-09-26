@@ -24,6 +24,11 @@ Description:
   a Latex file containing a readable specification of the language.
 Extra-source-files: src/BNF.cf TODO
 
+Source-repository head
+  type: git
+  location: https://github.com/BNFC/bnfc.git
+  subdir: source
+
 Library
   hs-source-dirs: runtime, src
   Build-Depends: base>=4.4 && <5, array
