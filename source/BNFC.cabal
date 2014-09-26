@@ -46,7 +46,7 @@ Executable bnfc
     pretty >=1.1 && <1.2,
     filepath,
     deepseq
-  build-tools:         alex, happy
+  build-tools:         alex >= 3.1.0 , happy >= 1.19.0
   Main-is: Main.hs
   HS-source-dirs: src/
   ghc-options:     -fwarn-incomplete-patterns
