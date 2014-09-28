@@ -40,7 +40,7 @@ errM errMod _ = unlines
 	    "  return      = Ok",
 	    "  fail        = Bad",
 	    "  Ok a  >>= f = f a",
-	    "  Bad s >>= f = Bad s",
+	    "  Bad s >>= _ = Bad s",
       "",
       "instance Applicative Err where",
       "  pure = Ok",
