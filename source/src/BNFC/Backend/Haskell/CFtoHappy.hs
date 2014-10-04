@@ -17,13 +17,11 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 -}
 
-module BNFC.Backend.Haskell.CFtoHappy
-       (
-       cf2HappyS -- cf2HappyS :: CF -> CFCat -> String
-       )
-        where
+module BNFC.Backend.Haskell.CFtoHappy where
 
+import Text.PrettyPrint
 import BNFC.CF
+import BNFC.Backend.Common.StrUtils (escapeChars)
 --import Lexer
 import Data.List (intersperse, sort)
 import Data.Char
@@ -113,6 +111,7 @@ declarations mode ns = unlines
                   "%monad { Err } { thenM } { returnM }",
                   "%tokentype { " ++ tokenName ++ " }"]
    where generateP []     = []
+
 	 generateP (n:ns) = concat ["%name p",n'," ",n',"\n",generateP ns]
                                where n' = identCat n
 
@@ -122,21 +121,17 @@ delimiter = "\n%%\n"
 
 -- Generate the list of tokens and their identifiers.
 tokens :: [(String,Int)] -> String
-tokens toks = "%token \n" ++ prTokens toks
+tokens toks = "%token\n" ++ prTokens toks
  where prTokens []         = []
-       prTokens ((t,k):tk) = " " ++ (convert t) ++
+       prTokens ((t,k):tk) = "  " ++ render (convert t) ++
                              " { " ++ oneTok t k ++ " }\n" ++
                              prTokens tk
        oneTok t k = "PT _ (TS _ " ++ show k ++ ")"
 
 -- Happy doesn't allow characters such as едц to occur in the happy file. This
 -- is however not a restriction, just a naming paradigm in the happy source file.
-convert :: String -> String
-convert "\\" = concat ['\'':"\\\\","\'"]
-convert xs   = concat ['\'':(escape xs),"\'"]
-  where escape [] = []
-	escape ('\'':xs) = '\\':'\'':escape xs
-	escape (x:xs) = x:escape xs
+convert :: String -> Doc
+convert = quotes . text . escapeChars
 
 rulesForHappy :: CF -> Rules
 rulesForHappy cf = map mkOne $ ruleGroups cf where
@@ -176,7 +171,7 @@ generatePatterns cf r = case rhsRule r of
  where
    mkIt i = case i of
      Left c -> identCat c
-     Right s -> convert s
+     Right s -> render (convert s)
    metas its = [revIf c ('$': show i) | (i,Left c) <- zip [1 ::Int ..] its]
    revIf c m = if (not (isConsFun (funRule r)) && elem c revs)
                  then ("(reverse " ++ m ++ ")")
