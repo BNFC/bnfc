@@ -170,7 +170,12 @@ regressionTests = makeTestSuite "Regression tests"
             liftIO $ print out
             liftIO $ assertBool "Couldn't find `int b` in output"
                                 ("int b ;" `T.isInfixOf` out)
-
+  , makeShellyTest "Parse error while building BNFC generated parser #110" $
+        withTmpDir $ \tmp -> do
+            cp ("regression-tests" </> "110_backslash.cf") tmp
+            cd tmp
+            cmd "bnfc" "--haskell" "-m" "110_backslash.cf"
+            cmd "make"
    ]
 
 -- ------------------------------------------------------------------------- --
