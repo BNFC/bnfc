@@ -22,7 +22,7 @@ Description:
   a Happy, CUP, or Bison parser generator file,
   a pretty-printer as a Haskell/Java/C++/C module,
   a Latex file containing a readable specification of the language.
-Extra-source-files: src/BNF.cf TODO
+Extra-source-files: src/BNF.cf TODO changelog
 
 Source-repository head
   type: git

@@ -1,0 +1,19 @@
+2.7.1.0 Grégoire Détrez <gregoire.detrez@gu.se> October 2014
+	* Generate warning free haskell code
+	* Fix issues #110 and #102
+
+2.7.0.0 Grégoire Détrez <gregoire.detrez@gu.se> September 2014
+	* Add token support for Ocaml
+	* New option parser
+	* Adds an optional argument to change Makefile name
+	* Add a --ghc option to derive Data, Typeable, Generic in Haskell
+	* New online documentation (https://bnfc.readthedocs.org)
+	* Derive ``Read`` for newtype decls in Haskell
+	* New option to get the version number --version
+	* Remove the F# backend
+	* Remove the Java4 backend
+	* New Applicative and Alternative instances to ``Err``
+	* Remove the coupling between building the parser and the pdf from
+	latex
+	* Improvement to the CNF Backend
+	* Bug fixes #92, #21, #34, #33, #90, #30, #60
