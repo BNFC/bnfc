@@ -21,8 +21,9 @@ renderCharOrString s =('S', "\"" ++ escapeChars s ++ "\"")
 --Helper function that escapes characters in strings
 escapeChars :: String -> String
 escapeChars [] = []
-escapeChars ('\\':xs) = '\\' : ('\\' : (escapeChars xs))
-escapeChars ('\"':xs) = '\\' : ('\"' : (escapeChars xs))
-escapeChars (x:xs) = x : (escapeChars xs)
+escapeChars ('\\':xs) = '\\' : '\\' : escapeChars xs
+escapeChars ('\"':xs) = '\\' : '\"' : escapeChars xs
+escapeChars ('\'':xs) = '\\' : '\'' : escapeChars xs
+escapeChars (x:xs) = x : escapeChars xs
 
 
