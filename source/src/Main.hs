@@ -49,7 +49,6 @@ import BNFC.MultiView (preprocessMCF, mkTestMulti, mkMakefileMulti)
 
 import System.Environment (getEnv,getArgs     )
 import System.Exit (exitFailure,exitSuccess)
-import System.Cmd (system)
 import Data.Char
 import Data.List (elemIndex, foldl')
 import Control.Monad (when,unless)
