@@ -132,7 +132,7 @@ makefile opts = makeA where
                 , mkFile withLang "Test" "" opts
                 , mkFile noLang   "ErrM" "*" opts
                 , mkFile noLang   "SharedString" "*" opts
-                , mkFile withLang "ComposOp" "*" opts
+                , mkFile noLang "ComposOp" "*" opts
                 , dir ++ lang opts ++ ".dtd"
                 , mkFile withLang "XML" "*" opts
                 , "Makefile*" ]
