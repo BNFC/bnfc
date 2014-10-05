@@ -49,7 +49,7 @@ cf2Happy :: String -> String -> String -> String -> CFP -> String
 cf2Happy name absName lexName errName cf
  = unlines
     [header name absName lexName errName,
-     declarations (allEntryPointsP cf),
+     declarations (allEntryPoints cf),
      tokens (symbols cf ++ reservedWords cf),
      specialToks cf,
      delimiter,

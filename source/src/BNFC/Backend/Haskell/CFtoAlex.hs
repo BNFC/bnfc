@@ -220,9 +220,9 @@ isInTree :: String -> BTree -> Bool
 isInTree x tree = case tree of
  N -> False
  B a left right
-   | x < a  -> isInTree x left
-   | x > a  -> isInTree x right
-   | x == a -> True
+   | x == a    -> True
+   | x < a     -> isInTree x left
+   | otherwise -> isInTree x right
 
 sorted2tree :: [String] -> BTree
 sorted2tree [] = N

@@ -21,6 +21,8 @@
 
 module BNFC.Backend.OCaml.CFtoOCamlAbs (cf2Abstract) where
 
+import Text.PrettyPrint
+
 import BNFC.CF
 import BNFC.Utils((+++),(++++))
 import Data.List(intersperse)
@@ -49,10 +51,16 @@ prData (cat,rules) =
   "\n"
 
 prRule (fun,[])   = fun
-prRule (fun,cats) = fun +++ "of" +++ mkTupleType cats
+prRule (fun,cats) = fun +++ "of" +++ render (mkTupleType cats)
 
-mkTupleType [c] = fixType c
-mkTupleType (c:cs) = fixType c +++ "*" +++ mkTupleType cs
+-- | Creates an OCaml type tuple by intercalating * between type names
+-- >>> mkTupleType [Cat "A"]
+-- a
+--
+-- >>> mkTupleType [Cat "A", Cat "Abc", Cat "S"]
+-- a * abc * s
+mkTupleType :: [Cat] -> Doc
+mkTupleType = hsep . intersperse (char '*') . map (text . fixType)
 
 prSpecialData :: CF -> Cat -> String
 prSpecialData cf cat = fixType cat +++ "=" +++ show cat +++ "of" +++ contentSpec cf cat
