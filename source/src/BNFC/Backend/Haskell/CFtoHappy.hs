@@ -238,7 +238,6 @@ definedRules cf = [ mkDef f xs e | FunDef f xs e <- pragmasOfCF cf ]
 specialToks :: CF -> String
 specialToks cf = unlines $
 		 (map aux (literals cf))
-		  ++ ["L_err    { _ }"]
  where aux cat =
         case show cat of
           "Ident"  -> "L_ident  { PT _ (TV $$) }"

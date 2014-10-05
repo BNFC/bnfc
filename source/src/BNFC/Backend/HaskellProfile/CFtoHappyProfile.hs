@@ -194,7 +194,6 @@ finalize cf = unlines
 specialToks :: CFP -> String
 specialToks cf = unlines $
 		 (map aux (literals cf))
-		  ++ ["L_err    { _ }"]
  where aux cat =
         case cat of
           Cat "Ident"  -> "L_ident  { PT _ (TV $$) }"
