@@ -188,3 +188,10 @@ Test-suite unit-tests
    -- need to be there for alex to work
    LexBNF
    ParBNF
+
+Test-suite bnfc-doctests
+  type:           exitcode-stdio-1.0
+  ghc-options:    -threaded
+  main-is:        doctests.hs
+  build-depends:  base, doctest >= 0.8
+  HS-source-dirs: test/
