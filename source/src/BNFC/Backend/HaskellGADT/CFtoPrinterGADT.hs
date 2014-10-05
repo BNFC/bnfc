@@ -1,6 +1,6 @@
 {-
     BNF Converter: GADT Pretty-printer generator
-    Copyright (C) 2004-2005  Author:  Aarne Ranta, Björn Bringert
+    Copyright (C) 2004-2005  Author:  Aarne Ranta, BjÃ¶rn Bringert
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by

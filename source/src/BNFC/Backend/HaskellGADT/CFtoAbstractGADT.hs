@@ -1,6 +1,6 @@
 {-
     BNF Converter: GADT Abstract syntax Generator
-    Copyright (C) 2004-2005  Author:  Markus Forberg, Björn Bringert
+    Copyright (C) 2004-2005  Author:  Markus Forberg, BjÃ¶rn Bringert
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by

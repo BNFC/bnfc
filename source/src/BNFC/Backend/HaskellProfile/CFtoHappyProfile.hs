@@ -94,7 +94,7 @@ tokens toks = "%token \n" ++ prTokens toks
                          prTokens tk
        oneTok t = "PT _ (TS " ++ show t ++ ")"
 
--- Happy doesn't allow characters such as åäö to occur in the happy file. This
+-- Happy doesn't allow characters such as Ã¥Ã¤Ã¶ to occur in the happy file. This
 -- is however not a restriction, just a naming paradigm in the happy source file.
 convert :: String -> String
 convert "\\" = concat ['\'':"\\\\","\'"]
