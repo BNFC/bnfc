@@ -13,7 +13,7 @@ module BNFC.Backend.Common.StrUtils where
 -- >>> renderCharOrString "'"
 -- ('C',"'\\''")
 -- >>> renderCharOrString "\"\\'"
--- ('S',"\"\\\"\\\\'\"")
+-- ('S',"\"\\\"\\\\\\'\"")
 renderCharOrString :: String -> (Char, String)
 renderCharOrString [char] = ('C', show char)     -- using show shoud quote '
 renderCharOrString s =('S', "\"" ++ escapeChars s ++ "\"")
