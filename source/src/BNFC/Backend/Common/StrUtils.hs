@@ -18,7 +18,13 @@ renderCharOrString :: String -> (Char, String)
 renderCharOrString [char] = ('C', show char)     -- using show shoud quote '
 renderCharOrString s =('S', "\"" ++ escapeChars s ++ "\"")
 
---Helper function that escapes characters in strings
+-- | Helper function that escapes characters in strings
+-- >>> escapeChars "\\"
+-- "\\\\"
+-- >>> escapeChars "\""
+-- "\\\""
+-- >>> escapeChars "'"
+-- "\\'"
 escapeChars :: String -> String
 escapeChars [] = []
 escapeChars ('\\':xs) = '\\' : '\\' : escapeChars xs
