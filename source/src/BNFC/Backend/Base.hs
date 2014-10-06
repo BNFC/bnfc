@@ -9,11 +9,8 @@ module BNFC.Backend.Base
   , writeFiles
   ) where
 
-import BNFC.Options hiding (Backend)
-import BNFC.CF (CF)
 import BNFC.Utils (writeFileRep)
 import Control.Monad.Writer
-import Control.Monad.Trans
 import System.Directory (doesDirectoryExist, createDirectoryIfMissing)
 import System.FilePath (dropFileName)
 
