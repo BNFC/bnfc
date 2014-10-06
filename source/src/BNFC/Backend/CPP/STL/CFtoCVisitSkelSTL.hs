@@ -40,10 +40,8 @@
 module BNFC.Backend.CPP.STL.CFtoCVisitSkelSTL (cf2CVisitSkel) where
 
 import BNFC.CF
-import BNFC.Utils ((+++), (++++))
-import BNFC.Backend.Common.NamedVariables
-import Data.List
-import Data.Char(toLower, toUpper)
+import BNFC.Utils ((+++))
+import Data.Char(toLower)
 import BNFC.Backend.Common.OOAbstract
 import BNFC.Backend.CPP.STL.STLUtils
 
@@ -131,7 +129,7 @@ prList (cl,b) = unlines [
  where
    vname = map toLower cl
 
-prCon fcs@(f,cs) = unlines [
+prCon (f,cs) = unlines [
   "void Skeleton::visit" ++ f ++ "(" ++ f ++ " *" ++ v ++ ")",
   "{",
   "  /* Code For " ++ f ++ " Goes Here */",

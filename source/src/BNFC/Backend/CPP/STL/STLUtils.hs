@@ -20,18 +20,19 @@
 module BNFC.Backend.CPP.STL.STLUtils where
 
 import Data.Char
+import Data.Maybe (fromMaybe)
 
 nsDefine :: Maybe String -> String -> String
 nsDefine inPackage h = maybe h (\ns -> map toUpper ns ++ "_" ++ h) inPackage
 
 nsStart :: Maybe String -> String
-nsStart inPackage = maybe "" (\ns -> "namespace " ++ ns ++ "\n{") inPackage
+nsStart = maybe "" (\ns -> "namespace " ++ ns ++ "\n{")
 
 nsEnd :: Maybe String -> String
-nsEnd inPackage = maybe "" (\ns -> "}") inPackage
+nsEnd = maybe "" (const "}")
 
 nsScope :: Maybe String -> String
-nsScope inPackage = maybe "" (\ns -> ns ++ "::") inPackage
+nsScope = maybe "" (++ "::")
 
 nsString :: Maybe String -> String
-nsString inPackage = maybe "" id inPackage
+nsString = fromMaybe ""

@@ -61,10 +61,10 @@
 module BNFC.Backend.CPP.NoSTL.CFtoBison (cf2Bison) where
 
 import BNFC.CF
-import Data.List (intersperse, isPrefixOf, nub)
+import Data.List (intersperse, isPrefixOf)
 import BNFC.Backend.Common.NamedVariables hiding (varName)
 import Data.Char (toLower,isUpper)
-import BNFC.Utils ((+++), (++++))
+import BNFC.Utils ((+++))
 import BNFC.TypeChecker
 import ErrM
 
@@ -172,7 +172,7 @@ definedRules cf =
 
 --This generates a parser method for each entry point.
 parseMethod :: String -> Cat -> String
-parseMethod name cat =
+parseMethod _ cat =
   -- if normCat cat /= cat     M.F. 2004-09-17 comment. No duplicates from allCatsIdNorm
   -- then ""
   -- else
@@ -236,14 +236,14 @@ union cats = unlines
    "  " ++ identCat (normCat s) ++ "*" +++ varName s ++ ";\n"
  mkPointer s | normCat s == s = --normal cat
    "  " ++ identCat (normCat s) ++ "*" +++ varName s ++ ";\n"
- mkPointer s = ""
+ mkPointer _ = ""
 
 --declares non-terminal types.
 declarations :: CF -> String
 declarations cf = concatMap (typeNT cf) (allCats cf)
  where --don't define internal rules
    typeNT cf nt | rulesForCat cf nt /= [] = "%type <" ++ varName nt ++ "> " ++ identCat nt ++ "\n"
-   typeNT cf nt = ""
+   typeNT _ _ = ""
 
 --declares terminal types.
 tokens :: [UserDef] -> SymEnv -> String
@@ -267,7 +267,7 @@ specialToks cf = concat [
 --The following functions are a (relatively) straightforward translation
 --of the ones in CFtoHappy.hs
 rulesForBison :: String -> CF -> SymEnv -> Rules
-rulesForBison name cf env = map mkOne $ ruleGroups cf where
+rulesForBison _ cf env = map mkOne $ ruleGroups cf where
   mkOne (cat,rules) = constructRule cf env rules cat
 
 -- For every non-terminal, we construct a set of rules.
@@ -326,7 +326,7 @@ generatePatterns cf env r = case rhsRule r of
 
 prRules :: Rules -> String
 prRules [] = []
-prRules ((nt, []):rs) = prRules rs --internal rule
+prRules ((_, []):rs) = prRules rs --internal rule
 prRules ((nt,((p,a):ls)):rs) =
   (unwords [nt', ":" , p, "{ $$ =", a, "}", "\n" ++ pr ls]) ++ ";\n" ++ prRules rs
  where

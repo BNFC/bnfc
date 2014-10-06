@@ -45,10 +45,10 @@
 module BNFC.Backend.CPP.STL.CFtoBisonSTL (cf2Bison) where
 
 import BNFC.CF
-import Data.List (intersperse, isPrefixOf, nub)
+import Data.List (intersperse)
 import BNFC.Backend.Common.NamedVariables hiding (varName)
-import Data.Char (toLower,isUpper,isDigit)
-import BNFC.Utils ((+++), (++++))
+import Data.Char (toLower,isUpper)
+import BNFC.Utils ((+++))
 import BNFC.TypeChecker
 import ErrM
 import BNFC.Backend.CPP.STL.STLUtils
@@ -168,7 +168,7 @@ definedRules cf =
 
 --This generates a parser method for each entry point.
 parseMethod :: Maybe String -> String -> Cat -> String
-parseMethod inPackage name cat =
+parseMethod inPackage _ cat =
   -- if normCat cat /= cat     M.F. 2004-09-17 comment. No duplicates from allCatsIdNorm
   -- then ""
   -- else
@@ -231,7 +231,7 @@ union inPackage cats = unlines
    "  " ++ scope ++ (identCat (normCat s)) ++ "*" +++ (varName s) ++ ";\n"
  mkPointer s | normCat s == s = --normal cat
    "  " ++ scope ++ (identCat (normCat s)) ++ "*" +++ (varName s) ++ ";\n"
- mkPointer s = ""
+ mkPointer _ = ""
  scope = nsScope inPackage
 
 --declares non-terminal types.
@@ -239,7 +239,7 @@ declarations :: CF -> String
 declarations cf = concatMap (typeNT cf) (positionCats cf ++ allCats cf)
  where --don't define internal rules
    typeNT cf nt | (isPositionCat cf nt || rulesForCat cf nt /= []) = "%type <" ++ (varName nt) ++ "> " ++ (identCat nt) ++ "\n"
-   typeNT cf nt = ""
+   typeNT _ _ = ""
 
 --declares terminal types.
 tokens :: [UserDef] -> SymEnv -> String
@@ -263,7 +263,7 @@ specialToks cf = concat [
 --The following functions are a (relatively) straightforward translation
 --of the ones in CFtoHappy.hs
 rulesForBison :: Bool -> Maybe String -> String -> CF -> SymEnv -> Rules
-rulesForBison ln inPackage name cf env = (map mkOne $ ruleGroups cf) ++ posRules where
+rulesForBison ln inPackage _ cf env = (map mkOne $ ruleGroups cf) ++ posRules where
   mkOne (cat,rules) = constructRule ln inPackage cf env rules cat
   posRules = map mkPos $ positionCats cf
   mkPos cat = (cat, [(maybe (show cat) id (lookup (show cat) env),
@@ -321,7 +321,7 @@ generateAction ln inPackage cat f b mbs =
 -- Generate patterns and a set of metavariables indicating
 -- where in the pattern the non-terminal
 generatePatterns :: CF -> SymEnv -> Rule -> Bool -> (Pattern,[(MetaVar,Bool)])
-generatePatterns cf env r revv = case rhsRule r of
+generatePatterns cf env r _ = case rhsRule r of
   []  -> ("/* empty */",[])
   its -> (unwords (map mkIt its), metas its)
  where
@@ -345,7 +345,7 @@ generatePatterns cf env r revv = case rhsRule r of
 
 prRules :: Rules -> String
 prRules [] = []
-prRules ((nt, []):rs) = prRules rs --internal rule
+prRules ((_, []):rs) = prRules rs --internal rule
 prRules ((nt,((p,a):ls)):rs) =
   (unwords [nt', ":" , p, "{ ", a, "}", "\n" ++ pr ls]) ++ ";\n" ++ prRules rs
  where

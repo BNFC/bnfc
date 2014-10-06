@@ -42,16 +42,14 @@ module BNFC.Backend.CPP.STL.CFtoSTLAbs (cf2CPPAbs) where
 
 import BNFC.Backend.Common.OOAbstract
 import BNFC.CF
-import BNFC.Utils((+++),(++++))
-import BNFC.Backend.Common.NamedVariables
+import BNFC.Utils((+++))
 import Data.List
-import Data.Char(toLower)
 import BNFC.Backend.CPP.STL.STLUtils
 
 --The result is two files (.H file, .C file)
 
 cf2CPPAbs :: Bool -> Maybe String -> String -> CF -> (String, String)
-cf2CPPAbs ln inPackage name cf = (mkHFile ln inPackage cab, mkCFile inPackage cab)
+cf2CPPAbs ln inPackage _ cf = (mkHFile ln inPackage cab, mkCFile inPackage cab)
   where
     cab = cf2cabs cf
 
@@ -189,7 +187,7 @@ mkCFile inPackage cf = unlines $ [
   ]
 
 prConC :: CAbsRule -> String
-prConC fcs@(f,cs) = unlines [
+prConC fcs@(f,_) = unlines [
   "/********************   " ++ f ++ "    ********************/",
   prConstructorC fcs,
   prCopyC fcs,
@@ -237,8 +235,8 @@ prConstructorC (f,cs) = unlines [
   ]
  where
    cvs = [c | (_,_,c) <- cs]
-   pvs = ["p" ++ show i | ((x,st,_),i) <- zip cs [1..]]
-   conargs = concat $ intersperse ", "
+   pvs = ['p' : show i | ((_,_,_),i) <- zip cs [1..]]
+   conargs = intercalate ", "
      [x +++ pointerIf st v | ((x,st,_),v) <- zip cs pvs]
 
 

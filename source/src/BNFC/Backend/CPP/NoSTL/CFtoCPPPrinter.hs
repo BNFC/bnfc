@@ -23,12 +23,11 @@
 module BNFC.Backend.CPP.NoSTL.CFtoCPPPrinter (cf2CPPPrinter) where
 
 import BNFC.CF
-import BNFC.Utils ((+++), (++++))
+import BNFC.Utils ((+++))
 import BNFC.Backend.Common.NamedVariables
 import BNFC.Backend.Common.StrUtils (renderCharOrString)
 import Data.List
-import Data.Char(toLower, toUpper)
-import Text.PrettyPrint
+import Data.Char(toLower)
 
 --Produces (.H file, .C file)
 cf2CPPPrinter :: CF -> (String, String)
@@ -40,7 +39,7 @@ cf2CPPPrinter cf = (mkHFile cf groups, mkCFile cf groups)
 
 --An extremely large function to make the Header File
 mkHFile :: CF -> [(Cat,[Rule])] -> String
-mkHFile cf groups = unlines
+mkHFile _ groups = unlines
  [
   printHeader,
   concatMap prDataH groups,
@@ -168,12 +167,12 @@ prDataH (cat, rules) =
  where
    cl = identCat (normCat cat)
    abstract = case lookupRule (show cat) rules of
-    Just x -> ""
+    Just _ -> ""
     Nothing ->  "  void visit" ++ cl ++ "(" ++ cl ++ " *p); /* abstract class */\n"
 
 --Prints all the methods to visit a rule.
 prRuleH :: Rule -> String
-prRuleH (Rule fun c cats) | isProperLabel fun = concat
+prRuleH (Rule fun _ _) | isProperLabel fun = concat
   ["  void visit", fun, "(", fun, " *p);\n"]
 prRuleH _ = ""
 
@@ -349,12 +348,12 @@ prPrintData user (cat, rules) =
    sep' = getCons rules
    optsep = if hasOneFunc rules then "" else ("      render(" ++ sep ++ ");")
    abstract = case lookupRule (show cat) rules of
-    Just x -> ""
+    Just _ -> ""
     Nothing ->  "void PrintAbsyn::visit" ++ cl ++ "(" ++ cl ++ "*p) {} //abstract class\n\n"
 
 --Pretty Printer methods for a rule.
 prPrintRule :: [UserDef] -> Rule -> String
-prPrintRule user r@(Rule fun c cats) | isProperLabel fun = unlines
+prPrintRule user r@(Rule fun _ cats) | isProperLabel fun = unlines
   [
    "void PrintAbsyn::visit" ++ fun ++ "(" ++ fun ++ "*" +++ fnm ++ ")",
    "{",
@@ -372,7 +371,7 @@ prPrintRule user r@(Rule fun c cats) | isProperLabel fun = unlines
        "  if (oldi > " ++ (show p) ++ ") render(_R_PAREN);\n")
     cats' = (concatMap (prPrintCat user fnm) (zip (fixOnes (numVars [] cats)) (map getPrec cats)))
     fnm = "p" --old names could cause conflicts
-    getPrec (Right s) = 0
+    getPrec (Right _) = 0
     getPrec (Left c) = precCat c
 prPrintRule _ _ = ""
 
@@ -430,12 +429,12 @@ prShowData user (cat, rules) =
      then "      visit" ++ (funName member) ++ "(" ++ vname ++ "->" ++ member ++ ");"
      else "      " ++ vname ++ "->" ++ member ++ "->accept(this);"
    abstract = case lookupRule (show cat) rules of
-    Just x -> ""
+    Just _ -> ""
     Nothing ->  "void ShowAbsyn::visit" ++ cl ++ "(" ++ cl ++ "* p) {} //abstract class\n\n"
 
 --This prints all the methods for Abstract Syntax tree rules.
 prShowRule :: [UserDef] -> Rule -> String
-prShowRule user (Rule fun c cats) | isProperLabel fun = concat
+prShowRule user (Rule fun _ cats) | isProperLabel fun = concat
   [
    "void ShowAbsyn::visit" ++ fun ++ "(" ++ fun ++ "*" +++ fnm ++ ")\n",
    "{\n",
@@ -457,10 +456,10 @@ prShowRule user (Rule fun c cats) | isProperLabel fun = concat
     insertSpaces (x:[]) = [x]
     insertSpaces (x:xs) = if x == ""
       then insertSpaces xs
-      else (x : ["  bufAppend(' ');\n"]) ++ (insertSpaces xs)
+      else (x : ["  bufAppend(' ');\n"]) ++ insertSpaces xs
     allTerms [] = True
-    allTerms ((Left z):zs) = False
-    allTerms (z:zs) = allTerms zs
+    allTerms (Left _:_) = False
+    allTerms (_:zs) = allTerms zs
     fnm = "p" --other names could cause conflicts
 prShowRule _ _ = ""
 
@@ -468,7 +467,7 @@ prShowRule _ _ = ""
 prShowCat :: [UserDef] -> String -> Either String String -> String
 prShowCat user fnm c =
   case c of
-    (Right t) -> ""
+    (Right _) -> ""
     (Left nt) ->
       if isBasic user nt
        then "  visit" ++ (funName nt) ++ "(" ++ fnm ++ "->" ++ nt ++ ");\n"

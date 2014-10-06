@@ -40,7 +40,7 @@
 module BNFC.Backend.CPP.NoSTL.CFtoCVisitSkel (cf2CVisitSkel) where
 
 import BNFC.CF
-import BNFC.Utils ((+++), (++++))
+import BNFC.Utils ((+++))
 import BNFC.Backend.Common.NamedVariables
 import Data.List
 import Data.Char(toLower, toUpper)
@@ -95,19 +95,19 @@ mkHFile cf groups = unlines
 --Prints out visit functions for a category
 prDataH :: (Cat, [Rule]) -> String
 prDataH (cat, rules) =
- if "List" `isPrefixOf` (identCat cat)
+ if "List" `isPrefixOf` identCat cat
  then concat ["  void visit", cl, "(", cl, "* ", vname, ");"]
- else abstract ++ (concatMap prRuleH rules)
+ else abstract ++ concatMap prRuleH rules
  where
    cl = identCat (normCat cat)
    vname = map toLower cl
    abstract = case lookupRule (show cat) rules of
-    Just x -> ""
+    Just _ -> ""
     Nothing ->  "  void visit" ++ cl ++ "(" ++ cl ++ "*" +++ vname ++ "); /* abstract class */\n"
 
 --Visit functions for a rule.
 prRuleH :: Rule -> String
-prRuleH (Rule fun c cats) | not (isCoercion fun) = concat
+prRuleH (Rule fun _ _) | not (isCoercion fun) = concat
   ["  void visit", fun, "(", fun, "* ", fnm, ");\n"]
    where
     fnm = map toLower fun
@@ -198,12 +198,12 @@ prData user (cat, rules) =
      then "    visit" ++ (funName member) ++ "(" ++ vname ++ "->" ++ member ++ ");"
      else "    " ++ vname ++ "->" ++ member ++ "->accept(this);"
    abstract = case lookupRule (show cat) rules of
-    Just x -> ""
+    Just _ -> ""
     Nothing ->  "void Skeleton::visit" ++ cl ++ "(" ++ cl ++ "*" +++ vname ++ ") {} //abstract class\n\n"
 
 --Visits all the instance variables of a category.
 prRule :: [UserDef] -> Rule -> String
-prRule user (Rule fun c cats) | not (isCoercion fun) = unlines
+prRule user (Rule fun _ cats) | not (isCoercion fun) = unlines
   [
    "void Skeleton::visit" ++ fun ++ "(" ++ fun ++ "*" +++ fnm ++ ")",
    "{",
@@ -216,15 +216,15 @@ prRule user (Rule fun c cats) | not (isCoercion fun) = unlines
         then ""
     	else (concatMap (prCat user fnm) (fixOnes (numVars [] cats)))
     allTerms [] = True
-    allTerms ((Left z):zs) = False
-    allTerms (z:zs) = allTerms zs
+    allTerms (Left _:_) = False
+    allTerms (_:zs) = allTerms zs
     fnm = map toLower fun
-prRule user _ = ""
+prRule _ _ = ""
 
 --Prints the actual instance-variable visiting.
 prCat user fnm c =
   case c of
-    (Right t) -> ""
+    (Right _) -> ""
     (Left nt) -> if isBasic user nt
        then "  visit" ++ (funName nt) ++ "(" ++ fnm ++ "->" ++ nt ++ ");\n"
        else if "list" `isPrefixOf` nt

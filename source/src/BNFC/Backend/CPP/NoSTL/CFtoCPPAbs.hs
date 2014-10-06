@@ -49,7 +49,7 @@ import Data.Char(toLower)
 
 --The result is two files (.H file, .C file)
 cf2CPPAbs :: String -> CF -> (String, String)
-cf2CPPAbs name cf = (mkHFile cf, mkCFile cf)
+cf2CPPAbs _ cf = (mkHFile cf, mkCFile cf)
 
 
 {- **** Header (.H) File Functions **** -}
@@ -80,7 +80,7 @@ mkHFile cf = unlines
   rules = getRules cf
   classes = rules ++ (getClasses (map show $ allCats cf))
   prForward s | isProperLabel s = "class " ++ (show$normCat$strToCat s) ++ ";\n"
-  prForward s = ""
+  prForward _ = ""
   getRules cf = (map testRule (rulesOfCF cf))
   getClasses [] = []
   getClasses (c:cs) =
@@ -90,7 +90,7 @@ mkHFile cf = unlines
      then getClasses cs
      else c : (getClasses cs)
 
-  testRule (Rule f c r) =
+  testRule (Rule f c _) =
    if isList c
    then if isConsFun f
      then identCat c
@@ -101,7 +101,7 @@ mkHFile cf = unlines
 prDataH :: [UserDef] -> Data -> String
 prDataH  user (cat, rules) =
   case lookup (show cat) rules of
-    Just x -> concatMap (prRuleH user cat) rules
+    Just _ -> concatMap (prRuleH user cat) rules
     Nothing -> if isList cat
       then concatMap (prRuleH user cat) rules
       else unlines
@@ -226,7 +226,7 @@ prTypeDefs user = unlines
 --A class's instance variables.
 prInstVars :: [UserDef] -> [IVar] -> String
 prInstVars _ [] = []
-prInstVars user vars@((t,n):vs) =
+prInstVars user vars@((t,_):_) =
   "  " ++ t +++ uniques ++ ";" ++++
   (prInstVars user vs')
  where
@@ -391,7 +391,7 @@ prCopyC user c vs =
 
 --The cloner makes a new deep copy of the object
 prCloneC :: [UserDef] -> String -> [IVar] -> String
-prCloneC user c vs =
+prCloneC _ c _ =
   c +++ "*" ++ c ++ "::clone() const {" ++++
     "  return new" +++ c ++ "(*this);\n}"
 
@@ -421,10 +421,10 @@ prAssigns [] _ = []
 prAssigns _ [] = []
 prAssigns ((t,n):vs) (p:ps) =
  if n == 1 then
-  case findIndices (\x -> case x of (l,r) -> l == t) vs of
-    [] -> (varName t) +++ "=" +++ p ++ ";" +++ (prAssigns vs ps)
-    z -> ((varName t) ++ (showNum n)) +++ "=" +++ p ++ ";" +++ (prAssigns vs ps)
- else ((varName t) ++ (showNum n)) +++ "=" +++ p ++ ";" +++ (prAssigns vs ps)
+  case findIndices (\(l,_) -> l == t) vs of
+    [] -> varName t +++ "=" +++ p ++ ";" +++ prAssigns vs ps
+    _ -> varName t ++ showNum n +++ "=" +++ p ++ ";" +++ prAssigns vs ps
+ else varName t ++ showNum n +++ "=" +++ p ++ ";" +++ prAssigns vs ps
 
 
 {- **** Helper Functions **** -}
