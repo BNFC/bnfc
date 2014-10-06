@@ -38,9 +38,6 @@ module BNFC.Backend.Java ( makeJava ) where
 -------------------------------------------------------------------
 -- Dependencies.
 -------------------------------------------------------------------
-import System.Directory ( createDirectory )
-import System.IO.Error ( isAlreadyExistsError )
-import System.Exit ( exitFailure )
 import System.FilePath (pathSeparator)
 import BNFC.Utils
 import BNFC.CF
@@ -55,7 +52,6 @@ import BNFC.Backend.Java.CFtoComposVisitor
 import BNFC.Backend.Java.CFtoAbstractVisitor
 import BNFC.Backend.Java.CFtoFoldVisitor
 import BNFC.Backend.Java.CFtoAllVisitor
-import Data.Char
 import Data.List(intersperse)
 import qualified BNFC.Backend.Common.Makefile as Makefile
 -------------------------------------------------------------------
@@ -75,7 +71,6 @@ makeJava options cf =
        let absynFiles = remDups $ cf2JavaAbs packageBase packageAbsyn cf
 	   absynBaseNames = map fst absynFiles
 	   absynFileNames = map (dirAbsyn ++) absynBaseNames
-	   absynFuns = [ f | (_,ps) <- cf2data cf, (f,_) <- ps ]
        let writeAbsyn (filename, contents) =
 	       mkfile (dirAbsyn ++ filename ++ ".java") contents
        mapM writeAbsyn absynFiles
@@ -103,7 +98,6 @@ makeJava options cf =
 
       pkgToDir :: String -> FilePath
       pkgToDir s = replace '.' pathSeparator s ++ [pathSeparator]
-      make = Options.make options
       inPackage = Options.inPackage options
       name = Options.lang options
 

@@ -21,11 +21,9 @@
 module BNFC.Backend.Java.CFtoAllVisitor (cf2AllVisitor) where
 
 import BNFC.CF
-import BNFC.Backend.Java.CFtoJavaAbs15 (typename)
-import BNFC.Utils ((+++), (++++))
+import BNFC.Utils ((+++))
 import BNFC.Backend.Common.NamedVariables
 import Data.List
-import Data.Char(toLower, toUpper, isDigit)
 
 cf2AllVisitor :: String -> String -> CF -> String
 cf2AllVisitor packageBase packageAbsyn cf =
@@ -36,16 +34,13 @@ cf2AllVisitor packageBase packageAbsyn cf =
            "",
            "/** BNFC-Generated All Visitor */",
            "public interface AllVisitor<R,A> extends",
-             concat $ intersperse ",\n" $ map ("  "++) is,
+           intercalate ",\n" $ map ("  "++) is,
            "{}"]
   where
     groups = [ g | g@(c,_) <- fixCoercions (ruleGroupsInternals cf), not (isList c) ]
     is = map (prInterface packageAbsyn) groups
-    header = unlines [
-
-      ]
 
 prInterface :: String -> (Cat, [Rule]) -> String
-prInterface packageAbsyn (cat, rules) =
+prInterface packageAbsyn (cat, _) =
     q ++ ".Visitor<R,A>"
   where q = packageAbsyn ++ "." ++ identCat cat

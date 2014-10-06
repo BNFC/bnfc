@@ -22,10 +22,9 @@ module BNFC.Backend.Java.CFtoComposVisitor (cf2ComposVisitor) where
 
 import BNFC.CF
 import BNFC.Backend.Java.CFtoJavaAbs15 (typename)
-import BNFC.Utils ((+++), (++++))
+import BNFC.Utils ((+++))
 import BNFC.Backend.Common.NamedVariables
 import Data.List
-import Data.Char(toLower, toUpper, isDigit)
 
 cf2ComposVisitor :: String -> String -> CF -> String
 cf2ComposVisitor packageBase packageAbsyn cf =
@@ -50,7 +49,7 @@ cf2ComposVisitor packageBase packageAbsyn cf =
 
 
 prInterface :: String -> (Cat, [Rule]) -> String
-prInterface packageAbsyn (cat, rules) =
+prInterface packageAbsyn (cat, _) =
     q ++ ".Visitor<" ++ q ++ ",A>"
   where q = packageAbsyn ++ "." ++ identCat cat
 
@@ -82,8 +81,8 @@ prRule packageAbsyn user cat (Rule fun _ cats)
 	       (Left c, Left v) <- zip cats (fixOnes (numVars [] cats)), c /= InternalCat ]
     cls = packageAbsyn ++ "." ++ fun
     allTerms [] = True
-    allTerms ((Left z):zs) = False
-    allTerms (z:zs) = allTerms zs
+    allTerms (Left _:_) = False
+    allTerms (_:zs) = allTerms zs
     children = map snd cats'
     visitVars = concatMap (uncurry (prCat user)) cats'
 prRule  _ _ _ _ = ""
@@ -100,7 +99,6 @@ prCat user cat nt
       where
       var = "p." ++ nt
       varType = typename (identCat (normCat cat)) user
-      accept = var ++ ".accept(this, arg);"
       et = typename (show$normCatOfList cat) user
       decl v = varType +++ nt +++ "=" +++ v ++ ";"
       listAccept = [decl ("new"+++varType++"()"),

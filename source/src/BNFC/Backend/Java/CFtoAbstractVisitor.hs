@@ -21,11 +21,8 @@
 module BNFC.Backend.Java.CFtoAbstractVisitor (cf2AbstractVisitor) where
 
 import BNFC.CF
-import BNFC.Backend.Java.CFtoJavaAbs15 (typename)
-import BNFC.Utils ((+++), (++++))
+import BNFC.Utils ((+++))
 import BNFC.Backend.Common.NamedVariables
-import Data.List
-import Data.Char(toLower, toUpper, isDigit)
 
 cf2AbstractVisitor :: String -> String -> CF -> String
 cf2AbstractVisitor packageBase packageAbsyn cf =
@@ -52,7 +49,7 @@ prData packageAbsyn user (cat, rules) =
 
 --traverses a standard rule.
 prRule :: String -> [UserDef] -> Cat -> Rule -> String
-prRule packageAbsyn user cat (Rule fun _ cats)
+prRule packageAbsyn _ _ (Rule fun _ _)
     | not (isCoercion fun || isDefinedRule fun) =
    "    public R visit(" ++ cls ++ " p, A arg) { return visitDefault(p, arg); }"
    where cls = packageAbsyn ++ "." ++ fun

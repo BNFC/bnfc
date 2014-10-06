@@ -40,7 +40,7 @@
 module BNFC.Backend.Java.CFtoCup15 ( cf2Cup ) where
 
 import BNFC.CF
-import Data.List (intersperse, isPrefixOf)
+import Data.List (intersperse)
 import BNFC.Backend.Common.NamedVariables
 import BNFC.Utils ( (+++) )
 import BNFC.TypeChecker  -- We need to (re-)typecheck to figure out list instances in
@@ -239,7 +239,7 @@ generateAction packageAbsyn nt f ms rev
 -- Generate patterns and a set of metavariables indicating
 -- where in the pattern the non-terminal
 generatePatterns :: CF -> SymEnv -> Rule -> (Pattern,[MetaVar])
-generatePatterns cf env r = case rhsRule r of
+generatePatterns _ env r = case rhsRule r of
   []  -> (" /* empty */ ",[])
   its -> (mkIt env 1 its, metas its)
  where
@@ -257,15 +257,15 @@ generatePatterns cf env r = case rhsRule r of
      Right s -> case (lookup s env) of
      		(Just x) -> x +++ (mkIt env (n+1) is)
 		(Nothing) -> (mkIt env n is)
-   metas its = ["p_" ++ show i | (i,Left c) <- zip [1 :: Int ..] its]
+   metas its = ["p_" ++ show i | (i,Left _) <- zip [1 :: Int ..] its]
 
 -- We have now constructed the patterns and actions,
 -- so the only thing left is to merge them into one string.
 prRules :: Rules -> String
 prRules [] = []
-prRules ((nt, []):rs) = prRules rs --internal rule
-prRules ((nt,((p,a):ls)):rs) =
-  (unwords [nt', "::=", p, "{:", a, ":}", "\n" ++ pr ls]) ++ ";\n" ++ prRules rs
+prRules ((_, []):rs) = prRules rs --internal rule
+prRules ((nt,(p,a):ls):rs) =
+  unwords [nt', "::=", p, "{:", a, ":}", "\n" ++ pr ls] ++ ";\n" ++ prRules rs
  where
   nt' = identCat nt
   pr []           = []

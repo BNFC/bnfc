@@ -42,10 +42,10 @@ module BNFC.Backend.Java.CFtoVisitSkel15 (cf2VisitSkel) where
 
 import BNFC.CF
 import BNFC.Backend.Java.CFtoJavaAbs15 (typename)
-import BNFC.Utils ((+++), (++++))
+import BNFC.Utils ((+++))
 import BNFC.Backend.Common.NamedVariables
 import Data.List
-import Data.Char(toLower, toUpper, isDigit)
+import Data.Char(toLower)
 
 --Produces a Skeleton using the Visitor Design Pattern.
 --Thus the user can choose which Skeleton to use.
@@ -89,7 +89,7 @@ prData packageAbsyn user (cat, rules) =
 
 --traverses a standard rule.
 prRule :: String -> [UserDef] -> Rule -> String
-prRule packageAbsyn user (Rule fun c cats) | not (isCoercion fun || isDefinedRule fun) = unlines
+prRule packageAbsyn user (Rule fun _ cats) | not (isCoercion fun || isDefinedRule fun) = unlines
   [
    "    public R visit(" ++ packageAbsyn ++ "." ++ fun ++ " p, A arg)",
    "    {",
@@ -105,9 +105,9 @@ prRule packageAbsyn user (Rule fun c cats) | not (isCoercion fun || isDefinedRul
     	else [ (c,v) |
 	       (Left c, Left v) <- zip cats (fixOnes (numVars [] cats)) ]
     allTerms [] = True
-    allTerms ((Left z):zs) = False
-    allTerms (z:zs) = allTerms zs
-prRule user nm _ = ""
+    allTerms (Left _:_) = False
+    allTerms (_:zs) = allTerms zs
+prRule _ _ _ = ""
 
 --Traverses a class's instance variables.
 prCat :: [UserDef]

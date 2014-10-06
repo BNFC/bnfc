@@ -22,10 +22,8 @@ module BNFC.Backend.Java.CFtoFoldVisitor (cf2FoldVisitor) where
 
 import BNFC.CF
 import BNFC.Backend.Java.CFtoJavaAbs15 (typename)
-import BNFC.Utils ((+++), (++++))
+import BNFC.Utils ((+++))
 import BNFC.Backend.Common.NamedVariables
-import Data.List
-import Data.Char(toLower, toUpper, isDigit)
 
 cf2FoldVisitor :: String -> String -> CF -> String
 cf2FoldVisitor packageBase packageAbsyn cf =
@@ -58,7 +56,7 @@ prData packageAbsyn user (cat, rules) =
 
 --traverses a standard rule.
 prRule :: String -> [UserDef] -> Cat -> Rule -> String
-prRule packageAbsyn user cat (Rule fun _ cats)
+prRule packageAbsyn user _ (Rule fun _ cats)
     | not (isCoercion fun || isDefinedRule fun) = unlines $
   ["    public R visit(" ++ cls ++ " p, A arg) {",
    "      R r = leaf(arg);"]
@@ -72,9 +70,8 @@ prRule packageAbsyn user cat (Rule fun _ cats)
 	       (Left c, Left v) <- zip cats (fixOnes (numVars [] cats)), c /= InternalCat ]
     cls = packageAbsyn ++ "." ++ fun
     allTerms [] = True
-    allTerms ((Left z):zs) = False
-    allTerms (z:zs) = allTerms zs
-    children = map snd cats'
+    allTerms (Left _:_) = False
+    allTerms (_:zs) = allTerms zs
     visitVars = concatMap (uncurry (prCat user)) cats'
 prRule  _ _ _ _ = ""
 
