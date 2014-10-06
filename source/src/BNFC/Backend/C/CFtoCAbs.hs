@@ -170,7 +170,7 @@ prInstVars =
     prInstVarsOneType ivars = text (fst (head ivars))
                               <+> hsep (punctuate comma (map prIVar ivars))
                               <> semi
-    prIVar (s, i) = text (varName s) <> int i
+    prIVar (s, i) = text (varName s) <> text (showNum i)
 
 {- **** Implementation (.C) File Functions **** -}
 
