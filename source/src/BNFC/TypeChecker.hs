@@ -92,8 +92,7 @@ checkContext ctx =
 
 checkDefinition :: Context -> String -> [String] -> Exp -> Err ()
 checkDefinition ctx f xs e =
-    do	checkDefinition' dummyConstructors ctx f xs e
-	return ()
+    void $ checkDefinition' dummyConstructors ctx f xs e
 
 data ListConstructors = LC
 	{ nil	:: Base -> String
@@ -119,8 +118,8 @@ checkDefinition' list ctx f xs e =
 	plural _ = "s"
 
 checkExp :: ListConstructors -> Context -> Exp -> Base -> Err Exp
-checkExp list ctx (App "[]" []) (ListT t) = return (App (nil list t) [])
-checkExp _ _	  (App "[]" _) _	  = fail $ "[] is applied to too many arguments."
+checkExp list _   (App "[]" []) (ListT t) = return (App (nil list t) [])
+checkExp _ _      (App "[]" _) _  = fail $ "[] is applied to too many arguments."
 checkExp list ctx (App "(:)" [e,es]) (ListT t) =
     do	e'  <- checkExp list ctx e t
 	es' <- checkExp list ctx es (ListT t)
@@ -128,11 +127,11 @@ checkExp list ctx (App "(:)" [e,es]) (ListT t) =
 checkExp _ _ (App "(:)" es) _	= fail $ "(:) takes 2 arguments, but has been given " ++ show (length es) ++ "."
 checkExp list ctx e@(App x es) t =
     do	FunT ts t' <- lookupCtx x ctx
-	es' <- matchArgs ctx es ts
+	es' <- matchArgs ts
 	unless (t == t') $ fail $ show e ++ " has type " ++ show t' ++ ", but something of type " ++ show t ++ " was expected."
 	return $ App x es'
     where
-	matchArgs ctx es ts
+	matchArgs ts
 	    | expect /= given	= fail $ "'" ++ x ++ "' takes " ++ show expect ++ " arguments, but has been given " ++ show given ++ "."
 	    | otherwise		= zipWithM (checkExp list ctx) es ts
 	    where
