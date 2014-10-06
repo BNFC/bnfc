@@ -1,19 +1,11 @@
 module BNFC.Options where
 
 import BNFC.CF (CF)
-import BNFC.WarningM
-import Control.Monad (liftM, when,unless)
-import Control.Monad.State
-import Control.Monad.Trans (lift)
-import Data.Char
-import Data.List (elemIndex, foldl', sort, intercalate)
-import Data.Maybe (catMaybes, listToMaybe, isJust, fromMaybe)
+import Data.Maybe (fromMaybe)
 import Data.Version ( showVersion )
-import ErrM
 import Paths_BNFC ( version )
 import System.Console.GetOpt
-import System.FilePath (takeBaseName, takeFileName)
-import System.IO (stderr, hPutStrLn,hPutStr)
+import System.FilePath (takeBaseName)
 import Text.Printf (printf)
 
 -- ~~~ Option data structures ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -92,6 +84,7 @@ type Backend = SharedOptions  -- ^ options
             -> CF             -- ^ Grammar
             -> IO ()
 
+defaultOptions :: SharedOptions
 defaultOptions = Options
   { cnf = False
   , target = TargetHaskell
@@ -193,14 +186,18 @@ specificOptions =
     , [TargetHaskell, TargetHaskellGadt, TargetProfile] )
   ]
 
+
+makefileOption :: [OptDescr (SharedOptions -> SharedOptions)]
 makefileOption =
   [ Option "m" ["makefile"] (OptArg (setMakefile . fromMaybe "Makefile") "MAKEFILE")
       "generate Makefile" ]
   where setMakefile = \mf -> \o -> o { make = Just mf }
 
+allOptions :: [OptDescr (SharedOptions -> SharedOptions)]
 allOptions = targetOptions ++ makefileOption ++ map fst specificOptions
 
 -- ~~~ Help strings ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+title :: String
 title = unlines [
   "The BNF Converter, "++showVersion version,
   "(c) Jonas Almström Duregård, Krasimir Angelov, Jean-Philippe Bernardy, Björn Bringert, Johan Broberg, Paul Callaghan, ",
@@ -220,8 +217,8 @@ help = unlines $
     :usageInfo "Global options"   globalOptions
     :usageInfo "Make option"      makefileOption
     :usageInfo "Target languages" targetOptions
-    :map targetUsage targets
-  where targets = [TargetHaskell, TargetJava, TargetCpp, TargetCSharp ]
+    :map targetUsage helpTargets
+  where helpTargets = [TargetHaskell, TargetJava, TargetCpp, TargetCSharp ]
         targetUsage t = usageInfo
                         (printf "Special options for the %s backend" (show t))
                         (map fst $ filter(elem t . snd)specificOptions)
