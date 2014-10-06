@@ -202,13 +202,22 @@ prInstVars vars@((t,_,_):_) =
     | t == t2 = remType t ts
     | otherwise = (t2,n,nm) : remType t ts
 
+-- | Convert IVar to java name
+-- >>> iVarName ("A",1,"abc")
+-- abc_1
+-- >>> iVarName ("C", 2, "")
+-- _2
+-- >>> iVarName ("Integer", 0, "integer")
+-- integer_
 iVarName :: IVar -> Doc
-iVarName (_,n,nm) = text (varName nm) <> int n
+iVarName (_,n,nm) = text (varName nm) <> text (showNum n)
 
 -- | The constructor just assigns the parameters to the corresponding instance
 -- variables.
 -- >>> prConstructor "bla" [] [("A",1,"a"),("B",1,""),("A",2,"")] [Cat "A",Cat "B", Cat "C"]
 -- public bla(A p1, B p2, C p3) { a_1 = p1; _ = p2; _2 = p3; }
+-- >>> prConstructor "EInt" [] [("Integer",0,"integer")] [Cat "Integer"]
+-- public EInt(Integer p1) { integer_ = p1; }
 prConstructor :: String -> [UserDef] -> [IVar] -> [Cat] -> Doc
 prConstructor c u vs cats =
     "public" <+> text c <> parens (interleave types params)
