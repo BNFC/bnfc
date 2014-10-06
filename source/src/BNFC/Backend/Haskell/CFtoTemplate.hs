@@ -24,7 +24,6 @@ module BNFC.Backend.Haskell.CFtoTemplate (
 
 import BNFC.CF
 import Data.Char
-import Data.List (delete)
 
 type ModuleName = String
 type Constructor = String

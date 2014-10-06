@@ -36,11 +36,6 @@ import BNFC.Backend.Haskell.HsOpts
 import Control.Monad.RWS
 import Control.Applicative hiding (Const)
 import qualified Data.Map as M
-import Data.List (nub,intercalate,sortBy,sort)
-import Data.Maybe (maybeToList)
-import Data.Function (on)
-import Data.Char (isAlphaNum,ord)
-import Data.String
 import Data.Pair
 import Text.PrettyPrint.HughesPJ hiding (first,(<>))
 
@@ -149,6 +144,7 @@ alt units (Rule f c [r1,r2]) = ((r1,r2),initial:others)
   where initial = (c, f `appMany` args)
         others = [(c', f' `app'` (f `appMany` args)) | (f',c') <- lookupMulti (Left c) units]
         args = map (unsafeCoerce' . Con) $ ["x"|isCat r1]++["y"|isCat r2]
+alt _ _ = error "Only works with binary rules"
 
 
 
@@ -191,7 +187,7 @@ genNeighborSet ns = vcat
 ------------------------
 -- Test file generation
 
-genTestFile opts cf = render $ vcat
+genTestFile opts _ = render $ vcat
     ["module Main where"
     ,"import " <> text ( alexFileM     opts)
     ,"import " <> text ( cnfTablesFileM opts)

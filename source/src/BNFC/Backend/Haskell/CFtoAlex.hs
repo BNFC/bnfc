@@ -191,13 +191,9 @@ restOfAlex cf = [
    pTSpec ([],[]) = ""
    pTSpec xp =
     "<pTSpec>   ::= " ++ aux xp ++ "%{ pTSpec p = PT p . TS    %}"
-   aux (xs,[]) = " %s "
-   aux ([],ys) = " %r "
-   aux (xs,ys) = " %s | %r "
-   resWs =
-     "[" ++ concat (intersperse "," [show s | s <- resws]) ++ "]"
-     --- show s can be strange for isolatin1 characters
-     --- precompile to search tree!
+   aux (_,[]) = " %s "
+   aux ([],_) = " %r "
+   aux (_,_) = " %s | %r "
 
    userDefTokenTypes = unlines $
      ["<mk_" ++ show name ++ "> ::= " ++ printRegAlex exp ++
@@ -215,14 +211,6 @@ restOfAlex cf = [
    resws = reservedWords cf
 
 data BTree = N | B String BTree BTree deriving (Show)
-
-isInTree :: String -> BTree -> Bool
-isInTree x tree = case tree of
- N -> False
- B a left right
-   | x == a    -> True
-   | x < a     -> isInTree x left
-   | otherwise -> isInTree x right
 
 sorted2tree :: [String] -> BTree
 sorted2tree [] = N

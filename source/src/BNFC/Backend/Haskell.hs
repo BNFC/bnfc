@@ -39,15 +39,10 @@ import BNFC.Backend.Haskell.HsOpts
 import BNFC.Backend.Haskell.ToCNF as ToCNF
 import BNFC.Backend.Haskell.MkErrM
 import BNFC.Backend.Haskell.MkSharedString
-import BNFC.Utils
 import qualified BNFC.Backend.Common.Makefile as Makefile
 
-import Data.Char
-import Data.Maybe (fromMaybe,maybe)
-import System.Exit (exitFailure)
-import System.FilePath (pathSeparator,(</>))
+import System.FilePath (pathSeparator)
 import Control.Monad(when,unless)
-import System.FilePath (takeFileName)
 import Text.Printf (printf)
 
 -- naming conventions
@@ -65,7 +60,6 @@ makeHaskell opts cf = do
       errMod = errFileM opts
       shareMod = shareFileM opts
   do
-    let dir = codeDir opts
     mkfile (absFile opts) $ cf2Abstract (byteStrings opts) (ghcExtensions opts) absMod cf
     case alexMode opts of
       Alex1 -> do
@@ -108,7 +102,6 @@ makefile :: Options -> String
 makefile opts = makeA where
   glr_params = if glr opts == GLR then "--glr --decode " else ""
   dir = let d = codeDir opts in if null d then "" else d ++ [pathSeparator]
-  cd c = if null dir then c else "(cd " ++ dir ++ "; " ++ c ++ ")"
   makeA = Makefile.mkRule "all" []
            ([ "happy -gca " ++ glr_params ++ happyFile opts | not (cnf opts) ] ++
             [ "alex -g " ++ alexFile opts ] ++

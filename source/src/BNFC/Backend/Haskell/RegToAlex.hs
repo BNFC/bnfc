@@ -41,7 +41,6 @@ render = rend (0::Int) where
     t        :ts -> space t   $ rend i ts
     _            -> ""
   cons s t  = s ++ t
-  new i s   = s
   space t s = if null s then t else t ++ " " ++ s
 
 parenth :: [String] -> [String]

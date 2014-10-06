@@ -23,7 +23,7 @@ import Text.PrettyPrint
 import BNFC.CF
 import BNFC.Backend.Common.StrUtils (escapeChars)
 --import Lexer
-import Data.List (intersperse, sort)
+import Data.List (intersperse)
 import Data.Char
 import BNFC.Options (HappyMode(..))
 -- Type declarations
@@ -126,7 +126,7 @@ tokens toks = "%token\n" ++ prTokens toks
        prTokens ((t,k):tk) = "  " ++ render (convert t) ++
                              " { " ++ oneTok t k ++ " }\n" ++
                              prTokens tk
-       oneTok t k = "PT _ (TS _ " ++ show k ++ ")"
+       oneTok _ k = "PT _ (TS _ " ++ show k ++ ")"
 
 -- Happy doesn't allow characters such as åäö to occur in the happy file. This
 -- is however not a restriction, just a naming paradigm in the happy source file.
@@ -159,7 +159,7 @@ constructRule cf rules nt = (nt,[(p,generateAction nt (revF b r) m) |
 -- An action can for example be: Sum $1 $2, that is, construct an AST
 -- with the constructor Sum applied to the two metavariables $1 and $2.
 generateAction :: NonTerminal -> Fun -> [MetaVar] -> Action
-generateAction nt f ms = unwords $ (if isCoercion f then [] else [f]) ++ ms
+generateAction _ f ms = unwords $ (if isCoercion f then [] else [f]) ++ ms
 
 -- Generate patterns and a set of metavariables indicating
 -- where in the pattern the non-terminal
@@ -184,7 +184,7 @@ generatePatterns cf r = case rhsRule r of
 prRules :: Rules -> String
 prRules = unlines . map prOne
   where
-    prOne (nt,[]) = [] -- nt has only internal use
+    prOne (_,[]) = [] -- nt has only internal use
     prOne (nt,((p,a):ls)) =
       unwords [nt', "::", "{", show $ normCat nt, "}\n" ++
                nt', ":" , p, "{", a, "}", "\n" ++ pr ls] ++ "\n"
