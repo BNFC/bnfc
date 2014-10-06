@@ -106,7 +106,7 @@ module BNFC.CF (
            ) where
 
 import BNFC.Utils (prParenth,(+++))
-import Data.List (nub, intersperse, partition, sort, group, intercalate, find)
+import Data.List (nub, intersperse, sort, group, intercalate, find)
 import Data.Char
 import AbsBNF (Reg())
 import ParBNF (pCat)
@@ -191,7 +191,7 @@ instance Show Exp where
 	    listView (App "[]" []) = Right []
 	    listView (App "(:)" [e1,e2])
 		| Right es <- listView e2   = Right $ e1:es
-	    listView e	= Left e
+	    listView x = Left x
 
 -- | Pragmas
 data Pragma = CommentS  String -- ^ for single line comments
@@ -207,7 +207,7 @@ data Pragma = CommentS  String -- ^ for single line comments
 
 -- | User-defined regular expression tokens
 tokenPragmas :: CFG f -> [(Cat,Reg)]
-tokenPragmas cf = [(Cat name,exp) | TokenReg name _ exp <- pragmasOfCF cf]
+tokenPragmas cf = [(Cat name,e) | TokenReg name _ e <- pragmasOfCF cf]
 
 -- | The names of all user-defined tokens
 tokenNames :: CFG f -> [String]
@@ -271,11 +271,11 @@ strToCat "#" = InternalCat
 strToCat s =
     case pCat (tokens s) of
         Ok c -> cat2cat c
-        Bad e -> Cat s -- error $ "Error parsing cat " ++ s ++ " (" ++ e ++ ")"
+        Bad _ -> Cat s -- error $ "Error parsing cat " ++ s ++ " (" ++ e ++ ")"
                        -- Might be one of the "Internal cat" which are not
                        -- really parsable...
-  where cat2cat (AbsBNF.IdCat (AbsBNF.Ident s)) =
-            case span isDigit (reverse s) of
+  where cat2cat (AbsBNF.IdCat (AbsBNF.Ident i)) =
+            case span isDigit (reverse i) of
                 ([],c') -> Cat (reverse c')
 	        (d,c') ->  CoercCat (reverse c') (read (reverse d))
         cat2cat (AbsBNF.ListCat c) = ListCat (cat2cat c)
@@ -326,21 +326,6 @@ notUniqueNames reserved cf = [head xs | xs <- xss, length xs > 1] where
   names = reserved ++ allCatsIdNorm cf ++ allFuns cf
   allFuns g = [ f | f <- map funRule (rulesOfCF g), not (isNilCons f || isCoercion f)]
 
-{-# DEPRECATED notUniqueFuns "obsolete" #-}
-notUniqueFuns :: CF -> [Fun]
-notUniqueFuns cf = let xss = group $ sort [ f | f <- map funRule (rulesOfCF cf),
-		                                 not (isNilCons f || isCoercion f)]
-		    in [ head xs | xs <- xss, length xs > 1]
-
-badInheritence :: CF -> [Cat]
-badInheritence cf = concatMap checkGroup (ruleGroups cf)
- where
-  checkGroup (cat, rs) = if length rs <= 1
-                           then []
-                           else case lookupRule (show cat) rs of
-                             Nothing -> []
-                             Just x -> [cat]
-
 -- extract the comment pragmas.
 commentPragmas :: [Pragma] -> [Pragma]
 commentPragmas = filter isComment
@@ -350,7 +335,7 @@ commentPragmas = filter isComment
 
 lookupRule :: Eq f => f -> [Rul f] -> Maybe (Cat, [Either Cat String])
 lookupRule f = lookup f . map unRule
-  where unRule (Rule f c rhs) = (f,(c,rhs))
+  where unRule (Rule f' c rhs) = (f',(c,rhs))
 
 -- | Returns all normal rules that constructs the given Cat.
 rulesForCat :: CF -> Cat -> [Rule]
@@ -578,14 +563,16 @@ getCons rs = case find (isConsFun . funRule) rs of
                                   ++ intercalate ", " (map (show . funRule) rs)
   where
     seper [] = []
-    seper (Right x:xs) = x
-    seper (Left x:xs) = seper xs
+    seper (Right x:_) = x
+    seper (Left _:xs) = seper xs
 
 
 isEmptyListCat :: CF -> Cat -> Bool
 isEmptyListCat cf c = elem "[]" $ map funRule $ rulesForCat' cf c
 
-isNonterm = either (const True) (const False)
+isNonterm :: Either Cat String -> Bool
+isNonterm (Left _) = True
+isNonterm (Right _) = False
 
 -- used in Happy to parse lists of form 'C t [C]' in reverse order
 -- applies only if the [] rule has no terminals
@@ -601,10 +588,11 @@ findAllReversibleCats cf = [c | (c,r) <- ruleGroups cf, isRev c r] where
                              then tryRev r2 r1
                            else isConsFun (funRule r1) && tryRev r1 r2
      _ -> False
-  tryRev (Rule f _ ts@(x:_:xs)) r = isEmptyNilRule r &&
+  tryRev (Rule f _ ts@(x:_:_)) r = isEmptyNilRule r &&
                                         isConsFun f && isNonterm x && isNonterm (last ts)
   tryRev _ _ = False
 
+isEmptyNilRule :: Rul Fun -> Bool
 isEmptyNilRule (Rule f _ ts) = isNilFun f && null ts
 
 -- | Returns the precedence of a category symbol.
