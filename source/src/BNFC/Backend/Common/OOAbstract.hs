@@ -42,8 +42,6 @@
 module BNFC.Backend.Common.OOAbstract where
 
 import BNFC.CF
-import BNFC.Utils((+++),(++++))
-import BNFC.Backend.Common.NamedVariables
 import Data.List
 import Data.Char(toLower)
 
@@ -87,7 +85,7 @@ cf2cabs cf = CAbs {
   (pos,base) = partition (isPositionCat cf) $ fst (unzip (tokenPragmas cf))
   (lists,cats) = partition isList $ allCats cf
   toks = map (show.normCat) base
-  testRule (Rule f c r)
+  testRule (Rule f c _)
    | isList c  = Nothing
    | f == "_"  = Nothing
    | otherwise = Just f

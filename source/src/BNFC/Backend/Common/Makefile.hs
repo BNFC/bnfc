@@ -1,8 +1,6 @@
 module BNFC.Backend.Common.Makefile where
 
 import Text.Printf
-import Text.Show (ShowS) -- Efficient string concatenation
-import System.FilePath (replaceExtension)
 
 import BNFC.Options (SharedOptions(..))
 import BNFC.Backend.Base (mkfile, Backend)
