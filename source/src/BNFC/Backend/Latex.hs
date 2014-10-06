@@ -23,13 +23,9 @@ import BNFC.Options hiding (Backend)
 import BNFC.Backend.Base
 import BNFC.Backend.Common.Makefile as Makefile
 import BNFC.CF
-import BNFC.GetCF
 import BNFC.Utils
-import Control.Monad (unless,when)
-import Data.List (nub,intersperse)
-import System.Console.GetOpt
-import System.Exit (exitSuccess)
-import System.FilePath ((<.>),replaceExtension, takeBaseName)
+import Data.List (intersperse)
+import System.FilePath ((<.>),replaceExtension)
 import Text.Printf
 
 makeLatex :: SharedOptions -> CF -> Backend
@@ -107,7 +103,7 @@ prtIdentifiers = unlines
   ]
 
 prtLiterals :: String -> CF -> String
-prtLiterals name cf =
+prtLiterals _ cf =
   unlines $ map stringLit $
     filter (`notElem` [Cat "Ident"]) $
       literals cf
