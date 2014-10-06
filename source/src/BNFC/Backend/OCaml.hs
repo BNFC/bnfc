@@ -34,14 +34,9 @@ import BNFC.Backend.OCaml.CFtoOCamlShow
 import BNFC.Backend.OCaml.CFtoOCamlTest
 import BNFC.Backend.XML
 import BNFC.Utils
-import System.FilePath (takeFileName)
 import BNFC.Options
 
-import Data.Char
-import Data.Maybe (fromMaybe,maybe)
-import System.Exit (exitFailure)
 import System.FilePath (pathSeparator, (</>))
-import Control.Monad(when)
 
 -- naming conventions
 
@@ -64,12 +59,9 @@ mkFile addLang name ext opts =
     where pref = maybe "" (\p->pkgToDir p </> "") (inPackage opts)
           ext' = if null ext then "" else "." ++ ext
 
-absFile, absFileM, ocamllexFile, ocamllexFileM,
- ocamlyaccFile, ocamlyaccFileM,
- utilFile, utilFileM,
- templateFile, templateFileM,
- printerFile, printerFileM,
- tFile, tFileM :: SharedOptions -> String
+absFile, absFileM, ocamllexFile, ocamllexFileM, ocamlyaccFile, ocamlyaccFileM,
+  utilFile, templateFile, templateFileM, printerFile, printerFileM,
+  tFile :: SharedOptions -> String
 absFile       = mkFile withLang "Abs" "ml"
 absFileM      = mkMod  withLang "Abs"
 ocamllexFile      = mkFile withLang "Lex" "mll"
@@ -83,10 +75,7 @@ printerFileM  = mkMod  withLang "Print"
 showFile      = mkFile  withLang "Show" "ml"
 showFileM     = mkMod  withLang "Show"
 tFile         = mkFile withLang "Test" "ml"
-tFileM        = mkMod  withLang "Test"
 utilFile       = mkFile noLang   "BNFC_Util" "ml"
-utilFileM      = mkMod  noLang   "BNFC_Util"
-xmlFileM      = mkMod  withLang "XML"
 
 makeOCaml :: SharedOptions -> CF -> MkFiles ()
 makeOCaml opts cf = do
@@ -95,10 +84,7 @@ makeOCaml opts cf = do
       parMod = ocamlyaccFileM opts
       prMod  = printerFileM opts
       showMod = showFileM opts
---      layMod = layoutFileM opts
-      utilMod = utilFileM opts
   do
-    let dir = codeDir opts
     mkfile (absFile opts) $ cf2Abstract absMod cf
     mkfile (ocamllexFile opts) $ cf2ocamllex lexMod parMod cf
     mkfile (ocamlyaccFile opts) $

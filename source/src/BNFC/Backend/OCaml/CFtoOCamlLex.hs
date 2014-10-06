@@ -31,7 +31,7 @@ import BNFC.Backend.OCaml.CFtoOCamlYacc (terminal)
 import BNFC.Utils ((+++))
 
 cf2ocamllex :: String -> String -> CF -> String
-cf2ocamllex name parserMod cf =
+cf2ocamllex _ parserMod cf =
   unlines $ concat $ intersperse [""] [
     header parserMod cf,
     definitions cf,
@@ -83,7 +83,7 @@ header parserMod cf = [
 hashtables :: CF -> String
 hashtables cf = ht "symbol_table" (symbols cf )  ++ "\n" ++
                 ht "resword_table" (reservedWords cf)
-    where ht table syms | length syms == 0 = ""
+    where ht _ syms | null syms = ""
           ht table syms = unlines [
                 "let" +++ table +++ "= Hashtbl.create " ++ show (length syms),
                 "let _ = List.iter (fun (kwd, tok) -> Hashtbl.add" +++ table
@@ -200,7 +200,6 @@ render = rend 0
                         _            -> ""
 
           cons s t  = s ++ t
-          new i s   = s
           space t s = if null s then t else t ++ " " ++ s
 
 parenth :: [String] -> [String]

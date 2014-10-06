@@ -26,8 +26,6 @@ module BNFC.Backend.OCaml.CFtoOCamlTemplate (
 
 import BNFC.CF
 import Data.Char
-import Data.List (delete)
-import BNFC.Utils((+++))
 import BNFC.Backend.OCaml.OCamlUtil
 
 
