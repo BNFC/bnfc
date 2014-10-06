@@ -198,19 +198,19 @@ rulesForCup :: String -> CF -> SymEnv -> Rules
 rulesForCup packageAbsyn cf env = map mkOne $ ruleGroups cf where
   mkOne (cat,rules) = constructRule packageAbsyn cf env rules cat
 
--- For every non-terminal, we construct a set of rules. A rule is a sequence of
+-- | For every non-terminal, we construct a set of rules. A rule is a sequence of
 -- terminals and non-terminals, and an action to be performed.
 constructRule :: String -> CF -> SymEnv -> [Rule] -> NonTerminal -> (NonTerminal,[(Pattern,Action)])
 constructRule packageAbsyn cf env rules nt =
-    (nt, [(p,generateAction packageAbsyn nt (funRule r) (revM b m) b)
-	  | r0 <- rules,
-	    let (b,r) = if isConsFun (funRule r0) && elem (valCat r0) revs
+    (nt, [ (p, generateAction packageAbsyn nt (funRule r) (revM b m) b)
+          | r0 <- rules,
+          let (b,r) = if isConsFun (funRule r0) && elem (valCat r0) revs
                           then (True, revSepListRule r0)
                           else (False, r0)
-                (p,m) = generatePatterns cf env r])
+              (p,m) = generatePatterns env r])
  where
-   revM False m = m
-   revM True [h,t] = [t,h]
+   revM False = id
+   revM True = reverse
    revs = reversibleCats cf
 
 -- Generates a string containing the semantic action.
@@ -236,28 +236,32 @@ generateAction packageAbsyn nt f ms rev
      p_2 = ms!!1
      add = if rev then "addLast" else "addFirst"
 
--- Generate patterns and a set of metavariables indicating
+-- | Generate patterns and a set of metavariables indicating
 -- where in the pattern the non-terminal
-generatePatterns :: CF -> SymEnv -> Rule -> (Pattern,[MetaVar])
-generatePatterns _ env r = case rhsRule r of
-  []  -> (" /* empty */ ",[])
-  its -> (mkIt env 1 its, metas its)
+-- >>> generatePatterns [] (Rule "myfun" (Cat "A") [])
+-- (" /* empty */ ",[])
+-- >>> generatePatterns [("def", "_SYMB_1")] (Rule "myfun" (Cat "A") [Right "def", Left (Cat "B")])
+-- ("_SYMB_1 B:p_2 ",["p_2"])
+generatePatterns :: SymEnv -> Rule -> (Pattern,[MetaVar])
+generatePatterns env r = case rhsRule r of
+    []  -> (" /* empty */ ",[])
+    its -> (mkIt 1 its, metas its)
  where
-   mkIt _env _n [] = []
-   mkIt env n (i:is) = case i of
-     Left c -> c' ++ ":p_" ++ (show (n :: Int)) +++ (mkIt env (n+1) is)
-                  where
-		   c' = case c of
-      			 Cat "Ident"   -> "_IDENT_"
-      			 Cat "Integer" -> "_INTEGER_"
-     			 Cat "Char"    -> "_CHAR_"
-  			 Cat "Double"  -> "_DOUBLE_"
-    			 Cat "String"  -> "_STRING_"
-		         _         -> identCat c
-     Right s -> case (lookup s env) of
-     		(Just x) -> x +++ (mkIt env (n+1) is)
-		(Nothing) -> (mkIt env n is)
-   metas its = ["p_" ++ show i | (i,Left _) <- zip [1 :: Int ..] its]
+    mkIt _ [] = []
+    mkIt n (i:is) = case i of
+        Left c -> c' ++ ":p_" ++ show (n :: Int) +++ mkIt (n+1) is
+          where
+              c' = case c of
+                  Cat "Ident"   -> "_IDENT_"
+                  Cat "Integer" -> "_INTEGER_"
+                  Cat "Char"    -> "_CHAR_"
+                  Cat "Double"  -> "_DOUBLE_"
+                  Cat "String"  -> "_STRING_"
+                  _         -> identCat c
+        Right s -> case lookup s env of
+            (Just x) -> x +++ mkIt (n+1) is
+            (Nothing) -> mkIt n is
+    metas its = ["p_" ++ show i | (i,Left _) <- zip [1 :: Int ..] its]
 
 -- We have now constructed the patterns and actions,
 -- so the only thing left is to merge them into one string.

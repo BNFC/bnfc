@@ -1,3 +1,4 @@
+{-# LANGUAGE OverloadedStrings #-}
 {-
     BNF Converter: Java 1.5 Abstract Syntax
     Copyright (C) 2004  Author:  Michael Pellauer, Bjorn Bringert
@@ -48,9 +49,11 @@ module BNFC.Backend.Java.CFtoJavaAbs15 (cf2JavaAbs, typename) where
 import BNFC.CF
 import BNFC.Utils((+++),(++++))
 import BNFC.Backend.Common.NamedVariables hiding (IVar, getVars, varName)
+import Data.Function (on)
 import Data.List
 import Data.Char(toLower)
 import Data.Maybe(catMaybes)
+import Text.PrettyPrint
 
 --Produces abstract data types in Java.
 --These follow Appel's "non-object oriented" version.
@@ -121,8 +124,9 @@ prRule h packageAbsyn funs user c (fun, cats) =
     [
      h,
      "public class" +++ fun ++ ext +++ "{",
-     (prInstVars vs),
-     prConstructor fun user vs cats,
+     render $ nest 2 $ vcat
+        [ prInstVars vs
+        , prConstructor fun user vs cats],
      prAccept packageAbsyn c fun,
      prEquals packageAbsyn fun vs,
      prHashCode packageAbsyn fun vs,
@@ -160,7 +164,7 @@ prEquals pack fun vs =
   fqn = pack++"."++fun
   checkKids = concat $ intersperse " && " $ map checkKid vs
   checkKid iv = "this." ++ v ++ ".equals(x." ++ v ++ ")"
-      where v = iVarName iv
+      where v = render (iVarName iv)
 
 -- Creates the equals() method.
 prHashCode :: String -> String -> [IVar] -> String
@@ -175,40 +179,43 @@ prHashCode _ _ vs =
   hashKids (v:vs) = hashKids_ (hashKid v) vs
   hashKids_ r [] = r
   hashKids_ r (v:vs) = hashKids_ (show aPrime ++ "*" ++ "(" ++ r ++ ")+" ++ hashKid v) vs
-  hashKid iv = "this." ++ iVarName iv ++ ".hashCode()"
+  hashKid iv = "this." ++ render (iVarName iv) ++ ".hashCode()"
 
 
---A class's instance variables.
-prInstVars :: [IVar] -> String
-prInstVars [] = []
+-- | A class's instance variables.
+-- >>> prInstVars [("A",1,""), ("B",1,""), ("A",2,"abc")]
+-- public final A _1, abc_2;
+-- public final B _1;
+prInstVars :: [IVar] -> Doc
+prInstVars [] = empty
 prInstVars vars@((t,_,_):_) =
-  "  public" +++ "final" +++ t +++ uniques ++ ";" ++++ prInstVars vs'
+    "public" <+> "final" <+> text t <+> uniques <> ";" $$ prInstVars vs'
  where
    (uniques, vs') = prUniques t vars
    --these functions group the types together nicely
-   prUniques :: String -> [IVar] -> (String, [IVar])
-   prUniques t vs = (prVars (findIndices (\x -> case x of (y,_,_) ->  y == t) vs) vs, remType t vs)
-   prVars (x:[]) vs = iVarName (vs!!x)
-   prVars (x:xs) vs = iVarName (vs!!x) ++ "," +++ prVars xs vs
+   prUniques :: String -> [IVar] -> (Doc, [IVar])
+   prUniques t vs = (prVars vs (findIndices (\(y,_,_) ->  y == t) vs), remType t vs)
+   prVars vs = hsep . punctuate comma . map (iVarName . (vs!!))
    remType :: String -> [IVar] -> [IVar]
    remType _ [] = []
-   remType t ((t2,n,nm):ts) = if t == t2
-   				then (remType t ts)
-				else (t2,n,nm) : (remType t ts)
+   remType t ((t2,n,nm):ts)
+    | t == t2 = remType t ts
+    | otherwise = (t2,n,nm) : remType t ts
 
-iVarName :: IVar -> String
-iVarName (_,n,nm) = varName nm ++ showNum n
+iVarName :: IVar -> Doc
+iVarName (_,n,nm) = text (varName nm) <> int n
 
---The constructor just assigns the parameters to the corresponding instance variables.
-prConstructor :: String -> [UserDef] -> [IVar] -> [Cat] -> String
+-- | The constructor just assigns the parameters to the corresponding instance
+-- variables.
+-- >>> prConstructor "bla" [] [("A",1,"a"),("B",1,""),("A",2,"")] [Cat "A",Cat "B", Cat "C"]
+-- public bla(A p1, B p2, C p3) { a_1 = p1; _ = p2; _2 = p3; }
+prConstructor :: String -> [UserDef] -> [IVar] -> [Cat] -> Doc
 prConstructor c u vs cats =
-  "  public" +++ c ++"(" ++ (interleave types params) ++ ")" +++ "{" +++
-   prAssigns vs params ++ "}"
+    "public" <+> text c <> parens (interleave types params)
+    <+> "{" <+> text (prAssigns vs params) <> "}"
   where
-   (types, params) = unzip (prParams cats u (length cats) ((length cats)+1))
-   interleave _ [] = []
-   interleave (x:[]) (y:[]) = x +++ y
-   interleave (x:xs) (y:ys) = x +++ y ++ "," +++ (interleave xs ys)
+   (types, params) = unzip (prParams cats u (length cats) (length cats+1))
+   interleave xs ys = hsep $ punctuate "," $ zipWith ((<+>) `on` text) xs ys
 
 --Prints the parameters to the constructors.
 prParams :: [Cat] -> [UserDef] -> Int -> Int -> [(String,String)]
