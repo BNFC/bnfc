@@ -24,7 +24,7 @@ module BNFC.Backend.HaskellGADT.CFtoTemplateGADT (
 
 import BNFC.CF
 import BNFC.Utils((+++))
-import Data.List (delete,groupBy)
+import Data.List (groupBy)
 
 import BNFC.Backend.HaskellGADT.HaskellGADTCommon
 

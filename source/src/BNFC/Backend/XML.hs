@@ -181,7 +181,7 @@ integerRule cf = showsPrintRule cf "Integer"
 doubleRule cf = showsPrintRule cf "Double"
 stringRule cf = showsPrintRule cf "Char" ++++ "  prtList i xs = elemTok i \"String\" xs"
 
-showsPrintRule cf t = unlines $ [
+showsPrintRule _ t = unlines $ [
   "instance XPrint " ++ t ++ " where",
   "  prt i x = elemTokS i" +++ "\"" ++ t ++ "\"" +++ "x"
   ]
@@ -223,7 +223,7 @@ rules cf = unlines $
 case_fun cat xs = unlines [
   "instance XPrint" +++ show cat +++ "where",
   "  prt i" +++ "e = case e of",
-  unlines $ map (\ ((c,xx),r) ->
+  unlines $ map (\ ((c,xx),_) ->
     "   " ++ c +++ unwords xx +++ "-> concat $ " +++
     "elemFun i \"" ++ show cat ++ "\" \"" ++ c ++ "\"" +++
     unwords [": prt (i+1)" +++ x | x <- xx] +++ ":" +++

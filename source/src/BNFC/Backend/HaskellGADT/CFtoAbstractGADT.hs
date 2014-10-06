@@ -20,12 +20,10 @@
 module BNFC.Backend.HaskellGADT.CFtoAbstractGADT (cf2Abstract) where
 
 import BNFC.CF
-import BNFC.Utils((+++),(++++))
+import BNFC.Utils((+++))
 import Data.List(intersperse,intercalate,nub)
 
 import BNFC.Backend.HaskellGADT.HaskellGADTCommon
-
-import Data.Maybe (catMaybes)
 
 -- to produce a Haskell module
 cf2Abstract :: Bool -> String -> CF -> String -> String

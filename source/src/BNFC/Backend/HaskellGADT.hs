@@ -21,18 +21,15 @@
 module BNFC.Backend.HaskellGADT (makeHaskellGadt) where
 
 
-
 -- import Utils
 import BNFC.Options
 import BNFC.Backend.Base hiding (Backend)
 import BNFC.Backend.Haskell.HsOpts
 import BNFC.CF
-import BNFC.Backend.Base
 import BNFC.Backend.Haskell.CFtoHappy
 import BNFC.Backend.Haskell.CFtoAlex
 import BNFC.Backend.Haskell.CFtoAlex2
 import BNFC.Backend.Haskell.CFtoAlex3
-import BNFC.Backend.Haskell(AlexVersion(..))
 import BNFC.Backend.HaskellGADT.CFtoAbstractGADT
 import BNFC.Backend.HaskellGADT.CFtoTemplateGADT
 import BNFC.Backend.HaskellGADT.CFtoPrinterGADT
@@ -40,14 +37,9 @@ import BNFC.Backend.Haskell.CFtoLayout
 import BNFC.Backend.XML
 import BNFC.Backend.Haskell.MkErrM
 import BNFC.Backend.Haskell.MkSharedString
-import BNFC.Utils
 import qualified BNFC.Backend.Common.Makefile as Makefile
 import qualified BNFC.Backend.Haskell as Haskell
 
-import Data.Char
-import Data.Maybe (fromMaybe,maybe)
-import System.Exit (exitFailure)
-import System.FilePath (pathSeparator)
 import Control.Monad(when)
 
 
@@ -62,7 +54,6 @@ makeHaskellGadt opts cf = do
       errMod = errFileM opts
       shareMod = shareFileM opts
   do
-    let dir = codeDir opts
     mkfile (absFile opts) $ cf2Abstract (byteStrings opts) absMod cf composOpMod
     mkfile (composOpFile opts) $ composOp composOpMod
     case alexMode opts of
@@ -89,12 +80,6 @@ makeHaskellGadt opts cf = do
       2 -> makeXML opts True cf
       1 -> makeXML opts False cf
       _ -> return ()
-
-codeDir :: Options -> FilePath
-codeDir opts = let pref = maybe "" pkgToDir (inPackage opts)
-		   dir = if inDir opts then lang opts else ""
-		   sep = if null pref || null dir then "" else [pathSeparator]
-		 in pref ++ sep ++ dir
 
 makefile :: Options -> String
 makefile = Haskell.makefile

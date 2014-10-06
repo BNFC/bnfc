@@ -21,9 +21,7 @@ module BNFC.Backend.HaskellGADT.CFtoPrinterGADT (cf2Printer) where
 
 import BNFC.CF
 import BNFC.Utils
-import BNFC.Backend.Haskell.CFtoTemplate
 import Data.List (intersperse)
-import Data.Char(toLower)
 
 import BNFC.Backend.HaskellGADT.HaskellGADTCommon
 
@@ -113,20 +111,10 @@ prologue name absMod = unlines [
 integerRule cf = showsPrintRule cf "Integer"
 doubleRule cf = showsPrintRule cf "Double"
 
-showsPrintRule cf t = unlines $ [
+showsPrintRule _ t = unlines $ [
   "instance Print " ++ t ++ " where",
   "  prt _ x = doc (shows x)",
   ""]
-
-ownPrintRule cf own = unlines $ [
-  "instance Print " ++ show own ++ " where",
-  "  prt _ (" ++ show own ++ posn ++ ") = doc (showString i)",
-  ""] ++ ifList cf own
- where
-   posn = if isPositionCat cf own then " (_,i)" else " i"
-
-ifList :: CF -> Cat -> [String]
-ifList cf cat = prPrtList cf (ListCat cat) -- FIXME: hackish
 
 prPrt :: CF -> [String]
 prPrt cf = ["instance Print (Tree c) where",
