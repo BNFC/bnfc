@@ -22,7 +22,7 @@ module BNFC.Backend.Txt2Tag (cfToTxt)where
 import BNFC.CF
 import AbsBNF (Reg (..))
 import BNFC.Utils
-import Data.List (nub,intersperse)
+import Data.List (intersperse)
 
 cfToTxt :: String -> CF -> String
 cfToTxt name cf = unlines [
@@ -72,7 +72,7 @@ prtIdentifiers = unlines
   ]
 
 prtLiterals :: String -> CF -> String
-prtLiterals name cf =
+prtLiterals _ cf =
   unlines $ map stringLit $
     filter (`notElem` [Cat "Ident"]) $
       literals cf
@@ -188,12 +188,6 @@ prtSymbols xs = foldr (+++) [] (map p xs)
 prt :: String -> String
 prt s = s
 
-reserved :: String -> String
-reserved s = "{\\reserved{" ++ s ++ "}}"
-
-literal :: String -> String
-literal s = "{\\literal{" ++ s ++ "}}"
-
 empty :: String
 empty = "**eps**"
 
@@ -201,7 +195,7 @@ symbol :: String -> String
 symbol s = s
 
 tabular :: Int -> [[String]] -> String
-tabular n xs = unlines [unwords (intersperse "|" (" " : x)) | x <- xs]
+tabular _ xs = unlines [unwords (intersperse "|" (" " : x)) | x <- xs]
 
 terminal :: String -> String
 terminal s = "``" ++ s ++ "``"
