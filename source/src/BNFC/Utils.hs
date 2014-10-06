@@ -34,10 +34,12 @@ infixr 5 +++++
 
 -- printing operations
 
+(+++), (++++), (+++++) :: String -> String -> String
 a +++ b   = a ++ " "    ++ b
 a ++++ b  = a ++ "\n"   ++ b
 a +++++ b = a ++ "\n\n" ++ b
 
+prParenth :: String -> String
 prParenth s = if s == "" then "" else "(" ++ s ++ ")"
 
 -- * List utilities
@@ -101,6 +103,7 @@ writeFileRep = writeFileRep2
 -- peteg: FIXME this is racey.
 -- want to be a bit smarter about whether we actually generate the file
 -- or save it... e.g. ErrM.hs need not be regenerated if it exists.
+writeFileRep1 :: FilePath -> String -> IO ()
 writeFileRep1 f s =
     do exists <- doesFileExist f
        backedUp <- if exists
@@ -141,8 +144,8 @@ writeFileRep2 path s =
     -- denied (The process cannot access the file because it is being used
     -- by another process.)"
     readFile' :: FilePath -> IO String
-    readFile' path =
-        do inFile <- openFile path ReadMode
+    readFile' path' =
+        do inFile <- openFile path' ReadMode
            contents <- hGetContents inFile
            rnf contents `seq` hClose inFile
 	   return contents
