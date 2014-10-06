@@ -240,24 +240,25 @@ prDataC (cat, rules) = vsep $ map (prRuleC cat) rules
 prRuleC :: Cat -> (String, [Cat]) -> Doc
 prRuleC _ (fun, _) | isNilFun fun || isOneFun fun = empty
 prRuleC cat (fun, _) | isConsFun fun = vsep
-    [ text $ "/********************   " ++ c ++ "    ********************/"
-    , text $ c ++ " make_" ++ c ++"(" ++ m ++ " p1" ++ ", " ++ c ++ " p2)"
+    [ "/********************   " <> c <> "    ********************/"
+    , c <+> "make_" <> c <> parens (text m <+> "p1" <> "," <+> c <+> "p2")
     , lbrace
     , nest 4 $ vsep
-        [ text $ c ++ " tmp = (" ++ c ++ ") malloc(sizeof(*tmp));"
-        , text "if (!tmp)"
+        [ c <+> "tmp = (" <> c <> ") malloc(sizeof(*tmp));"
+        , "if (!tmp)"
         , lbrace
         , nest 4 $ vsep
-            [ text $ "fprintf(stderr, \"Error: out of memory when allocating " ++ c ++ "!\\n\");"
-            , text $ "exit(1);" ]
+            [ "fprintf(stderr, \"Error: out of memory when allocating " <> c <> "!\\n\");"
+            , "exit(1);" ]
         , rbrace
         , text $ "tmp->" ++ m' ++ " = " ++ "p1;"
-        , text $ "tmp->" ++ v ++ " = " ++ "p2;"
-        , text "return tmp;" ]
+        , "tmp->" <> v <+> "=" <+> "p2;"
+        , "return tmp;" ]
     , rbrace ]
   where
-    c = identCat (normCat cat)
-    v = map toLower c ++ "_"
+    icat = identCat (normCat cat)
+    c = text icat
+    v = text (map toLower icat ++ "_")
     ListCat c' = cat            -- We're making a list constructor, so we
                                 -- expect a list category
     m = identCat (normCat c')
