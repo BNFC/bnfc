@@ -41,7 +41,6 @@ import BNFC.CF
 import BNFC.Backend.CPP.NoSTL.RegToFlex
 -- import BNFC.Utils((+++), (++++))
 import BNFC.Backend.Common.NamedVariables
-import Data.List
 
 --The environment must be returned for the parser to use.
 cf2flex :: String -> CF -> (String, SymEnv)
@@ -176,10 +175,6 @@ lexMultiComment (b,e) = unlines [
   "<COMMENT>.      \t /* BNFC multi-line comment */;",
   "<COMMENT>[\\n]      \t /* BNFC multi-line comment */;"
   ]
-
-lexReserved :: String -> String
-lexReserved s = "<YYINITIAL>\"" ++ s ++ "\" \t yylval.string_ = strdup(yytext); return TS;"
-
 
 --Helper function that escapes characters in strings
 escapeChars :: String -> String

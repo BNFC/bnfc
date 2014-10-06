@@ -40,16 +40,19 @@
 
 module BNFC.Backend.C.CFtoCAbs (cf2CAbs) where
 
+import Text.PrettyPrint
+
 import BNFC.CF
-import BNFC.Utils((+++),(++++))
+import BNFC.Utils((+++), vsep)
 import BNFC.Backend.Common.NamedVariables
+import Data.Function (on)
 import Data.List
 import Data.Char(toLower)
 
 
 --The result is two files (.H file, .C file)
 cf2CAbs :: String -> CF -> (String, String)
-cf2CAbs name cf = (mkHFile cf, mkCFile cf)
+cf2CAbs _ cf = (mkHFile cf, mkCFile cf)
 
 
 {- **** Header (.H) File Functions **** -}
@@ -67,7 +70,7 @@ mkHFile cf = unlines
   concatMap prForward classes,
   "",
   "/********************   Abstract Syntax Classes    ********************/\n",
-  concatMap (prDataH user) (cf2dataLists cf),
+  concatMap prDataH (cf2dataLists cf),
   "",
   "#endif"
  ]
@@ -81,10 +84,10 @@ mkHFile cf = unlines
      "struct " ++ s ++ "_;",
      "typedef struct " ++ s ++ "_ *" ++ s ++ ";"
     ]
-  prForward s = ""
+  prForward _ = ""
   getRules cf = (map testRule (rulesOfCF cf))
   getClasses = map show . filter (\c -> identCat (normCat c) == show c)
-  testRule (Rule f c r) =
+  testRule (Rule f c _) =
    if isList c
    then if isConsFun f
      then identCat (normCat c)
@@ -92,15 +95,15 @@ mkHFile cf = unlines
    else "_"
 
 --Prints struct definitions for all categories.
-prDataH :: [UserDef] -> Data -> String
-prDataH user (cat, rules) =
+prDataH :: Data -> String
+prDataH (cat, rules) =
    if isList cat
       then unlines
        [
         "struct " ++ c' ++ "_",
         "{",
-        "  " ++ mem +++ (varName mem) ++ ";",
-        "  " ++ c' +++ (varName c') ++ ";",
+        "  " ++ mem +++ varName mem ++ ";",
+        "  " ++ c' +++ varName c' ++ ";",
         "};",
         "",
         c' ++ " make_" ++ c' ++ "(" ++ mem ++ " p1, " ++ c' ++ " p2);"
@@ -108,28 +111,27 @@ prDataH user (cat, rules) =
       else unlines
        [
         "struct " ++ show cat ++ "_",
+
         "{",
-        "  enum { " ++ (concat (intersperse ", " (map prKind rules))) ++ " } kind;",
+        "  enum { " ++ intercalate ", " (map prKind rules) ++ " } kind;",
         "  union",
         "  {",
-        concatMap (prUnion user) rules ++ "  } u;",
+        concatMap prUnion rules ++ "  } u;",
         "};",
         "",
-        concatMap (prRuleH user cat) rules
+        concatMap (prRuleH cat) rules
        ]
  where
   c' = identCat (normCat cat)
   mem = identCat (normCatOfList cat)
-  prKind (fun, cats) = "is_" ++ normFun fun
-  prMember user (fun, []) = ""
-  prMember user (fun, cats) = "  " ++ (prInstVars user (getVars cats))
-  prUnion user (fun, []) = ""
-  prUnion user (fun, cats) = "    struct { " ++ (prInstVars user (getVars cats)) ++ " } " ++ (memName fun) ++ ";\n"
+  prKind (fun, _) = "is_" ++ normFun fun
+  prUnion (_, []) = ""
+  prUnion (fun, cats) = "    struct { " ++ (render $ prInstVars (getVars cats)) ++ " } " ++ (memName fun) ++ ";\n"
 
 
 --Interface definitions for rules vary on the type of rule.
-prRuleH :: [UserDef] -> Cat -> (Fun, [Cat]) -> String
-prRuleH user c (fun, cats) =
+prRuleH :: Cat -> (Fun, [Cat]) -> String
+prRuleH c (fun, cats) =
     if isNilFun fun || isOneFun fun || isConsFun fun
     then ""  --these are not represented in the AbSyn
     else --a standard rule
@@ -155,34 +157,20 @@ prTypeDefs user = unlines
  where
   prUserDef s = "typedef char* " ++ show s ++ ";\n"
 
---A class's instance variables.
-prInstVars :: [UserDef] -> [IVar] -> String
-prInstVars _ [] = []
-prInstVars user vars@((t,n):[]) =
-  t +++ uniques
- where
-   (uniques, vs') = prUniques t vars
-prInstVars user vars@((t,n):vs) =
-  t +++ uniques ++
-  (prInstVars user vs')
- where
-   (uniques, vs') = prUniques t vars
-
---these functions group the types together nicely
-prUniques :: String -> [IVar] -> (String, [IVar])
-prUniques t vs = (prVars (findIndices (\x -> case x of (y,_) ->  y == t) vs) vs, remType t vs)
- where
-   remType :: String -> [IVar] -> [IVar]
-   remType _ [] = []
-   remType t ((t2,n):ts) = if t == t2
-   				then (remType t ts)
-				else (t2,n) : (remType t ts)
-   prVars (x:[]) vs =  case vs !! x of
-   			(t,n) -> (varName t) ++ (showNum n) ++ ";"
-   prVars (x:xs) vs = case vs !! x of
-   			(t,n) -> (varName t) ++ (showNum n) ++ ", " ++
-				 (prVars xs vs)
-
+-- | A class's instance variables. Print the variables declaration by grouping
+-- together the variables of the same type.
+-- >>> prInstVars [("A", 1)]
+-- A a_1;
+-- >>> prInstVars [("A",1),("A",2),("B",1)]
+-- A a_1, a_2; B b_1;
+prInstVars :: [IVar] -> Doc
+prInstVars =
+    hsep . map prInstVarsOneType . groupBy ((==) `on` fst) . sort
+  where
+    prInstVarsOneType ivars = text (fst (head ivars))
+                              <+> hsep (punctuate comma (map prIVar ivars))
+                              <> semi
+    prIVar (s, i) = text (varName s) <> int i
 
 {- **** Implementation (.C) File Functions **** -}
 
@@ -191,10 +179,9 @@ mkCFile :: CF -> String
 mkCFile cf = unlines
  [
   header,
-  concatMap (prDataC user) (cf2dataLists cf)
+  concatMap (render . prDataC) (cf2dataLists cf)
  ]
  where
-  user = fst (unzip (tokenPragmas cf))
   header = unlines
    [
     "/* C Abstract Syntax Implementation generated by the BNF Converter. */",
@@ -207,114 +194,142 @@ mkCFile cf = unlines
 
 --This is not represented in the implementation.
 --This is not represented in the implementation.
-prDataC :: [UserDef] -> Data -> String
-prDataC user (cat, rules) = concatMap (prRuleC user cat) rules
+prDataC :: Data -> Doc
+prDataC (cat, rules) = vsep $ map (prRuleC cat) rules
 
---Classes for rules vary based on the type of rule.
-prRuleC user c (fun, cats) =
-    if isNilFun fun || isOneFun fun
-    then ""  --these are not represented in the AbSyn
-    else if isConsFun fun
-    then --this is the linked list case.
-    unlines
-    [
-     "/********************   " ++ c' ++ "    ********************/",
-     prListFuncs user c',
-     ""
-    ]
-    else --a standard rule
-    unlines
-    [
-     "/********************   " ++ fun' ++ "    ********************/",
-     prConstructorC user c fun' vs cats,
-     ""
-    ]
+-- | Classes for rules vary based on the type of rule.
+--
+-- * Empty list constructor, these are not represented in the AbSyn
+-- >>> prRuleC (ListCat (Cat "A")) ("[]", [Cat "A", Cat "B", Cat "B"])
+-- <BLANKLINE>
+--
+-- * Linked list case. These are all built-in list functions.
+-- Later we could include things like lookup,insert,delete,etc.
+-- >>> prRuleC (ListCat (Cat "A")) ("(:)", [Cat "A", Cat "B", Cat "B"])
+-- /********************   ListA    ********************/
+-- ListA make_ListA(A p1, ListA p2)
+-- {
+--     ListA tmp = (ListA) malloc(sizeof(*tmp));
+--     if (!tmp)
+--     {
+--         fprintf(stderr, "Error: out of memory when allocating ListA!\n");
+--         exit(1);
+--     }
+--     tmp->a_ = p1;
+--     tmp->lista_ = p2;
+--     return tmp;
+-- }
+--
+-- * Standard rule
+-- >>> prRuleC (Cat "A") ("funa", [Cat "A", Cat "B", Cat "B"])
+-- /********************   funa    ********************/
+-- A make_funa(A p1, B p2, B p3)
+-- {
+--     A tmp = (A) malloc(sizeof(*tmp));
+--     if (!tmp)
+--     {
+--         fprintf(stderr, "Error: out of memory when allocating funa!\n");
+--         exit(1);
+--     }
+--     tmp->kind = is_funa;
+--     tmp->u.funa_.a_ = p1;
+--     tmp->u.funa_.b_1 = p2;
+--     tmp->u.funa_.b_2 = p3;
+--     return tmp;
+-- }
+prRuleC :: Cat -> (String, [Cat]) -> Doc
+prRuleC _ (fun, _) | isNilFun fun || isOneFun fun = empty
+prRuleC cat (fun, _) | isConsFun fun = vsep
+    [ text $ "/********************   " ++ c ++ "    ********************/"
+    , text $ c ++ " make_" ++ c ++"(" ++ m ++ " p1" ++ ", " ++ c ++ " p2)"
+    , lbrace
+    , nest 4 $ vsep
+        [ text $ c ++ " tmp = (" ++ c ++ ") malloc(sizeof(*tmp));"
+        , text "if (!tmp)"
+        , lbrace
+        , nest 4 $ vsep
+            [ text $ "fprintf(stderr, \"Error: out of memory when allocating " ++ c ++ "!\\n\");"
+            , text $ "exit(1);" ]
+        , rbrace
+        , text $ "tmp->" ++ m' ++ " = " ++ "p1;"
+        , text $ "tmp->" ++ v ++ " = " ++ "p2;"
+        , text "return tmp;" ]
+    , rbrace ]
+  where
+    c = identCat (normCat cat)
+    v = map toLower c ++ "_"
+    ListCat c' = cat            -- We're making a list constructor, so we
+                                -- expect a list category
+    m = identCat (normCat c')
+    m' = map toLower m ++ "_"
+prRuleC c (fun, cats) = vsep
+    [ text $ "/********************   " ++ fun' ++ "    ********************/"
+    , prConstructorC c fun' vs cats ]
    where
      vs = getVars cats
      fun' = normFun fun
-     c' = identCat (normCat c)
 
---These are all built-in list functions.
---Later we could include things like lookup,insert,delete,etc.
-prListFuncs :: [UserDef] -> String -> String
-prListFuncs user c = unlines
- [
-   c ++ " make_" ++ c ++"(" ++ m ++ " p1" ++ ", " ++ c ++ " p2)",
-   "{",
-   "  " ++ c ++ " tmp = (" ++ c ++ ") malloc(sizeof(*tmp));",
-   "  if (!tmp)",
-   "  {",
-   "    fprintf(stderr, \"Error: out of memory when allocating " ++ c ++ "!\\n\");",
-   "    exit(1);",
-   "  }",
-   "  tmp->" ++ m' ++ " = " ++ "p1;",
-   "  tmp->" ++ v ++ " = " ++ "p2;",
-   "  return tmp;",
-   "}"
- ]
- where
-   v = (map toLower c) ++ "_"
-   m = drop 4 c
-   m' = drop 4 v
-
---The constructor just assigns the parameters to the corresponding instance variables.
-prConstructorC :: [UserDef] -> Cat -> String -> [IVar] -> [Cat] -> String
-prConstructorC user cat c vs cats =
-  unlines
-  [
-   cat' ++ " make_" ++ c ++"(" ++ (interleave types params) ++ ")",
-   "{",
-   "  " ++ cat' ++ " tmp = (" ++ cat' ++ ") malloc(sizeof(*tmp));",
-   "  if (!tmp)",
-   "  {",
-   "    fprintf(stderr, \"Error: out of memory when allocating " ++ c ++ "!\\n\");",
-   "    exit(1);",
-   "  }",
-   "  tmp->kind = is_" ++ c ++ ";",
-   prAssigns c vs params,
-   "  return tmp;",
-   "}"
-  ]
+-- | The constructor just assigns the parameters to the corresponding instance
+-- variables.
+-- >>> prConstructorC (Cat "A") "funa" [("A",1),("B",2)] [Cat "O", Cat "E"]
+-- A make_funa(O p1, E p2)
+-- {
+--     A tmp = (A) malloc(sizeof(*tmp));
+--     if (!tmp)
+--     {
+--         fprintf(stderr, "Error: out of memory when allocating funa!\n");
+--         exit(1);
+--     }
+--     tmp->kind = is_funa;
+--     tmp->u.funa_.a_ = p1;
+--     tmp->u.funa_.b_2 = p2;
+--     return tmp;
+-- }
+prConstructorC :: Cat -> String -> [IVar] -> [Cat] -> Doc
+prConstructorC cat c vs cats = vsep
+    [ text (cat' ++ " make_" ++ c) <> parens args
+    , lbrace
+    , nest 4 $ vsep
+        [ text $ cat' ++ " tmp = (" ++ cat' ++ ") malloc(sizeof(*tmp));"
+        , text "if (!tmp)"
+        , lbrace
+        , nest 4 $ vsep
+            [ text ("fprintf(stderr, \"Error: out of memory when allocating " ++ c ++ "!\\n\");")
+            , text "exit(1);" ]
+        , rbrace
+        , text $ "tmp->kind = is_" ++ c ++ ";"
+        , prAssigns c vs params
+        , text "return tmp;" ]
+    , rbrace ]
  where
    cat' = identCat (normCat cat)
-   (types, params) = unzip (prParams cats (length cats) ((length cats)+1))
-   interleave _ [] = []
-   interleave (x:[]) (y:[]) = x +++ y
-   interleave (x:xs) (y:ys) = x +++ y ++ "," +++ (interleave xs ys)
+   (types, params) = unzip (prParams cats)
+   args = hsep $ punctuate comma $ zipWith (<+>) types params
 
---Prints the constructor's parameters.
-prParams :: [Cat] -> Int -> Int -> [(String,String)]
-prParams [] _ _ = []
-prParams (c:cs) n m = (identCat c,"p" ++ (show (m-n)))
-			: (prParams cs (n-1) m)
+-- | Prints the constructor's parameters. Returns pairs of type * name
+-- >>> prParams [Cat "O", Cat "E"]
+-- [(O,p1),(E,p2)]
+prParams :: [Cat] -> [(Doc, Doc)]
+prParams = zipWith prParam [1..]
+  where
+    prParam n c = (text (identCat c), text ("p" ++ show n))
 
---Prints the assignments of parameters to instance variables.
---This algorithm peeks ahead in the list so we don't use map or fold
-prAssigns :: String -> [IVar] -> [String] -> String
-prAssigns _ [] _ = []
-prAssigns _ _ [] = []
-prAssigns c ((t,n):vs) (p:ps) =
-  if n == 1 then
-   case findIndices (\x -> case x of (l,r) -> l == t) vs of
-    [] -> "  tmp->u." ++ c' ++ "_." ++ (varName t) ++ " = " ++ p ++ ";\n" ++ (prAssigns c vs ps)
-    z -> "  tmp->u." ++ c' ++ "_." ++ ((varName t) ++ (showNum n)) ++ " = " ++ p ++ ";\n" ++ (prAssigns c vs ps)
-  else "  tmp->u." ++ c' ++ "_." ++ ((varName t) ++ (showNum n)) ++ " = " ++ p ++ ";\n" ++ (prAssigns c vs ps)
- where
-  c' = map toLower c
+-- | Prints the assignments of parameters to instance variables.
+-- >>> prAssigns "A" [("A",1),("B",2)] [text "abc", text "def"]
+-- tmp->u.a_.a_ = abc;
+-- tmp->u.a_.b_2 = def;
+prAssigns :: String -> [IVar] -> [Doc] -> Doc
+prAssigns c vars params = vcat $ zipWith prAssign vars params
+  where
+    prAssign (t,n) p =
+        text ("tmp->u." ++ c' ++ "_." ++ vname t n) <+> char '=' <+> p <> semi
+    vname t n | n == 1 =
+        case findIndices ((== t).fst) vars of
+            [_] -> varName t
+            _   -> varName t ++ showNum n
+    vname t n = varName t ++ showNum n
+    c' = map toLower c
 
 {- **** Helper Functions **** -}
 
---Checks if something is a basic or user-defined type.
-isBasic :: [UserDef] -> Cat -> Bool
-isBasic user x =
-  if elem x user
-    then True
-    else case x of
-      Cat "Integer" -> True
-      Cat "Char" -> True
-      Cat "String" -> True
-      Cat "Double" -> True
-      Cat "Ident" -> True
-      _ -> False
-
-memName s = (map toLower s) ++ "_"
+memName s = map toLower s ++ "_"

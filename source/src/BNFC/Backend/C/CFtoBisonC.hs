@@ -42,10 +42,10 @@
 module BNFC.Backend.C.CFtoBisonC (cf2Bison) where
 
 import BNFC.CF
-import Data.List (intersperse, isPrefixOf)
+import Data.List (intersperse)
 import BNFC.Backend.Common.NamedVariables hiding (varName)
 import Data.Char (toLower)
-import BNFC.Utils ((+++), (++++))
+import BNFC.Utils ((+++))
 
 --This follows the basic structure of CFtoHappy.
 
@@ -89,14 +89,14 @@ header name cf = unlines
           "}",
 	  "",
           -- M.F. 2004-09-17 changed allEntryPoints to allCatsIdNorm. Seems to fix the [Ty2] bug.
-	  unlines $ map (parseMethod name) (allCatsNorm cf), -- (allEntryPoints cf),
+	  unlines $ map parseMethod (allCatsNorm cf), -- (allEntryPoints cf),
 	  concatMap reverseList (filter isList (allCats cf)),
 	  "%}"
 	  ]
 
 --This generates a parser method for each entry point.
-parseMethod :: String -> Cat -> String
-parseMethod name cat =
+parseMethod :: Cat -> String
+parseMethod cat =
 --  if normCat cat /= cat      M.F. 2004-09-17 comment. No duplicates from allCatsIdNorm
 --  then ""
 --  else
@@ -160,14 +160,14 @@ union cats = unlines
    "  " ++ (identCat (normCat s)) +++ (varName (normCat s)) ++ ";\n"
  mkPointer s | normCat s == s = --normal cat
    "  " ++ (identCat (normCat s)) +++ (varName (normCat s)) ++ ";\n"
- mkPointer s = ""
+ mkPointer _ = ""
 
 --declares non-terminal types.
 declarations :: CF -> String
 declarations cf = concatMap (typeNT cf) (allCats cf)
  where --don't define internal rules
    typeNT cf nt | rulesForCat cf nt /= [] = "%type <" ++ (varName (normCat nt)) ++ "> " ++ (identCat nt) ++ "\n"
-   typeNT cf nt = ""
+   typeNT _ _ = ""
 
 --declares terminal types.
 tokens :: [UserDef] -> SymEnv -> String
@@ -249,7 +249,7 @@ generatePatterns cf env r = case rhsRule r of
 
 prRules :: Rules -> String
 prRules [] = []
-prRules ((nt, []):rs) = prRules rs --internal rule
+prRules ((_, []):rs) = prRules rs --internal rule
 prRules ((nt,((p,a):ls)):rs) =
   (unwords [nt', ":" , p, "{ $$ =", a, "}", "\n" ++ pr ls]) ++ ";\n" ++ prRules rs
  where

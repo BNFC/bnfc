@@ -42,11 +42,11 @@
 module BNFC.Backend.C.CFtoCPrinter (cf2CPrinter) where
 
 import BNFC.CF
-import BNFC.Utils ((+++), (++++))
+import BNFC.Utils ((+++))
 import BNFC.Backend.Common.NamedVariables
 import BNFC.Backend.Common.StrUtils (renderCharOrString)
 import Data.List
-import Data.Char(toLower, toUpper)
+import Data.Char(toLower)
 
 --Produces (.h file, .c file)
 cf2CPrinter :: CF -> (String, String)
@@ -124,13 +124,13 @@ mkHFile cf groups = unlines
 
 --Prints all the required method names and their parameters.
 prPrintDataH :: (Cat, [Rule]) -> String
-prPrintDataH (cat, rules) = concat ["void pp", cl, "(", cl, " p, int i);\n"]
+prPrintDataH (cat, _) = concat ["void pp", cl, "(", cl, " p, int i);\n"]
   where
    cl = identCat (normCat cat)
 
 --Prints all the required method names and their parameters.
 prShowDataH :: (Cat, [Rule]) -> String
-prShowDataH (cat, rules) = concat ["void sh", cl, "(", cl, " p);\n"]
+prShowDataH (cat, _) = concat ["void sh", cl, "(", cl, " p);\n"]
   where
    cl = identCat (normCat cat)
 
@@ -382,7 +382,7 @@ prPrintData user (cat, rules) =
 
 --Pretty Printer methods for a rule.
 prPrintRule :: [UserDef] -> Rule -> String
-prPrintRule user r@(Rule fun c cats) | not (isCoercion fun) = unlines
+prPrintRule user r@(Rule fun _ cats) | not (isCoercion fun) = unlines
   [
    "  case is_" ++ fun ++ ":",
    lparen,
@@ -396,7 +396,7 @@ prPrintRule user r@(Rule fun c cats) | not (isCoercion fun) = unlines
       ("    if (_i_ > " ++ (show p) ++ ") renderC(_L_PAREN);",
        "    if (_i_ > " ++ (show p) ++ ") renderC(_R_PAREN);")
     cats' = (concatMap (prPrintCat user fun) (zip3 (fixOnes (numVars [] cats)) cats (map getPrec cats)))
-    getPrec (Right s) = 0 :: Integer
+    getPrec (Right _) = 0 :: Integer
     getPrec (Left c) = precCat c
 prPrintRule _ _ = ""
 
@@ -482,7 +482,7 @@ prShowData user (cat, rules) =
 
 --Pretty Printer methods for a rule.
 prShowRule :: [UserDef] -> Rule -> String
-prShowRule user r@(Rule fun c cats) | not (isCoercion fun) = unlines
+prShowRule user (Rule fun _ cats) | not (isCoercion fun) = unlines
   [
    "  case is_" ++ fun ++ ":",
    lparen,
@@ -505,14 +505,14 @@ prShowRule user r@(Rule fun c cats) | not (isCoercion fun) = unlines
       then insertSpaces xs
       else (x : ["  bufAppendC(' ');\n"]) ++ (insertSpaces xs)
     allTerms [] = True
-    allTerms ((Left z):zs) = False
-    allTerms (z:zs) = allTerms zs
+    allTerms (Left _:_) = False
+    allTerms (_:zs) = allTerms zs
 prShowRule _ _ = ""
 
 --This goes on to recurse to the instance variables.
 prShowCat :: [UserDef] -> Fun -> (Either String String, Either Cat String) -> String
 prShowCat user fnm (c,o) = case c of
-  (Right t) -> ""
+  (Right _) -> ""
   (Left nt) -> if isBasic user nt
        then "    sh" ++ (basicFunName nt) ++ "(_p_->u." ++ v ++ "_." ++ nt ++ ");\n"
        else if nt == "#_" --Internal category
@@ -558,10 +558,6 @@ basicFunName v =
     else if "double_" `isPrefixOf` v then "Double"
     else if "ident_" `isPrefixOf` v then "Ident"
     else "Ident" --User-defined type
-
---Just sets the coercion level for parentheses in the Pretty Printer.
-setI :: Int -> String
-setI n = "_i_ = " ++ (show n) ++ "; "
 
 --An extremely simple renderCer for terminals.
 prRender :: String

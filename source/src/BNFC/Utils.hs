@@ -21,12 +21,14 @@ module BNFC.Utils where
 
 import Control.DeepSeq (rnf)
 import Control.Monad (unless)
+import Data.Function (on)
+import Data.List (groupBy, sort)
 import System.IO (IOMode(ReadMode),hClose,hGetContents,openFile)
 import System.IO.Error (tryIOError)
 import System.Directory (createDirectory, doesDirectoryExist, renameFile,
                          removeFile, doesFileExist)
-
 import System.FilePath (pathSeparator)
+import Text.PrettyPrint
 
 infixr 5 +++
 infixr 5 ++++
@@ -149,3 +151,18 @@ writeFileRep2 path s =
            contents <- hGetContents inFile
            rnf contents `seq` hClose inFile
 	   return contents
+
+-- | Partition a list of pairs
+-- >>> partitionByKey [("a",1), ("b",2), ("a",3), ("b", 4)]
+-- [("a",[1,3]),("b",[2,4])]
+partitionByKey :: (Ord a, Eq a, Ord b) => [(a,b)] -> [(a,[b])]
+partitionByKey = map foo . groupBy ((==) `on` fst) . sort
+  where foo l = (fst (head l), map snd l)
+
+
+-- | List version of prettyPrint $+$
+-- >>> vsep [text "abc", nest 4 (text "def")]
+-- abc
+--     def
+vsep :: [Doc] -> Doc
+vsep = foldl ($+$) empty
