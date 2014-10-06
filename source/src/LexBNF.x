@@ -24,7 +24,7 @@ $u = [\0-\255]          -- universal: any character
 
 :-
 "--" [.]* ; -- Toss single line comments
-"{-" ([$u # \-] | \- [$u # \}])* ("-")+ "}" ; 
+"{-" ([$u # \-] | \-+ [$u # [\- \}]])* ("-")+ "}" ;
 
 $white+ ;
 @rsyms { tok (\p s -> PT p (eitherResIdent (TV . share) s)) }
@@ -37,6 +37,7 @@ $d+ \. $d+ (e (\-)? $d+)? { tok (\p s -> PT p (TD $ share s)) }
 
 {
 
+tok :: (Posn -> String -> Token) -> (Posn -> String -> Token)
 tok f p s = f p s
 
 share :: String -> String
@@ -52,21 +53,30 @@ data Tok =
 
  deriving (Eq,Show,Ord)
 
-data Token = 
+data Token =
    PT  Posn Tok
  | Err Posn
   deriving (Eq,Show,Ord)
 
+tokenPos :: [Token] -> String
 tokenPos (PT (Pn _ l _) _ :_) = "line " ++ show l
 tokenPos (Err (Pn _ l _) :_) = "line " ++ show l
 tokenPos _ = "end of file"
 
+tokenPosn :: Token -> Posn
 tokenPosn (PT p _) = p
 tokenPosn (Err p) = p
+
+tokenLineCol :: Token -> (Int, Int)
 tokenLineCol = posLineCol . tokenPosn
+
+posLineCol :: Posn -> (Int, Int)
 posLineCol (Pn _ l c) = (l,c)
+
+mkPosToken :: Token -> ((Int, Int), String)
 mkPosToken t@(PT p _) = (posLineCol p, prToken t)
 
+prToken :: Token -> String
 prToken t = case t of
   PT _ (TS s _) -> s
   PT _ (TL s)   -> s
@@ -86,6 +96,7 @@ eitherResIdent tv s = treeFind resWords
                               | s > a  = treeFind right
                               | s == a = t
 
+resWords :: BTree
 resWords = b "digit" 21 (b "=" 11 (b "-" 6 (b "*" 3 (b ")" 2 (b "(" 1 N N) N) (b "," 5 (b "+" 4 N N) N)) (b "::=" 9 (b ":" 8 (b "." 7 N N) N) (b ";" 10 N N))) (b "char" 16 (b "]" 14 (b "[" 13 (b "?" 12 N N) N) (b "_" 15 N N)) (b "define" 19 (b "comment" 18 (b "coercions" 17 N N) N) (b "delimiters" 20 N N)))) (b "separator" 31 (b "letter" 26 (b "internal" 24 (b "eps" 23 (b "entrypoints" 22 N N) N) (b "layout" 25 N N)) (b "position" 29 (b "nonempty" 28 (b "lower" 27 N N) N) (b "rules" 30 N N))) (b "upper" 36 (b "token" 34 (b "terminator" 33 (b "stop" 32 N N) N) (b "toplevel" 35 N N)) (b "|" 39 (b "{" 38 (b "views" 37 N N) N) (b "}" 40 N N))))
    where b s n = let bs = id s
                   in B bs (TS bs n)
@@ -147,7 +158,7 @@ alexGetByte (p, _, [], s) =
 alexInputPrevChar :: AlexInput -> Char
 alexInputPrevChar (p, c, bs, s) = c
 
--- | Encode a Haskell String to a list of Word8 values, in UTF8 format.
+  -- | Encode a Haskell String to a list of Word8 values, in UTF8 format.
 utf8Encode :: Char -> [Word8]
 utf8Encode = map fromIntegral . go . ord
  where

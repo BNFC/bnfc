@@ -4,6 +4,7 @@ module Main where
 
 import System.IO ( stdin, hGetContents )
 import System.Environment ( getArgs, getProgName )
+import System.Exit ( exitFailure, exitSuccess )
 
 import LexBNF
 import ParBNF
@@ -34,9 +35,11 @@ run v p s = let ts = myLLexer s in case p ts of
                           putStrV v "Tokens:"
                           putStrV v $ show ts
                           putStrLn s
+                          exitFailure
            Ok  tree -> do putStrLn "\nParse Successful!"
                           showTree v tree
 
+                          exitSuccess
 
 
 showTree :: (Show a, Print a) => Int -> a -> IO ()

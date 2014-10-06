@@ -202,7 +202,7 @@ instance Print Arg where
 instance Print Exp where
   prt i e = case e of
    Cons exp0 exp -> prPrec i 0 (concatD [prt 1 exp0 , doc (showString ":") , prt 0 exp])
-   App id exps -> prPrec i 1 (concatD [prt 0 id , prt 2 exps])
+   App id exps -> prPrec i 1 (concatD [prt 0 id , prt 0 exps])
    Var id -> prPrec i 2 (concatD [prt 0 id])
    LitInt n -> prPrec i 2 (concatD [prt 0 n])
    LitChar c -> prPrec i 2 (concatD [prt 0 c])
@@ -213,7 +213,9 @@ instance Print Exp where
   prtList es = case es of
    [] -> (concatD [])
    [x] -> (concatD [prt 2 x])
-   x:xs -> (concatD [prt 2 x , prt 2 xs])
+   [x] -> (concatD [prt 0 x])
+   x:xs -> (concatD [prt 2 x , prt 0 xs])
+   x:xs -> (concatD [prt 0 x , doc (showString ",") , prt 0 xs])
 
 instance Print RHS where
   prt i e = case e of
