@@ -33,15 +33,12 @@ Yet Presentable Version of the CYK Algorithm", Informatica Didactica
 -}
 
 import BNFC.CF hiding (App,Exp)
-import BNFC.Backend.Haskell.HsOpts
 import Control.Monad.RWS
 import Control.Applicative hiding (Const)
 import qualified Data.Map as M
-import Data.List (nub,intercalate,sortBy,sort)
-import Data.Maybe (maybeToList)
+import Data.List (nub,sortBy,sort)
 import Data.Function (on)
 import Data.Char (isAlphaNum,ord)
-import Data.String
 import Data.Pair
 import Text.PrettyPrint.HughesPJ hiding (first,(<>))
 
@@ -119,9 +116,6 @@ toBinRul (Rule f cat rhs) | length rhs > 2 = do
          : r'
   where l = last rhs
         p = init rhs
-        fun' = case l of
-          Left _ -> Con "($)" -- in this case we have to apply the final argument to the partial result
-          Right _ -> Con "const" -- in this case the 2nd argument must be ignored (it is not present in the result).
 toBinRul r = return [r]
 
 prettyRHS = hcat . punctuate " " . map (either (text . show) (quotes . text))
@@ -142,7 +136,7 @@ fixpointOnGrammar name f cf = case fixn 100 step M.empty of
   where step curSet = M.unionsWith (∪) (map (f curSet) (rulesOfCF cf))
 
 fixn :: Eq a => Int -> (a -> a) -> a -> Either a a
-fixn 0 f x = Left x
+fixn 0 _ x = Left x
 fixn n f x = if x' == x then Right x else fixn (n-1) f x'
   where x' = f x
 
@@ -156,12 +150,9 @@ cross [] = [[]]
 cross (x:xs) = [y:ys | y <- x,  ys <- cross xs]
 
 nullRule :: Nullable -> Rul Exp -> (Cat,[Exp])
-nullRule nullset (Rule f c rhs) = (c, map (\xs -> (appMany f xs)) (cross (map nulls rhs)))
-    where nulls (Right tok) = []
+nullRule nullset (Rule f c rhs) = (c, map (appMany f) (cross (map nulls rhs)))
+    where nulls (Right _) = []
           nulls (Left cat) = lookupMulti cat nullset
-
-nullable :: Nullable -> Rul Exp -> Bool
-nullable s = not . null . snd . nullRule s
 
 nullSet :: CFG Exp -> Nullable
 nullSet = fixpointOnGrammar "nullable" (\s r -> uncurry M.singleton (nullRule s r))
@@ -174,7 +165,7 @@ delNullable nullset r@(Rule f cat rhs) = case rhs of
   [r1,r2] -> [r] ++ [Rule (app'  f x) cat [r2] | x <- lk' r1]
                  ++ [Rule (app2 (isCat r1) f x) cat [r1] | x <- lk' r2]
   _ -> error $ "Panic:" ++ show r ++ "should have at most two elements."
-  where lk' (Right tok) = []
+  where lk' (Right _) = []
         lk' (Left cat) = lookupMulti cat nullset
 
 
@@ -197,7 +188,7 @@ unitRule unitSet (Rule f c [r]) = M.singleton r $ (f,c) : [(g `appl` f,c') | (g,
                  Right _ -> app'
 unitRule _ _ = M.empty
 
-isUnitRule (Rule f c [r]) = True
+isUnitRule (Rule _ _ [_]) = True
 isUnitRule _ = False
 
 
@@ -206,10 +197,10 @@ isUnitRule _ = False
 type RHSEl = Either Cat String
 
 isOnLeft, isOnRight :: RHSEl -> Rul f -> Bool
-isOnLeft c (Rule f _ [c',_]) = c == c'
+isOnLeft c (Rule _ _ [c',_]) = c == c'
 isOnLeft _ _ = False
 
-isOnRight c (Rule f _ [_,c']) = c == c'
+isOnRight c (Rule _ _ [_,c']) = c == c'
 isOnRight _ _ = False
 
 isEntryPoint cf el = either (`elem` allEntryPoints cf) (const False) el
@@ -241,10 +232,10 @@ splitOptim f cf xs = optim f $ splitLROn f cf $ xs
 -- Error reporting
 
 -- leftOf C = ⋃ { {X} ∪ leftOf X | C ::= X B ∈ Grammar or C ::= X ∈ Grammar }
-leftRight pos s (Rule f c rhs) = M.singleton (show c) (lkCat x s)
+leftRight pos s (Rule _ c rhs) = M.singleton (show c) (lkCat x s)
   where x = pos rhs
 
-lkCat (Right t) s = [Right t]
+lkCat (Right t) _ = [Right t]
 lkCat (Left c) s = Left c:lookupMulti (show c) s
 
 -- neighbors A B = ∃ A' B'. P ::= A' B' ∧  A ∈ rightOf A'  ∧  B ∈ leftOf B
