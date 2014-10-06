@@ -3,7 +3,6 @@ module BNFC.Backend.CSharp.RegToGPLEX (printRegGPLEX) where
 -- modified from RegToFlex
 
 import AbsBNF
-import Data.Char
 
 -- the top-level printing method
 printRegGPLEX :: Reg -> String
@@ -22,7 +21,6 @@ render = rend (0::Int) where
     t        :ts -> space t   $ rend i ts
     _            -> ""
   cons s t  = s ++ t
-  new i s   = s
   space t s = if null s then t else t ++ s
 
 parenth :: [String] -> [String]

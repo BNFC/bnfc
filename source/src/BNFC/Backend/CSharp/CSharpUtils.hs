@@ -38,10 +38,7 @@
 module BNFC.Backend.CSharp.CSharpUtils where
 
 import BNFC.CF
-import Control.Monad.ST
--- Control.Monad.State
 import Data.Char (toLower)
-import Data.Maybe
 import Data.List
 import BNFC.Backend.Common.OOAbstract hiding (basetypes)
 

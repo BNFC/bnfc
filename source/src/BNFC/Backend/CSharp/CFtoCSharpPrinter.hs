@@ -41,10 +41,10 @@
 module BNFC.Backend.CSharp.CFtoCSharpPrinter (cf2csharpprinter) where
 
 import BNFC.CF
-import BNFC.Utils ((+++), (++++))
+import BNFC.Utils ((+++))
 import BNFC.Backend.Common.NamedVariables
 import Data.List
-import Data.Char(toLower, toUpper, isSpace)
+import Data.Char(toLower)
 import Data.Maybe
 import BNFC.Backend.CSharp.CSharpUtils
 
@@ -358,7 +358,7 @@ prRule namespace maybeElse r@(Rule fun _c cats)
 prRule _nm _ _ = ""
 
 prList :: [UserDef] -> Cat -> [Rule] -> String
-prList user c rules = unlinesInline [
+prList _ _ rules = unlinesInline [
   "      for(int i=0; i < p.Count; i++)",
   "      {",
   "        PrintInternal(p[i], 0);",
@@ -373,7 +373,6 @@ prList user c rules = unlinesInline [
   "      }"
   ]
   where
-    et = typename (show$ normCatOfList c)
     sep = getCons rules
     optsep = if hasOneFunc rules then "" else escapeChars sep
 
@@ -429,7 +428,7 @@ shRule namespace (Rule fun _c cats)
 shRule _nm _ = ""
 
 shList :: [UserDef] -> Cat -> [Rule] -> String
-shList user c _rules = unlinesInline [
+shList _ _ _rules = unlinesInline [
   "      for(int i=0; i < p.Count; i++)",
   "      {",
   "        ShowInternal(p[i]);",
@@ -437,8 +436,6 @@ shList user c _rules = unlinesInline [
   "          Render(\",\");",
   "      }"
   ]
-  where
-    et = typename (show $ normCatOfList c)
 
 shCat fnm c =
   case c of

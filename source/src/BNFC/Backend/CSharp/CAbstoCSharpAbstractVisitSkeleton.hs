@@ -49,12 +49,9 @@
 module BNFC.Backend.CSharp.CAbstoCSharpAbstractVisitSkeleton (cabs2csharpAbstractVisitSkeleton) where
 
 import BNFC.CF
-import BNFC.Utils ((+++), (++++))
-import BNFC.Backend.Common.NamedVariables
-import Data.List
+import BNFC.Utils ((+++))
 import BNFC.Backend.Common.OOAbstract hiding (basetypes)
 import BNFC.Backend.CSharp.CSharpUtils
-import BNFC.Backend.CSharp.CAbstoCSharpAbs
 
 --Produces .cs file
 cabs2csharpAbstractVisitSkeleton :: Namespace -> CAbs -> String
@@ -92,6 +89,6 @@ prCon namespace (c,fs) = unlinesInline [
   ]
 
 prVisit :: Namespace -> (Fun, [(String, Bool, String)]) -> String
-prVisit namespace (f,cs) = unlinesInline [
+prVisit namespace (f,_) = unlinesInline [
   "    public abstract R Visit(" ++ identifier namespace f +++ varname f ++ ", A arg);"
   ]

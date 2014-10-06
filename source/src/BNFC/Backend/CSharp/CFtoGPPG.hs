@@ -39,10 +39,10 @@
 module BNFC.Backend.CSharp.CFtoGPPG (cf2gppg) where
 
 import BNFC.CF
-import Data.List (intersperse, isPrefixOf)
+import Data.List (intersperse)
 import BNFC.Backend.Common.NamedVariables hiding (varName)
-import Data.Char (toLower,isUpper,isDigit)
-import BNFC.Utils ((+++), (++++))
+import Data.Char (toLower)
+import BNFC.Utils ((+++))
 import BNFC.TypeChecker
 import ErrM
 import BNFC.Backend.Common.OOAbstract hiding (basetypes)
@@ -86,7 +86,7 @@ header namespace cf = unlines [
   ]
 
 definedRules :: Namespace -> CF -> String
-definedRules namespace cf = unlinesInline [
+definedRules _ cf = unlinesInline [
   if null [ rule f xs e | FunDef f xs e <- pragmasOfCF cf ]
     then ""
     else error "Defined rules are not yet available in C# mode!"
@@ -102,7 +102,7 @@ definedRules namespace cf = unlinesInline [
     rule f xs e =
       case checkDefinition' list ctx f xs e of
         Bad err	-> error $ "Panic! This should have been caught already:\n" ++ err
-        Ok (args,(e',t)) -> unlinesInline [
+        Ok (_,(_,_)) -> unlinesInline [
           "Defined Rule goes here"
           ]
 
@@ -144,14 +144,14 @@ union namespace cats = unlines $ filter (\x -> x /= "\n") [
   where --This is a little weird because people can make [Exp2] etc.
     catline cat | (identCat cat /= show cat) || ((normCat cat) == cat) =
       "  public " ++ identifier namespace (identCat (normCat cat)) +++ (varName (show$normCat cat)) ++ ";"
-    catline cat = ""
+    catline _ = ""
 
 --declares non-terminal types.
 declarations :: CF -> String
 declarations cf = unlinesInline $ map (typeNT cf) (positionCats cf ++ allCats cf)
  where --don't define internal rules
    typeNT cf nt | (isPositionCat cf nt || rulesForCat cf nt /= []) = "%type <" ++ (varName (show$normCat nt)) ++ "> " ++ (show$normCat nt)
-   typeNT cf nt = ""
+   typeNT _ _ = ""
 
 --declares terminal types.
 tokens :: [UserDef] -> SymEnv -> String
@@ -224,7 +224,7 @@ generateAction namespace nt f rev mbs
 -- Generate patterns and a set of metavariables indicating
 -- where in the pattern the non-terminal
 generatePatterns :: CF -> SymEnv -> Rule -> Bool -> (Pattern,[(MetaVar,Bool)])
-generatePatterns cf env r revv = case rhsRule r of
+generatePatterns cf env r _ = case rhsRule r of
   []  -> ("/* empty */",[])
   its -> (unwords (map mkIt its), metas its)
   where
@@ -249,8 +249,8 @@ generatePatterns cf env r revv = case rhsRule r of
 
 prRules :: Rules -> String
 prRules [] = []
-prRules ((nt, []):rs) = prRules rs --internal rule
-prRules ((nt,((p,a):ls)):rs) =
+prRules ((_, []):rs) = prRules rs --internal rule
+prRules ((nt,(p,a):ls):rs) =
   (unwords [nt', ":" , p, "{ ", a, "}", "\n" ++ pr ls]) ++ ";\n" ++ prRules rs
   where
     nt' = identCat nt
