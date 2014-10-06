@@ -19,8 +19,6 @@
 module BNFC.Backend.C (makeC) where
 
 import BNFC.Utils
-import Control.Monad (unless,when)
-import System.Console.GetOpt
 import BNFC.CF
 import BNFC.Options
 import BNFC.Backend.Base
@@ -30,7 +28,6 @@ import BNFC.Backend.C.CFtoBisonC
 import BNFC.Backend.C.CFtoCSkel
 import BNFC.Backend.C.CFtoCPrinter
 import Data.Char
-import System.Exit (exitFailure)
 import qualified BNFC.Backend.Common.Makefile as Makefile
 
 makeC :: SharedOptions -> CF -> MkFiles ()

@@ -37,7 +37,6 @@
 
 module BNFC.Backend.CSharp (makeCSharp) where
 
-import BNFC.Utils
 import BNFC.CF
 import BNFC.Options
 import BNFC.Backend.Common.OOAbstract
@@ -50,19 +49,15 @@ import BNFC.Backend.CSharp.CAbstoCSharpVisitSkeleton
 import BNFC.Backend.CSharp.CAbstoCSharpAbstractVisitSkeleton
 import BNFC.Backend.CSharp.CFtoCSharpPrinter
 import BNFC.Backend.CSharp.CSharpUtils
-import Data.Char
-import System.Exit (exitFailure)
 import System.Environment (getEnv)
 import System.Directory
 import System.IO
 import System.IO.Error (catchIOError)
 import System.Process
 import Data.Maybe
-import Data.Char
-import Control.Monad.ST
 import Control.Monad (when)
 import qualified BNFC.Backend.Common.Makefile as Makefile
-import System.FilePath ((<.>),takeFileName)
+import System.FilePath ((<.>))
 -- Control.Monad.State
 
 makeCSharp :: SharedOptions -> CF -> MkFiles ()
@@ -313,9 +308,6 @@ csharptest namespace cf = unlines [
   where
    def = show (head (allEntryPoints cf))
 
-filepathtonamespace :: FilePath -> Namespace
-filepathtonamespace file = take (length file - 3) (takeFileName file)
-
 projectguid :: MkFiles String
 projectguid = do
   maybeFilePath <- findDirectory
@@ -332,7 +324,7 @@ projectguid = do
     getGoodGUID :: FilePath -> MkFiles String
     getGoodGUID filepath = liftIO $ do
       let filepath' = "\"" ++ filepath ++ "\""
-      (hIn, hOut, hErr, processHandle) <- runInteractiveCommand filepath'
+      (_, hOut, _, _) <- runInteractiveCommand filepath'
       guid <- hGetLine hOut
       return ('{' : init guid ++ "}")
     findDirectory :: MkFiles (Maybe FilePath)

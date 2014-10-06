@@ -42,10 +42,8 @@ module BNFC.Backend.CSharp.CAbstoCSharpAbs (cabs2csharpabs) where
 
 import BNFC.Backend.Common.OOAbstract
 import BNFC.CF
-import BNFC.Utils((+++),(++++))
-import BNFC.Backend.Common.NamedVariables
+import BNFC.Utils((+++))
 import Data.List
-import Data.Char(toLower)
 import Data.Maybe
 import BNFC.Backend.CSharp.CSharpUtils
 
@@ -228,7 +226,7 @@ prEquals namespace c vars = unlinesInline [
 
 -- Creates the GetHashCode() method.
 prHashCode :: Namespace -> Fun -> [String] -> String
-prHashCode namespace c vars = unlinesInline [
+prHashCode _ _ vars = unlinesInline [
   "    ",
   "    public override int GetHashCode()",
   "    {",
@@ -272,6 +270,6 @@ prConstructor namespace (f,cs) = unlinesInline [
   ]
  where
    cvs = [c | (_,_,c,_) <- cs]
-   pvs = ["p" ++ show i | ((x,st,_,_),i) <- zip cs [1..]]
+   pvs = ["p" ++ show i | ((_,_,_,_),i) <- zip cs [1..]]
    conargs = concat $ intersperse ", "
      [identifier namespace (typename x) +++ v | ((x,_,_,_),v) <- zip cs pvs]
