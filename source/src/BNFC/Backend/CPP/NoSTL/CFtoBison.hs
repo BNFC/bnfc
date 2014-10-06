@@ -61,7 +61,7 @@
 module BNFC.Backend.CPP.NoSTL.CFtoBison (cf2Bison) where
 
 import BNFC.CF
-import Data.List (intersperse, isPrefixOf)
+import Data.List (intersperse)
 import BNFC.Backend.Common.NamedVariables hiding (varName)
 import Data.Char (toLower,isUpper)
 import BNFC.Utils ((+++))

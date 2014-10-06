@@ -1,3 +1,4 @@
+{-# LANGUAGE OverloadedStrings #-}
 {-
     BNF Converter: C++ abstract syntax generator
     Copyright (C) 2004  Author:  Michael Pellauer
@@ -45,6 +46,7 @@ import BNFC.Utils((+++),(++++))
 import BNFC.Backend.Common.NamedVariables
 import Data.List
 import Data.Char(toLower)
+import Text.PrettyPrint
 
 
 --The result is two files (.H file, .C file)
@@ -125,7 +127,7 @@ prRuleH user c (fun, cats) =
      "class" +++ c' +++ ": public Visitable",
      "{",
      " public:",
-     prInstVars user vs,
+     render $ nest 2 $ prInstVars user vs,
      "  " ++ c' ++ "(const" +++ c' +++ "&);",
      "  " ++ c' ++ " &operator=(const" +++ c' +++ "&);",
      "  " ++ c' ++ "(" ++ (prConstructorH 1 vs) ++ ");",
@@ -144,7 +146,7 @@ prRuleH user c (fun, cats) =
      "class" +++ fun' +++ ": public" +++ super,
      "{",
      " public:",
-     prInstVars user vs,
+     render $ nest 2 $ prInstVars user vs,
      "  " ++ fun' ++ "(const" +++ fun' +++ "&);",
      "  " ++ fun' ++ " &operator=(const" +++ fun' +++ "&);",
      "  " ++ fun' ++ "(" ++ (prConstructorH 1 vs) ++ ");",
@@ -223,28 +225,27 @@ prTypeDefs user = unlines
  where
   prUserDef s = "typedef char* " ++ show s ++ ";\n"
 
---A class's instance variables.
-prInstVars :: [UserDef] -> [IVar] -> String
-prInstVars _ [] = []
+-- | A class's instance variables.
+-- >>> prInstVars [Cat "MyTokn"] [("MyTokn",1), ("A",1), ("A",2)]
+-- MyTokn mytokn_1;
+-- A *a_1, *a_2;
+prInstVars :: [UserDef] -> [IVar] -> Doc
+prInstVars _ [] = empty
 prInstVars user vars@((t,_):_) =
-  "  " ++ t +++ uniques ++ ";" ++++
-  (prInstVars user vs')
+    text t <+> uniques <> ";" $$ prInstVars user vs'
  where
-   (uniques, vs') = prUniques t vars
-   --these functions group the types together nicely
-   prUniques :: String -> [IVar] -> (String, [IVar])
-   prUniques t vs = (prVars (findIndices (\x -> case x of (y,_) ->  y == t) vs) vs, remType t vs)
-   prVars (x:[]) vs =  case vs !! x of
-   			(t,n) -> ((varLinkName t) ++ (showNum n))
-   prVars (x:xs) vs = case vs !! x of
-   			(t,n) -> ((varLinkName t) ++ (showNum n)) ++ "," +++
-				 (prVars xs vs)
-   varLinkName z = if isBasic user z
-     then (map toLower z) ++ "_"
-     else "*" ++ (map toLower z) ++ "_"
-   remType :: String -> [IVar] -> [IVar]
-   remType _ [] = []
-   remType t ((t2,n):ts) = if t == t2
+    (uniques, vs') = prUniques t
+    --these functions group the types together nicely
+    prUniques :: String -> (Doc, [IVar])
+    prUniques t = (prVars (findIndices (\(y,_) ->  y == t) vars), remType t vars)
+    prVars = hsep . punctuate comma . map prVar
+    prVar x = let (t,n) = vars !! x in varLinkName t <> text (showNum n)
+    varLinkName z = if isBasic user z
+      then text (map toLower z) <> "_"
+      else "*" <> text (map toLower z) <> "_"
+    remType :: String -> [IVar] -> [IVar]
+    remType _ [] = []
+    remType t ((t2,n):ts) = if t == t2
    				then (remType t ts)
 				else (t2,n) : (remType t ts)
 
@@ -280,7 +281,7 @@ prRuleC user c (fun, cats) =
     unlines
     [
      "/********************   " ++ c' ++ "    ********************/",
-     prConstructorC user c' vs cats,
+     render $ prConstructorC user c' vs cats,
      prCopyC user c' vs,
      prDestructorC user c' vs,
      prListFuncs user c',
@@ -292,7 +293,7 @@ prRuleC user c (fun, cats) =
     unlines
     [
      "/********************   " ++ fun' ++ "    ********************/",
-     prConstructorC user fun' vs cats,
+     render $ prConstructorC user fun' vs cats,
      prCopyC user fun' vs,
      prDestructorC user fun' vs,
      prAcceptC fun,
@@ -351,19 +352,20 @@ prAcceptC :: String -> String
 prAcceptC ty =
   "\nvoid " ++ ty ++ "::accept(Visitor *v) { v->visit" ++ ty ++ "(this); }"
 
---The constructor just assigns the parameters to the corresponding instance variables.
-prConstructorC :: [UserDef] -> String -> [IVar] -> [Cat] -> String
+-- | The constructor just assigns the parameters to the corresponding instance
+-- variables.
+-- >>> prConstructorC [Cat "Integer"] "bla" [("A",1), ("Integer",1), ("A",2)] [Cat "A", Cat "Integer", Cat "A"]
+-- bla::bla(A *p1, Integer p2, A *p3) { a_1 = p1; integer_ = p2; a_2 = p3; }
+prConstructorC :: [UserDef] -> String -> [IVar] -> [Cat] -> Doc
 prConstructorC user c vs cats =
-  c ++ "::" ++ c ++"(" ++ (interleave types params) ++ ")" +++ "{" +++
-   prAssigns vs params ++ "}"
+    text c <> "::" <> text c <> parens (args)
+    <+> "{" <+> text (prAssigns vs params) <> "}"
   where
-   (types, params) = unzip (prParams cats (length cats) ((length cats)+1))
-   interleave _ [] = []
-   interleave (x:[]) (y:[]) = x +++ (optstar x) ++ y
-   interleave (x:xs) (y:ys) = x +++ (optstar x) ++ y ++ "," +++ (interleave xs ys)
-   optstar x = if isBasic user x
-       then ""
-       else "*"
+    (types, params) = unzip (prParams cats (length cats) (length cats+1))
+    args = hsep $ punctuate "," $ zipWith prArg types params
+    prArg type_ name
+      | isBasic user type_  = text type_ <+> text name
+      | otherwise           = text type_ <+> "*" <> text name
 
 --Print copy constructor and copy assignment
 prCopyC :: [UserDef] -> String -> [IVar] -> String

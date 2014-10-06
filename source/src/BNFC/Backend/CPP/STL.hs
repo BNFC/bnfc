@@ -32,10 +32,7 @@ import BNFC.Backend.CPP.STL.CFtoSTLPrinter
 import BNFC.Backend.CPP.STL.STLUtils
 import BNFC.CF
 import BNFC.Utils
-import Control.Monad (unless, when)
 import Data.Char
-import System.Console.GetOpt
-import System.Exit (exitFailure)
 
 makeCppStl :: SharedOptions -> CF -> MkFiles ()
 makeCppStl opts cf = do

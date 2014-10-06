@@ -29,8 +29,6 @@ import BNFC.Backend.CPP.NoSTL.CFtoBison
 import BNFC.Backend.CPP.NoSTL.CFtoCVisitSkel
 import BNFC.Backend.CPP.NoSTL.CFtoCPPPrinter
 import Data.Char
-import System.Exit (exitFailure)
-import Control.Monad (when)
 import qualified BNFC.Backend.Common.Makefile as Makefile
 
 makeCppNoStl :: SharedOptions -> CF -> MkFiles ()
