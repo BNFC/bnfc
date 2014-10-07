@@ -39,7 +39,6 @@ module BNFC.Backend.C.CFtoFlexC (cf2flex) where
 
 import BNFC.CF
 import BNFC.Backend.CPP.NoSTL.RegToFlex
--- import BNFC.Utils((+++), (++++))
 import BNFC.Backend.Common.NamedVariables
 
 --The environment must be returned for the parser to use.
