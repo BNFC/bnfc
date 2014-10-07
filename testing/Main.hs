@@ -11,7 +11,6 @@ import Filesystem.Path (filename, basename)
 import Filesystem.Path.CurrentOS (encodeString)
 import Prelude hiding (FilePath)
 import Shelly
-import System.Exit (exitFailure,exitSuccess)
 import Test.HUnit hiding (Test)
 import Test.Framework
 import Test.Framework.TestTypes
@@ -47,7 +46,7 @@ settings =
          , tcBnfcOptions = ["--haskell-gadt", "-m"] }
   , base { tcName = "Haskell/CNF"
          , tcBnfcOptions = ["--haskell", "--cnf", "-m"]
-         , tcRun = \lang -> cmd ("." </> "TestCNF") }
+         , tcRun = const (cmd ("." </> "TestCNF")) }
   , base { tcName = "OCaml"
          , tcBnfcOptions = ["--ocaml", "-m"] }
   , base { tcName = "C"
