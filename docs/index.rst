@@ -13,6 +13,7 @@ Contents:
 
    lbnf
    changes
+   othertools
 
 
 Indices and tables
