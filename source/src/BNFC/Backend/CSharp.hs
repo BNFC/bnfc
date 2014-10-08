@@ -104,9 +104,7 @@ writeMakefile opts namespace = do
                , "MONOCFLAGS = -optimize -reference:${PARSERREF}"
                , "GPLEX = ${MONO} gplex.exe", "GPPG = ${MONO} gppg.exe"
                , "PARSERREF = bin/ShiftReduceParser.dll"
-               -- Apparently GPLEX outputs filenames in
-               -- lowercase, so scanner.cs is supposed to be like that!
-              , "CSFILES = Absyn.cs Parser.cs Printer.cs scanner.cs Test.cs VisitSkeleton.cs" ] ++)
+               , "CSFILES = Absyn.cs Parser.cs Printer.cs Scanner.cs Test.cs VisitSkeleton.cs AbstractVisitSkeleton.cs" ] ++)
       $ Makefile.mkRule "all" [ "test" ]
         []
       $ Makefile.mkRule "clean" []
@@ -120,9 +118,9 @@ writeMakefile opts namespace = do
         [ "@echo \"Compiling test...\""
         , "${MONOC} ${MONOCFLAGS} -out:bin/test.exe ${CSFILES}" ]
       $ Makefile.mkRule "Scanner.cs" [ namespace <.> "l" ]
-        [ "${GPLEX} /out:Scanner.cs " ++ namespace <.> "l" ]
+        [ "${GPLEX} /out:$@ " ++ namespace <.> "l" ]
       $ Makefile.mkRule "Parser.cs" [ namespace <.> "y" ]
-        [ "${GPPG} /gplex " ++ namespace <.> "y > Parser.cs" ]
+        [ "${GPPG} /gplex " ++ namespace <.> "y > $@" ]
       ""
 
 writeVisualStudioFiles :: Namespace -> MkFiles ()
