@@ -196,11 +196,11 @@ regressionTests = makeTestSuite "Regression tests"
       map (\s ->makeShellyTest (tcName s) $
             withTmpDir $ \tmp -> do
               cd tmp
-              writefile "A.cf" "F. C ::= \"abracadabra\""
-              tcBnfc s "A.cf"
+              writefile "Abra.cf" "F. C ::= \"abracadabra\";"
+              tcBnfc s "Abra.cf"
               tcMake s
               setStdin "bad"
-              errExit False $ tcRun s "A"
+              errExit False $ tcRun s "Abra"
               lastExitCode >>= liftIO . assertEqual "exit code: " 1)
           settings
    ]
