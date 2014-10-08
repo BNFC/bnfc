@@ -38,6 +38,12 @@ data TestContext = TestContext
   , -- | Command for running the test executable
     tcRun         :: Text -> Sh () }
 
+-- | Helper function that runs bnfc with the context's options
+tcBnfc :: TestContext -> FilePath -> Sh ()
+tcBnfc context grammar = run_ "bnfc" args
+  where args = tcBnfcOptions context ++ [toTextArg grammar]
+
+
 settings :: [TestContext]
 settings =
   [ base { tcName = "Haskell"
@@ -175,6 +181,28 @@ regressionTests = makeTestSuite "Regression tests"
             cd tmp
             cmd "bnfc" "--haskell" "-m" "110_backslash.cf"
             cmd "make"
+  , makeShellyTest "Custom tokens in OCaml" $
+        withTmpDir $ \tmp -> do
+            cd tmp
+            writefile "Idents.cf" $ T.unlines
+                [ "token UIdent (upper upper*);"
+                , "Upper. S ::= UIdent ;" ]
+            cmd "bnfc" "--ocaml" "-m" "Idents.cf"
+            cmd "make"
+            setStdin "VOGONPOETRY"
+            out <- cmd "./TestIdents"
+            liftIO $ print out
+  , CompoundTest $ makeTestSuite "Exit code" $
+      map (\s ->makeShellyTest (tcName s) $
+            withTmpDir $ \tmp -> do
+              cd tmp
+              writefile "A.cf" "F. C ::= \"abracadabra\""
+              tcBnfc s "A.cf"
+              tcMake s
+              setStdin "bad"
+              errExit False $ tcRun s "A"
+              lastExitCode >>= liftIO . assertEqual "exit code: " 1)
+          settings
    ]
 
 -- ------------------------------------------------------------------------- --
