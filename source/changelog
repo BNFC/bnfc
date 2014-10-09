@@ -1,6 +1,9 @@
 2.7.1 Grégoire Détrez <gregoire.detrez@gu.se> October 2014
 	* Generated haskell code is now warning free
-	* Fixed issues #79, #102, #110, #111
+	* Removed unused terminal in happy
+	* Correctly escape backslashes in symbols
+	* Fix problem that was preventing custom tokens to work in OCaml if
+	they conflict with the build-in Ident
 	* BNFC build is also warning free (ghc 7.4.2)
 	* Test programs return non-zerro exit code on parse error
 
