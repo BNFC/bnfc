@@ -35,7 +35,7 @@ import BNFC.Utils ((+++))
 
 cf2ocamllex :: String -> String -> CF -> String
 cf2ocamllex _ parserMod cf =
-  unlines $ concat $ intersperse [""] [
+  unlines $ intercalate [""] [
     header parserMod cf,
     definitions cf,
     [PP.render (rules cf)]
@@ -144,7 +144,12 @@ userTokens cf =
 --   parse REGEX1 {ACTION1}
 --       | REGEX2 {ACTION2}
 --       | ... {...}
+--
+-- If no regex are given, we dont create a lexer rule:
+-- >>> mkRule "empty" []
+-- <BLANKLINE>
 mkRule :: Doc -> [(Doc,Doc)] -> Doc
+mkRule _ [] = empty
 mkRule entrypoint (r1:rn) = vcat
     [ "rule" <+> entrypoint <+> "="
     , nest 2 $ hang "parse" 4 $ vcat
