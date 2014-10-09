@@ -1,6 +1,8 @@
-2.7.1.0 Grégoire Détrez <gregoire.detrez@gu.se> October 2014
-	* Generate warning free haskell code
-	* Fix issues #110 and #102
+2.7.1 Grégoire Détrez <gregoire.detrez@gu.se> October 2014
+	* Generated haskell code is now warning free
+	* Fixed issues #79, #102, #110, #111
+	* BNFC build is also warning free (ghc 7.4.2)
+	* Test programs return non-zerro exit code on parse error
 
 2.7.0.0 Grégoire Détrez <gregoire.detrez@gu.se> September 2014
 	* Add token support for Ocaml
