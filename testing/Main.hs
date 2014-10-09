@@ -6,6 +6,7 @@ module Main where
 import Data.Monoid ((<>))
 import Data.Text (Text)
 import qualified Data.Text as T
+import Control.Exception (handle, throwIO, SomeException)
 import Control.Monad (forM_)
 import Filesystem.Path (filename, basename)
 import Filesystem.Path.CurrentOS (encodeString)
@@ -208,9 +209,13 @@ regressionTests = makeTestSuite "Regression tests"
 -- ------------------------------------------------------------------------- --
 -- TEST UTILS
 -- ------------------------------------------------------------------------- --
+--
 -- Shortcut function to create a (black box) test from a shelly script
 makeShellyTest :: TestID -> Sh () -> Test
-makeShellyTest label = makeBlackBoxTest label . shelly . silently
+makeShellyTest label =
+    makeBlackBoxTest label . handle fixException . shelly
+  where
+    fixException (ReThrownException x _) = throwIO (x::SomeException)
 
 -- A (Shelly) assertion to check the existense of a file
 assertFileExists :: FilePath -> Sh ()
