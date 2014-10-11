@@ -6,11 +6,14 @@
 Welcome to BNFC's documentation!
 ================================
 
-Contents:
+`Google Group <https://groups.google.com/forum/#!forum/bnfc-dev>`_
+| `Github <https://github.com/bnfc/bnfc>`_
+| `Hackage <http://hackage.haskell.org/package/BNFC>`_
 
 .. toctree::
    :maxdepth: 2
 
+   user_guide
    lbnf
    changes
    othertools
