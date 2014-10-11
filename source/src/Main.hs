@@ -39,6 +39,7 @@ import BNFC.Backend.HaskellProfile
 import BNFC.Backend.Java
 import BNFC.Backend.Latex
 import BNFC.Backend.OCaml
+import BNFC.Backend.Pygments
 import BNFC.GetCF
 import BNFC.Options hiding (make)
 
@@ -77,3 +78,4 @@ main = do
         make TargetJava         opts cf = writeFiles "." $ makeJava opts cf
         make TargetOCaml        opts cf = writeFiles "." $ makeOCaml opts cf
         make TargetProfile      opts cf = fail "" opts cf
+        make TargetPygments     opts cf = writeFiles "." $ makePygments opts cf

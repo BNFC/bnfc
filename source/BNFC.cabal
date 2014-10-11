@@ -72,6 +72,7 @@ Executable bnfc
     BNFC.MultiView,
     BNFC.TypeChecker,
     BNFC.GetCF,
+    BNFC.Lexing,
     BNFC.Backend.Base
     BNFC.Backend.Common.Makefile,
     BNFC.Backend.Common.NamedVariables,
@@ -173,6 +174,8 @@ Executable bnfc
     -- XML backend
     BNFC.Backend.XML
 
+    -- Pygments backend
+    BNFC.Backend.Pygments
 
 -- --- Testing --------------------------------------------------------------
 Test-suite unit-tests

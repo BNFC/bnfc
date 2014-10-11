@@ -17,12 +17,20 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 -}
 
-module BNFC.Utils where
+module BNFC.Utils
+    ( (+++), (++++), (+++++)
+    , (<=>)
+    , lowerCase, upperCase, camelCase, mixedCase, snakeCase
+    , prParenth, replace, split, splitAll, prepareDir
+    , writeFileRep
+    , vsep
+    ) where
 
+import Control.Arrow ((&&&))
 import Control.DeepSeq (rnf)
 import Control.Monad (unless)
-import Data.Function (on)
-import Data.List (groupBy, sort)
+import Data.Char
+import Data.List (intercalate)
 import System.IO (IOMode(ReadMode),hClose,hGetContents,openFile)
 import System.IO.Error (tryIOError)
 import System.Directory (createDirectory, doesDirectoryExist, renameFile,
@@ -152,17 +160,93 @@ writeFileRep2 path s =
            rnf contents `seq` hClose inFile
 	   return contents
 
--- | Partition a list of pairs
--- >>> partitionByKey [("a",1), ("b",2), ("a",3), ("b", 4)]
--- [("a",[1,3]),("b",[2,4])]
-partitionByKey :: (Ord a, Eq a, Ord b) => [(a,b)] -> [(a,[b])]
-partitionByKey = map foo . groupBy ((==) `on` fst) . sort
-  where foo l = (fst (head l), map snd l)
-
-
 -- | List version of prettyPrint $+$
 -- >>> vsep [text "abc", nest 4 (text "def")]
 -- abc
 --     def
 vsep :: [Doc] -> Doc
 vsep = foldl ($+$) empty
+
+-- | Pretty print separator with a dot
+-- >>> "abc" <.> "py"
+-- abc.py
+(<.>) :: Doc -> Doc -> Doc
+a <.> b = a <> "." <> b
+
+-- | Pretty print separator with = (for assignments...)
+-- >>> "a" <=> "123"
+-- a = 123
+(<=>) :: Doc -> Doc -> Doc
+a <=> b = a <+> "=" <+> b
+
+
+-- | Heuristic to "parse" an identifier and separating componennts
+-- >>> parseIdent "abc"
+-- ["abc"]
+-- >>> parseIdent "Abc"
+-- ["abc"]
+-- >>> parseIdent "WhySoSerious"
+-- ["why","so","serious"]
+-- >>> parseIdent "why_so_serious"
+-- ["why","so","serious"]
+-- >>> parseIdent "why-so-serious"
+-- ["why","so","serious"]
+--
+-- Some corner cases
+-- >>> parseIdent "LBNFParser"
+-- ["lbnf","parser"]
+-- >>> parseIdent "ILoveNY"
+-- ["i","love","ny"]
+parseIdent :: String -> [String]
+parseIdent = p [] . map (classify &&& toLower)
+  where
+    classify c
+        | isUpper c = U
+        | isLower c = L
+        | otherwise = O
+    p [] [] = []
+    p acc [] = reverse acc: p [] []
+    p [] ((L,c):cs) = p [c] cs
+    p [] ((U,c):cs) = p [c] cs
+    p [] ((O,_):cs) = p [] cs
+    p acc ((L,c1):cs@((L,_):_)) = p (c1:acc) cs
+    p acc ((U,c1):cs@((L,_):_)) = reverse acc:p [c1] cs
+    p acc ((U,c1):cs@((U,_):_)) = p (c1:acc) cs
+    p acc ((L,c1):cs@((U,_):_)) = reverse (c1:acc) : p [] cs
+    p acc ((U,c1):(O,_):cs) = reverse (c1:acc) : p [] cs
+    p acc ((L,c1):(O,_):cs) = reverse (c1:acc) : p [] cs
+    p acc ((O,_):cs) = reverse acc : p [] cs
+    p acc [(_,c)] = p (c:acc) []
+
+-- | Ident to lower case
+-- >>> lowerCase "MyIdent"
+-- myident
+lowerCase :: String -> Doc
+lowerCase = text . concat . parseIdent
+-- | Ident to upper case
+-- >>> upperCase "MyIdent"
+-- MYIDENT
+upperCase :: String -> Doc
+upperCase = text . map toUpper . concat . parseIdent
+-- | Ident to camel case
+-- >>> camelCase "my_IDENT"
+-- MyIdent
+camelCase :: String -> Doc
+camelCase = text . concatMap capitalize . parseIdent
+  where capitalize [] = []
+        capitalize (c:cs) = toUpper c:map toLower cs
+-- | To mixed case
+-- >>> mixedCase "MY_IDENT"
+-- myIdent
+mixedCase :: String -> Doc
+mixedCase s = case render (camelCase s) of
+    []   -> empty
+    c:cs -> text (toLower c:cs)
+-- | To snake case
+-- >>> snakeCase "MyIdent"
+-- my_ident
+snakeCase :: String -> Doc
+snakeCase = text . intercalate "_" . parseIdent
+
+
+data CharClass = U | L | O
