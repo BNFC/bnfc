@@ -1,23 +1,20 @@
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE ExtendedDefaultRules #-}
-{-# OPTIONS_GHC -fno-warn-type-defaults #-}
-module Main where
+module Main (main) where
 
 import Data.Monoid ((<>))
 import Data.Text (Text)
-import qualified Data.Text as T
-import Control.Exception (handle, throwIO, SomeException)
 import Control.Monad (forM_)
 import Filesystem.Path (filename, basename)
 import Filesystem.Path.CurrentOS (encodeString)
 import Prelude hiding (FilePath)
 import Shelly
-import Test.HUnit hiding (Test)
 import Test.Framework
-import Test.Framework.TestTypes
-import Test.Framework.TestManager
 
-main = htfMain [blackBoxTests, regressionTests]
+import TestUtils
+import PygmentsTests
+import RegressionTests
+
+main = htfMain [ exitCodeTests, blackBoxTests
+               , RegressionTests.all, PygmentsTests.all]
 
 {- ----------------------------------------------------------------------------
  - BLACK BOX TESTS
@@ -124,8 +121,7 @@ testScript context (grammar, examples) = withTmpDir $ \tmp -> do
     cp grammar tmp
     forM_ examples $ flip cp tmp
     cd tmp
-    let args = tcBnfcOptions context ++ [toTextArg (filename grammar)]
-    run_ "bnfc" args
+    tcBnfc context (filename grammar)
     tcMake context
     forM_ examples $ \example -> do
       readfile (filename example) >>= setStdin
@@ -140,84 +136,16 @@ blackBoxTests =
         makeOneTest tc td = makeShellyTest (getLanguage td) $ testScript tc td
         getLanguage (grammar,_) = encodeString (filename grammar)
 
-{- ------------------------------------------------------------------------- -
- - REGRESSION TESTS
- - ------------------------------------------------------------------------- -
- -
- - Tests specific to some reported issues -}
-regressionTests :: TestSuite
-regressionTests = makeTestSuite "Regression tests"
-  [ makeShellyTest "#60 Compilation error in Java when a production uses more than one user-defined tokens" $
-        withTmpDir $ \tmp -> do
-            cd tmp
-            writefile "multiple_token.cf" $ T.unlines
-                [ "Label. Category ::= FIRST SECOND;"
-                , "token FIRST 'a';"
-                , "token SECOND 'b';" ]
-            cmd "bnfc" "--java" "-m" "multiple_token.cf"
-            cmd "make"
-  , makeShellyTest "#30 With -d option XML module is not generated inside the directorty" $
-        withTmpDir $ \tmp -> do
-            cd tmp
-            writefile "Test.cf" $ T.unlines
-                [ "Start. S ::= S \"a\" ;"
-                , "End.   S ::= ;" ]
-            cmd "bnfc" "--haskell" "--xml" "-m" "-d" "Test.cf"
-            assertFileExists "Test/XML.hs"
-            cmd "make"
-  , makeShellyTest "#108 C like comments and alex" $
-        withTmpDir $ \tmp -> do
-            cp "../examples/C/C.cf" tmp
-            cd tmp
-            cmd "bnfc" "--haskell" "-m" "C.cf"
-            cmd "make"
-            setStdin "int a; /* **/ int b; /* */"
-            out <- cmd "./TestC"
-            liftIO $ print out
-            liftIO $ assertBool "Couldn't find `int b` in output"
-                                ("int b ;" `T.isInfixOf` out)
-  , makeShellyTest "Parse error while building BNFC generated parser #110" $
-        withTmpDir $ \tmp -> do
-            cp ("regression-tests" </> "110_backslash.cf") tmp
-            cd tmp
-            cmd "bnfc" "--haskell" "-m" "110_backslash.cf"
-            cmd "make"
-  , makeShellyTest "Custom tokens in OCaml" $
-        withTmpDir $ \tmp -> do
-            cd tmp
-            writefile "Idents.cf" $ T.unlines
-                [ "token UIdent (upper upper*);"
-                , "Upper. S ::= UIdent ;" ]
-            cmd "bnfc" "--ocaml" "-m" "Idents.cf"
-            cmd "make"
-            setStdin "VOGONPOETRY"
-            out <- cmd "./TestIdents"
-            liftIO $ print out
-  , CompoundTest $ makeTestSuite "Exit code" $
-      map (\s ->makeShellyTest (tcName s) $
-            withTmpDir $ \tmp -> do
-              cd tmp
-              writefile "Abra.cf" "F. C ::= \"abracadabra\";"
-              tcBnfc s "Abra.cf"
-              tcMake s
-              setStdin "bad"
-              errExit False $ tcRun s "Abra"
-              lastExitCode >>= liftIO . assertEqual "exit code: " 1)
-          settings
-   ]
 
--- ------------------------------------------------------------------------- --
--- TEST UTILS
--- ------------------------------------------------------------------------- --
---
--- Shortcut function to create a (black box) test from a shelly script
-makeShellyTest :: TestID -> Sh () -> Test
-makeShellyTest label =
-    makeBlackBoxTest label . handle fixException . shelly
+exitCodeTests :: TestSuite
+exitCodeTests = makeTestSuite "Exit code" $ map testExitCode settings
   where
-    fixException (ReThrownException x _) = throwIO (x::SomeException)
-
--- A (Shelly) assertion to check the existense of a file
-assertFileExists :: FilePath -> Sh ()
-assertFileExists p = test_f p >>= liftIO . assertBool errorMessage
-  where errorMessage = "Can't find file " ++ encodeString p
+    testExitCode s = makeShellyTest (tcName s) $
+        withTmpDir $ \tmp -> do
+            cd tmp
+            writefile "Abra.cf" "F. C ::= \"abracadabra\";"
+            tcBnfc s "Abra.cf"
+            tcMake s
+            setStdin "bad"
+            errExit False $ tcRun s "Abra"
+            lastExitCode >>= assertEqual 1

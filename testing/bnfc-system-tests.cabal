@@ -65,8 +65,9 @@ executable bnfc-system-tests
                        HTF
 
   -- Directories containing source files.
-  -- hs-source-dirs:
+  hs-source-dirs: . tests
 
   -- Base language which the package is written in.
   default-language:    Haskell2010
-  ghc-options:         -W -Werror
+  extensions: OverloadedStrings ExtendedDefaultRules
+  ghc-options:         -W -Werror -fno-warn-type-defaults
