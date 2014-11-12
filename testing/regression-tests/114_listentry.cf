@@ -1,0 +1,6 @@
+-- A grammar with a list category as entry point
+
+separator Bar "";
+Foo. Bar ::= "foo" ;
+Foo. Bar ::= "bar" ;
+
