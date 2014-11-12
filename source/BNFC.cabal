@@ -81,6 +81,7 @@ Executable bnfc
     BNFC.Options,
     BNFC.WarningM,
     Data.Pair,
+    BNFC.Backend.Utils,
 
     -- Documentation backends
     BNFC.Backend.Latex,
