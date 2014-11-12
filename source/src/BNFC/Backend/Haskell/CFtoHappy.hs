@@ -22,6 +22,7 @@ module BNFC.Backend.Haskell.CFtoHappy where
 import Text.PrettyPrint
 import BNFC.CF
 import BNFC.Backend.Common.StrUtils (escapeChars)
+import BNFC.Backend.Haskell.Utils (parserName)
 --import Lexer
 import Data.List (intersperse)
 import Data.Char
@@ -51,7 +52,7 @@ cf2HappyS = cf2Happy
 cf2Happy name absName lexName errName mode byteStrings cf
  = unlines
     [header name absName lexName errName mode byteStrings,
-     declarations mode (allEntryPoints cf),
+     render $ declarations mode (allEntryPoints cf),
      tokens (cfTokens cf),
      specialToks cf,
      delimiter,
@@ -101,19 +102,24 @@ header name = unlines
          ]
 -}
 
--- The declarations of a happy file.
-declarations :: HappyMode -> [Cat] -> String
-declarations mode ns = unlines
-                 [generateP ns,
-          	  case mode of
-                    Standard -> "-- no lexer declaration"
-                    GLR      -> "%lexer { myLexer } { Err _ }",
-                  "%monad { Err } { thenM } { returnM }",
-                  "%tokentype { " ++ tokenName ++ " }"]
-   where generateP []     = []
-
-	 generateP (n:ns) = concat ["%name p",n'," ",n',"\n",generateP ns]
-                               where n' = identCat n
+-- | The declarations of a happy file.
+-- >>> declarations Standard [Cat "A", Cat "B", ListCat (Cat "B")]
+-- %name pA A
+-- %name pB B
+-- %name pListB ListB
+-- -- no lexer declaration
+-- %monad { Err } { thenM } { returnM }
+-- %tokentype {Token}
+declarations :: HappyMode -> [Cat] -> Doc
+declarations mode ns = vcat
+    [ vcat $ map generateP ns
+    , case mode of
+        Standard -> "-- no lexer declaration"
+        GLR      -> "%lexer { myLexer } { Err _ }",
+      "%monad { Err } { thenM } { returnM }",
+      "%tokentype" <+> braces (text tokenName) ]
+  where generateP n = "%name" <+> parserName n <+> text n'
+          where n' = identCat n
 
 -- The useless delimiter symbol.
 delimiter :: String

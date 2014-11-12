@@ -10,7 +10,7 @@ import Prelude hiding (FilePath)
 import Shelly
 import Test.Framework (assertEqualPretty_)
 import Test.Framework.Location (unknownLocation)
-import Test.Framework.Pretty (Pretty(..))
+import Test.Framework.Pretty (Pretty(..), text)
 import Test.Framework.TestManager (makeBlackBoxTest, makeTestSuite)
 import Test.Framework.TestTypes
 import qualified Test.HUnit as HUnit
@@ -23,7 +23,7 @@ assertEqual a b = liftIO $ assertEqualPretty_ unknownLocation a b
 
 -- | Pretty instance for Text (to use with assertEquals)
 instance Pretty T.Text where
-  pretty = pretty . T.unpack
+  pretty = text . T.unpack
 
 -- Shortcut function to create a (black box) test from a shelly script
 makeShellyTest :: TestID -> Sh () -> Test

@@ -12,7 +12,7 @@ import TestUtils
 import Shelly
 
 all = makeTestSuite "Regression tests"
-    [ issue60, issue30, issue108, issue110, issue111 ]
+    [ issue60, issue30, issue108, issue110, issue111, issue114 ]
 
 
 issue60 :: Test
@@ -69,3 +69,20 @@ issue111 =  makeShellyTest "Custom tokens in OCaml" $
         setStdin "VOGONPOETRY"
         out <- cmd "./TestIdents"
         liftIO $ print out
+
+issue114 :: Test
+issue114 = makeShellyTest "#114 List category as entry point" $
+    withTmpDir $ \tmp -> do
+        cp "regression-tests/114_listentry.cf" tmp
+        cp "regression-tests/114_listentry.in" tmp
+        input <- readfile "regression-tests/114_listentry.in"
+        expected <- readfile "regression-tests/114_listentry.out"
+        cd tmp
+        cmd "bnfc" "--haskell" "-m" "114_listentry.cf"
+        cmd "make"
+        setStdin input
+        output <- cmd "./Test114_listentry"
+        assertEqual expected output
+
+
+
