@@ -102,6 +102,7 @@ Executable bnfc
     BNFC.Backend.Haskell.MkErrM,
     BNFC.Backend.Haskell.MkSharedString,
     BNFC.Backend.Haskell.HsOpts,
+    BNFC.Backend.Haskell.Utils,
     -- Profile
     BNFC.Backend.HaskellProfile,
     BNFC.Backend.HaskellProfile.CFtoHappyProfile,
