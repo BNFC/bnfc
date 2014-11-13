@@ -70,6 +70,8 @@ module BNFC.Backend.Common.NamedVariables where
 import BNFC.CF
 import Data.Char (toLower)
 import Data.List (nub)
+import Text.PrettyPrint
+import Data.Maybe (fromMaybe)
 
 type IVar = (String, Int)
 --The type of an instance variable
@@ -100,6 +102,21 @@ getVars cs = foldl addVar [] (map identCat cs)
         then (t, 1) : (addVar' is 2 c)
 	else i : (addVar' is (x+1) c)
       else i : (addVar' is n c)
+
+-- | Anotate a list of categories with suggested variable names for
+-- the non-terminals.
+-- >>> numVars_[Cat "A", Cat "B"]
+-- [(A,a_),(B,b_)]
+-- >>> numVars_[Cat "A", Cat "A"]
+-- [(A,a_1),(A,a_2)]
+numVars_ :: [Cat] -> [(Cat, Doc)]
+numVars_ cats = zip cats (f' [] names)
+  where names = map (varName . identCat . normCat) cats
+        f' _ [] = []
+        f' env (n : ns) =
+            let i = fromMaybe 1 (lookup n env)
+                vname = if i == 1 && not (n `elem` ns) then text n else text n <> int i
+            in vname : f' ((n,i+1):env) ns
 
 --Given a rule's definition, it goes through and nicely the variables by type.
 numVars :: [(String, Int)] -> [Either Cat b] -> [Either String b]
