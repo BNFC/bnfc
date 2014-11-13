@@ -128,16 +128,16 @@ testScript context (grammar, examples) = withTmpDir $ \tmp -> do
       tcRun context language
   where language = toTextArg (basename grammar)
 
-blackBoxTests :: TestSuite
+blackBoxTests :: Test
 blackBoxTests =
     makeTestSuite "Black box tests" $ map makeTestSuiteForContext settings
-  where makeTestSuiteForContext c = CompoundTest $ 
+  where makeTestSuiteForContext c =
             makeTestSuite (tcName c) $ map (makeOneTest c) testData
         makeOneTest tc td = makeShellyTest (getLanguage td) $ testScript tc td
         getLanguage (grammar,_) = encodeString (filename grammar)
 
 
-exitCodeTests :: TestSuite
+exitCodeTests :: Test
 exitCodeTests = makeTestSuite "Exit code" $ map testExitCode settings
   where
     testExitCode s = makeShellyTest (tcName s) $

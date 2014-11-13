@@ -11,11 +11,16 @@ import Shelly
 import Test.Framework (assertEqualPretty_)
 import Test.Framework.Location (unknownLocation)
 import Test.Framework.Pretty (Pretty(..), text)
-import Test.Framework.TestManager (makeBlackBoxTest, makeTestSuite)
+import qualified Test.Framework.TestManager as HTF
 import Test.Framework.TestTypes
 import qualified Test.HUnit as HUnit
 
 
+-- | Replate the makeTestSuite function from HTF. This one returns a Test
+-- object instead of a TestSuite which makes it easier to mix single test
+-- and test suites in ohter test suites
+makeTestSuite :: TestID -> [Test] -> Test
+makeTestSuite id = HTF.testSuiteAsTest . HTF.makeTestSuite id
 
 -- Lift HTF's version of assertEqual in Sh
 assertEqual :: (Eq a, Pretty a) => a -> a -> Sh ()
@@ -28,7 +33,7 @@ instance Pretty T.Text where
 -- Shortcut function to create a (black box) test from a shelly script
 makeShellyTest :: TestID -> Sh () -> Test
 makeShellyTest label =
-    makeBlackBoxTest label . handle fixException . shelly
+    HTF.makeBlackBoxTest label . handle fixException . shelly
   where
     fixException (ReThrownException x _) = throwIO (x::SomeException)
 
