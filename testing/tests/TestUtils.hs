@@ -1,20 +1,31 @@
 module TestUtils
     ( makeShellyTest, assertFileExists, assertEqual
     , makeTestSuite
+    , pathToString
     , Test(..) ) where
 
+-- base
 import Control.Exception (handle, throwIO, SomeException)
-import qualified Data.Text as T
-import Filesystem.Path.CurrentOS (encodeString)
 import Prelude hiding (FilePath)
+
+-- text
+import qualified Data.Text as T
+
+-- system-filepath
+import Filesystem.Path.CurrentOS (encodeString, toText)
+
+-- shelly
 import Shelly
+
+-- htf
 import Test.Framework (assertEqualPretty_)
 import Test.Framework.Location (unknownLocation)
 import Test.Framework.Pretty (Pretty(..), text)
 import qualified Test.Framework.TestManager as HTF
 import Test.Framework.TestTypes
-import qualified Test.HUnit as HUnit
 
+-- hunit
+import qualified Test.HUnit as HUnit
 
 -- | Replate the makeTestSuite function from HTF. This one returns a Test
 -- object instead of a TestSuite which makes it easier to mix single test
@@ -41,3 +52,14 @@ makeShellyTest label =
 assertFileExists :: FilePath -> Sh ()
 assertFileExists p = test_f p >>= liftIO . HUnit.assertBool errorMessage
   where errorMessage = "Can't find file " ++ encodeString p
+
+-- | A PrintfArg instance of FilePath to use filepaths in strings (e.g. names
+-- of tests). Allows you to do things like:
+-- printf "testing %s" (path :: FilePath)
+--
+-- !! Commented for now as it is only possible with ghc-7.8.3
+-- instance Text.Printf.PrintfArg FilePath where
+--   formatArg = formatArg . either T.unpack T.unpack . Filesystem.Path.CurrentOS.toText
+
+-- | Convert a FilePath to a string
+pathToString = either T.unpack T.unpack . toText

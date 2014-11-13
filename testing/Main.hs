@@ -7,14 +7,15 @@ import Filesystem.Path (filename, basename)
 import Filesystem.Path.CurrentOS (encodeString)
 import Prelude hiding (FilePath)
 import Shelly
-import Test.Framework
+import Test.Framework (htfMain)
 
 import TestUtils
 import PygmentsTests
 import RegressionTests
+import JavaTests
 
 main = htfMain [ exitCodeTests, blackBoxTests
-               , RegressionTests.all, PygmentsTests.all]
+               , RegressionTests.all, PygmentsTests.all, JavaTests.all ]
 
 {- ----------------------------------------------------------------------------
  - BLACK BOX TESTS
