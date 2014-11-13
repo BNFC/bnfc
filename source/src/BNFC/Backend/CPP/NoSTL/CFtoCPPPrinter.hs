@@ -312,9 +312,8 @@ mkCFile cf groups = concat
 
 --Generates methods for the Pretty Printer
 prPrintData :: [UserDef] -> (Cat, [Rule]) -> String
-prPrintData user (cat, rules) =
- if isList cat
- then unlines
+prPrintData user (cat@(ListCat c), rules) =
+ unlines
  [
   "void PrintAbsyn::visit" ++ cl ++ "("++ cl ++ " *" ++ vname ++ ")",
   "{",
@@ -335,22 +334,25 @@ prPrintData user (cat, rules) =
   "  }",
   "}",
   ""
- ] --Not a list:
- else abstract ++ (concatMap (render . prPrintRule user) rules)
- where
-   cl = identCat (normCat cat)
-   ecl = identCat (normCatOfList cat)
-   vname = map toLower cl
-   member = map toLower ecl ++ "_"
-   visitMember = if isTokenType user cat
-     then "      visit" ++ funName cat ++ "(" ++ vname ++ "->" ++ member ++ ");"
-     else "      " ++ vname ++ "->" ++ member ++ "->accept(this);"
-   sep = snd (renderCharOrString sep')
-   sep' = getCons rules
-   optsep = if hasOneFunc rules then "" else ("      render(" ++ sep ++ ");")
-   abstract = case lookupRule (show cat) rules of
-    Just _ -> ""
-    Nothing ->  "void PrintAbsyn::visit" ++ cl ++ "(" ++ cl ++ "*p) {} //abstract class\n\n"
+ ]
+  where
+    visitMember = if isTokenType user c
+        then "      visit" ++ funName c ++ "(" ++ vname ++ "->" ++ member ++ ");"
+        else "      " ++ vname ++ "->" ++ member ++ "->accept(this);"
+    cl = identCat (normCat cat)
+    ecl = identCat (normCatOfList cat)
+    vname = map toLower cl
+    member = map toLower ecl ++ "_"
+    optsep = if hasOneFunc rules then "" else ("      render(" ++ sep ++ ");")
+    sep = snd (renderCharOrString sep')
+    sep' = getCons rules
+prPrintData user (cat, rules) = --Not a list:
+    abstract ++ concatMap (render . prPrintRule user) rules
+  where
+    cl = identCat (normCat cat)
+    abstract = case lookupRule (show cat) rules of
+      Just _ -> ""
+      Nothing ->  "void PrintAbsyn::visit" ++ cl ++ "(" ++ cl ++ "*p) {} //abstract class\n\n"
 
 -- | Pretty Printer methods for a rule.
 -- >>> prPrintRule [Cat "A"] (Rule "Myf" (Cat "X") [Left (Cat "A"), Left (Cat "Integer"), Right "abc", Left (Cat "B")])
@@ -415,9 +417,8 @@ prPrintCat _ fnm (Left (cat, nt)) =
 
 --This prints the functions for Abstract Syntax tree printing.
 prShowData :: [UserDef] -> (Cat, [Rule]) -> String
-prShowData user (cat, rules) =
- if isList cat
- then unlines
+prShowData user (cat@(ListCat c), rules) =
+ unlines
  [
   "void ShowAbsyn::visit" ++ cl ++ "("++ cl ++ " *" ++ vname ++ ")",
   "{",
@@ -437,19 +438,22 @@ prShowData user (cat, rules) =
   "  }",
   "}",
   ""
- ] --Not a list:
- else abstract ++ concatMap (prShowRule user) rules
- where
-   cl = identCat (normCat cat)
-   ecl = identCat (normCatOfList cat)
-   vname = map toLower cl
-   member = map toLower ecl ++ "_"
-   visitMember = if isTokenType user cat
-     then "      visit" ++ funName cat ++ "(" ++ vname ++ "->" ++ member ++ ");"
-     else "      " ++ vname ++ "->" ++ member ++ "->accept(this);"
-   abstract = case lookupRule (show cat) rules of
-    Just _ -> ""
-    Nothing ->  "void ShowAbsyn::visit" ++ cl ++ "(" ++ cl ++ "* p) {} //abstract class\n\n"
+ ]
+  where
+    cl = identCat (normCat cat)
+    ecl = identCat (normCatOfList cat)
+    vname = map toLower cl
+    member = map toLower ecl ++ "_"
+    visitMember = if isTokenType user c
+      then "      visit" ++ funName c ++ "(" ++ vname ++ "->" ++ member ++ ");"
+      else "      " ++ vname ++ "->" ++ member ++ "->accept(this);"
+prShowData user (cat, rules) = --Not a list:
+    abstract ++ concatMap (prShowRule user) rules
+  where
+    cl = identCat (normCat cat)
+    abstract = case lookupRule (show cat) rules of
+      Just _ -> ""
+      Nothing ->  "void ShowAbsyn::visit" ++ cl ++ "(" ++ cl ++ "* p) {} //abstract class\n\n"
 
 --This prints all the methods for Abstract Syntax tree rules.
 prShowRule :: [UserDef] -> Rule -> String
