@@ -27,7 +27,6 @@ import BNFC.Utils ((+++))
 import BNFC.Backend.Common.NamedVariables
 import BNFC.Backend.Common.StrUtils (renderCharOrString)
 import BNFC.Backend.Utils (isTokenType)
-import Data.List
 import Data.Char(toLower)
 import Text.PrettyPrint
 

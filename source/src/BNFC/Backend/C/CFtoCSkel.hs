@@ -43,7 +43,6 @@ import BNFC.CF
 import BNFC.Utils			( (+++) )
 import BNFC.Backend.Common.NamedVariables
 import BNFC.Backend.Utils (isTokenType)
-import Data.List		( isPrefixOf )
 import Data.Char		( toLower, toUpper )
 import Data.Either (lefts)
 
@@ -237,4 +236,4 @@ prCat user fnm (cat, vname) =
 
 --The visit-function name of a basic type
 basicFunName :: Cat -> Doc
-basicFunName (Cat a) = text (toUpper (head a): tail a)
+basicFunName c = text (toUpper (head (show c)): tail (show c))

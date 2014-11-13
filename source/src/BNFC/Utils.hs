@@ -34,7 +34,7 @@ import Data.List (intercalate)
 import System.IO (IOMode(ReadMode),hClose,hGetContents,openFile)
 import System.IO.Error (tryIOError)
 import System.Directory (createDirectory, doesDirectoryExist, renameFile,
-                         removeFile, doesFileExist)
+                         removeFile)
 import System.FilePath (pathSeparator)
 import Text.PrettyPrint
 
@@ -107,28 +107,11 @@ pathInits xs = let (ys,zs) = split pathSeparator xs
 
 
 -- | Write a file, after making a backup of an existing file with the same name.
-writeFileRep :: FilePath -> String -> IO ()
-writeFileRep = writeFileRep2
-
--- peteg: FIXME this is racey.
--- want to be a bit smarter about whether we actually generate the file
--- or save it... e.g. ErrM.hs need not be regenerated if it exists.
-writeFileRep1 :: FilePath -> String -> IO ()
-writeFileRep1 f s =
-    do exists <- doesFileExist f
-       backedUp <- if exists
-		     then do let fbak = f ++ ".bak"
-		             renameFile f fbak
-			     return $ " (saving old file as " ++ fbak ++ ")"
-		     else return ""
-       putStrLn $ "writing file " ++ f ++ backedUp
-       writeFile f s
-
--- New version by TH, 2010-09-23
 -- If an old version of the file exist and the new version is the same,
 -- keep the old file and don't create a .bak file.
-writeFileRep2 :: FilePath -> String -> IO ()
-writeFileRep2 path s =
+-- / New version by TH, 2010-09-23
+writeFileRep :: FilePath -> String -> IO ()
+writeFileRep path s =
     either newFile updateFile =<< tryIOError (readFile' path)
   where
     newFile _ =

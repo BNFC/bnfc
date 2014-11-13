@@ -360,7 +360,7 @@ mkCFile inPackage cf groups = concat
 
 --Generates methods for the Pretty Printer
 prPrintData :: Maybe String -> CF -> [UserDef] -> (Cat, [Rule]) -> String
-prPrintData inPackage cf user (cat@(ListCat c), rules) =
+prPrintData _ _ user (cat@(ListCat c), rules) =
  unlines
  [
   "void PrintAbsyn::visit" ++ cl ++ "("++ cl ++ " *" ++ vname ++ ")",
@@ -397,7 +397,6 @@ prPrintData inPackage cf user (cat, rules) = -- Not a list
  else abstract ++ (concatMap (prPrintRule inPackage user) rules)
  where
    cl = identCat (normCat cat)
-   vname = map toLower cl
    abstract = case lookupRule (show cat) rules of
     Just _ -> ""
     Nothing ->  "void PrintAbsyn::visit" ++ cl ++ "(" ++ cl ++ "*p) {} //abstract class\n\n"
@@ -422,8 +421,6 @@ prPrintRule inPackage user r@(Rule fun _ cats) | isProperLabel fun = unlines
        "  if (oldi > " ++ (show p) ++ ") render(" ++ nsDefine inPackage "_R_PAREN" ++ ");\n")
     cats' = concatMap (prPrintCat user fnm) (numVars' cats)
     fnm = "p" --old names could cause conflicts
-    getPrec (Right _) = 0
-    getPrec (Left c) = precCat c
 prPrintRule _ _ _ = ""
 
 --This goes on to recurse to the instance variables.
@@ -443,7 +440,7 @@ prPrintCat user fnm (Left (c, nt))
 
 --This prints the functions for Abstract Syntax tree printing.
 prShowData :: [UserDef] -> (Cat, [Rule]) -> String
-prShowData user (cat@(ListCat c), rules) = unlines
+prShowData user (cat@(ListCat c), _) = unlines
  [
   "void ShowAbsyn::visit" ++ cl ++ "("++ cl ++ " *" ++ vname ++ ")",
   "{",
@@ -518,24 +515,6 @@ prShowCat user fnm (Left (cat,nt))
 
 {- **** Helper Functions Section **** -}
 
-
---Just checks if something is a basic or user-defined type.
---This is because you don't -> a basic non-pointer type.
-isBasic :: [UserDef] -> String -> Bool
-isBasic user v =
-  if elem (init v) user'
-    then True
-    else if "integer_" `isPrefixOf` v then True
-    else if "char_" `isPrefixOf` v then True
-    else if "string_" `isPrefixOf` v then True
-    else if "double_" `isPrefixOf` v then True
-    else if "ident_" `isPrefixOf` v then True
-    else False
-  where
-   user' = map (map toLower.show) user
-
--- from listident to ident_
-isBase user vn = isBasic user (baseName vn ++ "_")
 -- from ListIdent to Ident
 baseName cl = drop 4 cl
 
