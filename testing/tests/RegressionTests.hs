@@ -12,7 +12,7 @@ import TestUtils
 import Shelly
 
 all = makeTestSuite "Regression tests"
-    [ issue60, issue30, issue108, issue110, issue111, issue114 ]
+    [ issue60, issue30, issue108, issue110, issue111, issue114, issue113 ]
 
 
 issue60 :: Test
@@ -85,4 +85,10 @@ issue114 = makeShellyTest "#114 List category as entry point" $
         assertEqual expected output
 
 
-
+issue113 :: Test
+issue113 = makeShellyTest "#113 BNFC to Java creates non-compilable code when using user-defined tokens in grammar" $
+    withTmpDir $ \tmp -> do
+        cp "regression-tests/113_javatokens.cf" (tmp </> "grammar.cf")
+        cd tmp
+        cmd "bnfc" "--java" "grammar.cf"
+        cmd "javac" "grammar/VisitSkel.java"

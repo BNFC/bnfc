@@ -1,0 +1,3 @@
+Pair. Something ::= LABEL LABEL;
+Single. Something ::= LABEL;
+token LABEL (upper (letter | digit | '_')*) ;
