@@ -43,9 +43,10 @@ module BNFC.Backend.Java.CFtoVisitSkel15 (cf2VisitSkel) where
 import BNFC.CF
 import BNFC.Backend.Java.CFtoJavaAbs15 (typename)
 import BNFC.Utils ((+++))
+import BNFC.Backend.Utils (isTokenType)
 import BNFC.Backend.Common.NamedVariables
-import Data.List
-import Data.Char(toLower)
+import Text.PrettyPrint
+import Data.Either (lefts)
 
 --Produces a Skeleton using the Visitor Design Pattern.
 --Thus the user can choose which Skeleton to use.
@@ -59,7 +60,7 @@ cf2VisitSkel packageBase packageAbsyn cf =
     "}"]
   where
     user = fst (unzip (tokenPragmas cf))
-    groups = fixCoercions (ruleGroups cf)
+    groups = fixCoercions (ruleGroupsInternals cf)
     header = unlines [
       "package" +++ packageBase ++ ";",
       "import" +++ packageAbsyn ++ ".*;",
@@ -83,59 +84,63 @@ prData packageAbsyn user (cat, rules) =
  else unlines ["  public class " ++ identCat cat ++ "Visitor<R,A> implements "
 	       ++ identCat cat ++ ".Visitor<R,A>",
 	       "  {",
-	       concatMap (prRule packageAbsyn user) rules,
+	       concatMap (render . nest 4 . prRule packageAbsyn user) rules,
 	       "  }"
 	      ]
 
---traverses a standard rule.
-prRule :: String -> [UserDef] -> Rule -> String
-prRule packageAbsyn user (Rule fun _ cats) | not (isCoercion fun || isDefinedRule fun) = unlines
-  [
-   "    public R visit(" ++ packageAbsyn ++ "." ++ fun ++ " p, A arg)",
-   "    {",
-   "      /* Code For " ++ fun ++ " Goes Here */",
-   "",
-   concatMap (uncurry (prCat user)) cats',
-   "      return null;",
-   "    }"
-  ]
-   where
-    cats' = if allTerms cats
-        then []
-    	else [ (c,v) |
-	       (Left c, Left v) <- zip cats (fixOnes (numVars [] cats)) ]
-    allTerms [] = True
-    allTerms (Left _:_) = False
-    allTerms (_:zs) = allTerms zs
+-- | traverses a standard rule.
+-- >>> prRule "ABSYN" [] (Rule "EInt" undefined [Left (Cat "Integer"), Left (Cat "NT")])
+-- public R visit(ABSYN.EInt p, A arg)
+-- { /* Code For EInt Goes Here */
+--   //p.integer_;
+--   p.nt_.accept(new NTVisitor<R,A>(), arg);
+--   return null;
+-- }
+--
+-- It skips the internal category (indicating that a rule is not parsable)
+-- >>> prRule "ABSYN" [] (Rule "EInt" undefined [Left (InternalCat), Left (Cat "Integer")])
+-- public R visit(ABSYN.EInt p, A arg)
+-- { /* Code For EInt Goes Here */
+--   //p.integer_;
+--   return null;
+-- }
+prRule :: String -> [UserDef] -> Rule -> Doc
+prRule packageAbsyn user (Rule fun _ cats)
+  | not (isCoercion fun || isDefinedRule fun) = vcat
+    [ "public R visit(" <> text packageAbsyn <> "." <> fname <> " p, A arg)"
+    , "{"
+    , nest 2 ( "/* Code For " <> fname <> " Goes Here */"
+            $$ vcat (map (prCat user) cats')
+            $$ "return null;" )
+    , "}" ]
+  where
+    fname = text fun                            -- function name
+    nts = filter (/= InternalCat) (lefts cats)  -- non-terminals in the rhs
+    cats' = numVars_ nts
 prRule _ _ _ = ""
 
---Traverses a class's instance variables.
-prCat :: [UserDef]
-      -> Cat       -- ^ Variable category
-      -> String    -- ^ Variable name
-      -> String    -- ^ Code for visiting the variable
-prCat user cat nt | isBasic user nt = "      //" ++ var ++ ";\n"
-		  | "list" `isPrefixOf` nt = listAccept
-		  | otherwise = "      " ++ accept ++ "\n"
-      where
-      var = "p." ++ nt
-      varType = typename (identCat (normCat cat)) user
-      accept = var ++ ".accept(new " ++ varType ++ "Visitor<R,A>(), arg);"
-      et = typename (show $normCatOfList cat) user
-      listAccept = unlines ["      for (" ++ et ++ " x : " ++ var ++ ") {",
-			    "      }"]
-
---Just checks if something is a basic or user-defined type.
---This is because you don't -> a basic non-pointer type.
-isBasic :: [UserDef] -> String -> Bool
-isBasic user v =
-  if elem (init v) user'
-    then True
-    else if "integer_" `isPrefixOf` v then True
-    else if "char_" `isPrefixOf` v then True
-    else if "string_" `isPrefixOf` v then True
-    else if "double_" `isPrefixOf` v then True
-    else if "ident_" `isPrefixOf` v then True
-    else False
+-- | Traverses a class's instance variables.
+-- >>> prCat [] (Cat "A", "a_")
+-- p.a_.accept(new AVisitor<R,A>(), arg);
+-- >>> prCat [] (Cat "Integer", "integer_")
+-- //p.integer_;
+-- >>> prCat [Cat "A"] (Cat "A", "a_")
+-- //p.a_;
+-- >>> prCat [Cat "A"] (Cat "A", "a_2")
+-- //p.a_2;
+-- >>> prCat [] (ListCat (Cat "A"), "lista_")
+-- for (A x: p.lista_)
+-- { /* ... */ }
+prCat :: [UserDef]    -- ^ User defined tokens
+      -> (Cat, Doc)   -- ^ Variable category and name
+      -> Doc          -- ^ Code for visiting the variable
+prCat user (cat, nt)
+  | isTokenType user cat = "//" <> var <> ";"
+  | isList cat           = "for" <+> parens (text et <+> "x:" <+> var)
+                        $$ braces " /* ... */ "
+  | otherwise            = accept
   where
-   user' = map (map toLower.show) user
+      var = "p." <> nt
+      varType = typename (identCat (normCat cat)) user
+      accept = var <> ".accept(new " <> text varType <> "Visitor<R,A>(), arg);"
+      et = typename (show $normCatOfList cat) user
