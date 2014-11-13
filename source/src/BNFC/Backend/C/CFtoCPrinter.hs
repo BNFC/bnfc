@@ -45,6 +45,7 @@ import BNFC.CF
 import BNFC.Utils ((+++))
 import BNFC.Backend.Common.NamedVariables
 import BNFC.Backend.Common.StrUtils (renderCharOrString)
+import BNFC.Backend.Utils (isTokenType)
 import Data.List
 import Data.Char(toLower)
 
@@ -402,15 +403,16 @@ prPrintRule _ _ = ""
 
 --This goes on to recurse to the instance variables.
 prPrintCat :: [UserDef] -> String -> (Either String String, Either Cat String, Integer) -> String
-prPrintCat user fnm (c,o,p) = case c of
-  (Right t) -> "    render" ++ [sc] ++ "(" ++ t' ++ ");\n"
+prPrintCat user fnm (c,o,p) = case (c,o) of
+  (Right t,_) -> "    render" ++ [sc] ++ "(" ++ t' ++ ");\n"
     where
      (sc,t') = renderCharOrString t
-  (Left nt) -> if isBasic user nt
+  (Left nt, Left cat) -> if isTokenType user cat
        then "    pp" ++ (basicFunName nt) ++ "(_p_->u." ++ v ++ "_." ++ nt ++ ", " ++ (show p) ++ ");\n"
        else if nt == "#_" --Internal category
          then "    /* Internal Category */\n"
          else "    pp" ++ o' ++ "(_p_->u." ++ v ++ "_." ++ nt ++ ", " ++ (show p) ++ ");\n"
+  (_,_) -> error "Should not happen"
  where
   v = map toLower (normFun fnm)
   o' = case o of
@@ -511,9 +513,8 @@ prShowRule _ _ = ""
 
 --This goes on to recurse to the instance variables.
 prShowCat :: [UserDef] -> Fun -> (Either String String, Either Cat String) -> String
-prShowCat user fnm (c,o) = case c of
-  (Right _) -> ""
-  (Left nt) -> if isBasic user nt
+prShowCat user fnm (c,o) = case (c,o) of
+  (Left nt, Left cat) -> if isTokenType user cat
        then "    sh" ++ (basicFunName nt) ++ "(_p_->u." ++ v ++ "_." ++ nt ++ ");\n"
        else if nt == "#_" --Internal category
          then "    /* Internal Category */\n"
@@ -525,6 +526,7 @@ prShowCat user fnm (c,o) = case c of
            "    sh" ++ o' ++ "(_p_->u." ++ v ++ "_." ++ nt ++ ");\n",
 	   "    bufAppendC(']');\n"
           ]
+  (_,_) -> ""
  where
   v = map toLower (normFun fnm)
   o' = case o of
@@ -532,23 +534,6 @@ prShowCat user fnm (c,o) = case c of
     Left x -> identCat (normCat x)
 
 {- **** Helper Functions Section **** -}
-
-
---Just checks if something is a basic or user-defined type.
---This is because you don't -> a basic non-pointer type.
-isBasic :: [UserDef] -> String -> Bool
-isBasic user v =
-  if elem (init v) user'
-    then True
-    else if "integer_" `isPrefixOf` v then True
-    else if "char_" `isPrefixOf` v then True
-    else if "string_" `isPrefixOf` v then True
-    else if "double_" `isPrefixOf` v then True
-    else if "ident_" `isPrefixOf` v then True
-    else False
-  where
-   user' = map (map toLower . show) user
-
 --The visit-function name of a basic type
 basicFunName :: String -> String
 basicFunName v =

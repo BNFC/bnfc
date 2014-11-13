@@ -26,8 +26,10 @@ import BNFC.CF
 import BNFC.Utils ((+++))
 import BNFC.Backend.Common.NamedVariables
 import BNFC.Backend.Common.StrUtils (renderCharOrString)
+import BNFC.Backend.Utils (isTokenType)
 import Data.List
 import Data.Char(toLower)
+import Text.PrettyPrint
 
 --Produces (.H file, .C file)
 cf2CPPPrinter :: CF -> (String, String)
@@ -335,14 +337,14 @@ prPrintData user (cat, rules) =
   "}",
   ""
  ] --Not a list:
- else abstract ++ (concatMap (prPrintRule user) rules)
+ else abstract ++ (concatMap (render . prPrintRule user) rules)
  where
    cl = identCat (normCat cat)
    ecl = identCat (normCatOfList cat)
    vname = map toLower cl
    member = map toLower ecl ++ "_"
-   visitMember = if isBasic user member
-     then "      visit" ++ (funName member) ++ "(" ++ vname ++ "->" ++ member ++ ");"
+   visitMember = if isTokenType user cat
+     then "      visit" ++ funName cat ++ "(" ++ vname ++ "->" ++ member ++ ");"
      else "      " ++ vname ++ "->" ++ member ++ "->accept(this);"
    sep = snd (renderCharOrString sep')
    sep' = getCons rules
@@ -351,45 +353,63 @@ prPrintData user (cat, rules) =
     Just _ -> ""
     Nothing ->  "void PrintAbsyn::visit" ++ cl ++ "(" ++ cl ++ "*p) {} //abstract class\n\n"
 
---Pretty Printer methods for a rule.
-prPrintRule :: [UserDef] -> Rule -> String
-prPrintRule user r@(Rule fun _ cats) | isProperLabel fun = unlines
-  [
-   "void PrintAbsyn::visit" ++ fun ++ "(" ++ fun ++ "*" +++ fnm ++ ")",
-   "{",
-   "  int oldi = _i_;",
-   lparen,
-   cats',
-   rparen,
-   "  _i_ = oldi;",
-   "}\n"
-  ]
+-- | Pretty Printer methods for a rule.
+-- >>> prPrintRule [Cat "A"] (Rule "Myf" (Cat "X") [Left (Cat "A"), Left (Cat "Integer"), Right "abc", Left (Cat "B")])
+-- void PrintAbsyn::visitMyf(Myf* p)
+-- { int oldi = _i_;
+--   if (oldi > 0) render(_L_PAREN);
+--   visitIdent(p->a_);
+--   visitInteger(p->integer_);
+--   render("abc");
+--   _i_ = 0; p->b_->accept(this);
+--   if (oldi > 0) render(_R_PAREN);
+--   _i_ = oldi;
+-- }
+prPrintRule :: [UserDef] -> Rule -> Doc
+prPrintRule user r@(Rule fun _ cats) | isProperLabel fun = vcat
+    [ "void PrintAbsyn::visit" <> text fun <> parens (text fun <> "*" <+>  fnm)
+    , "{"
+    , nest 2 (vcat
+        [ "int oldi = _i_;"
+        , "if (oldi > " <> integer p <> ") render(_L_PAREN);"
+        , vcat cats'
+        , "if" <+> parens ("oldi >" <+> integer p) <+> "render(_R_PAREN);"
+        , "_i_ = oldi;" ])
+    , "}"
+    ]
    where
     p = precRule r
-    (lparen, rparen) =
-      ("  if (oldi > " ++ (show p) ++ ") render(_L_PAREN);\n",
-       "  if (oldi > " ++ (show p) ++ ") render(_R_PAREN);\n")
-    cats' = (concatMap (prPrintCat user fnm) (zip (fixOnes (numVars [] cats)) (map getPrec cats)))
+    cats' = map (prPrintCat user fnm) (numVars' cats)
     fnm = "p" --old names could cause conflicts
-    getPrec (Right _) = 0
-    getPrec (Left c) = precCat c
 prPrintRule _ _ = ""
 
---This goes on to recurse to the instance variables.
-prPrintCat :: [UserDef] -> String -> (Either String String, Integer) -> String
-prPrintCat user fnm (c,p) = case c of
-  (Right t) -> "  render(" ++ t' ++ ");\n"
-    where
-     t' = snd (renderCharOrString t)
-  (Left nt) -> if isBasic user nt
-       then "  visit" ++ (funName nt) ++ "(" ++ fnm ++ "->" ++ nt ++ ");\n"
-       else if "list" `isPrefixOf` nt
-         then "  if(" ++ fnm ++ "->" ++ nt ++ ") {" ++ accept ++ "}"
-	 else "  " ++ accept ++ "\n"
-     where
-       accept = if nt == "#_" --Internal category
-         then "/* Internal Category */\n"
-         else (setI p) ++ fnm ++ "->" ++ nt ++ "->accept(this);"
+-- | This goes on to recurse to the instance variables.
+-- >>> prPrintCat [] "MyFun" (Left (Cat "A", "a_"))
+-- _i_ = 0; MyFun->a_->accept(this);
+-- >>> prPrintCat [] "MyFun" (Left (CoercCat "Exp" 2, "exp_"))
+-- _i_ = 2; MyFun->exp_->accept(this);
+-- >>> prPrintCat [] "MyFun" (Right "abc")
+-- render("abc");
+-- >>> prPrintCat [Cat "A"] "MyFun" (Left (Cat "A", "a_"))
+-- visitIdent(MyFun->a_);
+-- >>> prPrintCat [] "MyFun" (Left (Cat "Integer", "integer_"))
+-- visitInteger(MyFun->integer_);
+prPrintCat :: [UserDef] -> Doc -> Either (Cat, Doc) String -> Doc
+prPrintCat _ _ (Right t) =
+    "render" <> parens (text (snd (renderCharOrString t))) <> ";"
+prPrintCat user fnm (Left (cat, nt)) | isTokenType user cat =
+    "visit" <> text (funName cat) <> "(" <> fnm <> "->" <> nt <> ");"
+prPrintCat _ fnm (Left (cat, nt)) =
+    if isList cat
+    then "if(" <> fnm <> "->" <> nt <> ")" <+> braces accept
+    else accept
+  where
+      accept = if cat == InternalCat
+               then "/* Internal Category */"
+               else setI (precCat cat) <+> fnm <> "->" <> nt <> "->accept(this);"
+      -- Just sets the coercion level for parentheses in the Pretty Printer.
+      setI :: Integer -> Doc
+      setI n = "_i_ =" <+> integer n <> ";"
 
 
 {- **** Abstract Syntax Tree Printer **** -}
@@ -419,14 +439,14 @@ prShowData user (cat, rules) =
   "}",
   ""
  ] --Not a list:
- else abstract ++ (concatMap (prShowRule user) rules)
+ else abstract ++ concatMap (prShowRule user) rules
  where
    cl = identCat (normCat cat)
    ecl = identCat (normCatOfList cat)
    vname = map toLower cl
    member = map toLower ecl ++ "_"
-   visitMember = if isBasic user member
-     then "      visit" ++ (funName member) ++ "(" ++ vname ++ "->" ++ member ++ ");"
+   visitMember = if isTokenType user cat
+     then "      visit" ++ funName cat ++ "(" ++ vname ++ "->" ++ member ++ ");"
      else "      " ++ vname ++ "->" ++ member ++ "->accept(this);"
    abstract = case lookupRule (show cat) rules of
     Just _ -> ""
@@ -451,7 +471,7 @@ prShowRule user (Rule fun _ cats) | isProperLabel fun = concat
       else ("  bufAppend(' ');\n", "  bufAppend('(');\n","  bufAppend(')');\n")
     cats' = if allTerms cats
         then ""
-    	else concat (insertSpaces (map (prShowCat user fnm) (fixOnes (numVars [] cats))))
+    	else concat (insertSpaces (map (prShowCat user fnm) (numVars' cats)))
     insertSpaces [] = []
     insertSpaces (x:[]) = [x]
     insertSpaces (x:xs) = if x == ""
@@ -464,57 +484,34 @@ prShowRule user (Rule fun _ cats) | isProperLabel fun = concat
 prShowRule _ _ = ""
 
 --This recurses to the instance variables of a class.
-prShowCat :: [UserDef] -> String -> Either String String -> String
+prShowCat :: [UserDef] -> String -> Either (Cat, Doc) String -> String
 prShowCat user fnm c =
   case c of
-    (Right _) -> ""
-    (Left nt) ->
-      if isBasic user nt
-       then "  visit" ++ (funName nt) ++ "(" ++ fnm ++ "->" ++ nt ++ ");\n"
-       else if nt == "#_" --internal category
+    Right _ -> ""
+    Left (cat, nt) ->
+      if isTokenType user cat
+       then "  visit" ++ funName cat ++ "(" ++ fnm ++ "->" ++ render nt ++ ");\n"
+       else if cat == InternalCat
        then "/* Internal Category */\n"
-       else if ((show$normCat$strToCat nt) /= nt)
+       else if ((show$normCat$strToCat$render nt) /= render nt)
           then accept
  	  else concat
 	  [
 	   "  bufAppend('[');\n",
-	   "  if (" ++ fnm ++ "->" ++ nt ++ ")" ++ accept,
+	   "  if (" ++ fnm ++ "->" ++ render nt ++ ")" ++ accept,
 	   "  bufAppend(']');\n"
 	  ]
        where
-         accept = "  " ++ fnm ++ "->" ++ nt ++ "->accept(this);\n"
+         accept = "  " ++ fnm ++ "->" ++ render nt ++ "->accept(this);\n"
 
 {- **** Helper Functions Section **** -}
 
-
---Just checks if something is a basic or user-defined type.
---This is because you don't -> a basic non-pointer type.
-isBasic :: [UserDef] -> String -> Bool
-isBasic user v =
-  if elem (init v) user'
-    then True
-    else if "integer_" `isPrefixOf` v then True
-    else if "char_" `isPrefixOf` v then True
-    else if "string_" `isPrefixOf` v then True
-    else if "double_" `isPrefixOf` v then True
-    else if "ident_" `isPrefixOf` v then True
-    else False
-  where
-   user' = map (map toLower.show) user
-
 --The visit-function name of a basic type
-funName :: String -> String
-funName v =
-    if "integer_" `isPrefixOf` v then "Integer"
-    else if "char_" `isPrefixOf` v then "Char"
-    else if "string_" `isPrefixOf` v then "String"
-    else if "double_" `isPrefixOf` v then "Double"
-    else if "ident_" `isPrefixOf` v then "Ident"
-    else "Ident" --User-defined type
+funName :: Cat -> String
+funName (Cat c) | c `elem` builtin = c
+  where builtin = ["Integer", "Char", "String", "Double", "Ident" ]
+funName _ = "Ident" --User-defined type
 
---Just sets the coercion level for parentheses in the Pretty Printer.
-setI :: Integer -> String
-setI n = "_i_ = " ++ (show n) ++ "; "
 
 --An extremely simple renderer for terminals.
 prRender :: String

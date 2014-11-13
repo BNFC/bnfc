@@ -72,6 +72,8 @@ import Data.Char (toLower)
 import Data.List (nub)
 import Text.PrettyPrint
 import Data.Maybe (fromMaybe)
+import Control.Arrow (left, (&&&))
+import Data.Either (lefts)
 
 type IVar = (String, Int)
 --The type of an instance variable
@@ -103,6 +105,12 @@ getVars cs = foldl addVar [] (map identCat cs)
 	else i : (addVar' is (x+1) c)
       else i : (addVar' is n c)
 
+-- # Create variable names for rules rhs
+-- This is about creating variable names for the right-hand side of rules.
+-- In particular, if you have a rule like Foo. Bar ::= A B A, you need to
+-- create unique variable names for the two instances of category A
+
+
 -- | Anotate a list of categories with suggested variable names for
 -- the non-terminals.
 -- >>> numVars_[Cat "A", Cat "B"]
@@ -117,6 +125,30 @@ numVars_ cats = zip cats (f' [] names)
             let i = fromMaybe 1 (lookup n env)
                 vname = if i == 1 && not (n `elem` ns) then text n else text n <> int i
             in vname : f' ((n,i+1):env) ns
+
+
+-- | Anotate the right hand side of a rule with variable names
+-- for the non-terminals.
+-- >>> numVars' [Left (Cat "A"), Right "+", Left (Cat "B")]
+-- [Left (A,a_),Right "+",Left (B,b_)]
+-- >>> numVars' [Left (Cat "A"), Left (Cat "A"), Right ";"]
+-- [Left (A,a_1),Left (A,a_2),Right ";"]
+numVars' :: [Either Cat a] -> [Either (Cat, Doc) a]
+numVars' cats =
+  -- First, we anotate each Left _ with a variable name (not univque)
+  let withNames = map (left (id &&& (varName . identCat . normCat))) cats
+  -- next, the function f' adds numbers where needed...
+  in f' [] withNames
+  where f' _ [] = []
+        f' env (Right t:xs) = Right t:f' env xs
+        f' env (Left (c,n):xs) =
+            -- we should use n_i as var name
+            let i = maybe 1 (+1) (lookup n env)
+            -- Is there more use of the name u_ ?
+                thereIsMore = n `elem` map snd (lefts xs)
+                vname = text n <> if i > 1 || thereIsMore then int i else empty
+            in Left (c, vname) : f' ((n,i):env) xs
+
 
 --Given a rule's definition, it goes through and nicely the variables by type.
 numVars :: [(String, Int)] -> [Either Cat b] -> [Either String b]

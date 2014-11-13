@@ -26,9 +26,11 @@ import BNFC.CF
 import BNFC.Utils ((+++))
 import BNFC.Backend.Common.NamedVariables
 import BNFC.Backend.Common.StrUtils (renderCharOrString)
+import BNFC.Backend.Utils (isTokenType)
 import Data.List
 import Data.Char(toLower)
 import BNFC.Backend.CPP.STL.STLUtils
+import Text.PrettyPrint
 
 --Produces (.H file, .C file)
 cf2CPPPrinter :: Maybe String -> CF -> (String, String)
@@ -358,31 +360,22 @@ mkCFile inPackage cf groups = concat
 
 --Generates methods for the Pretty Printer
 prPrintData :: Maybe String -> CF -> [UserDef] -> (Cat, [Rule]) -> String
-prPrintData inPackage cf user (cat, rules) =
- if isList cat
- then unlines
+prPrintData inPackage cf user (cat@(ListCat c), rules) =
+ unlines
  [
   "void PrintAbsyn::visit" ++ cl ++ "("++ cl ++ " *" ++ vname ++ ")",
   "{",
   "  for ("++ cl ++"::const_iterator i = " ++
        vname++"->begin() ; i != " ++vname ++"->end() ; ++i)",
   "  {",
-  if isBase user vname
+  if isTokenType user c
     then "    visit" ++ baseName cl ++ "(*i) ;"
     else "    (*i)->accept(this);",
   optsep,
   "  }",
   "}",
   ""
- ] --Not a list:
- -- a position token
- else if isPositionCat cf cat then unlines [
-   "void PrintAbsyn::visit" ++ show cat ++ "(" ++ show cat ++ "* p)",
-   "{",
-   "  visitIdent(p->string_);",
-   "}"
-   ]
- else abstract ++ (concatMap (prPrintRule inPackage user) rules)
+ ]
  where
    cl = identCat (normCat cat)
    vname = map toLower cl
@@ -393,6 +386,18 @@ prPrintData inPackage cf user (cat, rules) =
        then "    if (i != " ++ vname ++ "->end() - 1) "
        else "    "
      )   ++ "render(" ++ sep ++ ");"
+prPrintData inPackage cf user (cat, rules) = -- Not a list
+ -- a position token
+ if isPositionCat cf cat then unlines [
+   "void PrintAbsyn::visit" ++ show cat ++ "(" ++ show cat ++ "* p)",
+   "{",
+   "  visitIdent(p->string_);",
+   "}"
+   ]
+ else abstract ++ (concatMap (prPrintRule inPackage user) rules)
+ where
+   cl = identCat (normCat cat)
+   vname = map toLower cl
    abstract = case lookupRule (show cat) rules of
     Just _ -> ""
     Nothing ->  "void PrintAbsyn::visit" ++ cl ++ "(" ++ cl ++ "*p) {} //abstract class\n\n"
@@ -415,56 +420,54 @@ prPrintRule inPackage user r@(Rule fun _ cats) | isProperLabel fun = unlines
     (lparen, rparen) =
       ("  if (oldi > " ++ (show p) ++ ") render(" ++ nsDefine inPackage "_L_PAREN" ++ ");\n",
        "  if (oldi > " ++ (show p) ++ ") render(" ++ nsDefine inPackage "_R_PAREN" ++ ");\n")
-    cats' = (concatMap (prPrintCat user fnm) (zip (fixOnes (numVars [] cats)) (map getPrec cats)))
+    cats' = concatMap (prPrintCat user fnm) (numVars' cats)
     fnm = "p" --old names could cause conflicts
     getPrec (Right _) = 0
     getPrec (Left c) = precCat c
 prPrintRule _ _ _ = ""
 
 --This goes on to recurse to the instance variables.
-prPrintCat :: [UserDef] -> String -> (Either String String, Integer) -> String
-prPrintCat user fnm (c,p) = case c of
-  (Right t) -> "  render(" ++ t' ++ ");\n"
-    where
-     t' = snd (renderCharOrString t)
-  (Left nt) -> if isBasic user nt
-       then "  visit" ++ (funName nt) ++ "(" ++ fnm ++ "->" ++ nt ++ ");\n"
-       else if "list" `isPrefixOf` nt
-         then "  if(" ++ fnm ++ "->" ++ nt ++ ") {" ++ accept ++ "}"
-	 else "  " ++ accept ++ "\n"
-     where
-       accept = if nt == "#_" --Internal category
-         then "/* Internal Category */\n"
-         else (setI p) ++ fnm ++ "->" ++ nt ++ "->accept(this);"
+prPrintCat :: [UserDef] -> String -> Either (Cat, Doc) String -> String
+prPrintCat _ _ (Right t) = "  render(" ++ t' ++ ");\n"
+  where t' = snd (renderCharOrString t)
+prPrintCat user fnm (Left (c, nt))
+  | isTokenType user c  = "  visit" ++ funName (render nt) ++ "(" ++ fnm ++ "->" ++ render nt ++ ");\n"
+  | isList c            = "  if(" ++ fnm ++ "->" ++ render nt ++ ") {" ++ accept ++ "}"
+  | otherwise           = "  " ++ accept ++ "\n"
+  where
+    accept
+      | c == InternalCat =  "/* Internal Category */\n"
+      | otherwise        = setI (precCat c) ++ fnm ++ "->" ++ render nt ++ "->accept(this);"
 
 {- **** Abstract Syntax Tree Printer **** -}
 
 --This prints the functions for Abstract Syntax tree printing.
 prShowData :: [UserDef] -> (Cat, [Rule]) -> String
-prShowData user (cat, rules) =
- if isList cat
- then unlines
+prShowData user (cat@(ListCat c), rules) = unlines
  [
   "void ShowAbsyn::visit" ++ cl ++ "("++ cl ++ " *" ++ vname ++ ")",
   "{",
   "  for ("++ cl ++"::const_iterator i = " ++
        vname++"->begin() ; i != " ++vname ++"->end() ; ++i)",
   "  {",
-  if isBase user vname
+  if isTokenType user c
     then "    visit" ++ baseName cl ++ "(*i) ;"
     else "    (*i)->accept(this);",
   "    if (i != " ++ vname ++ "->end() - 1) bufAppend(\", \");",
   "  }",
   "}",
   ""
- ] --Not a list:
- else abstract ++ (concatMap (prShowRule user) rules)
- where
-   cl = identCat (normCat cat)
-   vname = map toLower cl
-   abstract = case lookupRule (show cat) rules of
-    Just _ -> ""
-    Nothing ->  "void ShowAbsyn::visit" ++ cl ++ "(" ++ cl ++ "* p) {} //abstract class\n\n"
+ ]
+  where
+    cl = identCat (normCat cat)
+    vname = map toLower cl
+prShowData user (cat, rules) =  --Not a list:
+  abstract ++ (concatMap (prShowRule user) rules)
+  where
+    cl = identCat (normCat cat)
+    abstract = case lookupRule (show cat) rules of
+      Just _ -> ""
+      Nothing ->  "void ShowAbsyn::visit" ++ cl ++ "(" ++ cl ++ "* p) {} //abstract class\n\n"
 
 --This prints all the methods for Abstract Syntax tree rules.
 prShowRule :: [UserDef] -> Rule -> String
@@ -485,7 +488,7 @@ prShowRule user (Rule fun _ cats) | isProperLabel fun = concat
       else ("  bufAppend(' ');\n", "  bufAppend('(');\n","  bufAppend(')');\n")
     cats' = if allTerms cats
         then ""
-    	else concat (insertSpaces (map (prShowCat user fnm) (fixOnes (numVars [] cats))))
+    	else concat (insertSpaces (map (prShowCat user fnm) (numVars' cats)))
     insertSpaces [] = []
     insertSpaces (x:[]) = [x]
     insertSpaces (x:xs) = if x == ""
@@ -498,25 +501,20 @@ prShowRule user (Rule fun _ cats) | isProperLabel fun = concat
 prShowRule _ _ = ""
 
 --This recurses to the instance variables of a class.
-prShowCat :: [UserDef] -> String -> Either String String -> String
-prShowCat user fnm c =
-  case c of
-    (Right _) -> ""
-    (Left nt) ->
-      if isBasic user nt
-       then "  visit" ++ (funName nt) ++ "(" ++ fnm ++ "->" ++ nt ++ ");\n"
-       else if nt == "#_" --internal category
-       then "/* Internal Category */\n"
-       else if ((show $normCat$strToCat nt) /= nt)
-          then accept
- 	  else concat
-	  [
+prShowCat :: [UserDef] -> String -> Either (Cat, Doc) String -> String
+prShowCat _ _ (Right _)               = ""
+prShowCat user fnm (Left (cat,nt))
+  | isTokenType user cat              =
+    "  visit" ++ funName (render nt) ++ "(" ++ fnm ++ "->" ++ render nt ++ ");\n"
+  | cat == InternalCat                = "/* Internal Category */\n"
+  | (show $normCat$strToCat$render nt) /= render nt = accept
+  | otherwise                         =
+    concat [
 	   "  bufAppend('[');\n",
-	   "  if (" ++ fnm ++ "->" ++ nt ++ ")" ++ accept,
+	   "  if (" ++ fnm ++ "->" ++ render nt ++ ")" ++ accept,
 	   "  bufAppend(']');\n"
 	  ]
-       where
-         accept = "  " ++ fnm ++ "->" ++ nt ++ "->accept(this);\n"
+  where accept = "  " ++ fnm ++ "->" ++ render nt ++ "->accept(this);\n"
 
 {- **** Helper Functions Section **** -}
 
