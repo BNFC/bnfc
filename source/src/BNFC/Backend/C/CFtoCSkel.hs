@@ -42,8 +42,12 @@ module BNFC.Backend.C.CFtoCSkel (cf2CSkel) where
 import BNFC.CF
 import BNFC.Utils			( (+++) )
 import BNFC.Backend.Common.NamedVariables
+import BNFC.Backend.Utils (isTokenType)
 import Data.List		( isPrefixOf )
 import Data.Char		( toLower, toUpper )
+import Data.Either (lefts)
+
+import Text.PrettyPrint
 
 --Produces (.H file, .C file)
 cf2CSkel :: CF -> (String, String)
@@ -98,7 +102,7 @@ prDataH (cat, _rules) =
 
 {- **** Implementation (.C) File Functions **** -}
 
---Makes the .C File
+-- | Makes the skeleton's .c File
 mkCFile :: CF -> [(Cat,[Rule])] -> String
 mkCFile cf groups = concat
    [
@@ -114,6 +118,9 @@ mkCFile cf groups = concat
       "/* This traverses the abstract syntax tree.",
       "   To use, copy Skeleton.h and Skeleton.c to",
       "   new files. */",
+      "",
+      "#include <stdlib.h>",
+      "#include <stdio.h>",
       "",
       "#include \"Skeleton.h\"",
       ""
@@ -176,7 +183,7 @@ prData user (cat, rules) =
 		"{",
 		"  switch(_p_->kind)",
 		"  {",
-		concatMap (prPrintRule user) rules,
+		concatMap (render . prPrintRule user) rules,
 		"  default:",
 		"    fprintf(stderr, \"Error: bad kind field when printing " ++ cl ++ "!\\n\");",
 		"    exit(1);",
@@ -188,53 +195,46 @@ prData user (cat, rules) =
 	  vname = map toLower cl
 	  member = map toLower ecl
 
--- Visits all the instance variables of a category.
-prPrintRule :: [UserDef] -> Rule -> String
-prPrintRule user (Rule fun _c cats) | not (isCoercion fun) = unlines
-  [
-   "  case is_" ++ fun ++ ":",
-   "    /* Code for " ++ fun ++ " Goes Here */",
-   cats' ++ "    break;"
-  ]
-   where
-    cats' = concatMap (prCat user fun) (zip (fixOnes (numVars [] cats)) cats)
+-- | Visits all the instance variables of a category.
+-- >>> let ab = Cat "ab"
+-- >>> prPrintRule [] (Rule "abc" undefined [Left ab, Left ab])
+--   case is_abc:
+--     /* Code for abc Goes Here */
+--     visitab(_p_->u.abc_.ab_1);
+--     visitab(_p_->u.abc_.ab_2);
+--     break;
+-- >>> prPrintRule [ab] (Rule "abc" undefined [Left ab])
+--   case is_abc:
+--     /* Code for abc Goes Here */
+--     visitAb(_p_->u.abc_.ab_);
+--     break;
+-- >>> prPrintRule [ab] (Rule "abc" undefined [Left ab, Left ab])
+--   case is_abc:
+--     /* Code for abc Goes Here */
+--     visitAb(_p_->u.abc_.ab_1);
+--     visitAb(_p_->u.abc_.ab_2);
+--     break;
+prPrintRule :: [UserDef] -> Rule -> Doc
+prPrintRule user (Rule fun _c cats) | not (isCoercion fun) = nest 2 $ vcat
+    [ text $ "case is_" ++ fun ++ ":"
+    , nest 2 (vcat
+        [ "/* Code for " <> text fun <> " Goes Here */"
+        , cats'
+        , "break;" ])
+    ]
+  where
+    cats' = vcat $ map (prCat user fun) (numVars_ (lefts cats))
 prPrintRule _user (Rule _fun _ _) = ""
 
 -- Prints the actual instance-variable visiting.
-prCat :: [UserDef] -> Fun -> (Either String String, Either Cat String) -> String
-prCat user fnm (c, o) =
-    case c of
-      Right {} -> ""
-      Left nt  ->
-        if isBasic user nt
-	  then "    visit" ++ basicFunName nt ++ "(_p_->u." ++ v ++ "_." ++ nt ++ ");\n"
-	  else "    visit" ++ o' ++ "(_p_->u." ++ v ++ "_." ++ nt ++ ");\n"
+prCat :: [UserDef] -> Fun -> (Cat, Doc) -> Doc
+prCat user fnm (cat, vname) =
+      let visitf = if isTokenType user cat
+                       then "visit" <> basicFunName cat
+                       else "visit" <> text (identCat (normCat cat))
+      in visitf <> parens ("_p_->u." <> text v <> "_." <> vname ) <> ";"
     where v = map toLower $ normFun fnm
-	  o' = case o of
-	         Right x -> x
-		 Left x  -> identCat $ normCat x
-
---Just checks if something is a basic or user-defined type.
---This is because you don't -> a basic non-pointer type.
-isBasic :: [UserDef] -> String -> Bool
-isBasic user v =
-  if elem (init v) user'
-    then True
-    else if "integer_" `isPrefixOf` v then True
-    else if "char_" `isPrefixOf` v then True
-    else if "string_" `isPrefixOf` v then True
-    else if "double_" `isPrefixOf` v then True
-    else if "ident_" `isPrefixOf` v then True
-    else False
-  where
-   user' = map (map toLower . show) user
 
 --The visit-function name of a basic type
-basicFunName :: String -> String
-basicFunName v =
-    if "integer_" `isPrefixOf` v then "Integer"
-    else if "char_" `isPrefixOf` v then "Char"
-    else if "string_" `isPrefixOf` v then "String"
-    else if "double_" `isPrefixOf` v then "Double"
-    else if "ident_" `isPrefixOf` v then "Ident"
-    else (toUpper (head v)) : (init (tail v)) --User-defined type
+basicFunName :: Cat -> Doc
+basicFunName (Cat a) = text (toUpper (head a): tail a)
