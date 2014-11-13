@@ -14,9 +14,14 @@ import TestData (exampleGrammars)
 import PygmentsTests
 import RegressionTests
 import JavaTests
+import CTests
 
-main = htfMain [ exitCodeTests, blackBoxTests
-               , RegressionTests.all, PygmentsTests.all, JavaTests.all ]
+main = htfMain [ exitCodeTests
+               , blackBoxTests
+               , RegressionTests.all
+               , PygmentsTests.all
+               , JavaTests.all
+               , CTests.all ]
 
 {- ----------------------------------------------------------------------------
  - BLACK BOX TESTS
