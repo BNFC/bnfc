@@ -15,13 +15,15 @@ import PygmentsTests
 import RegressionTests
 import JavaTests
 import CTests
+import HaskellTests
 
 main = htfMain [ exitCodeTests
                , blackBoxTests
                , RegressionTests.all
                , PygmentsTests.all
                , JavaTests.all
-               , CTests.all ]
+               , CTests.all
+               , HaskellTests.all ]
 
 {- ----------------------------------------------------------------------------
  - BLACK BOX TESTS
