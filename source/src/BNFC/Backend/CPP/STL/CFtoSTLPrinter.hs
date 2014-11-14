@@ -419,7 +419,7 @@ prPrintRule inPackage user r@(Rule fun _ cats) | isProperLabel fun = unlines
     (lparen, rparen) =
       ("  if (oldi > " ++ (show p) ++ ") render(" ++ nsDefine inPackage "_L_PAREN" ++ ");\n",
        "  if (oldi > " ++ (show p) ++ ") render(" ++ nsDefine inPackage "_R_PAREN" ++ ");\n")
-    cats' = concatMap (prPrintCat user fnm) (numVars' cats)
+    cats' = concatMap (prPrintCat user fnm) (numVars cats)
     fnm = "p" --old names could cause conflicts
 prPrintRule _ _ _ = ""
 
@@ -485,7 +485,7 @@ prShowRule user (Rule fun _ cats) | isProperLabel fun = concat
       else ("  bufAppend(' ');\n", "  bufAppend('(');\n","  bufAppend(')');\n")
     cats' = if allTerms cats
         then ""
-    	else concat (insertSpaces (map (prShowCat user fnm) (numVars' cats)))
+    	else concat (insertSpaces (map (prShowCat user fnm) (numVars cats)))
     insertSpaces [] = []
     insertSpaces (x:[]) = [x]
     insertSpaces (x:xs) = if x == ""

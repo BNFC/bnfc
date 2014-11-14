@@ -222,7 +222,7 @@ prPrintRule user (Rule fun _c cats) | not (isCoercion fun) = nest 2 $ vcat
         , "break;" ])
     ]
   where
-    cats' = vcat $ map (prCat user fun) (numVars_ (lefts cats))
+    cats' = vcat $ map (prCat user fun) (lefts (numVars cats))
 prPrintRule _user (Rule _fun _ _) = ""
 
 -- Prints the actual instance-variable visiting.

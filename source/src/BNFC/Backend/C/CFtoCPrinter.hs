@@ -48,6 +48,8 @@ import BNFC.Backend.Common.StrUtils (renderCharOrString)
 import BNFC.Backend.Utils (isTokenType)
 import Data.List
 import Data.Char(toLower)
+import Data.Either (lefts)
+import Text.PrettyPrint
 
 --Produces (.h file, .c file)
 cf2CPrinter :: CF -> (String, String)
@@ -394,30 +396,22 @@ prPrintRule user r@(Rule fun _ cats) | not (isCoercion fun) = unlines
    where
     p = precRule r
     (lparen, rparen) =
-      ("    if (_i_ > " ++ (show p) ++ ") renderC(_L_PAREN);",
-       "    if (_i_ > " ++ (show p) ++ ") renderC(_R_PAREN);")
-    cats' = (concatMap (prPrintCat user fun) (zip3 (fixOnes (numVars [] cats)) cats (map getPrec cats)))
-    getPrec (Right _) = 0 :: Integer
-    getPrec (Left c) = precCat c
+      ("    if (_i_ > " ++ show p ++ ") renderC(_L_PAREN);",
+       "    if (_i_ > " ++ show p ++ ") renderC(_R_PAREN);")
+    cats' = concatMap (prPrintCat user fun) (numVars cats)
 prPrintRule _ _ = ""
 
 --This goes on to recurse to the instance variables.
-prPrintCat :: [UserDef] -> String -> (Either String String, Either Cat String, Integer) -> String
-prPrintCat user fnm (c,o,p) = case (c,o) of
-  (Right t,_) -> "    render" ++ [sc] ++ "(" ++ t' ++ ");\n"
+prPrintCat :: [UserDef] -> String -> Either (Cat, Doc) String -> String
+prPrintCat user fnm (c) = case c of
+  Right t -> "    render" ++ [sc] ++ "(" ++ t' ++ ");\n"
     where
      (sc,t') = renderCharOrString t
-  (Left nt, Left cat) -> if isTokenType user cat
-       then "    pp" ++ (basicFunName nt) ++ "(_p_->u." ++ v ++ "_." ++ nt ++ ", " ++ (show p) ++ ");\n"
-       else if nt == "#_" --Internal category
-         then "    /* Internal Category */\n"
-         else "    pp" ++ o' ++ "(_p_->u." ++ v ++ "_." ++ nt ++ ", " ++ (show p) ++ ");\n"
-  (_,_) -> error "Should not happen"
+  Left (cat, nt) | isTokenType user cat -> "    pp" ++ basicFunName (render nt) ++ "(_p_->u." ++ v ++ "_." ++ render nt ++ ", " ++ show (precCat cat) ++ ");\n"
+  Left (InternalCat, _) -> "    /* Internal Category */\n"
+  Left (cat, nt) -> "    pp" ++ identCat (normCat cat) ++ "(_p_->u." ++ v ++ "_." ++ render nt ++ ", " ++ show (precCat cat) ++ ");\n"
  where
   v = map toLower (normFun fnm)
-  o' = case o of
-    Right x -> x
-    Left x -> identCat (normCat x)
 
 {- **** Abstract Syntax Tree Printer **** -}
 
@@ -500,7 +494,7 @@ prShowRule user (Rule fun _ cats) | not (isCoercion fun) = unlines
       else ("  bufAppendC(' ');\n", "  bufAppendC('(');\n","  bufAppendC(')');\n")
     cats' = if allTerms cats
         then ""
-    	else concat (insertSpaces (map (prShowCat user fun) (zip (fixOnes (numVars [] cats)) cats)))
+        else concat (insertSpaces (map (prShowCat user fun) (lefts $ numVars cats)))
     insertSpaces [] = []
     insertSpaces (x:[]) = [x]
     insertSpaces (x:xs) = if x == ""
@@ -512,26 +506,20 @@ prShowRule user (Rule fun _ cats) | not (isCoercion fun) = unlines
 prShowRule _ _ = ""
 
 --This goes on to recurse to the instance variables.
-prShowCat :: [UserDef] -> Fun -> (Either String String, Either Cat String) -> String
-prShowCat user fnm (c,o) = case (c,o) of
-  (Left nt, Left cat) -> if isTokenType user cat
-       then "    sh" ++ (basicFunName nt) ++ "(_p_->u." ++ v ++ "_." ++ nt ++ ");\n"
-       else if nt == "#_" --Internal category
-         then "    /* Internal Category */\n"
-         else if ((show $ normCat $ strToCat nt) /= nt)
-          then "    sh" ++ o' ++ "(_p_->u." ++ v ++ "_." ++ nt ++ ");\n"
-          else concat
+prShowCat :: [UserDef] -> Fun -> (Cat, Doc) -> String
+prShowCat user fnm c = case c of
+    (cat,nt) | isTokenType user cat ->
+        "    sh" ++ basicFunName (render nt) ++ "(_p_->u." ++ v ++ "_." ++ render nt ++ ");\n"
+    (InternalCat, _) -> "    /* Internal Category */\n"
+    (cat,nt) | show (normCat $ strToCat$ render nt) /= render nt ->
+        "    sh" ++ identCat (normCat cat) ++ "(_p_->u." ++ v ++ "_." ++ render nt ++ ");\n"
+    (cat,nt) -> concat
           [
 	   "    bufAppendC('[');\n",
-           "    sh" ++ o' ++ "(_p_->u." ++ v ++ "_." ++ nt ++ ");\n",
+           "    sh" ++ identCat (normCat cat) ++ "(_p_->u." ++ v ++ "_." ++ render nt ++ ");\n",
 	   "    bufAppendC(']');\n"
           ]
-  (_,_) -> ""
- where
-  v = map toLower (normFun fnm)
-  o' = case o of
-    Right x -> x
-    Left x -> identCat (normCat x)
+  where v = map toLower (normFun fnm)
 
 {- **** Helper Functions Section **** -}
 --The visit-function name of a basic type

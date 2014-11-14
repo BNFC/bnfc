@@ -40,10 +40,13 @@
 module BNFC.Backend.CPP.NoSTL.CFtoCVisitSkel (cf2CVisitSkel) where
 
 import BNFC.CF
-import BNFC.Utils ((+++))
+import BNFC.Utils ((+++), codeblock)
 import BNFC.Backend.Common.NamedVariables
+import BNFC.Backend.Utils (isTokenType)
 import Data.List
 import Data.Char(toLower, toUpper)
+import Data.Either (lefts)
+import Text.PrettyPrint
 
 --Produces (.H file, .C file)
 cf2CVisitSkel :: CF -> (String, String)
@@ -188,7 +191,7 @@ prData user (cat, rules) =
   "}",
   ""
  ] --Not a list:
- else abstract ++ (concatMap (prRule user) rules)
+ else abstract ++ (concatMap (render . prRule user) rules)
  where
    cl = identCat (normCat cat)
    vname = map toLower cl
@@ -201,37 +204,43 @@ prData user (cat, rules) =
     Just _ -> ""
     Nothing ->  "void Skeleton::visit" ++ cl ++ "(" ++ cl ++ "*" +++ vname ++ ") {} //abstract class\n\n"
 
---Visits all the instance variables of a category.
-prRule :: [UserDef] -> Rule -> String
-prRule user (Rule fun _ cats) | not (isCoercion fun) = unlines
-  [
-   "void Skeleton::visit" ++ fun ++ "(" ++ fun ++ "*" +++ fnm ++ ")",
-   "{",
-   "  /* Code For " ++ fun ++ " Goes Here */",
-   "",
-   cats' ++ "}\n"
+-- | Visits all the instance variables of a category.
+-- >>> prRule [Cat "A"] (Rule "F" (Cat "S") [Right "X", Left (Cat "A"), Left (Cat "B")])
+-- void Skeleton::visitF(F* f)
+-- {
+--   /* Code For F Goes Here */
+-- <BLANKLINE>
+--   visitA(f->a_);
+--   f->b_->accept(this);
+-- }
+prRule :: [UserDef] -> Rule -> Doc
+prRule user (Rule fun _ cats) | not (isCoercion fun) = vcat
+  [ text ("void Skeleton::visit" ++ fun ++ "(" ++ fun ++ "*" +++ fnm ++ ")")
+  , codeblock 2
+      [ text ("/* Code For " ++ fun ++ " Goes Here */")
+      , ""
+      , cats'
+      ]
   ]
    where
-    cats' = if allTerms cats
-        then ""
-    	else (concatMap (prCat user fnm) (fixOnes (numVars [] cats)))
-    allTerms [] = True
-    allTerms (Left _:_) = False
-    allTerms (_:zs) = allTerms zs
+    cats' = vcat (map (prCat user fnm) (lefts (numVars cats)))
     fnm = map toLower fun
 prRule _ _ = ""
 
---Prints the actual instance-variable visiting.
-prCat user fnm c =
-  case c of
-    (Right _) -> ""
-    (Left nt) -> if isBasic user nt
-       then "  visit" ++ (funName nt) ++ "(" ++ fnm ++ "->" ++ nt ++ ");\n"
-       else if "list" `isPrefixOf` nt
-         then "  if (" ++ fnm ++ "->" ++ nt ++ ") {" ++ accept ++ "}\n"
-	 else "  " ++ accept ++ "\n"
-      where
-       accept = fnm ++ "->" ++ nt ++ "->accept(this);"
+-- | Prints the actual instance-variable visiting.
+-- >>> prCat [] "Myfun" (Cat "Integer", "integer_")
+-- visitInteger(Myfun->integer_);
+-- >>> prCat [] "Myfun" (ListCat (Cat "A"), "lista_")
+-- if (Myfun->lista_) {Myfun->lista_->accept(this);}
+-- >>> prCat [] "Myfun" (Cat "A", "a_")
+-- Myfun->a_->accept(this);
+prCat :: [Cat] -> String -> (Cat, Doc) -> Doc
+prCat user fnm (cat, nt)
+  | isTokenType user cat = "visit" <> text (funName (render nt)) <> parens (fname <> "->" <> nt) <> ";"
+  | isList cat = "if" <+> parens (fname <> "->" <> nt) <+> braces accept
+  | otherwise = accept
+  where accept = fname <> "->" <> nt <> "->accept(this);"
+        fname = text fnm
 
 --Just checks if something is a basic or user-defined type.
 --This is because you don't -> a basic non-pointer type.

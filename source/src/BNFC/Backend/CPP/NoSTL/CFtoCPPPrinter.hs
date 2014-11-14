@@ -380,7 +380,7 @@ prPrintRule user r@(Rule fun _ cats) | isProperLabel fun = vcat
     ]
    where
     p = precRule r
-    cats' = map (prPrintCat user fnm) (numVars' cats)
+    cats' = map (prPrintCat user fnm) (numVars cats)
     fnm = "p" --old names could cause conflicts
 prPrintRule _ _ = ""
 
@@ -417,7 +417,7 @@ prPrintCat _ fnm (Left (cat, nt)) =
 
 --This prints the functions for Abstract Syntax tree printing.
 prShowData :: [UserDef] -> (Cat, [Rule]) -> String
-prShowData user (cat@(ListCat c), rules) =
+prShowData user (cat@(ListCat c), _) =
  unlines
  [
   "void ShowAbsyn::visit" ++ cl ++ "("++ cl ++ " *" ++ vname ++ ")",
@@ -474,7 +474,7 @@ prShowRule user (Rule fun _ cats) | isProperLabel fun = concat
       else ("  bufAppend(' ');\n", "  bufAppend('(');\n","  bufAppend(')');\n")
     cats' = if allTerms cats
         then ""
-    	else concat (insertSpaces (map (prShowCat user fnm) (numVars' cats)))
+    	else concat (insertSpaces (map (prShowCat user fnm) (numVars cats)))
     insertSpaces [] = []
     insertSpaces (x:[]) = [x]
     insertSpaces (x:xs) = if x == ""

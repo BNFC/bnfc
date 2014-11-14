@@ -53,6 +53,8 @@ import BNFC.Backend.Common.NamedVariables
 import BNFC.Utils		( (+++) )
 import Data.List
 import Data.Char	( toLower, isSpace )
+import Data.Either (lefts)
+import Text.PrettyPrint
 
 --Produces the PrettyPrinter class.
 --It will generate two methods "print" and "show"
@@ -243,11 +245,8 @@ prRule packageAbsyn r@(Rule fun _c cats) | not (isCoercion fun || isDefinedRule 
       "       if (_i_ > " ++ (show p) ++ ") render(_R_PAREN);\n")
     cats' = case cats of
         [] -> ""
-    	_  -> concatMap (prCat fnm) (zip (fixOnes (numVars [] cats)) (map getPrec cats))
+    	_  -> concatMap (render . prCat (text fnm)) (numVars cats)
     fnm = '_' : map toLower fun
-
-    getPrec (Right {}) = 0
-    getPrec (Left  c)  = precCat c
 
 prRule _nm _ = ""
 
@@ -270,14 +269,25 @@ prList user c rules = unlines
     sep = escapeChars $ getCons rules
     optsep = if hasOneFunc rules then "" else sep
 
-prCat fnm (c, p) =
-    case c of
-	   Right t -> "       render(\"" ++ escapeChars t ++ "\");\n"
-	   Left nt | "string" `isPrefixOf` nt
-                     -> "       printQuoted(" ++ fnm ++ "." ++ nt ++ ");\n"
-                   | isInternalVar nt -> ""
-                   | otherwise
-                     -> "       pp(" ++ fnm ++ "." ++ nt ++ ", " ++ show p ++ ");\n"
+-- |
+-- >>> prCat "F" (Right "++")
+--        render("++");
+-- <BLANKLINE>
+-- >>> prCat "F" (Left (Cat "String", "string_"))
+--        printQuoted(F.string_);
+-- <BLANKLINE>
+-- >>> prCat "F" (Left (InternalCat, "#_"))
+-- <BLANKLINE>
+-- >>> prCat "F" (Left (Cat "Abc", "abc_"))
+--        pp(F.abc_, 0);
+-- <BLANKLINE>
+prCat :: Doc -> Either (Cat, Doc) String -> Doc
+prCat _ (Right t) = nest 7 ("render(\"" <> text(escapeChars t) <> "\");\n")
+prCat fnm (Left (Cat "String", nt))
+    = nest 7 ("printQuoted(" <> fnm <> "." <> nt <> ");\n")
+prCat _ (Left (InternalCat, _)) = empty
+prCat fnm (Left (cat, nt))
+    = nest 7 ("pp(" <> fnm <> "." <> nt <> ", " <> integer (precCat cat) <> ");\n")
 
 --The following methods generate the Show function.
 
@@ -316,7 +326,7 @@ shRule packageAbsyn (Rule fun _c cats) | not (isCoercion fun || isDefinedRule fu
      ]
     cats' = if allTerms cats
         then ""
-    	else (concat (map (shCat fnm) (fixOnes (numVars [] cats))))
+    	else concatMap (render . shCat (text fnm)) (lefts (numVars cats))
     (lparen, rparen) =
       if allTerms cats
          then ("","")
@@ -341,15 +351,24 @@ shList user c _rules = unlines
     where
     et = typename (show $ normCatOfList c) user
 
-shCat fnm c =
-    case c of
-    Right {} -> ""
-    Left nt | "list" `isPrefixOf` nt
-                -> unlines ["       render(\"[\");",
-		            "       sh(" ++ fnm ++ "." ++ nt ++ ");",
-		            "       render(\"]\");"]
-            | isInternalVar nt -> ""
-            | otherwise  -> "       sh(" ++ fnm ++ "." ++ nt ++ ");\n"
+-- |
+-- >>> shCat "F" (ListCat (Cat "A"), "lista_")
+--        render("[");
+--        sh(F.lista_);
+--        render("]");
+-- <BLANKLINE>
+-- >>> shCat "F" (InternalCat, "#_")
+-- <BLANKLINE>
+-- >>> shCat "F" (Cat "A", "a_")
+--        sh(F.a_);
+-- <BLANKLINE>
+shCat :: Doc -> (Cat, Doc) -> Doc
+shCat fnm (ListCat _, vname) = vcat
+    [ "       render(\"[\");"
+    , "       sh(" <> fnm <> "." <> vname <> ");"
+    , "       render(\"]\");\n" ]
+shCat _ (InternalCat, _)     = empty
+shCat fname (_, vname)       = "       sh(" <> fname <> "." <> vname <> ");\n"
 
 --Helper function that escapes characters in strings
 escapeChars :: String -> String
@@ -357,5 +376,3 @@ escapeChars [] = []
 escapeChars ('\\':xs) = '\\' : ('\\' : (escapeChars xs))
 escapeChars ('\"':xs) = '\\' : ('\"' : (escapeChars xs))
 escapeChars (x:xs) = x : (escapeChars xs)
-
-isInternalVar x = x == show InternalCat ++ "_"

@@ -23,7 +23,7 @@ module BNFC.Utils
     , lowerCase, upperCase, camelCase, mixedCase, snakeCase
     , prParenth, replace, split, splitAll, prepareDir
     , writeFileRep
-    , vsep
+    , vsep, codeblock
     ) where
 
 import Control.Arrow ((&&&))
@@ -233,3 +233,12 @@ snakeCase = text . intercalate "_" . parseIdent
 
 
 data CharClass = U | L | O
+
+-- | Code block. A bloc of code, surrounded by {} and indented.
+-- >>> codeblock 4 ["abc", "def"]
+-- {
+--     abc
+--     def
+-- }
+codeblock :: Int -> [Doc] -> Doc
+codeblock indent code = lbrace $+$ nest indent (vcat code) $+$ rbrace

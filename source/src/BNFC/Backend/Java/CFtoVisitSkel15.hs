@@ -115,8 +115,7 @@ prRule packageAbsyn user (Rule fun _ cats)
     , "}" ]
   where
     fname = text fun                            -- function name
-    nts = filter (/= InternalCat) (lefts cats)  -- non-terminals in the rhs
-    cats' = numVars_ nts
+    cats' = filter ((/= InternalCat).fst) (lefts (numVars cats))  -- non-terminals in the rhs
 prRule _ _ _ = ""
 
 -- | Traverses a class's instance variables.

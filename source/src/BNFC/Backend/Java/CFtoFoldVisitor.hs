@@ -22,8 +22,10 @@ module BNFC.Backend.Java.CFtoFoldVisitor (cf2FoldVisitor) where
 
 import BNFC.CF
 import BNFC.Backend.Java.CFtoJavaAbs15 (typename)
-import BNFC.Utils ((+++))
+import BNFC.Utils ((+++), codeblock)
 import BNFC.Backend.Common.NamedVariables
+import Data.Either (lefts)
+import Text.PrettyPrint
 
 cf2FoldVisitor :: String -> String -> CF -> String
 cf2FoldVisitor packageBase packageAbsyn cf =
@@ -64,33 +66,39 @@ prRule packageAbsyn user _ (Rule fun _ cats)
   ++ ["      return r;",
       "    }"]
    where
-    cats' = if allTerms cats
-        then []
-    	else [ (c,v) |
-	       (Left c, Left v) <- zip cats (fixOnes (numVars [] cats)), c /= InternalCat ]
+    cats' = filter ((/= InternalCat) . fst) (lefts (numVars cats))
     cls = packageAbsyn ++ "." ++ fun
     allTerms [] = True
     allTerms (Left _:_) = False
     allTerms (_:zs) = allTerms zs
-    visitVars = concatMap (uncurry (prCat user)) cats'
+    visitVars = lines $ render $ vcat $ map (prCat user) cats'
 prRule  _ _ _ _ = ""
 
---Traverses a class's instance variables.
+-- | Traverses a class's instance variables.
+-- >>> prCat [Cat "A"] (Cat "A", "a_")
+-- <BLANKLINE>
+-- >>> prCat [] (ListCat (Cat "Integer"), "listinteger_")
+-- <BLANKLINE>
+-- >>> prCat [] (ListCat (Cat "N"), "listn_")
+-- for (N x : p.listn_)
+-- {
+--   r = combine(x.accept(this, arg), r, arg);
+-- }
+-- >>> prCat [] (Cat "N", "n_")
+-- r = combine(p.n_.accept(this, arg), r, arg);
 prCat :: [UserDef]
-      -> Cat       -- ^ Variable category
-      -> String    -- ^ Variable name
-      -> [String]  -- ^ Code for visiting the variable
-prCat user cat nt
-    | isBasicType user varType || (isList cat && isBasicType user et) = []
-    | isList cat = listAccept
-    | otherwise = ["r = combine(" ++ var ++ ".accept(this, arg), r, arg);"]
+      -> (Cat, Doc) -- ^ Variable category and name
+      -> Doc        -- ^ Code for visiting the variable
+prCat user (cat,nt)
+    | isBasicType user varType || (isList cat && isBasicType user et) = empty
+    | isList cat = vcat
+        [ "for (" <> text et <> " x : " <> var <> ")"
+        , codeblock 2 [ "r = combine(x.accept(this, arg), r, arg);" ] ]
+    | otherwise = "r = combine(" <> var <> ".accept(this, arg), r, arg);"
       where
-      var = "p." ++ nt
+      var = "p." <> nt
       varType = typename (identCat (normCat cat)) user
-      et = typename (show$normCatOfList cat) user
-      listAccept = ["for (" ++ et ++ " x : " ++ var ++ ") {",
-                    "  r = combine(x.accept(this,arg), r, arg);",
-	            "}"]
+      et      = typename (show$normCatOfList cat) user
 
 --Just checks if something is a basic or user-defined type.
 isBasicType :: [UserDef] -> String -> Bool

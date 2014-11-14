@@ -110,31 +110,14 @@ getVars cs = foldl addVar [] (map identCat cs)
 -- In particular, if you have a rule like Foo. Bar ::= A B A, you need to
 -- create unique variable names for the two instances of category A
 
-
--- | Anotate a list of categories with suggested variable names for
--- the non-terminals.
--- >>> numVars_[Cat "A", Cat "B"]
--- [(A,a_),(B,b_)]
--- >>> numVars_[Cat "A", Cat "A"]
--- [(A,a_1),(A,a_2)]
-numVars_ :: [Cat] -> [(Cat, Doc)]
-numVars_ cats = zip cats (f' [] names)
-  where names = map (varName . identCat . normCat) cats
-        f' _ [] = []
-        f' env (n : ns) =
-            let i = fromMaybe 1 (lookup n env)
-                vname = if i == 1 && not (n `elem` ns) then text n else text n <> int i
-            in vname : f' ((n,i+1):env) ns
-
-
 -- | Anotate the right hand side of a rule with variable names
 -- for the non-terminals.
--- >>> numVars' [Left (Cat "A"), Right "+", Left (Cat "B")]
+-- >>> numVars [Left (Cat "A"), Right "+", Left (Cat "B")]
 -- [Left (A,a_),Right "+",Left (B,b_)]
--- >>> numVars' [Left (Cat "A"), Left (Cat "A"), Right ";"]
+-- >>> numVars [Left (Cat "A"), Left (Cat "A"), Right ";"]
 -- [Left (A,a_1),Left (A,a_2),Right ";"]
-numVars' :: [Either Cat a] -> [Either (Cat, Doc) a]
-numVars' cats =
+numVars :: [Either Cat a] -> [Either (Cat, Doc) a]
+numVars cats =
   -- First, we anotate each Left _ with a variable name (not univque)
   let withNames = map (left (id &&& (varName . identCat . normCat))) cats
   -- next, the function f' adds numbers where needed...
@@ -148,18 +131,6 @@ numVars' cats =
                 thereIsMore = n `elem` map snd (lefts xs)
                 vname = text n <> if i > 1 || thereIsMore then int i else empty
             in Left (c, vname) : f' ((n,i):env) xs
-
-
---Given a rule's definition, it goes through and nicely the variables by type.
-numVars :: [(String, Int)] -> [Either Cat b] -> [Either String b]
-numVars _env [] = []
-numVars env ((Right f) : fs) = (Right f) : (numVars env fs)
-numVars env ((Left f) : fs) =
-   case lookup f' env of
-     Nothing -> (Left f') : (numVars ((f',1):env) fs)
-     Just n -> (Left $ f' ++ (show $ n + 1)) : (numVars ((f',n+1):env) fs)
- where
-   f' = varName (identCat (normCat f))
 
 --This makes numbers a little nicer.
 --If there's only one variable of a type we drop the redundant _1 label.
