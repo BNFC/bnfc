@@ -407,7 +407,8 @@ checkRule cf (Rule (f,_) cat rhs)
 -- >>> :{
 -- let rules1 = Abs.Rules (Abs.Ident "Foo")
 --         [ Abs.RHS [Abs.Terminal "foo", Abs.Terminal "bar"] ]
---     rules2 = Abs.Rules (Abs.Ident "Foo")
+-- in
+-- let rules2 = Abs.Rules (Abs.Ident "Foo")
 --         [ Abs.RHS [Abs.Terminal "foo", Abs.Terminal "foo"] ]
 -- in (putStrLn (printTree (expandRules (Abs.Grammar [rules1, rules2]))))
 -- :}
