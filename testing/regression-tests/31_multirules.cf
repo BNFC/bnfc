@@ -1,0 +1,2 @@
+rules Function ::= "a" "v" | "b" | "c";
+rules Function ::= "a" "u" | "e" | "f";
