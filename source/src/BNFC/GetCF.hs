@@ -28,11 +28,15 @@ import BNFC.TypeChecker
 import BNFC.Utils
 
 import Control.Monad (liftM)
+import Control.Monad.State
 import Data.Char
 import Data.Either (partitionEithers)
 import Data.List(nub,partition)
 import Data.Maybe (catMaybes)
 import ErrM
+
+-- $setup
+-- >>> import PrintBNF
 
 parseCF :: SharedOptions -> Target -> String -> IO CF
 parseCF opts t s = liftM cfp2cf (parseCFP opts t s)
@@ -103,8 +107,9 @@ nilCFP = CFG (([],([],[],[],[])),[])
 getCFP :: Bool -> String -> (CFP,[String])
 getCFP cnf s = case pGrammar . myLexer $ s of
   Bad s -> (nilCFP,[s])
-  Ok (Abs.Grammar defs0) -> (cf0,msgs)
-    where (pragma,rules0) = partitionEithers $ concatMap transDef $ defs
+  Ok grammar -> (cf0,msgs)
+    where (Abs.Grammar defs0) = expandRules grammar
+          (pragma,rules0) = partitionEithers $ concatMap transDef $ defs
           (defs,inlineDelims) = if cnf then (defs0,id) else removeDelims defs0
           rules = inlineDelims rules0
           msgs = catMaybes $ map (checkRule (cfp2cf cf0)) (rulesOfCF cf0)
@@ -379,3 +384,53 @@ checkRule cf (Rule (f,_) cat rhs)
    isBadCatName s = not (isUpper (head s) || s == show InternalCat || (head s == '@'))
    badFunName = not (all (\c -> isAlphaNum c || c == '_') f {-isUpper (head f)-}
                        || isCoercion f || isNilCons f)
+
+
+-- | Pre-processor that converts the `rules` macros to regular rules
+-- by creating unique function names for them.
+-- >>> :{
+-- let rules1 = Abs.Rules (Abs.Ident "Foo")
+--         [ Abs.RHS [Abs.Terminal "abc"]
+--         , Abs.RHS [Abs.NTerminal (Abs.IdCat (Abs.Ident "A"))]
+--         , Abs.RHS [Abs.Terminal "foo", Abs.Terminal "bar"]
+--         , Abs.RHS [Abs.Terminal "++"]
+--         ]
+-- in putStrLn (printTree (expandRules (Abs.Grammar [rules1])))
+-- :}
+-- Foo_abc . Foo ::= "abc" ;
+-- FooA . Foo ::= A ;
+-- Foo1 . Foo ::= "foo" "bar" ;
+-- Foo2 . Foo ::= "++"
+--
+-- Note that if there are two `rules` macro with the same category, the
+-- generated names should be uniques:
+-- >>> :{
+-- let rules1 = Abs.Rules (Abs.Ident "Foo")
+--         [ Abs.RHS [Abs.Terminal "foo", Abs.Terminal "bar"] ]
+--     rules2 = Abs.Rules (Abs.Ident "Foo")
+--         [ Abs.RHS [Abs.Terminal "foo", Abs.Terminal "foo"] ]
+-- in (putStrLn (printTree (expandRules (Abs.Grammar [rules1, rules2]))))
+-- :}
+-- Foo1 . Foo ::= "foo" "bar" ;
+-- Foo2 . Foo ::= "foo" "foo"
+--
+-- This is using a State monad to remember the last used indey for a category.
+expandRules :: Abs.Grammar -> Abs.Grammar
+expandRules (Abs.Grammar defs) =
+    Abs.Grammar (concat (evalState (mapM expand defs) []))
+  where
+    expand (Abs.Rules ident rhss) = mapM (mkRule ident) rhss
+    expand other = return [other]
+    mkRule :: Abs.Ident -> Abs.RHS -> State [(String, Int)] Abs.Def
+    mkRule ident (Abs.RHS rhs) = do
+      fun <- liftM (Abs.LabNoP . Abs.Id . Abs.Ident) (mkName ident rhs)
+      return (Abs.Rule fun (Abs.IdCat ident) rhs)
+    mkName :: Abs.Ident -> [Abs.Item] -> State [(String, Int)] String
+    mkName (Abs.Ident cat) [Abs.Terminal s]
+      | all (\c -> isAlphaNum c || elem c "_'") s = return (cat ++ "_" ++ s)
+    mkName (Abs.Ident cat) [Abs.NTerminal (Abs.IdCat (Abs.Ident s))] =
+        return (cat ++ s)
+    mkName (Abs.Ident cat) _ = do
+        i <- liftM (maybe 1 (+1) . lookup cat) get
+        modify ((cat, i):)
+        return (cat ++ show i)
