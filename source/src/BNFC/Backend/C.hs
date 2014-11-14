@@ -100,6 +100,8 @@ makefile name prefix =
   ""
   where testName = "Test" ++ name
 
+-- | Generate a test program that parses stdin and prints the AST and it's
+-- linearization
 ctest :: CF -> String
 ctest cf =
   unlines

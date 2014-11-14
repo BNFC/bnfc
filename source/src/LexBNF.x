@@ -84,6 +84,7 @@ prToken t = case t of
   PT _ (TV s)   -> s
   PT _ (TD s)   -> s
   PT _ (TC s)   -> s
+  Err _ -> "#Error"
 
 
 data BTree = N | B String Tok BTree BTree deriving (Show)
