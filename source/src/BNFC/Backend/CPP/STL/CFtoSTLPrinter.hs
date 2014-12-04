@@ -368,7 +368,7 @@ prPrintData _ _ user (cat@(ListCat c), rules) =
   "  for ("++ cl ++"::const_iterator i = " ++
        vname++"->begin() ; i != " ++vname ++"->end() ; ++i)",
   "  {",
-  if isTokenType user c
+  if isTokenCat c
     then "    visit" ++ baseName cl ++ "(*i) ;"
     else "    (*i)->accept(this);",
   optsep,
@@ -428,7 +428,7 @@ prPrintCat :: [UserDef] -> String -> Either (Cat, Doc) String -> String
 prPrintCat _ _ (Right t) = "  render(" ++ t' ++ ");\n"
   where t' = snd (renderCharOrString t)
 prPrintCat user fnm (Left (c, nt))
-  | isTokenType user c  = "  visit" ++ funName (render nt) ++ "(" ++ fnm ++ "->" ++ render nt ++ ");\n"
+  | isTokenCat c  = "  visit" ++ funName (render nt) ++ "(" ++ fnm ++ "->" ++ render nt ++ ");\n"
   | isList c            = "  if(" ++ fnm ++ "->" ++ render nt ++ ") {" ++ accept ++ "}"
   | otherwise           = "  " ++ accept ++ "\n"
   where
@@ -447,7 +447,7 @@ prShowData user (cat@(ListCat c), _) = unlines
   "  for ("++ cl ++"::const_iterator i = " ++
        vname++"->begin() ; i != " ++vname ++"->end() ; ++i)",
   "  {",
-  if isTokenType user c
+  if isTokenCat c
     then "    visit" ++ baseName cl ++ "(*i) ;"
     else "    (*i)->accept(this);",
   "    if (i != " ++ vname ++ "->end() - 1) bufAppend(\", \");",
@@ -501,7 +501,7 @@ prShowRule _ _ = ""
 prShowCat :: [UserDef] -> String -> Either (Cat, Doc) String -> String
 prShowCat _ _ (Right _)               = ""
 prShowCat user fnm (Left (cat,nt))
-  | isTokenType user cat              =
+  | isTokenCat cat              =
     "  visit" ++ funName (render nt) ++ "(" ++ fnm ++ "->" ++ render nt ++ ");\n"
   | cat == InternalCat                = "/* Internal Category */\n"
   | (show $normCat$strToCat$render nt) /= render nt = accept

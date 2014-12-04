@@ -20,12 +20,18 @@
 module BNFC.Backend.Haskell.CFtoAbstract (cf2Abstract) where
 
 import BNFC.CF
-import BNFC.Utils((+++),(++++),prParenth)
-import Data.List(intersperse,intercalate)
+import BNFC.Utils((+++), NameStyle(..), mkNames)
+import BNFC.Backend.Haskell.Utils (catToType, catvars)
+import Text.PrettyPrint
 
 -- to produce a Haskell module
-cf2Abstract :: Bool -> Bool -> String -> CF -> String
-cf2Abstract byteStrings ghcExtensions name cf = unlines $
+cf2Abstract :: Bool     -- ^ Use ByteString instead of String
+            -> Bool     -- ^ Use GHC specific extensions
+            -> Bool     -- ^ Make the tree a functor
+            -> String   -- ^ module name
+            -> CF       -- ^ Grammar
+            -> String
+cf2Abstract byteStrings ghcExtensions functor name cf = unlines $
   (if ghcExtensions then "{-# LANGUAGE DeriveDataTypeable #-}" else "") :
   (if ghcExtensions then "{-# LANGUAGE DeriveGeneric #-}" else "") :
   ("module "++name +++ "where\n") :
@@ -33,29 +39,121 @@ cf2Abstract byteStrings ghcExtensions name cf = unlines $
   (if byteStrings then "import qualified Data.ByteString.Char8 as BS" else "") :
   (if ghcExtensions then "import Data.Data (Data,Typeable)" else "") :
   (if ghcExtensions then "import GHC.Generics (Generic)" else "") :
-  (map (prSpecialData byteStrings cf derivingClasses) (specialCats cf) ++ map (prData derivingClasses) (cf2data cf))
+  (map (render . \c -> prSpecialData byteStrings (isPositionCat cf c) derivingClasses c) (specialCats cf)
+  ++ map (render . prData functor derivingClasses) (cf2data cf))
   where
-    derivingClasses = prParenth . intercalate "," $ concat
-        [ ["Eq","Ord","Show","Read"]
-        , (if ghcExtensions then ["Data","Typeable","Generic"] else [])
-        ]
+    derivingClasses = ["Eq","Ord","Show","Read"]
+        ++ if ghcExtensions then ["Data","Typeable","Generic"] else []
 
-prData :: String -> Data -> String
-prData derivingClasses (cat,rules) =
-  "data" +++ show cat +++ "=\n   " ++
-  concat (intersperse "\n | " (map prRule rules)) ++++
-  "  deriving" +++ derivingClasses ++ "\n"
- where
-   prRule (fun,cats) = unwords (fun:map show cats)
-
-prSpecialData :: Bool -> CF -> String -> Cat -> String
-prSpecialData byteStrings cf derivingClasses cat =
-  unwords [ "newtype", show cat, "=", show cat, contentSpec byteStrings cf cat
-          , "deriving", derivingClasses ]
-
-contentSpec :: Bool -> CF -> Cat -> String
-contentSpec byteStrings cf cat = if isPositionCat cf cat then "((Int,Int),"++stringType++")" else stringType
+-- | >>> prData False ["Eq", "Ord", "Show", "Read"] (Cat "C", [("C1", [Cat "C"]), ("CIdent", [Cat "Ident"])])
+-- data C = C1 C | CIdent Ident
+--   deriving (Eq, Ord, Show, Read)
+-- <BLANKLINE>
+--
+-- Nota that the layout adapts if it doesn't fit in a line:
+-- >>> prData False ["Show"] (Cat "C", [("CAbracadabra",[]),("CEbrecedebre",[]),("CIbricidibri",[]),("CObrocodobro",[]),("CUbrucudubru",[])])
+-- data C
+--     = CAbracadabra
+--     | CEbrecedebre
+--     | CIbricidibri
+--     | CObrocodobro
+--     | CUbrucudubru
+--   deriving (Show)
+-- <BLANKLINE>
+--
+-- The if the first argument is True, generate a functor:
+-- >>> prData True ["Show"] (Cat "C", [("C1", [Cat "C"]), ("CIdent", [TokenCat "Ident"])])
+-- data C a = C1 a (C a) | CIdent a Ident
+--   deriving (Show)
+-- <BLANKLINE>
+-- instance Functor C where
+--     fmap f x = case x of
+--         C1 a c -> C1 (f a) (fmap f c)
+--         CIdent a ident -> CIdent (f a) ident
+--
+-- The case for lists
+-- >>> prData True ["Show"] (Cat "ExpList", [("Exps", [ListCat (Cat "Exp")])])
+-- data ExpList a = Exps a [Exp a]
+--   deriving (Show)
+-- <BLANKLINE>
+-- instance Functor ExpList where
+--     fmap f x = case x of
+--         Exps a exps -> Exps (f a) (map (fmap f) exps)
+prData :: Bool -> [String] -> Data -> Doc
+prData functor derivingClasses (cat,rules) =
+    hang ("data" <+> dataType) 4 (constructors rules)
+    $+$ nest 2 (deriving_ derivingClasses)
+    $+$ ""
+    $+$ if functor then genFunctorInstance (cat, rules) else empty
   where
-    stringType
-      | byteStrings = "BS.ByteString"
-      | otherwise   = "String"
+    prRule (fun,cats) =
+        hsep $ concat [[text fun], ["a" | functor], map prArg cats]
+    dataType =
+        if functor then text (show cat) <+> "a"
+                   else text (show cat)
+    prArg c  = catToType (if functor then Just "a" else Nothing) c
+    constructors [] = empty
+    constructors (h:t) = sep ("=" <+> prRule h : map (("|" <+>) . prRule) t)
+
+-- | Generate a functor instance declaration:
+-- >>> genFunctorInstance (Cat "C", [("C1", [Cat "C", Cat "C"]), ("CIdent", [TokenCat "Ident"])])
+-- instance Functor C where
+--     fmap f x = case x of
+--         C1 a c1 c2 -> C1 (f a) (fmap f c1) (fmap f c2)
+--         CIdent a ident -> CIdent (f a) ident
+-- >>> genFunctorInstance (Cat "SomeLists", [("Ints", [ListCat (TokenCat "Integer")]), ("Exps", [ListCat (Cat "Exp")])])
+-- instance Functor SomeLists where
+--     fmap f x = case x of
+--         Ints a integers -> Ints (f a) integers
+--         Exps a exps -> Exps (f a) (map (fmap f) exps)
+--
+genFunctorInstance :: Data -> Doc
+genFunctorInstance (cat, cons) =
+    "instance Functor" <+> text (show cat) <+> "where"
+    $+$ nest 4 ( "fmap f x = case x of" $+$ nest 4 (vcat (map mkCase cons)))
+  where
+    mkCase (f,args) =
+        let variables = catvars args
+        in text f <+> "a" <+> hsep variables
+          <+> "->" <+> text f <+> "(f a)" <+> hsep (map reccurse (zip args variables))
+    -- We reccursively call fmap on non-terminals only if they are not
+    -- token categories
+    reccurse (TokenCat _, var) = var
+    reccurse (ListCat (TokenCat _), var) = var
+    reccurse (ListCat _, var) = parens ("map (fmap f)" <+> var)
+    reccurse (_, var)          = parens ("fmap f" <+> var)
+
+
+-- | Generate a newtype declaration for Ident types
+--
+-- >>> prSpecialData False False ["Show"] (Cat "Ident")
+-- newtype Ident = Ident String deriving (Show)
+--
+-- >>> prSpecialData False True ["Show"] (Cat "Ident")
+-- newtype Ident = Ident ((Int,Int),String) deriving (Show)
+--
+-- >>> prSpecialData True False ["Show"] (Cat "Ident")
+-- newtype Ident = Ident BS.ByteString deriving (Show)
+--
+-- >>> prSpecialData True True ["Show"] (Cat "Ident")
+-- newtype Ident = Ident ((Int,Int),BS.ByteString) deriving (Show)
+prSpecialData :: Bool     -- ^ If True, use ByteString instead of String
+              -> Bool     -- ^ If True, store the token position
+              -> [String] -- ^ Derived classes
+              -> Cat      -- ^ Category
+              -> Doc
+prSpecialData byteStrings position classes cat =
+    hang newtype_ 2 (deriving_ classes)
+  where
+    ppcat = text (show cat)
+    newtype_ = "newtype" <+> ppcat <+> "=" <+> ppcat <+> contentSpec
+    contentSpec | position  = parens ( "(Int,Int)," <> stringType)
+                | otherwise = stringType
+    stringType | byteStrings = "BS.ByteString"
+               | otherwise   = "String"
+
+-- | Generate 'deriving' clause
+-- >>> deriving_ ["Show","Read"]
+-- deriving (Show, Read)
+deriving_ :: [String] -> Doc
+deriving_ cls = "deriving" <+> parens (hsep (punctuate "," (map text cls)))

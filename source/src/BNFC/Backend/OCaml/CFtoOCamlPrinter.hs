@@ -105,29 +105,29 @@ prologue _ absMod = unlines [
 
 charRule cf = unlines [
     "let rec prtChar (_:int) (c:char) : doc = render (\"'\" ^ Char.escaped c ^ \"'\")",
-    ifList cf (Cat "Char"),
+    ifList cf catChar,
     ""
     ]
 
 integerRule cf = unlines [
     "let rec prtInt (_:int) (i:int) : doc = render (string_of_int i)",
-    ifList cf (Cat "Integer"),
+    ifList cf catInteger,
     ""
     ]
 
 doubleRule cf = unlines [
     "let rec prtFloat (_:int) (f:float) : doc = render (sprintf \"%f\" f)",
-    ifList cf (Cat "Double"),
+    ifList cf catDouble,
     ""
     ]
 
 stringRule cf = unlines [
     "let rec prtString (_:int) (s:string) : doc = render (\"\\\"\" ^ String.escaped s ^ \"\\\"\")",
-    ifList cf (Cat "String"),
+    ifList cf catString,
     ""
     ]
 
-identRule cf = ownPrintRule cf (Cat "Ident")
+identRule cf = ownPrintRule cf catIdent
 
 ownPrintRule cf own = unlines $ [
   "let rec" +++ prtFun own +++ "_ (" ++ show own ++ posn ++ ") : doc = render i",

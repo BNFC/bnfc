@@ -53,9 +53,7 @@ tcBnfc context grammar = run_ "bnfc" args
 
 settings :: [TestContext]
 settings =
-  [ base { tcName = "Haskell"
-         , tcBnfcOptions = ["--haskell", "-m"] }
-  , base { tcName = "Haskell/GADT"
+  [ base { tcName = "Haskell/GADT"
          , tcBnfcOptions = ["--haskell-gadt", "-m"] }
   , base { tcName = "Haskell/CNF"
          , tcBnfcOptions = ["--haskell", "--cnf", "-m"]
@@ -68,9 +66,6 @@ settings =
          , tcBnfcOptions = ["--cpp", "-m"] }
   , base { tcName = "C++ (no STL)"
          , tcBnfcOptions = ["--cpp-nostl", "-m"] }
-  , base { tcName = "Java"
-         , tcBnfcOptions = ["--java", "-m"]
-         , tcRun = \lang -> cmd "java" (lang </> "Test") }
   ]
   where base = TestContext undefined -- name
                            undefined -- bnfc options

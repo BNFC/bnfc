@@ -22,10 +22,10 @@ module BNFC.Backend.Java.CFtoFoldVisitor (cf2FoldVisitor) where
 
 import BNFC.CF
 import BNFC.Backend.Java.CFtoJavaAbs15 (typename)
-import BNFC.Utils ((+++), codeblock)
+import BNFC.Utils ((+++))
 import BNFC.Backend.Common.NamedVariables
 import Data.Either (lefts)
-import Text.PrettyPrint
+import BNFC.PrettyPrint
 
 cf2FoldVisitor :: String -> String -> CF -> String
 cf2FoldVisitor packageBase packageAbsyn cf =

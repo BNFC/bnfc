@@ -19,20 +19,22 @@
 
 module BNFC.Backend.Haskell.CFtoPrinter (cf2Printer) where
 
+import BNFC.Backend.Haskell.Utils (hsReservedWords)
 import BNFC.CF
 import BNFC.Utils
-import Data.List (intersperse)
+import Data.Either (lefts)
 import Data.Char(toLower)
+import Text.PrettyPrint
 
 -- derive pretty-printer from a BNF grammar. AR 15/2/2002
-cf2Printer :: Bool -> String -> String -> CF -> String
-cf2Printer byteStrings name absMod cf = unlines [
+cf2Printer :: Bool -> Bool -> String -> String -> CF -> String
+cf2Printer byteStrings functor name absMod cf = unlines [
   prologue byteStrings name absMod,
   integerRule cf,
   doubleRule cf,
   if hasIdent cf then identRule byteStrings cf else "",
   unlines [ownPrintRule byteStrings cf own | (own,_) <- tokenPragmas cf],
-  rules cf
+  rules functor cf
   ]
 
 
@@ -133,56 +135,85 @@ ownPrintRule byteStrings cf own = unlines $ [
 
 -- copy and paste from BNFC.Backend.Haskell.CFtoTemplate
 
-rules :: CF -> String
-rules cf = unlines $
-  map (\(s,xs) -> case_fun s (map toArgs xs) ++ ifList cf s) $ cf2data cf
+rules :: Bool -> CF -> String
+rules functor cf = unlines $
+
+  map (\(s,xs) -> render (case_fun functor s (map toArgs xs)) ++++ ifList cf s) $ cf2data cf
  where
-   toArgs (cons,args) = ((cons, names (map (checkRes . var) args) (0 :: Int)), ruleOf cons)
-   names [] _ = []
-   names (x:xs) n
-     | elem x xs = (x ++ show n) : names xs (n+1)
-     | otherwise = x             : names xs n
-   var (ListCat c)  = var c ++ "s"
-   var (Cat "Ident")   = "id"
-   var (Cat "Integer") = "n"
-   var (Cat "String")  = "str"
-   var (Cat "Char")    = "c"
-   var (Cat "Double")  = "d"
-   var xs        = map toLower $ show xs
-   checkRes s
-        | elem s reservedHaskell = s ++ "'"
-	| otherwise              = s
-   reservedHaskell = ["case","class","data","default","deriving","do","else","if",
-		      "import","in","infix","infixl","infixr","instance","let","module",
-		      "newtype","of","then","type","where","as","qualified","hiding"]
+   toArgs (cons,_) = (cons, ruleOf cons)
    ruleOf s = maybe undefined id $ lookupRule s (rulesOfCF cf)
 
---- case_fun :: Cat -> [(Constructor,Rule)] -> String
-case_fun cat xs = unlines [
-  "instance Print" +++ show cat +++ "where",
-  "  prt i" +++ "e = case e of",
-  unlines $ map (\ ((c,xx),r) ->
-    "   " ++ c +++ unwords xx +++ "->" +++
-    "prPrec i" +++ show (precCat (fst r)) +++ mkRhs xx (snd r)) xs
-  ]
+-- |
+-- >>> case_fun False (Cat "A") [("AA", (Cat "AB", [Right "xxx"]))]
+-- instance Print A where
+--   prt i e = case e of
+--     AA -> prPrec i 0 (concatD [doc (showString "xxx")])
+--
+-- >>> case_fun False (Cat "Expr") [("EInt", (CoercCat "Expr" 2, [Left (TokenCat "Integer")])), ("EPlus", (CoercCat "Expr" 1, [Left (Cat "Expr"), Right "+", Left (Cat "Expr")]))]
+-- instance Print Expr where
+--   prt i e = case e of
+--     EInt n -> prPrec i 2 (concatD [prt 0 n])
+--     EPlus expr0 expr -> prPrec i 1 (concatD [prt 0 expr0, doc (showString "+"), prt 0 expr])
+--
+-- If the AST is a functor, ignore first argument
+-- >>> case_fun True (Cat "Expr") [("EInt", (CoercCat "Expr" 2, [Left (TokenCat "Integer")])), ("EPlus", (CoercCat "Expr" 1, [Left (Cat "Expr"), Right "+", Left (Cat "Expr")]))]
+-- instance Print (Expr a) where
+--   prt i e = case e of
+--     EInt _ n -> prPrec i 2 (concatD [prt 0 n])
+--     EPlus _ expr0 expr -> prPrec i 1 (concatD [prt 0 expr0, doc (showString "+"), prt 0 expr])
+--
+-- It skips intertal categories
+-- >>> case_fun True (Cat "Expr") [("EInternal", (Cat "Expr", [Left InternalCat, Left (Cat "Expr")]))]
+-- instance Print (Expr a) where
+--   prt i e = case e of
+--     EInternal _ expr -> prPrec i 0 (concatD [prt 0 expr])
+case_fun :: Bool -> Cat -> [(String, (Cat, [Either Cat String]))] -> Doc
+case_fun functor cat xs =
+    "instance Print" <+> type_ <+> "where"
+    $+$ nest 2 ("prt i" <+> "e = case e of" $$ nest 2 (vcat (map pOneCase xs)))
+  where
+    type_ | functor   = parens (text (show cat) <+> "a")
+          | otherwise = text (show cat)
+    pOneCase (f, (cat, rhs)) =
+      let vars = names (map (checkRes . var) (filter (/=InternalCat) $ lefts rhs)) 0
+      in text f <+> (if functor then "_" else empty) <+> hsep vars <+> "->"
+      <+> "prPrec i" <+> integer (precCat cat) <+> mkRhs (map render vars) rhs
+    names [] _ = []
+    names (x:xs) n
+      | x `elem` xs = (text x <> int n) : names xs (n+1)
+      | otherwise   = text x            : names xs n
+    var (ListCat c)  = var c ++ "s"
+    var (TokenCat "Ident")   = "id"
+    var (TokenCat "Integer") = "n"
+    var (TokenCat "String")  = "str"
+    var (TokenCat "Char")    = "c"
+    var (TokenCat "Double")  = "d"
+    var xs        = map toLower $ show xs
+    checkRes s
+         | s `elem` hsReservedWords = s ++ "'"
+         | otherwise                = s
 
 ifList cf cat = mkListRule $ nil cat ++ one cat ++ cons cat where
-  nil cat  = ["   [] -> " ++ mkRhs [] its |
+  nil cat  = ["   [] -> " ++ render (mkRhs [] its) |
                             Rule f c its <- rulesOfCF cf, isNilFun f , normCatOfList c == cat]
-  one cat  = ["   [x] -> " ++ mkRhs ["x"] its |
+  one cat  = ["   [x] -> " ++ render (mkRhs ["x"] its) |
                             Rule f c its <- rulesOfCF cf, isOneFun f , normCatOfList c == cat]
-  cons cat = ["   x:xs -> " ++ mkRhs ["x","xs"] its |
+  cons cat = ["   x:xs -> " ++ render (mkRhs ["x","xs"] its) |
                             Rule f c its <- rulesOfCF cf, isConsFun f , normCatOfList c == cat]
   mkListRule [] = ""
   mkListRule rs = unlines $ ("  prtList" +++ "es = case es of"):rs
 
 
+-- |
+-- >>> mkRhs ["expr1", "n", "expr2"] [Left (Cat "Expr"), Right "-", Left (TokenCat "Integer"), Left (Cat "Expr")]
+-- (concatD [prt 0 expr1, doc (showString "-"), prt 0 n, prt 0 expr2])
+mkRhs :: [String] -> [Either Cat String] -> Doc
 mkRhs args its =
-  "(concatD [" ++ unwords (intersperse "," (mk args its)) ++ "])"
+    parens ("concatD" <+> brackets (hsep (punctuate "," (mk args its))))
  where
-  mk args (Left InternalCat : items)      = mk args items
-  mk (arg:args) (Left c : items)  = (prt c +++ arg)        : mk args items
-  mk args       (Right s : items) = ("doc (showString" +++ show s ++ ")") : mk args items
-  mk _ _ = []
-  prt c = "prt" +++ show (precCat c)
+  mk args (Left InternalCat : items) = mk args items
+  mk (arg:args) (Left c  : items)    = (prt c <+> text arg) : mk args items
+  mk args       (Right s : items)    = ("doc (showString" <+> text (show s) <> ")") : mk args items
+  mk _          _                    = []
+  prt c = "prt" <+> integer (precCat c)
 

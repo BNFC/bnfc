@@ -1,7 +1,9 @@
-module TestData (exampleGrammars) where
+module TestData (exampleGrammars, Example) where
 
 import Shelly ((</>), FilePath)
 import Prelude hiding (FilePath)
+
+type Example = (FilePath, [FilePath])
 
 -- The data to test the different backends with. The first file should be
 -- a lbnf grammar and the list contains example programs written in this
@@ -9,7 +11,7 @@ import Prelude hiding (FilePath)
 -- is zero, we only test that the grammar is correctly compiled. If there is
 -- ore or more, they are fed to the test program and we expect that it exits
 -- successfully (i.e. exit code 0).
-exampleGrammars :: [(FilePath, [FilePath])]
+exampleGrammars :: [Example]
 exampleGrammars =
   [ ( examples</>"cpp"</>"cpp.cf"
     , [ examples</>"cpp"</>"example.cpp"] )

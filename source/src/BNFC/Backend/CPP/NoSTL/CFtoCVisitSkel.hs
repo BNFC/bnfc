@@ -40,13 +40,13 @@
 module BNFC.Backend.CPP.NoSTL.CFtoCVisitSkel (cf2CVisitSkel) where
 
 import BNFC.CF
-import BNFC.Utils ((+++), codeblock)
+import BNFC.Utils ((+++))
 import BNFC.Backend.Common.NamedVariables
 import BNFC.Backend.Utils (isTokenType)
 import Data.List
 import Data.Char(toLower, toUpper)
 import Data.Either (lefts)
-import Text.PrettyPrint
+import BNFC.PrettyPrint
 
 --Produces (.H file, .C file)
 cf2CVisitSkel :: CF -> (String, String)

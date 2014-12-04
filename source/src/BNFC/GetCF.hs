@@ -27,12 +27,12 @@ import BNFC.Options
 import BNFC.TypeChecker
 import BNFC.Utils
 
-import Control.Monad (liftM)
+import Control.Arrow (left)
 import Control.Monad.State
 import Data.Char
 import Data.Either (partitionEithers)
 import Data.List(nub,partition)
-import Data.Maybe (catMaybes)
+import Data.Maybe (mapMaybe)
 import ErrM
 
 -- $setup
@@ -43,37 +43,41 @@ parseCF opts t s = liftM cfp2cf (parseCFP opts t s)
 
 parseCFP :: SharedOptions -> Target -> String -> IO CFP
 parseCFP opts target content = do
-  let (cfp,msgs1) = getCFP (cnf opts) content
-      cf = cfp2cf cfp
-      msgs2 = case checkDefinitions cf of
-        Bad err -> [err]
-        Ok ()   -> []
-      msgs3 = checkTokens cf
-      msg = msgs1++msgs2 -- ++ msgs3 -- in a future version
+  cfp <- runErr $ pGrammar (myLexer content)
+                    >>= expandRules
+                    >>= getCFP (cnf opts)
+                    >>= markTokenCategories
+  let cf = cfp2cf cfp
+  runErr $ checkDefinitions cf
+  let msgs3 = checkTokens cf
 
   let reserved = [lang opts | target == TargetJava ]
 
+  -- Warn of fail if the grammar use non unique names
   case filter (not . isDefinedRule) $ notUniqueNames reserved cf of
-    ns@(_:_)
-      | not (target `elem` [TargetHaskell,TargetHaskellGadt,TargetOCaml]) -> do
-        fail $ "ERROR: names not unique: " ++ unwords ns
-    ns -> do
-      case ns of
-        _:_ -> do
-          putStrLn $ "Warning: names not unique: " ++ unwords ns
-          putStrLn "This can be an error in other back ends."
-        _ -> return ()
-      putStrLn $ unlines msgs3
-      if not (null msg) then do
-         fail $ unlines msg
-       else do
-         putStrLn $ show (length (rulesOfCF cf)) +++ "rules accepted\n"
-         let c3s = [(b,e) | (b,e) <- fst (comments cf), length b > 2 || length e > 2]
-         if null c3s then return () else do
-           putStrLn
-             "Warning: comment delimiters longer than 2 characters ignored in Haskell:"
-           mapM_ putStrLn [b +++ "-" +++ e | (b,e) <- c3s]
-         return cfp
+    [] -> return ()
+    ns| target `notElem` [TargetHaskell,TargetHaskellGadt,TargetOCaml]
+      -> fail $ "ERROR: names not unique: " ++ unwords ns
+      | otherwise
+      -> do putStrLn $ "Warning: names not unique: " ++ unwords ns
+            putStrLn "This can be an error in other back ends."
+
+  -- Print msgs3
+  putStrLn $ unlines msgs3
+
+  -- Print the number of rules
+  putStrLn $ show (length (rulesOfCF cf)) +++ "rules accepted\n"
+
+  -- Print a warning if comment delimiter are bigger than 2 characters
+  let c3s = [(b,e) | (b,e) <- fst (comments cf), length b > 2 || length e > 2]
+  unless (null c3s) $do
+      putStrLn "Warning: comment delimiters longer than 2 characters ignored in Haskell:"
+      mapM_ putStrLn [b +++ "-" +++ e | (b,e) <- c3s]
+  return cfp
+
+  where
+    runErr (Ok a) = return a
+    runErr (Bad msg) = fail msg
 
 {-
     case filter (not . isDefinedRule) $ notUniqueFuns cf of
@@ -101,29 +105,52 @@ parseCFP opts target content = do
           return (ret,True)
 -}
 
-nilCFP :: CFP
-nilCFP = CFG (([],([],[],[],[])),[])
+getCFP :: Bool -> Abs.Grammar -> Err CFP
+getCFP cnf (Abs.Grammar defs0) = do
+    let rules = inlineDelims rules0
+        cf0 = revs srt
+        srt = let literals           = nub [lit | xs <- map rhsRule rules,
+                                                     Left (Cat lit) <- xs,
+                                                     elem lit specialCatsP]
+                  (symbols,keywords) = partition notIdent reservedWords
+                  notIdent s         = null s || not (isAlpha (head s)) || any (not . isIdentRest) s
+                  isIdentRest c      = isAlphaNum c || c == '_' || c == '\''
+                  reservedWords      = nub [t | r <- rules, Right t <- rhsRule r]
+              in CFG((pragma,(literals,symbols,keywords,[])),rules)
+        revs cf1@(CFG((pragma,(literals,symbols,keywords,_)),rules)) =
+            CFG((pragma,(literals,symbols,keywords,findAllReversibleCats (cfp2cf cf1))),rules)
+    case mapMaybe (checkRule (cfp2cf cf0)) (rulesOfCF cf0) of
+      [] -> return ()
+      msgs -> fail (unlines msgs)
+    return cf0
+  where
+    (pragma,rules0) = partitionEithers $ concatMap transDef defs
+    (defs,inlineDelims) = if cnf then (defs0,id) else removeDelims defs0
 
-getCFP :: Bool -> String -> (CFP,[String])
-getCFP cnf s = case pGrammar . myLexer $ s of
-  Bad s -> (nilCFP,[s])
-  Ok grammar -> (cf0,msgs)
-    where (Abs.Grammar defs0) = expandRules grammar
-          (pragma,rules0) = partitionEithers $ concatMap transDef $ defs
-          (defs,inlineDelims) = if cnf then (defs0,id) else removeDelims defs0
-          rules = inlineDelims rules0
-          msgs = catMaybes $ map (checkRule (cfp2cf cf0)) (rulesOfCF cf0)
-          cf0 = revs srt
-          srt = let    literals           = nub [lit | xs <- map rhsRule rules,
-               	         		         Left lit <- xs,
-               	         		         elem lit specialCatsP]
-                       (symbols,keywords) = partition notIdent reservedWords
-                       notIdent s         = null s || not (isAlpha (head s)) || any (not . isIdentRest) s
-                       isIdentRest c      = isAlphaNum c || c == '_' || c == '\''
-                       reservedWords      = nub [t | r <- rules, Right t <- rhsRule r]
-                   in CFG((pragma,(literals,symbols,keywords,[])),rules)
-          revs cf1@(CFG((pragma,(literals,symbols,keywords,_)),rules)) =
-              CFG((pragma,(literals,symbols,keywords,findAllReversibleCats (cfp2cf cf1))),rules)
+-- | This function goes through each rule of a grammar and replace Cat "X" with
+-- TokenCat "X" when "X" is a token type.
+markTokenCategories :: CFP -> Err CFP
+markTokenCategories (CFG (exts, rules)) = return $ CFG (exts, newRules)
+  where
+    newRules = [ Rule f (mark c) (map (left mark) rhs) | Rule f c rhs <- rules ]
+    tokenCatNames = [ n | TokenReg n _ _ <- fst exts ] ++ specialCatsP
+    mark = toTokenCat tokenCatNames
+
+
+-- | Change the constructor of categories with the given names from Cat to
+-- TokenCat
+-- >>> toTokenCat ["A"] (Cat "A") == TokenCat "A"
+-- True
+-- >>> toTokenCat ["A"] (ListCat (Cat "A")) == ListCat (TokenCat "A")
+-- True
+-- >>> toTokenCat ["A"] (Cat "B") == Cat "B"
+-- True
+toTokenCat :: [String] -> Cat -> Cat
+toTokenCat ns (Cat a) | a `elem` ns = TokenCat a
+toTokenCat ns (ListCat c) = ListCat (toTokenCat ns c)
+toTokenCat _ c = c
+
+
 
 removeDelims :: [Abs.Def] -> ([Abs.Def], [RuleP] -> [RuleP])
 removeDelims xs = (ys ++ map delimToSep ds,
@@ -356,7 +383,7 @@ checkRule cf (Rule (f,_) cat rhs)
   | badTypeName    = Just $ "Bad type name" +++ unwords (map show badtypes) +++ "in" +++ s
   | badFunName     = Just $ "Bad constructor name" +++ f +++ "in" +++ s
   | badMissing     = Just $ "No production for" +++ unwords missing ++
-                             ", appearing in rule" +++ s
+                             ", appearing in rule" +++ s +++ ". Defined categories:" +++ unwords defineds
   | otherwise      = Nothing
  where
    s  = f ++ "." +++ show cat +++ "::=" +++ unwords (map (either show show) rhs) -- Todo: consider using the show instance of Rule
@@ -368,19 +395,20 @@ checkRule cf (Rule (f,_) cat rhs)
    badCons     = isConsFun f  && not (isList c && cs == [catOfList c, c])
    badList     = isList c     &&
                  not (isCoercion f || isNilCons f)
-   badSpecial  = elem c specialCatsP && not (isCoercion f)
+   badSpecial  = elem c [ Cat x | x <- specialCatsP] && not (isCoercion f)
 
    badMissing  = not (null missing)
    missing     = filter nodef [show c | Left c <- rhs]
    nodef t = notElem t defineds
    defineds =
-    show InternalCat : tokenNames cf ++ (map show specialCatsP) ++ map (show . valCat) (rulesOfCF cf)
+    show InternalCat : tokenNames cf ++ specialCatsP ++ map (show . valCat) (rulesOfCF cf)
    badTypeName = not (null badtypes)
    badtypes = filter isBadType $ cat : [c | Left c <- rhs]
    isBadType (ListCat c) = isBadType c
    isBadType InternalCat = False
    isBadType (CoercCat c _) = isBadCatName c
    isBadType (Cat s) = isBadCatName s
+   isBadType (TokenCat s) = isBadCatName s
    isBadCatName s = not (isUpper (head s) || s == show InternalCat || (head s == '@'))
    badFunName = not (all (\c -> isAlphaNum c || c == '_') f {-isUpper (head f)-}
                        || isCoercion f || isNilCons f)
@@ -395,7 +423,9 @@ checkRule cf (Rule (f,_) cat rhs)
 --         , Abs.RHS [Abs.Terminal "foo", Abs.Terminal "bar"]
 --         , Abs.RHS [Abs.Terminal "++"]
 --         ]
--- in putStrLn (printTree (expandRules (Abs.Grammar [rules1])))
+-- in
+-- let Ok tree = expandRules (Abs.Grammar [rules1])
+-- in putStrLn (printTree tree)
 -- :}
 -- Foo_abc . Foo ::= "abc" ;
 -- FooA . Foo ::= A ;
@@ -410,15 +440,17 @@ checkRule cf (Rule (f,_) cat rhs)
 -- in
 -- let rules2 = Abs.Rules (Abs.Ident "Foo")
 --         [ Abs.RHS [Abs.Terminal "foo", Abs.Terminal "foo"] ]
--- in (putStrLn (printTree (expandRules (Abs.Grammar [rules1, rules2]))))
+-- in
+-- let Ok tree = expandRules (Abs.Grammar [rules1, rules2])
+-- in putStrLn (printTree tree)
 -- :}
 -- Foo1 . Foo ::= "foo" "bar" ;
 -- Foo2 . Foo ::= "foo" "foo"
 --
--- This is using a State monad to remember the last used indey for a category.
-expandRules :: Abs.Grammar -> Abs.Grammar
+-- This is using a State monad to remember the last used index for a category.
+expandRules :: Abs.Grammar -> Err Abs.Grammar
 expandRules (Abs.Grammar defs) =
-    Abs.Grammar (concat (evalState (mapM expand defs) []))
+    return $ Abs.Grammar (concat (evalState (mapM expand defs) []))
   where
     expand (Abs.Rules ident rhss) = mapM (mkRule ident) rhss
     expand other = return [other]

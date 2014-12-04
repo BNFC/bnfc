@@ -40,10 +40,10 @@
 
 module BNFC.Backend.C.CFtoCAbs (cf2CAbs) where
 
-import Text.PrettyPrint
 
 import BNFC.CF
-import BNFC.Utils((+++), vsep)
+import BNFC.PrettyPrint
+import BNFC.Utils((+++))
 import BNFC.Backend.Common.NamedVariables
 import Data.Function (on)
 import Data.List

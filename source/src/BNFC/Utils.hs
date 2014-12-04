@@ -19,11 +19,10 @@
 
 module BNFC.Utils
     ( (+++), (++++), (+++++)
-    , (<=>)
+    , mkName, mkNames, NameStyle(..)
     , lowerCase, upperCase, camelCase, mixedCase, snakeCase
     , prParenth, replace, split, splitAll, prepareDir
     , writeFileRep
-    , vsep, codeblock
     ) where
 
 import Control.Arrow ((&&&))
@@ -143,25 +142,70 @@ writeFileRep path s =
            rnf contents `seq` hClose inFile
 	   return contents
 
--- | List version of prettyPrint $+$
--- >>> vsep [text "abc", nest 4 (text "def")]
--- abc
---     def
-vsep :: [Doc] -> Doc
-vsep = foldl ($+$) empty
+-- *** Naming ***
+-- Because naming is hard (http://blog.codinghorror.com/i-shall-call-it-somethingmanager/)
 
--- | Pretty print separator with a dot
--- >>> "abc" <.> "py"
--- abc.py
-(<.>) :: Doc -> Doc -> Doc
-a <.> b = a <> "." <> b
+-- | Different case style
+data NameStyle = LowerCase | UpperCase | SnakeCase | CamelCase | MixedCase
+  deriving (Show, Eq)
 
--- | Pretty print separator with = (for assignments...)
--- >>> "a" <=> "123"
--- a = 123
-(<=>) :: Doc -> Doc -> Doc
-a <=> b = a <+> "=" <+> b
+-- | Generate a name in the given case style taking into account the reserved
+-- word of the language. Note that despite the fact that those name are mainly
+-- to be used in code rendering (type Doc), we return a String here to allow
+-- further manipulation of the name (like disambiguation) which is not possible
+-- in the Doc type.
+-- Examples:
+-- >>> mkName [] LowerCase "My_IDENT"
+-- "myident"
+-- >>> mkName [] UpperCase "My_IDENT"
+-- "MYIDENT"
+-- >>> mkName [] SnakeCase "My_IDENT"
+-- "my_ident"
+-- >>> mkName [] CamelCase "My_IDENT"
+-- "MyIdent"
+-- >>> mkName [] MixedCase "My_IDENT"
+-- "myIdent"
+-- >>> mkName ["myident"] LowerCase "My_IDENT"
+-- "myident_"
+-- >>> mkName ["myident", "myident_"] LowerCase "My_IDENT"
+-- "myident__"
+mkName :: [String] -> NameStyle -> String -> String
+mkName reserved style s = notReserved name'
+  where
+    notReserved s
+      | s `elem` reserved = notReserved (s ++ "_")
+      | otherwise = s
+    tokens = parseIdent s
+    name' = case style of
+        LowerCase -> concat tokens
+        UpperCase -> map toUpper (concat tokens)
+        CamelCase -> concatMap capitalize tokens
+        MixedCase -> case concatMap capitalize tokens of
+                         "" -> ""
+                         c:cs -> toLower c:cs
+        SnakeCase -> intercalate "_" tokens
+    capitalize [] = []
+    capitalize (c:cs) = toUpper c:map toLower cs
 
+-- | Same as above but accept a list as argument and make sure that the
+-- names generated are uniques.
+-- >>> mkNames ["c"] LowerCase ["A", "b_", "a_", "c"]
+-- ["a1","b","a2","c_"]
+mkNames :: [String] -> NameStyle -> [String] -> [String]
+mkNames reserved style = disambiguateNames . map (mkName reserved style)
+
+-- | This one takes a list of names and makes sure each is unique, appending
+-- numerical suffix if needed
+-- >>> disambiguateNames ["a", "b", "a", "c"]
+-- ["a1","b","a2","c"]
+disambiguateNames :: [String] -> [String]
+disambiguateNames = disamb []
+  where
+    disamb ns1 (n:ns2)
+      | n `elem` (ns1 ++ ns2) = let i = length (filter (==n) ns1) + 1
+                                in (n ++ show i) : disamb (n:ns1) ns2
+      | otherwise = n : disamb (n:ns1) ns2
+    disamb _ [] = []
 
 -- | Heuristic to "parse" an identifier and separating componennts
 -- >>> parseIdent "abc"
@@ -234,11 +278,3 @@ snakeCase = text . intercalate "_" . parseIdent
 
 data CharClass = U | L | O
 
--- | Code block. A bloc of code, surrounded by {} and indented.
--- >>> codeblock 4 ["abc", "def"]
--- {
---     abc
---     def
--- }
-codeblock :: Int -> [Doc] -> Doc
-codeblock indent code = lbrace $+$ nest indent (vcat code) $+$ rbrace

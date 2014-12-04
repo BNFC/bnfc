@@ -27,8 +27,8 @@ import Data.Char (toLower, toUpper)
 -- Note: OCaml (data-)types start with lowercase letter
 fixType :: Cat -> String
 fixType (ListCat c) = fixType c +++ "list"
-fixType (Cat "Integer") = "int"
-fixType (Cat "Double") = "float"
+fixType (TokenCat "Integer") = "int"
+fixType (TokenCat "Double") = "float"
 fixType cat = let c:cs = show cat in
                 let ls = toLower c : cs in
                   if (elem ls reservedOCaml) then (ls ++ "T") else ls

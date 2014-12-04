@@ -22,11 +22,11 @@ module BNFC.Backend.Java.CFtoComposVisitor (cf2ComposVisitor) where
 
 import BNFC.CF
 import BNFC.Backend.Java.CFtoJavaAbs15 (typename)
-import BNFC.Utils ((+++), codeblock)
+import BNFC.Utils ((+++))
 import BNFC.Backend.Common.NamedVariables
 import Data.List
 import Data.Either (lefts)
-import Text.PrettyPrint
+import BNFC.PrettyPrint
 
 cf2ComposVisitor :: String -> String -> CF -> String
 cf2ComposVisitor packageBase packageAbsyn cf =

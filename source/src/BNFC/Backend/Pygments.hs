@@ -7,7 +7,6 @@
  - -}
 module BNFC.Backend.Pygments where
 
-import Text.PrettyPrint
 
 import AbsBNF (Reg(..))
 import BNFC.Backend.Base (mkfile, Backend)
@@ -15,6 +14,7 @@ import BNFC.CF
 import BNFC.Lexing
 import BNFC.Options hiding (Backend)
 import BNFC.Utils
+import BNFC.PrettyPrint
 
 makePygments :: SharedOptions -> CF -> Backend
 makePygments opts cf = do

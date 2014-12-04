@@ -18,7 +18,7 @@ getCalc = parseCF  calcOptions TargetHaskell $
           , "coercions Exp 2 ;" ]
 
 spec =
-  describe "C backend" $
+  describe "OCaml backend" $
     it "respect the makefile option" $ do
       calc <- getCalc
       let opts = calcOptions { make = Just "MyMakefile" }

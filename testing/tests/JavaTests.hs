@@ -1,31 +1,52 @@
 module JavaTests (all) where
 
+import Control.Monad (forM_)
+import Data.Monoid ((<>))
 import TestUtils
 import Shelly
 import Prelude hiding (FilePath, all)
 import Filesystem.Path (filename, basename)
-import TestData (exampleGrammars)
+import TestData
 
-all = makeTestSuite "Java backend" [testVisitorSkels, issue31]
+all = makeTestSuite "Java"
+    [ makeTestSuite "default options" (map factory exampleGrammars)
+    , issue31
+    ]
 
--- | Given the path to a grammar file, this will generate java code using bnfc
--- and make sure that the generated Visitor skeleton compiles with javac.
-testVisitorSkel :: FilePath -> Test
-testVisitorSkel grammar = makeShellyTest (pathToString (basename grammar)) $
-    withTmpDir $ \tmp -> do
-        cp grammar tmp
-        cd tmp
-        cmd "bnfc" "--java" (filename grammar)
-        let visitClass = language </> "VisitSkel.java"
-        assertFileExists visitClass
-        cmd "javac" visitClass
-  where language = basename grammar
+-- | Test factory
+-- Given a grammar files and eventually some example programma parsable with
+-- the grammar, this produce a testsuite where code is generated using bnfc and
+-- then either
+-- - uses 'make' to build the test program
+-- - uses javac to build the skeleton file
+factory :: Example -> Test
+factory (grammar,examples) = makeTestSuite name
+    [ makeShellyTest "make test program" $
+        withTmpDir $ \tmp -> do
+            cp grammar tmp
+            forM_ examples $ flip cp tmp
+            cd tmp
+            cmd "bnfc" "-m" "--java" (toTextArg (filename grammar))
+            cmd "make"
+            forM_ examples $ \example -> do
+                readfile (filename example) >>= setStdin
+                cmd ("." </> ("Test" <> lang))
+    -- | Given the grammar file, this will generate java code using bnfc and
+    -- make sure that the generated skeleton compiles with javac.
+    , makeShellyTest "compile VisitSkel.java" $
+        withTmpDir $ \tmp -> do
+            cp grammar tmp
+            cd tmp
+            cmd "bnfc" "--java" (filename grammar)
+            let visitClass = lang </> "VisitSkel.java"
+            assertFileExists visitClass
+            cmd "javac" visitClass
+    ]
+  where
+    lang = toTextArg (basename grammar)
+    name = pathToString (filename grammar)
 
--- | Instanciate the test above with all test grammars
-testVisitorSkels = makeTestSuite "Compile VisitSkel.java" $
-    map (testVisitorSkel . fst) exampleGrammars
-
--- | Issue
+-- | Issue #31
 issue31 :: Test
 issue31 = makeShellyTest "#31 Problem with multiples `rules` declaration with a common prefix" $
     withTmpDir $ \tmp -> do

@@ -252,11 +252,11 @@ generatePatterns env r = case rhsRule r of
         Left c -> c' ++ ":p_" ++ show (n :: Int) +++ mkIt (n+1) is
           where
               c' = case c of
-                  Cat "Ident"   -> "_IDENT_"
-                  Cat "Integer" -> "_INTEGER_"
-                  Cat "Char"    -> "_CHAR_"
-                  Cat "Double"  -> "_DOUBLE_"
-                  Cat "String"  -> "_STRING_"
+                  TokenCat "Ident"   -> "_IDENT_"
+                  TokenCat "Integer" -> "_INTEGER_"
+                  TokenCat "Char"    -> "_CHAR_"
+                  TokenCat "Double"  -> "_DOUBLE_"
+                  TokenCat "String"  -> "_STRING_"
                   _         -> identCat c
         Right s -> case lookup s env of
             (Just x) -> x +++ mkIt (n+1) is

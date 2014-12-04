@@ -66,6 +66,7 @@ module BNFC.CF (
 --	    notUniqueFuns,   -- Returns a list of function labels that are not unique.
 --            badInheritence, -- Returns a list of all function labels that can cause problems in languages with inheritence.
 	    isList,         -- Checks if a category is a list category.
+            isTokenCat,
 	    -- Information functions for list functions.
 	    isNilFun,       -- empty list function? ([])
 	    isOneFun,       -- one element list function? (:[])
@@ -207,7 +208,7 @@ data Pragma = CommentS  String -- ^ for single line comments
 
 -- | User-defined regular expression tokens
 tokenPragmas :: CFG f -> [(Cat,Reg)]
-tokenPragmas cf = [(Cat name,e) | TokenReg name _ e <- pragmasOfCF cf]
+tokenPragmas cf = [(TokenCat name,e) | TokenReg name _ e <- pragmasOfCF cf]
 
 -- | The names of all user-defined tokens
 tokenNames :: CFG f -> [String]
@@ -225,36 +226,47 @@ hasLayout cf = case layoutPragmas cf of
   (t,ws,_) -> t || not (null ws)   -- (True,[],_) means: top-level layout only
 
 -- | Literal: Char, String, Ident, Integer, Double
-type Literal = Cat
+type Literal = String
 type Symbol  = String
 type KeyWord = String
 
+------------------------------------------------------------------------------
+-- Categories
+------------------------------------------------------------------------------
+
 -- | Categories are the Non-terminals of the grammar.
-data Cat = InternalCat           -- | Internal category, inserted in 1st
-                                      -- position in "internal" rules,
-                                      -- essentially ensuring that they are
-                                      -- never parsed.
-              | Cat String
-              | ListCat Cat
-              | CoercCat String Integer
+data Cat = InternalCat       -- | Internal category, inserted in 1st
+                             -- position in "internal" rules,
+                             -- essentially ensuring that they are
+                             -- never parsed.
+         | Cat String
+         | TokenCat String   -- ^ Token types (like Ident)
+         | ListCat Cat
+         | CoercCat String Integer
   deriving (Eq, Ord)
+
 -- An alias for Cat used in many backends:
 type NonTerminal = Cat
 
--- | Show instance for category symbols
--- >>> show (Cat "Def")
+-- | Render category symbols as strings
+-- >>> catToStr (Cat "Def")
 -- "Def"
--- >>> show (ListCat (Cat "Thing"))
+-- >>> catToStr (ListCat (Cat "Thing"))
 -- "[Thing]"
--- >>> show (CoercCat "Expr" 3)
+-- >>> catToStr (CoercCat "Expr" 3)
 -- "Expr3"
--- >>> show (ListCat (CoercCat "Expr" 2))
+-- >>> catToStr (ListCat (CoercCat "Expr" 2))
 -- "[Expr2]"
+-- >>> catToStr (TokenCat "Abc")
+-- "Abc"
+catToStr InternalCat = "#"
+catToStr (Cat s) = s
+catToStr (TokenCat s) = s
+catToStr (ListCat c) = "[" ++ show c ++ "]"
+catToStr (CoercCat s i) = s ++ show i
+
 instance Show Cat where
-  show InternalCat = "#"
-  show (Cat s) = s
-  show (ListCat c) = "[" ++ show c ++ "]"
-  show (CoercCat s i) = s ++ show i
+  show = catToStr
 
 -- | Reads a string into a category. This should only needs to handle
 -- the case of simple categories (with or without coercion) since list
@@ -282,15 +294,119 @@ strToCat s =
 
 -- Build-in categories contants
 catString, catInteger, catDouble, catChar, catIdent :: Cat
-catString  = Cat "String"
-catInteger = Cat "Integer"
-catDouble  = Cat "Double"
-catChar    = Cat "Char"
-catIdent   = Cat "Ident"
+catString  = TokenCat "String"
+catInteger = TokenCat "Integer"
+catDouble  = TokenCat "Double"
+catChar    = TokenCat "Char"
+catIdent   = TokenCat "Ident"
 
+-- the parser needs these
+specialCatsP :: [String]
+specialCatsP = words "Ident Integer String Char Double"
+
+-- | Does the category correspond to a data type?
+isDataCat :: Cat -> Bool
+isDataCat c = isDataOrListCat c && not (isList c)
+
+isDataOrListCat :: Cat -> Bool
+isDataOrListCat (CoercCat _ _)  = False
+isDataOrListCat (Cat ('@':_))   = False
+isDataOrListCat _               = True
+
+-- | Categories C1, C2,... (one digit in end) are variants of C. This function
+-- returns true if two category are variants of the same abstract category.
+-- E.g.
+--
+-- >>> eqCat (Cat "Abc") (Cat "Abc")
+-- True
+-- >>> eqCat (CoercCat "Abc" 3) (CoercCat "Abc" 5)
+-- True
+-- >>> eqCat (CoercCat "Acb" 4) (CoercCat "Abc" 4)
+-- False
+-- >>> eqCat (Cat "Abc") (CoercCat "Abc" 44)
+-- True
+eqCat :: Cat -> Cat -> Bool
+eqCat (CoercCat c1 _) (CoercCat c2 _) = c1 == c2
+eqCat (Cat c1 ) (CoercCat c2 _) = c1 == c2
+eqCat (CoercCat c1 _) (Cat c2) = c1 == c2
+eqCat c1 c2 = c1 == c2
+
+
+
+-- | Removes precendence information. C1 => C, [C2] => [C]
+normCat :: Cat -> Cat
+normCat (ListCat c) = ListCat (normCat c)
+normCat (CoercCat c _) = Cat c
+normCat c = c
+
+normCatOfList :: Cat -> Cat
+normCatOfList = normCat . catOfList
+
+-- | When given a list Cat, i.e. '[C]', it removes the square
+-- brackets, and adds the prefix List, i.e. 'ListC'.  (for Happy and
+-- Latex)
+-- >>> identCat (ListCat (Cat "C")) -- [C]
+-- "ListC"
+-- >>> identCat (CoercCat "C" 3)
+-- "C3"
+identCat :: Cat -> String
+identCat (ListCat c) = "List" ++ identCat c
+identCat c = show c
+
+isList :: Cat -> Bool
+isList (ListCat _) = True
+isList _           = False
+
+isTokenCat :: Cat -> Bool
+isTokenCat (TokenCat _) = True
+isTokenCat _            = False
+
+-- | Unwraps the list constructor from the category name. Eg. [C1] => C1
+-- E.g.
+-- >>> catOfList (ListCat (Cat "A"))
+-- A
+-- >>> catOfList (Cat "B")
+-- B
+catOfList :: Cat -> Cat
+catOfList (ListCat c) = c
+catOfList c = c
+------------------------------------------------------------------------------
+-- Functions
+------------------------------------------------------------------------------
 -- | Fun is the function name of a rule.
 type Fun     = String
 -- | Either Cat or Fun
+
+
+-- | Is this function just a coercion? (Ie. the identity)
+isCoercion :: Fun -> Bool
+isCoercion = (== "_") -- perhaps this should be changed to "id"?
+
+isDefinedRule :: Fun -> Bool
+isDefinedRule (x:_) = isLower x
+isDefinedRule [] = error "isDefinedRule: empty function name"
+
+isProperLabel :: Fun -> Bool
+isProperLabel f = not (isCoercion f || isDefinedRule f)
+
+
+-- | FIXME: This is a copy of the old normCat function that some backend use
+-- on Fun. Now that the type of Cat has changed, this is no longer possible
+-- so this is added for those odd cases. It should be verified if this is
+-- really necessary.
+normFun :: Fun -> Fun
+normFun f = case f of
+    '[':cs -> "[" ++ norm (init cs) ++ "]"
+    _     -> norm f
+  where norm = reverse . dropWhile isDigit . reverse
+
+isNilFun, isOneFun, isConsFun, isNilCons,isConcatFun :: Fun -> Bool
+isNilCons f = isNilFun f || isOneFun f || isConsFun f || isConcatFun f
+isNilFun f  = f == "[]"
+isOneFun f  = f == "(:[])"
+isConsFun f = f == "(:)"
+isConcatFun f = f == "(++)"
+------------------------------------------------------------------------------
 type Name = String
 
 -- | Abstract syntax tree.
@@ -371,7 +487,7 @@ ruleGroupsInternals cf = [(c, rulesForCat' cf c) | c <- allCats cf]
 
 -- | Get all literals of a grammar. (e.g. String, Double)
 literals :: CFG f -> [Cat]
-literals cf = lits ++ owns
+literals cf = [TokenCat l | l <- lits] ++ owns
  where
    (lits,_,_,_) = infoOfCF cf
    owns = map fst (tokenPragmas cf)
@@ -415,11 +531,7 @@ hasIdent cf = isUsedCat cf catIdent
 -- | Categories corresponding to tokens. These end up in the
 -- AST. (unlike tokens returned by 'cfTokens')
 specialCats :: CF -> [Cat]
-specialCats cf = (if hasIdent cf then (Cat "Ident":) else id) (map fst (tokenPragmas cf))
-
--- the parser needs these
-specialCatsP :: [Cat]
-specialCatsP = map Cat $ words "Ident Integer String Char Double"
+specialCats cf = (if hasIdent cf then (TokenCat "Ident":) else id) (map fst (tokenPragmas cf))
 
 -- to print parse trees
 prTree :: Tree -> String
@@ -442,86 +554,18 @@ cf2data' predicate cf =
 cf2data :: CF -> [Data]
 cf2data = cf2data' isDataCat
 
--- | Does the category correspond to a data type?
-isDataCat :: Cat -> Bool
-isDataCat c = isDataOrListCat c && not (isList c)
-
-isDataOrListCat :: Cat -> Bool
-isDataOrListCat (CoercCat _ _)  = False
-isDataOrListCat (Cat ('@':_))   = False
-isDataOrListCat _               = True
 
 cf2dataLists :: CF -> [Data]
 cf2dataLists = cf2data' isDataOrListCat
 
 specialData :: CF -> [Data]
-specialData cf = [(c,[(show c,[Cat "String"])]) | c <- specialCats cf] where
+specialData cf = [(c,[(show c,[TokenCat "String"])]) | c <- specialCats cf] where
 
 
 -- to deal with coercions
 
 -- the Haskell convention: the wildcard _ is not a constructor
 
--- | Is this function just a coercion? (Ie. the identity)
-isCoercion :: Fun -> Bool
-isCoercion = (== "_") -- perhaps this should be changed to "id"?
-
-isDefinedRule :: Fun -> Bool
-isDefinedRule (x:_) = isLower x
-isDefinedRule [] = error "isDefinedRule: empty function name"
-
-isProperLabel :: Fun -> Bool
-isProperLabel f = not (isCoercion f || isDefinedRule f)
-
--- | Categories C1, C2,... (one digit in end) are variants of C. This function
--- returns true if two category are variants of the same abstract category.
--- E.g.
---
--- >>> eqCat (Cat "Abc") (Cat "Abc")
--- True
--- >>> eqCat (CoercCat "Abc" 3) (CoercCat "Abc" 5)
--- True
--- >>> eqCat (CoercCat "Acb" 4) (CoercCat "Abc" 4)
--- False
--- >>> eqCat (Cat "Abc") (CoercCat "Abc" 44)
--- True
-eqCat :: Cat -> Cat -> Bool
-eqCat (CoercCat c1 _) (CoercCat c2 _) = c1 == c2
-eqCat (Cat c1 ) (CoercCat c2 _) = c1 == c2
-eqCat (CoercCat c1 _) (Cat c2) = c1 == c2
-eqCat c1 c2 = c1 == c2
-
-
-
--- | Removes precendence information. C1 => C, [C2] => [C]
-normCat :: Cat -> Cat
-normCat (ListCat c) = ListCat (normCat c)
-normCat (CoercCat c _) = Cat c
-normCat c = c
-
-normCatOfList :: Cat -> Cat
-normCatOfList = normCat . catOfList
-
--- | When given a list Cat, i.e. '[C]', it removes the square
--- brackets, and adds the prefix List, i.e. 'ListC'.  (for Happy and
--- Latex)
--- >>> identCat (ListCat (Cat "C")) -- [C]
--- "ListC"
--- >>> identCat (CoercCat "C" 3)
--- "C3"
-identCat :: Cat -> String
-identCat (ListCat c) = "List" ++ identCat c
-identCat c = show c
-
--- | FIXME: This is a copy of the old normCat function that some backend use
--- on Fun. Now that the type of Cat has changed, this is no longer possible
--- so this is added for those odd cases. It should be verified if this is
--- really necessary.
-normFun :: Fun -> Fun
-normFun f = case f of
-    '[':cs -> "[" ++ norm (init cs) ++ "]"
-    _     -> norm f
-  where norm = reverse . dropWhile isDigit . reverse
 
 
 -- | Checks if the rule is parsable.
@@ -529,27 +573,7 @@ isParsable :: Rul f -> Bool
 isParsable (Rule _ _ (Left c:_)) = c /= InternalCat
 isParsable _ = True
 
-isList :: Cat -> Bool
-isList (ListCat _) = True
-isList _ = False
 
-
--- | Unwraps the list constructor from the category name. Eg. [C1] => C1
--- E.g.
--- >>> catOfList (ListCat (Cat "A"))
--- A
--- >>> catOfList (Cat "B")
--- B
-catOfList :: Cat -> Cat
-catOfList (ListCat c) = c
-catOfList c = c
-
-isNilFun, isOneFun, isConsFun, isNilCons,isConcatFun :: Fun -> Bool
-isNilCons f = isNilFun f || isOneFun f || isConsFun f || isConcatFun f
-isNilFun f  = f == "[]"
-isOneFun f  = f == "(:[])"
-isConsFun f = f == "(:)"
-isConcatFun f = f == "(++)"
 
 -- | Checks if the list has a non-empty rule.
 hasOneFunc :: [Rule] -> Bool

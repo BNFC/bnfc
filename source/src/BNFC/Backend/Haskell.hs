@@ -62,7 +62,7 @@ makeHaskell opts cf = do
       errMod = errFileM opts
       shareMod = shareFileM opts
   do
-    mkfile (absFile opts) $ cf2Abstract (byteStrings opts) (ghcExtensions opts) absMod cf
+    mkfile (absFile opts) $ cf2Abstract (byteStrings opts) (ghcExtensions opts) (functor opts) absMod cf
     case alexMode opts of
       Alex1 -> do
         mkfile (alexFile opts) $ cf2alex lexMod errMod cf
@@ -75,12 +75,12 @@ makeHaskell opts cf = do
         liftIO $ printf "Use Alex 3.0 to compile %s.\n" (alexFile opts)
     unless (cnf opts) $ do        
       mkfile (happyFile opts) $
-        cf2HappyS parMod absMod lexMod errMod (glr opts) (byteStrings opts) cf
+        cf2HappyS parMod absMod lexMod errMod (glr opts) (byteStrings opts) (functor opts) cf
       liftIO $ printf "%s Tested with Happy 1.15\n" (happyFile opts)
     mkfile (tFile opts)        $ testfile opts cf
     mkfile (txtFile opts)      $ cfToTxt (lang opts) cf
-    mkfile (templateFile opts) $ cf2Template (templateFileM opts) absMod errMod cf
-    mkfile (printerFile opts)  $ cf2Printer (byteStrings opts) prMod absMod cf
+    mkfile (templateFile opts) $ cf2Template (templateFileM opts) absMod errMod (functor opts) cf
+    mkfile (printerFile opts)  $ cf2Printer (byteStrings opts) (functor opts) prMod absMod cf
     when (hasLayout cf) $ mkfile (layoutFile opts) $ cf2Layout (alex1 opts) (inDir opts) layMod lexMod cf
     mkfile (errFile opts)      $ errM errMod cf
     when (shareStrings opts) $ mkfile (shareFile opts)    $ sharedString shareMod (byteStrings opts) cf

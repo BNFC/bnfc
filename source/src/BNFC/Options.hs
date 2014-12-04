@@ -78,6 +78,7 @@ data SharedOptions = Options
   -- C# specific
   , visualStudio :: Bool      -- ^ Generate Visual Studio solution/project files
   , wcf :: Bool               -- ^ Windows Communication Foundation
+  , functor :: Bool
   } deriving (Eq,Show,Ord)
 
 -- | We take this oportunity to define the type of the backend functions
@@ -101,7 +102,9 @@ defaultOptions = Options
   , lang = error "lang not set"
   , linenumbers = False
   , visualStudio = False
-  , wcf = False }
+  , wcf = False
+  , functor = False
+  }
 
 -- ~~~ Option definition ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 -- This defines bnfc's "global" options, like --help
@@ -188,6 +191,9 @@ specificOptions =
   , ( Option []    ["ghc"] (NoArg (\o -> o {ghcExtensions = True}))
           "Use ghc-specific language extensions"
     , [TargetHaskell, TargetHaskellGadt, TargetProfile] )
+  , ( Option []    ["functor"] (NoArg (\o -> o {functor = True}))
+          "Make the AST a functor and use it to store the position of the nodes"
+    , [TargetHaskell] )
   ]
 
 
