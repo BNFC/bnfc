@@ -96,6 +96,7 @@ mkFileName module' ext = pkgToDir module' <.> ext
 
 
 -- | Determine the modules' namespace
+--
 -- >>> mkNamespace defaultOptions
 -- ""
 -- >>> mkNamespace defaultOptions { lang = "Bla", inDir = True }
@@ -113,6 +114,7 @@ mkNamespace opts = intercalate "." $ catMaybes [inPackage opts, dir]
         | otherwise  = Nothing
 
 -- | Determine the directory corresponding to the modules' namespace
+--
 -- >>> codeDir defaultOptions
 -- ""
 -- >>> codeDir defaultOptions { lang = "Bla", inDir = True }

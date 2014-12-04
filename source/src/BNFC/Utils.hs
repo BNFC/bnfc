@@ -146,7 +146,11 @@ writeFileRep path s =
 -- Because naming is hard (http://blog.codinghorror.com/i-shall-call-it-somethingmanager/)
 
 -- | Different case style
-data NameStyle = LowerCase | UpperCase | SnakeCase | CamelCase | MixedCase
+data NameStyle = LowerCase  -- ^ e.g. @lowercase@
+               | UpperCase  -- ^ e.g. @UpperCase@
+               | SnakeCase  -- ^ e.g. @snake_case@
+               | CamelCase  -- ^ e.g. @CamelCase@
+               | MixedCase  -- ^ e.g. @mixedCase@
   deriving (Show, Eq)
 
 -- | Generate a name in the given case style taking into account the reserved
