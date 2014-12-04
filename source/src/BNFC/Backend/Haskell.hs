@@ -94,11 +94,6 @@ makeHaskell opts cf = do
       mkfile "TestCNF.hs" $ ToCNF.genTestFile opts cf
       mkfile "BenchCNF.hs" $ ToCNF.genBenchmark opts
 
-codeDir :: Options -> FilePath
-codeDir opts = let pref = maybe "" pkgToDir (inPackage opts)
-		   dir = if inDir opts then lang opts else ""
-		   sep = if null pref || null dir then "" else [pathSeparator]
-		 in pref ++ sep ++ dir
 
 makefile :: Options -> String
 makefile opts = makeA where
@@ -112,8 +107,7 @@ makefile opts = makeA where
               else "ghc --make " ++ tFile opts ++ " -o " ++ mkFile withLang "Test" "" opts])
         $ Makefile.mkRule "clean" []
             [ "-rm -f "  ++ unwords
-                (map (dir++) [ "*.log", "*.aux", "*.hi", "*.o", "*.dvi" ])
-            , "-rm -f " ++ psFile opts ]
+                (map (dir++) [ "*.log", "*.aux", "*.hi", "*.o", "*.dvi" ]) ]
         $  Makefile.mkRule "distclean" ["clean"]
             [ "-rm -f " ++ unwords
                 [ mkFile withLang "Doc" "*" opts
