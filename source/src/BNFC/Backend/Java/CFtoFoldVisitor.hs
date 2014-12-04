@@ -68,9 +68,6 @@ prRule packageAbsyn user _ (Rule fun _ cats)
    where
     cats' = filter ((/= InternalCat) . fst) (lefts (numVars cats))
     cls = packageAbsyn ++ "." ++ fun
-    allTerms [] = True
-    allTerms (Left _:_) = False
-    allTerms (_:zs) = allTerms zs
     visitVars = lines $ render $ vcat $ map (prCat user) cats'
 prRule  _ _ _ _ = ""
 

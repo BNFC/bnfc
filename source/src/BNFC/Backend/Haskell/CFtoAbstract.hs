@@ -20,7 +20,7 @@
 module BNFC.Backend.Haskell.CFtoAbstract (cf2Abstract) where
 
 import BNFC.CF
-import BNFC.Utils((+++), NameStyle(..), mkNames)
+import BNFC.Utils((+++))
 import BNFC.Backend.Haskell.Utils (catToType, catvars)
 import Text.PrettyPrint
 

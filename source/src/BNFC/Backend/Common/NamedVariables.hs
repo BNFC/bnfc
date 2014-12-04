@@ -71,7 +71,6 @@ import BNFC.CF
 import Data.Char (toLower)
 import Data.List (nub)
 import Text.PrettyPrint
-import Data.Maybe (fromMaybe)
 import Control.Arrow (left, (&&&))
 import Data.Either (lefts)
 

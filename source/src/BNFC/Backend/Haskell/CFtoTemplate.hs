@@ -18,14 +18,10 @@
 -}
 
 
-module BNFC.Backend.Haskell.CFtoTemplate (
-		    cf2Template
-                    ) where
+module BNFC.Backend.Haskell.CFtoTemplate (cf2Template) where
 
-import BNFC.Backend.Haskell.Utils (hsReservedWords, catvars)
+import BNFC.Backend.Haskell.Utils (catvars)
 import BNFC.CF
-import BNFC.Utils ((+++))
-import Data.Char
 import BNFC.PrettyPrint
 
 type ModuleName = String
@@ -112,12 +108,3 @@ case_fun functor' cat xs = vcat
     mkOne (cons, args) =
         let ns = catvars args -- names False (map (checkRes .var) args) 1
         in  text cons <+> iffunctor "_" <+> hsep ns <+> "-> failure x"
-    names _ [] _ = []
-    names b (x:xs) n
-      | x `elem` xs = (x ++ show n) ++ " " ++ names True xs (n+1)
-      | otherwise = (x ++ if b then show n else "") ++ " " ++ names b xs (if b then n+1 else n)
-    var (ListCat c) = var c ++ "s"
-    var xs        = map toLower (show xs)
-    checkRes s
-      | s `elem` hsReservedWords = s ++ "'"
-      | otherwise              = s
