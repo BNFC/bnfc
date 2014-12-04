@@ -1,7 +1,6 @@
 module JavaTests (all) where
 
 import Control.Monad (forM_)
-import Data.Monoid ((<>))
 import TestUtils
 import Shelly
 import Prelude hiding (FilePath, all)
@@ -30,7 +29,7 @@ factory (grammar,examples) = makeTestSuite name
             cmd "make"
             forM_ examples $ \example -> do
                 readfile (filename example) >>= setStdin
-                cmd ("." </> ("Test" <> lang))
+                cmd "java" (lang </> "Test")
     -- | Given the grammar file, this will generate java code using bnfc and
     -- make sure that the generated skeleton compiles with javac.
     , makeShellyTest "compile VisitSkel.java" $
