@@ -1,19 +1,22 @@
 module HaskellTests (all) where
 
 import Control.Monad (forM_)
-import Data.Monoid ((<>))
 import TestUtils
 import Shelly
 import Data.Text (Text)
 import Prelude hiding (FilePath, all)
-import Filesystem.Path (filename, basename)
+import Filesystem.Path (filename)
 import TestData
+import Text.Regex.Posix
+import Filesystem.Path.CurrentOS (encode)
 
 all = makeTestSuite "Haskell"
     [ makeTestSuite "default options"
         (map (factory []) exampleGrammars)
     , makeTestSuite "with functor"
-        (map (factory ["--functor"]) exampleGrammars) ]
+        (map (factory ["--functor"]) exampleGrammars)
+    , makeTestSuite "with namespace"
+        (map (factory ["-p", "Language", "-d"]) exampleGrammars) ]
 
 
 -- | Test factory
@@ -29,22 +32,30 @@ factory options (grammar,examples) = makeTestSuite name
             cp grammar tmp
             forM_ examples $ flip cp tmp
             cd tmp
-            command_ "bnfc" ["-m", "--haskell", toTextArg (filename grammar)] options
+            bnfc ["-m", toTextArg (filename grammar)]
             cmd "make"
+            -- cmd "tree" "."
+            testProgram <- findFileRegex "Test\\w*$"
             forM_ examples $ \example -> do
                 readfile (filename example) >>= setStdin
-                cmd ("." </> ("Test" <> lang))
+                cmd testProgram
     -- | Given the grammar file, this will generate haskell code using bnfc and
     -- make sure that the generated skeleton compiles with ghc.
     , makeShellyTest "compile SkelXxx.hs" $
         withTmpDir $ \tmp -> do
             cp grammar tmp
             cd tmp
-            cmd "bnfc" "--haskell" (filename grammar)
+            bnfc [toTextArg (filename grammar)]
+            skelf <- findFileRegex "Skel.*\\.hs$"
             assertFileExists skelf
             cmd "ghc" skelf
     ]
   where
-    lang = toTextArg (basename grammar)
     name = pathToString (filename grammar)
-    skelf = ("Skel" <> lang) <.> "hs"
+    bnfc = command_ "bnfc" ("--haskell" : options)
+    findFileRegex :: String -> Sh FilePath
+    findFileRegex r = do
+        fs <- findWhen (return . (=~ r) . encode) "."
+        when (length fs < 1) $ assertFailure "File not found"
+        when (length fs > 1) $ assertFailure "Too many files"
+        return (head fs)

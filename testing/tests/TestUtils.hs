@@ -1,5 +1,5 @@
 module TestUtils
-    ( makeShellyTest, assertFileExists, assertEqual
+    ( makeShellyTest, assertFileExists, assertEqual, assertFailure
     , makeTestSuite
     , pathToString
     , Test(..) ) where
@@ -44,7 +44,7 @@ instance Pretty T.Text where
 -- Shortcut function to create a (black box) test from a shelly script
 makeShellyTest :: TestID -> Sh () -> Test
 makeShellyTest label =
-    HTF.makeBlackBoxTest label . handle fixException . shelly
+    HTF.makeBlackBoxTest label . handle fixException . shelly . verbosely
   where
     fixException (ReThrownException x _) = throwIO (x::SomeException)
 
@@ -52,6 +52,10 @@ makeShellyTest label =
 assertFileExists :: FilePath -> Sh ()
 assertFileExists p = test_f p >>= liftIO . HUnit.assertBool errorMessage
   where errorMessage = "Can't find file " ++ encodeString p
+
+-- | Lift HUnit's assertFailure
+assertFailure :: String -> Sh ()
+assertFailure = liftIO . HUnit.assertFailure
 
 -- | A PrintfArg instance of FilePath to use filepaths in strings (e.g. names
 -- of tests). Allows you to do things like:

@@ -1,14 +1,20 @@
 module JavaTests (all) where
 
-import Control.Monad (forM_)
-import TestUtils
-import Shelly
+import Control.Monad (forM_, liftM)
+import Data.Maybe (listToMaybe)
+import Data.Text (Text)
+import Filesystem.Path (filename, stripPrefix, dropExtension)
 import Prelude hiding (FilePath, all)
-import Filesystem.Path (filename, basename)
+import Shelly
+
+import TestUtils
 import TestData
 
 all = makeTestSuite "Java"
-    [ makeTestSuite "default options" (map factory exampleGrammars)
+    [ makeTestSuite "default options"
+        (map (factory []) exampleGrammars)
+    , makeTestSuite "with namespace"
+        (map (factory ["-p","my.stuff"]) exampleGrammars)
     , issue31
     ]
 
@@ -18,32 +24,37 @@ all = makeTestSuite "Java"
 -- then either
 -- - uses 'make' to build the test program
 -- - uses javac to build the skeleton file
-factory :: Example -> Test
-factory (grammar,examples) = makeTestSuite name
+factory :: [Text] -> Example -> Test
+factory options (grammar,examples) = makeTestSuite name
     [ makeShellyTest "make test program" $
         withTmpDir $ \tmp -> do
             cp grammar tmp
             forM_ examples $ flip cp tmp
             cd tmp
-            cmd "bnfc" "-m" "--java" (toTextArg (filename grammar))
+            bnfc ["-m", toTextArg (filename grammar)]
             cmd "make"
+            testClass <- liftM dropExtension $ findFile "Test.class"
             forM_ examples $ \example -> do
                 readfile (filename example) >>= setStdin
-                cmd "java" (lang </> "Test")
+                cmd "java" testClass
     -- | Given the grammar file, this will generate java code using bnfc and
     -- make sure that the generated skeleton compiles with javac.
     , makeShellyTest "compile VisitSkel.java" $
         withTmpDir $ \tmp -> do
             cp grammar tmp
             cd tmp
-            cmd "bnfc" "--java" (filename grammar)
-            let visitClass = lang </> "VisitSkel.java"
-            assertFileExists visitClass
+            bnfc [toTextArg (filename grammar)]
+            visitClass <- findFile "VisitSkel.java"
             cmd "javac" visitClass
     ]
   where
-    lang = toTextArg (basename grammar)
     name = pathToString (filename grammar)
+    bnfc = command "bnfc" ("--java" : options)
+    findFile n = do
+        f <- findWhen (return . (n==) . filename) "."
+        case listToMaybe f >>= stripPrefix "." of
+          Just f -> return f
+          Nothing -> assertFailure "File not found" >> undefined
 
 -- | Issue #31
 issue31 :: Test
