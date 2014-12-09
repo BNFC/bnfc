@@ -2,17 +2,19 @@ module TestUtils
     ( makeShellyTest, assertFileExists, assertEqual, assertFailure
     , makeTestSuite
     , pathToString
+    , findFileRegex
     , Test(..) ) where
 
 -- base
 import Control.Exception (handle, throwIO, SomeException)
 import Prelude hiding (FilePath)
+import Text.Regex.Posix
 
 -- text
 import qualified Data.Text as T
 
 -- system-filepath
-import Filesystem.Path.CurrentOS (encodeString, toText)
+import Filesystem.Path.CurrentOS (encodeString, toText, encode)
 
 -- shelly
 import Shelly
@@ -67,3 +69,12 @@ assertFailure = liftIO . HUnit.assertFailure
 
 -- | Convert a FilePath to a string
 pathToString = either T.unpack T.unpack . toText
+
+-- | Find a file given a regular expression.
+-- Will fail if there is not exactly one file matching
+findFileRegex :: String -> Sh FilePath
+findFileRegex r = do
+    fs <- findWhen (return . (=~ r) . encode) "."
+    when (length fs < 1) $ assertFailure "File not found"
+    when (length fs > 1) $ assertFailure "Too many files"
+    return (head fs)

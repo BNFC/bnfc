@@ -81,7 +81,7 @@ issue114 = makeShellyTest "#114 List category as entry point" $
         cmd "bnfc" "--haskell" "-m" "114_listentry.cf"
         cmd "make"
         setStdin input
-        output <- cmd "./Test114_listentry"
+        output <- cmd "./TestListentry"
         assertEqual expected output
 
 

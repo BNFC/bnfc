@@ -54,7 +54,8 @@ tcBnfc context grammar = run_ "bnfc" args
 settings :: [TestContext]
 settings =
   [ base { tcName = "Haskell/GADT"
-         , tcBnfcOptions = ["--haskell-gadt", "-m"] }
+         , tcBnfcOptions = ["--haskell-gadt", "-m"]
+         , tcRun = \_ -> cmd =<< findFileRegex "Test\\w*$"}
   , base { tcName = "Haskell/CNF"
          , tcBnfcOptions = ["--haskell", "--cnf", "-m"]
          , tcRun = const (cmd ("." </> "TestCNF")) }

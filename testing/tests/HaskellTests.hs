@@ -7,8 +7,6 @@ import Data.Text (Text)
 import Prelude hiding (FilePath, all)
 import Filesystem.Path (filename)
 import TestData
-import Text.Regex.Posix
-import Filesystem.Path.CurrentOS (encode)
 
 all = makeTestSuite "Haskell"
     [ makeTestSuite "default options"
@@ -53,9 +51,3 @@ factory options (grammar,examples) = makeTestSuite name
   where
     name = pathToString (filename grammar)
     bnfc = command_ "bnfc" ("--haskell" : options)
-    findFileRegex :: String -> Sh FilePath
-    findFileRegex r = do
-        fs <- findWhen (return . (=~ r) . encode) "."
-        when (length fs < 1) $ assertFailure "File not found"
-        when (length fs > 1) $ assertFailure "Too many files"
-        return (head fs)
