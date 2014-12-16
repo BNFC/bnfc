@@ -647,7 +647,7 @@ precCF cf = length (precLevels cf) > 1
 
 -- | Does the category have a position stored in AST?
 isPositionCat :: CFG f -> Cat -> Bool
-isPositionCat cf cat =  or [b | TokenReg name b _ <- pragmasOfCF cf, Cat name == cat]
+isPositionCat cf cat =  or [b | TokenReg name b _ <- pragmasOfCF cf, TokenCat name == cat]
 
 -- | Grammar with permutation profile à la GF. AR 22/9/2004
 type CFP   = CFG FunP -- (Exts,[RuleP])
