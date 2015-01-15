@@ -160,6 +160,7 @@ testfile inDir name xml cf = makeA where
                  "import Profile",
 	         "import System.IO ( stdin, hGetContents )",
 	         "import System.Environment ( getArgs, getProgName )",
+	         "import System.Exit ( exitFailure, exitSuccess )",
 		 "",
 		 "import " ++ alexFileM     inDir name,
 		 "import " ++ happyFileM    inDir name,
@@ -196,13 +197,25 @@ testfile inDir name xml cf = makeA where
   "      putStrLn s",
   "      putStrLn \"\\nParse failed... tokenization:\"",
   "      print ts",
-		 "",
-		 "main :: IO ()",
-		 "main = do args <- getArgs",
-		 "          case args of",
-		 "            []  -> hGetContents stdin >>= run " ++ firstParser,
-		 "            [f] -> runFile " ++ firstParser ++ " f",
-		 "            _   -> do progName <- getProgName",
-		 "                      putStrLn $ progName ++ \": excess arguments.\""
-		 ]
-		  where firstParser = 'p' : show (firstEntry cf)
+                 "",
+                 "usage :: IO ()",
+                 "usage = do",
+                 "  putStrLn $ unlines",
+                 "    [ \"usage: Call with one of the following argument combinations:\"",
+                 "    , \"  --help          Display this help message.\"",
+                 "    , \"  (no arguments)  Parse stdin.\"",
+                 "    , \"  (file)          Parse content of file.\"",
+                 "    ]",
+                 "  exitFailure",
+                 "",
+                 "main :: IO ()",
+                 "main = do",
+                 "  args <- getArgs",
+                 "  case args of",
+                 "    [\"--help\"] -> usage",
+                 "    []  -> hGetContents stdin >>= run " ++ firstParser,
+                 "    [f] -> runFile " ++ firstParser ++ " f",
+                 "    _   -> do progName <- getProgName",
+                 "              putStrLn $ progName ++ \": excess arguments.\""
+                 ]
+                  where firstParser = 'p' : show (firstEntry cf)
