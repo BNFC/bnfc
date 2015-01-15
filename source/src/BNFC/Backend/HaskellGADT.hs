@@ -67,7 +67,7 @@ makeHaskellGadt opts cf = do
         mkfile (alexFile opts) $ cf2alex3 lexMod errMod shareMod (shareStrings opts) (byteStrings opts) cf
         liftIO $ putStrLn "   (Use Alex 3.0 to compile.)"
     mkfile (happyFile opts) $
-		 cf2HappyS parMod absMod lexMod errMod (glr opts) (byteStrings opts) False cf
+      cf2HappyS parMod absMod lexMod errMod (glr opts) (byteStrings opts) False cf
     liftIO $ putStrLn "   (Tested with Happy 1.15)"
     mkfile (templateFile opts) $ cf2Template (templateFileM opts) absMod errMod cf
     mkfile (printerFile opts)  $ cf2Printer prMod absMod cf
@@ -80,7 +80,6 @@ makeHaskellGadt opts cf = do
       2 -> makeXML opts True cf
       1 -> makeXML opts False cf
       _ -> return ()
-
 
 composOp :: String -> String
 composOp composOpMod = unlines
