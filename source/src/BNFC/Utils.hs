@@ -159,20 +159,22 @@ data NameStyle = LowerCase  -- ^ e.g. @lowercase@
 -- further manipulation of the name (like disambiguation) which is not possible
 -- in the Doc type.
 -- Examples:
--- >>> mkName [] LowerCase "My_IDENT"
--- "myident"
--- >>> mkName [] UpperCase "My_IDENT"
--- "MYIDENT"
--- >>> mkName [] SnakeCase "My_IDENT"
--- "my_ident"
--- >>> mkName [] CamelCase "My_IDENT"
--- "MyIdent"
--- >>> mkName [] MixedCase "My_IDENT"
--- "myIdent"
--- >>> mkName ["myident"] LowerCase "My_IDENT"
--- "myident_"
--- >>> mkName ["myident", "myident_"] LowerCase "My_IDENT"
--- "myident__"
+-- >>> mkName [] LowerCase "FooBAR"
+-- "foobar"
+-- >>> mkName [] UpperCase "FooBAR"
+-- "FOOBAR"
+-- >>> mkName [] SnakeCase "FooBAR"
+-- "foo_bar"
+-- >>> mkName [] CamelCase "FooBAR"
+-- "FooBAR"
+-- >>> mkName [] CamelCase "Foo_bar"
+-- "FooBar"
+-- >>> mkName [] MixedCase "FooBAR"
+-- "fooBAR"
+-- >>> mkName ["foobar"] LowerCase "FooBAR"
+-- "foobar_"
+-- >>> mkName ["foobar", "foobar_"] LowerCase "FooBAR"
+-- "foobar__"
 mkName :: [String] -> NameStyle -> String -> String
 mkName reserved style s = notReserved name'
   where
@@ -181,15 +183,15 @@ mkName reserved style s = notReserved name'
       | otherwise = s
     tokens = parseIdent s
     name' = case style of
-        LowerCase -> concat tokens
+        LowerCase -> map toLower (concat tokens)
         UpperCase -> map toUpper (concat tokens)
         CamelCase -> concatMap capitalize tokens
         MixedCase -> case concatMap capitalize tokens of
                          "" -> ""
                          c:cs -> toLower c:cs
-        SnakeCase -> intercalate "_" tokens
+        SnakeCase -> map toLower (intercalate "_" tokens)
     capitalize [] = []
-    capitalize (c:cs) = toUpper c:map toLower cs
+    capitalize (c:cs) = toUpper c:cs
 
 -- | Same as above but accept a list as argument and make sure that the
 -- names generated are uniques.
@@ -211,25 +213,31 @@ disambiguateNames = disamb []
       | otherwise = n : disamb (n:ns1) ns2
     disamb _ [] = []
 
--- | Heuristic to "parse" an identifier and separating componennts
+-- | Heuristic to "parse" an identifier into separate componennts
+--
 -- >>> parseIdent "abc"
 -- ["abc"]
+--
 -- >>> parseIdent "Abc"
--- ["abc"]
+-- ["Abc"]
+--
 -- >>> parseIdent "WhySoSerious"
--- ["why","so","serious"]
+-- ["Why","So","Serious"]
+--
 -- >>> parseIdent "why_so_serious"
 -- ["why","so","serious"]
+--
 -- >>> parseIdent "why-so-serious"
 -- ["why","so","serious"]
 --
 -- Some corner cases
 -- >>> parseIdent "LBNFParser"
--- ["lbnf","parser"]
+-- ["LBNF","Parser"]
+--
 -- >>> parseIdent "ILoveNY"
--- ["i","love","ny"]
+-- ["I","Love","NY"]
 parseIdent :: String -> [String]
-parseIdent = p [] . map (classify &&& toLower)
+parseIdent = p [] . map (classify &&& id)
   where
     classify c
         | isUpper c = U
@@ -253,32 +261,26 @@ parseIdent = p [] . map (classify &&& toLower)
 -- >>> lowerCase "MyIdent"
 -- myident
 lowerCase :: String -> Doc
-lowerCase = text . concat . parseIdent
+lowerCase = text . mkName [] LowerCase
 -- | Ident to upper case
 -- >>> upperCase "MyIdent"
 -- MYIDENT
 upperCase :: String -> Doc
-upperCase = text . map toUpper . concat . parseIdent
+upperCase = text . mkName [] UpperCase
 -- | Ident to camel case
--- >>> camelCase "my_IDENT"
+-- >>> camelCase "my_ident"
 -- MyIdent
 camelCase :: String -> Doc
-camelCase = text . concatMap capitalize . parseIdent
-  where capitalize [] = []
-        capitalize (c:cs) = toUpper c:map toLower cs
+camelCase = text . mkName [] CamelCase
 -- | To mixed case
--- >>> mixedCase "MY_IDENT"
+-- >>> mixedCase "my_ident"
 -- myIdent
 mixedCase :: String -> Doc
-mixedCase s = case render (camelCase s) of
-    []   -> empty
-    c:cs -> text (toLower c:cs)
+mixedCase = text . mkName [] MixedCase
 -- | To snake case
 -- >>> snakeCase "MyIdent"
 -- my_ident
 snakeCase :: String -> Doc
-snakeCase = text . intercalate "_" . parseIdent
-
+snakeCase = text . mkName [] SnakeCase
 
 data CharClass = U | L | O
-
