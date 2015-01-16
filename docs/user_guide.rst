@@ -4,6 +4,19 @@ User Guide
 
 .. contents::
 
+Java
+====
+
+Generates java code
+
+Entrypoints
+...........
+
+Cup can only generate parsers with a single entry point. If multiple entry points
+are given using the ``entrypoint`` directive, only the first one will be used.
+Otherwise, the first category defined in the grammar file will be used as the
+entry point for the grammar.
+
 Pygments
 ========
 
