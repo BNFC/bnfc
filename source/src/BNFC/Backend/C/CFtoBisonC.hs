@@ -86,8 +86,9 @@ header name cf = unlines
 	  "extern int initialize_lexer(FILE * inp);",
           "void yyerror(const char *str)",
           "{",
-          "  fprintf(stderr,\"error: line %d: %s\\n\",",
-          "    yy_mylinenumber + 1, str);",
+          "  extern char *" ++ name ++ "text;", 
+          "  fprintf(stderr,\"error: line %d: %s at %s\\n\",",
+          "    yy_mylinenumber + 1, str, " ++ name ++ "text);",
           "}",
 	  "",
           -- M.F. 2004-09-17 changed allEntryPoints to allCatsIdNorm. Seems to fix the [Ty2] bug.
