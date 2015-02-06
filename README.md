@@ -29,6 +29,11 @@ To install bnfc from git:
 
 To download the latest realease, see the bnfc website: http://bnfc.digitalgrammars.com/
 
+Documentation
+-------------
+
+https://bnfc.readthedocs.org/en/latest/lbnf.html
+
 Run tests
 ---------
 
