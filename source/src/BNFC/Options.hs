@@ -79,6 +79,7 @@ data SharedOptions = Options
   , visualStudio :: Bool      -- ^ Generate Visual Studio solution/project files
   , wcf :: Bool               -- ^ Windows Communication Foundation
   , functor :: Bool
+  , outDir :: FilePath        -- ^ Target directory for generated files
   } deriving (Eq,Show,Ord)
 
 -- | We take this oportunity to define the type of the backend functions
@@ -104,6 +105,7 @@ defaultOptions = Options
   , visualStudio = False
   , wcf = False
   , functor = False
+  , outDir  = "."
   }
 
 -- ~~~ Option definition ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -197,14 +199,17 @@ specificOptions =
   ]
 
 
-makefileOption :: [OptDescr (SharedOptions -> SharedOptions)]
-makefileOption =
+commonOption :: [OptDescr (SharedOptions -> SharedOptions)]
+commonOption =
   [ Option "m" ["makefile"] (OptArg (setMakefile . fromMaybe "Makefile") "MAKEFILE")
-      "generate Makefile" ]
+      "generate Makefile"
+  , Option "o" ["outputdir"] (ReqArg (\n o -> o {outDir = n}) "DIR")
+      "Redirects all generated files into DIR"
+  ]
   where setMakefile = \mf -> \o -> o { make = Just mf }
 
 allOptions :: [OptDescr (SharedOptions -> SharedOptions)]
-allOptions = targetOptions ++ makefileOption ++ map fst specificOptions
+allOptions = targetOptions ++ commonOption ++ map fst specificOptions
 
 -- ~~~ Help strings ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 title :: String
@@ -225,7 +230,7 @@ help :: String
 help = unlines $
     usage:""
     :usageInfo "Global options"   globalOptions
-    :usageInfo "Make option"      makefileOption
+    :usageInfo "Common option"      commonOption
     :usageInfo "Target languages" targetOptions
     :map targetUsage helpTargets
   where helpTargets = [TargetHaskell, TargetJava, TargetCpp, TargetCSharp ]
