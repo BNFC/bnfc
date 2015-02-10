@@ -41,6 +41,7 @@ import BNFC.Backend.Latex
 import BNFC.Backend.OCaml
 import BNFC.Backend.Pygments
 import BNFC.GetCF
+import BNFC.CF
 import BNFC.Options hiding (make)
 
 import Paths_BNFC ( version )
@@ -68,14 +69,18 @@ main = do
       readFile file >>= parseCFP options TargetProfile >>= makeHaskellProfile options
     Target options file ->
       readFile file >>= parseCF options (target options) >>= make (target options) options
-  where make TargetC            opts cf = writeFiles "." $ makeC opts cf
-        make TargetCpp          opts cf = writeFiles "." $ makeCppStl opts cf
-        make TargetCppNoStl     opts cf = writeFiles "." $ makeCppNoStl opts cf
-        make TargetCSharp       opts cf = writeFiles "." $ makeCSharp opts cf
-        make TargetHaskell      opts cf = writeFiles "." $ makeHaskell opts cf
-        make TargetHaskellGadt  opts cf = writeFiles "." $ makeHaskellGadt opts cf
-        make TargetLatex        opts cf = writeFiles "." $ makeLatex opts cf
-        make TargetJava         opts cf = writeFiles "." $ makeJava opts cf
-        make TargetOCaml        opts cf = writeFiles "." $ makeOCaml opts cf
-        make TargetProfile      opts cf = fail "" opts cf
-        make TargetPygments     opts cf = writeFiles "." $ makePygments opts cf
+  where
+    make t opts cf = writeFiles (outDir opts) $ (maketarget t) opts cf
+
+maketarget t = case t of
+    TargetC            -> makeC
+    TargetCpp          -> makeCppStl
+    TargetCppNoStl     -> makeCppNoStl
+    TargetCSharp       -> makeCSharp
+    TargetHaskell      -> makeHaskell
+    TargetHaskellGadt  -> makeHaskellGadt
+    TargetLatex        -> makeLatex
+    TargetJava         -> makeJava
+    TargetOCaml        -> makeOCaml
+    TargetProfile      -> error "Not implemented"
+    TargetPygments     -> makePygments
