@@ -21,11 +21,11 @@ spec = do
       execBackend (mkfile "test.txt" "abcd")
         `shouldReturn` [("test.txt", "abcd")]
   describe "writeFiles" $ do
-    it "raises an exception if the root directory does not exists" $
-      withSystemTempDirectory "bnfc-test" (\tmpdir -> do
+    it "creates the root directory if it doesn't exists" $
+      withSystemTempDirectory "bnfc-test" $ \tmpdir -> do
         setCurrentDirectory tmpdir
-        writeFiles "I/dont/exists" (return ()))
-      `shouldThrow` anyException
+        writeFiles "foo/bar" (return ())
+        doesDirectoryExist "foo/bar" `shouldReturn` True
     it "creates a file from the bucket" $
       withSystemTempDirectory "bnfc-test" $ \tmpdir -> do
         setCurrentDirectory tmpdir
@@ -38,9 +38,14 @@ spec = do
         writeFiles "." (mkfile "file.txt" "abcd")
         readFile "file.txt"
       `shouldReturn` "abcd"
-    it "creates subdirectories" $ 
+    it "creates subdirectories" $
       withSystemTempDirectory "bnfc-test" $ \tmpdir -> do
         setCurrentDirectory tmpdir
         writeFiles "." (mkfile "subdir/file.txt" "abcd")
         doesDirectoryExist "subdir"
       `shouldReturn` True
+    it "creates files in the root directory" $
+      withSystemTempDirectory "bnfc-test" $ \tmpdir -> do
+        setCurrentDirectory tmpdir
+        writeFiles "root/" (mkfile "foo/bar.txt" "abcd")
+        doesFileExist "root/foo/bar.txt" `shouldReturn` True
