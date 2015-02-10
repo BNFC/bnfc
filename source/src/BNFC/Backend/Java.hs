@@ -152,8 +152,7 @@ makefile name dirBase dirAbsyn absynFileNames =
     []
 -- FIXME
   $ Makefile.mkRule "clean" []
-    [ "rm -f " ++ dirAbsyn ++ "*.class" ++ " " ++ dirBase ++ "*.class"
-    , "rm -f " ++ ".dvi " ++ name ++ ".aux " ++ name ++ ".log " ++ name ++ ".ps " ++ " *.class" ]
+    [ "rm -f " ++ dirAbsyn ++ "*.class" ++ " " ++ dirBase ++ "*.class" ]
   $ Makefile.mkRule "distclean" [ "vclean" ]
     []
   $ Makefile.mkRule "vclean" []
