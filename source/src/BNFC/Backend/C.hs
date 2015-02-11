@@ -66,7 +66,8 @@ makefile name prefix =
                   "FLEX = flex",
                   "FLEX_OPTS = -P" ++ prefix, "",
                   "BISON = bison",
-                  "BISON_OPTS = -t -p" ++ prefix, ""])
+                  "BISON_OPTS = -t -p" ++ prefix, "",
+                  "OBJS = Absyn.o Lexer.o Parser.o Printer.o" ])
   $ Makefile.mkRule ".PHONY" ["clean", "distclean"]
     []
   $ Makefile.mkRule "all" [testName]
@@ -80,9 +81,9 @@ makefile name prefix =
       , "Skeleton.c", "Skeleton.h", "Printer.c" ,"Printer.h"
       , name ++ ".l " ++ name ++ ".y " ++ name ++ ".tex "
       , testName, "Makefile" ]]
-  $ Makefile.mkRule testName ["Absyn.o", "Lexer.o", "Parser.o", "Printer.o", "Test.o"]
+  $ Makefile.mkRule testName ["${OBJS}", "Test.o"]
     [ "@echo \"Linking test" ++ name ++ "...\""
-    , "${CC} ${CCFLAGS} *.o -o Test" ++ name ]
+    , "${CC} ${CCFLAGS} ${OBJS} Test.o -o Test" ++ name ]
   $ Makefile.mkRule "Absyn.o" [ "Absyn.c", "Absyn.h"]
     [ "${CC} ${CCFLAGS} -c Absyn.c" ]
   $ Makefile.mkRule "Lexer.c" [ name ++ ".l" ]

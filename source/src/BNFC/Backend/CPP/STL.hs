@@ -57,7 +57,11 @@ makeCppStl opts cf = do
 
 makefile :: String -> String
 makefile name =
-  (unlines [ "CC = g++", "CCFLAGS = -g", "FLEX = flex", "BISON = bison" ] ++)
+  (unlines [ "CC = g++",
+             "CCFLAGS = -g",
+             "FLEX = flex",
+             "BISON = bison",
+             "OBJS = Absyn.o Lexer.o Parser.o Printer.o" ] ++)
   $ Makefile.mkRule "all" [ "Test" ++ name ]
     []
   $ Makefile.mkRule "clean" []
@@ -66,10 +70,9 @@ makefile name =
    , "rm -f " ++ name ++ ".pdf Test" ++ name ]
   $ Makefile.mkRule "distclean" []
    [ " rm -f *.o Absyn.C Absyn.H Test.C Parser.C Parser.H Lexer.C Skeleton.C Skeleton.H Printer.C Printer.H " ++ name ++ ".l " ++ name ++ ".y " ++ name ++ ".tex " ++ name ++ ".dvi " ++ name ++ ".aux " ++ name ++ ".log " ++ name ++ ".ps Test" ++ name ++ " Makefile" ]
-  $ Makefile.mkRule ("Test" ++ name) [ "Absyn.o", "Lexer.o",
-                                       "Parser.o", "Printer.o", "Test.o" ]
+  $ Makefile.mkRule ("Test" ++ name) [ "${OBJS}", "Test.o" ]
    [ "@echo \"Linking Test" ++ name ++ "...\""
-   , "${CC} ${CCFLAGS} *.o -o Test" ++ name ]
+   , "${CC} ${CCFLAGS} ${OBJS} Test.o -o Test" ++ name ]
   $ Makefile.mkRule "Absyn.o" [ "Absyn.C", "Absyn.H" ]
    [ "${CC} ${CCFLAGS} -c Absyn.C" ]
   $ Makefile.mkRule "Lexer.C" [ name ++ ".l" ]
