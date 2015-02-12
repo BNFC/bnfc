@@ -58,21 +58,28 @@ makeCppStl opts cf = do
 makefile :: String -> String
 makefile name =
   (unlines [ "CC = g++",
-             "CCFLAGS = -g",
+             "CCFLAGS = -g -W -Wall", "",
              "FLEX = flex",
+             "FLEX_OPTS = -P" ++ name, "",
              "BISON = bison",
-             "OBJS = Absyn.o Lexer.o Parser.o Printer.o" ] ++)
-  $ Makefile.mkRule "all" [ "Test" ++ name ]
+             "BISON_OPTS = -t -p" ++ name, "",
+             "OBJS = Absyn.o Lexer.o Parser.o Printer.o", "" ] ++)
+  $ Makefile.mkRule ".PHONY" ["clean", "distclean"]
+    []
+  $ Makefile.mkRule "all" [ testName ]
     []
   $ Makefile.mkRule "clean" []
    -- peteg: don't nuke what we generated - move that to the "vclean" target.
-   [ "rm -f *.o " ++ name ++ ".dvi " ++ name ++ ".aux " ++ name ++ ".log "
-   , "rm -f " ++ name ++ ".pdf Test" ++ name ]
-  $ Makefile.mkRule "distclean" []
-   [ " rm -f *.o Absyn.C Absyn.H Test.C Parser.C Parser.H Lexer.C Skeleton.C Skeleton.H Printer.C Printer.H " ++ name ++ ".l " ++ name ++ ".y " ++ name ++ ".tex " ++ name ++ ".dvi " ++ name ++ ".aux " ++ name ++ ".log " ++ name ++ ".ps Test" ++ name ++ " Makefile" ]
-  $ Makefile.mkRule ("Test" ++ name) [ "${OBJS}", "Test.o" ]
-   [ "@echo \"Linking Test" ++ name ++ "...\""
-   , "${CC} ${CCFLAGS} ${OBJS} Test.o -o Test" ++ name ]
+   [ "rm -f *.o " ++ testName ++ " " ++ unwords
+     [name ++ e | e <- [".aux", ".log", ".pdf", ".dvi", ".ps", ""]]]
+  $ Makefile.mkRule "distclean" ["clean"]
+    [ "rm -f " ++ unwords
+      [ "Absyn.C", "Absyn.H", "Test.C", "Parser.C", "Parser.H", "Lexer.C" 
+      , "Skeleton.C", "Skeleton.H", "Printer.C", "Printer.H", "Makefile " ]
+      ++ name ++ ".l " ++ name ++ ".y " ++ name ++ ".tex "]
+  $ Makefile.mkRule testName [ "${OBJS}", "Test.o" ]
+   [ "@echo \"Linking " ++ testName ++ "...\""
+   , "${CC} ${CCFLAGS} ${OBJS} Test.o -o " ++ testName ]
   $ Makefile.mkRule "Absyn.o" [ "Absyn.C", "Absyn.H" ]
    [ "${CC} ${CCFLAGS} -c Absyn.C" ]
   $ Makefile.mkRule "Lexer.C" [ name ++ ".l" ]
@@ -90,6 +97,7 @@ makefile name =
   $ Makefile.mkRule "Test.o" [ "Test.C", "Parser.H", "Printer.H", "Absyn.H" ]
    [ "${CC} ${CCFLAGS} -c Test.C" ]
   ""
+  where testName = "Test" ++ name
 
 cpptest :: Maybe String -> CF -> String
 cpptest inPackage cf =
