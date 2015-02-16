@@ -69,6 +69,7 @@ prelude name = unlines
    "#include <string.h>",
    "#include \"Parser.h\"",
    "#define YY_BUFFER_LENGTH 4096",
+   "extern int yy_mylinenumber ;",
    "char YY_PARSED_STRING[YY_BUFFER_LENGTH];",
    "void YY_BUFFER_APPEND(char *s)",
    "{",
@@ -115,8 +116,9 @@ restOfFlex cf env = concat
    ifC catChar    chStates,
    ifC catDouble  "<YYINITIAL>{DIGIT}+\".\"{DIGIT}+(\"e\"(\\-)?{DIGIT}+)?      \t yylval.double_ = atof(yytext); return _DOUBLE_;\n",
    ifC catInteger "<YYINITIAL>{DIGIT}+      \t yylval.int_ = atoi(yytext); return _INTEGER_;\n",
-   ifC catIdent   "<YYINITIAL>{LETTER}{IDENT}*      \t yylval.string_ = strdup(yytext); return _IDENT_;\n"
-   , "<YYINITIAL>[ \\t\\r\\n\\f]      \t /* ignore white space. */;\n",
+   ifC catIdent   "<YYINITIAL>{LETTER}{IDENT}*      \t yylval.string_ = strdup(yytext); return _IDENT_;\n",
+   "\\n ++yy_mylinenumber ;\n",
+   "<YYINITIAL>[ \\t\\r\\n\\f]      \t /* ignore white space. */;\n",
    "<YYINITIAL>.      \t return _ERROR_;\n",
    "%%\n",
    footer
@@ -162,7 +164,7 @@ lexComments (m,s) =
 
 lexSingleComment :: String -> String
 lexSingleComment c =
-  "<YYINITIAL>\"" ++ c ++ "\"[^\\n]*\\n      \t /* BNFC single-line comment */;"
+  "<YYINITIAL>\"" ++ c ++ "\"[^\\n]*\\n     ++yy_mylinenumber; \t /* BNFC single-line comment */;"
 
 --There might be a possible bug here if a language includes 2 multi-line comments.
 --They could possibly start a comment with one character and end it with another.
@@ -172,7 +174,7 @@ lexMultiComment (b,e) = unlines [
   "<YYINITIAL>\"" ++ b ++ "\"      \t BEGIN COMMENT;",
   "<COMMENT>\"" ++ e ++ "\"      \t BEGIN YYINITIAL;",
   "<COMMENT>.      \t /* BNFC multi-line comment */;",
-  "<COMMENT>[\\n]      \t /* BNFC multi-line comment */;"
+  "<COMMENT>[\\n]    ++yy_mylinenumber ; \t /* BNFC multi-line comment */;"
   ]
 
 --Helper function that escapes characters in strings
