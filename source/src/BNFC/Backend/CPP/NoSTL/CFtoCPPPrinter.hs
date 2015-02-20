@@ -198,6 +198,7 @@ mkCFile cf groups = concat
       "/*** BNFC-Generated Pretty Printer and Abstract Syntax Viewer ***/",
       "",
       "#include \"Printer.H\"",
+      "#define INDENT_WIDTH 2",
       ""
      ]
     printEntries = unlines
@@ -527,7 +528,7 @@ prRender = unlines
       "     bufAppend('\\n');",
       "     indent();",
       "     bufAppend(c);",
-      "     _n_ = _n_ + 2;",
+      "     _n_ = _n_ + INDENT_WIDTH;",
       "     bufAppend('\\n');",
       "     indent();",
       "  }",
@@ -541,9 +542,11 @@ prRender = unlines
       "  }",
       "  else if (c == '}')",
       "  {",
-      "     _n_ = _n_ - 2;",
-      "     backup();",
-      "     backup();",
+      "     int t;",
+      "     _n_ = _n_ - INDENT_WIDTH;",
+      "     for(t=0; t<INDENT_WIDTH; t++) {",
+      "       backup();",
+      "     }",
       "     bufAppend(c);",
       "     bufAppend('\\n\');",
       "     indent();",
