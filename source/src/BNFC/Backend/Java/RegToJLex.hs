@@ -36,17 +36,21 @@ instance Print a => Print [a] where
   prt _ = prtList
 
 instance Print Char where
-  prt _ c = [escapeChar c]
+  prt _ c = [escapeChar False c]
   prtList s = map (concat . prt 0) s
 
-escapeChar :: Char -> String
-escapeChar '^' = "\\x5E" -- special case, since \^ is a control character escape
-escapeChar x | x `elem` jlexReserved = '\\' : [x]
-escapeChar x = [x]
+escapeChar :: Bool -> Char -> String
+escapeChar _ '^' = "\\x5E" -- special case, since \^ is a control character escape
+escapeChar False x | x `elem` jlexReserved = '\\' : [x]
+escapeChar True x | x `elem` jflexReserved = '\\' : [x]
+escapeChar _ x = [x]
 
 -- Characters that must be escaped in JLex regular expressions
 jlexReserved :: [Char]
-jlexReserved = ['?', '*', '+', '|', '(', ')', '^', '$', '.', '[', ']', '{', '}', '"', '\\']
+jlexReserved = ['?','*','+','|','(',')','^','$','.','[',']','{','}','"','\\']
+
+jflexReserved :: [Char]
+jflexReserved = '~':'!':'/':jlexReserved
 
 prPrec :: Int -> Int -> [String] -> [String]
 prPrec i j = if j<i then parenth else id
@@ -79,6 +83,3 @@ instance Print Reg where
    RUpper  -> prPrec i 3 (concat [["{CAPITAL}"]])
    RLower  -> prPrec i 3 (concat [["{SMALL}"]])
    RAny  -> prPrec i 3 (concat [["."]])
-
-
-

@@ -52,19 +52,19 @@ import BNFC.Backend.Java.CFtoComposVisitor
 import BNFC.Backend.Java.CFtoAbstractVisitor
 import BNFC.Backend.Java.CFtoFoldVisitor
 import BNFC.Backend.Java.CFtoAllVisitor
-import Data.List(intersperse)
 import qualified BNFC.Backend.Common.Makefile as Makefile
+import BNFC.PrettyPrint
 -------------------------------------------------------------------
 -- | Build the Java output.
 -- FIXME: get everything to put the files in the right places.
 -- Adapt Makefile to do the business.
 -------------------------------------------------------------------
 makeJava :: SharedOptions -> CF -> MkFiles ()
-makeJava options cf =
+makeJava options@Options{..} cf =
     do -- Create the package directories if necessary.
        let packageBase = case inPackage of
-                             Nothing -> name
-                             Just p -> p ++ "." ++ name
+                             Nothing -> lang
+                             Just p -> p ++ "." ++ lang
 	   packageAbsyn = packageBase ++ "." ++ "Absyn"
 	   dirBase = pkgToDir packageBase
 	   dirAbsyn = pkgToDir packageAbsyn
@@ -73,23 +73,23 @@ makeJava options cf =
 	   absynFileNames = map (dirAbsyn ++) absynBaseNames
        let writeAbsyn (filename, contents) =
 	       mkfile (dirAbsyn ++ filename ++ ".java") contents
-       mapM writeAbsyn absynFiles
+       mapM_ writeAbsyn absynFiles
        mkfile (dirBase ++ "PrettyPrinter.java") $ cf2JavaPrinter packageBase packageAbsyn cf
        mkfile (dirBase ++ "VisitSkel.java") $ cf2VisitSkel packageBase packageAbsyn cf
        mkfile (dirBase ++ "ComposVisitor.java") $ cf2ComposVisitor packageBase packageAbsyn cf
        mkfile (dirBase ++ "AbstractVisitor.java") $ cf2AbstractVisitor packageBase packageAbsyn cf
        mkfile (dirBase ++ "FoldVisitor.java") $ cf2FoldVisitor packageBase packageAbsyn cf
        mkfile (dirBase ++ "AllVisitor.java") $ cf2AllVisitor packageBase packageAbsyn cf
-       mkfile (dirBase ++ "Test.java") $ javaTest packageBase packageAbsyn cf
+       mkfile (dirBase ++ "Test.java") $ render $ javaTest packageBase packageAbsyn cf
 ---       mkfile ("Test" ++ name) $ "java " ++ dirBase ++ "Test $(1)"
-       let (lex, env) = cf2jlex packageBase packageAbsyn cf
-       mkfile (dirBase ++ "Yylex") lex
+       let (lex, env) = cf2jlex packageBase cf jflex
+       mkfile (dirBase ++ "Yylex") (render lex)
        liftIO $ putStrLn "   (Tested with JLex 1.2.6.)"
-       mkfile (dirBase ++ name ++ ".cup") $ cf2Cup packageBase packageAbsyn cf env
+       mkfile (dirBase ++ lang ++ ".cup") $ cf2Cup packageBase packageAbsyn cf env
        -- FIXME: put in a doc directory?
        liftIO $ putStrLn $ "   (Parser created for category " ++ show (firstEntry cf) ++ ")"
        liftIO $ putStrLn "   (Tested with CUP 0.10k)"
-       Makefile.mkMakefile options $ makefile name dirBase dirAbsyn absynFileNames
+       Makefile.mkMakefile options $ makefile lang dirBase dirAbsyn absynFileNames jflex
     where
       remDups [] = []
       remDups ((a,b):as) = case lookup a as of
@@ -98,22 +98,21 @@ makeJava options cf =
 
       pkgToDir :: String -> FilePath
       pkgToDir s = replace '.' pathSeparator s ++ [pathSeparator]
-      inPackage = Options.inPackage options
-      name = Options.lang options
 
 -- FIXME get filenames right.
 -- FIXME It's almost certainly better to just feed all the Java source
 -- files to javac in one go.
 -- Replace with an ANT script?
-makefile :: String -> FilePath -> FilePath -> [String] -> String
-makefile name dirBase dirAbsyn absynFileNames =
-  (++) (unlines [ "JAVAC = javac",
-                  "JAVAC_FLAGS = -sourcepath .", "",
-                  "JAVA = java",
-                  "JAVA_FLAGS =", "",
-                  "CUP = java_cup.Main",
-                  "CUPFLAGS = -nopositions -expect 100", "",
-                  "JLEX = JLex.Main", "" ])
+makefile :: String -> FilePath -> FilePath -> [String] -> Bool -> String
+makefile name dirBase dirAbsyn absynFileNames jflex =
+    Makefile.mkVar "JAVAC" "javac"
+  $ Makefile.mkVar "JAVAC_FLAGS" "-sourcepath ."
+  $ Makefile.mkVar "JAVA" "java"
+  $ Makefile.mkVar "JAVA_FLAGS" ""
+  $ Makefile.mkVar "CUP" "java_cup.Main"
+  $ Makefile.mkVar "CUPFLAGS" "-nopositions -expect 100"
+  $ (if jflex then Makefile.mkVar "JFLEX" "jflex"
+              else Makefile.mkVar "JLEX" "JLex.Main" )
   $ Makefile.mkRule "all" [ "test" ]
     []
   $ Makefile.mkRule "test" ("absyn":(map (dirBase ++) [ "Yylex.class",
@@ -134,7 +133,7 @@ makefile name dirBase dirAbsyn absynFileNames =
   $ Makefile.mkRule "absyn" [absynJavaSrc]
     [ "${JAVAC} ${JAVAC_FLAGS} $^" ]
   $ Makefile.mkRule (dirBase ++ "Yylex.java") [ dirBase ++ "Yylex" ]
-    [ "${JAVA} ${JAVA_FLAGS} ${JLEX} " ++ dirBase ++ "Yylex" ]
+    [ (if jflex then "${JFLEX} " else "${JAVA} ${JAVA_FLAGS} ${JLEX} ") ++ dirBase ++ "Yylex" ]
   $ Makefile.mkRule (dirBase ++ "sym.java " ++ dirBase ++ "parser.java")
                     [ dirBase ++ name ++ ".cup" ]
     [ "${JAVA} ${JAVA_FLAGS} ${CUP} ${CUPFLAGS} " ++ dirBase ++ name ++ ".cup"
@@ -181,64 +180,60 @@ makefile name dirBase dirAbsyn absynFileNames =
     where absynJavaSrc = unwords (map (++ ".java") absynFileNames)
 	  absynJavaClass = unwords (map (++ ".class") absynFileNames)
 
-javaTest :: String -> String -> CF -> String
-javaTest packageBase packageAbsyn cf =
-    unlines
-    [
-     "package" +++ packageBase ++ ";",
-     "import java_cup.runtime.*;",
-     "import" +++ packageBase ++ ".*;",
-     "import" +++ packageAbsyn ++ ".*;",
-     "import java.io.*;",
-     "",
-     "public class Test",
-     "{",
-     "  public static void main(String args[]) throws Exception",
-     "  {",
-     "    Yylex l = null;",
-     "    parser p;",
-     "    try",
-     "    {",
-     "      if (args.length == 0) l = new Yylex(System.in);",
-     "      else l = new Yylex(new FileReader(args[0]));",
-     "    }",
-     "    catch(FileNotFoundException e)",
-     "    {",
-     "     System.err.println(\"Error: File not found: \" + args[0]);",
-     "     System.exit(1);",
-     "    }",
-     "    p = new parser(l);",
-     "    /* The default parser is the first-defined entry point. */",
-     "    /* You may want to change this. Other options are: */",
-     "    /* " ++ (concat (intersperse ", " (showOpts (tail eps)))) ++ " */",
-     "    try",
-     "    {",
-     "      " ++ packageAbsyn ++ "." ++ show def +++ "parse_tree = p.p"
-     ++ show def ++ "();",
-     "      System.out.println();",
-     "      System.out.println(\"Parse Succesful!\");",
-     "      System.out.println();",
-     "      System.out.println(\"[Abstract Syntax]\");",
-     "      System.out.println();",
-     "      System.out.println(PrettyPrinter.show(parse_tree));",
-     "      System.out.println();",
-     "      System.out.println(\"[Linearized Tree]\");",
-     "      System.out.println();",
-     "      System.out.println(PrettyPrinter.print(parse_tree));",
-     "    }",
-     "    catch(Throwable e)",
-     "    {",
-     "      System.err.println(\"At line \" + String.valueOf(l.line_num()) + \", near \\\"\" + l.buff() + \"\\\" :\");",
-     "      System.err.println(\"     \" + e.getMessage());",
-     "      System.exit(1);",
-     "    }",
-     "  }",
-     "}"
+javaTest :: String -> String -> CF -> Doc
+javaTest packageBase packageAbsyn cf = vcat
+    [ "package" <+> text packageBase <> ";"
+    , "import java_cup.runtime.*;"
+    , "import" <+> text packageBase <> ".*;"
+    , "import" <+> text packageAbsyn <> ".*;"
+    , "import java.io.*;"
+    , ""
+    , "public class Test"
+    , codeblock 2
+        [ "public static void main(String args[]) throws Exception"
+        , codeblock 2
+            [ "Yylex l = null;"
+            , "parser p;"
+            , "try"
+            , codeblock 2
+                [ "if (args.length == 0) l = new Yylex(new InputStreamReader(System.in));"
+                , "else l = new Yylex(new FileReader(args[0]));" ]
+            , "catch(FileNotFoundException e)"
+            , "{"
+            , " System.err.println(\"Error: File not found: \" + args[0]);"
+            , " System.exit(1);"
+            , "}"
+            , "p = new parser(l);"
+            , "/* The default parser is the first-defined entry point. */"
+            , "/* You may want to change this. Other options are: */"
+            , "/* " <> fsep (punctuate "," (showOpts (tail eps))) <> " */"
+            , "try"
+            , "{"
+            , "  " <> text packageAbsyn <> "." <> text (show def) <+> "parse_tree = p.p"
+             <> text (show def) <> "();"
+            , "  System.out.println();"
+            , "  System.out.println(\"Parse Succesful!\");"
+            , "  System.out.println();"
+            , "  System.out.println(\"[Abstract Syntax]\");"
+            , "  System.out.println();"
+            , "  System.out.println(PrettyPrinter.show(parse_tree));"
+            , "  System.out.println();"
+            , "  System.out.println(\"[Linearized Tree]\");"
+            , "  System.out.println();"
+            , "  System.out.println(PrettyPrinter.print(parse_tree));"
+            , "}"
+            , "catch(Throwable e)"
+            , "{"
+            , "  System.err.println(\"At line \" + String.valueOf(l.line_num()) + \", near \\\"\" + l.buff() + \"\\\" :\");"
+            , "  System.err.println(\"     \" + e.getMessage());"
+            , "  System.exit(1);"
+            , "}"
+            ]
+        ]
     ]
-    where eps = allEntryPoints cf
-	  def = head eps
-	  showOpts [] = []
-
-	  showOpts (x:[]) = if normCat x /= x then [] else ['p' : (identCat x)]
-	  showOpts (x:xs) = if normCat x /= x then (showOpts xs)
-			    else ('p' : (identCat x)) : (showOpts xs)
+  where
+    eps = allEntryPoints cf
+    def = head eps
+    showOpts [] = []
+    showOpts (x:xs) | normCat x /= x = showOpts xs
+                    | otherwise      = text ('p' : identCat x) : showOpts xs

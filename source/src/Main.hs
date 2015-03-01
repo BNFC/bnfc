@@ -41,7 +41,6 @@ import BNFC.Backend.Latex
 import BNFC.Backend.OCaml
 import BNFC.Backend.Pygments
 import BNFC.GetCF
-import BNFC.CF
 import BNFC.Options hiding (make)
 
 import Paths_BNFC ( version )

@@ -17,6 +17,10 @@ mkRule target deps recipe = (++) $ unlines $
   ++ map (printf "\t%s") recipe
   ++ [""]
 
+mkVar :: String -> String -> Makefile
+mkVar n v = (++) (n ++ "=" ++ v  ++ "\n")
+
+
 -- | Create the Makefile file using the name specified in the option
 -- record.
 mkMakefile :: SharedOptions -> String -> Backend

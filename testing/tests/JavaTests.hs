@@ -15,6 +15,8 @@ all = makeTestSuite "Java"
         (map (factory []) exampleGrammars)
     , makeTestSuite "with namespace"
         (map (factory ["-p","my.stuff"]) exampleGrammars)
+    , makeTestSuite "with jflex"
+        (map (factory ["--jflex"]) exampleGrammars)
     , issue31
     ]
 

@@ -67,6 +67,7 @@ data SharedOptions = Options
   , lang :: String
   -- Haskell specific:
   , alexMode :: AlexVersion
+  , jflex :: Bool
   , inDir :: Bool
   , shareStrings :: Bool
   , byteStrings :: Bool
@@ -106,6 +107,7 @@ defaultOptions = Options
   , wcf = False
   , functor = False
   , outDir  = "."
+  , jflex = False
   }
 
 -- ~~~ Option definition ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -154,6 +156,9 @@ specificOptions =
       (ReqArg (\n o -> o {inPackage = Just n}) "<namespace>")
       "Prepend <namespace> to the package/module name"
     , [TargetCpp, TargetCSharp, TargetHaskell, TargetHaskellGadt, TargetProfile, TargetJava] )
+  , ( Option [] ["jflex"] (NoArg (\o -> o {jflex = True}))
+          "Use JFlex instead of JLex for lexing"
+    , [TargetJava] )
   , ( Option [] ["vs"] (NoArg (\o -> o {visualStudio = True}))
           "Generate Visual Studio solution/project files"
     , [TargetCSharp] )
