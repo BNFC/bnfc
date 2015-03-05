@@ -63,7 +63,7 @@ cf2Happy name absName lexName errName mode byteStrings functor cf
      specialToks cf,
      delimiter,
      specialRules byteStrings cf,
-     render $ prRules functor (rulesForHappy functor cf),
+     render $ prRules functor (rulesForHappy absName functor cf),
      finalize byteStrings cf]
 
 -- construct the header.
@@ -119,36 +119,42 @@ tokens toks = "%token\n" ++ prTokens toks
 convert :: String -> Doc
 convert = quotes . text . escapeChars
 
-rulesForHappy :: Bool -> CF -> Rules
-rulesForHappy functor cf = map mkOne $ ruleGroups cf
+rulesForHappy :: String -> Bool -> CF -> Rules
+rulesForHappy absM functor cf = map mkOne $ ruleGroups cf
   where
-    mkOne (cat,rules) = (cat, map (constructRule functor reversibles) rules)
+    mkOne (cat,rules) = (cat, map (constructRule absM functor reversibles) rules)
     reversibles = reversibleCats cf
 
 -- | For every non-terminal, we construct a set of rules. A rule is a sequence
 -- of terminals and non-terminals, and an action to be performed
--- >>> constructRule False [] (Rule "EPlus" (Cat "Exp") [Left (Cat "Exp"), Right "+", Left (Cat "Exp")])
--- ("Exp '+' Exp","EPlus $1 $3")
+-- >>> constructRule "Foo" False [] (Rule "EPlus" (Cat "Exp") [Left (Cat "Exp"), Right "+", Left (Cat "Exp")])
+-- ("Exp '+' Exp","Foo.EPlus $1 $3")
 --
 -- If we're using functors, it adds an void value:
--- >>> constructRule True [] (Rule "EPlus" (Cat "Exp") [Left (Cat "Exp"), Right "+", Left (Cat "Exp")])
--- ("Exp '+' Exp","EPlus () $1 $3")
+-- >>> constructRule "Foo" True [] (Rule "EPlus" (Cat "Exp") [Left (Cat "Exp"), Right "+", Left (Cat "Exp")])
+-- ("Exp '+' Exp","Foo.EPlus () $1 $3")
+--
+-- List constructors should not be prefixed by the abstract module name:
+-- >>> constructRule "Foo" False [] (Rule "(:)" (ListCat (Cat "A")) [Left (Cat "A"), Right",", Left (ListCat (Cat "A"))])
+-- ("A ',' ListA","(:) $1 $3")
+-- >>> constructRule "Foo" False [] (Rule "(:[])" (ListCat (Cat "A")) [Left (Cat "A")])
+-- ("A","(:[]) $1")
 --
 -- Coercion are much simpler:
--- >>> constructRule True [] (Rule "_" (Cat "Exp") [Right "(", Left (Cat "Exp"), Right ")"])
+-- >>> constructRule "Foo" True [] (Rule "_" (Cat "Exp") [Right "(", Left (Cat "Exp"), Right ")"])
 -- ("'(' Exp ')'","$2")
 --
 -- As an optimization, a pair of list rules [C] ::= "" | C k [C] is
 -- left-recursivized into [C] ::= "" | [C] C k.
 -- This could be generalized to cover other forms of list rules.
--- >>> constructRule False [ListCat (Cat "A")] (Rule "(:)" (ListCat (Cat "A")) [Left (Cat "A"), Right",", Left (ListCat (Cat "A"))])
+-- >>> constructRule "Foo" False [ListCat (Cat "A")] (Rule "(:)" (ListCat (Cat "A")) [Left (Cat "A"), Right",", Left (ListCat (Cat "A"))])
 -- ("ListA A ','","flip (:) $1 $2")
 --
 -- Note that functors don't concern list constructors:
--- >>> constructRule True [ListCat (Cat "A")] (Rule "(:)" (ListCat (Cat "A")) [Left (Cat "A"), Right",", Left (ListCat (Cat "A"))])
+-- >>> constructRule "Abs" True [ListCat (Cat "A")] (Rule "(:)" (ListCat (Cat "A")) [Left (Cat "A"), Right",", Left (ListCat (Cat "A"))])
 -- ("ListA A ','","flip (:) $1 $2")
-constructRule :: Bool -> [Cat] -> Rule -> (Pattern,Action)
-constructRule functor revs r0@(Rule fun cat _) = (pattern, action)
+constructRule :: String -> Bool -> [Cat] -> Rule -> (Pattern,Action)
+constructRule absName functor revs r0@(Rule fun cat _) = (pattern, action)
   where
     (pattern,metavars) = generatePatterns revs r
     action | isCoercion fun                 = unwords metavars
@@ -158,8 +164,9 @@ constructRule functor revs r0@(Rule fun cat _) = (pattern, action)
            | otherwise                      = unwords (underscore fun : metavars)
     r | isConsFun (funRule r0) && elem (valCat r0) revs = revSepListRule r0
       | otherwise                                       = r0
-    underscore f | isDefinedRule f = f ++ "_"
-                 | otherwise       = f
+    underscore f | isConsFun f || isNilCons f = f
+                 | isDefinedRule f = absName ++ "." ++ f ++ "_"
+                 | otherwise       = absName ++ "." ++ f
 
 -- Generate patterns and a set of metavariables indicating
 -- where in the pattern the non-terminal
