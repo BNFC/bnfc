@@ -44,7 +44,7 @@ prelude name _ shareMod shareStrings byteStrings = [
   "{",
   "{-# OPTIONS -fno-warn-incomplete-patterns #-}",
   "{-# OPTIONS_GHC -w #-}",
-  "module " ++ name ++ " where",
+  "module " ++ name ++ " (Token(..), tokens, tokenPos, prToken, Tok(..)) where",
   "",
   -- "import " ++ errMod,
   if shareStrings then "import " ++ shareMod else "",

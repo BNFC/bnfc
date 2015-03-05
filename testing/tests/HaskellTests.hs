@@ -14,7 +14,9 @@ all = makeTestSuite "Haskell"
     , makeTestSuite "with functor"
         (map (factory ["--functor"]) exampleGrammars)
     , makeTestSuite "with namespace"
-        (map (factory ["-p", "Language", "-d"]) exampleGrammars) ]
+        (map (factory ["-p", "Language", "-d"]) exampleGrammars)
+    , issue128
+    ]
 
 
 -- | Test factory
@@ -51,3 +53,12 @@ factory options (grammar,examples) = makeTestSuite name
   where
     name = pathToString (filename grammar)
     bnfc = command_ "bnfc" ("--haskell" : options)
+
+-- | Issue #128
+issue128 :: Test
+issue128 = makeShellyTest "Cannot use B as a constructor in haskell #128" $
+    withTmpDir $ \tmp -> do
+        cp "regression-tests/128_bar.cf" (tmp </> "grammar.cf")
+        cd tmp
+        cmd "bnfc" "--haskell" "-m" "grammar.cf"
+        cmd "make"
