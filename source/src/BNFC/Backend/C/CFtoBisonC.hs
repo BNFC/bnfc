@@ -65,6 +65,7 @@ cf2Bison name cf env
      tokens user env,
      declarations cf,
      specialToks cf,
+     startSymbol cf,
      "%%",
      prRules (rulesForBison cf env)
     ]
@@ -187,6 +188,9 @@ specialToks cf = concat [
   ]
    where
     ifC cat s = if isUsedCat cf cat then s else ""
+
+startSymbol :: CF -> String
+startSymbol cf = "%start" +++ identCat (firstEntry cf)
 
 --The following functions are a (relatively) straightforward translation
 --of the ones in CFtoHappy.hs
