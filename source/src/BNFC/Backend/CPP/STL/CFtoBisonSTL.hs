@@ -52,6 +52,7 @@ import BNFC.Utils ((+++))
 import BNFC.TypeChecker
 import ErrM
 import BNFC.Backend.CPP.STL.STLUtils
+import BNFC.Backend.C.CFtoBisonC (startSymbol)
 
 --This follows the basic structure of CFtoHappy.
 
@@ -71,6 +72,7 @@ cf2Bison ln inPackage name cf env
      "%token _ERROR_",
      tokens user env,
      declarations cf,
+     startSymbol cf,
      specialToks cf,
      "%%",
      prRules (rulesForBison ln inPackage name cf env)

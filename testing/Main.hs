@@ -15,6 +15,7 @@ import PygmentsTests
 import RegressionTests
 import JavaTests
 import CTests
+import CppTests
 import HaskellTests
 
 main = htfMain [ exitCodeTests
@@ -23,6 +24,7 @@ main = htfMain [ exitCodeTests
                , PygmentsTests.all
                , JavaTests.all
                , CTests.all
+               , CppTests.all
                , HaskellTests.all ]
 
 {- ----------------------------------------------------------------------------

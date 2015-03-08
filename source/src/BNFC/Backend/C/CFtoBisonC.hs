@@ -39,7 +39,7 @@
 -}
 
 
-module BNFC.Backend.C.CFtoBisonC (cf2Bison) where
+module BNFC.Backend.C.CFtoBisonC (cf2Bison, startSymbol) where
 
 import BNFC.CF
 import Data.List (intersperse)
