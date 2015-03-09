@@ -1,12 +1,15 @@
 module TestUtils
-    ( makeShellyTest, assertFileExists, assertEqual, assertFailure
+    ( makeShellyTest
     , makeTestSuite
+    , assertFileExists, assertEqual, assertFailure, assertExitCode
     , pathToString
     , findFileRegex
+    , findFile
     , Test(..) ) where
 
 -- base
 import Control.Exception (handle, throwIO, SomeException)
+import Data.Maybe (listToMaybe)
 import Prelude hiding (FilePath)
 import Text.Regex.Posix
 
@@ -14,6 +17,7 @@ import Text.Regex.Posix
 import qualified Data.Text as T
 
 -- system-filepath
+import Filesystem.Path (filename, stripPrefix)
 import Filesystem.Path.CurrentOS (encodeString, toText, encode)
 
 -- shelly
@@ -59,6 +63,10 @@ assertFileExists p = test_f p >>= liftIO . HUnit.assertBool errorMessage
 assertFailure :: String -> Sh ()
 assertFailure = liftIO . HUnit.assertFailure
 
+-- | Expect a particular exit code:
+assertExitCode :: Int -> Sh () -> Sh ()
+assertExitCode c sh = errExit False sh >> lastExitCode >>= assertEqual c
+
 -- | A PrintfArg instance of FilePath to use filepaths in strings (e.g. names
 -- of tests). Allows you to do things like:
 -- printf "testing %s" (path :: FilePath)
@@ -78,3 +86,10 @@ findFileRegex r = do
     when (length fs < 1) $ assertFailure "File not found"
     when (length fs > 1) $ assertFailure "Too many files"
     return (head fs)
+
+-- Find a file given its exact name
+findFile n = do
+    f <- findWhen (return . (n==) . filename) "."
+    case listToMaybe f >>= stripPrefix "." of
+        Just f -> return f
+        Nothing -> assertFailure "File not found" >> undefined

@@ -4,27 +4,19 @@
  -
  - Tests specific to some reported issues
  - -}
-module RegressionTests where
+module RegressionTests (all) where
 
-import Data.Text as T
+import qualified Data.Text as T
 import Test.HUnit (assertBool)
 import TestUtils
 import Shelly
+import Prelude hiding (all)
 
 all = makeTestSuite "Regression tests"
-    [ issue60, issue30, issue108, issue110, issue111, issue114, issue113 ]
-
-
-issue60 :: Test
-issue60 = makeShellyTest "#60 Compilation error in Java when a production uses more than one user-defined tokens" $
-    withTmpDir $ \tmp -> do
-        cd tmp
-        writefile "multiple_token.cf" $ T.unlines
-            [ "Label. Category ::= FIRST SECOND;"
-            , "token FIRST 'a';"
-            , "token SECOND 'b';" ]
-        cmd "bnfc" "--java" "-m" "multiple_token.cf"
-        cmd "make"
+    [ issue30, issue31
+    , issue60
+    , issue108, issue110, issue111, issue114, issue113
+    , issue127, issue128 ]
 
 issue30 :: Test
 issue30 = makeShellyTest "#30 With -d option XML module is not generated inside the directorty" $
@@ -35,6 +27,25 @@ issue30 = makeShellyTest "#30 With -d option XML module is not generated inside 
             , "End.   S ::= ;" ]
         cmd "bnfc" "--haskell" "--xml" "-m" "-d" "Test.cf"
         assertFileExists "Test/XML.hs"
+        cmd "make"
+
+-- | Issue #31
+issue31 :: Test
+issue31 = makeShellyTest "#31 Problem with multiples `rules` declaration with a common prefix" $
+    withTmpDir $ \tmp -> do
+        cp "regression-tests/31_multirules.cf" (tmp </> "grammar.cf")
+        cd tmp
+        cmd "bnfc" "--java" "grammar.cf"
+
+issue60 :: Test
+issue60 = makeShellyTest "#60 Compilation error in Java when a production uses more than one user-defined tokens" $
+    withTmpDir $ \tmp -> do
+        cd tmp
+        writefile "multiple_token.cf" $ T.unlines
+            [ "Label. Category ::= FIRST SECOND;"
+            , "token FIRST 'a';"
+            , "token SECOND 'b';" ]
+        cmd "bnfc" "--java" "-m" "multiple_token.cf"
         cmd "make"
 
 issue108 :: Test
@@ -50,7 +61,7 @@ issue108 = makeShellyTest "#108 C like comments and alex" $
                             ("int b ;" `T.isInfixOf` out)
 
 issue110 :: Test
-issue110 = makeShellyTest "Parse error while building BNFC generated parser #110" $
+issue110 = makeShellyTest "#110 Parse error while building BNFC generated parser" $
     withTmpDir $ \tmp -> do
         cp ("regression-tests" </> "110_backslash.cf") tmp
         cd tmp
@@ -58,7 +69,7 @@ issue110 = makeShellyTest "Parse error while building BNFC generated parser #110
         cmd "make"
 
 issue111 :: Test
-issue111 =  makeShellyTest "Custom tokens in OCaml" $
+issue111 =  makeShellyTest "#111 Custom tokens in OCaml" $
     withTmpDir $ \tmp -> do
         cd tmp
         writefile "Idents.cf" $ T.unlines
@@ -84,7 +95,6 @@ issue114 = makeShellyTest "#114 List category as entry point" $
         output <- cmd "./TestListentry"
         assertEqual expected output
 
-
 issue113 :: Test
 issue113 = makeShellyTest "#113 BNFC to Java creates non-compilable code when using user-defined tokens in grammar" $
     withTmpDir $ \tmp -> do
@@ -92,3 +102,29 @@ issue113 = makeShellyTest "#113 BNFC to Java creates non-compilable code when us
         cd tmp
         cmd "bnfc" "--java" "grammar.cf"
         cmd "javac" "grammar/VisitSkel.java"
+
+-- | Issue #127
+issue127 :: Test
+issue127 = makeShellyTest "#127 Problems with C and entrypoints" $
+    withTmpDir $ \tmp -> do
+        cd tmp
+        writefile "foobar.cf" "entrypoints Bar;"
+        appendfile "foobar.cf" "F. Foo ::= \"foo\" ;"
+        appendfile "foobar.cf" "B. Bar ::= \"bar\" ;"
+        cmd "bnfc" "--c" "-m" "foobar.cf"
+        cmd "make"
+        -- reject foo
+        setStdin "foo"
+        assertExitCode 1 $ cmd "./Testfoobar"
+        -- accept bar
+        setStdin "bar"
+        assertExitCode 0 $ cmd "./Testfoobar"
+
+-- | Issue #128
+issue128 :: Test
+issue128 = makeShellyTest "#128 Cannot use B as a constructor in haskell" $
+    withTmpDir $ \tmp -> do
+        cp "regression-tests/128_bar.cf" (tmp </> "grammar.cf")
+        cd tmp
+        cmd "bnfc" "--haskell" "-m" "grammar.cf"
+        cmd "make"
