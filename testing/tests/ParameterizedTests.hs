@@ -9,8 +9,8 @@ module ParameterizedTests where
 
 import Control.Monad (forM_, liftM)
 import Data.Monoid ((<>))
-import Data.Text (pack, Text)
-import Filesystem.Path (filename, dropExtension)
+import Data.Text (Text)
+import Filesystem.Path (filename, dropExtension, basename)
 import Filesystem.Path.CurrentOS (encodeString)
 import Prelude hiding (FilePath)
 import Shelly
@@ -79,7 +79,7 @@ exampleTests params =
             tpBuild params
             forM_ examples $ \example -> do
                 readfile (filename example) >>= setStdin
-                tpRunTestProg params (pack lang)
+                tpRunTestProg params (toTextArg $ basename grammar)
 
 -- ~~~ Parameters ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 -- Test parameters are the combination of bnfc options (that define the
