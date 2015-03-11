@@ -21,18 +21,18 @@
 
 module BNFC.Backend.CPP.STL (makeCppStl,) where
 
+import BNFC.Utils
+import BNFC.CF
 import BNFC.Options
-import qualified BNFC.Backend.Common.Makefile as Makefile
 import BNFC.Backend.Base
+import BNFC.Backend.CPP.STL.CFtoSTLAbs
 import BNFC.Backend.CPP.NoSTL.CFtoFlex
 import BNFC.Backend.CPP.STL.CFtoBisonSTL
 import BNFC.Backend.CPP.STL.CFtoCVisitSkelSTL
-import BNFC.Backend.CPP.STL.CFtoSTLAbs
 import BNFC.Backend.CPP.STL.CFtoSTLPrinter
 import BNFC.Backend.CPP.STL.STLUtils
-import BNFC.CF
-import BNFC.Utils
 import Data.Char
+import qualified BNFC.Backend.Common.Makefile as Makefile
 
 makeCppStl :: SharedOptions -> CF -> MkFiles ()
 makeCppStl opts cf = do
@@ -57,19 +57,29 @@ makeCppStl opts cf = do
 
 makefile :: String -> String
 makefile name =
-  (unlines [ "CC = g++", "CCFLAGS = -g", "FLEX = flex", "BISON = bison" ] ++)
-  $ Makefile.mkRule "all" [ "Test" ++ name ]
+  (unlines [ "CC = g++",
+             "CCFLAGS = -g -W -Wall", "",
+             "FLEX = flex",
+             "FLEX_OPTS = -P" ++ name, "",
+             "BISON = bison",
+             "BISON_OPTS = -t -p" ++ name, "",
+             "OBJS = Absyn.o Lexer.o Parser.o Printer.o", "" ] ++)
+  $ Makefile.mkRule ".PHONY" ["clean", "distclean"]
+    []
+  $ Makefile.mkRule "all" [testName]
     []
   $ Makefile.mkRule "clean" []
    -- peteg: don't nuke what we generated - move that to the "vclean" target.
-   [ "rm -f *.o " ++ name ++ ".dvi " ++ name ++ ".aux " ++ name ++ ".log "
-   , "rm -f " ++ name ++ ".pdf Test" ++ name ]
-  $ Makefile.mkRule "distclean" []
-   [ " rm -f *.o Absyn.C Absyn.H Test.C Parser.C Parser.H Lexer.C Skeleton.C Skeleton.H Printer.C Printer.H " ++ name ++ ".l " ++ name ++ ".y " ++ name ++ ".tex " ++ name ++ ".dvi " ++ name ++ ".aux " ++ name ++ ".log " ++ name ++ ".ps Test" ++ name ++ " Makefile" ]
-  $ Makefile.mkRule ("Test" ++ name) [ "Absyn.o", "Lexer.o",
-                                       "Parser.o", "Printer.o", "Test.o" ]
-   [ "@echo \"Linking Test" ++ name ++ "...\""
-   , "${CC} ${CCFLAGS} *.o -o Test" ++ name ]
+    [ "rm -f *.o " ++ testName ++ " " ++ unwords
+      [ name ++ e | e <- [".aux", ".log", ".pdf",".dvi", ".ps", ""]] ]
+  $ Makefile.mkRule "distclean" ["clean"]
+    [ "rm -f " ++ unwords
+      [ "Absyn.C", "Absyn.H", "Test.C", "Parser.C", "Parser.H", "Lexer.C",
+        "Skeleton.C", "Skeleton.H", "Printer.C", "Printer.H", "Makefile " ]
+      ++ name ++ ".l " ++ name ++ ".y " ++ name ++ ".tex "]
+  $ Makefile.mkRule (testName) [ "${OBJS}", "Test.o" ]
+   [ "@echo \"Linking " ++ testName ++ "...\""
+   , "${CC} ${CCFLAGS} ${OBJS} Test.o -o " ++ testName ]
   $ Makefile.mkRule "Absyn.o" [ "Absyn.C", "Absyn.H" ]
    [ "${CC} ${CCFLAGS} -c Absyn.C" ]
   $ Makefile.mkRule "Lexer.C" [ name ++ ".l" ]
@@ -87,6 +97,7 @@ makefile name =
   $ Makefile.mkRule "Test.o" [ "Test.C", "Parser.H", "Printer.H", "Absyn.H" ]
    [ "${CC} ${CCFLAGS} -c Test.C" ]
   ""
+  where testName = "Test" ++ name
 
 cpptest :: Maybe String -> CF -> String
 cpptest inPackage cf =

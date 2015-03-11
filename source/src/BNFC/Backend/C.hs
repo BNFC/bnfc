@@ -61,28 +61,29 @@ makeC opts cf = do
 
 makefile :: String -> String -> String
 makefile name prefix =
-  (++) (unlines [ "CC = gcc",
-                  "CCFLAGS = -g -W -Wall", "",
-                  "FLEX = flex",
-                  "FLEX_OPTS = -P" ++ prefix, "",
-                  "BISON = bison",
-                  "BISON_OPTS = -t -p" ++ prefix, ""])
+  (unlines [ "CC = gcc",
+             "CCFLAGS = -g -W -Wall", "",
+             "FLEX = flex",
+             "FLEX_OPTS = -P" ++ prefix, "",
+             "BISON = bison",
+             "BISON_OPTS = -t -p" ++ prefix, "",
+             "OBJS = Absyn.o Lexer.o Parser.o Printer.o", ""] ++)
   $ Makefile.mkRule ".PHONY" ["clean", "distclean"]
     []
   $ Makefile.mkRule "all" [testName]
     []
   $ Makefile.mkRule "clean" []
     -- peteg: don't nuke what we generated - move that to the "vclean" target.
-    [ "rm -f *.o " ++ unwords [ name ++ e | e <- [".aux",".log",".pdf",""]] ]
-  $ Makefile.mkRule "distclean" ["clean"] -- FIXME
+    [ "rm -f *.o " ++ testName ++ " " ++ unwords
+      [ name ++ e | e <- [".aux", ".log", ".pdf",".dvi", ".ps", ""]] ]
+  $ Makefile.mkRule "distclean" ["clean"]
     [ "rm -f " ++ unwords
-      [ "Absyn.c", "Absyn.h", "Test.c", "Parser.c", "Parser.h", "Lexer.c"
-      , "Skeleton.c", "Skeleton.h", "Printer.c" ,"Printer.h"
-      , name ++ ".l " ++ name ++ ".y " ++ name ++ ".tex "
-      , testName, "Makefile" ]]
-  $ Makefile.mkRule testName ["Absyn.o", "Lexer.o", "Parser.o", "Printer.o", "Test.o"]
-    [ "@echo \"Linking test" ++ name ++ "...\""
-    , "${CC} ${CCFLAGS} *.o -o Test" ++ name ]
+      [ "Absyn.h", "Absyn.c", "Test.c", "Parser.c", "Parser.h", "Lexer.c",
+        "Skeleton.c", "Skeleton.h", "Printer.c", "Printer.h", "Makefile " ]
+      ++ name ++ ".l " ++ name ++ ".y " ++ name ++ ".tex "]
+  $ Makefile.mkRule testName ["${OBJS}", "Test.o"]
+    [ "@echo \"Linking " ++ testName ++ "...\""
+    , "${CC} ${CCFLAGS} ${OBJS} Test.o -o " ++ testName ]
   $ Makefile.mkRule "Absyn.o" [ "Absyn.c", "Absyn.h"]
     [ "${CC} ${CCFLAGS} -c Absyn.c" ]
   $ Makefile.mkRule "Lexer.c" [ name ++ ".l" ]
