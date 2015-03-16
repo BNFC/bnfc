@@ -21,14 +21,16 @@ Given a Labelled BNF grammar the tool produces:
 Requirements
 ------------
 
-You will need:
+Everything needed to build bnfc is available in the
+[haskell platform](https://www.haskell.org/platform/).
 
-* cabal-install
-* alex
+On Debian, you can install the dependencies as follows
 
-On Unix, configure the dependencies as follows
+    sudo apt-get install haskell-platform
 
-    sudo apt-get install cabal-install alex && cabal update
+On Fedora:
+
+    yum install haskell-platform
 
 Then proceed with the installation.
 
