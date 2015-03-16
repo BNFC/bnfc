@@ -18,6 +18,20 @@ Given a Labelled BNF grammar the tool produces:
 
 *More information*: http://bnfc.digitalgrammars.com/
 
+Requirements
+------------
+
+You will need:
+
+* cabal-install
+* alex
+
+On Unix, configure the dependencies as follows
+
+    sudo apt-get install cabal-install alex && cabal update
+
+Then proceed with the installation.
+
 Installation
 ------------
 
