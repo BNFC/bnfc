@@ -62,19 +62,24 @@ are given by the nonterminals of the rule, in the same order.
 
 More formally, an LBNF grammar consists of a collection of rules, which
 have the following form (expressed by a regular expression; Appendix
-gives a complete BNF definition of the notation): Ident "." Ident "::="
-(Ident :math:`\mid` String)\* ";" ; The first identifier is the *rule
+gives a complete BNF definition of the notation)::
+
+  Ident "." Ident "::=" (Ident | String)* ";" ;
+
+The first identifier is the *rule
 label*, followed by the *value category*. On the right-hand side of the
-production arrow (::=) is the list of production items. An item is
+production arrow (``::=``) is the list of production items. An item is
 either a quoted string (*terminal*) or a category symbol
 (*non-terminal*). A rule whose value category is :math:`C` is also
 called a *production* for :math:`C`.
 
 Identifiers, that is, rule names and category symbols, can be chosen *ad
 libitum*, with the restrictions imposed by the target language. To
-satisfy Haskell, and C and Java as well, the following rule is imposed
-An identifier is a nonempty sequence of letters, starting with a capital
-letter.
+satisfy Haskell, and C and Java as well, the following rule is imposed:
+
+.. highlights::
+    An identifier is a nonempty sequence of letters, starting with a capital
+    letter.
 
 Additional features
 -------------------
