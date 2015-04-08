@@ -1,0 +1,10 @@
+
+Parse Successful!
+
+[Abstract Syntax]
+
+SBar [EAdd (EInt 1) (EInt 2)]
+
+[Linearized tree]
+
+bar (1 + 2)

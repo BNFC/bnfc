@@ -1,0 +1,10 @@
+
+Parse Successful!
+
+[Abstract Syntax]
+
+SExp2 (EAdd (EInt 41) (EInt 1))
+
+[Linearized tree]
+
+exp2 (41 + 1)

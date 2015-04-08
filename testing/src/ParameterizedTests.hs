@@ -10,13 +10,14 @@ module ParameterizedTests where
 import Control.Monad (forM_, liftM)
 import Data.Monoid ((<>))
 import Data.Text (Text)
-import Filesystem.Path (filename, dropExtension, basename)
+import Filesystem.Path (filename, dropExtension, basename, replaceExtension)
 import Filesystem.Path.CurrentOS (encodeString)
 import Prelude hiding (FilePath)
 import Shelly
 
 import TestUtils
 import TestData
+import OutputParser
 
 -- ~~~ TESTS ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 all :: Test
@@ -99,7 +100,13 @@ testCases params = do
             good <- liftM (filter (matchFilePath "good[0-9]*.in$")) (ls dir)
             forM_ good $ \f -> do
                 readfile f >>= setStdin
-                tpRunTestProg params "test"
+                output <- tpRunTestProg params "test"
+                goldExists <- test_f (replaceExtension f "out")
+                when goldExists $ do
+                    gold <- readfile (replaceExtension f "out")
+                    let (_, goldLT) = parseOutput gold
+                        (_, actualLT) = parseOutput output
+                    assertEqual goldLT actualLT
             bad <- liftM (filter (matchFilePath "bad[0-9]*.in$")) (ls dir)
             forM_ bad $ \f -> do
                 readfile f >>= setStdin

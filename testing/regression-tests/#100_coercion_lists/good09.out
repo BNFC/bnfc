@@ -1,0 +1,10 @@
+
+Parse Successful!
+
+[Abstract Syntax]
+
+SBar [EInt 42,EInt 42,EAdd (EInt 41) (EInt 1)]
+
+[Linearized tree]
+
+bar 42 . 42 . (41 + 1)

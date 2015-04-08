@@ -1,0 +1,10 @@
+
+Parse Successful!
+
+[Abstract Syntax]
+
+SFoo [EInt 42,EAdd (EInt 41) (EInt 1),EInt 42,EAdd (EInt 41) (EInt 1)]
+
+[Linearized tree]
+
+foo 42, 41 + 1, 42, 41 + 1

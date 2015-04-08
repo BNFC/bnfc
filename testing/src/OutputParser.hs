@@ -17,16 +17,21 @@ parseOutput t =
   where clean = T.unlines . dropWhile (== "") . dropWhileEnd (== "") . drop 1
 
 abstractSyntaxHeader :: Text -> Bool
-abstractSyntaxHeader = (== "[Abstract Syntax]")
+abstractSyntaxHeader = (== "[abstract syntax]") . T.toLower
 
 linearizedTreeHeader :: Text -> Bool
-linearizedTreeHeader = (== "[Linearized tree]")
+linearizedTreeHeader = (== "[linearized tree]") . T.toLower
 
 tests = makeTestSuite "OutputParser"
     [ makeTestSuite "parseOutput"
         [ makeUnitTest "parses a simple output" $
             let output = "[Abstract Syntax]\n(Foo Bar)\n[Linearized tree]\nfoo bar\n"
                 expected = ("(Foo Bar)\n", "foo bar\n")
+                actual = parseOutput output
+            in assertEqual expected actual
+        , makeUnitTest "parses an example output" $
+            let output = "Parse Successful!\n\n[Abstract Syntax]\n\nSExp (EInt 42)\n\n[Linearized tree]\n\nexp 42"
+                expected = ("SExp (EInt 42)\n", "exp 42\n")
                 actual = parseOutput output
             in assertEqual expected actual
         ]
