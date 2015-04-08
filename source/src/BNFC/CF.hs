@@ -37,6 +37,7 @@ module BNFC.CF (
 	    Data,           -- describes the abstract syntax of a grammar
 	    cf2data,        -- translates a grammar to a Data object.
 	    cf2dataLists,   -- translates to a Data with List categories included.
+            getAbstractSyntax,
 	    -- Literal categories, constants,
 	    firstCat,       -- the first value category in the grammar.
 	    firstEntry,     -- the first entry or the first value category
@@ -60,6 +61,7 @@ module BNFC.CF (
 	    isParsable,
 	    rulesOfCF,      -- All rules of a grammar.
 	    rulesForCat,    -- rules for a given category
+	    rulesForNormalizedCat,    -- rules for a given category
 	    ruleGroups,     -- Categories are grouped with their rules.
             ruleGroupsInternals, --As above, but includes internal cats.
             notUniqueNames, -- list of not unique names (replaces the following 2)
@@ -107,6 +109,7 @@ module BNFC.CF (
            ) where
 
 import BNFC.Utils (prParenth,(+++))
+import Control.Monad (guard)
 import Data.List (nub, intersperse, sort, group, intercalate, find)
 import Data.Char
 import AbsBNF (Reg())
@@ -311,6 +314,7 @@ isDataCat c = isDataOrListCat c && not (isList c)
 isDataOrListCat :: Cat -> Bool
 isDataOrListCat (CoercCat _ _)  = False
 isDataOrListCat (Cat ('@':_))   = False
+isDataOrListCat (ListCat c)     = isDataOrListCat c
 isDataOrListCat _               = True
 
 -- | Categories C1, C2,... (one digit in end) are variants of C. This function
@@ -457,6 +461,13 @@ lookupRule f = lookup f . map unRule
 rulesForCat :: CF -> Cat -> [Rule]
 rulesForCat cf cat = [r | r <- rulesOfCF cf, isParsable r, valCat r == cat]
 
+-- | Like rulesForCat but for normalized value categories.
+-- I.e., `rulesForCat (Cat "Exp")` will return rules for category Exp but also
+-- Exp1, Exp2... in case of coercion
+rulesForNormalizedCat :: CF -> Cat -> [Rule]
+rulesForNormalizedCat cf cat =
+    [r | r <- rulesOfCF cf, isParsable r, normCat (valCat r) == cat]
+
 -- | As rulesForCat, but this version doesn't exclude internal rules.
 rulesForCat' :: CF -> Cat -> [Rule]
 rulesForCat' cf cat = [r | r <- rulesOfCF cf, valCat r == cat]
@@ -539,8 +550,35 @@ prTree (Tree (fun,[])) = fun
 prTree (Tree (fun,trees)) = fun +++ unwords (map pr2 trees) where
   pr2 t@(Tree (_,ts)) = (if null ts then id else prParenth) (prTree t)
 
--- abstract syntax trees: data type definitions
 
+
+
+-- * abstract syntax trees: data type definitions
+--
+-- The abstract syncax, instanciated by the Data type, is the type signatures
+-- of all the constructors.
+
+-- | Return the abstract syntax of the grammar.
+-- All categories are normalized, so a rule like:
+--     EAdd . Exp2 ::= Exp2 "+" Exp3 ;
+-- Will give the following signature: EAdd : Exp -> Exp -> Exp
+getAbstractSyntax :: CF -> [(Cat, [(Fun, [Cat])])]
+getAbstractSyntax cf = [ ( c, nub (constructors c) ) | c <- allCatsNorm cf ]
+  where
+    constructors cat = do
+        rule <- rulesOfCF cf
+        let f = funRule rule
+        guard $ not (isDefinedRule f)
+        guard $ not (isCoercion f)
+        guard $ normCat (valCat rule) == cat
+        let cs = [normCat c | Left c <- rhsRule rule, c /= InternalCat]
+        return (f, cs)
+
+
+-- All the function bellow are variation arround the idea of getting the
+-- abstract syntax of the grammar with some variation but they seem to do a
+-- poor job at handling corner cases involving coercions. Use getAbstractSyntax
+-- instead if possible.
 cf2data' :: (Cat -> Bool) -> CF -> [Data]
 cf2data' predicate cf =
   [(cat, nub (map mkData [r | r <- rulesOfCF cf,
@@ -560,7 +598,6 @@ cf2dataLists = cf2data' isDataOrListCat
 
 specialData :: CF -> [Data]
 specialData cf = [(c,[(show c,[TokenCat "String"])]) | c <- specialCats cf] where
-
 
 -- to deal with coercions
 
@@ -630,9 +667,10 @@ isEmptyNilRule (Rule f _ ts) = isNilFun f && null ts
 --
 -- But!
 -- >>> precCat (ListCat (CoercCat "Abc" 2))
--- 0
+-- 2
 precCat :: Cat -> Integer
 precCat (CoercCat _ i) = i
+precCat (ListCat c) = precCat c
 precCat _ = 0
 
 precRule :: Rule -> Integer

@@ -23,9 +23,12 @@ module BNFC.Backend.OCaml.CFtoOCamlPrinter (cf2Printer) where
 
 import BNFC.CF
 import BNFC.Utils
-import Data.List (intersperse)
+import Data.List (intersperse, sortBy)
 import Data.Char(toLower)
 import BNFC.Backend.OCaml.OCamlUtil
+import BNFC.PrettyPrint
+import BNFC.Backend.Haskell.CFtoPrinter (compareRules)
+
 
 -- derive pretty-printer from a BNF grammar. AR 15/2/2002
 cf2Printer :: String -> String -> CF -> String
@@ -168,16 +171,51 @@ case_fun cat xs = unlines [
     "prPrec i" +++ show (precCat (fst r)) +++ mkRhs xx (snd r)) xs
   ]
 
-ifList cf cat = mkListRule $ nil cat ++ one cat ++ cons cat where
-  nil cat  = ["    []    -> " ++ mkRhs [] its |
-                            Rule f c its <- rulesOfCF cf, isNilFun f , normCatOfList c == cat]
-  one cat  = ["  | [x]   -> " ++ mkRhs ["x"] its |
-                            Rule f c its <- rulesOfCF cf, isOneFun f , normCatOfList c == cat]
-  cons cat = ["  | x::xs -> " ++ mkRhs ["x","xs"] its |
-                            Rule f c its <- rulesOfCF cf, isConsFun f , normCatOfList c == cat]
-  mkListRule [] = ""
-  mkListRule rs = unlines $ ("and prt" ++ fixTypeUpper cat ++ "ListBNFC" +++ "_ es : doc = match es with"):rs
+-- ifList cf cat = mkListRule $ nil cat ++ one cat ++ cons cat where
+--   nil cat  = ["    []    -> " ++ mkRhs [] its |
+--                             Rule f c its <- rulesOfCF cf, isNilFun f , normCatOfList c == cat]
+--   one cat  = ["  | [x]   -> " ++ mkRhs ["x"] its |
+--                             Rule f c its <- rulesOfCF cf, isOneFun f , normCatOfList c == cat]
+--   cons cat = ["  | x::xs -> " ++ mkRhs ["x","xs"] its |
+--                             Rule f c its <- rulesOfCF cf, isConsFun f , normCatOfList c == cat]
+--   mkListRule [] = ""
+--   mkListRule rs = unlines $ ("and prt" ++ fixTypeUpper cat ++ "ListBNFC" +++ "_ es : doc = match es with"):rs
 
+ifList :: CF -> Cat -> String
+ifList cf cat = case cases of
+    []        -> ""
+    first:rest -> render $ vcat
+        [ "and prt" <> text (fixTypeUpper cat)  <> "ListBNFC i es : doc = match (i, es) with"
+        , nest 4 first
+        , nest 2 $ vcat (map ("|" <+>) rest)
+        ]
+  where
+    rules = sortBy compareRules $ rulesForNormalizedCat cf (ListCat cat)
+    cases = [ mkPrtListCase r | r <- rules ]
+
+
+-- | Pattern match on the list constructor and the coercion level
+-- >>> mkPrtListCase (Rule "[]" (ListCat (Cat "Foo")) [])
+-- (_,[]) -> (concatD [])
+-- >>> mkPrtListCase (Rule "(:[])" (ListCat (Cat "Foo")) [Left (Cat "Foo")])
+-- (_,[x]) -> (concatD [prtFoo 0 x])
+-- >>> mkPrtListCase (Rule "(:)" (ListCat (Cat "Foo")) [Left (Cat "Foo"), Left (ListCat (Cat "Foo"))])
+-- (_,x::xs) -> (concatD [prtFoo 0 x ; prtFooListBNFC 0 xs])
+-- >>> mkPrtListCase (Rule "[]" (ListCat (CoercCat "Foo" 2)) [])
+-- (2,[]) -> (concatD [])
+-- >>> mkPrtListCase (Rule "(:[])" (ListCat (CoercCat "Foo" 2)) [Left (CoercCat "Foo" 2)])
+-- (2,[x]) -> (concatD [prtFoo 2 x])
+-- >>> mkPrtListCase (Rule "(:)" (ListCat (CoercCat "Foo" 2)) [Left (CoercCat "Foo" 2), Left (ListCat (CoercCat "Foo" 2))])
+-- (2,x::xs) -> (concatD [prtFoo 2 x ; prtFooListBNFC 2 xs])
+mkPrtListCase :: Rule -> Doc
+mkPrtListCase (Rule f (ListCat c) rhs)
+  | isNilFun f  = parens (precPattern <> "," <> "[]") <+> "->" <+> body
+  | isOneFun f  = parens (precPattern <> "," <> "[x]") <+> "->" <+> body
+  | isConsFun f = parens (precPattern <> "," <>"x::xs") <+> "->" <+> body
+  | otherwise = empty -- (++) constructor
+  where
+    precPattern = case precCat c of 0 -> "_" ; p -> integer p
+    body = text $ mkRhs ["x", "xs"] rhs
 
 mkRhs args its =
   "(concatD [" ++ unwords (intersperse ";" (mk args its)) ++ "])"

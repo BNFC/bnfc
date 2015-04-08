@@ -110,7 +110,6 @@ Executable bnfc
     -- Haskell GADT
     BNFC.Backend.HaskellGADT,
     BNFC.Backend.HaskellGADT.HaskellGADTCommon,
-    BNFC.Backend.HaskellGADT.CFtoPrinterGADT,
     BNFC.Backend.HaskellGADT.CFtoTemplateGADT,
     BNFC.Backend.HaskellGADT.CFtoAbstractGADT,
 

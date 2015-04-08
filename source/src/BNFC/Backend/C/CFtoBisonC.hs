@@ -60,7 +60,7 @@ cf2Bison :: String -> CF -> SymEnv -> String
 cf2Bison name cf env
  = unlines
     [header name cf,
-     union (allCats cf),
+     union (allCatsNorm cf),
      "%token _ERROR_",
      tokens user env,
      declarations cf,
@@ -94,7 +94,7 @@ header name cf = unlines
 	  "",
           -- M.F. 2004-09-17 changed allEntryPoints to allCatsIdNorm. Seems to fix the [Ty2] bug.
 	  unlines $ map parseMethod (allCatsNorm cf), -- (allEntryPoints cf),
-	  concatMap reverseList (filter isList (allCats cf)),
+	  concatMap reverseList (filter isList (allCatsNorm cf)),
 	  "%}"
 	  ]
 
@@ -203,7 +203,7 @@ rulesForBison cf env = map mkOne $ ruleGroups cf where
 
 -- For every non-terminal, we construct a set of rules.
 constructRule :: CF -> SymEnv -> [Rule] -> NonTerminal -> (NonTerminal,[(Pattern,Action)])
-constructRule cf env rules nt = (nt,[(p,(generateAction (identCat (normCat nt)) (ruleName r) b m) +++ result) |
+constructRule cf env rules nt = (nt,[(p,(generateAction (identCat (normCat nt)) (funRule r) b m) +++ result) |
      r0 <- rules,
      let (b,r) = if isConsFun (funRule r0) && elem (valCat r0) revs
                    then (True,revSepListRule r0)
@@ -218,7 +218,19 @@ constructRule cf env rules nt = (nt,[(p,(generateAction (identCat (normCat nt)) 
    isEntry nt = if elem nt eps then True else False
    result = if isEntry nt then (resultName (identCat (normCat nt))) ++ "= $$;" else ""
 
--- Generates a string containing the semantic action.
+-- | Generates a string containing the semantic action.
+-- >>> generateAction "Foo" "Bar" False ["$1"]
+-- "make_Bar($1);"
+-- >>> generateAction "Foo" "_" False ["$1"]
+-- "$1;"
+-- >>> generateAction "ListFoo" "[]" False []
+-- "0;"
+-- >>> generateAction "ListFoo" "(:[])" False ["$1"]
+-- "make_ListFoo($1, 0);"
+-- >>> generateAction "ListFoo" "(:)" False ["$1","$2"]
+-- "make_ListFoo($1, $2);"
+-- >>> generateAction "ListFoo" "(:)" True ["$1","$2"]
+-- "make_ListFoo($2, $1);"
 generateAction :: String -> Fun -> Bool -> [MetaVar] -> Action
 generateAction nt f b ms =
   if isCoercion f
@@ -227,7 +239,9 @@ generateAction nt f b ms =
   then "0;"
   else if isOneFun f
   then concat ["make_", nt, "(", (concat (intersperse ", " ms')), ", 0);"]
-  else concat ["make_", normFun f, "(", (concat (intersperse ", " ms')), ");"]
+  else if isConsFun f
+  then concat ["make_", nt, "(", (concat (intersperse ", " ms')), ");"]
+  else concat ["make_", f, "(", (concat (intersperse ", " ms')), ");"]
  where
   ms' = if b then reverse ms else ms
 

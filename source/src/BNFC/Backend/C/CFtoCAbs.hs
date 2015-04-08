@@ -70,7 +70,7 @@ mkHFile cf = unlines
   concatMap prForward classes,
   "",
   "/********************   Abstract Syntax Classes    ********************/\n",
-  concatMap prDataH (cf2dataLists cf),
+  concatMap prDataH (getAbstractSyntax cf),
   "",
   "#endif"
  ]
@@ -94,7 +94,7 @@ mkHFile cf = unlines
      else "_" --ignore this
    else "_"
 
---Prints struct definitions for all categories.
+-- | Prints struct definitions for all categories.
 prDataH :: Data -> String
 prDataH (cat, rules) =
    if isList cat
@@ -124,7 +124,7 @@ prDataH (cat, rules) =
  where
   c' = identCat (normCat cat)
   mem = identCat (normCatOfList cat)
-  prKind (fun, _) = "is_" ++ normFun fun
+  prKind (fun, _) = "is_" ++ fun
   prUnion (_, []) = ""
   prUnion (fun, cats) = "    struct { " ++ (render $ prInstVars (getVars cats)) ++ " } " ++ (memName fun) ++ ";\n"
 
@@ -135,9 +135,8 @@ prRuleH c (fun, cats) =
     if isNilFun fun || isOneFun fun || isConsFun fun
     then ""  --these are not represented in the AbSyn
     else --a standard rule
-      show c ++ " make_" ++ fun' ++ "(" ++ (prParamsH 0 (getVars cats)) ++ ");\n"
+      show c ++ " make_" ++ fun ++ "(" ++ (prParamsH 0 (getVars cats)) ++ ");\n"
    where
-     fun' = normFun fun
      prParamsH :: Int -> [(String, a)] -> String
      prParamsH _ [] = ""
      prParamsH n ((t,_):[]) = t ++ " p" ++ (show n)
@@ -179,7 +178,7 @@ mkCFile :: CF -> String
 mkCFile cf = unlines
  [
   header,
-  concatMap (render . prDataC) (cf2dataLists cf)
+  concatMap (render . prDataC) (getAbstractSyntax cf)
  ]
  where
   header = unlines
@@ -264,11 +263,10 @@ prRuleC cat (fun, _) | isConsFun fun = vsep
     m = identCat (normCat c')
     m' = map toLower m ++ "_"
 prRuleC c (fun, cats) = vsep
-    [ text $ "/********************   " ++ fun' ++ "    ********************/"
-    , prConstructorC c fun' vs cats ]
+    [ text $ "/********************   " ++ fun ++ "    ********************/"
+    , prConstructorC c fun vs cats ]
    where
      vs = getVars cats
-     fun' = normFun fun
 
 -- | The constructor just assigns the parameters to the corresponding instance
 -- variables.
