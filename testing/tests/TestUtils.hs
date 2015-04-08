@@ -5,10 +5,12 @@ module TestUtils
     , pathToString
     , findFileRegex
     , findFile
-    , Test(..) ) where
+    , Test(..)
+    , matchFilePath ) where
 
 -- base
 import Control.Exception (handle, throwIO, SomeException)
+import Control.Monad
 import Data.Maybe (listToMaybe)
 import Prelude hiding (FilePath)
 import Text.Regex.Posix
@@ -26,7 +28,7 @@ import Shelly
 -- htf
 import Test.Framework (assertEqualPretty_)
 import Test.Framework.Location (unknownLocation)
-import Test.Framework.Pretty (Pretty(..), text)
+import Test.Framework.Pretty (Pretty(..), text, vcat)
 import qualified Test.Framework.TestManager as HTF
 import Test.Framework.TestTypes
 
@@ -45,12 +47,12 @@ assertEqual a b = liftIO $ assertEqualPretty_ unknownLocation a b
 
 -- | Pretty instance for Text (to use with assertEquals)
 instance Pretty T.Text where
-  pretty = text . T.unpack
+  pretty = vcat . map text . lines . T.unpack
 
 -- Shortcut function to create a (black box) test from a shelly script
 makeShellyTest :: TestID -> Sh () -> Test
 makeShellyTest label =
-    HTF.makeBlackBoxTest label . handle fixException . shelly . verbosely
+    HTF.makeBlackBoxTest label . handle fixException . shelly . silently
   where
     fixException (ReThrownException x _) = throwIO (x::SomeException)
 
@@ -82,9 +84,10 @@ pathToString = either T.unpack T.unpack . toText
 -- Will fail if there is not exactly one file matching
 findFileRegex :: String -> Sh FilePath
 findFileRegex r = do
-    fs <- findWhen (return . (=~ r) . encode) "."
+    fs <- findWhen (return . matchFilePath r) "." >>= filterM test_f
     when (length fs < 1) $ assertFailure "File not found"
-    when (length fs > 1) $ assertFailure "Too many files"
+    when (length fs > 1) $ assertFailure $
+        "Too many files for regex " ++ r ++ " " ++ show fs
     return (head fs)
 
 -- Find a file given its exact name
@@ -93,3 +96,6 @@ findFile n = do
     case listToMaybe f >>= stripPrefix "." of
         Just f -> return f
         Nothing -> assertFailure "File not found" >> undefined
+
+matchFilePath :: String -> FilePath -> Bool
+matchFilePath regex name = encode name =~ regex

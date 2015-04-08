@@ -1,0 +1,11 @@
+SExp. S  ::= "exp" Exp ;
+SExp2. S ::= "exp2" Exp2 ;
+SFoo. S  ::= "foo" [Exp] ;
+SBar. S  ::= "bar" [Exp2] ;
+
+separator Exp "," ;
+separator Exp2 ".";
+
+EInt. Exp2 ::= Integer ;
+EAdd. Exp1 ::= Exp1 "+" Exp2 ;
+coercions Exp 2 ;

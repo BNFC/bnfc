@@ -23,11 +23,12 @@ all :: Test
 all = makeTestSuite "Parameterized tests" [allWithParams p | p <- parameters ]
 
 allWithParams :: TestParameters -> Test
-allWithParams params = makeTestSuite (tpName params)
+allWithParams params = makeTestSuite (tpName params) $
     [ exitCodeTest params
     , entrypointTest params
     , exampleTests params
-    ]
+    ] ++ testCases params
+
 
 -- This tests checks that when given an invalid input, the generated example
 -- application exits with a non-zerro exit code.
@@ -81,6 +82,30 @@ exampleTests params =
                 readfile (filename example) >>= setStdin
                 tpRunTestProg params (toTextArg $ basename grammar)
 
+-- | To test certain grammatical constructions or interractions between rules,
+-- test grammar can be created under the regression-tests directory,
+-- together with valid and invalid inputs.
+testCases :: TestParameters -> [Test]
+testCases params = do
+    map makeTestCase ["regression-tests/#100_coercion_lists"]
+  where
+    mkTitle dir = encodeString (filename dir)
+    makeTestCase dir =
+        makeShellyTest (mkTitle dir) $ withTmpDir $ \tmp -> do
+            dir <- absPath dir
+            cd tmp
+            tpBnfc params (dir </> "test.cf")
+            tpBuild params
+            good <- liftM (filter (matchFilePath "good[0-9]*.in$")) (ls dir)
+            forM_ good $ \f -> do
+                readfile f >>= setStdin
+                tpRunTestProg params "test"
+            bad <- liftM (filter (matchFilePath "bad[0-9]*.in$")) (ls dir)
+            forM_ bad $ \f -> do
+                readfile f >>= setStdin
+                errExit False $ tpRunTestProg params "test"
+                lastExitCode >>= assertEqual 1
+
 -- ~~~ Parameters ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 -- Test parameters are the combination of bnfc options (that define the
 -- backend to use) a build command to compile the resulting parser and a run
@@ -93,7 +118,7 @@ data TestParameters = TP
   , -- | Command for building the generated test executable
     tpBuild       :: Sh ()
   , -- | Command for running the test executable
-    tpRunTestProg :: Text -> Sh ()
+    tpRunTestProg :: Text -> Sh Text
   }
 
 parameters :: [TestParameters]
