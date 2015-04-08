@@ -7,9 +7,11 @@ import HaskellCnfTests
 import ParameterizedTests
 import PygmentsTests
 import RegressionTests
+import OutputParser
 
 main = htfMain [ ParameterizedTests.all
                , RegressionTests.all
                , PygmentsTests.all
                , CTests.all
-               , HaskellCnfTests.all ]
+               , HaskellCnfTests.all
+               , OutputParser.tests ]

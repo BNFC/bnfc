@@ -1,7 +1,9 @@
 module TestUtils
     ( makeShellyTest
     , makeTestSuite
+    , makeUnitTest
     , assertFileExists, assertEqual, assertFailure, assertExitCode
+    , assertEqualPretty
     , pathToString
     , findFileRegex
     , findFile
@@ -26,7 +28,7 @@ import Filesystem.Path.CurrentOS (encodeString, toText, encode)
 import Shelly
 
 -- htf
-import Test.Framework (assertEqualPretty_)
+import Test.Framework (assertEqualPretty_, assertEqual_)
 import Test.Framework.Location (unknownLocation)
 import Test.Framework.Pretty (Pretty(..), text, vcat)
 import qualified Test.Framework.TestManager as HTF
@@ -41,9 +43,14 @@ import qualified Test.HUnit as HUnit
 makeTestSuite :: TestID -> [Test] -> Test
 makeTestSuite id = HTF.testSuiteAsTest . HTF.makeTestSuite id
 
--- Lift HTF's version of assertEqual in Sh
-assertEqual :: (Eq a, Pretty a) => a -> a -> Sh ()
-assertEqual a b = liftIO $ assertEqualPretty_ unknownLocation a b
+-- | Replace the makeUnitTest functon from HTF with one that doesn't requite a
+-- location.
+makeUnitTest :: TestID -> IO () -> Test
+makeUnitTest id = HTF.makeUnitTest id unknownLocation
+
+-- Lift HTF's version of assertEqual in MonadIO
+assertEqual a b = liftIO $ assertEqual_ unknownLocation a b
+assertEqualPretty a b = liftIO $ assertEqualPretty_ unknownLocation a b
 
 -- | Pretty instance for Text (to use with assertEquals)
 instance Pretty T.Text where
