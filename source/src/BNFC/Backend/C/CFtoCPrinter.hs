@@ -49,7 +49,7 @@ import BNFC.Backend.Utils (isTokenType)
 import Data.List
 import Data.Char(toLower)
 import Data.Either (lefts)
-import Text.PrettyPrint
+import BNFC.PrettyPrint
 
 --Produces (.h file, .c file)
 cf2CPrinter :: CF -> (String, String)
@@ -355,7 +355,7 @@ prPrintData user (cat, rules) =
   "    else",
   "    {",
   visitMember,
-  "      render" ++ [sc] ++ "(" ++ sep ++ ");",
+  render (nest 6 (printListSepByPrecedence (getSeparatorByPrecedence rules))),
   "      " ++ vname +++ "=" +++ vname ++ "->" ++ vname ++ "_;",
   "    }",
   "  }",
@@ -380,10 +380,59 @@ prPrintData user (cat, rules) =
    ecl = identCat (normCatOfList cat)
    vname = map toLower cl
    member = map toLower ecl
-   visitMember = "      pp" ++ ecl ++ "(" ++ vname ++ "->" ++ member ++ "_, 0);"
-   (sc, sep) = renderCharOrString sep'
+   visitMember = "      pp" ++ ecl ++ "(" ++ vname ++ "->" ++ member ++ "_, i);"
    sep' = getCons rules
-   optsep = if hasOneFunc rules then "" else "      render" ++ [sc] ++ "(" ++ sep ++ ");"
+   optsep = if hasOneFunc rules then "" else "      " ++ render (renderX sep') ++ ";"
+
+-- | Helper function that gets the list separator by precedence level
+--
+-- >>> let c0 = CoercCat "C" 0
+-- >>> let c1 = CoercCat "C" 1
+-- >>> let rule0 = Rule "(:)" (ListCat c0) [Left c0, Right ",", Left (ListCat c0)]
+-- >>> let rule1 = Rule "(:)" (ListCat c1) [Left c1, Right ";", Left (ListCat c1)]
+-- >>> getSeparatorByPrecedence [rule0, rule1, rule1]
+-- [(1,";"),(0,",")]
+getSeparatorByPrecedence :: [Rule] -> [(Integer,String)]
+getSeparatorByPrecedence rules = [ (p, getCons (getRulesFor p)) | p <- precedences ]
+  where
+    precedences = sortBy (flip compare) $ nub $ map precRule rules
+    getRulesFor p = [ r | r <- rules, precRule r == p ]
+
+-- | Helper function that generate the code printing the list separator
+-- according to the given precedence level:
+--
+-- >>> printListSepByPrecedence []
+-- <BLANKLINE>
+--
+-- >>> printListSepByPrecedence [(0,",")]
+-- renderC(',');
+--
+-- >>> printListSepByPrecedence [(3,";"), (1, "--")]
+-- switch(i)
+-- {
+--   case 3: renderC(';'); break;
+--   default: renderS("--");
+-- }
+printListSepByPrecedence :: [(Integer, String)] -> Doc
+printListSepByPrecedence [] = empty
+printListSepByPrecedence [(_,sep)] = renderX sep <> ";"
+printListSepByPrecedence ss = "switch(i)" $$ codeblock 2
+    ( ["case" <+> integer i <:> renderX sep <>"; break;" | (i, sep) <- init ss]
+    ++ ["default" <:> renderX sep <>";" | let (_,sep) = last ss])
+  where a <:> b = a <> ":" <+> b
+
+-- | Helper function that call the right c function (renderC or renderS) to
+-- render a literal string.
+--
+-- >>> renderX ","
+-- renderC(',')
+--
+-- >>> renderX "---"
+-- renderS("---")
+renderX :: String -> Doc
+renderX sep' = "render" <> char sc <> parens (text sep)
+  where (sc, sep) = renderCharOrString sep'
+
 
 --Pretty Printer methods for a rule.
 prPrintRule :: [UserDef] -> Rule -> String
@@ -406,9 +455,7 @@ prPrintRule _ _ = ""
 --This goes on to recurse to the instance variables.
 prPrintCat :: [UserDef] -> String -> Either (Cat, Doc) String -> String
 prPrintCat user fnm (c) = case c of
-  Right t -> "    render" ++ [sc] ++ "(" ++ t' ++ ");\n"
-    where
-     (sc,t') = renderCharOrString t
+  Right t -> "    " ++ render (renderX t) ++ ";\n"
   Left (cat, nt) | isTokenType user cat -> "    pp" ++ basicFunName (render nt) ++ "(_p_->u." ++ v ++ "_." ++ render nt ++ ", " ++ show (precCat cat) ++ ");\n"
   Left (InternalCat, _) -> "    /* Internal Category */\n"
   Left (cat, nt) -> "    pp" ++ identCat (normCat cat) ++ "(_p_->u." ++ v ++ "_." ++ render nt ++ ", " ++ show (precCat cat) ++ ");\n"
@@ -556,7 +603,6 @@ prRender = unlines
       "  {",
       "     backup();",
       "     bufAppendC(c);",
-      "     bufAppendC(' ');",
       "  }",
       "  else if (c == '}')",
       "  {",
@@ -585,6 +631,7 @@ prRender = unlines
       "  else if (c == 0) return;",
       "  else",
       "  {",
+      "     bufAppendC(' ');",
       "     bufAppendC(c);",
       "     bufAppendC(' ');",
       "  }",
