@@ -74,6 +74,7 @@ Executable bnfc
     BNFC.GetCF,
     BNFC.Lexing,
     BNFC.Backend.Base
+    BNFC.Backend.Common,
     BNFC.Backend.Common.Makefile,
     BNFC.Backend.Common.NamedVariables,
     BNFC.Backend.Common.OOAbstract,

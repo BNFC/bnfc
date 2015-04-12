@@ -74,6 +74,7 @@ module BNFC.CF (
 	    isOneFun,       -- one element list function? (:[])
             hasOneFunc,
             getCons,
+            getSeparatorByPrecedence,
 	    isConsFun,      -- constructor function? (:)
 	    isNilCons,      -- either three of above?
             isEmptyListCat, -- checks if the list permits []
@@ -110,7 +111,7 @@ module BNFC.CF (
 
 import BNFC.Utils (prParenth,(+++))
 import Control.Monad (guard)
-import Data.List (nub, intersperse, sort, group, intercalate, find)
+import Data.List (nub, intersperse, sort, group, intercalate, find, sortBy)
 import Data.Char
 import AbsBNF (Reg())
 import ParBNF (pCat)
@@ -627,6 +628,12 @@ getCons rs = case find (isConsFun . funRule) rs of
     seper (Right x:_) = x
     seper (Left _:xs) = seper xs
 
+-- | Helper function that gets the list separator by precedence level
+getSeparatorByPrecedence :: [Rule] -> [(Integer,String)]
+getSeparatorByPrecedence rules = [ (p, getCons (getRulesFor p)) | p <- precedences ]
+  where
+    precedences = sortBy (flip compare) $ nub $ map precRule rules
+    getRulesFor p = [ r | r <- rules, precRule r == p ]
 
 isEmptyListCat :: CF -> Cat -> Bool
 isEmptyListCat cf c = elem "[]" $ map funRule $ rulesForCat' cf c

@@ -43,6 +43,7 @@ module BNFC.Backend.C.CFtoCPrinter (cf2CPrinter) where
 
 import BNFC.CF
 import BNFC.Utils ((+++))
+import BNFC.Backend.Common (renderListSepByPrecedence)
 import BNFC.Backend.Common.NamedVariables
 import BNFC.Backend.Common.StrUtils (renderCharOrString)
 import BNFC.Backend.Utils (isTokenType)
@@ -355,7 +356,8 @@ prPrintData user (cat, rules) =
   "    else",
   "    {",
   visitMember,
-  render (nest 6 (printListSepByPrecedence (getSeparatorByPrecedence rules))),
+  render (nest 6 (renderListSepByPrecedence "i" renderX
+      (getSeparatorByPrecedence rules))),
   "      " ++ vname +++ "=" +++ vname ++ "->" ++ vname ++ "_;",
   "    }",
   "  }",
@@ -383,43 +385,6 @@ prPrintData user (cat, rules) =
    visitMember = "      pp" ++ ecl ++ "(" ++ vname ++ "->" ++ member ++ "_, i);"
    sep' = getCons rules
    optsep = if hasOneFunc rules then "" else "      " ++ render (renderX sep') ++ ";"
-
--- | Helper function that gets the list separator by precedence level
---
--- >>> let c0 = CoercCat "C" 0
--- >>> let c1 = CoercCat "C" 1
--- >>> let rule0 = Rule "(:)" (ListCat c0) [Left c0, Right ",", Left (ListCat c0)]
--- >>> let rule1 = Rule "(:)" (ListCat c1) [Left c1, Right ";", Left (ListCat c1)]
--- >>> getSeparatorByPrecedence [rule0, rule1, rule1]
--- [(1,";"),(0,",")]
-getSeparatorByPrecedence :: [Rule] -> [(Integer,String)]
-getSeparatorByPrecedence rules = [ (p, getCons (getRulesFor p)) | p <- precedences ]
-  where
-    precedences = sortBy (flip compare) $ nub $ map precRule rules
-    getRulesFor p = [ r | r <- rules, precRule r == p ]
-
--- | Helper function that generate the code printing the list separator
--- according to the given precedence level:
---
--- >>> printListSepByPrecedence []
--- <BLANKLINE>
---
--- >>> printListSepByPrecedence [(0,",")]
--- renderC(',');
---
--- >>> printListSepByPrecedence [(3,";"), (1, "--")]
--- switch(i)
--- {
---   case 3: renderC(';'); break;
---   default: renderS("--");
--- }
-printListSepByPrecedence :: [(Integer, String)] -> Doc
-printListSepByPrecedence [] = empty
-printListSepByPrecedence [(_,sep)] = renderX sep <> ";"
-printListSepByPrecedence ss = "switch(i)" $$ codeblock 2
-    ( ["case" <+> integer i <:> renderX sep <>"; break;" | (i, sep) <- init ss]
-    ++ ["default" <:> renderX sep <>";" | let (_,sep) = last ss])
-  where a <:> b = a <> ":" <+> b
 
 -- | Helper function that call the right c function (renderC or renderS) to
 -- render a literal string.
