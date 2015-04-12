@@ -27,7 +27,7 @@ import BNFC.Backend.CPP.NoSTL.CFtoCPPAbs
 import BNFC.Backend.CPP.NoSTL.CFtoFlex
 import BNFC.Backend.CPP.NoSTL.CFtoBison
 import BNFC.Backend.CPP.NoSTL.CFtoCVisitSkel
-import BNFC.Backend.CPP.NoSTL.CFtoCPPPrinter
+import BNFC.Backend.CPP.PrettyPrinter
 import Data.Char
 import qualified BNFC.Backend.Common.Makefile as Makefile
 
@@ -45,7 +45,7 @@ makeCppNoStl opts cf = do
     let (skelH, skelC) = cf2CVisitSkel cf
     mkfile "Skeleton.H" skelH
     mkfile "Skeleton.C" skelC
-    let (prinH, prinC) = cf2CPPPrinter cf
+    let (prinH, prinC) = cf2CPPPrinter False Nothing cf
     mkfile "Printer.H" prinH
     mkfile "Printer.C" prinC
     mkfile "Test.C" (cpptest cf)

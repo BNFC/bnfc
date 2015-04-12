@@ -136,10 +136,10 @@ Executable bnfc
 
     -- C++ backend
     BNFC.Backend.CPP.NoSTL,
+    BNFC.Backend.CPP.PrettyPrinter,
     BNFC.Backend.CPP.NoSTL.RegToFlex,
     BNFC.Backend.CPP.NoSTL.CFtoFlex,
     BNFC.Backend.CPP.NoSTL.CFtoBison,
-    BNFC.Backend.CPP.NoSTL.CFtoCPPPrinter,
     BNFC.Backend.CPP.NoSTL.CFtoCPPAbs,
 
     -- C++ STL backend
@@ -148,7 +148,6 @@ Executable bnfc
     BNFC.Backend.CPP.STL.CFtoSTLAbs,
     BNFC.Backend.CPP.STL.STLUtils,
     BNFC.Backend.CPP.STL.CFtoCVisitSkelSTL,
-    BNFC.Backend.CPP.STL.CFtoSTLPrinter,
 
     -- C# backend
     BNFC.Backend.CSharp,

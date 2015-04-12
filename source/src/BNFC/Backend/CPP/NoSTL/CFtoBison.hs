@@ -63,11 +63,13 @@ module BNFC.Backend.CPP.NoSTL.CFtoBison (cf2Bison) where
 import BNFC.CF
 import Data.List (intersperse)
 import BNFC.Backend.Common.NamedVariables hiding (varName)
+import BNFC.Backend.CPP.STL.CFtoBisonSTL (union)
 import Data.Char (toLower,isUpper)
 import BNFC.Utils ((+++))
 import BNFC.TypeChecker
 import ErrM
 import BNFC.Backend.C.CFtoBisonC (startSymbol)
+import BNFC.PrettyPrint
 
 --This follows the basic structure of CFtoHappy.
 
@@ -82,7 +84,7 @@ cf2Bison :: String -> CF -> SymEnv -> String
 cf2Bison name cf env
  = unlines
     [header name cf,
-     union (allCats cf),
+     render $ union Nothing (allCats cf),
      "%token _ERROR_",
      tokens user env,
      declarations cf,
@@ -120,7 +122,7 @@ header name cf = unlines
 	  "",
 	  definedRules cf,
 	  unlines $ map (parseMethod name) (allCatsNorm cf),  -- (allEntryPoints cf), M.F. 2004-09-14 fix of [Ty2] bug.
-	  concatMap reverseList (filter isList (allCats cf)),
+	  concatMap reverseList (filter isList (allCatsNorm cf)),
 	  "%}"
 	  ]
 
@@ -220,27 +222,6 @@ reverseList c = unlines
   c' = identCat (normCat c)
   v = (map toLower c') ++ "_"
 
---The union declaration is special to Bison/Yacc and gives the type of yylval.
---For efficiency, we may want to only include used categories here.
-union :: [Cat] -> String
-union cats = unlines
- [
-  "%union",
-  "{",
-  "  int int_;",
-  "  char char_;",
-  "  double double_;",
-  "  char* string_;",
-  concatMap mkPointer cats,
-  "}"
- ]
- where --This is a little weird because people can make [Exp2] etc.
- mkPointer s | identCat s /= show s = --list. add it even if it refers to a coercion.
-   "  " ++ identCat (normCat s) ++ "*" +++ varName s ++ ";\n"
- mkPointer s | normCat s == s = --normal cat
-   "  " ++ identCat (normCat s) ++ "*" +++ varName s ++ ";\n"
- mkPointer _ = ""
-
 --declares non-terminal types.
 declarations :: CF -> String
 declarations cf = concatMap (typeNT cf) (allCats cf)
@@ -283,8 +264,8 @@ constructRule cf env rules nt = (nt,[(p,(generateAction (ruleName r) b m) +++ re
      let (p,m) = generatePatterns cf env r])
  where
    ruleName r = case funRule r of
-     "(:)" -> identCat nt
-     "(:[])" -> identCat nt
+     "(:)" -> identCat (normCat nt)
+     "(:[])" -> identCat (normCat nt)
      z -> z
    revs = reversibleCats cf
    eps = allEntryPoints cf
@@ -300,7 +281,7 @@ generateAction f b ms =
   then "0;"
   else if isDefinedRule f
   then concat [ f, "_", "(", concat $ intersperse ", " ms', ");" ]
-  else concat ["new ", normFun f, "(", (concat (intersperse ", " ms')), ");"]
+  else concat ["new ", f, "(", (concat (intersperse ", " ms')), ");"]
  where
   ms' = if b then reverse ms else ms
 

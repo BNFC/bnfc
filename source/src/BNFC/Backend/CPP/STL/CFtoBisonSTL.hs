@@ -42,10 +42,10 @@
 -}
 
 
-module BNFC.Backend.CPP.STL.CFtoBisonSTL (cf2Bison) where
+module BNFC.Backend.CPP.STL.CFtoBisonSTL (cf2Bison, union) where
 
 import BNFC.CF
-import Data.List (intersperse)
+import Data.List (intersperse, nub)
 import BNFC.Backend.Common.NamedVariables hiding (varName)
 import Data.Char (toLower,isUpper)
 import BNFC.Utils ((+++))
@@ -53,6 +53,7 @@ import BNFC.TypeChecker
 import ErrM
 import BNFC.Backend.CPP.STL.STLUtils
 import BNFC.Backend.C.CFtoBisonC (startSymbol)
+import BNFC.PrettyPrint
 
 --This follows the basic structure of CFtoHappy.
 
@@ -67,7 +68,7 @@ cf2Bison :: Bool -> Maybe String -> String -> CF -> SymEnv -> String
 cf2Bison ln inPackage name cf env
  = unlines
     [header inPackage name cf,
-     union inPackage (positionCats cf ++ allCats cf),
+     render $ union inPackage (positionCats cf ++ allCats cf),
      maybe "" (\ns -> "%name-prefix=\"" ++ ns ++ "yy\"") inPackage,
      "%token _ERROR_",
      tokens user env,
@@ -215,27 +216,49 @@ parseMethod inPackage _ cat =
   ns = nsString inPackage
 
 
---The union declaration is special to Bison/Yacc and gives the type of yylval.
---For efficiency, we may want to only include used categories here.
-union :: Maybe String -> [Cat] -> String
-union inPackage cats = unlines
- [
-  "%union",
-  "{",
-  "  int int_;",
-  "  char char_;",
-  "  double double_;",
-  "  char* string_;",
-  concatMap mkPointer cats,
-  "}"
- ]
- where --This is a little weird because people can make [Exp2] etc.
- mkPointer s | identCat s /= show s = --list. add it even if it refers to a coercion.
-   "  " ++ scope ++ (identCat (normCat s)) ++ "*" +++ (varName s) ++ ";\n"
- mkPointer s | normCat s == s = --normal cat
-   "  " ++ scope ++ (identCat (normCat s)) ++ "*" +++ (varName s) ++ ";\n"
- mkPointer _ = ""
- scope = nsScope inPackage
+-- | The union declaration is special to Bison/Yacc and gives the type of
+-- yylval.  For efficiency, we may want to only include used categories here.
+--
+-- >>> let foo = Cat "Foo"
+-- >>> union Nothing [foo, ListCat foo]
+-- %union
+-- {
+--   int int_;
+--   char char_;
+--   double double_;
+--   char* string_;
+--   Foo* foo_;
+--   ListFoo* listfoo_;
+-- }
+--
+-- If the given list of categories is contains coerced categories, those should
+-- be normalized and duplicate removed
+-- E.g. if there is both [Foo] and [Foo2] we should only print one pointer:
+--    ListFoo* listfoo_;
+--
+-- >>> let foo2 = CoercCat "Foo" 2
+-- >>> union Nothing [foo, ListCat foo, foo2, ListCat foo2]
+-- %union
+-- {
+--   int int_;
+--   char char_;
+--   double double_;
+--   char* string_;
+--   Foo* foo_;
+--   ListFoo* listfoo_;
+-- }
+union :: Maybe String -> [Cat] -> Doc
+union inPackage cats =
+    "%union" $$ codeblock 2 (
+        [ "int int_;"
+        , "char char_;"
+        , "double double_;"
+        , "char* string_;" ]
+        ++ map mkPointer normCats )
+  where
+    normCats = nub (map normCat cats)
+    mkPointer s = scope <> text (identCat s) <> "*" <+> text (varName s) <> ";"
+    scope = text (nsScope inPackage)
 
 --declares non-terminal types.
 declarations :: CF -> String

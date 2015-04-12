@@ -83,7 +83,7 @@ cf2cabs cf = CAbs {
   }
  where
   (pos,base) = partition (isPositionCat cf) $ fst (unzip (tokenPragmas cf))
-  (lists,cats) = partition isList $ allCats cf
+  (lists,cats) = partition isList $ allCatsNorm cf
   toks = map (show.normCat) base
   testRule (Rule f c _)
    | isList c  = Nothing

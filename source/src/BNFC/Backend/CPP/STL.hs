@@ -29,7 +29,7 @@ import BNFC.Backend.CPP.STL.CFtoSTLAbs
 import BNFC.Backend.CPP.NoSTL.CFtoFlex
 import BNFC.Backend.CPP.STL.CFtoBisonSTL
 import BNFC.Backend.CPP.STL.CFtoCVisitSkelSTL
-import BNFC.Backend.CPP.STL.CFtoSTLPrinter
+import BNFC.Backend.CPP.PrettyPrinter
 import BNFC.Backend.CPP.STL.STLUtils
 import Data.Char
 import qualified BNFC.Backend.Common.Makefile as Makefile
@@ -48,7 +48,7 @@ makeCppStl opts cf = do
     let (skelH, skelC) = cf2CVisitSkel (inPackage opts) cf
     mkfile "Skeleton.H" skelH
     mkfile "Skeleton.C" skelC
-    let (prinH, prinC) = cf2CPPPrinter (inPackage opts) cf
+    let (prinH, prinC) = cf2CPPPrinter True (inPackage opts) cf
     mkfile "Printer.H" prinH
     mkfile "Printer.C" prinC
     mkfile "Test.C" (cpptest (inPackage opts) cf)
