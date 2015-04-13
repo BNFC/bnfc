@@ -88,14 +88,18 @@ exampleTests params =
 -- together with valid and invalid inputs.
 testCases :: TestParameters -> [Test]
 testCases params = do
-    map makeTestCase ["regression-tests/#100_coercion_lists"]
+    map makeTestCase
+        [ "regression-tests/#100_coercion_lists"
+        , "regression-tests/#134_category_named_I" ]
   where
     mkTitle dir = encodeString (filename dir)
     makeTestCase dir =
         makeShellyTest (mkTitle dir) $ withTmpDir $ \tmp -> do
             dir <- absPath dir
             cd tmp
+            echo "§ Generate"
             tpBnfc params (dir </> "test.cf")
+            echo "§ Build"
             tpBuild params
             good <- liftM (filter (matchFilePath "good[0-9]*.in$")) (ls dir)
             forM_ good $ \f -> do
