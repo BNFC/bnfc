@@ -145,7 +145,8 @@ rules :: CF -> String
 rules cf = unlines $ mutualDefs $
   map (\(s,xs) -> case_fun s (map toArgs xs) ++ ifList cf s) $ cf2data cf
  where
-   toArgs (cons,args) = ((cons, names (map (checkRes . var) args) (0 :: Int)), ruleOf cons)
+   reserved = "i":"e":reservedOCaml
+   toArgs (cons,args) = ((cons, mkNames reserved LowerCase (map var args)), ruleOf cons)
    names [] _ = []
    names (x:xs) n
      | elem x xs = (x ++ show n) : names xs (n+1)
