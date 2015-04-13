@@ -184,14 +184,14 @@ case_fun functor cat xs = vcat
 -- EInternal _ expr -> prPrec i 0 (concatD [prt 0 expr])
 mkPrintCase :: Bool -> (Fun, (Cat, [Either Cat String])) -> Doc
 mkPrintCase functor (f, (cat, rhs)) =
-    let vars = names (map (checkRes . var) (filter (/=InternalCat) $ lefts rhs)) 0
-    in text f <+> (if functor then "_" else empty) <+> hsep vars <+> "->"
-    <+> "prPrec i" <+> integer (precCat cat) <+> mkRhs (map render vars) rhs
+    text f <+> (if functor then "_" else empty) <+> hsep variables <+> "->"
+    <+> "prPrec i" <+> integer (precCat cat) <+> mkRhs (map render variables) rhs
   where
-    names [] _ = []
-    names (x:xs) n
-      | x `elem` xs = (text x <> int n) : names xs (n+1)
-      | otherwise   = text x            : names xs n
+    -- Creating variables names used in pattern matching. In addition to
+    -- haskell's reserved words, `e` and `i` are used in the printing function
+    -- and should be avoided
+    names = map var (filter (/=InternalCat) $ lefts rhs)
+    variables = map text $ mkNames ("e":"i":hsReservedWords) LowerCase names
     var (ListCat c)  = var c ++ "s"
     var (TokenCat "Ident")   = "id"
     var (TokenCat "Integer") = "n"
@@ -199,9 +199,6 @@ mkPrintCase functor (f, (cat, rhs)) =
     var (TokenCat "Char")    = "c"
     var (TokenCat "Double")  = "d"
     var xs        = map toLower $ show xs
-    checkRes s
-         | s `elem` hsReservedWords = s ++ "'"
-         | otherwise                = s
 
 ifList :: CF -> Cat -> String
 ifList cf cat = render $ nest 2 $ vcat [ mkPrtListCase r | r <- rules ]
