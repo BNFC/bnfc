@@ -66,6 +66,7 @@ instance Print Reg where
 -- Handle special characters in regular expressions.
 mkEsc :: String -> String
 mkEsc = concatMap escChar
-    where escChar c
-	      | c `elem` "$+-*=<>[](){}!?.,;:^~|&%#/\\$_@\"" = '\\':[c]
-	      | otherwise = [c]
+  where
+    escChar c
+      | c `elem` ("$+-*=<>[](){}!?.,;:^~|&%#/\\$_@\"" :: String) = '\\':[c]
+      | otherwise = [c]

@@ -216,12 +216,12 @@ prtSymbols xs = foldr (+++) [] (map p xs)
 
 prt :: String -> String
 prt = concatMap escape
-  where escape '\\'                   = "$\\backslash$"
-        escape '~'                    = "\\~{}"
-        escape '^'                    = "{\\textasciicircum}"
-        escape c | c `elem` "$&%#_{}" = ['\\', c]
-        escape c | c `elem` "+=|<>-"  = "{$"  ++ [c] ++ "$}"
-        escape c                      = [c]
+  where escape '\\'                               = "$\\backslash$"
+        escape '~'                                = "\\~{}"
+        escape '^'                                = "{\\textasciicircum}"
+        escape c | c `elem` ("$&%#_{}" :: String) = ['\\', c]
+        escape c | c `elem` ("+=|<>-" :: String)  = "{$"  ++ [c] ++ "$}"
+        escape c                                  = [c]
 
 macros :: String
 macros =
