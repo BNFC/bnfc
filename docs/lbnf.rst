@@ -629,6 +629,25 @@ the integer indicating the highest level (here ``3``) is bigger than the
 highest level actually occurring, or if there are some other levels
 without productions in the grammar.
 
+.. HINT::
+   Coerced categorise (e.g. ``Exp2``) can also be used in other rules. For
+   instance, given the following grammar::
+
+     EInt. Exp2 ::= Integer;
+     EAdd. Exp1 ::= Exp1 "+" Exp2;
+
+   you might want to use ``Exp2`` instead of simply ``Exp`` to force the usage
+   of parenthesis around non-trivial expressions.  For instance, ``Foo. F ::=
+   "foo" Exp2 ;`` will accept ``foo 42`` or ``foo (1 + 1)`` but *not*
+   ``foo 1 + 1``.
+
+   You can even use coerced categories in lists and give them different
+   separators/terminators::
+
+     separator Exp "," ;
+     separator Exp2 ";" ;
+
+
 Rules
 -----
 
