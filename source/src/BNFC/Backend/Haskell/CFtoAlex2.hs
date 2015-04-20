@@ -41,7 +41,7 @@ import Data.Char
 
 cf2alex2 :: String -> String -> String -> Bool -> Bool -> CF -> String
 cf2alex2 name errMod shareMod shareStrings byteStrings cf =
-  unlines $ concat $ intersperse [""] [
+  unlines $ intercalate [""] [
     prelude name errMod shareMod shareStrings byteStrings,
     cMacros,
     rMacros cf,
@@ -155,7 +155,7 @@ restOfAlex _ shareStrings byteStrings cf = [
   "                              | s > a  = treeFind right",
   "                              | s == a = t",
   "",
-  "resWords = " ++ (show $ sorted2tree $ zip (sort resws) [1..]),
+  "resWords = " ++ show (sorted2tree $ zip (sort resws) [1..]),
   "   where b s n = let bs = "++stringPack++" s",
   "                  in B bs (TS bs n)",
   "",
@@ -220,31 +220,31 @@ restOfAlex _ shareStrings byteStrings cf = [
    ifC cat s = if isUsedCat cf cat then s else ""
    lexComments ([],[])           = []
    lexComments (xs,s1:ys) = '\"' : s1 ++ "\"" ++ " [.]* ; -- Toss single line comments\n" ++ lexComments (xs, ys)
-   lexComments (([l1,l2],[r1,r2]):xs,[]) = concat $
-					[
-					('\"':l1:l2:"\" ([$u # \\"), -- FIXME quotes or escape?
-					(r1:"] | \\"),
-					(r1:"+ [$u # [\\"),
-					(r1:" \\"),
-					(r2:"]])* (\""),
-					(r1:"\")+ \""),
-					(r2:"\" ; \n"),
-					lexComments (xs, [])
-					]
-   lexComments ((_:xs),[]) = lexComments (xs,[])
+   lexComments (([l1,l2],[r1,r2]):xs,[]) = concat
+                                        [
+                                        '\"':l1:l2:"\" ([$u # \\", -- FIXME quotes or escape?
+                                        r1:"] | \\",
+                                        r1:"+ [$u # [\\",
+                                        r1:" \\",
+                                        r2:"]])* (\"",
+                                        r1:"\")+ \"",
+                                        r2:"\" ; \n",
+                                        lexComments (xs, [])
+                                        ]
+   lexComments (_:xs,[]) = lexComments (xs,[])
 ---   lexComments (xs,(_:ys)) = lexComments (xs,ys)
 
    -- tokens consisting of special symbols
    pTSpec [] = ""
    pTSpec _ = "@rsyms { tok (\\p s -> PT p (eitherResIdent (TV . share) s)) }"
 
-   userDefTokenTypes = unlines $
+   userDefTokenTypes = unlines
      [printRegAlex exp ++
       " { tok (\\p s -> PT p (eitherResIdent (T_"  ++ show name ++ " . share) s)) }"
       | (name,exp) <- tokenPragmas cf]
-   userDefTokenConstrs = unlines $
+   userDefTokenConstrs = unlines
      [" | T_" ++ name ++ " !"++stringType | name <- tokenNames cf]
-   userDefTokenPrint = unlines $
+   userDefTokenPrint = unlines
      ["  PT _ (T_" ++ name ++ " s) -> s" | name <- tokenNames cf]
 
    ident =
@@ -259,14 +259,14 @@ data BTree = N | B String Int BTree BTree
 instance Show BTree where
     showsPrec _ N = showString "N"
     showsPrec n (B s k l r) = wrap (showString "b " . shows s  . showChar ' '. shows k  . showChar ' '
-				    . showsPrec 1 l . showChar ' '
-				    . showsPrec 1 r)
-	where wrap f = if n > 0 then showChar '(' . f . showChar ')' else f
+                                    . showsPrec 1 l . showChar ' '
+                                    . showsPrec 1 r)
+        where wrap f = if n > 0 then showChar '(' . f . showChar ')' else f
 
 sorted2tree :: [(String,Int)] -> BTree
 sorted2tree [] = N
 sorted2tree xs = B x n (sorted2tree t1) (sorted2tree t2) where
-  (t1,((x,n):t2)) = splitAt (length xs `div` 2) xs
+  (t1,(x,n):t2) = splitAt (length xs `div` 2) xs
 
 
 -------------------------------------------------------------------
@@ -285,17 +285,17 @@ printRegAlex = render . prt 0
 render :: [String] -> String
 render = rend 0
     where rend :: Int -> [String] -> String
-	  rend i ss = case ss of
-		        "["      :ts -> cons "["  $ rend i ts
-			"("      :ts -> cons "("  $ rend i ts
-			t  : "," :ts -> cons t    $ space "," $ rend i ts
-		        t  : ")" :ts -> cons t    $ cons ")"  $ rend i ts
-			t  : "]" :ts -> cons t    $ cons "]"  $ rend i ts
-			t        :ts -> space t   $ rend i ts
-			_            -> ""
+          rend i ss = case ss of
+                        "["      :ts -> cons "["  $ rend i ts
+                        "("      :ts -> cons "("  $ rend i ts
+                        t  : "," :ts -> cons t    $ space "," $ rend i ts
+                        t  : ")" :ts -> cons t    $ cons ")"  $ rend i ts
+                        t  : "]" :ts -> cons t    $ cons "]"  $ rend i ts
+                        t        :ts -> space t   $ rend i ts
+                        _            -> ""
 
-	  cons s t  = s ++ t
-	  space t s = if null s then t else t ++ " " ++ s
+          cons s t  = s ++ t
+          space t s = if null s then t else t ++ " " ++ s
 
 parenth :: [String] -> [String]
 parenth ss = ["("] ++ ss ++ [")"]
@@ -304,14 +304,14 @@ parenth ss = ["("] ++ ss ++ [")"]
 class Print a where
   prt :: Int -> a -> [String]
   prtList :: [a] -> [String]
-  prtList = concat . map (prt 0)
+  prtList = concatMap (prt 0)
 
 instance Print a => Print [a] where
   prt _ = prtList
 
 instance Print Char where
   prt _ c = if isAlphaNum c then [[c]] else ['\\':[c]]
-  prtList s = map (concat . prt 0) s
+  prtList = map (concat . prt 0)
 
 prPrec :: Int -> Int -> [String] -> [String]
 prPrec i j = if j<i then parenth else id
@@ -321,18 +321,18 @@ instance Print Ident where
 
 instance Print Reg where
   prt i e = case e of
-   RSeq reg0 reg -> prPrec i 2 (concat [prt 2 reg0 , prt 3 reg])
+   RSeq reg0 reg -> prPrec i 2 (prt 2 reg0 ++ prt 3 reg)
    RAlt reg0 reg -> prPrec i 1 (concat [prt 1 reg0 , ["|"] , prt 2 reg])
    RMinus reg0 reg -> prPrec i 1 (concat [prt 2 reg0 , ["#"] , prt 2 reg])
-   RStar reg -> prPrec i 3 (concat [prt 3 reg , ["*"]])
-   RPlus reg -> prPrec i 3 (concat [prt 3 reg , ["+"]])
-   ROpt reg  -> prPrec i 3 (concat [prt 3 reg , ["?"]])
-   REps  -> prPrec i 3 (["()"])
-   RChar c -> prPrec i 3 (concat [prt 0 c])
+   RStar reg -> prPrec i 3 (prt 3 reg ++ ["*"])
+   RPlus reg -> prPrec i 3 (prt 3 reg ++ ["+"])
+   ROpt reg  -> prPrec i 3 (prt 3 reg ++ ["?"])
+   REps  -> prPrec i 3 ["()"]
+   RChar c -> prPrec i 3 (prt 0 c)
    RAlts str -> prPrec i 3 (concat [["["],prt 0 str,["]"]])
-   RSeqs str -> prPrec i 2 (concat (map (prt 0) str))
-   RDigit  -> prPrec i 3 (concat [["$d"]])
-   RLetter  -> prPrec i 3 (concat [["$l"]])
-   RUpper  -> prPrec i 3 (concat [["$c"]])
-   RLower  -> prPrec i 3 (concat [["$s"]])
-   RAny  -> prPrec i 3 (concat [["$u"]])
+   RSeqs str -> prPrec i 2 (concatMap (prt 0) str)
+   RDigit  -> prPrec i 3 ["$d"]
+   RLetter  -> prPrec i 3 ["$l"]
+   RUpper  -> prPrec i 3 ["$c"]
+   RLower  -> prPrec i 3 ["$s"]
+   RAny  -> prPrec i 3 ["$u"]

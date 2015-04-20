@@ -27,7 +27,6 @@ import BNFC.Utils ((+++))
 import BNFC.Backend.Common
 import BNFC.Backend.Common.NamedVariables
 import BNFC.Backend.Common.StrUtils (renderCharOrString)
-import Data.List
 import Data.Char(toLower)
 import BNFC.Backend.CPP.STL.STLUtils
 import BNFC.PrettyPrint
@@ -37,7 +36,7 @@ cf2CPPPrinter :: Bool -> Maybe String -> CF -> (String, String)
 cf2CPPPrinter useStl inPackage cf =
     (mkHFile useStl inPackage cf groups, mkCFile useStl inPackage cf groups)
  where
-    groups = positionRules cf ++ (fixCoercions (ruleGroupsInternals cf))
+    groups = positionRules cf ++ fixCoercions (ruleGroupsInternals cf)
 
 positionRules :: CF -> [(Cat,[Rule])]
 positionRules cf =
@@ -185,7 +184,7 @@ prDataH :: (Cat, [Rule]) -> String
 prDataH (cat, rules) =
  if isList cat
  then concat ["  void visit", cl, "(", cl, "* p);\n"]
- else abstract ++ (concatMap prRuleH rules)
+ else abstract ++ concatMap prRuleH rules
  where
    cl = identCat (normCat cat)
    abstract = case lookupRule (show cat) rules of
@@ -374,7 +373,7 @@ prPrintData _ inPackage cf (cat, rules) = -- Not a list
    "  visitIdent(p->string_);",
    "}"
    ]
- else abstract ++ (concatMap (prPrintRule inPackage) rules)
+ else abstract ++ concatMap (prPrintRule inPackage) rules
  where
    cl = identCat (normCat cat)
    abstract = case lookupRule (show cat) rules of
@@ -430,6 +429,7 @@ genPrintVisitorList (cat@(ListCat c), rules) =
    cl = identCat (normCat cat)
    vname = text $ map toLower cl
    renderSep s = "render(" <> text (snd (renderCharOrString s)) <> ")"
+genPrintVisitorList _ = error "genPrintVisitorList expects a ListCat"
 
 -- | This is the only part of the pretty printer that differs significantly
 -- between the versions with and without STL.
@@ -463,11 +463,12 @@ genPrintVisitorListNoStl (cat@(ListCat c), rules) = unlines
     ecl = identCat (normCatOfList cat)
     vname = map toLower cl
     member = map toLower ecl ++ "_"
-    optsep = if hasOneFunc rules then "" else ("      render(" ++ sep ++ ");")
+    optsep = if hasOneFunc rules then "" else "      render(" ++ sep ++ ");"
     sep = snd (renderCharOrString sep')
     sep' = getCons rules
     renderSep s = "render(" <> text (snd (renderCharOrString s)) <> ")"
     separators = getSeparatorByPrecedence rules
+genPrintVisitorListNoStl _ = error "genPrintVisitorListNoStl expects a ListCat"
 
 --Pretty Printer methods for a rule.
 prPrintRule :: Maybe String -> Rule -> String
@@ -557,7 +558,7 @@ prShowData False (cat@(ListCat c), _) =
       then "      visit" ++ funName c ++ "(" ++ vname ++ "->" ++ member ++ ");"
       else "      " ++ vname ++ "->" ++ member ++ "->accept(this);"
 prShowData _ (cat, rules) =  --Not a list:
-  abstract ++ (concatMap prShowRule rules)
+  abstract ++ concatMap prShowRule rules
   where
     cl = identCat (normCat cat)
     abstract = case lookupRule (show cat) rules of
@@ -583,38 +584,38 @@ prShowRule (Rule fun _ cats) | isProperLabel fun = concat
       else ("  bufAppend(' ');\n", "  bufAppend('(');\n","  bufAppend(')');\n")
     cats' = if allTerms cats
         then ""
-    	else concat (insertSpaces (map (prShowCat fnm) (numVars cats)))
+        else concat (insertSpaces (map (prShowCat fnm) (numVars cats)))
     insertSpaces [] = []
     insertSpaces (x:[]) = [x]
     insertSpaces (x:xs) = if x == ""
       then insertSpaces xs
-      else (x : ["  bufAppend(' ');\n"]) ++ (insertSpaces xs)
+      else x : "  bufAppend(' ');\n" : insertSpaces xs
     allTerms [] = True
     allTerms (Left _:_) = False
     allTerms (_:zs) = allTerms zs
     fnm = "p" --other names could cause conflicts
 prShowRule _ = ""
 
---This recurses to the instance variables of a class.
+-- This recurses to the instance variables of a class.
 prShowCat :: String -> Either (Cat, Doc) String -> String
 prShowCat _ (Right _)               = ""
 prShowCat fnm (Left (cat,nt))
   | isTokenCat cat              =
     "  visit" ++ funName cat ++ "(" ++ fnm ++ "->" ++ render nt ++ ");\n"
   | cat == InternalCat                = "/* Internal Category */\n"
-  | (show $normCat$strToCat$render nt) /= render nt = accept
+  | show (normCat $ strToCat $ render nt) /= render nt = accept
   | otherwise                         =
     concat [
-	   "  bufAppend('[');\n",
-	   "  if (" ++ fnm ++ "->" ++ render nt ++ ")" ++ accept,
-	   "  bufAppend(']');\n"
-	  ]
+           "  bufAppend('[');\n",
+           "  if (" ++ fnm ++ "->" ++ render nt ++ ")" ++ accept,
+           "  bufAppend(']');\n"
+          ]
   where accept = "  " ++ fnm ++ "->" ++ render nt ++ "->accept(this);\n"
 
 {- **** Helper Functions Section **** -}
 
 -- from ListIdent to Ident
-baseName cl = drop 4 cl
+baseName = drop 4
 
 
 --The visit-function name of a basic type
@@ -634,7 +635,7 @@ funName _ = "Ident" --User-defined type
 
 --Just sets the coercion level for parentheses in the Pretty Printer.
 setI :: Integer -> String
-setI n = "_i_ = " ++ (show n) ++ "; "
+setI n = "_i_ = " ++ show n ++ "; "
 
 --An extremely simple renderer for terminals.
 prRender :: Bool -> String

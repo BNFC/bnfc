@@ -65,7 +65,8 @@ main = do
     Help    -> putStrLn help >> exitSuccess
     Version ->  putStrLn (showVersion version) >> exitSuccess
     Target options file | target options == TargetProfile ->
-      readFile file >>= parseCFP options TargetProfile >>= makeHaskellProfile options
+      readFile file >>= parseCFP options TargetProfile
+                    >>= writeFiles (outDir options) . makeHaskellProfile options
     Target options file ->
       readFile file >>= parseCF options (target options) >>= make (target options) options
   where

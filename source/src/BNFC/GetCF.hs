@@ -111,7 +111,7 @@ getCFP cnf (Abs.Grammar defs0) = do
         cf0 = revs srt
         srt = let literals           = nub [lit | xs <- map rhsRule rules,
                                                      Left (Cat lit) <- xs,
-                                                     elem lit specialCatsP]
+                                                     lit `elem` specialCatsP]
                   (symbols,keywords) = partition notIdent reservedWords
                   notIdent s         = null s || not (isAlpha (head s)) || any (not . isIdentRest) s
                   isIdentRest c      = isAlphaNum c || c == '_' || c == '\''
@@ -174,7 +174,7 @@ removeDelims xs = (ys ++ map delimToSep ds,
 
     delimToSep (Abs.Delimiters cat _ _ (Abs.SepTerm  s) sz) = Abs.Terminator sz cat s
     delimToSep (Abs.Delimiters cat _ _ (Abs.SepSepar s) sz) = Abs.Separator  sz cat s
-    delimToSep (Abs.Delimiters cat _ _ (Abs.SepNone   ) sz) = Abs.Terminator sz cat ""
+    delimToSep (Abs.Delimiters cat _ _  Abs.SepNone     sz) = Abs.Terminator sz cat ""
     delimToSep x = x
     
 transDef :: Abs.Def -> [Either Pragma RuleP]
@@ -187,7 +187,7 @@ transDef x = case x of
  Abs.PosToken ident reg        -> [Left $ TokenReg (transIdent ident) True reg]
  Abs.Entryp idents             -> [Left $ EntryPoints (map (strToCat .transIdent) idents)]
  Abs.Internal label cat items  ->
-   [Right $ Rule (transLabel label) (transCat cat) (Left InternalCat:(map transItem items))]
+   [Right $ Rule (transLabel label) (transCat cat) (Left InternalCat:map transItem items)]
  Abs.Separator size ident str -> map  (Right . cf2cfpRule) $ separatorRules size ident str
  Abs.Terminator size ident str -> map  (Right . cf2cfpRule) $ terminatorRules size ident str
  Abs.Delimiters a b c d e -> map  (Right . cf2cfpRule) $ delimiterRules a b c d e
@@ -195,7 +195,7 @@ transDef x = case x of
  Abs.Rules ident strs -> map (Right . cf2cfpRule) $ ebnfRules ident strs
  Abs.Layout ss      -> [Left $ Layout ss]
  Abs.LayoutStop ss  -> [Left $ LayoutStop ss]
- Abs.LayoutTop      -> [Left $ LayoutTop]
+ Abs.LayoutTop      -> [Left LayoutTop]
  Abs.Function f xs e -> [Left $ FunDef (transIdent f) (map transArg xs) (transExp e)]
 
 delimiterRules :: Abs.Cat -> String -> String -> Abs.Separation -> Abs.MinimumSize -> [Rule]
@@ -250,7 +250,7 @@ separatorRules size c s = if null s then terminatorRules size c s else ifEmpty [
  where
    c' = transCat c
    cs = ListCat c'
-   ifEmpty rs = if (size == Abs.MNonempty)
+   ifEmpty rs = if size == Abs.MNonempty
                 then rs
                 else Rule "[]" cs [] : rs
 
@@ -262,9 +262,9 @@ terminatorRules size c s = [
  where
    c' = transCat c
    cs = ListCat c'
-   s' its = if null s then its else (Right s : its)
-   ifEmpty = if (size == Abs.MNonempty)
-                then Rule "(:[])" cs ([Left c'] ++ if null s then [] else [Right s])
+   s' its = if null s then its else Right s : its
+   ifEmpty = if size == Abs.MNonempty
+                then Rule "(:[])" cs (Left c' : if null s then [] else [Right s])
                 else Rule "[]" cs []
 
 coercionRules :: Abs.Ident -> Integer -> [Rule]
@@ -322,16 +322,16 @@ transArg (Abs.Arg x) = transIdent x
 transExp :: Abs.Exp -> Exp
 transExp e = case e of
     Abs.App x es    -> App (transIdent x) (map transExp es)
-    Abs.Var x	    -> App (transIdent x) []
+    Abs.Var x       -> App (transIdent x) []
     Abs.Cons e1 e2  -> cons e1 (transExp e2)
-    Abs.List es	    -> foldr cons nil es
+    Abs.List es     -> foldr cons nil es
     Abs.LitInt x    -> LitInt x
     Abs.LitDouble x -> LitDouble x
     Abs.LitChar x   -> LitChar x
     Abs.LitString x -> LitString x
   where
     cons e1 e2 = App "(:)" [transExp e1, e2]
-    nil	       = App "[]" []
+    nil        = App "[]" []
 
 --------------------------------------------------------------------------------
 
@@ -389,7 +389,7 @@ checkRule cf (Rule (f,_) cat rhs)
    s  = f ++ "." +++ show cat +++ "::=" +++ unwords (map (either show show) rhs) -- Todo: consider using the show instance of Rule
    c  = normCat cat
    cs = [normCat c | Left c <- rhs]
-   badCoercion = isCoercion f && not ([c] == cs) 
+   badCoercion = isCoercion f && [c] /= cs
    badNil      = isNilFun f   && not (isList c && null cs)
    badOne      = isOneFun f   && not (isList c && cs == [catOfList c])
    badCons     = isConsFun f  && not (isList c && cs == [catOfList c, c])
@@ -399,7 +399,7 @@ checkRule cf (Rule (f,_) cat rhs)
 
    badMissing  = not (null missing)
    missing     = filter nodef [show c | Left c <- rhs]
-   nodef t = notElem t defineds
+   nodef t = t `notElem` defineds
    defineds =
     show InternalCat : tokenNames cf ++ specialCatsP ++ map (show . valCat) (rulesOfCF cf)
    badTypeName = not (null badtypes)

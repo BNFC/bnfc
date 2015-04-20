@@ -40,10 +40,10 @@
 module BNFC.Backend.C.CFtoCSkel (cf2CSkel) where
 
 import BNFC.CF
-import BNFC.Utils			( (+++) )
+import BNFC.Utils                       ( (+++) )
 import BNFC.Backend.Common.NamedVariables
 import BNFC.Backend.Utils (isTokenType)
-import Data.Char		( toLower, toUpper )
+import Data.Char                ( toLower, toUpper )
 import Data.Either (lefts)
 
 import Text.PrettyPrint
@@ -52,7 +52,7 @@ import Text.PrettyPrint
 cf2CSkel :: CF -> (String, String)
 cf2CSkel cf = (mkHFile cf groups, mkCFile cf groups)
  where
-    groups = (fixCoercions (ruleGroups cf))
+    groups = fixCoercions (ruleGroups cf)
 
 
 {- **** Header (.H) File Functions **** -}
@@ -79,7 +79,7 @@ mkHFile cf groups = unlines
    ]
   prUserH user = "void visit" ++ u' ++ "(" ++ show user ++ " p);"
     where
-     u' = let u = show user in ((toUpper (head u)) : (map toLower (tail u))) --this is a hack to fix a potential capitalization problem.
+     u' = let u = show user in toUpper (head u) : map toLower (tail u) --this is a hack to fix a potential capitalization problem.
   footer = unlines
    [
     "void visitIdent(Ident i);",
@@ -132,7 +132,7 @@ mkCFile cf groups = concat
       "}"
      ]
      where
-      u' = ((toUpper (head u)) : (map toLower (tail u))) --this is a hack to fix a potential capitalization problem.
+      u' = toUpper (head u) : map toLower (tail u) --this is a hack to fix a potential capitalization problem.
     footer = unlines
      [
       "void visitIdent(Ident i)",
@@ -160,39 +160,38 @@ mkCFile cf groups = concat
 
 --Visit functions for a category.
 prData :: [UserDef] -> (Cat, [Rule]) -> String
-prData user (cat, rules) =
-    if isList cat
-      then unlines
-	       [
-		"void visit" ++ cl ++ "("++ cl +++ vname ++ ")",
-		"{",
-		"  while(" ++ vname ++ " != 0)",
-		"  {",
-		"    /* Code For " ++ cl ++ " Goes Here */",
-		"    visit" ++ ecl ++ "(" ++ vname ++ "->" ++ member ++ "_);",
-		"    " ++ vname +++ "=" +++ vname ++ "->" ++ vname ++ "_;",
-		"  }",
-		"}",
-		""
-	       ]
+prData user (cat, rules)
+  | isList cat = unlines
+               [
+                "void visit" ++ cl ++ "("++ cl +++ vname ++ ")",
+                "{",
+                "  while(" ++ vname ++ " != 0)",
+                "  {",
+                "    /* Code For " ++ cl ++ " Goes Here */",
+                "    visit" ++ ecl ++ "(" ++ vname ++ "->" ++ member ++ "_);",
+                "    " ++ vname +++ "=" +++ vname ++ "->" ++ vname ++ "_;",
+                "  }",
+                "}",
+                ""
+               ]
       -- Not a list:
-      else unlines
-	       [
-		"void visit" ++ cl ++ "(" ++ cl ++ " _p_)",
-		"{",
-		"  switch(_p_->kind)",
-		"  {",
-		concatMap (render . prPrintRule user) rules,
-		"  default:",
-		"    fprintf(stderr, \"Error: bad kind field when printing " ++ cl ++ "!\\n\");",
-		"    exit(1);",
-		"  }",
-		"}\n"
-	       ]
+  | otherwise = unlines
+               [
+                "void visit" ++ cl ++ "(" ++ cl ++ " _p_)",
+                "{",
+                "  switch(_p_->kind)",
+                "  {",
+                concatMap (render . prPrintRule user) rules,
+                "  default:",
+                "    fprintf(stderr, \"Error: bad kind field when printing " ++ cl ++ "!\\n\");",
+                "    exit(1);",
+                "  }",
+                "}\n"
+               ]
     where cl = identCat $ normCat cat
-	  ecl = identCat $ normCatOfList cat
-	  vname = map toLower cl
-	  member = map toLower ecl
+          ecl = identCat $ normCatOfList cat
+          vname = map toLower cl
+          member = map toLower ecl
 
 -- | Visits all the instance variables of a category.
 -- >>> let ab = Cat "ab"
@@ -228,9 +227,9 @@ prPrintRule _user (Rule _fun _ _) = ""
 -- Prints the actual instance-variable visiting.
 prCat :: [UserDef] -> Fun -> (Cat, Doc) -> Doc
 prCat user fnm (cat, vname) =
-      let visitf = if isTokenType user cat
-                       then "visit" <> basicFunName cat
-                       else "visit" <> text (identCat (normCat cat))
+      let visitf = "visit" <> if isTokenType user cat
+                       then basicFunName cat
+                       else text (identCat (normCat cat))
       in visitf <> parens ("_p_->u." <> text v <> "_." <> vname ) <> ";"
     where v = map toLower $ normFun fnm
 

@@ -65,14 +65,14 @@ makeJava options@Options{..} cf =
        let packageBase = case inPackage of
                              Nothing -> lang
                              Just p -> p ++ "." ++ lang
-	   packageAbsyn = packageBase ++ "." ++ "Absyn"
-	   dirBase = pkgToDir packageBase
-	   dirAbsyn = pkgToDir packageAbsyn
+           packageAbsyn = packageBase ++ "." ++ "Absyn"
+           dirBase = pkgToDir packageBase
+           dirAbsyn = pkgToDir packageAbsyn
        let absynFiles = remDups $ cf2JavaAbs packageBase packageAbsyn cf
-	   absynBaseNames = map fst absynFiles
-	   absynFileNames = map (dirAbsyn ++) absynBaseNames
+           absynBaseNames = map fst absynFiles
+           absynFileNames = map (dirAbsyn ++) absynBaseNames
        let writeAbsyn (filename, contents) =
-	       mkfile (dirAbsyn ++ filename ++ ".java") contents
+               mkfile (dirAbsyn ++ filename ++ ".java") contents
        mapM_ writeAbsyn absynFiles
        mkfile (dirBase ++ "PrettyPrinter.java") $ cf2JavaPrinter packageBase packageAbsyn cf
        mkfile (dirBase ++ "VisitSkel.java") $ cf2VisitSkel packageBase packageAbsyn cf
@@ -93,8 +93,8 @@ makeJava options@Options{..} cf =
     where
       remDups [] = []
       remDups ((a,b):as) = case lookup a as of
-			     Just {} -> remDups as
-			     Nothing -> (a, b) : (remDups as)
+                             Just {} -> remDups as
+                             Nothing -> (a, b) : remDups as
 
       pkgToDir :: String -> FilePath
       pkgToDir s = replace '.' pathSeparator s ++ [pathSeparator]
@@ -115,16 +115,16 @@ makefile name dirBase dirAbsyn absynFileNames jflex =
               else Makefile.mkVar "JLEX" "JLex.Main" )
   $ Makefile.mkRule "all" [ "test" ]
     []
-  $ Makefile.mkRule "test" ("absyn":(map (dirBase ++) [ "Yylex.class",
-				                       "PrettyPrinter.class",
-				                       "Test.class",
+  $ Makefile.mkRule "test" ("absyn" : map (dirBase ++) [ "Yylex.class",
+                                                       "PrettyPrinter.class",
+                                                       "Test.class",
                                                        "ComposVisitor.class",
                                                        "AbstractVisitor.class",
                                                        "FoldVisitor.class",
                                                        "AllVisitor.class",
-				                       "parser.class",
-				                       "sym.class",
-				                       "Test.class"]))
+                                                       "parser.class",
+                                                       "sym.class",
+                                                       "Test.class"])
     []
   $ Makefile.mkRule ".PHONY" ["absyn"]
     []
@@ -160,25 +160,25 @@ makefile name dirBase dirAbsyn absynFileNames jflex =
 --     , "rm -f " ++ "Test" ++ name
     , " rmdir " ++ dirAbsyn
     , " rm -f " ++ unwords (map (dirBase ++) [
-					        "Yylex",
-						name ++ ".cup",
-						"Yylex.java",
-						"VisitSkel.java",
+                                                "Yylex",
+                                                name ++ ".cup",
+                                                "Yylex.java",
+                                                "VisitSkel.java",
                                                 "ComposVisitor.java",
                                                 "AbstractVisitor.java",
                                                 "FoldVisitor.java",
                                                 "AllVisitor.java",
-						"PrettyPrinter.java",
-						"Skeleton.java",
-						"Test.java",
-						"sym.java",
-						"parser.java",
-						"*.class"])
+                                                "PrettyPrinter.java",
+                                                "Skeleton.java",
+                                                "Test.java",
+                                                "sym.java",
+                                                "parser.java",
+                                                "*.class"])
     , "rm -f Makefile"
     , "rmdir -p " ++ dirBase ]
   ""
     where absynJavaSrc = unwords (map (++ ".java") absynFileNames)
-	  absynJavaClass = unwords (map (++ ".class") absynFileNames)
+          absynJavaClass = unwords (map (++ ".class") absynFileNames)
 
 javaTest :: String -> String -> CF -> Doc
 javaTest packageBase packageAbsyn cf = vcat

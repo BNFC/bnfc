@@ -28,6 +28,7 @@ import BNFC.Backend.Haskell.CFtoTemplate ()
 import BNFC.Backend.Haskell.HsOpts (xmlFile, xmlFileM, absFileM)
 import Data.List (intersperse, intercalate)
 import Data.Char(toLower)
+import Data.Maybe (fromMaybe)
 
 type Coding = Bool ---- change to at least three values
 
@@ -87,7 +88,7 @@ endtagDef b = if b then endtagDefConstr else endtagDefNotyp
 -- to show both types and constructors as tags;
 -- lengthy, but validation guarantees type correctness
 -- flag -xmlt
-elemDataConstrs cf (cat,fcs) = elemc cat ([(f,rhsCat cf f cs) | (f,cs) <- fcs])
+elemDataConstrs cf (cat,fcs) = elemc cat [(f,rhsCat cf f cs) | (f,cs) <- fcs]
 efunDefConstrs = "elemFun i t x = [replicate (i+i) ' ' ++ tag t ++ \" \" ++ etag x]"
 endtagDefConstrs = "endtag f c = tag (\"/\" ++ c)"
 
@@ -95,7 +96,7 @@ endtagDefConstrs = "endtag f c = tag (\"/\" ++ c)"
 -- to show constructors as empty tags;
 -- shorter than 0, but validation still guarantees type correctness
 -- flag -xmlt
-elemDataConstr cf (cat,fcs) = elemc cat ([(f,rhsCat cf f cs) | (f,cs) <- fcs])
+elemDataConstr cf (cat,fcs) = elemc cat [(f,rhsCat cf f cs) | (f,cs) <- fcs]
 efunDefConstr = "elemFun i t x = [replicate (i+i) ' ' ++ tag t ++ \" \" ++ etag x]"
 endtagDefConstr = "endtag f c = tag (\"/\" ++ c)"
 
@@ -116,7 +117,7 @@ endtagDefNotyp = "endtag f c = tag (\"/\" ++ f)"
 
 rhsCat :: CF -> Fun -> [Cat] -> String
 rhsCat cf fun cs = parenth (intercalate ", " (fun:map (symbCat cf) cs))
-rhsCatNot cf cs = if null cs then "EMPTY" else concat (intersperse ", " (map (symbCatNot cf) cs))
+rhsCatNot cf cs = if null cs then "EMPTY" else intercalate", " (map (symbCatNot cf) cs)
 
 symbCat cf c
   | isList c  = show (normCatOfList c) ++ if isEmptyListCat cf c then "*" else "+"
@@ -181,14 +182,14 @@ integerRule cf = showsPrintRule cf "Integer"
 doubleRule cf = showsPrintRule cf "Double"
 stringRule cf = showsPrintRule cf "Char" ++++ "  prtList i xs = elemTok i \"String\" xs"
 
-showsPrintRule _ t = unlines $ [
+showsPrintRule _ t = unlines [
   "instance XPrint " ++ t ++ " where",
   "  prt i x = elemTokS i" +++ "\"" ++ t ++ "\"" +++ "x"
   ]
 
 identRule cf = ownPrintRule cf (Cat "Ident")
 
-ownPrintRule cf cat = unlines $ [
+ownPrintRule cf cat = unlines [
   "instance XPrint " ++ show cat ++ " where",
   "  prt i (" ++ show cat ++ posn ++ ") = elemTok i" +++ "\"" ++ show cat ++ "\"" +++ "x"
   ]
@@ -202,7 +203,7 @@ rules cf = unlines $
    toArgs (cons,args) = ((cons, names (map (checkRes . var) args) (0 :: Int)), ruleOf cons)
    names [] _ = []
    names (x:xs) n
-     | elem x xs = (x ++ show n) : names xs (n+1)
+     | x `elem` xs = (x ++ show n) : names xs (n+1)
      | otherwise = x             : names xs n
    var (ListCat c)  = var c ++ "s"
    var (Cat "Ident")   = "id"
@@ -212,12 +213,12 @@ rules cf = unlines $
    var (Cat "Double")  = "d"
    var cat            = map toLower (show cat)
    checkRes s
-        | elem s reservedHaskell = s ++ "'"
-	| otherwise              = s
+        | s `elem` reservedHaskell = s ++ "'"
+        | otherwise              = s
    reservedHaskell = ["case","class","data","default","deriving","do","else","if",
-			  "import","in","infix","infixl","infixr","instance","let","module",
-			  "newtype","of","then","type","where","as","qualified","hiding"]
-   ruleOf s = maybe undefined id $ lookupRule s (rulesOfCF cf)
+                          "import","in","infix","infixl","infixr","instance","let","module",
+                          "newtype","of","then","type","where","as","qualified","hiding"]
+   ruleOf s = fromMaybe undefined $ lookupRule s (rulesOfCF cf)
 
 --- case_fun :: Cat -> [(Constructor,Rule)] -> String
 case_fun cat xs = unlines [

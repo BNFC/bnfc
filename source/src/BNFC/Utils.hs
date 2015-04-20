@@ -18,35 +18,31 @@
 -}
 
 module BNFC.Utils
-    ( (+++), (++++), (+++++)
+    ( (+++), (++++)
     , mkName, mkNames, NameStyle(..)
-    , lowerCase, upperCase, camelCase, mixedCase, snakeCase
-    , prParenth, replace, split, splitAll, prepareDir
+    , lowerCase, upperCase, mixedCase, camelCase, snakeCase
+    , replace, prParenth
     , writeFileRep
     ) where
 
 import Control.Arrow ((&&&))
 import Control.DeepSeq (rnf)
-import Control.Monad (unless)
 import Data.Char
 import Data.List (intercalate)
 import System.IO (IOMode(ReadMode),hClose,hGetContents,openFile)
 import System.IO.Error (tryIOError)
 import System.Directory (createDirectory, doesDirectoryExist, renameFile,
                          removeFile)
-import System.FilePath (pathSeparator)
-import Text.PrettyPrint
+import BNFC.PrettyPrint
 
 infixr 5 +++
 infixr 5 ++++
-infixr 5 +++++
 
 -- printing operations
 
-(+++), (++++), (+++++) :: String -> String -> String
+(+++), (++++) :: String -> String -> String
 a +++ b   = a ++ " "    ++ b
 a ++++ b  = a ++ "\n"   ++ b
-a +++++ b = a ++ "\n\n" ++ b
 
 prParenth :: String -> String
 prParenth s = if s == "" then "" else "(" ++ s ++ ")"
@@ -55,55 +51,12 @@ prParenth s = if s == "" then "" else "(" ++ s ++ ")"
 
 -- | Replace all occurences of a value by another value
 replace :: Eq a =>
-	   a -- ^ Value to replace
-	-> a -- ^ Value to replace it with
-	-> [a] -> [a]
+           a -- ^ Value to replace
+        -> a -- ^ Value to replace it with
+        -> [a] -> [a]
 replace x y xs = [ if z == x then y else z | z <- xs]
 
--- | Split a list on the first occurence of a value.
---   Does not include the value that was split on in either
---   of the returned lists.
-split :: Eq a => a -> [a] -> ([a],[a])
-split x xs = let (ys, zs) = break (==x) xs
-		 in (ys, drop 1 zs)
-
--- | Split a list on every occurence of a value.
---   If the value does not occur in the list,
---   the result is the singleton list containing the input list.
---   Thus the returned list is never the empty list.
-splitAll :: Eq a => a -> [a] -> [[a]]
-splitAll _ [] = [[]]
-splitAll x xs = let (ys, zs) = break (==x) xs
-		    in ys : case zs of
-				    [] -> []
-				    _:zs' -> splitAll x zs'
-
 -- * File utilities
-
--- | Ensure that a directory exists.
-prepareDir :: FilePath -> IO ()
-prepareDir = mapM_ createDirectoryIfNotExists . pathInits
-
--- | Ensure that a directory exists. All parent directories
---   must already exist.
-createDirectoryIfNotExists :: FilePath -> IO ()
-createDirectoryIfNotExists d = do
-      exists <- doesDirectoryExist d
-      unless exists (createDirectory d)
-
--- | Like the prelude function 'inits' but for path names.
---   For example:
--- > pathInits "foo/bar" = ["foo","foo/bar"]
--- > pathInits "foo/bar/baz.hs" = ["foo","foo/bar","foo/bar/baz.hs"]
-pathInits :: String -> [String]
-pathInits "" = []
-pathInits xs = let (ys,zs) = split pathSeparator xs
-		   in ys : map ((ys ++ [pathSeparator]) ++) (pathInits zs)
-
--- | Like basename(1), remove all leading directories from a path name.
--- basename :: String -> String
--- basename = last . splitAll pathSeparator
-
 
 -- | Write a file, after making a backup of an existing file with the same name.
 -- If an old version of the file exist and the new version is the same,
@@ -140,14 +93,14 @@ writeFileRep path s =
         do inFile <- openFile path' ReadMode
            contents <- hGetContents inFile
            rnf contents `seq` hClose inFile
-	   return contents
+           return contents
 
 -- *** Naming ***
 -- Because naming is hard (http://blog.codinghorror.com/i-shall-call-it-somethingmanager/)
 
 -- | Different case style
 data NameStyle = LowerCase  -- ^ e.g. @lowercase@
-               | UpperCase  -- ^ e.g. @UpperCase@
+               | UpperCase  -- ^ e.g. @UPPERCASE@
                | SnakeCase  -- ^ e.g. @snake_case@
                | CamelCase  -- ^ e.g. @CamelCase@
                | MixedCase  -- ^ e.g. @mixedCase@
@@ -257,6 +210,8 @@ parseIdent = p [] . map (classify &&& id)
     p acc ((O,_):cs) = reverse acc : p [] cs
     p acc [(_,c)] = p (c:acc) []
 
+data CharClass = U | L | O
+
 -- | Ident to lower case
 -- >>> lowerCase "MyIdent"
 -- myident
@@ -282,5 +237,3 @@ mixedCase = text . mkName [] MixedCase
 -- my_ident
 snakeCase :: String -> Doc
 snakeCase = text . mkName [] SnakeCase
-
-data CharClass = U | L | O

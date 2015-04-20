@@ -52,7 +52,7 @@ import BNFC.Backend.Common.NamedVariables hiding (IVar, getVars, varName)
 import Data.Function (on)
 import Data.List
 import Data.Char(toLower)
-import Data.Maybe(catMaybes)
+import Data.Maybe (mapMaybe)
 import Text.PrettyPrint
 
 --Produces abstract data types in Java.
@@ -77,29 +77,29 @@ cf2JavaAbs _ packageAbsyn cf =
 --Generates a (possibly abstract) category class, and classes for all its rules.
 prData :: String -> String -> [UserDef] -> Data ->[(String, String)]
 prData header packageAbsyn user (cat, rules) =
-  categoryClass ++ (catMaybes $ map (prRule header packageAbsyn funs user cat) rules)
+  categoryClass ++ mapMaybe (prRule header packageAbsyn funs user cat) rules
       where
       funs = map fst rules
       categoryClass
-	  | show cat `elem` funs = [] -- the catgory is also a function, skip abstract class
-	  | otherwise = [(identCat cat, header ++++
-			 unlines [
-				  "public abstract class" +++ cls
+          | show cat `elem` funs = [] -- the catgory is also a function, skip abstract class
+          | otherwise = [(identCat cat, header ++++
+                         unlines [
+                                  "public abstract class" +++ cls
                                     +++ "implements java.io.Serializable {",
-				  "  public abstract <R,A> R accept("
-				  ++ cls ++ ".Visitor<R,A> v, A arg);",
-				  prVisitor packageAbsyn funs,
-				  "}"
-				 ])]
+                                  "  public abstract <R,A> R accept("
+                                  ++ cls ++ ".Visitor<R,A> v, A arg);",
+                                  prVisitor packageAbsyn funs,
+                                  "}"
+                                 ])]
                 where cls = identCat cat
 
 prVisitor :: String -> [String] -> String
 prVisitor packageAbsyn funs =
     unlines [
-	     "  public interface Visitor <R,A> {",
-	     unlines (map prVisitFun funs),
-	     "  }"
-	    ]
+             "  public interface Visitor <R,A> {",
+             unlines (map prVisitFun funs),
+             "  }"
+            ]
     where
     prVisitFun f = "    public R visit(" ++ packageAbsyn ++ "." ++ f ++ " p, A arg);"
 
@@ -108,18 +108,16 @@ prRule :: String   -- ^ Header
        -> String   -- ^ Abstract syntax package name
        -> [String] -- ^ Names of all constructors in the category
        -> [UserDef] -> Cat -> (Fun, [Cat]) -> Maybe (String, String)
-prRule h packageAbsyn funs user c (fun, cats) =
-    if isNilFun fun || isOneFun fun
-    then Nothing  --these are not represented in the AbSyn
-    else if isConsFun fun
-    then Just $ (fun', --this is the linked list case.
+prRule h packageAbsyn funs user c (fun, cats)
+  | isNilFun fun || isOneFun fun = Nothing  --these are not represented in the AbSyn
+  | isConsFun fun =Just (fun', --this is the linked list case.
     unlines
     [
      h,
      "public class" +++ fun' +++ "extends java.util.LinkedList<"++ et ++"> {",
      "}"
     ])
-    else Just $ (fun, --a standard rule
+  | otherwise = Just (fun, --a standard rule
     unlines
     [
      h,
@@ -138,14 +136,14 @@ prRule h packageAbsyn funs user c (fun, cats) =
      fun' = identCat (normCat c)
      isAlsoCategory = fun == show c
      --This handles the case where a LBNF label is the same as the category.
-     ext = if isAlsoCategory then "" else " extends" +++ (identCat c)
+     ext = if isAlsoCategory then "" else " extends" +++ identCat c
      et = typename (show $ normCatOfList c) user
 
 
 --The standard accept function for the Visitor pattern
 prAccept :: String -> Cat -> String -> String
 prAccept pack cat _ = "\n  public <R,A> R accept(" ++ pack ++ "." ++ show cat
-		      ++ ".Visitor<R,A> v, A arg) { return v.visit(this, arg); }\n"
+                      ++ ".Visitor<R,A> v, A arg) { return v.visit(this, arg); }\n"
 
 -- Creates the equals() method.
 prEquals :: String -> String -> [IVar] -> String
@@ -162,7 +160,7 @@ prEquals pack fun vs =
                               "}"]
   where
   fqn = pack++"."++fun
-  checkKids = concat $ intersperse " && " $ map checkKid vs
+  checkKids = intercalate " && " $ map checkKid vs
   checkKid iv = "this." ++ v ++ ".equals(x." ++ v ++ ")"
       where v = render (iVarName iv)
 
@@ -177,8 +175,7 @@ prHashCode _ _ vs =
   aPrime = 37
   hashKids [] = show aPrime
   hashKids (v:vs) = hashKids_ (hashKid v) vs
-  hashKids_ r [] = r
-  hashKids_ r (v:vs) = hashKids_ (show aPrime ++ "*" ++ "(" ++ r ++ ")+" ++ hashKid v) vs
+  hashKids_ = foldl (\r v -> show aPrime ++ "*" ++ "(" ++ r ++ ")+" ++ hashKid v)
   hashKid iv = "this." ++ render (iVarName iv) ++ ".hashCode()"
 
 
@@ -229,8 +226,8 @@ prConstructor c u vs cats =
 --Prints the parameters to the constructors.
 prParams :: [Cat] -> [UserDef] -> Int -> Int -> [(String,String)]
 prParams [] _ _ _ = []
-prParams (c:cs) u n m = (typename (identCat c) u,"p" ++ (show (m-n)))
-			: (prParams cs u (n-1) m)
+prParams (c:cs) u n m = (typename (identCat c) u, 'p' : show (m-n))
+                        : prParams cs u (n-1) m
 
 --This algorithm peeks ahead in the list so we don't use map or fold
 prAssigns :: [IVar] -> [String] -> String
@@ -256,16 +253,12 @@ getVars cs user = reverse $ singleToZero $ foldl addVar [] (map identCat cs)
                                then 0 else n]
 
 varName :: String -- ^ category name
-	-> String -- ^ Variable name
-varName c = (map toLower c) ++ "_"
+        -> String -- ^ Variable name
+varName c = map toLower c ++ "_"
 
 --This makes up for the fact that there's no typedef in Java
 typename :: String -> [UserDef] -> String
-typename t user =
- if t == "Ident"
-  then "String"
-  else if t == "Char"
-  then "Character"
-  else if elem t (map show user)
-  then "String"
-  else t
+typename t user | t == "Ident"            = "String"
+                | t == "Char"             = "Character"
+                | t `elem` map show user  = "String"
+                | otherwise               = t

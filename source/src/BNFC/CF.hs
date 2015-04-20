@@ -19,77 +19,77 @@
 -}
 
 module BNFC.CF (
-	    -- Types.
-	    CF,
+            -- Types.
+            CF,
             CFG(..), pragmasOfCF, -- ...
-	    Rule, Rul(..), lookupRule,
-	    Pragma(..),
-	    Exp(..),
-	    Literal,
-	    Symbol,
-	    KeyWord,
+            Rule, Rul(..), lookupRule,
+            Pragma(..),
+            Exp(..),
+            Literal,
+            Symbol,
+            KeyWord,
             Cat(..), strToCat,
             catString, catInteger, catDouble, catChar, catIdent,
             NonTerminal,
-	    Fun,
-	    Tree(..),
-	    prTree,         -- print an abstract syntax tree
-	    Data,           -- describes the abstract syntax of a grammar
-	    cf2data,        -- translates a grammar to a Data object.
-	    cf2dataLists,   -- translates to a Data with List categories included.
+            Fun,
+            Tree(..),
+            prTree,         -- print an abstract syntax tree
+            Data,           -- describes the abstract syntax of a grammar
+            cf2data,        -- translates a grammar to a Data object.
+            cf2dataLists,   -- translates to a Data with List categories included.
             getAbstractSyntax,
-	    -- Literal categories, constants,
-	    firstCat,       -- the first value category in the grammar.
-	    firstEntry,     -- the first entry or the first value category
-	    specialCats,    -- ident
-	    specialCatsP,   -- all literals
-	    specialData,    -- special data
-	    isCoercion,     -- wildcards in grammar (avoid syntactic clutter)
-	    isDefinedRule,  -- defined rules (allows syntactic sugar)
-	    isProperLabel,  -- not coercion or defined rule
-	    allCats,        -- all categories of a grammar
+            -- Literal categories, constants,
+            firstCat,       -- the first value category in the grammar.
+            firstEntry,     -- the first entry or the first value category
+            specialCats,    -- ident
+            specialCatsP,   -- all literals
+            specialData,    -- special data
+            isCoercion,     -- wildcards in grammar (avoid syntactic clutter)
+            isDefinedRule,  -- defined rules (allows syntactic sugar)
+            isProperLabel,  -- not coercion or defined rule
+            allCats,        -- all categories of a grammar
             allCatsNorm,
-	    allCatsIdNorm,
-	    allEntryPoints,
-	    reservedWords,
+            allCatsIdNorm,
+            allEntryPoints,
+            reservedWords,
             cfTokens,
-	    symbols,
-	    literals,
-	    reversibleCats,
-	    findAllReversibleCats, -- find all reversible categories
-	    identCat,       -- transforms '[C]' to ListC (others, unchanged).
-	    isParsable,
-	    rulesOfCF,      -- All rules of a grammar.
-	    rulesForCat,    -- rules for a given category
-	    rulesForNormalizedCat,    -- rules for a given category
-	    ruleGroups,     -- Categories are grouped with their rules.
+            symbols,
+            literals,
+            reversibleCats,
+            findAllReversibleCats, -- find all reversible categories
+            identCat,       -- transforms '[C]' to ListC (others, unchanged).
+            isParsable,
+            rulesOfCF,      -- All rules of a grammar.
+            rulesForCat,    -- rules for a given category
+            rulesForNormalizedCat,    -- rules for a given category
+            ruleGroups,     -- Categories are grouped with their rules.
             ruleGroupsInternals, --As above, but includes internal cats.
             notUniqueNames, -- list of not unique names (replaces the following 2)
---	    notUniqueFuns,   -- Returns a list of function labels that are not unique.
+--          notUniqueFuns,   -- Returns a list of function labels that are not unique.
 --            badInheritence, -- Returns a list of all function labels that can cause problems in languages with inheritence.
-	    isList,         -- Checks if a category is a list category.
+            isList,         -- Checks if a category is a list category.
             isTokenCat,
-	    -- Information functions for list functions.
-	    isNilFun,       -- empty list function? ([])
-	    isOneFun,       -- one element list function? (:[])
+            -- Information functions for list functions.
+            isNilFun,       -- empty list function? ([])
+            isOneFun,       -- one element list function? (:[])
             hasOneFunc,
             getCons,
             getSeparatorByPrecedence,
-	    isConsFun,      -- constructor function? (:)
-	    isNilCons,      -- either three of above?
+            isConsFun,      -- constructor function? (:)
+            isNilCons,      -- either three of above?
             isEmptyListCat, -- checks if the list permits []
-	    revSepListRule, -- reverse a rule, if it is of form C t [C].
-	    normCat,
+            revSepListRule, -- reverse a rule, if it is of form C t [C].
+            normCat,
             isDataCat,
-	    normCatOfList,  -- Removes precendence information and enclosed List. C1 => C, C2 => C
-	    catOfList,
-	    comments,       -- translates the pragmas into two list containing the s./m. comments
+            normCatOfList,  -- Removes precendence information and enclosed List. C1 => C, C2 => C
+            catOfList,
+            comments,       -- translates the pragmas into two list containing the s./m. comments
             tokenPragmas,   -- get the user-defined regular expression tokens
             tokenNames,     -- get the names of all user-defined tokens
-	    precCat,        -- get the precendence level of a Cat C1 => 1, C => 0
-	    precLevels,     -- get all precendence levels in the grammar, sorted in increasing order.
-	    precRule,       -- get the precendence level of the value category of a rule.
-	    precCF,         -- Check if the CF consists of precendence levels.
+            precCat,        -- get the precendence level of a Cat C1 => 1, C => 0
+            precLevels,     -- get all precendence levels in the grammar, sorted in increasing order.
+            precRule,       -- get the precendence level of the value category of a rule.
+            precCF,         -- Check if the CF consists of precendence levels.
             isUsedCat,
             isPositionCat,
             hasIdent,
@@ -99,7 +99,7 @@ module BNFC.CF (
 
             CFP,            -- CF with profiles
             RuleP,
-	    FunP,
+            FunP,
             Prof,
             cf2cfpRule,
             cf2cfp,
@@ -164,39 +164,39 @@ type Info = ([Literal],[Symbol],[KeyWord],[Cat])
 
 -- Expressions for function definitions
 data Exp = App String [Exp]
-	 | LitInt Integer
-	 | LitDouble Double
-	 | LitChar Char
-	 | LitString String
+         | LitInt Integer
+         | LitDouble Double
+         | LitChar Char
+         | LitString String
   deriving (Eq)
 
 instance Show Exp where
     showsPrec p e =
-	case listView e of
-	    Right es	->
-		showString "["
-		. foldr (.) id (intersperse (showString ", ") $ map shows es)
-		. showString "]"
-	    Left (App x []) -> showString x
-	    Left (App  "(:)" [e1,e2]) ->
-		showParen (p>0)
-		$ showsPrec 1 e1
-		. showString " : "
-		. shows e2
-	    Left (App x es) ->
-		showParen (p>1)
-		$ foldr (.) id
-		$ intersperse (showString " ")
-		$ showString x : map (showsPrec 2) es
-	    Left (LitInt n)	-> shows n
-	    Left (LitDouble x)	-> shows x
-	    Left (LitChar c)	-> shows c
-	    Left (LitString s)	-> shows s
-	where
-	    listView (App "[]" []) = Right []
-	    listView (App "(:)" [e1,e2])
-		| Right es <- listView e2   = Right $ e1:es
-	    listView x = Left x
+        case listView e of
+            Right es    ->
+                showString "["
+                . foldr (.) id (intersperse (showString ", ") $ map shows es)
+                . showString "]"
+            Left (App x []) -> showString x
+            Left (App  "(:)" [e1,e2]) ->
+                showParen (p>0)
+                $ showsPrec 1 e1
+                . showString " : "
+                . shows e2
+            Left (App x es) ->
+                showParen (p>1)
+                $ foldr (.) id
+                $ intersperse (showString " ")
+                $ showString x : map (showsPrec 2) es
+            Left (LitInt n)     -> shows n
+            Left (LitDouble x)  -> shows x
+            Left (LitChar c)    -> shows c
+            Left (LitString s)  -> shows s
+        where
+            listView (App "[]" []) = Right []
+            listView (App "(:)" [e1,e2])
+                | Right es <- listView e2   = Right $ e1:es
+            listView x = Left x
 
 -- | Pragmas
 data Pragma = CommentS  String -- ^ for single line comments
@@ -206,9 +206,9 @@ data Pragma = CommentS  String -- ^ for single line comments
             | Layout [String]
             | LayoutStop [String]
             | LayoutTop
-	    | FunDef String [String] Exp
+            | FunDef String [String] Exp
             -- ...
-	      deriving (Show)
+              deriving (Show)
 
 -- | User-defined regular expression tokens
 tokenPragmas :: CFG f -> [(Cat,Reg)]
@@ -293,7 +293,7 @@ strToCat s =
   where cat2cat (AbsBNF.IdCat (AbsBNF.Ident i)) =
             case span isDigit (reverse i) of
                 ([],c') -> Cat (reverse c')
-	        (d,c') ->  CoercCat (reverse c') (read (reverse d))
+                (d,c') ->  CoercCat (reverse c') (read (reverse d))
         cat2cat (AbsBNF.ListCat c) = ListCat (cat2cat c)
 
 -- Build-in categories contants
@@ -426,8 +426,8 @@ firstCat = valCat . head . rulesOfCF
 
 firstEntry :: CF -> Cat
 firstEntry cf = case allEntryPoints cf of
-		 (x:_) -> x
-		 _     -> firstCat cf
+                 (x:_) -> x
+                 _     -> firstCat cf
 
 rulesOfCF   :: CFG f -> [Rul f]
 rulesOfCFP  :: CFP -> [RuleP]
@@ -528,8 +528,8 @@ reversibleCats cf = cats
 -- | Comments can be defined by the 'comment' pragma
 comments :: CF -> ([(String,String)],[String])
 comments cf = case commentPragmas (pragmasOfCF cf) of
-	       xs -> ([p | CommentM p <- xs],
-		      [s | CommentS s <- xs])
+               xs -> ([p | CommentM p <- xs],
+                      [s | CommentS s <- xs])
 
 -- built-in categories (corresponds to lexer)
 
@@ -584,7 +584,7 @@ cf2data' :: (Cat -> Bool) -> CF -> [Data]
 cf2data' predicate cf =
   [(cat, nub (map mkData [r | r <- rulesOfCF cf,
                               let f = funRule r,
-			      not (isDefinedRule f),
+                              not (isDefinedRule f),
                               not (isCoercion f), eqCat cat (valCat r)]))
       | cat <- filter predicate (allCats cf)]
  where

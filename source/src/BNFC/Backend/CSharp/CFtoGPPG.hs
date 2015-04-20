@@ -101,7 +101,7 @@ definedRules _ cf = unlinesInline [
 
     rule f xs e =
       case checkDefinition' list ctx f xs e of
-        Bad err	-> error $ "Panic! This should have been caught already:\n" ++ err
+        Bad err -> error $ "Panic! This should have been caught already:\n" ++ err
         Ok (_,(_,_)) -> unlinesInline [
           "Defined Rule goes here"
           ]
@@ -204,7 +204,7 @@ constructRule namespace cf env rules nt =
 -- Generates a string containing the semantic action.
 -- This was copied from CFtoCup15, with only a few small modifications
 generateAction :: Namespace -> NonTerminal -> Fun -> Bool -> [(MetaVar, Bool)]
-	       -> Action
+               -> Action
 generateAction namespace nt f rev mbs
   | isNilFun f             = "$$ = new " ++ identifier namespace c ++ "();"
   | isOneFun f             = "$$ = new " ++ identifier namespace c ++ "(); $$.Add(" ++ p_1 ++ ");"

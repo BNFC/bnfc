@@ -339,9 +339,9 @@ prPrintFun _ = ""
 
 --Generates methods for the Pretty Printer
 prPrintData :: [UserDef] -> (Cat, [Rule]) -> String
-prPrintData user (cat, rules) =
+prPrintData user (cat, rules) = unlines $
  if isList cat
- then unlines
+ then
  [
   "void pp" ++ cl ++ "("++ cl +++ vname ++ ", int i)",
   "{",
@@ -364,7 +364,7 @@ prPrintData user (cat, rules) =
   "}",
   ""
  ] --Not a list:
- else unlines
+ else
  [
    "void pp" ++ cl ++ "(" ++ cl ++ " _p_, int _i_)",
    "{",
@@ -447,9 +447,9 @@ prShowFun _ = ""
 
 --This prints the functions for Abstract Syntax tree printing.
 prShowData :: [UserDef] -> (Cat, [Rule]) -> String
-prShowData user (cat, rules) =
+prShowData user (cat, rules) = unlines $
  if isList cat
- then unlines
+ then
  [
   "void sh" ++ cl ++ "("++ cl +++ vname ++ ")",
   "{",
@@ -470,7 +470,7 @@ prShowData user (cat, rules) =
   "}",
   ""
  ] --Not a list:
- else unlines
+ else
  [
    "void sh" ++ cl ++ "(" ++ cl ++ " _p_)",
    "{",
@@ -513,7 +513,7 @@ prShowRule user (Rule fun _ cats) | not (isCoercion fun) = unlines
     insertSpaces (x:[]) = [x]
     insertSpaces (x:xs) = if x == ""
       then insertSpaces xs
-      else (x : ["  bufAppendC(' ');\n"]) ++ (insertSpaces xs)
+      else x : "  bufAppendC(' ');\n" : insertSpaces xs
     allTerms [] = True
     allTerms (Left _:_) = False
     allTerms (_:zs) = allTerms zs
@@ -529,22 +529,22 @@ prShowCat user fnm c = case c of
         "    sh" ++ identCat (normCat cat) ++ "(_p_->u." ++ v ++ "_." ++ render nt ++ ");\n"
     (cat,nt) -> concat
           [
-	   "    bufAppendC('[');\n",
+           "    bufAppendC('[');\n",
            "    sh" ++ identCat (normCat cat) ++ "(_p_->u." ++ v ++ "_." ++ render nt ++ ");\n",
-	   "    bufAppendC(']');\n"
+           "    bufAppendC(']');\n"
           ]
   where v = map toLower (normFun fnm)
 
 {- **** Helper Functions Section **** -}
 --The visit-function name of a basic type
 basicFunName :: String -> String
-basicFunName v =
-    if "integer_" `isPrefixOf` v then "Integer"
-    else if "char_" `isPrefixOf` v then "Char"
-    else if "string_" `isPrefixOf` v then "String"
-    else if "double_" `isPrefixOf` v then "Double"
-    else if "ident_" `isPrefixOf` v then "Ident"
-    else "Ident" --User-defined type
+basicFunName v
+  | "integer_" `isPrefixOf` v = "Integer"
+  | "char_" `isPrefixOf` v    = "Char"
+  | "string_" `isPrefixOf` v  = "String"
+  | "double_" `isPrefixOf` v  = "Double"
+  | "ident_" `isPrefixOf` v   = "Ident"
+  | otherwise = "Ident" --User-defined type
 
 --An extremely simple renderCer for terminals.
 prRender :: String
