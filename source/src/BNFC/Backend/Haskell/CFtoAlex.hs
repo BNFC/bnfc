@@ -84,7 +84,7 @@ rMacros cf =
  where
   mkEsc = unwords . map ( f . (:[]))
   f s = if all isSpec s then '^':s else s
-  isSpec = flip elem "$+-*=<>[](){}!?.,;:^~|&%#/\\$_@\""
+  isSpec = flip elem ("$+-*=<>[](){}!?.,;:^~|&%#/\\$_@\"" :: String)
 
 restOfAlex :: CF -> [String]
 restOfAlex cf = [

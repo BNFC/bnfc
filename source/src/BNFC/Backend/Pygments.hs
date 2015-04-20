@@ -150,7 +150,7 @@ pyRegex reg = case reg of
   where
     escape '\n' = "\\n"
     escape '\t' = "\\t"
-    escape c | c `elem` ".'[]()|*+?{}\\" = ['\\',c]
+    escape c | c `elem` (".'[]()|*+?{}\\" :: String) = ['\\',c]
     escape c = [c]
     pyRegex' r@(RAlt{}) = parens (pyRegex r)
     pyRegex' r = pyRegex r

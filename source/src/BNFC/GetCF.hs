@@ -283,7 +283,7 @@ ebnfRules (Abs.Ident c) rhss =
      [Abs.NTerminal n] -> c' ++ identCat (transCat n)
      _ -> c' ++ "_" ++ show k
    c' = c --- normCat c
-   mkName k s = if all (\c -> isAlphaNum c || elem c "_'") s
+   mkName k s = if all (\c -> isAlphaNum c || elem c ("_'" :: String)) s
                    then s else show k
 
 transItem :: Abs.Item -> Either Cat String
@@ -460,7 +460,7 @@ expandRules (Abs.Grammar defs) =
       return (Abs.Rule fun (Abs.IdCat ident) rhs)
     mkName :: Abs.Ident -> [Abs.Item] -> State [(String, Int)] String
     mkName (Abs.Ident cat) [Abs.Terminal s]
-      | all (\c -> isAlphaNum c || elem c "_'") s = return (cat ++ "_" ++ s)
+      | all (\c -> isAlphaNum c || elem c ("_'" :: String)) s = return (cat ++ "_" ++ s)
     mkName (Abs.Ident cat) [Abs.NTerminal (Abs.IdCat (Abs.Ident s))] =
         return (cat ++ s)
     mkName (Abs.Ident cat) _ = do
