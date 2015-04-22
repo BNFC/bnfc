@@ -35,5 +35,8 @@ Releasing
 ☐ Upload the source package on hackage
     https://hackage.haskell.org/upload
 
+☐ Activate readthedocs for the new version
+    This is done at https://readthedocs.org/projects/bnfc/versions/
+
 .. _semantic versioning:
    http://semver.org/
