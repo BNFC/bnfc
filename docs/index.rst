@@ -17,6 +17,7 @@ Welcome to BNFC's documentation!
    lbnf
    changes
    othertools
+   dev/release
 
 
 Indices and tables
