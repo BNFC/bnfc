@@ -1,3 +1,12 @@
+2.8 Grégoire Détrez <gregoire.detrez@gu.se>  April 2015
+	* Builds with ghc 7.10.1
+	* Add support for JFlex (java)
+	* Add an option to generate files in an other directory
+	* Add an experimental option that turns the AST into a parameterized
+	  functor (in Haskell only)
+	* New pygment backend to generate syntax highlighters
+	* Bug fixes
+
 2.7.1 Grégoire Détrez <gregoire.detrez@gu.se> October 2014
 	* Generated haskell code is now warning free
 	* Removed unused terminal in happy
