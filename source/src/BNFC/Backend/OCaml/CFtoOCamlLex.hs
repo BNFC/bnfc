@@ -64,10 +64,10 @@ header parserMod cf = [
   "        if i < 0 then l else exp (i - 1) (s.[i] :: l) in",
   "      exp (String.length s - 1) []",
   "  in let implode (l : char list) : string =",
-  "      let res = String.create (List.length l) in",
+  "      let res = Bytes.create (List.length l) in",
   "      let rec imp i = function",
   "      | [] -> res",
-  "      | c :: l -> res.[i] <- c; imp (i + 1) l in",
+  "      | c :: l -> Bytes.set res i c; imp (i + 1) l in",
   "      imp 0 l",
   "  in implode (unesc (List.tl (explode s)))",
   "",
@@ -135,7 +135,7 @@ userTokens :: CF -> [(String, String, String)]
 userTokens cf =
   let regName = map toLower . show in
   [(regName name, printRegOCaml reg, show name) | (name, reg) <- tokenPragmas cf]
-      
+
 
 
 -- | Make OCamlLex rule

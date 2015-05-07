@@ -68,7 +68,7 @@ prologue _ absMod = unlines [
   "",
   "let indent (i: int) : string = ",
   "    let s = String.make (i+1) ' ' in",
-  "    String.set s 0 '\\n';",
+  "    Bytes.set s 0 '\\n';",
   "    s",
   "",
   "(* this render function is written for C-style languages, you may want to change it *)",
