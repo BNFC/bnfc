@@ -1,4 +1,4 @@
-2.8 Grégoire Détrez <gregoire.detrez@gu.se>  April 2015
+2.8 Grégoire Détrez <gregoire.detrez@gu.se>  May 2015
 	* Builds with ghc 7.10.1
 	* Add support for JFlex (java)
 	* Add an option to generate files in an other directory
