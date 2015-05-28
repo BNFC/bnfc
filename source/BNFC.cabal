@@ -195,6 +195,7 @@ Test-suite unit-tests
    BNFC.Backend.HaskellSpec
    BNFC.OptionsSpec
    BNFC.WarningMSpec
+   BNFC.Hspec
    -- need to be there for alex to work
    LexBNF
    ParBNF
