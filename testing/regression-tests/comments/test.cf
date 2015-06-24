@@ -1,0 +1,7 @@
+-- This grammar tests different comment tokens
+
+Foo. F ::= "foo" ;
+
+comment "//" ;
+comment "\"" ;
+comment "'" ;

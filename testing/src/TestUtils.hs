@@ -22,7 +22,7 @@ import qualified Data.Text as T
 
 -- system-filepath
 import Filesystem.Path (filename, stripPrefix)
-import Filesystem.Path.CurrentOS (encodeString, toText, encode)
+import Filesystem.Path.CurrentOS (encodeString, toText)
 
 -- shelly
 import Shelly
@@ -105,4 +105,4 @@ findFile n = do
         Nothing -> assertFailure "File not found" >> undefined
 
 matchFilePath :: String -> FilePath -> Bool
-matchFilePath regex name = encode name =~ regex
+matchFilePath regex name = encodeString name =~ regex
