@@ -102,7 +102,6 @@ LitString.  Exp2 ::= String ;
 LitDouble.  Exp2 ::= Double ;
 List.	    Exp2 ::= "[" [Exp] "]" ;
 
-
 coercions Exp 2;
 separator nonempty Exp2 "" ;
 separator Exp "," ;
@@ -149,5 +148,4 @@ _. Reg3 ::= "(" Reg ")" ;
 -- comments in BNF source
 comment "--" ;
 comment "{-" "-}" ;
-
 
