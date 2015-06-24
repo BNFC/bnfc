@@ -23,6 +23,7 @@ module BNFC.Utils
     , lowerCase, upperCase, mixedCase, camelCase, snakeCase
     , replace, prParenth
     , writeFileRep
+    , cstring
     ) where
 
 import Control.Arrow ((&&&))
@@ -237,3 +238,14 @@ mixedCase = text . mkName [] MixedCase
 -- my_ident
 snakeCase :: String -> Doc
 snakeCase = text . mkName [] SnakeCase
+
+-- ESCAPING
+
+-- | a function that renders a c-like string with escaped characters:
+-- >>> cstring "foobar"
+-- "foobar"
+--
+-- >>> cstring "foobar\""
+-- "foobar\""
+cstring :: String -> Doc
+cstring = text . show
