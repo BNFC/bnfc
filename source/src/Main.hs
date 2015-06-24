@@ -1,8 +1,10 @@
 {-
     BNF Converter: Main file
     Copyright (C) 2002-2013  Authors:
-    Jonas Almström Duregård, Krasimir Angelov, Jean-Philippe Bernardy, Björn Bringert, Johan Broberg, Paul Callaghan,
-    Grégoire Détrez, Markus Forsberg, Ola Frid, Peter Gammie, Thomas Hallgren, Patrik Jansson,
+    Jonas Almström Duregård, Krasimir Angelov, Jean-Philippe Bernardy,
+    Björn Bringert, Johan Broberg, Paul Callaghan,
+    Grégoire Détrez, Markus Forsberg, Ola Frid, Peter Gammie,
+    Thomas Hallgren, Patrik Jansson,
     Kristofer Johannisson, Antti-Juhani Kaijanaho, Ulf Norell,
     Michael Pellauer and Aarne Ranta 2002 - 2013.
 
@@ -24,7 +26,6 @@
     along with this program; if not, write to the Free Software
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 -}
-
 
 module Main where
 

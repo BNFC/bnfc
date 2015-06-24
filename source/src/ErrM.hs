@@ -23,7 +23,6 @@ instance Applicative Err where
   (Bad s) <*> _ = Bad s
   (Ok f) <*> o  = liftM f o
 
-
 instance Functor Err where
   fmap = liftM
 
@@ -35,3 +34,4 @@ instance MonadPlus Err where
 instance Alternative Err where
   empty = mzero
   (<|>) = mplus
+
