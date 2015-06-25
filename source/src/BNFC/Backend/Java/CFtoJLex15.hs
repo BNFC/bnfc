@@ -41,7 +41,7 @@ module BNFC.Backend.Java.CFtoJLex15 ( cf2jlex ) where
 
 import BNFC.CF
 import BNFC.Backend.Java.RegToJLex
-import BNFC.Utils ( (+++), cstring )
+import BNFC.Utils (cstring)
 import BNFC.Backend.Common.NamedVariables
 import Text.PrettyPrint
 
@@ -142,7 +142,8 @@ restOfJLex cf = vcat
     ifC cat s = if isUsedCat cf cat then s else ""
     userDefTokens = vcat
         [ "<YYINITIAL>" <> text (printRegJLex exp)
-            <+> "{ return new Symbol(sym." <> text show name <> ", yytext().intern()); }"
+            <+> "{ return new Symbol(sym." <> text (show name)
+            <> ", yytext().intern()); }"
         | (name, exp) <- tokenPragmas cf ]
     strStates = vcat --These handle escaped characters in Strings.
         [ "<YYINITIAL>\"\\\"\" { yybegin(STRING); }"
