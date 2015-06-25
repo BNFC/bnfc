@@ -228,6 +228,7 @@ mkPrtListCase (Rule f (ListCat c) rhs)
   where
     precPattern = case precCat c of 0 -> "_" ; p -> integer p
     body = mkRhs ["x", "xs"] rhs
+mkPrtListCase _ = error "mkPrtListCase undefined for non-list categories"
 
 
 -- | Define an ordering on lists' rules with the following properties:

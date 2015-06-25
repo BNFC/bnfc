@@ -147,10 +147,6 @@ rules cf = unlines $ mutualDefs $
  where
    reserved = "i":"e":reservedOCaml
    toArgs (cons,args) = ((cons, mkNames reserved LowerCase (map var args)), ruleOf cons)
-   names [] _ = []
-   names (x:xs) n
-     | elem x xs = (x ++ show n) : names xs (n+1)
-     | otherwise = x             : names xs n
    var (ListCat c)  = var c ++ "s"
    var (Cat "Ident")   = "id"
    var (Cat "Integer") = "n"
@@ -158,9 +154,6 @@ rules cf = unlines $ mutualDefs $
    var (Cat "Char")    = "c"
    var (Cat "Double")  = "d"
    var xs        = map toLower (show xs)
-   checkRes s
-        | elem s reservedOCaml = s ++ "'"
-        | otherwise              = s
    ruleOf s = maybe undefined id $ lookupRule s (rulesOfCF cf)
 
 --- case_fun :: Cat -> [(Constructor,Rule)] -> String
@@ -217,6 +210,7 @@ mkPrtListCase (Rule f (ListCat c) rhs)
   where
     precPattern = case precCat c of 0 -> "_" ; p -> integer p
     body = text $ mkRhs ["x", "xs"] rhs
+mkPrtListCase _ = error "mkPrtListCase undefined for non-list categories"
 
 mkRhs args its =
   "(concatD [" ++ unwords (intersperse ";" (mk args its)) ++ "])"

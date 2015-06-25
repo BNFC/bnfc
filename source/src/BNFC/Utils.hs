@@ -32,8 +32,7 @@ import Data.Char
 import Data.List (intercalate)
 import System.IO (IOMode(ReadMode),hClose,hGetContents,openFile)
 import System.IO.Error (tryIOError)
-import System.Directory (createDirectory, doesDirectoryExist, renameFile,
-                         removeFile)
+import System.Directory (renameFile, removeFile)
 import BNFC.PrettyPrint
 
 infixr 5 +++
