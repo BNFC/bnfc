@@ -173,14 +173,13 @@ lexComments (m,s) =
 -- | Create lexer rule for single-line comments.
 --
 -- >>> lexSingleComment "--"
--- <YYINITIAL>"--"[^\n]*\n { /* skip */ } // BNFC: comment "--";
+-- <YYINITIAL>"--"[^\n]*\n { /* skip */ }
 --
 -- >>> lexSingleComment "\""
--- <YYINITIAL>"\""[^\n]*\n { /* skip */ } // BNFC: comment "\"";
+-- <YYINITIAL>"\""[^\n]*\n { /* skip */ }
 lexSingleComment :: String -> Doc
 lexSingleComment c =
   "<YYINITIAL>" <> cstring c <>  "[^\\n]*\\n { /* skip */ }"
-  <+> "// BNFC: comment" <+> cstring c <> ";"
 
 -- | Create lexer rule for multi-lines comments.
 --
@@ -189,20 +188,19 @@ lexSingleComment c =
 -- with another. However this seems rare.
 --
 -- >>> lexMultiComment ("{-", "-}")
--- <YYINITIAL>"{-" { yybegin(COMMENT); } // BNFC: comment "{-" "-}";
+-- <YYINITIAL>"{-" { yybegin(COMMENT); }
 -- <COMMENT>"-}" { yybegin(YYINITIAL); }
 -- <COMMENT>. { /* skip */ }
 -- <COMMENT>[\n] { /* skip */ }
 --
 -- >>> lexMultiComment ("\"'", "'\"")
--- <YYINITIAL>"\"'" { yybegin(COMMENT); } // BNFC: comment "\"'" "'\"";
+-- <YYINITIAL>"\"'" { yybegin(COMMENT); }
 -- <COMMENT>"'\"" { yybegin(YYINITIAL); }
 -- <COMMENT>. { /* skip */ }
 -- <COMMENT>[\n] { /* skip */ }
 lexMultiComment :: (String, String) -> Doc
 lexMultiComment (b,e) = vcat
     [ "<YYINITIAL>" <> cstring b <+> "{ yybegin(COMMENT); }"
-        <+> "// BNFC: comment" <+> cstring b <+> cstring e <> ";"
     , "<COMMENT>" <> cstring e <+> "{ yybegin(YYINITIAL); }"
     , "<COMMENT>. { /* skip */ }"
     , "<COMMENT>[\\n] { /* skip */ }"
