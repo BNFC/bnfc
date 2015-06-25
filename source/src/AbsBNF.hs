@@ -7,118 +7,95 @@ module AbsBNF where
 
 
 
-newtype Ident = Ident String deriving (Eq,Ord,Show,Read)
-data LGrammar =
-   LGr [LDef]
-  deriving (Eq,Ord,Show,Read)
+newtype Ident = Ident String deriving (Eq, Ord, Show, Read)
+data LGrammar = LGr [LDef]
+  deriving (Eq, Ord, Show, Read)
 
-data LDef =
-   DefAll Def
- | DefSome [Ident] Def
- | LDefView [Ident]
-  deriving (Eq,Ord,Show,Read)
+data LDef = DefAll Def | DefSome [Ident] Def | LDefView [Ident]
+  deriving (Eq, Ord, Show, Read)
 
-data Grammar =
-   Grammar [Def]
-  deriving (Eq,Ord,Show,Read)
+data Grammar = Grammar [Def]
+  deriving (Eq, Ord, Show, Read)
 
-data Def =
-   Rule Label Cat [Item]
- | Comment String
- | Comments String String
- | Internal Label Cat [Item]
- | Token Ident Reg
- | PosToken Ident Reg
- | Entryp [Ident]
- | Separator MinimumSize Cat String
- | Terminator MinimumSize Cat String
- | Delimiters Cat String String Separation MinimumSize
- | Coercions Ident Integer
- | Rules Ident [RHS]
- | Function Ident [Arg] Exp
- | Layout [String]
- | LayoutStop [String]
- | LayoutTop
-  deriving (Eq,Ord,Show,Read)
+data Def
+    = Rule Label Cat [Item]
+    | Comment String
+    | Comments String String
+    | Internal Label Cat [Item]
+    | Token Ident Reg
+    | PosToken Ident Reg
+    | Entryp [Ident]
+    | Separator MinimumSize Cat String
+    | Terminator MinimumSize Cat String
+    | Delimiters Cat String String Separation MinimumSize
+    | Coercions Ident Integer
+    | Rules Ident [RHS]
+    | Function Ident [Arg] Exp
+    | Layout [String]
+    | LayoutStop [String]
+    | LayoutTop
+  deriving (Eq, Ord, Show, Read)
 
-data Item =
-   Terminal String
- | NTerminal Cat
-  deriving (Eq,Ord,Show,Read)
+data Item = Terminal String | NTerminal Cat
+  deriving (Eq, Ord, Show, Read)
 
-data Cat =
-   ListCat Cat
- | IdCat Ident
-  deriving (Eq,Ord,Show,Read)
+data Cat = ListCat Cat | IdCat Ident
+  deriving (Eq, Ord, Show, Read)
 
-data Label =
-   LabNoP LabelId
- | LabP LabelId [ProfItem]
- | LabPF LabelId LabelId [ProfItem]
- | LabF LabelId LabelId
-  deriving (Eq,Ord,Show,Read)
+data Label
+    = LabNoP LabelId
+    | LabP LabelId [ProfItem]
+    | LabPF LabelId LabelId [ProfItem]
+    | LabF LabelId LabelId
+  deriving (Eq, Ord, Show, Read)
 
-data LabelId =
-   Id Ident
- | Wild
- | ListE
- | ListCons
- | ListOne
-  deriving (Eq,Ord,Show,Read)
+data LabelId = Id Ident | Wild | ListE | ListCons | ListOne
+  deriving (Eq, Ord, Show, Read)
 
-data ProfItem =
-   ProfIt [IntList] [Integer]
-  deriving (Eq,Ord,Show,Read)
+data ProfItem = ProfIt [IntList] [Integer]
+  deriving (Eq, Ord, Show, Read)
 
-data IntList =
-   Ints [Integer]
-  deriving (Eq,Ord,Show,Read)
+data IntList = Ints [Integer]
+  deriving (Eq, Ord, Show, Read)
 
-data Separation =
-   SepNone
- | SepTerm String
- | SepSepar String
-  deriving (Eq,Ord,Show,Read)
+data Separation = SepNone | SepTerm String | SepSepar String
+  deriving (Eq, Ord, Show, Read)
 
-data Arg =
-   Arg Ident
-  deriving (Eq,Ord,Show,Read)
+data Arg = Arg Ident
+  deriving (Eq, Ord, Show, Read)
 
-data Exp =
-   Cons Exp Exp
- | App Ident [Exp]
- | Var Ident
- | LitInt Integer
- | LitChar Char
- | LitString String
- | LitDouble Double
- | List [Exp]
-  deriving (Eq,Ord,Show,Read)
+data Exp
+    = Cons Exp Exp
+    | App Ident [Exp]
+    | Var Ident
+    | LitInt Integer
+    | LitChar Char
+    | LitString String
+    | LitDouble Double
+    | List [Exp]
+  deriving (Eq, Ord, Show, Read)
 
-data RHS =
-   RHS [Item]
-  deriving (Eq,Ord,Show,Read)
+data RHS = RHS [Item]
+  deriving (Eq, Ord, Show, Read)
 
-data MinimumSize =
-   MNonempty
- | MEmpty
-  deriving (Eq,Ord,Show,Read)
+data MinimumSize = MNonempty | MEmpty
+  deriving (Eq, Ord, Show, Read)
 
-data Reg =
-   RSeq Reg Reg
- | RAlt Reg Reg
- | RMinus Reg Reg
- | RStar Reg
- | RPlus Reg
- | ROpt Reg
- | REps
- | RChar Char
- | RAlts String
- | RSeqs String
- | RDigit
- | RLetter
- | RUpper
- | RLower
- | RAny
-  deriving (Eq,Ord,Show,Read)
+data Reg
+    = RSeq Reg Reg
+    | RAlt Reg Reg
+    | RMinus Reg Reg
+    | RStar Reg
+    | RPlus Reg
+    | ROpt Reg
+    | REps
+    | RChar Char
+    | RAlts String
+    | RSeqs String
+    | RDigit
+    | RLetter
+    | RUpper
+    | RLower
+    | RAny
+  deriving (Eq, Ord, Show, Read)
 
