@@ -77,7 +77,7 @@ parseCFP opts target content = do
 
   where
     runErr (Ok a) = return a
-    runErr (Bad msg) = fail msg
+    runErr (Bad msg) = error msg
 
 {-
     case filter (not . isDefinedRule) $ notUniqueFuns cf of
@@ -159,12 +159,12 @@ removeDelims xs = (ys ++ map delimToSep ds,
     (ds,ys) = partition isDelim xs
     isDelim (Abs.Delimiters{}) = True
     isDelim _ = False
-    
+
     inlineDelim :: Abs.Def -> Either Cat String ->  [Either Cat String]
     inlineDelim (Abs.Delimiters cat open close _ _) (Left c)
       | c == ListCat (transCat cat) = [Right open, Left c, Right close]
     inlineDelim _ x = [x]
-    
+
     inlineDelim' :: Abs.Def -> RuleP -> RuleP
     inlineDelim' d@(Abs.Delimiters cat _ _ _ _) r@(Rule f c rhs)
       | c == ListCat (transCat cat) = r
@@ -176,7 +176,7 @@ removeDelims xs = (ys ++ map delimToSep ds,
     delimToSep (Abs.Delimiters cat _ _ (Abs.SepSepar s) sz) = Abs.Separator  sz cat s
     delimToSep (Abs.Delimiters cat _ _  Abs.SepNone     sz) = Abs.Terminator sz cat ""
     delimToSep x = x
-    
+
 transDef :: Abs.Def -> [Either Pragma RuleP]
 transDef x = case x of
  Abs.Rule label cat items ->

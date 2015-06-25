@@ -242,7 +242,7 @@ finalize byteStrings cf = unlines $
      "  case ts of",
      "    [] -> []",
      "    [Err _] -> \" due to lexer error\"",
-     "    _ -> \" before \" ++ unwords (map ("++stringUnpack++" . prToken) (take 4 ts))",
+     "    t:_ -> \" before `\" ++ " ++ stringUnpack ++ "(prToken t) ++ \"'\"",
      "",
      "myLexer = tokens"
    ] ++ definedRules cf ++ [ "}" ]
