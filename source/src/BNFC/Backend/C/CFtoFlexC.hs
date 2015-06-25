@@ -115,6 +115,7 @@ restOfFlex :: CF -> SymEnv -> String
 restOfFlex cf env = concat
   [
    render $ lexComments Nothing (comments cf),
+   "\n\n",
    userDefTokens,
    ifC catString  strStates,
    ifC catChar    chStates,
