@@ -311,8 +311,7 @@ csharptest namespace cf = unlines [
 projectguid :: MkFiles String
 projectguid = do
   maybeFilePath <- findDirectory
-  guid <- maybe getBadGUID getGoodGUID maybeFilePath
-  return guid
+  maybe getBadGUID getGoodGUID maybeFilePath
   where
     getBadGUID :: MkFiles String
     getBadGUID = do

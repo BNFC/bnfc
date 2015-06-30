@@ -122,7 +122,7 @@ mkHeaderFile inPackage cf cats eps env = unlines
   "  char char_;",
   "  double double_;",
   "  char* string_;",
-  (concatMap mkVar cats) ++ "} YYSTYPE;",
+  concatMap mkVar cats ++ "} YYSTYPE;",
   "",
   concatMap mkFuncs eps,
   nsEnd inPackage,
@@ -135,12 +135,12 @@ mkHeaderFile inPackage cf cats eps env = unlines
  ]
  where
   hdef = nsDefine inPackage "PARSER_HEADER_FILE"
-  mkForwardDec s | (normCat s == s) = "class " ++ (identCat s) ++ ";\n"
+  mkForwardDec s | normCat s == s = "class " ++ identCat s ++ ";\n"
   mkForwardDec _ = ""
-  mkVar s | (normCat s == s) = "  " ++ (identCat s) ++"*" +++ (map toLower (identCat s)) ++ "_;\n"
+  mkVar s | normCat s == s = "  " ++ identCat s ++"*" +++ map toLower (identCat s) ++ "_;\n"
   mkVar _ = ""
   mkDefines n [] = mkString n
-  mkDefines n ((_,s):ss) = ("#define " ++ s +++ (show n) ++ "\n") ++ (mkDefines (n+1) ss) -- "nsDefine inPackage s" not needed (see cf2flex::makeSymEnv)
+  mkDefines n ((_,s):ss) = "#define " ++ s +++ show n ++ "\n" ++ mkDefines (n+1) ss -- "nsDefine inPackage s" not needed (see cf2flex::makeSymEnv)
   mkString n =  if isUsedCat cf catString
    then ("#define " ++ nsDefine inPackage "_STRING_ " ++ show n ++ "\n") ++ mkChar (n+1)
    else mkChar n
@@ -154,7 +154,7 @@ mkHeaderFile inPackage cf cats eps env = unlines
    then ("#define " ++ nsDefine inPackage "_DOUBLE_ " ++ show n ++ "\n") ++ mkIdent(n+1)
    else mkIdent n
   mkIdent n =  if isUsedCat cf catIdent
-   then ("#define " ++ nsDefine inPackage "_IDENT_ " ++ show n ++ "\n")
+   then "#define " ++ nsDefine inPackage "_IDENT_ " ++ show n ++ "\n"
    else ""
   mkFuncs s | normCat s == s = identCat s ++ "*" +++ "p" ++ identCat s ++ "(FILE *inp);\n" ++
                                identCat s ++ "*" +++ "p" ++ identCat s ++ "(const char *str);\n"

@@ -149,17 +149,14 @@ prtOwnToken (name,reg) = unlines
   ]
 
 prtComments :: ([(String,String)],[String]) -> String
-prtComments (xs,ys) = concat
-                   [
-                   if null ys then
-                    "There are no single-line comments in the grammar. \\\\"
-                   else
-                    "Single-line comments begin with " ++ sing ++". \\\\",
-                   if null xs then
-                    "There are no multiple-line comments in the grammar."
-                   else
-                   "Multiple-line comments are  enclosed with " ++ mult ++"."
-                   ]
+prtComments (xs,ys) =
+    (if null ys
+        then "There are no single-line comments in the grammar. \\\\"
+        else "Single-line comments begin with " ++ sing ++". \\\\")
+    ++
+    (if null xs
+        then "There are no multiple-line comments in the grammar."
+        else "Multiple-line comments are  enclosed with " ++ mult ++".")
  where
  sing = intercalate ", " $ map (symbol.prt) ys
  mult = intercalate ", " $
@@ -216,7 +213,7 @@ prtRules          [] = []
 prtRules ((c,[]):xs)
     = tabular 3 [[nonterminal c,arrow,[]]] ++ prtRules xs
 prtRules ((c, r : rs) : xs)
-    = tabular 3 ([[nonterminal c,arrow,prtSymbols $ rhsRule r]] ++
+    = tabular 3 ([nonterminal c,arrow,prtSymbols $ rhsRule r] :
                  [[[],delimiter,prtSymbols (rhsRule y)] | y <-  rs]) ++
       prtRules xs
 

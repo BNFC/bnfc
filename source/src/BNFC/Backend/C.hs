@@ -172,7 +172,7 @@ mkHeaderFile cf cats eps env = unlines
   "  char char_;",
   "  double double_;",
   "  char* string_;",
-  (concatMap mkVar cats) ++ "} YYSTYPE;",
+  concatMap mkVar cats ++ "} YYSTYPE;",
   "",
   "#define _ERROR_ 258",
   mkDefines (259::Int) env,

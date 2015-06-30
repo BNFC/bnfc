@@ -114,7 +114,7 @@ mkHeaderFile cf cats eps env = unlines
   "  char char_;",
   "  double double_;",
   "  char* string_;",
-  (concatMap mkVar cats) ++ "} YYSTYPE;",
+  concatMap mkVar cats ++ "} YYSTYPE;",
   "",
   "#define _ERROR_ 258",
   mkDefines (259 :: Int) env,
@@ -124,12 +124,12 @@ mkHeaderFile cf cats eps env = unlines
   "#endif"
  ]
  where
-  mkForwardDec s | (normCat s == s) = "class " ++ (identCat s) ++ ";\n"
+  mkForwardDec s | normCat s == s = "class " ++ identCat s ++ ";\n"
   mkForwardDec _ = ""
-  mkVar s | (normCat s == s) = "  " ++ (identCat s) ++"*" +++ (map toLower (identCat s)) ++ "_;\n"
+  mkVar s | normCat s == s = "  " ++ identCat s ++"*" +++ map toLower (identCat s) ++ "_;\n"
   mkVar _ = ""
   mkDefines n [] = mkString n
-  mkDefines n ((_,s):ss) = ("#define " ++ s +++ (show n) ++ "\n") ++ (mkDefines (n+1) ss)
+  mkDefines n ((_,s):ss) = "#define " ++ s +++ show n ++ "\n" ++ mkDefines (n+1) ss
   mkString n =  if isUsedCat cf catString
    then ("#define _STRING_ " ++ show n ++ "\n") ++ mkChar (n+1)
    else mkChar n
@@ -143,7 +143,7 @@ mkHeaderFile cf cats eps env = unlines
    then ("#define _DOUBLE_ " ++ show n ++ "\n") ++ mkIdent(n+1)
    else mkIdent n
   mkIdent n =  if isUsedCat cf catIdent
-   then ("#define _IDENT_ " ++ show n ++ "\n")
+   then "#define _IDENT_ " ++ show n ++ "\n"
    else ""
-  mkFunc s | (normCat s == s) = (identCat s) ++ "*" +++ "p" ++ (identCat s) ++ "(FILE *inp);\n"
+  mkFunc s | normCat s == s = identCat s ++ "*" +++ "p" ++ identCat s ++ "(FILE *inp);\n"
   mkFunc _ = ""

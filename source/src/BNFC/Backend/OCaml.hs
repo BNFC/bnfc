@@ -94,7 +94,7 @@ makeOCaml opts cf = do
     mkfile (printerFile opts)  $ cf2Printer prMod absMod cf
     mkfile (showFile opts)  $ cf2show showMod absMod cf
     mkfile (tFile opts) $ render $ ocamlTestfile absMod lexMod parMod prMod showMod cf
-    mkfile (utilFile opts)      $ utilM
+    mkfile (utilFile opts) utilM
     mkMakefile opts $ makefile opts
     case xml opts of
       2 -> makeXML opts True cf
@@ -102,7 +102,7 @@ makeOCaml opts cf = do
       _ -> return ()
 
 pkgToDir :: String -> FilePath
-pkgToDir s = replace '.' pathSeparator s
+pkgToDir = replace '.' pathSeparator
 
 codeDir :: SharedOptions -> FilePath
 codeDir opts = let pref = maybe "" pkgToDir (inPackage opts)
