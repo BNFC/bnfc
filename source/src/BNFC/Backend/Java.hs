@@ -86,7 +86,6 @@ makeJava options@Options{..} cf =
        mkfile (dirBase ++ "Yylex") (render lex)
        liftIO $ putStrLn "   (Tested with JLex 1.2.6.)"
        mkfile (dirBase ++ lang ++ ".cup") $ cf2Cup packageBase packageAbsyn cf env
-       -- FIXME: put in a doc directory?
        liftIO $ putStrLn $ "   (Parser created for category " ++ show (firstEntry cf) ++ ")"
        liftIO $ putStrLn "   (Tested with CUP 0.10k)"
        Makefile.mkMakefile options $ makefile lang dirBase dirAbsyn absynFileNames jflex
@@ -99,7 +98,6 @@ makeJava options@Options{..} cf =
       pkgToDir :: String -> FilePath
       pkgToDir s = replace '.' pathSeparator s ++ [pathSeparator]
 
--- FIXME get filenames right.
 -- FIXME It's almost certainly better to just feed all the Java source
 -- files to javac in one go.
 -- Replace with an ANT script?
@@ -140,7 +138,6 @@ makefile name dirBase dirAbsyn absynFileNames jflex = vcat
   , Makefile.mkRule (dirBase ++ "PrettyPrinter.class")
                     [ dirBase ++ "PrettyPrinter.java" ]
       []
--- FIXME
   , Makefile.mkRule "clean" []
       [ "rm -f " ++ dirAbsyn ++ "*.class" ++ " " ++ dirBase ++ "*.class" ]
   , Makefile.mkRule "distclean" [ "vclean" ]
