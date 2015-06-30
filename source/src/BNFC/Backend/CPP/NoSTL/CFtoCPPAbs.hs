@@ -45,6 +45,7 @@ import BNFC.CF
 import BNFC.Utils((+++),(++++))
 import BNFC.Backend.Common.NamedVariables
 import BNFC.Backend.Common.OOAbstract
+import BNFC.Backend.CPP.AbsynHeaderFile
 import Data.List
 import Data.Char(toLower)
 import Text.PrettyPrint
@@ -52,7 +53,7 @@ import Text.PrettyPrint
 
 --The result is two files (.H file, .C file)
 cf2CPPAbs :: String -> CF -> (String, String)
-cf2CPPAbs _ cf = (mkHFile cf, mkCFile cf)
+cf2CPPAbs _ cf = (mkAbsynHFile False False Nothing (cf2cabs cf), mkCFile cf)
 
 
 {- **** Header (.H) File Functions **** -}
