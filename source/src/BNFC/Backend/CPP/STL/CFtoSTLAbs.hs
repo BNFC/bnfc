@@ -45,12 +45,11 @@ import BNFC.CF
 import BNFC.Utils((+++))
 import Data.List
 import BNFC.Backend.CPP.STL.STLUtils
-import BNFC.Backend.CPP.AbsynHeaderFile
 
 --The result is two files (.H file, .C file)
 
 cf2CPPAbs :: Bool -> Maybe String -> String -> CF -> (String, String)
-cf2CPPAbs ln inPackage _ cf = (mkAbsynHFile True ln inPackage cab, mkCFile inPackage cab)
+cf2CPPAbs ln inPackage _ cf = (mkHFile ln inPackage cab, mkCFile inPackage cab)
   where
     cab = cf2cabs cf
 
