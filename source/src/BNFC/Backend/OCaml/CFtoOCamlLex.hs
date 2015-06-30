@@ -31,7 +31,7 @@ import qualified Text.PrettyPrint as PP
 import BNFC.CF
 import AbsBNF
 import BNFC.Backend.OCaml.CFtoOCamlYacc (terminal)
-import BNFC.Utils ((+++))
+import BNFC.Utils ((+++), cstring, cchar)
 
 cf2ocamllex :: String -> String -> CF -> String
 cf2ocamllex _ parserMod cf =
@@ -160,13 +160,17 @@ mkRule entrypoint (r1:rn) = vcat
 -- | Create regex for single line comments
 -- >>> mkRegexSingleLineComment "--"
 -- "--" (_ # '\n')*
+-- >>> mkRegexSingleLineComment "\""
+-- "\"" (_ # '\n')*
 mkRegexSingleLineComment :: String -> Doc
-mkRegexSingleLineComment s =
-    doubleQuotes (text s) <+> "(_ # '\\n')*"
+mkRegexSingleLineComment s = cstring s <+> "(_ # '\\n')*"
 
 -- | Create regex for multiline comments
 -- >>> mkRegexMultilineComment "<!--" "-->"
 -- "<!--" ((u # ['-']) | '-' (u # ['-']) | "--" (u # ['>']))* '-'* "-->"
+--
+-- >>> mkRegexMultilineComment "\"'" "'\""
+-- "\"'" ((u # ['\'']) | '\'' (u # ['"']))* '\''* "'\""
 mkRegexMultilineComment :: String -> String -> Doc
 mkRegexMultilineComment b e =
   lit b
@@ -176,8 +180,8 @@ mkRegexMultilineComment b e =
   where
     lit :: String -> Doc
     lit "" = empty
-    lit [c] = quotes (char c)
-    lit s = doubleQuotes (text s)
+    lit [c] = cchar c
+    lit s = cstring s
     prefix = map (init &&& last) (drop 1 (inits e))
     subregexs = [ lit ss <+> parens ("u #" <+> brackets (lit [s])) | (ss,s) <- prefix]
 

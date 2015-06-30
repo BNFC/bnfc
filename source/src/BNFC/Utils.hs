@@ -23,6 +23,7 @@ module BNFC.Utils
     , lowerCase, upperCase, mixedCase, camelCase, snakeCase
     , replace, prParenth
     , writeFileRep
+    , cstring, cchar
     ) where
 
 import Control.Arrow ((&&&))
@@ -31,8 +32,7 @@ import Data.Char
 import Data.List (intercalate)
 import System.IO (IOMode(ReadMode),hClose,hGetContents,openFile)
 import System.IO.Error (tryIOError)
-import System.Directory (createDirectory, doesDirectoryExist, renameFile,
-                         removeFile)
+import System.Directory (renameFile, removeFile)
 import BNFC.PrettyPrint
 
 infixr 5 +++
@@ -237,3 +237,30 @@ mixedCase = text . mkName [] MixedCase
 -- my_ident
 snakeCase :: String -> Doc
 snakeCase = text . mkName [] SnakeCase
+
+-- ESCAPING
+
+-- | a function that renders a c-like string with escaped characters.
+-- Note that although it's called cstring, this can be used with most (all)
+-- backend as they seem to mostly share escaping conventions.
+-- The c in the name is barely an homage for C being the oldest language in
+-- the lot.
+--
+-- >>> cstring "foobar"
+-- "foobar"
+--
+-- >>> cstring "foobar\""
+-- "foobar\""
+cstring :: String -> Doc
+cstring = text . show
+
+
+-- | A function that renders a c-like character.
+--
+-- >>> cchar 'x'
+-- 'x'
+--
+-- >>> cchar '\''
+-- '\''
+cchar :: Char -> Doc
+cchar = text . show

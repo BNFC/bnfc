@@ -58,10 +58,12 @@ data Token =
  | Err Posn
   deriving (Eq,Show,Ord)
 
+printPosn :: Posn -> String
+printPosn (Pn _ l c) = "line " ++ show l ++ ", column " ++ show c
+
 tokenPos :: [Token] -> String
-tokenPos (PT (Pn _ l _) _ :_) = "line " ++ show l
-tokenPos (Err (Pn _ l _) :_) = "line " ++ show l
-tokenPos _ = "end of file"
+tokenPos (t:_) = printPosn (tokenPosn t)
+tokenPos [] = "end of file"
 
 tokenPosn :: Token -> Posn
 tokenPosn (PT p _) = p
@@ -79,12 +81,12 @@ mkPosToken t@(PT p _) = (posLineCol p, prToken t)
 prToken :: Token -> String
 prToken t = case t of
   PT _ (TS s _) -> s
-  PT _ (TL s)   -> s
+  PT _ (TL s)   -> show s
   PT _ (TI s)   -> s
   PT _ (TV s)   -> s
   PT _ (TD s)   -> s
   PT _ (TC s)   -> s
-  Err _ -> "#Error"
+  Err _         -> "#error"
 
 
 data BTree = N | B String Tok BTree BTree deriving (Show)

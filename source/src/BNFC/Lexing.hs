@@ -4,12 +4,11 @@ module BNFC.Lexing
 import Control.Arrow ((&&&))
 import Data.List (inits)
 import AbsBNF (Reg(..))
-import PrintBNF
 import BNFC.CF
 
-
-p :: Reg -> IO ()
-p = putStrLn . concat . words . printTree
+-- $setup
+-- >>> import PrintBNF
+-- >>> let p = putStrLn . concat . words . printTree :: Reg -> IO ()
 
 -- Abstract lexer
 

@@ -90,7 +90,8 @@ testCases :: TestParameters -> [Test]
 testCases params = do
     map makeTestCase
         [ "regression-tests/#100_coercion_lists"
-        , "regression-tests/#134_category_named_I" ]
+        , "regression-tests/#134_category_named_I"
+        , "regression-tests/comments" ]
   where
     mkTitle dir = encodeString (filename dir)
     makeTestCase dir =

@@ -12,9 +12,13 @@ import Test.Framework.Pretty (Pretty(..), ($$))
 import TestUtils
 
 parseOutput :: Text -> (Text, Text)
-parseOutput t =
-    (clean *** clean) $ break linearizedTreeHeader $ snd $ break abstractSyntaxHeader (T.lines t)
-  where clean = T.unlines . dropWhile (== "") . dropWhileEnd (== "") . drop 1
+parseOutput =
+    (clean *** clean)                         -- remove headers and spaces
+    . break linearizedTreeHeader              -- split at [linearized tree]
+    . dropWhile (not . abstractSyntaxHeader)  -- drop before [abstract syntax]
+    . T.lines                                 -- Break input into lines
+  where clean = T.unlines . map T.strip . dropAround (== "") . drop 1
+        dropAround p = dropWhile p . dropWhileEnd p
 
 abstractSyntaxHeader :: Text -> Bool
 abstractSyntaxHeader = (== "[abstract syntax]") . T.toLower
@@ -31,6 +35,11 @@ tests = makeTestSuite "OutputParser"
             in assertEqual expected actual
         , makeUnitTest "parses an example output" $
             let output = "Parse Successful!\n\n[Abstract Syntax]\n\nSExp (EInt 42)\n\n[Linearized tree]\n\nexp 42"
+                expected = ("SExp (EInt 42)\n", "exp 42\n")
+                actual = parseOutput output
+            in assertEqual expected actual
+        , makeUnitTest "strips spaces arounds lines" $
+            let output = "Parse Successful!\n\n[Abstract Syntax]\n\nSExp (EInt 42) \n\n[Linearized tree]\n\nexp 42  "
                 expected = ("SExp (EInt 42)\n", "exp 42\n")
                 actual = parseOutput output
             in assertEqual expected actual

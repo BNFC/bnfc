@@ -41,7 +41,7 @@ module BNFC.Backend.Java.CFtoJLex15 ( cf2jlex ) where
 
 import BNFC.CF
 import BNFC.Backend.Java.RegToJLex
-import BNFC.Utils ( (+++) )
+import BNFC.Utils (cstring)
 import BNFC.Backend.Common.NamedVariables
 import Text.PrettyPrint
 
@@ -52,7 +52,7 @@ cf2jlex packageBase cf jflex = (vcat
   prelude jflex packageBase,
   cMacros,
   lexSymbols jflex env,
-  text $ unlines $ restOfJLex cf
+  restOfJLex cf
  ], env)
   where
    env = makeSymEnv (symbols cf ++ reservedWords cf) (0 :: Int)
@@ -123,70 +123,85 @@ lexSymbols jflex ss = vcat $  map transSym ss
     escapeChars :: String -> String
     escapeChars = concatMap (escapeChar jflex)
 
-restOfJLex :: CF -> [String]
-restOfJLex cf =
-  [
-   lexComments (comments cf),
-   userDefTokens,
-   ifC catString strStates,
-   ifC catChar chStates,
-   ifC catDouble "<YYINITIAL>{DIGIT}+\".\"{DIGIT}+(\"e\"(\\-)?{DIGIT}+)? { return new Symbol(sym._DOUBLE_, new Double(yytext())); }",
-   ifC catInteger "<YYINITIAL>{DIGIT}+ { return new Symbol(sym._INTEGER_, new Integer(yytext())); }",
-   ifC catIdent "<YYINITIAL>{LETTER}{IDENT}* { return new Symbol(sym._IDENT_, yytext().intern()); }"
-   , "<YYINITIAL>[ \\t\\r\\n\\f] { /* ignore white space. */ }"
-   ]
+restOfJLex :: CF -> Doc
+restOfJLex cf = vcat
+    [ lexComments (comments cf)
+    , ""
+    , userDefTokens
+    , ifC catString strStates
+    , ifC catChar chStates
+    , ifC catDouble
+        "<YYINITIAL>{DIGIT}+\".\"{DIGIT}+(\"e\"(\\-)?{DIGIT}+)? { return new Symbol(sym._DOUBLE_, new Double(yytext())); }"
+    , ifC catInteger
+        "<YYINITIAL>{DIGIT}+ { return new Symbol(sym._INTEGER_, new Integer(yytext())); }"
+    , ifC catIdent
+        "<YYINITIAL>{LETTER}{IDENT}* { return new Symbol(sym._IDENT_, yytext().intern()); }"
+    , "<YYINITIAL>[ \\t\\r\\n\\f] { /* ignore white space. */ }"
+    ]
   where
-   ifC cat s = if isUsedCat cf cat then s else ""
-   userDefTokens = unlines $
-     ["<YYINITIAL>" ++ printRegJLex exp +++
-      "{ return new Symbol(sym." ++ show name ++ ", yytext().intern()); }"
-       | (name, exp) <- tokenPragmas cf]
-   strStates = unlines --These handle escaped characters in Strings.
-    [
-     "<YYINITIAL>\"\\\"\" { yybegin(STRING); }",
-     "<STRING>\\\\ { yybegin(ESCAPED); }",
-     "<STRING>\\\" { String foo = pstring; pstring = new String(); yybegin(YYINITIAL); return new Symbol(sym._STRING_, foo.intern()); }",
-     "<STRING>.  { pstring += yytext(); }",
-     "<ESCAPED>n { pstring +=  \"\\n\"; yybegin(STRING); }",
-     "<ESCAPED>\\\" { pstring += \"\\\"\"; yybegin(STRING); }",
-     "<ESCAPED>\\\\ { pstring += \"\\\\\"; yybegin(STRING); }",
-     "<ESCAPED>t  { pstring += \"\\t\"; yybegin(STRING); }",
-     "<ESCAPED>.  { pstring += yytext(); yybegin(STRING); }"
-    ]
-   chStates = unlines --These handle escaped characters in Chars.
-    [
-     "<YYINITIAL>\"'\" { yybegin(CHAR); }",
-     "<CHAR>\\\\ { yybegin(CHARESC); }",
-     "<CHAR>[^'] { yybegin(CHAREND); return new Symbol(sym._CHAR_, new Character(yytext().charAt(0))); }",
-     "<CHARESC>n { yybegin(CHAREND); return new Symbol(sym._CHAR_, new Character('\\n')); }",
-     "<CHARESC>t { yybegin(CHAREND); return new Symbol(sym._CHAR_, new Character('\\t')); }",
-     "<CHARESC>. { yybegin(CHAREND); return new Symbol(sym._CHAR_, new Character(yytext().charAt(0))); }",
-     "<CHAREND>\"'\" {yybegin(YYINITIAL);}"
-    ]
+    ifC cat s = if isUsedCat cf cat then s else ""
+    userDefTokens = vcat
+        [ "<YYINITIAL>" <> text (printRegJLex exp)
+            <+> "{ return new Symbol(sym." <> text (show name)
+            <> ", yytext().intern()); }"
+        | (name, exp) <- tokenPragmas cf ]
+    strStates = vcat --These handle escaped characters in Strings.
+        [ "<YYINITIAL>\"\\\"\" { yybegin(STRING); }"
+        , "<STRING>\\\\ { yybegin(ESCAPED); }"
+        , "<STRING>\\\" { String foo = pstring; pstring = new String(); yybegin(YYINITIAL); return new Symbol(sym._STRING_, foo.intern()); }"
+        , "<STRING>.  { pstring += yytext(); }"
+        , "<ESCAPED>n { pstring +=  \"\\n\"; yybegin(STRING); }"
+        , "<ESCAPED>\\\" { pstring += \"\\\"\"; yybegin(STRING); }"
+        , "<ESCAPED>\\\\ { pstring += \"\\\\\"; yybegin(STRING); }"
+        , "<ESCAPED>t  { pstring += \"\\t\"; yybegin(STRING); }"
+        , "<ESCAPED>.  { pstring += yytext(); yybegin(STRING); }"
+        ]
+    chStates = vcat --These handle escaped characters in Chars.
+        [ "<YYINITIAL>\"'\" { yybegin(CHAR); }"
+        , "<CHAR>\\\\ { yybegin(CHARESC); }"
+        , "<CHAR>[^'] { yybegin(CHAREND); return new Symbol(sym._CHAR_, new Character(yytext().charAt(0))); }"
+        , "<CHARESC>n { yybegin(CHAREND); return new Symbol(sym._CHAR_, new Character('\\n')); }"
+        , "<CHARESC>t { yybegin(CHAREND); return new Symbol(sym._CHAR_, new Character('\\t')); }"
+        , "<CHARESC>. { yybegin(CHAREND); return new Symbol(sym._CHAR_, new Character(yytext().charAt(0))); }"
+        , "<CHAREND>\"'\" {yybegin(YYINITIAL);}"
+        ]
 
-
-
-
-lexComments :: ([(String, String)], [String]) -> String
+lexComments :: ([(String, String)], [String]) -> Doc
 lexComments (m,s) =
-  (unlines (map lexSingleComment s))
-  ++ (unlines (map lexMultiComment m))
+    vcat (map lexSingleComment s ++ map lexMultiComment m)
 
-lexSingleComment :: String -> String
+-- | Create lexer rule for single-line comments.
+--
+-- >>> lexSingleComment "--"
+-- <YYINITIAL>"--"[^\n]*\n { /* skip */ }
+--
+-- >>> lexSingleComment "\""
+-- <YYINITIAL>"\""[^\n]*\n { /* skip */ }
+lexSingleComment :: String -> Doc
 lexSingleComment c =
-  "<YYINITIAL>\"" ++ c ++ "\"[^\\n]*\\n { /* BNFC single-line comment */ }"
+  "<YYINITIAL>" <> cstring c <>  "[^\\n]*\\n { /* skip */ }"
 
---There might be a possible bug here if a language includes 2 multi-line comments.
---They could possibly start a comment with one character and end it with another.
---However this seems rare.
-lexMultiComment :: (String, String) -> String
-lexMultiComment (b,e) = unlines [
-  "<YYINITIAL>\"" ++ b ++ "\" { yybegin(COMMENT); }",
-  "<COMMENT>\"" ++ e ++ "\" { yybegin(YYINITIAL); }",
-  "<COMMENT>. { }",
-  "<COMMENT>[\\n] { }"
-  ]
-
--- lexReserved :: String -> String
--- lexReserved s = "<YYINITIAL>\"" ++ s ++ "\" { return new Symbol(sym.TS, yytext()); }"
-
+-- | Create lexer rule for multi-lines comments.
+--
+-- There might be a possible bug here if a language includes 2 multi-line
+-- comments. They could possibly start a comment with one character and end it
+-- with another. However this seems rare.
+--
+-- >>> lexMultiComment ("{-", "-}")
+-- <YYINITIAL>"{-" { yybegin(COMMENT); }
+-- <COMMENT>"-}" { yybegin(YYINITIAL); }
+-- <COMMENT>. { /* skip */ }
+-- <COMMENT>[\n] { /* skip */ }
+--
+-- >>> lexMultiComment ("\"'", "'\"")
+-- <YYINITIAL>"\"'" { yybegin(COMMENT); }
+-- <COMMENT>"'\"" { yybegin(YYINITIAL); }
+-- <COMMENT>. { /* skip */ }
+-- <COMMENT>[\n] { /* skip */ }
+lexMultiComment :: (String, String) -> Doc
+lexMultiComment (b,e) = vcat
+    [ "<YYINITIAL>" <> cstring b <+> "{ yybegin(COMMENT); }"
+    , "<COMMENT>" <> cstring e <+> "{ yybegin(YYINITIAL); }"
+    , "<COMMENT>. { /* skip */ }"
+    , "<COMMENT>[\\n] { /* skip */ }"
+    ]

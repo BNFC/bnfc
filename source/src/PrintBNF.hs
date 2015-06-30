@@ -48,15 +48,15 @@ replicateS n f = concatS (replicate n f)
 -- the printer class does the job
 class Print a where
   prt :: Int -> a -> Doc
-  prtList :: [a] -> Doc
-  prtList = concatD . map (prt 0)
+  prtList :: Int -> [a] -> Doc
+  prtList i = concatD . map (prt i)
 
 instance Print a => Print [a] where
-  prt _ = prtList
+  prt = prtList
 
 instance Print Char where
   prt _ s = doc (showChar '\'' . mkEsc '\'' s . showChar '\'')
-  prtList s = doc (showChar '"' . concatS (map (mkEsc '"') s) . showChar '"')
+  prtList _ s = doc (showChar '"' . concatS (map (mkEsc '"') s) . showChar '"')
 
 mkEsc :: Char -> Char -> ShowS
 mkEsc q s = case s of
@@ -72,10 +72,6 @@ prPrec i j = if j<i then parenth else id
 
 instance Print Integer where
   prt _ x = doc (shows x)
-  prtList es = case es of
-   [] -> (concatD [])
-   [x] -> (concatD [prt 0 x])
-   x:xs -> (concatD [prt 0 x , doc (showString ",") , prt 0 xs])
 
 
 instance Print Double where
@@ -84,170 +80,136 @@ instance Print Double where
 
 instance Print Ident where
   prt _ (Ident i) = doc (showString ( i))
-  prtList es = case es of
-   [x] -> (concatD [prt 0 x])
-   x:xs -> (concatD [prt 0 x , doc (showString ",") , prt 0 xs])
-
+  prtList _ [x] = (concatD [prt 0 x])
+  prtList _ (x:xs) = (concatD [prt 0 x, doc (showString ","), prt 0 xs])
 
 
 instance Print LGrammar where
   prt i e = case e of
-   LGr ldefs -> prPrec i 0 (concatD [prt 0 ldefs])
-
+    LGr ldefs -> prPrec i 0 (concatD [prt 0 ldefs])
 
 instance Print LDef where
   prt i e = case e of
-   DefAll def -> prPrec i 0 (concatD [prt 0 def])
-   DefSome ids def -> prPrec i 0 (concatD [prt 0 ids , doc (showString ":") , prt 0 def])
-   LDefView ids -> prPrec i 0 (concatD [doc (showString "views") , prt 0 ids])
-
-  prtList es = case es of
-   [] -> (concatD [])
-   [x] -> (concatD [prt 0 x])
-   x:xs -> (concatD [prt 0 x , doc (showString ";") , prt 0 xs])
-
+    DefAll def -> prPrec i 0 (concatD [prt 0 def])
+    DefSome ids def -> prPrec i 0 (concatD [prt 0 ids, doc (showString ":"), prt 0 def])
+    LDefView ids -> prPrec i 0 (concatD [doc (showString "views"), prt 0 ids])
+  prtList _ [] = (concatD [])
+  prtList _ [x] = (concatD [prt 0 x])
+  prtList _ (x:xs) = (concatD [prt 0 x, doc (showString ";"), prt 0 xs])
 instance Print Grammar where
   prt i e = case e of
-   Grammar defs -> prPrec i 0 (concatD [prt 0 defs])
-
+    Grammar defs -> prPrec i 0 (concatD [prt 0 defs])
 
 instance Print Def where
   prt i e = case e of
-   Rule label cat items -> prPrec i 0 (concatD [prt 0 label , doc (showString ".") , prt 0 cat , doc (showString "::=") , prt 0 items])
-   Comment str -> prPrec i 0 (concatD [doc (showString "comment") , prt 0 str])
-   Comments str0 str -> prPrec i 0 (concatD [doc (showString "comment") , prt 0 str0 , prt 0 str])
-   Internal label cat items -> prPrec i 0 (concatD [doc (showString "internal") , prt 0 label , doc (showString ".") , prt 0 cat , doc (showString "::=") , prt 0 items])
-   Token id reg -> prPrec i 0 (concatD [doc (showString "token") , prt 0 id , prt 0 reg])
-   PosToken id reg -> prPrec i 0 (concatD [doc (showString "position") , doc (showString "token") , prt 0 id , prt 0 reg])
-   Entryp ids -> prPrec i 0 (concatD [doc (showString "entrypoints") , prt 0 ids])
-   Separator minimumsize cat str -> prPrec i 0 (concatD [doc (showString "separator") , prt 0 minimumsize , prt 0 cat , prt 0 str])
-   Terminator minimumsize cat str -> prPrec i 0 (concatD [doc (showString "terminator") , prt 0 minimumsize , prt 0 cat , prt 0 str])
-   Delimiters cat str0 str separation minimumsize -> prPrec i 0 (concatD [doc (showString "delimiters") , prt 0 cat , prt 0 str0 , prt 0 str , prt 0 separation , prt 0 minimumsize])
-   Coercions id n -> prPrec i 0 (concatD [doc (showString "coercions") , prt 0 id , prt 0 n])
-   Rules id rhss -> prPrec i 0 (concatD [doc (showString "rules") , prt 0 id , doc (showString "::=") , prt 0 rhss])
-   Function id args exp -> prPrec i 0 (concatD [doc (showString "define") , prt 0 id , prt 0 args , doc (showString "=") , prt 0 exp])
-   Layout strs -> prPrec i 0 (concatD [doc (showString "layout") , prt 0 strs])
-   LayoutStop strs -> prPrec i 0 (concatD [doc (showString "layout") , doc (showString "stop") , prt 0 strs])
-   LayoutTop  -> prPrec i 0 (concatD [doc (showString "layout") , doc (showString "toplevel")])
-
-  prtList es = case es of
-   [] -> (concatD [])
-   [x] -> (concatD [prt 0 x])
-   x:xs -> (concatD [prt 0 x , doc (showString ";") , prt 0 xs])
-
+    Rule label cat items -> prPrec i 0 (concatD [prt 0 label, doc (showString "."), prt 0 cat, doc (showString "::="), prt 0 items])
+    Comment str -> prPrec i 0 (concatD [doc (showString "comment"), prt 0 str])
+    Comments str1 str2 -> prPrec i 0 (concatD [doc (showString "comment"), prt 0 str1, prt 0 str2])
+    Internal label cat items -> prPrec i 0 (concatD [doc (showString "internal"), prt 0 label, doc (showString "."), prt 0 cat, doc (showString "::="), prt 0 items])
+    Token id reg -> prPrec i 0 (concatD [doc (showString "token"), prt 0 id, prt 0 reg])
+    PosToken id reg -> prPrec i 0 (concatD [doc (showString "position"), doc (showString "token"), prt 0 id, prt 0 reg])
+    Entryp ids -> prPrec i 0 (concatD [doc (showString "entrypoints"), prt 0 ids])
+    Separator minimumsize cat str -> prPrec i 0 (concatD [doc (showString "separator"), prt 0 minimumsize, prt 0 cat, prt 0 str])
+    Terminator minimumsize cat str -> prPrec i 0 (concatD [doc (showString "terminator"), prt 0 minimumsize, prt 0 cat, prt 0 str])
+    Delimiters cat str1 str2 separation minimumsize -> prPrec i 0 (concatD [doc (showString "delimiters"), prt 0 cat, prt 0 str1, prt 0 str2, prt 0 separation, prt 0 minimumsize])
+    Coercions id n -> prPrec i 0 (concatD [doc (showString "coercions"), prt 0 id, prt 0 n])
+    Rules id rhss -> prPrec i 0 (concatD [doc (showString "rules"), prt 0 id, doc (showString "::="), prt 0 rhss])
+    Function id args exp -> prPrec i 0 (concatD [doc (showString "define"), prt 0 id, prt 0 args, doc (showString "="), prt 0 exp])
+    Layout strs -> prPrec i 0 (concatD [doc (showString "layout"), prt 0 strs])
+    LayoutStop strs -> prPrec i 0 (concatD [doc (showString "layout"), doc (showString "stop"), prt 0 strs])
+    LayoutTop -> prPrec i 0 (concatD [doc (showString "layout"), doc (showString "toplevel")])
+  prtList _ [] = (concatD [])
+  prtList _ [x] = (concatD [prt 0 x])
+  prtList _ (x:xs) = (concatD [prt 0 x, doc (showString ";"), prt 0 xs])
 instance Print Item where
   prt i e = case e of
-   Terminal str -> prPrec i 0 (concatD [prt 0 str])
-   NTerminal cat -> prPrec i 0 (concatD [prt 0 cat])
-
-  prtList es = case es of
-   [] -> (concatD [])
-   x:xs -> (concatD [prt 0 x , prt 0 xs])
-
+    Terminal str -> prPrec i 0 (concatD [prt 0 str])
+    NTerminal cat -> prPrec i 0 (concatD [prt 0 cat])
+  prtList _ [] = (concatD [])
+  prtList _ (x:xs) = (concatD [prt 0 x, prt 0 xs])
 instance Print Cat where
   prt i e = case e of
-   ListCat cat -> prPrec i 0 (concatD [doc (showString "[") , prt 0 cat , doc (showString "]")])
-   IdCat id -> prPrec i 0 (concatD [prt 0 id])
-
+    ListCat cat -> prPrec i 0 (concatD [doc (showString "["), prt 0 cat, doc (showString "]")])
+    IdCat id -> prPrec i 0 (concatD [prt 0 id])
 
 instance Print Label where
   prt i e = case e of
-   LabNoP labelid -> prPrec i 0 (concatD [prt 0 labelid])
-   LabP labelid profitems -> prPrec i 0 (concatD [prt 0 labelid , prt 0 profitems])
-   LabPF labelid0 labelid profitems -> prPrec i 0 (concatD [prt 0 labelid0 , prt 0 labelid , prt 0 profitems])
-   LabF labelid0 labelid -> prPrec i 0 (concatD [prt 0 labelid0 , prt 0 labelid])
-
+    LabNoP labelid -> prPrec i 0 (concatD [prt 0 labelid])
+    LabP labelid profitems -> prPrec i 0 (concatD [prt 0 labelid, prt 0 profitems])
+    LabPF labelid1 labelid2 profitems -> prPrec i 0 (concatD [prt 0 labelid1, prt 0 labelid2, prt 0 profitems])
+    LabF labelid1 labelid2 -> prPrec i 0 (concatD [prt 0 labelid1, prt 0 labelid2])
 
 instance Print LabelId where
   prt i e = case e of
-   Id id -> prPrec i 0 (concatD [prt 0 id])
-   Wild  -> prPrec i 0 (concatD [doc (showString "_")])
-   ListE  -> prPrec i 0 (concatD [doc (showString "[") , doc (showString "]")])
-   ListCons  -> prPrec i 0 (concatD [doc (showString "(") , doc (showString ":") , doc (showString ")")])
-   ListOne  -> prPrec i 0 (concatD [doc (showString "(") , doc (showString ":") , doc (showString "[") , doc (showString "]") , doc (showString ")")])
-
+    Id id -> prPrec i 0 (concatD [prt 0 id])
+    Wild -> prPrec i 0 (concatD [doc (showString "_")])
+    ListE -> prPrec i 0 (concatD [doc (showString "["), doc (showString "]")])
+    ListCons -> prPrec i 0 (concatD [doc (showString "("), doc (showString ":"), doc (showString ")")])
+    ListOne -> prPrec i 0 (concatD [doc (showString "("), doc (showString ":"), doc (showString "["), doc (showString "]"), doc (showString ")")])
 
 instance Print ProfItem where
   prt i e = case e of
-   ProfIt intlists ns -> prPrec i 0 (concatD [doc (showString "(") , doc (showString "[") , prt 0 intlists , doc (showString "]") , doc (showString ",") , doc (showString "[") , prt 0 ns , doc (showString "]") , doc (showString ")")])
-
-  prtList es = case es of
-   [x] -> (concatD [prt 0 x])
-   x:xs -> (concatD [prt 0 x , prt 0 xs])
-
+    ProfIt intlists ns -> prPrec i 0 (concatD [doc (showString "("), doc (showString "["), prt 0 intlists, doc (showString "]"), doc (showString ","), doc (showString "["), prt 0 ns, doc (showString "]"), doc (showString ")")])
+  prtList _ [x] = (concatD [prt 0 x])
+  prtList _ (x:xs) = (concatD [prt 0 x, prt 0 xs])
 instance Print IntList where
   prt i e = case e of
-   Ints ns -> prPrec i 0 (concatD [doc (showString "[") , prt 0 ns , doc (showString "]")])
-
-  prtList es = case es of
-   [] -> (concatD [])
-   [x] -> (concatD [prt 0 x])
-   x:xs -> (concatD [prt 0 x , doc (showString ",") , prt 0 xs])
-
+    Ints ns -> prPrec i 0 (concatD [doc (showString "["), prt 0 ns, doc (showString "]")])
+  prtList _ [] = (concatD [])
+  prtList _ [x] = (concatD [prt 0 x])
+  prtList _ (x:xs) = (concatD [prt 0 x, doc (showString ","), prt 0 xs])
 instance Print Separation where
   prt i e = case e of
-   SepNone  -> prPrec i 0 (concatD [])
-   SepTerm str -> prPrec i 0 (concatD [doc (showString "terminator") , prt 0 str])
-   SepSepar str -> prPrec i 0 (concatD [doc (showString "separator") , prt 0 str])
-
+    SepNone -> prPrec i 0 (concatD [])
+    SepTerm str -> prPrec i 0 (concatD [doc (showString "terminator"), prt 0 str])
+    SepSepar str -> prPrec i 0 (concatD [doc (showString "separator"), prt 0 str])
 
 instance Print Arg where
   prt i e = case e of
-   Arg id -> prPrec i 0 (concatD [prt 0 id])
-
-  prtList es = case es of
-   [] -> (concatD [])
-   x:xs -> (concatD [prt 0 x , prt 0 xs])
-
+    Arg id -> prPrec i 0 (concatD [prt 0 id])
+  prtList _ [] = (concatD [])
+  prtList _ (x:xs) = (concatD [prt 0 x, prt 0 xs])
 instance Print Exp where
   prt i e = case e of
-   Cons exp0 exp -> prPrec i 0 (concatD [prt 1 exp0 , doc (showString ":") , prt 0 exp])
-   App id exps -> prPrec i 1 (concatD [prt 0 id , prt 0 exps])
-   Var id -> prPrec i 2 (concatD [prt 0 id])
-   LitInt n -> prPrec i 2 (concatD [prt 0 n])
-   LitChar c -> prPrec i 2 (concatD [prt 0 c])
-   LitString str -> prPrec i 2 (concatD [prt 0 str])
-   LitDouble d -> prPrec i 2 (concatD [prt 0 d])
-   List exps -> prPrec i 2 (concatD [doc (showString "[") , prt 0 exps , doc (showString "]")])
-
-  prtList es = case es of
-   [] -> (concatD [])
-   [x] -> (concatD [prt 2 x])
-   [x] -> (concatD [prt 0 x])
-   x:xs -> (concatD [prt 2 x , prt 0 xs])
-   x:xs -> (concatD [prt 0 x , doc (showString ",") , prt 0 xs])
-
+    Cons exp1 exp2 -> prPrec i 0 (concatD [prt 1 exp1, doc (showString ":"), prt 0 exp2])
+    App id exps -> prPrec i 1 (concatD [prt 0 id, prt 2 exps])
+    Var id -> prPrec i 2 (concatD [prt 0 id])
+    LitInt n -> prPrec i 2 (concatD [prt 0 n])
+    LitChar c -> prPrec i 2 (concatD [prt 0 c])
+    LitString str -> prPrec i 2 (concatD [prt 0 str])
+    LitDouble d -> prPrec i 2 (concatD [prt 0 d])
+    List exps -> prPrec i 2 (concatD [doc (showString "["), prt 0 exps, doc (showString "]")])
+  prtList 2 [x] = (concatD [prt 2 x])
+  prtList 2 (x:xs) = (concatD [prt 2 x, prt 2 xs])
+  prtList _ [] = (concatD [])
+  prtList _ [x] = (concatD [prt 0 x])
+  prtList _ (x:xs) = (concatD [prt 0 x, doc (showString ","), prt 0 xs])
 instance Print RHS where
   prt i e = case e of
-   RHS items -> prPrec i 0 (concatD [prt 0 items])
-
-  prtList es = case es of
-   [x] -> (concatD [prt 0 x])
-   x:xs -> (concatD [prt 0 x , doc (showString "|") , prt 0 xs])
-
+    RHS items -> prPrec i 0 (concatD [prt 0 items])
+  prtList _ [x] = (concatD [prt 0 x])
+  prtList _ (x:xs) = (concatD [prt 0 x, doc (showString "|"), prt 0 xs])
 instance Print MinimumSize where
   prt i e = case e of
-   MNonempty  -> prPrec i 0 (concatD [doc (showString "nonempty")])
-   MEmpty  -> prPrec i 0 (concatD [])
-
+    MNonempty -> prPrec i 0 (concatD [doc (showString "nonempty")])
+    MEmpty -> prPrec i 0 (concatD [])
 
 instance Print Reg where
   prt i e = case e of
-   RSeq reg0 reg -> prPrec i 2 (concatD [prt 2 reg0 , prt 3 reg])
-   RAlt reg0 reg -> prPrec i 1 (concatD [prt 1 reg0 , doc (showString "|") , prt 2 reg])
-   RMinus reg0 reg -> prPrec i 1 (concatD [prt 2 reg0 , doc (showString "-") , prt 2 reg])
-   RStar reg -> prPrec i 3 (concatD [prt 3 reg , doc (showString "*")])
-   RPlus reg -> prPrec i 3 (concatD [prt 3 reg , doc (showString "+")])
-   ROpt reg -> prPrec i 3 (concatD [prt 3 reg , doc (showString "?")])
-   REps  -> prPrec i 3 (concatD [doc (showString "eps")])
-   RChar c -> prPrec i 3 (concatD [prt 0 c])
-   RAlts str -> prPrec i 3 (concatD [doc (showString "[") , prt 0 str , doc (showString "]")])
-   RSeqs str -> prPrec i 3 (concatD [doc (showString "{") , prt 0 str , doc (showString "}")])
-   RDigit  -> prPrec i 3 (concatD [doc (showString "digit")])
-   RLetter  -> prPrec i 3 (concatD [doc (showString "letter")])
-   RUpper  -> prPrec i 3 (concatD [doc (showString "upper")])
-   RLower  -> prPrec i 3 (concatD [doc (showString "lower")])
-   RAny  -> prPrec i 3 (concatD [doc (showString "char")])
-
+    RSeq reg1 reg2 -> prPrec i 2 (concatD [prt 2 reg1, prt 3 reg2])
+    RAlt reg1 reg2 -> prPrec i 1 (concatD [prt 1 reg1, doc (showString "|"), prt 2 reg2])
+    RMinus reg1 reg2 -> prPrec i 1 (concatD [prt 2 reg1, doc (showString "-"), prt 2 reg2])
+    RStar reg -> prPrec i 3 (concatD [prt 3 reg, doc (showString "*")])
+    RPlus reg -> prPrec i 3 (concatD [prt 3 reg, doc (showString "+")])
+    ROpt reg -> prPrec i 3 (concatD [prt 3 reg, doc (showString "?")])
+    REps -> prPrec i 3 (concatD [doc (showString "eps")])
+    RChar c -> prPrec i 3 (concatD [prt 0 c])
+    RAlts str -> prPrec i 3 (concatD [doc (showString "["), prt 0 str, doc (showString "]")])
+    RSeqs str -> prPrec i 3 (concatD [doc (showString "{"), prt 0 str, doc (showString "}")])
+    RDigit -> prPrec i 3 (concatD [doc (showString "digit")])
+    RLetter -> prPrec i 3 (concatD [doc (showString "letter")])
+    RUpper -> prPrec i 3 (concatD [doc (showString "upper")])
+    RLower -> prPrec i 3 (concatD [doc (showString "lower")])
+    RAny -> prPrec i 3 (concatD [doc (showString "char")])
 
 

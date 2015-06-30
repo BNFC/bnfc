@@ -38,9 +38,11 @@
 module BNFC.Backend.CPP.NoSTL.CFtoFlex (cf2flex) where
 
 import BNFC.CF
+import BNFC.Backend.C.CFtoFlexC (lexComments, cMacros)
 import BNFC.Backend.CPP.NoSTL.RegToFlex
 import BNFC.Backend.Common.NamedVariables
 import BNFC.Backend.CPP.STL.STLUtils
+import BNFC.PrettyPrint
 
 --The environment must be returned for the parser to use.
 cf2flex :: Maybe String -> String -> CF -> (String, SymEnv)
@@ -81,20 +83,6 @@ prelude inPackage _ = unlines
    "%}"
   ]
 
---For now all categories are included.
---Optimally only the ones that are used should be generated.
-cMacros :: String
-cMacros = unlines
-  [
-  "LETTER [a-zA-Z]",
-  "CAPITAL [A-Z]",
-  "SMALL [a-z]",
-  "DIGIT [0-9]",
-  "IDENT [a-zA-Z0-9'_]",
-  "%START YYINITIAL COMMENT CHAR CHARESC CHAREND STRING ESCAPED",
-  "%%"
-  ]
-
 lexSymbols :: SymEnv -> String
 lexSymbols ss = concatMap transSym ss
   where
@@ -106,7 +94,8 @@ lexSymbols ss = concatMap transSym ss
 restOfFlex :: Maybe String -> CF -> SymEnv -> String
 restOfFlex inPackage cf env = concat
   [
-   lexComments inPackage (comments cf),
+   render $ lexComments inPackage (comments cf),
+   "\n\n",
    userDefTokens,
    ifC catString strStates,
    ifC catChar chStates,
@@ -157,28 +146,6 @@ restOfFlex inPackage cf env = concat
      "int " ++ ns ++ "initialize_lexer(FILE *inp) { yyrestart(inp); BEGIN YYINITIAL; }",
      "int yywrap(void) { return 1; }"
     ]
-
-
-lexComments :: Maybe String -> ([(String, String)], [String]) -> String
-lexComments inPackage (m,s) =
-  (unlines (map (lexSingleComment inPackage) s))
-  ++ (unlines (map (lexMultiComment inPackage) m))
-
-lexSingleComment :: Maybe String -> String -> String
-lexSingleComment inPackage c =
-  "<YYINITIAL>\"" ++ c ++ "\"[^\\n]*\\n  ++" ++ nsString inPackage ++ "yy_mylinenumber ; \t /* BNFC single-line comment */;"
-
---There might be a possible bug here if a language includes 2 multi-line comments.
---They could possibly start a comment with one character and end it with another.
---However this seems rare.
-lexMultiComment :: Maybe String -> (String, String) -> String
-lexMultiComment inPackage (b,e) = unlines [
-  "<YYINITIAL>\"" ++ b ++ "\"      \t BEGIN COMMENT;",
-  "<COMMENT>\"" ++ e ++ "\"      \t BEGIN YYINITIAL;",
-  "<COMMENT>.      \t /* BNFC multi-line comment */;",
-  "<COMMENT>[\\n]   ++" ++ nsString inPackage ++ "yy_mylinenumber ; \t /* BNFC multi-line comment */;"
- ---- "\\n  ++yy_mylinenumber ;"
-  ]
 
 
 --Helper function that escapes characters in strings
