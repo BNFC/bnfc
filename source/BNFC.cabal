@@ -137,6 +137,7 @@ Executable bnfc
     -- C++ backend
     BNFC.Backend.CPP.NoSTL,
     BNFC.Backend.CPP.PrettyPrinter,
+    BNFC.Backend.CPP.Makefile,
     BNFC.Backend.CPP.NoSTL.RegToFlex,
     BNFC.Backend.CPP.NoSTL.CFtoFlex,
     BNFC.Backend.CPP.NoSTL.CFtoBison,
