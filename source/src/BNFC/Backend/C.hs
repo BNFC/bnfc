@@ -27,6 +27,7 @@ import BNFC.Backend.C.CFtoFlexC
 import BNFC.Backend.C.CFtoBisonC
 import BNFC.Backend.C.CFtoCSkel
 import BNFC.Backend.C.CFtoCPrinter
+import BNFC.PrettyPrint
 import Data.Char
 import qualified BNFC.Backend.Common.Makefile as Makefile
 
@@ -59,46 +60,50 @@ makeC opts cf = do
         name = lang opts
 
 
-makefile :: String -> String -> String
-makefile name prefix =
-  (unlines [ "CC = gcc",
-             "CCFLAGS = -g -W -Wall", "",
-             "FLEX = flex",
-             "FLEX_OPTS = -P" ++ prefix, "",
-             "BISON = bison",
-             "BISON_OPTS = -t -p" ++ prefix, "",
-             "OBJS = Absyn.o Lexer.o Parser.o Printer.o", ""] ++)
-  $ Makefile.mkRule ".PHONY" ["clean", "distclean"]
-    []
-  $ Makefile.mkRule "all" [testName]
-    []
-  $ Makefile.mkRule "clean" []
-    -- peteg: don't nuke what we generated - move that to the "vclean" target.
-    [ "rm -f *.o " ++ testName ++ " " ++ unwords
-      [ name ++ e | e <- [".aux", ".log", ".pdf",".dvi", ".ps", ""]] ]
-  $ Makefile.mkRule "distclean" ["clean"]
-    [ "rm -f " ++ unwords
-      [ "Absyn.h", "Absyn.c", "Test.c", "Parser.c", "Parser.h", "Lexer.c",
-        "Skeleton.c", "Skeleton.h", "Printer.c", "Printer.h", "Makefile " ]
-      ++ name ++ ".l " ++ name ++ ".y " ++ name ++ ".tex "]
-  $ Makefile.mkRule testName ["${OBJS}", "Test.o"]
-    [ "@echo \"Linking " ++ testName ++ "...\""
-    , "${CC} ${CCFLAGS} ${OBJS} Test.o -o " ++ testName ]
-  $ Makefile.mkRule "Absyn.o" [ "Absyn.c", "Absyn.h"]
-    [ "${CC} ${CCFLAGS} -c Absyn.c" ]
-  $ Makefile.mkRule "Lexer.c" [ name ++ ".l" ]
-    [ "${FLEX} ${FLEX_OPTS} -oLexer.c " ++ name ++ ".l" ]
-  $ Makefile.mkRule "Parser.c" [ name ++ ".y" ]
-    [ "${BISON} ${BISON_OPTS} " ++ name ++ ".y -o Parser.c" ]
-  $ Makefile.mkRule "Lexer.o" [ "Lexer.c", "Parser.h" ]
-    [ "${CC} ${CCFLAGS} -c Lexer.c " ]
-  $ Makefile.mkRule "Parser.o" ["Parser.c", "Absyn.h" ]
-    [ "${CC} ${CCFLAGS} -c Parser.c" ]
-  $ Makefile.mkRule "Printer.o" [ "Printer.c", "Printer.h", "Absyn.h" ]
-    [ "${CC} ${CCFLAGS} -c Printer.c" ]
-  $ Makefile.mkRule "Test.o" [ "Test.c", "Parser.h", "Printer.h", "Absyn.h" ]
-    [ "${CC} ${CCFLAGS} -c Test.c" ]
-  ""
+makefile :: String -> String -> Doc
+makefile name prefix = vcat
+    [ "CC = gcc"
+    , "CCFLAGS = -g -W -Wall"
+    , ""
+    , "FLEX = flex"
+    , "FLEX_OPTS = -P" <> text prefix
+    , ""
+    , "BISON = bison"
+    , "BISON_OPTS = -t -p" <> text prefix
+    , ""
+    , "OBJS = Absyn.o Lexer.o Parser.o Printer.o"
+    , ""
+    , Makefile.mkRule ".PHONY" ["clean", "distclean"]
+      []
+    , Makefile.mkRule "all" [testName]
+      []
+    , Makefile.mkRule "clean" []
+      -- peteg: don't nuke what we generated - move that to the "vclean" target.
+      [ "rm -f *.o " ++ testName ++ " " ++ unwords
+        [ name ++ e | e <- [".aux", ".log", ".pdf",".dvi", ".ps", ""]] ]
+    , Makefile.mkRule "distclean" ["clean"]
+      [ "rm -f " ++ unwords
+        [ "Absyn.h", "Absyn.c", "Test.c", "Parser.c", "Parser.h", "Lexer.c",
+          "Skeleton.c", "Skeleton.h", "Printer.c", "Printer.h", "Makefile " ]
+        ++ name ++ ".l " ++ name ++ ".y " ++ name ++ ".tex "]
+    , Makefile.mkRule testName ["${OBJS}", "Test.o"]
+      [ "@echo \"Linking " ++ testName ++ "...\""
+      , "${CC} ${CCFLAGS} ${OBJS} Test.o -o " ++ testName ]
+    , Makefile.mkRule "Absyn.o" [ "Absyn.c", "Absyn.h"]
+      [ "${CC} ${CCFLAGS} -c Absyn.c" ]
+    , Makefile.mkRule "Lexer.c" [ name ++ ".l" ]
+      [ "${FLEX} ${FLEX_OPTS} -oLexer.c " ++ name ++ ".l" ]
+    , Makefile.mkRule "Parser.c" [ name ++ ".y" ]
+      [ "${BISON} ${BISON_OPTS} " ++ name ++ ".y -o Parser.c" ]
+    , Makefile.mkRule "Lexer.o" [ "Lexer.c", "Parser.h" ]
+      [ "${CC} ${CCFLAGS} -c Lexer.c " ]
+    , Makefile.mkRule "Parser.o" ["Parser.c", "Absyn.h" ]
+      [ "${CC} ${CCFLAGS} -c Parser.c" ]
+    , Makefile.mkRule "Printer.o" [ "Printer.c", "Printer.h", "Absyn.h" ]
+      [ "${CC} ${CCFLAGS} -c Printer.c" ]
+    , Makefile.mkRule "Test.o" [ "Test.c", "Parser.h", "Printer.h", "Absyn.h" ]
+      [ "${CC} ${CCFLAGS} -c Test.c" ]
+    ]
   where testName = "Test" ++ name
 
 -- | Generate a test program that parses stdin and prints the AST and it's

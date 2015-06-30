@@ -103,63 +103,54 @@ makeJava options@Options{..} cf =
 -- FIXME It's almost certainly better to just feed all the Java source
 -- files to javac in one go.
 -- Replace with an ANT script?
-makefile :: String -> FilePath -> FilePath -> [String] -> Bool -> String
-makefile name dirBase dirAbsyn absynFileNames jflex =
-    Makefile.mkVar "JAVAC" "javac"
-  $ Makefile.mkVar "JAVAC_FLAGS" "-sourcepath ."
-  $ Makefile.mkVar "JAVA" "java"
-  $ Makefile.mkVar "JAVA_FLAGS" ""
-  $ Makefile.mkVar "CUP" "java_cup.Main"
-  $ Makefile.mkVar "CUPFLAGS" "-nopositions -expect 100"
-  $ (if jflex then Makefile.mkVar "JFLEX" "jflex"
-              else Makefile.mkVar "JLEX" "JLex.Main" )
-  $ Makefile.mkRule "all" [ "test" ]
-    []
-  $ Makefile.mkRule "test" ("absyn" : map (dirBase ++) [ "Yylex.class",
-                                                       "PrettyPrinter.class",
-                                                       "Test.class",
-                                                       "ComposVisitor.class",
-                                                       "AbstractVisitor.class",
-                                                       "FoldVisitor.class",
-                                                       "AllVisitor.class",
-                                                       "parser.class",
-                                                       "sym.class",
-                                                       "Test.class"])
-    []
-  $ Makefile.mkRule ".PHONY" ["absyn"]
-    []
-  $ Makefile.mkRule "%.class" [ "%.java" ]
-    [ "${JAVAC} ${JAVAC_FLAGS} $^" ]
-  $ Makefile.mkRule "absyn" [absynJavaSrc]
-    [ "${JAVAC} ${JAVAC_FLAGS} $^" ]
-  $ Makefile.mkRule (dirBase ++ "Yylex.java") [ dirBase ++ "Yylex" ]
-    [ (if jflex then "${JFLEX} " else "${JAVA} ${JAVA_FLAGS} ${JLEX} ") ++ dirBase ++ "Yylex" ]
-  $ Makefile.mkRule (dirBase ++ "sym.java " ++ dirBase ++ "parser.java")
-                    [ dirBase ++ name ++ ".cup" ]
-    [ "${JAVA} ${JAVA_FLAGS} ${CUP} ${CUPFLAGS} " ++ dirBase ++ name ++ ".cup"
-    , "mv sym.java parser.java " ++ dirBase ]
-  $ Makefile.mkRule (dirBase ++ "Yylex.class") [ dirBase ++ "Yylex.java",
+makefile :: String -> FilePath -> FilePath -> [String] -> Bool -> Doc
+makefile name dirBase dirAbsyn absynFileNames jflex = vcat
+    [ Makefile.mkVar "JAVAC" "javac"
+    , Makefile.mkVar "JAVAC_FLAGS" "-sourcepath ."
+    , Makefile.mkVar "JAVA" "java"
+    , Makefile.mkVar "JAVA_FLAGS" ""
+    , Makefile.mkVar "CUP" "java_cup.Main"
+    , Makefile.mkVar "CUPFLAGS" "-nopositions -expect 100"
+    , if jflex then Makefile.mkVar "JFLEX" "jflex"
+                else Makefile.mkVar "JLEX" "JLex.Main"
+    , Makefile.mkRule "all" [ "test" ]
+        []
+    , Makefile.mkRule "test" ("absyn" : classes)
+      []
+  , Makefile.mkRule ".PHONY" ["absyn"]
+      []
+  , Makefile.mkRule "%.class" [ "%.java" ]
+      [ "${JAVAC} ${JAVAC_FLAGS} $^" ]
+  , Makefile.mkRule "absyn" [absynJavaSrc]
+      [ "${JAVAC} ${JAVAC_FLAGS} $^" ]
+  , Makefile.mkRule (dirBase ++ "Yylex.java") [ dirBase ++ "Yylex" ]
+      [ (if jflex then "${JFLEX} " else "${JAVA} ${JAVA_FLAGS} ${JLEX} ") ++ dirBase ++ "Yylex" ]
+  , Makefile.mkRule (dirBase ++ "sym.java " ++ dirBase ++ "parser.java")
+      [ dirBase ++ name ++ ".cup" ]
+      [ "${JAVA} ${JAVA_FLAGS} ${CUP} ${CUPFLAGS} " ++ dirBase ++ name ++ ".cup"
+      , "mv sym.java parser.java " ++ dirBase ]
+  , Makefile.mkRule (dirBase ++ "Yylex.class") [ dirBase ++ "Yylex.java",
                                                  dirBase ++ "sym.java" ]
-    []
-  $ Makefile.mkRule (dirBase ++ "sym.class") [ dirBase ++ "sym.java" ]
-    []
-  $ Makefile.mkRule (dirBase ++ "parser.class") [ dirBase ++ "parser.java"
+      []
+  , Makefile.mkRule (dirBase ++ "sym.class") [ dirBase ++ "sym.java" ]
+      []
+  , Makefile.mkRule (dirBase ++ "parser.class") [ dirBase ++ "parser.java"
                                                 , dirBase ++ "sym.java" ]
-    []
-  $ Makefile.mkRule (dirBase ++ "PrettyPrinter.class")
+      []
+  , Makefile.mkRule (dirBase ++ "PrettyPrinter.class")
                     [ dirBase ++ "PrettyPrinter.java" ]
-    []
+      []
 -- FIXME
-  $ Makefile.mkRule "clean" []
-    [ "rm -f " ++ dirAbsyn ++ "*.class" ++ " " ++ dirBase ++ "*.class" ]
-  $ Makefile.mkRule "distclean" [ "vclean" ]
-    []
-  $ Makefile.mkRule "vclean" []
-    [ " rm -f " ++ absynJavaSrc ++ " " ++ absynJavaClass
-    , " rm -f " ++ dirAbsyn ++ "*.class"
---     , "rm -f " ++ "Test" ++ name
-    , " rmdir " ++ dirAbsyn
-    , " rm -f " ++ unwords (map (dirBase ++) [
+  , Makefile.mkRule "clean" []
+      [ "rm -f " ++ dirAbsyn ++ "*.class" ++ " " ++ dirBase ++ "*.class" ]
+  , Makefile.mkRule "distclean" [ "vclean" ]
+      []
+  , Makefile.mkRule "vclean" []
+      [ " rm -f " ++ absynJavaSrc ++ " " ++ absynJavaClass
+      , " rm -f " ++ dirAbsyn ++ "*.class"
+  --     , "rm -f " ++ "Test" ++ name
+      , " rmdir " ++ dirAbsyn
+      , " rm -f " ++ unwords (map (dirBase ++) [
                                                 "Yylex",
                                                 name ++ ".cup",
                                                 "Yylex.java",
@@ -174,11 +165,18 @@ makefile name dirBase dirAbsyn absynFileNames jflex =
                                                 "sym.java",
                                                 "parser.java",
                                                 "*.class"])
-    , "rm -f Makefile"
-    , "rmdir -p " ++ dirBase ]
-  ""
-    where absynJavaSrc = unwords (map (++ ".java") absynFileNames)
-          absynJavaClass = unwords (map (++ ".class") absynFileNames)
+      , "rm -f Makefile"
+      , "rmdir -p " ++ dirBase ]
+  ]
+    where
+      absynJavaSrc = unwords (map (++ ".java") absynFileNames)
+      absynJavaClass = unwords (map (++ ".class") absynFileNames)
+      classes = map (dirBase ++)
+          [ "Yylex.class", "PrettyPrinter.class", "Test.class"
+          , "ComposVisitor.class", "AbstractVisitor.class"
+          , "FoldVisitor.class", "AllVisitor.class", "parser.class"
+          , "sym.class", "Test.class"]
+
 
 javaTest :: String -> String -> CF -> Doc
 javaTest packageBase packageAbsyn cf = vcat

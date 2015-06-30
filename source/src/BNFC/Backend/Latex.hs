@@ -24,6 +24,7 @@ import BNFC.Backend.Base
 import BNFC.Backend.Common.Makefile as Makefile
 import BNFC.CF
 import BNFC.Utils
+import BNFC.PrettyPrint hiding ((<.>), empty)
 import Data.List
 import System.FilePath ((<.>),replaceExtension)
 import Text.Printf
@@ -46,19 +47,31 @@ cfToLatex name cf = unlines [
                             endDocument
                             ]
 
-
-makefile_ = makefile
-makefile :: String -> String
-makefile texfile =
-      Makefile.mkRule "all" [pdffile]
-      []
-    $ Makefile.mkRule pdffile [texfile]
-      [ printf "pdflatex %s" texfile ]
-    $ Makefile.mkRule "clean" []
-      [ unwords [ "-rm", pdffile, auxfile, logfile ]]
-    $ Makefile.mkRule "cleanall" ["clean"]
-      [ "-rm Makefile " ++ texfile ]
-    ""
+-- | Create a makefile for the given tex file
+--
+-- >>> makefile "myFile.tex"
+-- all: myFile.pdf
+-- <BLANKLINE>
+-- myFile.pdf: myFile.tex
+-- 	pdflatex myFile.tex
+-- <BLANKLINE>
+-- clean:
+-- 	-rm myFile.pdf myFile.aux myFile.log
+-- <BLANKLINE>
+-- cleanall: clean
+-- 	-rm Makefile myFile.tex
+-- <BLANKLINE>
+makefile :: String -> Doc
+makefile texfile = vcat
+    [ Makefile.mkRule "all" [pdffile]
+        []
+    , Makefile.mkRule pdffile [texfile]
+        [ printf "pdflatex %s" texfile ]
+    , Makefile.mkRule "clean" []
+        [ unwords [ "-rm", pdffile, auxfile, logfile ]]
+    , Makefile.mkRule "cleanall" ["clean"]
+        [ "-rm Makefile " ++ texfile ]
+    ]
   where pdffile = replaceExtension texfile "pdf"
         auxfile = replaceExtension texfile "aux"
         logfile = replaceExtension texfile "log"

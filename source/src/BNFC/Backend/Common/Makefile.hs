@@ -4,25 +4,37 @@ import Text.Printf
 
 import BNFC.Options (SharedOptions(..))
 import BNFC.Backend.Base (mkfile, Backend)
+import BNFC.PrettyPrint
 
-type Makefile = ShowS
-
-
+-- | Creates a Makefile rule
+-- >>> mkRule "main" ["file1","file2"] ["do something"]
+-- main: file1 file2
+-- 	do something
+-- <BLANKLINE>
+--
+-- >>> mkRule "main" ["program.exe"] []
+-- main: program.exe
+-- <BLANKLINE>
 mkRule :: String   -- ^ The target name
        -> [String] -- ^ Dependencies
        -> [String] -- ^ Recipe
-       -> Makefile
-mkRule target deps recipe = (++) $ unlines $
-  [ unwords (printf "%s:" target:deps) ]
-  ++ map (printf "\t%s") recipe
-  ++ [""]
+       -> Doc
+mkRule target deps recipes =
+    text target <> ":" <+> hsep (map text deps)
+    $$ vcat [ "\t" <> text recipe | recipe <- recipes ]
+    $$ ""
 
-mkVar :: String -> String -> Makefile
-mkVar n v = (++) (n ++ "=" ++ v  ++ "\n")
+-- | Variable assignment
+--
+-- >>> mkVar "FOO" "bar"
+-- FOO=bar
+mkVar :: String -> String -> Doc
+mkVar n v = text n <> "=" <> text v
 
 
 -- | Create the Makefile file using the name specified in the option
 -- record.
-mkMakefile :: SharedOptions -> String -> Backend
+mkMakefile :: SharedOptions -> Doc -> Backend
 mkMakefile Options {make = Nothing} _ = return ()
-mkMakefile Options {make = Just makefile} content = mkfile makefile content
+mkMakefile Options {make = Just makefile} content
+  = mkfile makefile (render content)

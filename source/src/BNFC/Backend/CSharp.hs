@@ -49,7 +49,10 @@ import BNFC.Backend.CSharp.CAbstoCSharpVisitSkeleton
 import BNFC.Backend.CSharp.CAbstoCSharpAbstractVisitSkeleton
 import BNFC.Backend.CSharp.CFtoCSharpPrinter
 import BNFC.Backend.CSharp.CSharpUtils
+import BNFC.PrettyPrint hiding ((<.>), (<>))
+import Data.Monoid ((<>))
 import System.Environment (getEnv)
+import System.FilePath ((<.>))
 import System.Directory
 import System.IO
 import System.IO.Error (catchIOError)
@@ -57,7 +60,6 @@ import System.Process
 import Data.Maybe
 import Control.Monad (when)
 import qualified BNFC.Backend.Common.Makefile as Makefile
-import System.FilePath ((<.>))
 -- Control.Monad.State
 
 makeCSharp :: SharedOptions -> CF -> MkFiles ()
@@ -99,29 +101,29 @@ writeMakefile opts namespace = do
   liftIO $ putStrLn "-----------------------------------------------------------------------------"
   liftIO $ putStrLn ""
   where
-    makefile =
-      (unlines [ "MONO = mono", "MONOC = gmcs"
-               , "MONOCFLAGS = -optimize -reference:${PARSERREF}"
-               , "GPLEX = ${MONO} gplex.exe", "GPPG = ${MONO} gppg.exe"
-               , "PARSERREF = bin/ShiftReduceParser.dll"
-               , "CSFILES = Absyn.cs Parser.cs Printer.cs Scanner.cs Test.cs VisitSkeleton.cs AbstractVisitSkeleton.cs" ] ++)
-      $ Makefile.mkRule "all" [ "test" ]
-        []
-      $ Makefile.mkRule "clean" []
-        -- peteg: don't nuke what we generated - move that to the "vclean" target.
-        [ "rm -f " ++ namespace ++ ".pdf test" ]
-      $ Makefile.mkRule "distclean" [ "clean" ]
-        [ "rm -f ${CSFILES}"
-        , "rm -f " ++ unwords [namespace <.> ext | ext <- [ "l","y","tex" ]]
-        , "rm -f Makefile" ]
-      $ Makefile.mkRule "test" [ "Parser.cs", "Scanner.cs" ]
-        [ "@echo \"Compiling test...\""
-        , "${MONOC} ${MONOCFLAGS} -out:bin/test.exe ${CSFILES}" ]
-      $ Makefile.mkRule "Scanner.cs" [ namespace <.> "l" ]
-        [ "${GPLEX} /out:$@ " ++ namespace <.> "l" ]
-      $ Makefile.mkRule "Parser.cs" [ namespace <.> "y" ]
-        [ "${GPPG} /gplex " ++ namespace <.> "y > $@" ]
-      ""
+    makefile = vcat
+        ["MONO = mono", "MONOC = gmcs"
+        , "MONOCFLAGS = -optimize -reference:${PARSERREF}"
+        , "GPLEX = ${MONO} gplex.exe", "GPPG = ${MONO} gppg.exe"
+        , "PARSERREF = bin/ShiftReduceParser.dll"
+        , "CSFILES = Absyn.cs Parser.cs Printer.cs Scanner.cs Test.cs VisitSkeleton.cs AbstractVisitSkeleton.cs"
+        , Makefile.mkRule "all" [ "test" ]
+            []
+        , Makefile.mkRule "clean" []
+            -- peteg: don't nuke what we generated - move that to the "vclean" target.
+            [ "rm -f " ++ namespace ++ ".pdf test" ]
+        , Makefile.mkRule "distclean" [ "clean" ]
+            [ "rm -f ${CSFILES}"
+            , "rm -f " ++ unwords [namespace <.> ext | ext <- [ "l","y","tex" ]]
+            , "rm -f Makefile" ]
+        , Makefile.mkRule "test" [ "Parser.cs", "Scanner.cs" ]
+            [ "@echo \"Compiling test...\""
+            , "${MONOC} ${MONOCFLAGS} -out:bin/test.exe ${CSFILES}" ]
+        , Makefile.mkRule "Scanner.cs" [ namespace <.> "l" ]
+            [ "${GPLEX} /out:$@ " ++ namespace <.> "l" ]
+        , Makefile.mkRule "Parser.cs" [ namespace <.> "y" ]
+            [ "${GPPG} /gplex " ++ namespace <.> "y > $@" ]
+        ]
 
 writeVisualStudioFiles :: Namespace -> MkFiles ()
 writeVisualStudioFiles namespace = do

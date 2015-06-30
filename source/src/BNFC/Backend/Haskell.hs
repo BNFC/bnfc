@@ -95,38 +95,39 @@ makeHaskell opts cf = do
       mkfile "BenchCNF.hs" $ ToCNF.genBenchmark opts
 
 
-makefile :: Options -> String
+makefile :: Options -> Doc
 makefile opts = makeA where
   glr_params = if glr opts == GLR then "--glr --decode " else ""
   dir = let d = codeDir opts in if null d then "" else d ++ [pathSeparator]
-  makeA = Makefile.mkRule "all" []
+  makeA = vcat
+      [ Makefile.mkRule "all" []
            ([ "happy -gca " ++ glr_params ++ happyFile opts | not (cnf opts) ] ++
             [ "alex -g " ++ alexFile opts ] ++
-            [ if cnf opts 
+            [ if cnf opts
               then "ghc --make TestCNF.hs"
               else "ghc --make " ++ tFile opts ++ " -o " ++ mkFile withLang "Test" "" opts])
-        $ Makefile.mkRule "clean" []
-            [ "-rm -f "  ++ unwords
+      , Makefile.mkRule "clean" []
+          [ "-rm -f "  ++ unwords
                 (map (dir++) [ "*.log", "*.aux", "*.hi", "*.o", "*.dvi" ]) ]
-        $  Makefile.mkRule "distclean" ["clean"]
-            [ "-rm -f " ++ unwords
-                [ mkFile withLang "Doc" "*" opts
-                , mkFile withLang "Lex" "*" opts
-                , mkFile withLang "Par" "*" opts
-                , mkFile withLang "Layout" "*" opts
-                , mkFile withLang "Skel" "*" opts
-                , mkFile withLang "Print" "*" opts
-                , mkFile withLang "Test" "*" opts
-                , mkFile withLang "Abs" "*" opts
-                , mkFile withLang "Test" "" opts
-                , mkFile noLang   "ErrM" "*" opts
-                , mkFile noLang   "SharedString" "*" opts
-                , mkFile noLang "ComposOp" "*" opts
-                , dir ++ lang opts ++ ".dtd"
-                , mkFile withLang "XML" "*" opts
-                , "Makefile*" ]
-            , if null dir then "" else "\t-rmdir -p " ++ dir ]
-        ""
+      ,  Makefile.mkRule "distclean" ["clean"]
+          [ "-rm -f " ++ unwords
+              [ mkFile withLang "Doc" "*" opts
+              , mkFile withLang "Lex" "*" opts
+              , mkFile withLang "Par" "*" opts
+              , mkFile withLang "Layout" "*" opts
+              , mkFile withLang "Skel" "*" opts
+              , mkFile withLang "Print" "*" opts
+              , mkFile withLang "Test" "*" opts
+              , mkFile withLang "Abs" "*" opts
+              , mkFile withLang "Test" "" opts
+              , mkFile noLang   "ErrM" "*" opts
+              , mkFile noLang   "SharedString" "*" opts
+              , mkFile noLang "ComposOp" "*" opts
+              , dir ++ lang opts ++ ".dtd"
+              , mkFile withLang "XML" "*" opts
+              , "Makefile*" ]
+          , if null dir then "" else "\t-rmdir -p " ++ dir ]
+      ]
 
 testfile :: Options -> CF -> String
 testfile opts cf

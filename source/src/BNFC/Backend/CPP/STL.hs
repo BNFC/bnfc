@@ -25,6 +25,7 @@ import BNFC.Utils
 import BNFC.CF
 import BNFC.Options
 import BNFC.Backend.Base
+import BNFC.Backend.CPP.Makefile
 import BNFC.Backend.CPP.STL.CFtoSTLAbs
 import BNFC.Backend.CPP.NoSTL.CFtoFlex
 import BNFC.Backend.CPP.STL.CFtoBisonSTL
@@ -55,49 +56,6 @@ makeCppStl opts cf = do
     Makefile.mkMakefile opts $ makefile name
   where name = lang opts
 
-makefile :: String -> String
-makefile name =
-  (unlines [ "CC = g++",
-             "CCFLAGS = -g -W -Wall", "",
-             "FLEX = flex",
-             "FLEX_OPTS = -P" ++ name, "",
-             "BISON = bison",
-             "BISON_OPTS = -t -p" ++ name, "",
-             "OBJS = Absyn.o Lexer.o Parser.o Printer.o", "" ] ++)
-  $ Makefile.mkRule ".PHONY" ["clean", "distclean"]
-    []
-  $ Makefile.mkRule "all" [testName]
-    []
-  $ Makefile.mkRule "clean" []
-   -- peteg: don't nuke what we generated - move that to the "vclean" target.
-    [ "rm -f *.o " ++ testName ++ " " ++ unwords
-      [ name ++ e | e <- [".aux", ".log", ".pdf",".dvi", ".ps", ""]] ]
-  $ Makefile.mkRule "distclean" ["clean"]
-    [ "rm -f " ++ unwords
-      [ "Absyn.C", "Absyn.H", "Test.C", "Parser.C", "Parser.H", "Lexer.C",
-        "Skeleton.C", "Skeleton.H", "Printer.C", "Printer.H", "Makefile " ]
-      ++ name ++ ".l " ++ name ++ ".y " ++ name ++ ".tex "]
-  $ Makefile.mkRule (testName) [ "${OBJS}", "Test.o" ]
-   [ "@echo \"Linking " ++ testName ++ "...\""
-   , "${CC} ${CCFLAGS} ${OBJS} Test.o -o " ++ testName ]
-  $ Makefile.mkRule "Absyn.o" [ "Absyn.C", "Absyn.H" ]
-   [ "${CC} ${CCFLAGS} -c Absyn.C" ]
-  $ Makefile.mkRule "Lexer.C" [ name ++ ".l" ]
-   [ "${FLEX} -oLexer.C " ++ name ++ ".l" ]
-  $ Makefile.mkRule "Parser.C" [ name ++ ".y" ]
-   [ "${BISON} " ++ name ++ ".y -o Parser.C" ]
-  $ Makefile.mkRule "Lexer.o" [ "Lexer.C", "Parser.H" ]
-   [ "${CC} ${CCFLAGS} -c Lexer.C" ]
-  $ Makefile.mkRule "Parser.o" [ "Parser.C", "Absyn.H" ]
-   [ "${CC} ${CCFLAGS} -c Parser.C" ]
-  $ Makefile.mkRule "Printer.o" [ "Printer.C", "Printer.H", "Absyn.H" ]
-   [ "${CC} ${CCFLAGS} -c Printer.C" ]
-  $ Makefile.mkRule "Skeleton.o" [ "Skeleton.C", "Skeleton.H", "Absyn.H" ]
-   [ "${CC} ${CCFLAGS} -c Skeleton.C" ]
-  $ Makefile.mkRule "Test.o" [ "Test.C", "Parser.H", "Printer.H", "Absyn.H" ]
-   [ "${CC} ${CCFLAGS} -c Test.C" ]
-  ""
-  where testName = "Test" ++ name
 
 cpptest :: Maybe String -> CF -> String
 cpptest inPackage cf =
