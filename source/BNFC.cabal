@@ -51,6 +51,8 @@ Executable bnfc
     pretty >=1.1 && <1.2,
     filepath,
     deepseq
+  if  impl(ghc < 7.6.1)
+    Build-depends: ghc-prime
   build-tools:         alex, happy
   Main-is: Main.hs
   HS-source-dirs: src/
