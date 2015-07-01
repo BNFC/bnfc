@@ -50,7 +50,6 @@ import BNFC.Backend.CSharp.CAbstoCSharpAbstractVisitSkeleton
 import BNFC.Backend.CSharp.CFtoCSharpPrinter
 import BNFC.Backend.CSharp.CSharpUtils
 import BNFC.PrettyPrint hiding ((<.>), (<>))
-import Data.Monoid ((<>))
 import System.Environment (getEnv)
 import System.FilePath ((<.>))
 import System.Directory

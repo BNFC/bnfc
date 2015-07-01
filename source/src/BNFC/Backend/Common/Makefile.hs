@@ -1,7 +1,5 @@
 module BNFC.Backend.Common.Makefile where
 
-import Text.Printf
-
 import BNFC.Options (SharedOptions(..))
 import BNFC.Backend.Base (mkfile, Backend)
 import BNFC.PrettyPrint
