@@ -23,32 +23,30 @@ import BNFC.CF
 
 import Data.Char
 
-data Constructor = Constructor {
-				consCat :: Cat,
-				consFun :: Fun,
-				consPrec :: Integer,
-				consVars :: [(Cat,String)],
-				consRhs :: [Either Cat String]
-			       }
+data Constructor = Constructor
+    { consCat :: Cat
+    , consFun :: Fun
+    , consPrec :: Integer
+    , consVars :: [(Cat,String)]
+    , consRhs :: [Either Cat String]
+    }
 
 -- | Get category, function, and rhs categories paired with variable names.
 cf2cons :: CF -> [Constructor]
-cf2cons cf = [  Constructor { consCat = cat,
-			      consFun = fun,
-			      consPrec = precFun cf fun,
-			      consVars = zip cats (mkVars cats),
-			      consRhs = rhsFun cf fun}
-		| (cat,rules) <- cf2data cf, (fun,cats) <- rules]
-	     ++ [ Constructor { consCat = cat,
-				consFun = show cat,
-				consPrec = 0,
-				consVars = [(Cat "String","str")],
-				consRhs = [Left (Cat "String")]}
-		  | cat <- specialCats cf]
- where mkVars cats = mkUnique (map catToVar cats) (0 :: Int)
-       mkUnique [] _ = []
-       mkUnique (x:xs) n | elem x xs || n > 0 = (x ++ show n) : mkUnique xs (n+1)
-			 | otherwise = x : mkUnique xs n
+cf2cons cf =
+    [  Constructor
+        { consCat = cat, consFun = fun, consPrec = precFun cf fun
+        , consVars = zip cats (mkVars cats), consRhs = rhsFun cf fun
+        } | (cat,rules) <- cf2data cf, (fun,cats) <- rules]
+    ++ [ Constructor
+        { consCat = cat, consFun = show cat, consPrec = 0
+        , consVars = [(Cat "String","str")], consRhs = [Left (Cat "String")]
+        } | cat <- specialCats cf]
+  where
+    mkVars cats = mkUnique (map catToVar cats) (0 :: Int)
+    mkUnique [] _ = []
+    mkUnique (x:xs) n | x `elem` xs || n > 0 = (x ++ show n) : mkUnique xs (n+1)
+                      | otherwise = x : mkUnique xs n
 
 -- | Make a variable name for a category.
 catToVar :: Cat -> String
@@ -60,11 +58,12 @@ catToVar = checkRes . var
         var (Cat "Char")    = "c"
         var (Cat "Double")  = "d"
         var xs        = map toLower $show xs
-        checkRes s | elem s reservedHaskell = s ++ "'"
-		   | otherwise              = s
-	reservedHaskell = ["case","class","data","default","deriving","do","else","if",
-			   "import","in","infix","infixl","infixr","instance","let","module",
-			   "newtype","of","then","type","where","as","qualified","hiding"]
+        checkRes s |  s `elem` reservedHaskell = s ++ "'"
+                   | otherwise              = s
+        reservedHaskell =
+            ["case","class","data","default","deriving","do","else","if"
+            , "import","in","infix","infixl","infixr","instance","let","module"
+            , "newtype","of","then","type","where","as","qualified","hiding"]
 
 -- | Get the rule for a function.
 ruleFun :: CF -> Fun -> Rule

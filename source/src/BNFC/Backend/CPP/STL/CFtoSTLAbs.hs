@@ -33,7 +33,7 @@
     Created       : 4 August, 2003
 
     Modified      : 22 May, 2004 / Antti-Juhani Kaijanaho
-	            29 August, 2006 / Aarne Ranta
+                    29 August, 2006 / Aarne Ranta
 
    **************************************************************
 -}
@@ -166,8 +166,7 @@ prList (c,b) = unlines [
   "};"
   ]
  where
-   bas = drop 4 c ++ -- drop List
-	 if b then "*" else ""
+   bas = drop 4 c {- drop "List" -} ++ if b then "*" else ""
 
 
 -- **** Implementation (.C) File Functions **** --

@@ -77,15 +77,15 @@ cf2VisitSkel packageBase packageAbsyn cf =
 
 --Traverses a category based on its type.
 prData :: String -> [UserDef] -> (Cat, [Rule]) -> String
-prData packageAbsyn user (cat, rules) =
- if isList cat
- then ""
- else unlines ["  public class " ++ identCat cat ++ "Visitor<R,A> implements "
-	       ++ identCat cat ++ ".Visitor<R,A>",
-	       "  {",
-	       concatMap (render . nest 4 . prRule packageAbsyn user) rules,
-	       "  }"
-	      ]
+prData packageAbsyn user (cat, rules)
+    | isList cat = ""
+    | otherwise = unlines
+        ["  public class " ++ identCat cat ++ "Visitor<R,A> implements "
+            ++ identCat cat ++ ".Visitor<R,A>"
+        , "  {"
+        , concatMap (render . nest 4 . prRule packageAbsyn user) rules
+        , "  }"
+        ]
 
 -- | traverses a standard rule.
 -- >>> prRule "ABSYN" [] (Rule "EInt" undefined [Left (TokenCat "Integer"), Left (Cat "NT")])

@@ -76,7 +76,7 @@ cabs2csharpabs namespace cabs useWCF = unlinesInline [
  ]
   where
     -- an abstract class is a category which does not contain rules
-      abstractclasses = [ (cat, (map fst cabsrules)) | (cat, cabsrules) <- signatures cabs, cat `notElem` (map fst cabsrules) ]
+      abstractclasses = [ (cat, map fst cabsrules) | (cat, cabsrules) <- signatures cabs, cat `notElem` map fst cabsrules ]
 
 -- auxiliaries
 
@@ -142,13 +142,13 @@ prAbs namespace useWCF (cat, funs) = unlinesInline [
   ]
 
 prVisitor :: Namespace -> [String] -> String
-prVisitor namespace funs = unlinesInline [
-  "    ",
-	"    public interface Visitor<R,A>",
-	"    {",
-	unlinesInline (map prVisitFun funs),
-	"    }"
-	]
+prVisitor namespace funs = unlinesInline
+  [ "    "
+  , "    public interface Visitor<R,A>"
+  , "    {"
+  , unlinesInline (map prVisitFun funs)
+  , "    }"
+  ]
   where
     prVisitFun f = "      R Visit(" ++ identifier namespace f ++ " p, A arg);"
 
@@ -164,7 +164,7 @@ prCon namespace useWCF (c,(f,cs)) = unlinesInline [
   prEquals namespace f propnames,
   prHashCode namespace f propnames,
   -- print Accept method, override keyword needed for classes inheriting an abstract class
-  prAccept namespace c (if isAlsoCategory f c then Nothing else (Just " override")),
+  prAccept namespace c (if isAlsoCategory f c then Nothing else Just " override"),
   -- if this label is also a category, we need to print the Visitor interface
   -- (if not, it was already printed in the abstract class)
   if isAlsoCategory f c then prVisitor namespace [c] else "",
@@ -221,7 +221,7 @@ prEquals namespace c vars = unlinesInline [
   ]
   where
     prEqualsVars [] = "true"
-    prEqualsVars vs = concat $ intersperse " && " $ map equalVar vs
+    prEqualsVars vs = intercalate " && " $ map equalVar vs
     equalVar v = "this." ++ v ++ ".Equals(obj." ++ v ++ ")"
 
 -- Creates the GetHashCode() method.
@@ -236,9 +236,8 @@ prHashCode _ _ vars = unlinesInline [
   where
     aPrime = 37
     prHashVars [] = show aPrime
-    prHashVars (v:vs) = prHashVars' (hashVar v) vs
-    prHashVars' r [] = r
-    prHashVars' r (v:vs) = prHashVars' (show aPrime ++ "*" ++ "(" ++ r ++ ")+" ++ hashVar v) vs
+    prHashVars (v:vs) =
+        foldl (\ r v -> show aPrime ++ "*" ++ "(" ++ r ++ ")+" ++ hashVar v) v vs
     hashVar var = "this." ++ var ++ ".GetHashCode()"
 
 prList :: Namespace -> (String,Bool) -> String
@@ -271,5 +270,5 @@ prConstructor namespace (f,cs) = unlinesInline [
  where
    cvs = [c | (_,_,c,_) <- cs]
    pvs = ["p" ++ show i | ((_,_,_,_),i) <- zip cs [1..]]
-   conargs = concat $ intersperse ", "
+   conargs = intercalate ", "
      [identifier namespace (typename x) +++ v | ((x,_,_,_),v) <- zip cs pvs]

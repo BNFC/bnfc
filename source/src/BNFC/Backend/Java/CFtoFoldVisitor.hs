@@ -50,11 +50,10 @@ cf2FoldVisitor packageBase packageAbsyn cf =
 
 --Traverses a category based on its type.
 prData :: String -> [UserDef] -> (Cat, [Rule]) -> String
-prData packageAbsyn user (cat, rules) =
-    unlines [
-             "/* " ++ identCat cat ++ " */",
-	     concatMap (prRule packageAbsyn user cat) rules
-	    ]
+prData packageAbsyn user (cat, rules) = unlines
+    [ "/* " ++ identCat cat ++ " */"
+    , concatMap (prRule packageAbsyn user cat) rules
+    ]
 
 --traverses a standard rule.
 prRule :: String -> [UserDef] -> Cat -> Rule -> String

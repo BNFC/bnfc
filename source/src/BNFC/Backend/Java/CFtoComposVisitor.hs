@@ -45,7 +45,7 @@ cf2ComposVisitor packageBase packageAbsyn cf =
       "*/",
       "",
       "public class ComposVisitor<A> implements",
-      concat $ intersperse ",\n" $ map ("  "++) is,
+      intercalate ",\n" $ map ("  "++) is,
       "{"
       ]
 
@@ -57,11 +57,10 @@ prInterface packageAbsyn (cat, _) =
 
 --Traverses a category based on its type.
 prData :: String -> [UserDef] -> (Cat, [Rule]) -> String
-prData packageAbsyn user (cat, rules) =
-    unlines [
-             "/* " ++ identCat cat ++ " */",
-	     concatMap (render . prRule packageAbsyn user cat) rules
-	    ]
+prData packageAbsyn user (cat, rules) = unlines
+    [ "/* " ++ identCat cat ++ " */"
+    , concatMap (render . prRule packageAbsyn user cat) rules
+    ]
 -- | traverses a standard rule.
 -- >>> prRule "lang.absyn" [Cat "A"] (Cat "B") (Rule "F" (Cat "B") [Left (Cat "A"), Right "+", Left (ListCat (Cat "B"))])
 --     public B visit(lang.absyn.F p, A arg)

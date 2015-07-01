@@ -51,9 +51,9 @@ import BNFC.Backend.Java.CFtoJavaAbs15
 import BNFC.CF
 import BNFC.Backend.Common (renderListSepByPrecedence)
 import BNFC.Backend.Common.NamedVariables
-import BNFC.Utils		( (+++) )
+import BNFC.Utils ( (+++) )
 import Data.List
-import Data.Char	( toLower, isSpace )
+import Data.Char ( toLower, isSpace )
 import Data.Either (lefts)
 import BNFC.PrettyPrint
 
@@ -186,11 +186,11 @@ prRender = unlines
 
 prEntryPoints :: String -> CF -> String
 prEntryPoints packageAbsyn cf =
-    msg ++ concat (map prEntryPoint (allCats cf)) ++ msg2
+    msg ++ concatMap prEntryPoint (allCats cf) ++ msg2
  where
   msg = "  //  print and show methods are defined for each category.\n"
   msg2 = "  /***   You shouldn't need to change anything beyond this point.   ***/\n"
-  prEntryPoint cat | (normCat cat) == cat = unlines
+  prEntryPoint cat | normCat cat == cat = unlines
    [
     "  public static String print(" ++ packageAbsyn ++ "." ++ cat' ++ " foo)",
     "  {",
@@ -226,30 +226,29 @@ prData packageAbsyn user (cat, rules) =
  [
   "  private static void pp(" ++ packageAbsyn ++ "." ++ identCat (normCat cat) +++ "foo, int _i_)",
   "  {",
-  (concat (addElse $ map (prRule packageAbsyn) rules)) ++ "  }"
+  concat (addElse $ map (prRule packageAbsyn) rules) ++ "  }"
  ]
   where addElse = map ("    "++). intersperse "else " . filter (not . null) . map (dropWhile isSpace)
 
 prRule :: String -> Rule -> String
 prRule packageAbsyn r@(Rule fun _c cats) | not (isCoercion fun || isDefinedRule fun) = concat
-  [
-   "    if (foo instanceof" +++ packageAbsyn ++ "." ++ fun ++ ")\n",
-   "    {\n",
-   "       " ++ packageAbsyn ++ "." ++ fun +++ fnm +++ "= ("
-     ++ packageAbsyn ++ "." ++ fun ++ ") foo;\n",
-   lparen,
-   cats',
-   rparen,
-   "    }\n"
-  ]
-   where
+    [ "    if (foo instanceof" +++ packageAbsyn ++ "." ++ fun ++ ")\n"
+    , "    {\n"
+    , "       " ++ packageAbsyn ++ "." ++ fun +++ fnm +++ "= ("
+        ++ packageAbsyn ++ "." ++ fun ++ ") foo;\n"
+    , lparen
+    , cats'
+    , rparen
+    , "    }\n"
+    ]
+  where
     p = precRule r
     (lparen, rparen) =
-     ("       if (_i_ > " ++ (show p) ++ ") render(_L_PAREN);\n",
-      "       if (_i_ > " ++ (show p) ++ ") render(_R_PAREN);\n")
+        ("       if (_i_ > " ++ show p ++ ") render(_L_PAREN);\n",
+        "       if (_i_ > " ++ show p ++ ") render(_R_PAREN);\n")
     cats' = case cats of
         [] -> ""
-    	_  -> concatMap (render . prCat (text fnm)) (numVars cats)
+        _  -> concatMap (render . prCat (text fnm)) (numVars cats)
     fnm = '_' : map toLower fun
 
 prRule _nm _ = ""
@@ -314,39 +313,34 @@ shData packageAbsyn user (cat, rules) =
  [
   "  private static void sh(" ++ packageAbsyn ++ "." ++ identCat (normCat cat) +++ "foo)",
   "  {",
-  (shList user cat rules) ++ "  }"
+  shList user cat rules ++ "  }"
  ]
  else unlines
  [
   "  private static void sh(" ++ packageAbsyn ++ "." ++ identCat (normCat cat) +++ "foo)",
   "  {",
-  (concat (map (shRule packageAbsyn) rules)) ++ "  }"
+  concatMap (shRule packageAbsyn) rules ++ "  }"
  ]
 
 shRule :: String -> Rule -> String
 shRule packageAbsyn (Rule fun _c cats) | not (isCoercion fun || isDefinedRule fun) = unlines
-  [
-   "    if (foo instanceof" +++ packageAbsyn ++ "." ++ fun ++ ")",
-   "    {",
-   "       " ++ packageAbsyn ++ "." ++ fun +++ fnm +++ "= ("
-     ++ packageAbsyn ++ "." ++ fun ++ ") foo;",
-   members ++ "    }"
-  ]
-   where
-    members = concat
-     [
-      lparen,
-      "       render(\"" ++ (escapeChars fun) ++ "\");\n",
-      cats',
-      rparen
-     ]
+    [ "    if (foo instanceof" +++ packageAbsyn ++ "." ++ fun ++ ")"
+    , "    {"
+    , "       " ++ packageAbsyn ++ "." ++ fun +++ fnm +++ "= ("
+        ++ packageAbsyn ++ "." ++ fun ++ ") foo;"
+    , members ++ "    }"
+    ]
+  where
+    members = concat [ lparen
+                     , "       render(\"" ++ escapeChars fun ++ "\");\n"
+                     , cats'
+                     , rparen ]
     cats' = if allTerms cats
         then ""
-    	else concatMap (render . shCat (text fnm)) (lefts (numVars cats))
-    (lparen, rparen) =
-      if allTerms cats
-         then ("","")
- 	 else ("       render(\"(\");\n","       render(\")\");\n")
+        else concatMap (render . shCat (text fnm)) (lefts (numVars cats))
+    (lparen, rparen) = if allTerms cats
+        then ("","")
+        else ("       render(\"(\");\n","       render(\")\");\n")
     allTerms [] = True
     allTerms ((Left {}):_) = False
     allTerms (_:zs) = allTerms zs
@@ -389,6 +383,6 @@ shCat fname (_, vname)       = "       sh(" <> fname <> "." <> vname <> ");\n"
 --Helper function that escapes characters in strings
 escapeChars :: String -> String
 escapeChars [] = []
-escapeChars ('\\':xs) = '\\' : ('\\' : (escapeChars xs))
-escapeChars ('\"':xs) = '\\' : ('\"' : (escapeChars xs))
-escapeChars (x:xs) = x : (escapeChars xs)
+escapeChars ('\\':xs) = '\\' : '\\' : escapeChars xs
+escapeChars ('\"':xs) = '\\' : '\"' : escapeChars xs
+escapeChars (x:xs) = x : escapeChars xs

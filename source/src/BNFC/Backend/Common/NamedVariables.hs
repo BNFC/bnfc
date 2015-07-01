@@ -94,15 +94,15 @@ type SymEnv = [(String, String)]
 getVars :: [Cat] -> [IVar]
 getVars [] = []
 getVars cs = foldl addVar [] (map identCat cs)
- where
-  addVar vs c = addVar' vs 0 c
-  addVar' []  n c = [(c, n)]
-  addVar' (i@(t,x):is) n c =
-    if c == t
-      then if x == 0
-        then (t, 1) : (addVar' is 2 c)
-	else i : (addVar' is (x+1) c)
-      else i : (addVar' is n c)
+  where
+    addVar vs = addVar' vs 0
+    addVar' []  n c = [(c, n)]
+    addVar' (i@(t,x):is) n c =
+      if c == t
+          then if x == 0
+              then (t, 1) : addVar' is 2 c
+              else i : addVar' is (x+1) c
+          else i : addVar' is n c
 
 -- # Create variable names for rules rhs
 -- This is about creating variable names for the right-hand side of rules.
@@ -137,11 +137,11 @@ numVars cats =
 -- is the same.)
 fixOnes :: Eq b => [Either String b] -> [Either String b]
 fixOnes [] = []
-fixOnes ((Right f): fs) = (Right f) : (fixOnes fs)
-fixOnes ((Left f) : fs) =
-  if elem (Left (f ++ "2")) fs
-    then (Left (f ++ "1")) : (fixOnes fs)
-    else (Left f) : (fixOnes fs)
+fixOnes (Right f : fs) = Right f : fixOnes fs
+fixOnes (Left f : fs) =
+  if Left (f ++ "2") `elem` fs
+    then Left (f ++ "1") : fixOnes fs
+    else Left f : fixOnes fs
 
 --This fixes the problem with coercions.
 fixCoercions :: [(Cat, [Rule])] -> [(Cat, [Rule])]
@@ -149,17 +149,17 @@ fixCoercions rs = nub (fixAll rs rs)
  where
   fixCoercion :: Cat -> [(Cat, [Rule])] -> [Rule]
   fixCoercion _ [] = []
-  fixCoercion cat ((c,rules):cats) = if (normCat c) == (normCat cat)
-    then rules ++ (fixCoercion cat cats)
+  fixCoercion cat ((c,rules):cats) = if normCat c == normCat cat
+    then rules ++ fixCoercion cat cats
     else fixCoercion cat cats
   fixAll :: [(Cat, [Rule])] -> [(Cat, [Rule])] -> [(Cat, [Rule])]
   fixAll _ [] = []
   fixAll top ((cat,_):cats) = if isCoercion (show cat) -- This is weird: isCoercion is supposed to be applied to functions!!!!
     then fixAll top cats
-    else (normCat cat, fixCoercion cat top) : (fixAll top cats)
+    else (normCat cat, fixCoercion cat top) : fixAll top cats
 
 --A generic variable name for C-like languages.
-varName c = (map toLower c) ++ "_"
+varName c = map toLower c ++ "_"
 
 --this makes var names a little cleaner.
-showNum n = if n == 0 then [] else (show n)
+showNum n = if n == 0 then [] else show n

@@ -87,18 +87,17 @@ mkHFile cf = unlines
 --Prints interface classes for all categories.
 prDataH :: [UserDef] -> Data -> String
 prDataH  user (cat, rules) =
-  case lookup (show cat) rules of
-    Just _ -> concatMap (prRuleH user cat) rules
-    Nothing -> if isList cat
-      then concatMap (prRuleH user cat) rules
-      else unlines
-       [
-        "class" +++ (identCat cat) +++ ": public Visitable {",
-	"public:",
-	"  virtual" +++ (identCat cat) +++ "*clone() const = 0;",
-	"};\n",
-        concatMap (prRuleH user cat) rules
-       ]
+    case lookup (show cat) rules of
+        Just _ -> concatMap (prRuleH user cat) rules
+        Nothing -> if isList cat
+            then concatMap (prRuleH user cat) rules
+            else unlines
+                [ "class" +++ identCat cat +++ ": public Visitable {"
+                , "public:"
+                , "  virtual" +++ identCat cat +++ "*clone() const = 0;"
+                , "};\n"
+                , concatMap (prRuleH user cat) rules
+                ]
 
 --Interface definitions for rules vary on the type of rule.
 prRuleH :: [UserDef] -> Cat -> (Fun, [Cat]) -> String
@@ -134,7 +133,7 @@ prRuleH user c (fun, cats) =
      render $ nest 2 $ prInstVars user vs,
      "  " ++ fun ++ "(const" +++ fun +++ "&);",
      "  " ++ fun ++ " &operator=(const" +++ fun +++ "&);",
-     "  " ++ fun ++ "(" ++ (prConstructorH 1 vs) ++ ");",
+     "  " ++ fun ++ "(" ++ prConstructorH 1 vs ++ ");",
      prDestructorH fun,
      "  virtual void accept(Visitor *v);",
      "  virtual " +++ fun +++ " *clone() const;",
@@ -146,11 +145,11 @@ prRuleH user c (fun, cats) =
      c' = identCat (normCat c);
      mem = drop 4 c'
      memstar = if isBasic user mem then "" else "*"
-     super = if show c == fun then "Visitable" else (identCat c)
+     super = if show c == fun then "Visitable" else identCat c
      prConstructorH :: Int -> [(String, b)] -> String
      prConstructorH _ [] = ""
-     prConstructorH n ((t,_):[]) = t +++ (optstar t) ++ "p" ++ (show n)
-     prConstructorH n ((t,_):vs) =( t +++ (optstar t) ++ "p" ++ (show n) ++ ", ") ++ (prConstructorH (n+1) vs)
+     prConstructorH n [(t,_)] = t +++ optstar t ++ "p" ++ show n
+     prConstructorH n ((t,_):vs) = t +++ optstar t ++ "p" ++ show n ++ ", " ++ prConstructorH (n+1) vs
      prDestructorH n = "  ~" ++ n ++ "();"
      optstar x = if isBasic user x
        then ""
@@ -177,7 +176,7 @@ prVisitor fs = unlines
   "{",
   " public:",
   "  virtual ~Visitor() {}",
-  (concatMap (prVisitFun) fs),
+  concatMap prVisitFun fs,
   footer
  ]
  where
@@ -228,8 +227,8 @@ prInstVars user vars@((t,_):_) =
     remType :: String -> [IVar] -> [IVar]
     remType _ [] = []
     remType t ((t2,n):ts) = if t == t2
-   				then (remType t ts)
-				else (t2,n) : (remType t ts)
+        then remType t ts
+        else (t2,n) : remType t ts
 
 
 {- **** Implementation (.C) File Functions **** -}
@@ -323,7 +322,7 @@ prListFuncs user c = unlines
   "}"
  ]
  where
-   v = (map toLower c) ++ "_"
+   v = map toLower c ++ "_"
    m = drop 4 c
    mstar = if isBasic user m then "" else "*"
    m' = drop 4 v
@@ -339,7 +338,7 @@ prAcceptC ty =
 -- bla::bla(A *p1, Integer p2, A *p3) { a_1 = p1; integer_ = p2; a_2 = p3; }
 prConstructorC :: [UserDef] -> String -> [IVar] -> [Cat] -> Doc
 prConstructorC user c vs cats =
-    text c <> "::" <> text c <> parens (args)
+    text c <> "::" <> text c <> parens args
     <+> "{" <+> text (prAssigns vs params) <> "}"
   where
     (types, params) = unzip (prParams cats (length cats) (length cats+1))
@@ -363,14 +362,14 @@ prCopyC user c vs =
       concatMap swapV vs ++++
       "}\n"
     where  doV :: IVar -> String
-	   doV v@(t, _)
-	     | isBasic user t = "  " ++ vn v ++ " = other." ++ vn v ++ ";\n"
-	     | otherwise = "  " ++ vn v ++ " = other." ++ vn v ++ "->clone();\n"
-	   vn :: IVar -> String
-	   vn (t, 0) = varName t
-	   vn (t, n) = varName t ++ show n
-	   swapV :: IVar -> String
-	   swapV v = "  std::swap(" ++ vn v ++ ", other." ++ vn v ++ ");\n"
+           doV v@(t, _)
+             | isBasic user t = "  " ++ vn v ++ " = other." ++ vn v ++ ";\n"
+             | otherwise = "  " ++ vn v ++ " = other." ++ vn v ++ "->clone();\n"
+           vn :: IVar -> String
+           vn (t, 0) = varName t
+           vn (t, n) = varName t ++ show n
+           swapV :: IVar -> String
+           swapV v = "  std::swap(" ++ vn v ++ ", other." ++ vn v ++ ");\n"
 
 --The cloner makes a new deep copy of the object
 prCloneC :: [UserDef] -> String -> [IVar] -> String
@@ -381,21 +380,20 @@ prCloneC _ c _ =
 --The destructor deletes all a class's members.
 prDestructorC :: [UserDef] -> String -> [IVar] -> String
 prDestructorC user c vs  =
-  c ++ "::~" ++ c ++"()" +++ "{" +++
-   (concatMap prDeletes vs) ++ "}"
+    c ++ "::~" ++ c ++"()" +++ "{" +++
+    concatMap prDeletes vs ++ "}"
   where
-   prDeletes :: (String, Int) -> String
-   prDeletes (t, n) = if isBasic user t
-    then ""
-    else if n == 0
-     then "delete(" ++ (varName t) ++ "); "
-     else "delete(" ++ (varName t) ++ (show n) ++ "); "
+    prDeletes :: (String, Int) -> String
+    prDeletes (t, n)
+        | isBasic user t = ""
+        | n == 0 = "delete(" ++ varName t ++ "); "
+        | otherwise = "delete(" ++ varName t ++ show n ++ "); "
 
 --Prints the constructor's parameters.
 prParams :: [Cat] -> Int -> Int -> [(String,String)]
 prParams [] _ _ = []
-prParams (c:cs) n m = (identCat c,"p" ++ (show (m-n)))
-			: (prParams cs (n-1) m)
+prParams (c:cs) n m = (identCat c, "p" ++ show (m-n))
+                    : prParams cs (n-1) m
 
 --Prints the assignments of parameters to instance variables.
 --This algorithm peeks ahead in the list so we don't use map or fold
@@ -415,12 +413,4 @@ prAssigns ((t,n):vs) (p:ps) =
 --Checks if something is a basic or user-defined type.
 isBasic :: [UserDef] -> String -> Bool
 isBasic user x =
-  if elem x (map show user)
-    then True
-    else case x of
-      "Integer" -> True
-      "Char" -> True
-      "String" -> True
-      "Double" -> True
-      "Ident" -> True
-      _ -> False
+    x `elem` (map show user ++ ["Integer", "Char", "String", "Double", "Ident"])
