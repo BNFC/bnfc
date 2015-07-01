@@ -10,6 +10,8 @@ module ErrM where
 import Control.Monad (MonadPlus(..), liftM)
 #if __GLASGOW_HASKELL__ < 710
 import Control.Applicative (Applicative(..), Alternative(..))
+#else
+import Control.Applicative (Alternative(..))
 #endif
 
 data Err a = Ok a | Bad String

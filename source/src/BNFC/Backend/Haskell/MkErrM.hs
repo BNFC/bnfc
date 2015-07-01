@@ -35,6 +35,8 @@ mkErrM errMod ghc = vcat
     , "import Control.Monad (MonadPlus(..), liftM)"
     , if ghc then "#if __GLASGOW_HASKELL__ < 710" else empty
     , "import Control.Applicative (Applicative(..), Alternative(..))"
+    , if ghc then "#else" else empty
+    , if ghc then "import Control.Applicative (Alternative(..))" else empty
     , if ghc then "#endif" else empty
     , ""
     , "data Err a = Ok a | Bad String"
