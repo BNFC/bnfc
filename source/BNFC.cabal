@@ -52,7 +52,7 @@ Executable bnfc
     filepath,
     deepseq
   if  impl(ghc < 7.6.1)
-    Build-depends: ghc-prime
+    Build-depends: ghc-prim
   build-tools:         alex, happy
   Main-is: Main.hs
   HS-source-dirs: src/
