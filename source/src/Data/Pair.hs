@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 module Data.Pair where
 
 #if __GLASGOW_HASKELL__ < 710
