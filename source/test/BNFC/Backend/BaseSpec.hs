@@ -1,4 +1,5 @@
 {-# LANGUAGE FlexibleInstances, UndecidableInstances #-}
+{-# LANGUAGE ExtendedDefaultRules #-}
 module BNFC.Backend.BaseSpec where
 
 import Control.Monad (liftM, liftM2)
@@ -11,6 +12,8 @@ import Test.Hspec
 import Test.QuickCheck
 
 import BNFC.Backend.Base -- SUT
+
+default(String)
 
 spec :: Spec
 spec = do

@@ -1,3 +1,4 @@
+{-# LANGUAGE TypeSynonymInstances, FlexibleInstances #-}
 {- Backend base function. Defines the type of the backend and some usefull
  - functions -}
 module BNFC.Backend.Base
@@ -9,10 +10,12 @@ module BNFC.Backend.Base
   , writeFiles
   ) where
 
-import BNFC.Utils (writeFileRep)
 import Control.Monad.Writer
 import System.Directory (createDirectoryIfMissing)
 import System.FilePath (dropFileName, (</>))
+
+import BNFC.PrettyPrint
+import BNFC.Utils (writeFileRep)
 
 -- | Define the type of the backend functions For more purity, instead of
 -- having each backend writing the generated files to disk, they return a list
@@ -35,8 +38,20 @@ execBackend = execWriterT
 
 -- | A specialized version of tell that adds a file and its content to the
 -- list of generated files
-mkfile :: FilePath -> String -> MkFiles ()
-mkfile path content = tell [(path,content)]
+mkfile :: (FileContent c) => FilePath -> c -> MkFiles ()
+mkfile path content = tell [(path, fileContentToString content)]
+
+-- | While we are moving to generating Text.PrettyPrint.Doc instead of String,
+-- it is nice to be able to use both as argument to mkfile
+-- So we do some typeclass magic
+class FileContent a where
+    fileContentToString :: a -> String
+
+instance FileContent [Char] where
+    fileContentToString = id
+
+instance FileContent Doc where
+    fileContentToString = render
 
 -- | Write a set of files to disk. the first argument is the root directory
 -- inside which all the generated files will be written. This root directory

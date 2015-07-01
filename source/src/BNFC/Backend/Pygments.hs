@@ -20,8 +20,8 @@ makePygments :: SharedOptions -> CF -> Backend
 makePygments opts cf = do
     let lexerfile = render (lowerCase name <> "/__init__.py")
         setupfile = "setup.py"
-    mkfile lexerfile (render $ lexer name cf)
-    mkfile setupfile (render $ setup name)
+    mkfile lexerfile (lexer name cf)
+    mkfile setupfile (setup name)
   where name = lang opts
 
 setup :: String -> Doc

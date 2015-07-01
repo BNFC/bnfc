@@ -34,5 +34,4 @@ mkVar n v = text n <> "=" <> text v
 -- record.
 mkMakefile :: SharedOptions -> Doc -> Backend
 mkMakefile Options {make = Nothing} _ = return ()
-mkMakefile Options {make = Just makefile} content
-  = mkfile makefile (render content)
+mkMakefile Options {make = Just makefile} content = mkfile makefile content

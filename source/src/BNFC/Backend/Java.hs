@@ -80,10 +80,10 @@ makeJava options@Options{..} cf =
        mkfile (dirBase ++ "AbstractVisitor.java") $ cf2AbstractVisitor packageBase packageAbsyn cf
        mkfile (dirBase ++ "FoldVisitor.java") $ cf2FoldVisitor packageBase packageAbsyn cf
        mkfile (dirBase ++ "AllVisitor.java") $ cf2AllVisitor packageBase packageAbsyn cf
-       mkfile (dirBase ++ "Test.java") $ render $ javaTest packageBase packageAbsyn cf
+       mkfile (dirBase ++ "Test.java") $ javaTest packageBase packageAbsyn cf
 ---       mkfile ("Test" ++ name) $ "java " ++ dirBase ++ "Test $(1)"
        let (lex, env) = cf2jlex packageBase cf jflex
-       mkfile (dirBase ++ "Yylex") (render lex)
+       mkfile (dirBase ++ "Yylex") lex
        liftIO $ putStrLn "   (Tested with JLex 1.2.6.)"
        mkfile (dirBase ++ lang ++ ".cup") $ cf2Cup packageBase packageAbsyn cf env
        liftIO $ putStrLn $ "   (Parser created for category " ++ show (firstEntry cf) ++ ")"
