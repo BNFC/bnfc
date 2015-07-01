@@ -75,7 +75,7 @@ prologue byteStrings useGadt name absMod = unlines $
   "    t        :ts -> space t . rend i ts",
   "    _            -> id",
   "  new i   = showChar '\\n' . replicateS (2*i) (showChar ' ') . dropWhile isSpace",
-  "  space t = showString t . (\\s -> if null s then \"\" else (' ':s))",
+  "  space t = showString t . (\\s -> if null s then \"\" else ' ':s)",
   "",
   "parenth :: Doc -> Doc",
   "parenth ss = doc (showChar '(') . ss . doc (showChar ')')",

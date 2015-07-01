@@ -47,7 +47,7 @@ import Paths_BNFC ( version )
 
 import Data.Version ( showVersion )
 import System.Environment (getArgs)
-import System.Exit (exitFailure,exitSuccess)
+import System.Exit (exitFailure, exitSuccess)
 import System.IO (stderr, hPutStrLn)
 
 -- Print an error message and a (short) usage help and exit
