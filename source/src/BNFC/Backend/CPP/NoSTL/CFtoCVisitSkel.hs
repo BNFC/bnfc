@@ -99,19 +99,19 @@ mkHFile cf groups = unlines
 prDataH :: (Cat, [Rule]) -> String
 prDataH (cat, rules) =
  if "List" `isPrefixOf` identCat cat
- then concat ["  void visit", cl, "(", cl, "* ", vname, ");"]
+ then concat ["  void visit", cl, "(", cl, " *", vname, ");"]
  else abstract ++ concatMap prRuleH rules
  where
    cl = identCat (normCat cat)
    vname = map toLower cl
    abstract = case lookupRule (show cat) rules of
     Just _ -> ""
-    Nothing ->  "  void visit" ++ cl ++ "(" ++ cl ++ "*" +++ vname ++ "); /* abstract class */\n"
+    Nothing ->  "  void visit" ++ cl ++ "(" ++ cl +++ "*" ++ vname ++ "); /* abstract class */\n"
 
 --Visit functions for a rule.
 prRuleH :: Rule -> String
 prRuleH (Rule fun _ _) | not (isCoercion fun) = concat
-  ["  void visit", fun, "(", fun, "* ", fnm, ");\n"]
+  ["  void visit", fun, "(", fun, " *", fnm, ");\n"]
    where
     fnm = map toLower fun
 prRuleH _ = ""
@@ -145,7 +145,8 @@ mkCFile cf groups = concat
       "void Skeleton::visit" ++ x' ++ "(" ++ x ++ " p)",
       "{",
       "  /* Code for " ++ x ++ " Goes Here */",
-      "}"
+      "}",
+      ""
      ]
      where
        x' = ((toUpper (head x)) : (map toLower (tail x))) --this is a hack to fix a potential capitalization problem.
@@ -155,18 +156,22 @@ mkCFile cf groups = concat
       "{",
       "  /* Code for Ident Goes Here */",
       "}",
+      "",
       "void Skeleton::visitInteger(Integer i)",
       "{",
       "  /* Code for Integers Goes Here */",
       "}",
+      "",
       "void Skeleton::visitDouble(Double d)",
       "{",
       "  /* Code for Doubles Goes Here */",
       "}",
+      "",
       "void Skeleton::visitChar(Char c)",
       "{",
       "  /* Code for Chars Goes Here */",
       "}",
+      "",
       "void Skeleton::visitString(String s)",
       "{",
       "  /* Code for Strings Goes Here */",
@@ -180,9 +185,9 @@ prData user (cat, rules) =
  if "List" `isPrefixOf` (identCat cat)
  then unlines
  [
-  "void Skeleton::visit" ++ cl ++ "("++ cl ++ "*" +++ vname ++ ")",
+  "void Skeleton::visit" ++ cl ++ "("++ cl +++ "*" ++ vname ++ ")",
   "{",
-  "  while(" ++ vname ++ "!= 0)",
+  "  while(" ++ vname +++ "!= 0)",
   "  {",
   "    /* Code For " ++ cl ++ " Goes Here */",
   visitMember,
@@ -202,11 +207,11 @@ prData user (cat, rules) =
      else "    " ++ vname ++ "->" ++ member ++ "->accept(this);"
    abstract = case lookupRule (show cat) rules of
     Just _ -> ""
-    Nothing ->  "void Skeleton::visit" ++ cl ++ "(" ++ cl ++ "*" +++ vname ++ ") {} //abstract class\n\n"
+    Nothing ->  "void Skeleton::visit" ++ cl ++ "(" ++ cl +++ "*" ++ vname ++ ") {} //abstract class\n\n"
 
 -- | Visits all the instance variables of a category.
 -- >>> prRule [Cat "A"] (Rule "F" (Cat "S") [Right "X", Left (Cat "A"), Left (Cat "B")])
--- void Skeleton::visitF(F* f)
+-- void Skeleton::visitF(F *f)
 -- {
 --   /* Code For F Goes Here */
 -- <BLANKLINE>
@@ -215,12 +220,13 @@ prData user (cat, rules) =
 -- }
 prRule :: [UserDef] -> Rule -> Doc
 prRule user (Rule fun _ cats) | not (isCoercion fun) = vcat
-  [ text ("void Skeleton::visit" ++ fun ++ "(" ++ fun ++ "*" +++ fnm ++ ")")
+  [ text ("void Skeleton::visit" ++ fun ++ "(" ++ fun +++ "*" ++ fnm ++ ")")
   , codeblock 2
       [ text ("/* Code For " ++ fun ++ " Goes Here */")
       , ""
       , cats'
       ]
+  , ""
   ]
    where
     cats' = vcat (map (prCat user fnm) (lefts (numVars cats)))

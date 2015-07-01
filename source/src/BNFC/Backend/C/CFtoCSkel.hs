@@ -165,7 +165,7 @@ prData user (cat, rules)
                [
                 "void visit" ++ cl ++ "("++ cl +++ vname ++ ")",
                 "{",
-                "  while(" ++ vname ++ " != 0)",
+                "  while(" ++ vname +++ " != 0)",
                 "  {",
                 "    /* Code For " ++ cl ++ " Goes Here */",
                 "    visit" ++ ecl ++ "(" ++ vname ++ "->" ++ member ++ "_);",
@@ -218,7 +218,8 @@ prPrintRule user (Rule fun _c cats) | not (isCoercion fun) = nest 2 $ vcat
     , nest 2 (vcat
         [ "/* Code for " <> text fun <> " Goes Here */"
         , cats'
-        , "break;" ])
+        , "break;\n"
+	])
     ]
   where
     cats' = vcat $ map (prCat user fun) (lefts (numVars cats))
