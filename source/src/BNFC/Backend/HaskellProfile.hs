@@ -81,7 +81,7 @@ makeHaskellProfile opts cfp = do
 ----      mkfile (layoutFile (inDir opts) name) $ cf2Layout alex1 (inDir opts) layMod lexMod cf
 ----      else return ()
     mkfile (tFile (inDir opts) name)        $ testfile (inDir opts) name (xml opts>0) cf
-    mkfile (errFile (inDir opts) name)      $ errM errMod cf
+    mkfile (errFile (inDir opts) name) $ mkErrM errMod (ghcExtensions opts)
     when (isJust $ make opts)
         (mkfile (mFile (inDir opts) name) $ makefile (inDir opts) name)
 ----    case xml of

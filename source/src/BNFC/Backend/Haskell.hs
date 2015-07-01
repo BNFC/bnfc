@@ -82,7 +82,7 @@ makeHaskell opts cf = do
     mkfile (templateFile opts) $ cf2Template (templateFileM opts) absMod errMod (functor opts) cf
     mkfile (printerFile opts)  $ cf2Printer (byteStrings opts) (functor opts) False prMod absMod cf
     when (hasLayout cf) $ mkfile (layoutFile opts) $ cf2Layout (alex1 opts) (inDir opts) layMod lexMod cf
-    mkfile (errFile opts)      $ errM errMod cf
+    mkfile (errFile opts) $ mkErrM errMod (ghcExtensions opts)
     when (shareStrings opts) $ mkfile (shareFile opts)    $ sharedString shareMod (byteStrings opts) cf
     Makefile.mkMakefile opts $ makefile opts
     case xml opts of

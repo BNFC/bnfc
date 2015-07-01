@@ -73,7 +73,7 @@ makeHaskellGadt opts cf = do
     mkfile (printerFile opts)  $ cf2Printer False False True prMod absMod cf
     when (hasLayout cf) $ mkfile (layoutFile opts) $ cf2Layout (alexMode opts == Alex1) (inDir opts) layMod lexMod cf
     mkfile (tFile opts)        $ Haskell.testfile opts cf
-    mkfile (errFile opts)      $ errM errMod cf
+    mkfile (errFile opts) $ mkErrM errMod (ghcExtensions opts)
     when (shareStrings opts) $ mkfile (shareFile opts)    $ sharedString shareMod (byteStrings opts) cf
     Makefile.mkMakefile opts $ Haskell.makefile opts
     case xml opts of

@@ -18,43 +18,48 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 -}
 module BNFC.Backend.Haskell.MkErrM where
-errM :: String -> b -> String
-errM errMod _ = 
-  unlines
-    ["-- BNF Converter: Error Monad"
-    ,"-- Copyright (C) 2004  Author:  Aarne Ranta"
-    ,""
-    ,"-- This file comes with NO WARRANTY and may be used FOR ANY PURPOSE."
-    ,"module " ++ errMod ++ " where"
-    ,""
-    ,"-- the Error monad: like Maybe type with error msgs"
-    ,""
-    ,"import Control.Monad (MonadPlus(..), liftM)"
-    ,"import Control.Applicative (Applicative(..), Alternative(..))"
-    ,""
-    ,"data Err a = Ok a | Bad String"
-    ,"  deriving (Read, Show, Eq, Ord)"
-    ,""
-    ,"instance Monad Err where"
-    ,"  return      = Ok"
-    ,"  fail        = Bad"
-    ,"  Ok a  >>= f = f a"
-    ,"  Bad s >>= _ = Bad s"
-    ,""
-    ,"instance Applicative Err where"
-    ,"  pure = Ok"
-    ,"  (Bad s) <*> _ = Bad s"
-    ,"  (Ok f) <*> o  = liftM f o"
-    ,""
-    ,""
-    ,"instance Functor Err where"
-    ,"  fmap = liftM"
-    ,""
-    ,"instance MonadPlus Err where"
-    ,"  mzero = Bad \"Err.mzero\""
-    ,"  mplus (Bad _) y = y"
-    ,"  mplus x       _ = x"
-    ,""
-    ,"instance Alternative Err where"
-    ,"  empty = mzero"
-    ,"  (<|>) = mplus"]
+
+import BNFC.PrettyPrint
+
+mkErrM :: String -> Bool -> Doc
+mkErrM errMod ghc = vcat
+    [ if ghc then "{-# LANGUAGE CPP #-}" else empty
+    , "-- BNF Converter: Error Monad"
+    , "-- Copyright (C) 2004  Author:  Aarne Ranta"
+    , ""
+    , "-- This file comes with NO WARRANTY and may be used FOR ANY PURPOSE."
+    , "module " <> text errMod <> " where"
+    , ""
+    , "-- the Error monad: like Maybe type with error msgs"
+    , ""
+    , "import Control.Monad (MonadPlus(..), liftM)"
+    , if ghc then "#if __GLASGOW_HASKELL__ < 710" else empty
+    , "import Control.Applicative (Applicative(..), Alternative(..))"
+    , if ghc then "#endif" else empty
+    , ""
+    , "data Err a = Ok a | Bad String"
+    , "  deriving (Read, Show, Eq, Ord)"
+    , ""
+    , "instance Monad Err where"
+    , "  return      = Ok"
+    , "  fail        = Bad"
+    , "  Ok a  >>= f = f a"
+    , "  Bad s >>= _ = Bad s"
+    , ""
+    , "instance Applicative Err where"
+    , "  pure = Ok"
+    , "  (Bad s) <*> _ = Bad s"
+    , "  (Ok f) <*> o  = liftM f o"
+    , ""
+    , ""
+    , "instance Functor Err where"
+    , "  fmap = liftM"
+    , ""
+    , "instance MonadPlus Err where"
+    , "  mzero = Bad \"Err.mzero\""
+    , "  mplus (Bad _) y = y"
+    , "  mplus x       _ = x"
+    , ""
+    , "instance Alternative Err where"
+    , "  empty = mzero"
+    , "  (<|>) = mplus"]
