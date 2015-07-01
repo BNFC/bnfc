@@ -117,9 +117,6 @@ basetypes = [
   ("Ident",  "std::string")
   ]
 
-isBaseType :: CAbs -> String -> Bool
-isBaseType cf c = elem c $ tokentypes cf ++ map fst basetypes
-
 classVar :: String -> String
 classVar c = map toLower c ++ "_"
 
