@@ -1,4 +1,4 @@
-{-# LANGUAGE TypeSynonymInstances, FlexibleInstances #-}
+{-# LANGUAGE TypeSynonymInstances, FlexibleInstances, CPP #-}
 {-
     Copyright (C) 2012  Authors:
     Jean-Philippe Bernardy.
@@ -34,7 +34,9 @@ import BNFC.ToCNFCore
 import BNFC.CF hiding (App,Exp)
 import BNFC.Backend.Haskell.HsOpts
 import Control.Monad.RWS
+#if __GLASGOW_HASKELL__ <= 710
 import Control.Applicative hiding (Const)
+#endif
 import qualified Data.Map as M
 import Data.Pair
 import Text.PrettyPrint.HughesPJ hiding (first,(<>))

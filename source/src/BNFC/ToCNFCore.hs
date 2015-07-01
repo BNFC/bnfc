@@ -1,4 +1,4 @@
-{-# LANGUAGE TypeSynonymInstances, FlexibleInstances #-}
+{-# LANGUAGE TypeSynonymInstances, FlexibleInstances, CPP #-}
 {-
     Copyright (C) 2012  Authors:
     Jean-Philippe Bernardy.
@@ -34,7 +34,9 @@ Yet Presentable Version of the CYK Algorithm", Informatica Didactica
 
 import BNFC.CF hiding (App,Exp)
 import Control.Monad.RWS
+#if __GLASGOW_HASKELL__ <= 710
 import Control.Applicative hiding (Const)
+#endif
 import qualified Data.Map as M
 import Data.List (nub,sortBy,sort)
 import Data.Function (on)
