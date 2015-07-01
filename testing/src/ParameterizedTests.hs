@@ -164,7 +164,7 @@ parameters =
     base = TP
         { tpName = undefined
         , tpBnfcOptions = undefined
-        , tpBuild = (run_ "make" [])
+        , tpBuild = run_ "make" []
         , tpRunTestProg = \lang args -> do
             bin <- canonicalize ("." </> ("Test" <> lang))
             cmd bin args
@@ -182,7 +182,7 @@ parameters =
             do { cmd "make" ; cmd "javac" =<< findFile "VisitSkel.java" }
         , tpRunTestProg = \_ args -> do
             class_ <- liftM dropExtension (findFile "Test.class")
-            cmd class_ args
+            cmd "java" class_ args
         }
 
 -- | Helper function that runs bnfc with the context's options
