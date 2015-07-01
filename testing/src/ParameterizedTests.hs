@@ -139,7 +139,9 @@ parameters =
              , tpBnfcOptions = ["--haskell", "-p", "Language", "-d", "-m"] }
   , base { tpName = "Haskell/GADT"
          , tpBnfcOptions = ["--haskell-gadt", "-m"]
-         , tpRunTestProg = \_ _ -> cmd =<< findFileRegex "Test\\w*$" }
+         , tpRunTestProg = \_ args -> do bin <- findFileRegex "Test\\w*$"
+                                         cmd bin args
+         }
   , base { tpName = "OCaml"
          , tpBnfcOptions = ["--ocaml", "-m"] }
   , base { tpName = "C"
