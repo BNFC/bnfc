@@ -34,7 +34,7 @@ import BNFC.ToCNFCore
 import BNFC.CF hiding (App,Exp)
 import BNFC.Backend.Haskell.HsOpts
 import Control.Monad.RWS
-#if __GLASGOW_HASKELL__ <= 710
+#if __GLASGOW_HASKELL__ < 710
 import Control.Applicative hiding (Const)
 #endif
 import qualified Data.Map as M
