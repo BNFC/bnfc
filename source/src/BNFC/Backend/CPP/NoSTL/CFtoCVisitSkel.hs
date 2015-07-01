@@ -218,6 +218,7 @@ prData user (cat, rules) =
 --   visitA(f->a_);
 --   f->b_->accept(this);
 -- }
+-- <BLANKLINE>
 prRule :: [UserDef] -> Rule -> Doc
 prRule user (Rule fun _ cats) | not (isCoercion fun) = vcat
   [ text ("void Skeleton::visit" ++ fun ++ "(" ++ fun +++ "*" ++ fnm ++ ")")
