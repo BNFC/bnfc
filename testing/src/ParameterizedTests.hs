@@ -42,7 +42,7 @@ exitCodeTest params =
             tpBnfc params "Abra.cf"
             tpBuild params
             setStdin "bad"
-            errExit False $ tpRunTestProg params "Abra"
+            errExit False $ tpRunTestProg params "Abra" []
             lastExitCode >>= assertEqual 1
 
 -- This tests that the generated parser abide to the entrypoint directive
@@ -58,10 +58,10 @@ entrypointTest params =
         tpBuild params
         -- accept foo bar
         setStdin "foo bar"
-        tpRunTestProg params "foobar"
+        tpRunTestProg params "foobar" []
         -- reject bar
         setStdin "bar"
-        errExit False $ tpRunTestProg params "foobar"
+        errExit False $ tpRunTestProg params "foobar" []
         lastExitCode >>= assertEqual 1
 
 -- Runs BNFC on the example grammars, build the generated code and, if
@@ -72,22 +72,21 @@ exampleTests params =
     makeTestSuite "Examples" $ map exampleTest exampleGrammars
   where
     exampleTest (grammar, examples) =
-        let lang = encodeString (filename grammar) in
+        let lang = encodeString (basename grammar) in
         makeShellyTest lang $ withTmpDir $ \tmp -> do
             cp grammar tmp
             forM_ examples $ flip cp tmp
             cd tmp
             tpBnfc params (filename grammar)
             tpBuild params
-            forM_ examples $ \example -> do
-                readfile (filename example) >>= setStdin
-                tpRunTestProg params (toTextArg $ basename grammar)
+            forM_ examples $ \example ->
+                tpRunTestProg params (toTextArg lang) [filename example]
 
 -- | To test certain grammatical constructions or interractions between rules,
 -- test grammar can be created under the regression-tests directory,
 -- together with valid and invalid inputs.
 testCases :: TestParameters -> [Test]
-testCases params = do
+testCases params =
     map makeTestCase
         [ "regression-tests/#100_coercion_lists"
         , "regression-tests/#134_category_named_I"
@@ -104,8 +103,7 @@ testCases params = do
             tpBuild params
             good <- liftM (filter (matchFilePath "good[0-9]*.in$")) (ls dir)
             forM_ good $ \f -> do
-                readfile f >>= setStdin
-                output <- tpRunTestProg params "test"
+                output <- tpRunTestProg params "test" [f]
                 goldExists <- test_f (replaceExtension f "out")
                 when goldExists $ do
                     gold <- readfile (replaceExtension f "out")
@@ -114,8 +112,7 @@ testCases params = do
                     assertEqual goldLT actualLT
             bad <- liftM (filter (matchFilePath "bad[0-9]*.in$")) (ls dir)
             forM_ bad $ \f -> do
-                readfile f >>= setStdin
-                errExit False $ tpRunTestProg params "test"
+                errExit False $ tpRunTestProg params "test" [f]
                 lastExitCode >>= assertEqual 1
 
 -- ~~~ Parameters ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -129,8 +126,8 @@ data TestParameters = TP
     tpBnfcOptions :: [Text]
   , -- | Command for building the generated test executable
     tpBuild       :: Sh ()
-  , -- | Command for running the test executable
-    tpRunTestProg :: Text -> Sh Text
+  , -- | Command for running the test executable with the given arguments
+    tpRunTestProg :: Text -> [FilePath] -> Sh Text
   }
 
 parameters :: [TestParameters]
@@ -142,11 +139,16 @@ parameters =
              , tpBnfcOptions = ["--haskell", "-p", "Language", "-d", "-m"] }
   , base { tpName = "Haskell/GADT"
          , tpBnfcOptions = ["--haskell-gadt", "-m"]
-         , tpRunTestProg = \_ -> cmd =<< findFileRegex "Test\\w*$"}
+         , tpRunTestProg = \_ _ -> cmd =<< findFileRegex "Test\\w*$" }
   , base { tpName = "OCaml"
          , tpBnfcOptions = ["--ocaml", "-m"] }
   , base { tpName = "C"
-         , tpBnfcOptions = ["--c", "-m"] }
+         , tpBnfcOptions = ["--c", "-m"]
+         , tpBuild = do cmd "make"
+                        assertFileExists "Skeleton.h"
+                        assertFileExists "Skeleton.c"
+                        cmd "gcc" "-c" "Skeleton.c"
+         }
   , base { tpName = "C++"
          , tpBnfcOptions = ["--cpp", "-m"] }
   , base { tpName = "C++ (no STL)"
@@ -159,19 +161,28 @@ parameters =
                , tpBnfcOptions = ["--java", "--jflex", "-m"] }
   ]
   where
-    base = TP undefined {-name-} undefined {-bnfc options-}
-                       (run_ "make" []) {-build-}
-                       (\lang -> cmd ("." </> ("Test" <> lang))) {-run-}
+    base = TP
+        { tpName = undefined
+        , tpBnfcOptions = undefined
+        , tpBuild = (run_ "make" [])
+        , tpRunTestProg = \lang args -> do
+            bin <- canonicalize ("." </> ("Test" <> lang))
+            cmd bin args
+        }
     hsParams = base
-        { tpBuild =
-            do { cmd "make" ; cmd "ghc" =<< findFileRegex "Skel.*\\.hs$" }
-        , tpRunTestProg =
-            const (cmd =<< findFileRegex "Test\\w*$" ) }
+        { tpBuild = do cmd "hlint" "-i" "Redundant bracket" "-i" "Use camelCase" "."
+                       cmd "make"
+                       cmd "ghc" =<< findFileRegex "Skel.*\\.hs$"
+        , tpRunTestProg = \_ args -> do
+            bin <- findFileRegex "Test\\w*$"
+            cmd bin args
+        }
     javaParams = base
         { tpBuild =
             do { cmd "make" ; cmd "javac" =<< findFile "VisitSkel.java" }
-        , tpRunTestProg =
-            const (cmd "java" =<< liftM dropExtension (findFile "Test.class"))
+        , tpRunTestProg = \_ args -> do
+            class_ <- liftM dropExtension (findFile "Test.class")
+            cmd class_ args
         }
 
 -- | Helper function that runs bnfc with the context's options

@@ -58,8 +58,12 @@ instance Pretty T.Text where
 
 -- Shortcut function to create a (black box) test from a shelly script
 makeShellyTest :: TestID -> Sh () -> Test
-makeShellyTest label =
-    HTF.makeBlackBoxTest label . handle fixException . shelly . silently
+makeShellyTest label = HTF.makeBlackBoxTest label
+                     . handle fixException
+                     . shelly
+                     . print_commands True
+                     . print_stdout False
+                     . print_stderr False
   where
     fixException (ReThrownException x _) = throwIO (x::SomeException)
 
@@ -95,7 +99,7 @@ findFileRegex r = do
     when (length fs < 1) $ assertFailure "File not found"
     when (length fs > 1) $ assertFailure $
         "Too many files for regex " ++ r ++ " " ++ show fs
-    return (head fs)
+    canonicalize (head fs)
 
 -- Find a file given its exact name
 findFile n = do
