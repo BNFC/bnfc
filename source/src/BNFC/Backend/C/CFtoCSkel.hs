@@ -165,7 +165,7 @@ prData user (cat, rules)
                [
                 "void visit" ++ cl ++ "("++ cl +++ vname ++ ")",
                 "{",
-                "  while(" ++ vname ++ " != 0)",
+                "  while(" ++ vname +++ " != 0)",
                 "  {",
                 "    /* Code For " ++ cl ++ " Goes Here */",
                 "    visit" ++ ecl ++ "(" ++ vname ++ "->" ++ member ++ "_);",
@@ -201,24 +201,28 @@ prData user (cat, rules)
 --     visitab(_p_->u.abc_.ab_1);
 --     visitab(_p_->u.abc_.ab_2);
 --     break;
+-- <BLANKLINE>
 -- >>> prPrintRule [ab] (Rule "abc" undefined [Left ab])
 --   case is_abc:
 --     /* Code for abc Goes Here */
 --     visitAb(_p_->u.abc_.ab_);
 --     break;
+-- <BLANKLINE>
 -- >>> prPrintRule [ab] (Rule "abc" undefined [Left ab, Left ab])
 --   case is_abc:
 --     /* Code for abc Goes Here */
 --     visitAb(_p_->u.abc_.ab_1);
 --     visitAb(_p_->u.abc_.ab_2);
 --     break;
+-- <BLANKLINE>
 prPrintRule :: [UserDef] -> Rule -> Doc
 prPrintRule user (Rule fun _c cats) | not (isCoercion fun) = nest 2 $ vcat
     [ text $ "case is_" ++ fun ++ ":"
     , nest 2 (vcat
         [ "/* Code for " <> text fun <> " Goes Here */"
         , cats'
-        , "break;" ])
+        , "break;\n"
+	])
     ]
   where
     cats' = vcat $ map (prCat user fun) (lefts (numVars cats))

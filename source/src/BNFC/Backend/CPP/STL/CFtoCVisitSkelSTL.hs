@@ -66,7 +66,7 @@ mkHFile inPackage cf = unlines [
   "class Skeleton : public Visitor",
   "{",
   "public:",
-  unlines ["  void visit" ++ b ++ "(" ++ b ++ "* p);" |
+  unlines ["  void visit" ++ b ++ "(" ++ b ++ " *p);" |
                               b <- classes, notElem b (defineds cf)],
   unlines ["  void visit" ++ show b ++ "(" ++ show b ++  " x);" | b <- basics],
   "};",
@@ -89,7 +89,7 @@ mkCFile inPackage cf = unlines [
   nsStart inPackage,
   unlines [
     "void Skeleton::visit" ++ t ++ "(" ++
-       t ++ "* t) {} //abstract class" | t <- absclasses cf],
+       t ++ " *t) {} //abstract class" | t <- absclasses cf],
   unlines [prCon   r  | (_,rs)  <- signatures cf, r <- rs],
   unlines [prList  cb | cb <- listtypes cf],
   unlines [prBasic b  | b  <- tokentypes cf ++ map fst basetypes],
@@ -115,7 +115,7 @@ prBasic c = unlines [
   ]
 
 prList (cl,b) = unlines [
-  "void Skeleton::visit" ++ cl ++ "("++ cl ++ "*" +++ vname ++ ")",
+  "void Skeleton::visit" ++ cl ++ "("++ cl +++ "*" ++ vname ++ ")",
   "{",
   "  for ("++ cl ++"::iterator i = " ++
        vname++"->begin() ; i != " ++vname ++"->end() ; ++i)",

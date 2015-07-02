@@ -73,11 +73,11 @@ mkHFile cf groups = unlines
  ]
  where
   eps = allEntryPoints cf
-  prPrints s | normCat s == s = "char* print" ++ s' ++ "(" ++ s' ++ " p);\n"
+  prPrints s | normCat s == s = "char *print" ++ s' ++ "(" ++ s' ++ " p);\n"
     where
       s' = identCat s
   prPrints _ = ""
-  prShows s | normCat s == s = "char* show" ++ s' ++ "(" ++ s' ++ " p);\n"
+  prShows s | normCat s == s = "char *show" ++ s' ++ "(" ++ s' ++ " p);\n"
     where
       s' = identCat s
   prShows _ = ""
@@ -118,7 +118,7 @@ mkHFile cf groups = unlines
     "void shChar(Char c);",
     "void shString(String s);",
     "void shIdent(String s);",
-    "void bufAppendS(const char* s);",
+    "void bufAppendS(const char *s);",
     "void bufAppendC(const char c);",
     "void bufReset(void);",
     "void resizeBuffer(void);",
@@ -171,7 +171,7 @@ mkCFile cf groups = concat
       "#define INDENT_WIDTH 2",
       "",
       "int _n_;",
-      "char* buf_;",
+      "char *buf_;",
       "int cur_;",
       "int buf_size;",
       ""
@@ -264,7 +264,7 @@ mkCFile cf groups = concat
      ]
     footer = unlines
      [
-      "void bufAppendS(const char* s)",
+      "void bufAppendS(const char *s)",
       "{",
       "  int len = strlen(s);",
       "  int n;",
@@ -300,7 +300,7 @@ mkCFile cf groups = concat
       "}",
       "void resizeBuffer(void)",
       "{",
-      "  char* temp = (char*) malloc(buf_size);",
+      "  char *temp = (char *) malloc(buf_size);",
       "  if (!temp)",
       "  {",
       "    fprintf(stderr, \"Error: Out of memory while attempting to grow buffer!\\n\");",
@@ -325,7 +325,7 @@ mkCFile cf groups = concat
 prPrintFun :: Cat -> String
 prPrintFun ep | normCat ep == ep = unlines
   [
-   "char* print" ++ ep' ++ "(" ++ ep' ++ " p)",
+   "char *print" ++ ep' ++ "(" ++ ep' ++ " p)",
    "{",
    "  _n_ = 0;",
    "  bufReset();",
@@ -345,7 +345,7 @@ prPrintData user (cat, rules) = unlines $
  [
   "void pp" ++ cl ++ "("++ cl +++ vname ++ ", int i)",
   "{",
-  "  while(" ++ vname ++ "!= 0)",
+  "  while(" ++ vname +++ "!= 0)",
   "  {",
   "    if (" ++ vname ++ "->" ++ vname ++ "_ == 0)",
   "    {",
@@ -433,7 +433,7 @@ prPrintCat user fnm (c) = case c of
 prShowFun :: Cat -> String
 prShowFun ep | normCat ep == ep = unlines
   [
-   "char* show" ++ ep' ++ "(" ++ ep' ++ " p)",
+   "char *show" ++ ep' ++ "(" ++ ep' ++ " p)",
    "{",
    "  _n_ = 0;",
    "  bufReset();",
@@ -453,7 +453,7 @@ prShowData user (cat, rules) = unlines $
  [
   "void sh" ++ cl ++ "("++ cl +++ vname ++ ")",
   "{",
-  "  while(" ++ vname ++ "!= 0)",
+  "  while(" ++ vname +++ "!= 0)",
   "  {",
   "    if (" ++ vname ++ "->" ++ vname ++ "_)",
   "    {",
@@ -495,12 +495,12 @@ prShowRule :: [UserDef] -> Rule -> String
 prShowRule user (Rule fun _ cats) | not (isCoercion fun) = unlines
   [
    "  case is_" ++ fun ++ ":",
-   lparen,
+   "  " ++ lparen,
    "    bufAppendS(\"" ++ fun ++ "\");\n",
-   optspace,
+   "  " ++ optspace,
    cats',
-   rparen,
-   "    break;\n"
+   "  " ++ rparen,
+   "    break;"
   ]
    where
     (optspace, lparen, rparen) = if allTerms cats
