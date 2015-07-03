@@ -1,0 +1,3 @@
+Prog. Program ::= Defin ;
+Pe. Program ::= "" ;
+Def. Defin ::= "woo" ;

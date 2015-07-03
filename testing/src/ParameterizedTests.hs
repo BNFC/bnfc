@@ -90,7 +90,8 @@ testCases params =
     map makeTestCase
         [ "regression-tests/#100_coercion_lists"
         , "regression-tests/#134_category_named_I"
-        , "regression-tests/comments" ]
+        , "regression-tests/comments"
+        , "regression-tests/#149" ]
   where
     mkTitle dir = encodeString (filename dir)
     makeTestCase dir =

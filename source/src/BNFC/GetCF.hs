@@ -18,7 +18,7 @@
 -}
 
 
-module BNFC.GetCF(parseCF, parseCFP) where
+module BNFC.GetCF(parseCF, parseCFP, transItem) where
 
 import qualified AbsBNF as Abs
 import ParBNF
@@ -180,14 +180,14 @@ removeDelims xs = (ys ++ map delimToSep ds,
 transDef :: Abs.Def -> [Either Pragma RuleP]
 transDef x = case x of
  Abs.Rule label cat items ->
-   [Right $ Rule (transLabel label) (transCat cat) (map transItem items)]
+   [Right $ Rule (transLabel label) (transCat cat) (concatMap transItem items)]
  Abs.Comment str               -> [Left $ CommentS str]
  Abs.Comments str0 str         -> [Left $ CommentM (str0,str)]
  Abs.Token ident reg           -> [Left $ TokenReg (transIdent ident) False reg]
  Abs.PosToken ident reg        -> [Left $ TokenReg (transIdent ident) True reg]
  Abs.Entryp idents             -> [Left $ EntryPoints (map (strToCat .transIdent) idents)]
  Abs.Internal label cat items  ->
-   [Right $ Rule (transLabel label) (transCat cat) (Left InternalCat:map transItem items)]
+   [Right $ Rule (transLabel label) (transCat cat) (Left InternalCat:concatMap transItem items)]
  Abs.Separator size ident str -> map  (Right . cf2cfpRule) $ separatorRules size ident str
  Abs.Terminator size ident str -> map  (Right . cf2cfpRule) $ terminatorRules size ident str
  Abs.Delimiters a b c d e -> map  (Right . cf2cfpRule) $ delimiterRules a b c d e
@@ -275,7 +275,7 @@ coercionRules (Abs.Ident c) n =
 
 ebnfRules :: Abs.Ident -> [Abs.RHS] -> [Rule]
 ebnfRules (Abs.Ident c) rhss =
-  [Rule (mkFun k its) (strToCat c) (map transItem its)
+  [Rule (mkFun k its) (strToCat c) (concatMap transItem its)
      | (k, Abs.RHS its) <- zip [1 :: Int ..] rhss]
  where
    mkFun k i = case i of
@@ -286,10 +286,16 @@ ebnfRules (Abs.Ident c) rhss =
    mkName k s = if all (\c -> isAlphaNum c || elem c ("_'" :: String)) s
                    then s else show k
 
-transItem :: Abs.Item -> Either Cat String
-transItem x = case x of
- Abs.Terminal str   -> Right str
- Abs.NTerminal cat  -> Left (transCat cat)
+-- | Translate a rule item (terminal or non terminal)
+-- It also sanitizes the terminals a bit by skipping empty terminals
+-- or splitting multiwords terminals.
+-- This means that the following rule
+--   Foo. S ::= "foo bar" ""
+-- is equivalent to
+--   Foo. S ::= "foo" "bar"
+transItem :: Abs.Item -> [Either Cat String]
+transItem (Abs.Terminal str) = [Right w | w <- words str]
+transItem (Abs.NTerminal cat) = [Left (transCat cat)]
 
 transCat :: Abs.Cat -> Cat
 transCat x = case x of
