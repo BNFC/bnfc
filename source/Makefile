@@ -8,5 +8,8 @@ build:
 install:
 	cabal install
 
+test:
+	cabal test
+
 doc:
 	cabal haddock --executables --internal
