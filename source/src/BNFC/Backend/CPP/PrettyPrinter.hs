@@ -83,13 +83,13 @@ mkHFile useStl inPackage cf groups = unlines
     "  /* You may wish to change them */",
     "  void render(Char c);",
     "  void render(String s);",
-    if useStl then "void render(char* s);" else "",
+    if useStl then "void render(char *s);" else "",
     "  void indent(void);",
     "  void backup(void);",
     " public:",
     "  PrintAbsyn(void);",
     "  ~PrintAbsyn(void);",
-    "  char* print(Visitable* v);"
+    "  char *print(Visitable *v);"
    ]
   hdef = nsDefine inPackage "PRINTER_HEADER"
   classFooter = unlines $
@@ -102,7 +102,7 @@ mkHFile useStl inPackage cf groups = unlines
    ] ++ ["  void visit" ++ t ++ "(String s);" | t <- tokenNames cf] ++
    [
     " protected:",
-    "  void inline bufAppend(const char* s)",
+    "  void inline bufAppend(const char *s)",
     "  {",
     "    int len = strlen(s);",
     "    while (cur_ + len > buf_size)",
@@ -117,6 +117,7 @@ mkHFile useStl inPackage cf groups = unlines
     "    cur_ += len;",
     "    buf_[cur_] = 0;",
     "  }",
+    "",
     "  void inline bufAppend(const char c)",
     "  {",
     "    if (cur_ == buf_size)",
@@ -128,6 +129,7 @@ mkHFile useStl inPackage cf groups = unlines
     "    cur_++;",
     "    buf_[cur_] = 0;",
     "  }",
+    "",
     if useStl then render (nest 2 bufAppendString) else "",
     "  void inline bufReset(void)",
     "  {",
@@ -136,9 +138,10 @@ mkHFile useStl inPackage cf groups = unlines
     "    resizeBuffer();",
     "    memset(buf_, 0, buf_size);",
     "  }",
+    "",
     "  void inline resizeBuffer(void)",
     "  {",
-    "    char* temp = (char*) malloc(buf_size);",
+    "    char *temp = (char *) malloc(buf_size);",
     "    if (!temp)",
     "    {",
     "      fprintf(stderr, \"Error: Out of memory while attempting to grow buffer!\\n\");",
@@ -160,7 +163,7 @@ mkHFile useStl inPackage cf groups = unlines
   bufAppendString =
       "void inline bufAppend(String str)"
       $$ codeblock 2
-          [ "const char* s = str.c_str();"
+          [ "const char *s = str.c_str();"
           , "bufAppend(s);"]
   showHeader = unlines
    [
@@ -170,7 +173,7 @@ mkHFile useStl inPackage cf groups = unlines
     " public:",
     "  ShowAbsyn(void);",
     "  ~ShowAbsyn(void);",
-    "  char* show(Visitable* v);"
+    "  char *show(Visitable *v);"
    ]
   footer = unlines
    [
@@ -183,7 +186,7 @@ mkHFile useStl inPackage cf groups = unlines
 prDataH :: (Cat, [Rule]) -> String
 prDataH (cat, rules) =
  if isList cat
- then concat ["  void visit", cl, "(", cl, "* p);\n"]
+ then concat ["  void visit", cl, "(", cl, " *p);\n"]
  else abstract ++ concatMap prRuleH rules
  where
    cl = identCat (normCat cat)
@@ -239,13 +242,14 @@ mkCFile useStl inPackage cf groups = concat
       "{",
       "}",
       "",
-      "char* PrintAbsyn::print(Visitable *v)",
+      "char *PrintAbsyn::print(Visitable *v)",
       "{",
       "  _i_ = 0; _n_ = 0;",
       "  bufReset();",
       "  v->accept(this);",
       "  return buf_;",
-      "}"
+      "}",
+      ""
      ]
     showEntries = unlines
      [
@@ -259,12 +263,13 @@ mkCFile useStl inPackage cf groups = concat
       "{",
       "}",
       "",
-      "char* ShowAbsyn::show(Visitable *v)",
+      "char *ShowAbsyn::show(Visitable *v)",
       "{",
       "  bufReset();",
       "  v->accept(this);",
       "  return buf_;",
-      "}"
+      "}",
+      ""
      ]
     printBasics = unlines
      [
@@ -274,24 +279,28 @@ mkCFile useStl inPackage cf groups = concat
       "  sprintf(tmp, \"%d\", i);",
       "  bufAppend(tmp);",
       "}",
+      "",
       "void PrintAbsyn::visitDouble(Double d)",
       "{",
       "  char tmp[16];",
       "  sprintf(tmp, \"%g\", d);",
       "  bufAppend(tmp);",
       "}",
+      "",
       "void PrintAbsyn::visitChar(Char c)",
       "{",
       "  bufAppend('\\'');",
       "  bufAppend(c);",
       "  bufAppend('\\'');",
       "}",
+      "",
       "void PrintAbsyn::visitString(String s)",
       "{",
       "  bufAppend('\\\"');",
       "  bufAppend(s);",
       "  bufAppend('\\\"');",
       "}",
+      "",
       "void PrintAbsyn::visitIdent(String s)",
       "{",
       "  render(s);",
@@ -368,17 +377,18 @@ prPrintData False {- use STL -} _ _ (cat@(ListCat _), rules) =
 prPrintData _ inPackage cf (cat, rules) = -- Not a list
  -- a position token
  if isPositionCat cf cat then unlines [
-   "void PrintAbsyn::visit" ++ show cat ++ "(" ++ show cat ++ "* p)",
+   "void PrintAbsyn::visit" ++ show cat ++ "(" ++ show cat ++ " *p)",
    "{",
    "  visitIdent(p->string_);",
-   "}"
+   "}",
+   ""
    ]
  else abstract ++ concatMap (prPrintRule inPackage) rules
  where
    cl = identCat (normCat cat)
    abstract = case lookupRule (show cat) rules of
     Just _ -> ""
-    Nothing ->  "void PrintAbsyn::visit" ++ cl ++ "(" ++ cl ++ "*p) {} //abstract class\n\n"
+    Nothing ->  "void PrintAbsyn::visit" ++ cl ++ "(" ++ cl +++ "*p) {} //abstract class\n\n"
 
 -- | Generate pretty printer visitor for a list category:
 --
@@ -437,7 +447,7 @@ genPrintVisitorListNoStl :: (Cat, [Rule]) -> String
 genPrintVisitorListNoStl (cat@(ListCat c), rules) = unlines
     [ "void PrintAbsyn::visit" ++ cl ++ "("++ cl ++ " *" ++ vname ++ ")"
     , "{"
-    , "  while(" ++ vname ++ "!= 0)"
+    , "  while(" ++ vname +++ "!= 0)"
     , "  {"
     , "    if (" ++ vname ++ "->" ++ vname ++ "_ == 0)"
     , "    {"
@@ -474,14 +484,15 @@ genPrintVisitorListNoStl _ = error "genPrintVisitorListNoStl expects a ListCat"
 prPrintRule :: Maybe String -> Rule -> String
 prPrintRule inPackage r@(Rule fun _ cats) | isProperLabel fun = unlines
   [
-   "void PrintAbsyn::visit" ++ fun ++ "(" ++ fun ++ "*" +++ fnm ++ ")",
+   "void PrintAbsyn::visit" ++ fun ++ "(" ++ fun +++ "*" ++ fnm ++ ")",
    "{",
    "  int oldi = _i_;",
    lparen,
    cats',
    rparen,
    "  _i_ = oldi;",
-   "}\n"
+   "}",
+   ""
   ]
    where
     p = precRule r
@@ -498,7 +509,7 @@ prPrintCat _ (Right t) = "  render(" ++ t' ++ ");\n"
   where t' = snd (renderCharOrString t)
 prPrintCat fnm (Left (c, nt))
   | isTokenCat c  = "  visit" ++ funName c ++ "(" ++ fnm ++ "->" ++ render nt ++ ");\n"
-  | isList c            = "  if(" ++ fnm ++ "->" ++ render nt ++ ") {" ++ accept ++ "}"
+  | isList c            = "  if(" ++ fnm ++ "->" ++ render nt ++ ") {" ++ accept ++ "}\n"
   | otherwise           = "  " ++ accept ++ "\n"
   where
     accept
@@ -563,13 +574,13 @@ prShowData _ (cat, rules) =  --Not a list:
     cl = identCat (normCat cat)
     abstract = case lookupRule (show cat) rules of
       Just _ -> ""
-      Nothing ->  "void ShowAbsyn::visit" ++ cl ++ "(" ++ cl ++ "* p) {} //abstract class\n\n"
+      Nothing ->  "void ShowAbsyn::visit" ++ cl ++ "(" ++ cl ++ " *p) {} //abstract class\n\n"
 
 --This prints all the methods for Abstract Syntax tree rules.
 prShowRule :: Rule -> String
 prShowRule (Rule fun _ cats) | isProperLabel fun = concat
   [
-   "void ShowAbsyn::visit" ++ fun ++ "(" ++ fun ++ "*" +++ fnm ++ ")\n",
+   "void ShowAbsyn::visit" ++ fun ++ "(" ++ fun +++ "*" ++ fnm ++ ")\n",
    "{\n",
    lparen,
    "  bufAppend(\"" ++ fun ++ "\");\n",
@@ -692,6 +703,7 @@ prRender useStl = unlines
       "     bufAppend(' ');",
       "  }",
       "}",
+      "",
       let renderString = "void PrintAbsyn::render(String s_)" $$ codeblock 2
                              [ "const char *s = s_.c_str() ;"
                              , "if(strlen(s) > 0)"
@@ -699,7 +711,7 @@ prRender useStl = unlines
                                  [ "bufAppend(s);"
                                  , "bufAppend(' ');" ] ]
       in if useStl then render renderString else "",
-      "void PrintAbsyn::render(char* s)",
+      "void PrintAbsyn::render(char *s)",
       "{",
       "  if(strlen(s) > 0)",
       "  {",
@@ -707,6 +719,7 @@ prRender useStl = unlines
       "    bufAppend(' ');",
       "  }",
       "}",
+      "",
       "void PrintAbsyn::indent()",
       "{",
       "  int n = _n_;",
@@ -716,6 +729,7 @@ prRender useStl = unlines
       "    n--;",
       "  }",
       "}",
+      "",
       "void PrintAbsyn::backup()",
       "{",
       "  if (buf_[cur_ - 1] == ' ')",
@@ -723,5 +737,6 @@ prRender useStl = unlines
       "    buf_[cur_ - 1] = 0;",
       "    cur_--;",
       "  }",
-      "}"
+      "}",
+      ""
   ]
