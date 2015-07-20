@@ -18,7 +18,7 @@
 -}
 
 
-module BNFC.GetCF(parseCF, parseCFP, transItem) where
+module BNFC.GetCF where
 
 import qualified AbsBNF as Abs
 import ParBNF
@@ -34,6 +34,8 @@ import Data.Either (partitionEithers)
 import Data.List(nub,partition)
 import Data.Maybe (mapMaybe)
 import ErrM
+import System.Exit (exitFailure)
+import System.IO (hPutStrLn, stderr)
 
 -- $setup
 -- >>> import PrintBNF
@@ -77,7 +79,7 @@ parseCFP opts target content = do
 
   where
     runErr (Ok a) = return a
-    runErr (Bad msg) = error msg
+    runErr (Bad msg) = hPutStrLn stderr msg >> exitFailure
 
 {-
     case filter (not . isDefinedRule) $ notUniqueFuns cf of
@@ -388,8 +390,8 @@ checkRule cf (Rule (f,_) cat rhs)
   | badSpecial     = Just $ "Bad special category rule" +++ s
   | badTypeName    = Just $ "Bad type name" +++ unwords (map show badtypes) +++ "in" +++ s
   | badFunName     = Just $ "Bad constructor name" +++ f +++ "in" +++ s
-  | badMissing     = Just $ "No production for" +++ unwords missing ++
-                             ", appearing in rule" +++ s +++ ". Defined categories:" +++ unwords defineds
+  | badMissing     = Just $ "no production for" +++ unwords missing ++
+                             ", appearing in rule\n    " ++ s
   | otherwise      = Nothing
  where
    s  = f ++ "." +++ show cat +++ "::=" +++ unwords (map (either show show) rhs) -- Todo: consider using the show instance of Rule
