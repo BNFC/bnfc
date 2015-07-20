@@ -211,7 +211,7 @@ constructRule packageAbsyn cf env rules nt =
  where
    revM False = id
    revM True = reverse
-   revs = reversibleCats cf
+   revs = cfgReversibleCats cf
 
 -- Generates a string containing the semantic action.
 generateAction :: String -> NonTerminal -> Fun -> [MetaVar]

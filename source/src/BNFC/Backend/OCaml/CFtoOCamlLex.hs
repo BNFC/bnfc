@@ -82,7 +82,7 @@ header parserMod cf = [
 
 -- | set up hashtables for reserved symbols and words
 hashtables :: CF -> String
-hashtables cf = ht "symbol_table" (symbols cf )  ++ "\n" ++
+hashtables cf = ht "symbol_table" (cfgSymbols cf )  ++ "\n" ++
                 ht "resword_table" (reservedWords cf)
     where ht _ syms | null syms = ""
           ht table syms = unlines [
@@ -116,7 +116,7 @@ cMacros = [
 
 rMacros :: CF -> [String]
 rMacros cf =
-  let symbs = symbols cf
+  let symbs = cfgSymbols cf
   in
   (if null symbs then [] else [
    "let rsyms =    (* reserved words consisting of special symbols *)",
@@ -201,7 +201,7 @@ rules cf = mkRule "token" $
     ++
     [ ( "rsyms"
       , "let id = lexeme lexbuf in try Hashtbl.find symbol_table id with Not_found -> failwith (\"internal lexer error: reserved symbol \" ^ id ^ \" not found in hashtable\")" )
-      | not (null (symbols cf))]
+      | not (null (cfgSymbols cf))]
     ++
     -- integers
     [ ( "d+", "let i = lexeme lexbuf in TOK_Integer (int_of_string i)" )

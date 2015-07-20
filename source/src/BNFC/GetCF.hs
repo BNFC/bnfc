@@ -126,7 +126,8 @@ getCFP cnf (Abs.Grammar defs0) = do
   where
     (pragma,rules0) = partitionEithers $ concatMap transDef defs
     (defs,inlineDelims) = if cnf then (defs0,id) else removeDelims defs0
-    revs cf1@CFG{..} = cf1 { cfgCats = findAllReversibleCats (cfp2cf cf1) }
+    revs cf1@CFG{..} =
+        cf1 { cfgReversibleCats = findAllReversibleCats (cfp2cf cf1) }
 
 -- | This function goes through each rule of a grammar and replace Cat "X" with
 -- TokenCat "X" when "X" is a token type.

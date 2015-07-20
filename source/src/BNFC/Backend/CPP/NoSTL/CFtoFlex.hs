@@ -54,7 +54,7 @@ cf2flex inPackage name cf = (unlines
   restOfFlex inPackage cf env'
  ], env')
   where
-   env = makeSymEnv (symbols cf ++ reservedWords cf) (0 :: Int)
+   env = makeSymEnv (cfgSymbols cf ++ reservedWords cf) (0 :: Int)
    env' = env ++ (makeSymEnv (tokenNames cf) (length env))
    makeSymEnv [] _ = []
    makeSymEnv (s:symbs) n = (s, nsDefine inPackage "_SYMB_" ++ (show n)) : (makeSymEnv symbs (n+1))

@@ -55,7 +55,7 @@ cf2jlex packageBase cf jflex = (vcat
   restOfJLex cf
  ], env)
   where
-   env = makeSymEnv (symbols cf ++ reservedWords cf) (0 :: Int)
+   env = makeSymEnv (cfgSymbols cf ++ reservedWords cf) (0 :: Int)
    makeSymEnv [] _ = []
    makeSymEnv (s:symbs) n = (s, "_SYMB_" ++ show n) : makeSymEnv symbs (n+1)
 

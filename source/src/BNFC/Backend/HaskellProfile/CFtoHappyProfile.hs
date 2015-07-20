@@ -44,7 +44,7 @@ cf2Happy name absName lexName errName cf
  = unlines
     [header name absName lexName errName,
      declarations (allEntryPoints cf),
-     tokens (symbols cf ++ reservedWords cf),
+     tokens (cfgSymbols cf ++ reservedWords cf),
      specialToks cf,
      delimiter,
      specialRules cf,
@@ -116,7 +116,7 @@ constructRule cf rules nt = (nt,[(p,generateAction nt (revF b r) m) |
    ---- left rec optimization does not work yet
    revF _ = ---- if b then ("flip " ++ funRuleP r) else (funRuleP r)
        funRule
-   revs = reversibleCats cf
+   revs = cfgReversibleCats cf
 
 -- Generates a string containing the semantic action.
 -- An action can for example be: Sum $1 $2, that is, construct an AST
@@ -143,7 +143,7 @@ generatePatterns cf r = case rhsRule r of
    revIf c m = if not (isConsFun (funRuleP r)) && elem c revs
                    then "(reverse " ++ m ++ ")"
                    else m  -- no reversal in the left-recursive Cons rule itself
-   revs = reversibleCats cf
+   revs = cfgReversibleCats cf
 
 -- We have now constructed the patterns and actions,
 -- so the only thing left is to merge them into one string.

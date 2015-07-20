@@ -196,7 +196,7 @@ constructRule namespace cf env rules nt =
       ---- "(:)" -> identCat nt
       ---- "(:[])" -> identCat nt
       z -> z
-    revs = reversibleCats cf
+    revs = cfgReversibleCats cf
     eps = allEntryPoints cf
     isEntry nt = if elem nt eps then True else False
     result = if isEntry nt then (resultName (identCat (normCat nt))) ++ "= $$;" else ""
@@ -242,7 +242,7 @@ generatePatterns cf env r _ = case rhsRule r of
     -- of right-recursive lists!
     revert c = (isList c) &&
                not (isConsFun (funRule r)) && notElem c revs
-    revs = reversibleCats cf
+    revs = cfgReversibleCats cf
 
 -- We have now constructed the patterns and actions,
 -- so the only thing left is to merge them into one string.

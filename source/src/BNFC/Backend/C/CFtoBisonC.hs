@@ -211,7 +211,7 @@ constructRule cf env rules nt = (nt,[(p, generateAction (identCat (normCat nt)) 
                  else (False,r0),
      let (p,m) = generatePatterns cf env r])
  where
-   revs = reversibleCats cf
+   revs = cfgReversibleCats cf
    eps = allEntryPoints cf
    isEntry nt = nt `elem` eps
    result = if isEntry nt then resultName (identCat (normCat nt)) ++ "= $$;" else ""
@@ -253,7 +253,7 @@ generatePatterns cf env r = case rhsRule r of
    revIf c m = if not (isConsFun (funRule r)) && elem c revs
                  then "reverse" ++ identCat (normCat c) ++ "(" ++ m ++ ")"
                else m  -- no reversal in the left-recursive Cons rule itself
-   revs = reversibleCats cf
+   revs = cfgReversibleCats cf
 
 -- We have now constructed the patterns and actions,
 -- so the only thing left is to merge them into one string.

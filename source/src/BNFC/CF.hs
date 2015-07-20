@@ -53,9 +53,7 @@ module BNFC.CF (
             allEntryPoints,
             reservedWords,
             cfTokens,
-            symbols,
             literals,
-            reversibleCats,
             findAllReversibleCats, -- find all reversible categories
             identCat,       -- transforms '[C]' to ListC (others, unchanged).
             isParsable,
@@ -68,6 +66,7 @@ module BNFC.CF (
 --            badInheritence, -- Returns a list of all function labels that can cause problems in languages with inheritence.
             isList,         -- Checks if a category is a list category.
             isTokenCat,
+            sameCat,
             -- Information functions for list functions.
             isNilFun,       -- empty list function? ([])
             isOneFun,       -- one element list function? (:[])
@@ -145,14 +144,16 @@ instance (Show function) => Show (Rul function) where
 
 -- | Polymorphic CFG type for common type signatures for CF and CFP
 data CFG function = CFG
-    { cfgPragmas  :: [Pragma]
-    , cfgLiterals :: [Literal]  -- ^ Char, String, Ident, Integer, Double
-                                -- Strings are quoted strings, and Ident are
-                                -- unquoted.
-    , cfgSymbols  :: [Symbol]   -- symbols in the grammar, e.g. “*”, '->'.
-    , cfgKeywords :: [KeyWord]  -- reserved words, e.g. 'if' 'while'
-    , cfgCats     :: [Cat]
-    , cfgRules    :: [Rul function]
+    { cfgPragmas        :: [Pragma]
+    , cfgLiterals       :: [Literal]  -- ^ Char, String, Ident, Integer, Double
+                                      -- Strings are quoted strings,
+                                      -- and Ident are unquoted.
+    , cfgSymbols        :: [Symbol]   -- ^ symbols in the grammar,
+                                      -- e.g. “*”, '->'
+    , cfgKeywords       :: [KeyWord]  -- ^ reserved words, e.g. 'if' 'while'
+    , cfgReversibleCats :: [Cat]      -- ^ categories that is left-recursive
+                                      -- transformable.
+    , cfgRules          :: [Rul function]
     } deriving (Functor)
 
 
@@ -251,16 +252,6 @@ data Cat = InternalCat       -- | Internal category, inserted in 1st
 type NonTerminal = Cat
 
 -- | Render category symbols as strings
--- >>> catToStr (Cat "Def")
--- "Def"
--- >>> catToStr (ListCat (Cat "Thing"))
--- "[Thing]"
--- >>> catToStr (CoercCat "Expr" 3)
--- "Expr3"
--- >>> catToStr (ListCat (CoercCat "Expr" 2))
--- "[Expr2]"
--- >>> catToStr (TokenCat "Abc")
--- "Abc"
 catToStr InternalCat = "#"
 catToStr (Cat s) = s
 catToStr (TokenCat s) = s
@@ -274,12 +265,6 @@ instance Show Cat where
 -- the case of simple categories (with or without coercion) since list
 -- categories are parsed in the grammar already. To be on the safe side here,
 -- we still call the parser function that parses categries.
--- >>> strToCat "Abc" == Cat "Abc"
--- True
--- >>> strToCat "Abc123" == CoercCat "Abc" 123
--- True
--- >>> strToCat "[Expr2]" == ListCat (CoercCat "Expr" 2)
--- True
 strToCat :: String -> Cat
 strToCat "#" = InternalCat
 strToCat s =
@@ -319,20 +304,13 @@ isDataOrListCat _               = True
 -- | Categories C1, C2,... (one digit in end) are variants of C. This function
 -- returns true if two category are variants of the same abstract category.
 -- E.g.
---
--- >>> eqCat (Cat "Abc") (Cat "Abc")
+-- >>> sameCat (Cat "Abc") (CoercCat "Abc" 44)
 -- True
--- >>> eqCat (CoercCat "Abc" 3) (CoercCat "Abc" 5)
--- True
--- >>> eqCat (CoercCat "Acb" 4) (CoercCat "Abc" 4)
--- False
--- >>> eqCat (Cat "Abc") (CoercCat "Abc" 44)
--- True
-eqCat :: Cat -> Cat -> Bool
-eqCat (CoercCat c1 _) (CoercCat c2 _) = c1 == c2
-eqCat (Cat c1 ) (CoercCat c2 _) = c1 == c2
-eqCat (CoercCat c1 _) (Cat c2) = c1 == c2
-eqCat c1 c2 = c1 == c2
+sameCat :: Cat -> Cat -> Bool
+sameCat (CoercCat c1 _) (CoercCat c2 _) = c1 == c2
+sameCat (Cat c1 ) (CoercCat c2 _) = c1 == c2
+sameCat (CoercCat c1 _) (Cat c2) = c1 == c2
+sameCat c1 c2 = c1 == c2
 
 
 
@@ -348,10 +326,6 @@ normCatOfList = normCat . catOfList
 -- | When given a list Cat, i.e. '[C]', it removes the square
 -- brackets, and adds the prefix List, i.e. 'ListC'.  (for Happy and
 -- Latex)
--- >>> identCat (ListCat (Cat "C")) -- [C]
--- "ListC"
--- >>> identCat (CoercCat "C" 3)
--- "C3"
 identCat :: Cat -> String
 identCat (ListCat c) = "List" ++ identCat c
 identCat c = show c
@@ -366,10 +340,6 @@ isTokenCat _            = False
 
 -- | Unwraps the list constructor from the category name. Eg. [C1] => C1
 -- E.g.
--- >>> catOfList (ListCat (Cat "A"))
--- A
--- >>> catOfList (Cat "B")
--- B
 catOfList :: Cat -> Cat
 catOfList (ListCat c) = c
 catOfList c = c
@@ -426,12 +396,6 @@ firstEntry :: CF -> Cat
 firstEntry cf = case allEntryPoints cf of
                  (x:_) -> x
                  _     -> firstCat cf
-
--- | Info is information extracted from the CF, for easy access.
-type Info = ([Literal],[Symbol],[KeyWord],[Cat])
-
-infoOfCF    :: CFG f -> Info
-infoOfCF cf = (cfgLiterals cf, cfgSymbols cf, cfgKeywords cf, cfgCats cf)
 
 -- aggressively ban nonunique names (AR 31/5/2012)
 
@@ -495,29 +459,18 @@ ruleGroupsInternals cf = [(c, rulesForCat' cf c) | c <- allCats cf]
 literals :: CFG f -> [Cat]
 literals cf = [TokenCat l | l <- lits] ++ owns
  where
-   (lits,_,_,_) = infoOfCF cf
+   lits = cfgLiterals cf
    owns = map fst (tokenPragmas cf)
-
--- | Get all symbols
-symbols :: CFG f -> [String]
-symbols cf = syms
- where (_,syms,_,_) = infoOfCF cf
 
 -- | Get the keywords of a grammar.
 reservedWords :: CFG f -> [String]
-reservedWords cf = sort keywords
- where (_,_,keywords,_) = infoOfCF cf
+reservedWords = sort . cfgKeywords
 
 -- | Canonical, numbered list of symbols and reserved words. (These do
 -- not end up in the AST.)
 cfTokens :: CFG f -> [(String,Int)]
-cfTokens cf = zip (sort (symbols cf ++ reservedWords cf)) [1..]
+cfTokens cf = zip (sort (cfgSymbols cf ++ reservedWords cf)) [1..]
 -- NOTE: some backends (incl. Haskell) assume that this list is sorted.
-
--- | Categories that is left-recursive transformable.
-reversibleCats :: CFG f -> [Cat]
-reversibleCats cf = cats
-  where (_,_,_,cats) = infoOfCF cf
 
 -- | Comments can be defined by the 'comment' pragma
 comments :: CF -> ([(String,String)],[String])
@@ -579,7 +532,7 @@ cf2data' predicate cf =
   [(cat, nub (map mkData [r | r <- cfgRules cf,
                               let f = funRule r,
                               not (isDefinedRule f),
-                              not (isCoercion f), eqCat cat (valCat r)]))
+                              not (isCoercion f), sameCat cat (valCat r)]))
       | cat <- filter predicate (allCats cf)]
  where
   mkData (Rule f _ its) = (f,[normCat c | Left c <- its, c /= InternalCat])
@@ -659,16 +612,8 @@ isEmptyNilRule (Rule f _ ts) = isNilFun f && null ts
 
 -- | Returns the precedence of a category symbol.
 -- E.g.
---
--- >>> precCat (Cat "Abc")
--- 0
---
 -- >>> precCat (CoercCat "Abc" 4)
 -- 4
---
--- But!
--- >>> precCat (ListCat (CoercCat "Abc" 2))
--- 2
 precCat :: Cat -> Integer
 precCat (CoercCat _ i) = i
 precCat (ListCat c) = precCat c
