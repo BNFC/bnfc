@@ -93,7 +93,7 @@ cf2Cup packageBase packageAbsyn cf env = unlines
 
 definedRules :: String -> CF -> String
 definedRules packageAbsyn cf =
-        unlines [ rule f xs e | FunDef f xs e <- pragmasOfCF cf ]
+        unlines [ rule f xs e | FunDef f xs e <- cfgPragmas cf ]
     where
         ctx = buildContext cf
 

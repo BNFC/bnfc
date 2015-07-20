@@ -252,7 +252,7 @@ finalize byteStrings cf = unlines $
        | otherwise   = "id"
 
 
-definedRules cf = [ mkDef f xs e | FunDef f xs e <- pragmasOfCF cf ]
+definedRules cf = [ mkDef f xs e | FunDef f xs e <- cfgPragmas cf ]
     where
         mkDef f xs e = unwords $ (f ++ "_") : xs' ++ ["=", show e']
             where

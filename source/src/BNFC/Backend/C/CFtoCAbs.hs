@@ -85,7 +85,7 @@ mkHFile cf = unlines
      "typedef struct " ++ s ++ "_ *" ++ s ++ ";"
     ]
   prForward _ = ""
-  getRules cf = (map testRule (rulesOfCF cf))
+  getRules cf = (map testRule (cfgRules cf))
   getClasses = map show . filter (\c -> identCat (normCat c) == show c)
   testRule (Rule f c _) =
    if isList c

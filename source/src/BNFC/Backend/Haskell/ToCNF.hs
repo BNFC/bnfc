@@ -135,7 +135,7 @@ prettyListFun xs = parens $ sep (map (<> "$") xs) <> "[]"
 
 
 genCombine :: UnitRel Cat -> CFG Exp -> Doc
-genCombine units cf = vcat $ map genEntry $ group' $ map (alt units) (rulesOfCF cf)
+genCombine units cf = vcat $ map genEntry $ group' $ map (alt units) (cfgRules cf)
   where genEntry :: ((RHSEl,RHSEl),[(Cat,Exp)]) -> Doc
         genEntry ((r1,r2),cs) = "combine p " <> catTag r1 <> " " <> catTag r2 <> " = " <> prettyPair (genList <$> splitOptim (Left . fst) cf cs)
         mkLam body = "\\x y -> " <> body

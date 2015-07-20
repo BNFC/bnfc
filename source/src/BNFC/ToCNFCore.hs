@@ -47,12 +47,12 @@ import Text.PrettyPrint.HughesPJ hiding (first,(<>))
 (f *** g) (a,b) = (f a, g b)
 second g = id *** g
 
-onRules f (CFG (exts,rules)) = CFG (exts,f rules)
+onRules f cfg@CFG{..} = cfg { cfgRules = f cfgRules }
 
 toCNF cf0 = (cf1,cf2,units,descriptions,neighbors)
-  where cf01@(CFG (exts01,_)) = funToExp . onRules delInternal $ cf0
-        (rules',descriptions) = toBin (rulesOfCF cf01)
-        cf1 = CFG (exts01,rules')
+  where cf01 = funToExp . onRules delInternal $ cf0
+        (rules',descriptions) = toBin (cfgRules cf01)
+        cf1 = cf01 { cfgRules = rules' }
         cf2 = delNull cf1
         units = unitSet cf2
         neighbors = neighborSet cf2
@@ -135,7 +135,7 @@ fixpointOnGrammar :: (Show k, Show x,Ord k, Ord x) => String -> (Set k x -> Rul 
 fixpointOnGrammar name f cf = case fixn 100 step M.empty of
   Left x -> error $ "Could not find fixpoint of " ++ name ++". Last iteration:\n" ++ show x
   Right x -> x
-  where step curSet = M.unionsWith (∪) (map (f curSet) (rulesOfCF cf))
+  where step curSet = M.unionsWith (∪) (map (f curSet) (cfgRules cf))
 
 fixn :: Eq a => Int -> (a -> a) -> a -> Either a a
 fixn 0 _ x = Left x
@@ -208,7 +208,7 @@ isOnRight _ _ = False
 isEntryPoint cf el = either (`elem` allEntryPoints cf) (const False) el
 
 occurs :: (RHSEl -> Rul f -> Bool) -> RHSEl -> CFG f -> Bool
-occurs where_ el cf = any (where_ el) (rulesOfCF cf)
+occurs where_ el cf = any (where_ el) (cfgRules cf)
 
 splitLROn :: (a -> RHSEl) -> CFG f -> [a] -> Pair [a]
 splitLROn f cf xs = filt <*> pure xs
@@ -241,7 +241,7 @@ lkCat (Right t) _ = [Right t]
 lkCat (Left c) s = Left c:lookupMulti (show c) s
 
 -- neighbors A B = ∃ A' B'. P ::= A' B' ∧  A ∈ rightOf A'  ∧  B ∈ leftOf B
-neighborSet cf = map (second (nub . sort)) $ group' [(x',lkCat y leftSet) | Rule _ _ [x,y] <- rulesOfCF cf, x' <- lkCat x rightSet]
+neighborSet cf = map (second (nub . sort)) $ group' [(x',lkCat y leftSet) | Rule _ _ [x,y] <- cfgRules cf, x' <- lkCat x rightSet]
   where leftSet  = fixpointOnGrammar "left set"  (leftRight head) cf
         rightSet = fixpointOnGrammar "right set" (leftRight last) cf
 

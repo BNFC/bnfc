@@ -87,7 +87,7 @@ header namespace cf = unlines [
 
 definedRules :: Namespace -> CF -> String
 definedRules _ cf = unlinesInline [
-  if null [ rule f xs e | FunDef f xs e <- pragmasOfCF cf ]
+  if null [ rule f xs e | FunDef f xs e <- cfgPragmas cf ]
     then ""
     else error "Defined rules are not yet available in C# mode!"
   ]

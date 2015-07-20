@@ -63,7 +63,7 @@ header _ absName _ cf = unlines
          ]
 
 definedRules :: CF -> String
-definedRules cf = unlines [mkDef f xs e | FunDef f xs e <- pragmasOfCF cf]
+definedRules cf = unlines [mkDef f xs e | FunDef f xs e <- cfgPragmas cf]
     where
         mkDef f xs e = 
             "let " ++ f ++ " " ++ mkTuple xs ++ " = " ++ ocamlExp e

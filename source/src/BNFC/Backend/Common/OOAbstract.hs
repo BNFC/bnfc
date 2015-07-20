@@ -76,7 +76,7 @@ cf2cabs cf = CAbs {
   listtypes  = [(c, snd (status (drop 4 c))) | -- remove "List" from "ListC"
                   c <- map (identCat . normCat) lists],
   absclasses = nub $ map (show.normCat) cats,
-  conclasses = [f | Just f <- map testRule (rulesOfCF cf)],
+  conclasses = [f | Just f <- map testRule (cfgRules cf)],
   signatures = posdata ++ map normSig (cf2data cf),
   postokens  = map show pos,
   defineds   = defs
@@ -95,7 +95,7 @@ cf2cabs cf = CAbs {
     [("Visitable",  -- to give superclass
      [(show c,[("String",False,"string_"),("Integer",False,"integer_")])]) | c<-pos]
   status cat = (cat, notElem cat (map fst basetypes ++ toks))
-  defs = [f | FunDef f _ _ <- pragmasOfCF cf]
+  defs = [f | FunDef f _ _ <- cfgPragmas cf]
 
   classVars :: [(String,Bool)] -> [(String,Bool,String)]
   classVars cs =

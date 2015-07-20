@@ -127,7 +127,7 @@ header name cf = unlines
     ]
 
 definedRules :: CF -> String
-definedRules cf = unlines [ rule f xs e | FunDef f xs e <- pragmasOfCF cf]
+definedRules cf = unlines [ rule f xs e | FunDef f xs e <- cfgPragmas cf]
   where
     ctx = buildContext cf
 

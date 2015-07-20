@@ -23,10 +23,12 @@
 
 module BNFC.Backend.OCaml.CFtoOCamlShow (cf2show) where
 
+import Data.Char(toLower)
+import Data.List (intersperse)
+import Data.Maybe (fromJust)
+
 import BNFC.CF
 import BNFC.Utils
-import Data.List (intersperse)
-import Data.Char(toLower)
 import BNFC.Backend.OCaml.OCamlUtil
 
 cf2show :: String -> String -> CF -> String
@@ -115,7 +117,7 @@ rules cf = unlines $ mutualDefs $
    checkRes s
         | elem s reservedOCaml = s ++ "'"
         | otherwise              = s
-   ruleOf s = maybe undefined id $ lookupRule s (rulesOfCF cf)
+   ruleOf s = fromJust $ lookupRule s (cfgRules cf)
 
 --- case_fun :: Cat -> [(Constructor,Rule)] -> String
 case_fun cat xs = unlines [

@@ -28,7 +28,7 @@ import BNFC.Backend.Haskell.CFtoTemplate ()
 import BNFC.Backend.Haskell.HsOpts (xmlFile, xmlFileM, absFileM)
 import Data.List (intersperse, intercalate)
 import Data.Char(toLower)
-import Data.Maybe (fromMaybe)
+import Data.Maybe (fromJust)
 
 type Coding = Bool ---- change to at least three values
 
@@ -218,7 +218,7 @@ rules cf = unlines $
    reservedHaskell = ["case","class","data","default","deriving","do","else","if",
                           "import","in","infix","infixl","infixr","instance","let","module",
                           "newtype","of","then","type","where","as","qualified","hiding"]
-   ruleOf s = fromMaybe undefined $ lookupRule s (rulesOfCF cf)
+   ruleOf s = fromJust $ lookupRule s (cfgRules cf)
 
 --- case_fun :: Cat -> [(Constructor,Rule)] -> String
 case_fun cat xs = unlines [

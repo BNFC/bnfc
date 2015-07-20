@@ -145,7 +145,7 @@ rules functor cf = unlines $
   map (\(s,xs) -> render (case_fun functor s (map toArgs xs)) ++++ ifList cf s) $ cf2data cf
  where
    toArgs (cons,_) = (cons, ruleOf cons)
-   ruleOf s = fromJust $ lookupRule s (rulesOfCF cf)
+   ruleOf s = fromJust $ lookupRule s (cfgRules cf)
 
 -- |
 -- >>> case_fun False (Cat "A") [("AA", (Cat "AB", [Right "xxx"]))]
