@@ -28,7 +28,7 @@ mkLexer cf =
     [ ( regIdent, LexToken "Ident" ) ]
     ++
     -- Symbols
-    [ (foldl1 RAlt (map RSeqs (symbols cf)), LexSymbols ) ]
+    [ (foldl1 RAlt (map RSeqs (cfgSymbols cf)), LexSymbols ) ]
     ++
     -- Built-ins
     [ ( regInteger, LexToken "Integer")
