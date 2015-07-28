@@ -17,8 +17,4 @@ check "ocamllex"
 check "ocamlyacc"
 
 cabal sandbox init
-cabal install --only-dependencies \
-        --constraint="HTF==0.11.*" \
-        --constraint='aeson==0.7.0.4' \
-        --constraint='haskell-src-exts==1.15.*'
-
+cabal install --only-dependencies
