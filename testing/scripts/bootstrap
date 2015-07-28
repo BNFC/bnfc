@@ -1,4 +1,4 @@
-#!/bin/sh -eux
+#!/bin/sh -eu
 export CLASSPATH=.:$(pwd)/data/javatools.jar
 # Setup sandbox
 
