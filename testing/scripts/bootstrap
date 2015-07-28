@@ -1,0 +1,22 @@
+#!/bin/sh -eux
+export CLASSPATH=.:\$(pwd)/data/javatools.jar
+# Setup sandbox
+
+check() {
+  if ! type $1 > /dev/null ; then
+    >&2 echo "ERROR: missing program $1"
+    exit 1
+  fi
+}
+
+check "flex"
+check "bison"
+check "hlint"
+
+
+cabal sandbox init
+cabal install --only-dependencies \
+        --constraint="HTF==0.11.*" \
+        --constraint='aeson==0.7.0.4' \
+        --constraint='haskell-src-exts==1.15.*'
+
