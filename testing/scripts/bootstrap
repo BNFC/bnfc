@@ -12,7 +12,9 @@ check() {
 check "flex"
 check "bison"
 check "hlint"
-
+check "javac"
+check "ocamllex"
+check "ocamlyacc"
 
 cabal sandbox init
 cabal install --only-dependencies \
