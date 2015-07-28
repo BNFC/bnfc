@@ -1,5 +1,5 @@
 #!/bin/sh -eux
-export CLASSPATH=.:\$(pwd)/data/javatools.jar
+export CLASSPATH=.:$(pwd)/data/javatools.jar
 # Setup sandbox
 
 check() {
