@@ -286,4 +286,4 @@ cf2Layout alex1 _ layName lexName cf =
   ""
   ]
   where
-   resws = sort (reservedWords cf ++ symbols cf)
+   resws = sort (reservedWords cf ++ cfgSymbols cf)

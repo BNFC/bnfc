@@ -53,7 +53,7 @@ cf2gplex namespace cf = (unlines [
   "%%"
   ], env')
   where
-    env = makeSymEnv (symbols cf ++ reservedWords cf) (0 :: Int)
+    env = makeSymEnv (cfgSymbols cf ++ reservedWords cf) (0 :: Int)
     env' = env ++ (makeSymEnv (tokenNames cf) (length env))
     -- GPPG doesn't seem to like tokens beginning with an underscore, so they (the underscores, nothing else) have been removed.
     makeSymEnv [] _ = []

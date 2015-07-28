@@ -21,10 +21,12 @@
 
 module BNFC.Backend.OCaml.CFtoOCamlPrinter (cf2Printer) where
 
+import Data.Char(toLower)
+import Data.List (intersperse, sortBy)
+import Data.Maybe (fromJust)
+
 import BNFC.CF
 import BNFC.Utils
-import Data.List (intersperse, sortBy)
-import Data.Char(toLower)
 import BNFC.Backend.OCaml.OCamlUtil
 import BNFC.PrettyPrint
 import BNFC.Backend.Haskell.CFtoPrinter (compareRules)
@@ -154,7 +156,7 @@ rules cf = unlines $ mutualDefs $
    var (Cat "Char")    = "c"
    var (Cat "Double")  = "d"
    var xs        = map toLower (show xs)
-   ruleOf s = maybe undefined id $ lookupRule s (rulesOfCF cf)
+   ruleOf s = fromJust $ lookupRule s (cfgRules cf)
 
 --- case_fun :: Cat -> [(Constructor,Rule)] -> String
 case_fun cat xs = unlines [

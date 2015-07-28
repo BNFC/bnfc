@@ -31,9 +31,9 @@ catchErr (Bad s) f = f s
 catchErr (Ok x) _  = Ok x
 
 buildContext :: CF -> Context
-buildContext cf@(CFG(_,rules)) =
+buildContext cf@CFG{..} =
     Ctx
-    [ (f, mkType cat args) | Rule f cat args <- rules
+    [ (f, mkType cat args) | Rule f cat args <- cfgRules
                            , not (isCoercion f)
                            , not (isNilCons f)
     ]
@@ -63,7 +63,7 @@ lookupCtx x ctx
 checkDefinitions :: CF -> Err ()
 checkDefinitions cf =
     do  checkContext ctx
-        sequence_ [checkDefinition ctx f xs e | FunDef f xs e <- pragmasOfCF cf]
+        sequence_ [checkDefinition ctx f xs e | FunDef f xs e <- cfgPragmas cf]
     where
         ctx = buildContext cf
 

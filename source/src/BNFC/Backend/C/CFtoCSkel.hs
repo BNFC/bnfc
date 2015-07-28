@@ -222,7 +222,7 @@ prPrintRule user (Rule fun _c cats) | not (isCoercion fun) = nest 2 $ vcat
         [ "/* Code for " <> text fun <> " Goes Here */"
         , cats'
         , "break;\n"
-	])
+        ])
     ]
   where
     cats' = vcat $ map (prCat user fun) (lefts (numVars cats))

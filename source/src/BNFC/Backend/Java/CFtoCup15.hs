@@ -93,7 +93,7 @@ cf2Cup packageBase packageAbsyn cf env = unlines
 
 definedRules :: String -> CF -> String
 definedRules packageAbsyn cf =
-        unlines [ rule f xs e | FunDef f xs e <- pragmasOfCF cf ]
+        unlines [ rule f xs e | FunDef f xs e <- cfgPragmas cf ]
     where
         ctx = buildContext cf
 
@@ -211,7 +211,7 @@ constructRule packageAbsyn cf env rules nt =
  where
    revM False = id
    revM True = reverse
-   revs = reversibleCats cf
+   revs = cfgReversibleCats cf
 
 -- Generates a string containing the semantic action.
 generateAction :: String -> NonTerminal -> Fun -> [MetaVar]

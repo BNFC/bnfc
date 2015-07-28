@@ -63,7 +63,7 @@ header _ absName _ cf = unlines
          ]
 
 definedRules :: CF -> String
-definedRules cf = unlines [mkDef f xs e | FunDef f xs e <- pragmasOfCF cf]
+definedRules cf = unlines [mkDef f xs e | FunDef f xs e <- cfgPragmas cf]
     where
         mkDef f xs e = 
             "let " ++ f ++ " " ++ mkTuple xs ++ " = " ++ ocamlExp e
@@ -77,7 +77,7 @@ definedRules cf = unlines [mkDef f xs e | FunDef f xs e <- pragmasOfCF cf]
 
 declarations :: String -> CF -> String
 declarations absName cf = unlines
-    [tokens (symbols cf) (reservedWords cf),
+    [tokens (cfgSymbols cf) (reservedWords cf),
      specialTokens cf,
      entryPoints absName cf
     ]
@@ -96,7 +96,7 @@ tokens symbols reswords = unlines
 -- | map a CF terminal into a ocamlyacc token
 terminal :: CF -> String -> String
 terminal cf s  |  s `elem` reservedWords cf = "TOK_" ++ s
-terminal cf s  = case lookup s (zip (symbols cf) [1..]) of
+terminal cf s  = case lookup s (zip (cfgSymbols cf) [1..]) of
     Just i -> "SYMB" ++ show i
     Nothing -> error $ "CFtoOCamlYacc: terminal " ++ show s ++ " not defined in CF."
 
@@ -183,7 +183,7 @@ constructRule cf rules nt = (nt,[(p,generateAction nt (funRule r) (mkFlip b m)) 
                  else (False,r0),
      let (p,m) = generatePatterns cf r])
  where
-   revs = reversibleCats cf
+   revs = cfgReversibleCats cf
    mkFlip doit xs = case xs of
        a:b:rest | doit -> b:a:rest
        _ -> xs
@@ -213,7 +213,7 @@ generatePatterns cf r = case rhsRule r of
    revIf c m = if (not (isConsFun (funRule r)) && elem c revs)
                  then ("(List.rev " ++ m ++ ")")
                else m  -- no reversal in the left-recursive Cons rule itself
-   revs = reversibleCats cf
+   revs = cfgReversibleCats cf
 
 
 

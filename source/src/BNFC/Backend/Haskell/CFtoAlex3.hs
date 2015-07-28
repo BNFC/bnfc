@@ -67,7 +67,7 @@ cMacros = [
 
 rMacros :: CF -> [String]
 rMacros cf =
-  let symbs = symbols cf
+  let symbs = cfgSymbols cf
   in
   (if null symbs then [] else [
    "@rsyms =    -- symbols and non-identifier-like reserved words",
@@ -88,7 +88,7 @@ restOfAlex _ shareStrings byteStrings cf = [
   ":-",
   lexComments (comments cf),
   "$white+ ;",
-  pTSpec (symbols cf),
+  pTSpec (cfgSymbols cf),
 
   userDefTokenTypes,
   ident,

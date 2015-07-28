@@ -16,7 +16,8 @@ all = makeTestSuite "Regression tests"
     [ issue30, issue31
     , issue60
     , issue108, issue110, issue111, issue114, issue113
-    , issue127, issue128 ]
+    , issue127, issue128
+    , issue151 ]
 
 issue30 :: Test
 issue30 = makeShellyTest "#30 With -d option XML module is not generated inside the directorty" $
@@ -128,3 +129,19 @@ issue128 = makeShellyTest "#128 Cannot use B as a constructor in haskell" $
         cd tmp
         cmd "bnfc" "--haskell" "-m" "grammar.cf"
         cmd "make"
+
+-- | Issue # 151
+issue151 :: Test
+issue151 = makeShellyTest "#151 Shouldn't print all categories in error message" $
+    withTmpDir $ \tmp -> do
+        cd tmp
+        writefile "test.cf" "Foo. Bar ::= Baz"
+        errExit False $ do
+          cmd "bnfc" "test.cf"
+          code <- lastExitCode
+          err <- lastStderr
+          assertEqual code 1
+          let expectedErr = T.unlines
+                  [ "no production for Baz, appearing in rule"
+                  , "    Foo. Bar ::= Baz", "" ]
+          assertEqual expectedErr err

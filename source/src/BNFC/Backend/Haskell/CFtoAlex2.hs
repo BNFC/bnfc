@@ -75,7 +75,7 @@ cMacros = [
 
 rMacros :: CF -> [String]
 rMacros cf =
-  let symbs = symbols cf
+  let symbs = cfgSymbols cf
   in
   (if null symbs then [] else [
    "@rsyms =    -- symbols and non-identifier-like reserved words",
@@ -96,7 +96,7 @@ restOfAlex _ shareStrings byteStrings cf = [
   ":-",
   lexComments (comments cf),
   "$white+ ;",
-  pTSpec (symbols cf),
+  pTSpec (cfgSymbols cf),
 
   userDefTokenTypes,
   ident,
@@ -251,7 +251,7 @@ restOfAlex _ shareStrings byteStrings cf = [
      "$l $i*   { tok (\\p s -> PT p (eitherResIdent (TV . share) s)) }"
      --ifC "Ident"  "<ident>   ::= ^l ^i*   { ident  p = PT p . eitherResIdent TV }"
 
-   resws = reservedWords cf ++ symbols cf
+   resws = reservedWords cf ++ cfgSymbols cf
 
 
 data BTree = N | B String Int BTree BTree

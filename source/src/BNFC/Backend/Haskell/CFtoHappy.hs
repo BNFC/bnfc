@@ -123,7 +123,7 @@ rulesForHappy :: String -> Bool -> CF -> Rules
 rulesForHappy absM functor cf = map mkOne $ ruleGroups cf
   where
     mkOne (cat,rules) = (cat, map (constructRule absM functor reversibles) rules)
-    reversibles = reversibleCats cf
+    reversibles = cfgReversibleCats cf
 
 -- | For every non-terminal, we construct a set of rules. A rule is a sequence
 -- of terminals and non-terminals, and an action to be performed
@@ -252,7 +252,7 @@ finalize byteStrings cf = unlines $
        | otherwise   = "id"
 
 
-definedRules cf = [ mkDef f xs e | FunDef f xs e <- pragmasOfCF cf ]
+definedRules cf = [ mkDef f xs e | FunDef f xs e <- cfgPragmas cf ]
     where
         mkDef f xs e = unwords $ (f ++ "_") : xs' ++ ["=", show e']
             where

@@ -74,7 +74,7 @@ cMacros = [
 
 rMacros :: CF -> [String]
 rMacros cf =
-  let symbs = symbols cf
+  let symbs = cfgSymbols cf
   in
   (if null symbs then [] else [
    "{ %s =    -- reserved words consisting of special symbols",
@@ -91,7 +91,7 @@ restOfAlex cf = [
   "\"tokens_lx\"/\"tokens_acts\":-",
   lexComments (comments cf),
   "<>         ::= ^w+",
-  pTSpec (symbols cf,[]), -- modif Markus 12/02 - 2002
+  pTSpec (cfgSymbols cf,[]), -- modif Markus 12/02 - 2002
 
   userDefTokenTypes,
   identAndRes,

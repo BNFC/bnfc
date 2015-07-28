@@ -18,7 +18,7 @@
 -}
 
 
-module BNFC.GetCF(parseCF, parseCFP, transItem) where
+module BNFC.GetCF where
 
 import qualified AbsBNF as Abs
 import ParBNF
@@ -34,6 +34,8 @@ import Data.Either (partitionEithers)
 import Data.List(nub,partition)
 import Data.Maybe (mapMaybe)
 import ErrM
+import System.Exit (exitFailure)
+import System.IO (hPutStrLn, stderr)
 
 -- $setup
 -- >>> import PrintBNF
@@ -66,7 +68,7 @@ parseCFP opts target content = do
   putStrLn $ unlines msgs3
 
   -- Print the number of rules
-  putStrLn $ show (length (rulesOfCF cf)) +++ "rules accepted\n"
+  putStrLn $ show (length (cfgRules cf)) +++ "rules accepted\n"
 
   -- Print a warning if comment delimiter are bigger than 2 characters
   let c3s = [(b,e) | (b,e) <- fst (comments cf), length b > 2 || length e > 2]
@@ -77,7 +79,7 @@ parseCFP opts target content = do
 
   where
     runErr (Ok a) = return a
-    runErr (Bad msg) = error msg
+    runErr (Bad msg) = hPutStrLn stderr msg >> exitFailure
 
 {-
     case filter (not . isDefinedRule) $ notUniqueFuns cf of
@@ -116,24 +118,24 @@ getCFP cnf (Abs.Grammar defs0) = do
                   notIdent s         = null s || not (isAlpha (head s)) || any (not . isIdentRest) s
                   isIdentRest c      = isAlphaNum c || c == '_' || c == '\''
                   reservedWords      = nub [t | r <- rules, Right t <- rhsRule r]
-              in CFG((pragma,(literals,symbols,keywords,[])),rules)
-        revs cf1@(CFG((pragma,(literals,symbols,keywords,_)),rules)) =
-            CFG((pragma,(literals,symbols,keywords,findAllReversibleCats (cfp2cf cf1))),rules)
-    case mapMaybe (checkRule (cfp2cf cf0)) (rulesOfCF cf0) of
+              in CFG pragma literals symbols keywords [] rules
+    case mapMaybe (checkRule (cfp2cf cf0)) (cfgRules cf0) of
       [] -> return ()
       msgs -> fail (unlines msgs)
     return cf0
   where
     (pragma,rules0) = partitionEithers $ concatMap transDef defs
     (defs,inlineDelims) = if cnf then (defs0,id) else removeDelims defs0
+    revs cf1@CFG{..} =
+        cf1 { cfgReversibleCats = findAllReversibleCats (cfp2cf cf1) }
 
 -- | This function goes through each rule of a grammar and replace Cat "X" with
 -- TokenCat "X" when "X" is a token type.
 markTokenCategories :: CFP -> Err CFP
-markTokenCategories (CFG (exts, rules)) = return $ CFG (exts, newRules)
+markTokenCategories cf@CFG{..} = return $ cf { cfgRules = newRules }
   where
-    newRules = [ Rule f (mark c) (map (left mark) rhs) | Rule f c rhs <- rules ]
-    tokenCatNames = [ n | TokenReg n _ _ <- fst exts ] ++ specialCatsP
+    newRules = [ Rule f (mark c) (map (left mark) rhs) | Rule f c rhs <- cfgRules ]
+    tokenCatNames = [ n | TokenReg n _ _ <- cfgPragmas ] ++ specialCatsP
     mark = toTokenCat tokenCatNames
 
 
@@ -388,8 +390,8 @@ checkRule cf (Rule (f,_) cat rhs)
   | badSpecial     = Just $ "Bad special category rule" +++ s
   | badTypeName    = Just $ "Bad type name" +++ unwords (map show badtypes) +++ "in" +++ s
   | badFunName     = Just $ "Bad constructor name" +++ f +++ "in" +++ s
-  | badMissing     = Just $ "No production for" +++ unwords missing ++
-                             ", appearing in rule" +++ s +++ ". Defined categories:" +++ unwords defineds
+  | badMissing     = Just $ "no production for" +++ unwords missing ++
+                             ", appearing in rule\n    " ++ s
   | otherwise      = Nothing
  where
    s  = f ++ "." +++ show cat +++ "::=" +++ unwords (map (either show show) rhs) -- Todo: consider using the show instance of Rule
@@ -407,7 +409,7 @@ checkRule cf (Rule (f,_) cat rhs)
    missing     = filter nodef [show c | Left c <- rhs]
    nodef t = t `notElem` defineds
    defineds =
-    show InternalCat : tokenNames cf ++ specialCatsP ++ map (show . valCat) (rulesOfCF cf)
+    show InternalCat : tokenNames cf ++ specialCatsP ++ map (show . valCat) (cfgRules cf)
    badTypeName = not (null badtypes)
    badtypes = filter isBadType $ cat : [c | Left c <- rhs]
    isBadType (ListCat c) = isBadType c

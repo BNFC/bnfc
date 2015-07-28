@@ -122,7 +122,7 @@ prtComments (xs,ys) = concat
          map (\(x,y) -> symbol (prt x) ++ " and " ++ symbol (prt y)) xs
 
 prtSymb :: String -> CF -> String
-prtSymb name cf = case symbols cf of
+prtSymb name cf = case cfgSymbols cf of
                    [] -> "\nThere are no symbols in " ++ name ++ ".\n"
                    xs -> "The symbols used in " ++ name ++ " are the following:\n"
                          ++

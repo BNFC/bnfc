@@ -127,7 +127,7 @@ header name cf = unlines
     ]
 
 definedRules :: CF -> String
-definedRules cf = unlines [ rule f xs e | FunDef f xs e <- pragmasOfCF cf]
+definedRules cf = unlines [ rule f xs e | FunDef f xs e <- cfgPragmas cf]
   where
     ctx = buildContext cf
 
@@ -265,7 +265,7 @@ constructRule cf env rules nt = (nt,[(p,(generateAction (ruleName r) b m) +++ re
      "(:)" -> identCat (normCat nt)
      "(:[])" -> identCat (normCat nt)
      z -> z
-   revs = reversibleCats cf
+   revs = cfgReversibleCats cf
    eps = allEntryPoints cf
    isEntry nt = if elem nt eps then True else False
    result = if isEntry nt then (resultName (identCat (normCat nt))) ++ "= $$;" else ""
@@ -301,7 +301,7 @@ generatePatterns cf env r = case rhsRule r of
    revIf c m = if (not (isConsFun (funRule r)) && elem c revs)
                  then ("reverse" ++ (identCat (normCat c)) ++ "(" ++ m ++ ")")
                else m  -- no reversal in the left-recursive Cons rule itself
-   revs = reversibleCats cf
+   revs = cfgReversibleCats cf
 
 -- We have now constructed the patterns and actions,
 -- so the only thing left is to merge them into one string.

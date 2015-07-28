@@ -67,7 +67,7 @@ catToVar = checkRes . var
 
 -- | Get the rule for a function.
 ruleFun :: CF -> Fun -> Rule
-ruleFun cf f = head $ filter (\r -> funRule r == f) $ rulesOfCF cf
+ruleFun cf f = head $ filter (\r -> funRule r == f) $ cfgRules cf
 
 -- | Get the precedence of a function.
 precFun :: CF -> Fun -> Integer
