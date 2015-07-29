@@ -8,7 +8,11 @@ import TestUtils
 
 cnf :: TestParameters
 cnf = TP "Haskell/CNF" ["--haskell", "--cnf", "-m"]
-         (cmd "make") (const (cmd ("." </> "TestCNF")))
+         (cmd "make")
+         (\_lang args -> do
+            bin <- canonicalize ("." </> "TestCNF")
+            cmd bin args
+         )
 
 -- The CNF backend doen't exactly work like other backend and some tests are
 -- not applicable as-is. We create a restricted test suite just for it.
