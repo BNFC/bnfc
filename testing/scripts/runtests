@@ -1,0 +1,4 @@
+#!/bin/sh -u
+export CLASSPATH=.:$(pwd)/data/javatools.jar
+mkdir -p dist/test
+cabal exec -- cabal run -- --xml=dist/test/bnfc-system-tests.xml $*

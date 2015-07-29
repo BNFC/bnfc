@@ -1,6 +1,10 @@
 #!/bin/sh -eu
-export CLASSPATH=.:$(pwd)/data/javatools.jar
+
 # Setup sandbox
+cabal sandbox init
+cabal install --only-dependencies
+cabal sandbox add-source ../source
+cabal install bnfc
 
 check() {
   if ! type $1 > /dev/null ; then
@@ -9,12 +13,9 @@ check() {
   fi
 }
 
-check "flex"
-check "bison"
-check "hlint"
-check "javac"
-check "ocamllex"
-check "ocamlyacc"
-
-cabal sandbox init
-cabal install --only-dependencies
+check flex
+check bison
+check hlint
+check javac
+check ocamllex
+check ocamlyacc
