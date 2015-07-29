@@ -57,7 +57,7 @@ issue108 = makeShellyTest "#108 C like comments and alex" $
         cmd "bnfc" "--haskell" "-m" "C.cf"
         cmd "make"
         setStdin "int a; /* **/ int b; /* */"
-        out <- cmd "./TestC"
+        out <- cmd =<< canonicalize "./TestC"
         liftIO $ assertBool "Couldn't find `int b` in output"
                             ("int b ;" `T.isInfixOf` out)
 
@@ -79,7 +79,7 @@ issue111 =  makeShellyTest "#111 Custom tokens in OCaml" $
         cmd "bnfc" "--ocaml" "-m" "Idents.cf"
         cmd "make"
         setStdin "VOGONPOETRY"
-        out <- cmd "./TestIdents"
+        out <- cmd =<< canonicalize "./TestIdents"
         liftIO $ print out
 
 issue114 :: Test
@@ -93,7 +93,7 @@ issue114 = makeShellyTest "#114 List category as entry point" $
         cmd "bnfc" "--haskell" "-m" "114_listentry.cf"
         cmd "make"
         setStdin input
-        output <- cmd "./TestListentry"
+        output <- cmd =<< canonicalize "./TestListentry"
         assertEqual expected output
 
 issue113 :: Test
@@ -116,10 +116,10 @@ issue127 = makeShellyTest "#127 Problems with C and entrypoints" $
         cmd "make"
         -- reject foo
         setStdin "foo"
-        assertExitCode 1 $ cmd "./Testfoobar"
+        assertExitCode 1 $ cmd =<< canonicalize "./Testfoobar"
         -- accept bar
         setStdin "bar"
-        assertExitCode 0 $ cmd "./Testfoobar"
+        assertExitCode 0 $ cmd =<< canonicalize "./Testfoobar"
 
 -- | Issue #128
 issue128 :: Test
