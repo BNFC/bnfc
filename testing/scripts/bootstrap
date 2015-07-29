@@ -17,5 +17,6 @@ check flex
 check bison
 check hlint
 check javac
+check jflex
 check ocamllex
 check ocamlyacc
