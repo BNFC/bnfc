@@ -80,7 +80,6 @@ header opts
        = vcat ["{-# LANGUAGE MagicHash, FlexibleInstances #-}"
               ,"module " <> text (cnfTablesFileM opts) <> " where"
               ,"import GHC.Prim"
-              ,"import GHC.Exts"
               ,"import Control.Applicative hiding (Const)"
               ,"import Algebra.RingUtils"
               ,"import Parsing.Chart ()"
