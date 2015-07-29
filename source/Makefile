@@ -6,7 +6,7 @@ CABAL_OPTS=
 # Name for binary distribution (e.g. bnfc-2.4.5-linux32)
 BDIST_TAG=bnfc-${BNFC_VERSION}-$(shell uname -s)-$(shell uname -m)
 
-.PHONY: build install doc
+.PHONY: build install doc test
 
 all: build
 
