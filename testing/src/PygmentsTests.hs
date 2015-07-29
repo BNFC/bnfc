@@ -18,10 +18,11 @@ testPygmentsCalc =
             assertFileExists "setup.py"
             assertFileExists "calc/__init__.py"
             cmd "virtualenv" "env"
-            cmd "env/bin/python" "setup.py" "install"
-            assertFileExists "env/bin/pygmentize"
+            env <- canonicalize "./env/"
+            cmd (env </> "bin/python") "setup.py" "install"
+            assertFileExists (env </> "bin/pygmentize")
             expected <- readfile "pygments-calc-output.txt"
             readfile "pygments-calc-input.txt" >>= setStdin
-            output <- cmd "env/bin/pygmentize" "-l" "calc" "-fraw"
+            output <- cmd (env </> "bin/pygmentize") "-l" "calc" "-fraw"
             assertEqual expected output
 
