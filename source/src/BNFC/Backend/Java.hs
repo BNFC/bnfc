@@ -82,13 +82,13 @@ makeJava options@Options{..} cf =
        mkfile (dirBase ++ "AllVisitor.java") $ cf2AllVisitor packageBase packageAbsyn cf
        mkfile (dirBase ++ "Test.java") $ javaTest packageBase packageAbsyn cf
 ---       mkfile ("Test" ++ name) $ "java " ++ dirBase ++ "Test $(1)"
-       let (lex, env) = cf2jlex packageBase cf jflex
+       let (lex, env) = cf2jlex packageBase cf javaLexerParser
        mkfile (dirBase ++ "Yylex") lex
        liftIO $ putStrLn "   (Tested with JLex 1.2.6.)"
        mkfile (dirBase ++ lang ++ ".cup") $ cf2Cup packageBase packageAbsyn cf env
        liftIO $ putStrLn $ "   (Parser created for category " ++ show (firstEntry cf) ++ ")"
        liftIO $ putStrLn "   (Tested with CUP 0.10k)"
-       Makefile.mkMakefile options $ makefile lang dirBase dirAbsyn absynFileNames jflex
+       Makefile.mkMakefile options $ makefile lang dirBase dirAbsyn absynFileNames javaLexerParser
     where
       remDups [] = []
       remDups ((a,b):as) = case lookup a as of
@@ -101,16 +101,18 @@ makeJava options@Options{..} cf =
 -- FIXME It's almost certainly better to just feed all the Java source
 -- files to javac in one go.
 -- Replace with an ANT script?
-makefile :: String -> FilePath -> FilePath -> [String] -> Bool -> Doc
-makefile name dirBase dirAbsyn absynFileNames jflex = vcat
+makefile :: String -> FilePath -> FilePath -> [String] -> JavaLexerParser -> Doc
+makefile name dirBase dirAbsyn absynFileNames jlexpar = vcat
     [ Makefile.mkVar "JAVAC" "javac"
     , Makefile.mkVar "JAVAC_FLAGS" "-sourcepath ."
     , Makefile.mkVar "JAVA" "java"
     , Makefile.mkVar "JAVA_FLAGS" ""
     , Makefile.mkVar "CUP" "java_cup.Main"
     , Makefile.mkVar "CUPFLAGS" "-nopositions -expect 100"
-    , if jflex then Makefile.mkVar "JFLEX" "jflex"
-                else Makefile.mkVar "JLEX" "JLex.Main"
+    , case jlexpar of
+        JFlexCup -> Makefile.mkVar "JFLEX" "jflex"
+        JLexCup  -> Makefile.mkVar "JLEX" "JLex.Main"
+        Antlr4 -> Makefile.mkVar "ANTLR4" "boooh"
     , Makefile.mkRule "all" [ "test" ]
         []
     , Makefile.mkRule "test" ("absyn" : classes)
@@ -122,7 +124,12 @@ makefile name dirBase dirAbsyn absynFileNames jflex = vcat
   , Makefile.mkRule "absyn" [absynJavaSrc]
       [ "${JAVAC} ${JAVAC_FLAGS} $^" ]
   , Makefile.mkRule (dirBase ++ "Yylex.java") [ dirBase ++ "Yylex" ]
-      [ (if jflex then "${JFLEX} " else "${JAVA} ${JAVA_FLAGS} ${JLEX} ") ++ dirBase ++ "Yylex" ]
+      [
+        case jlexpar of
+            JFlexCup -> "${JFLEX} " ++ dirBase ++ "Yylex"
+            JLexCup  -> "${JAVA} ${JAVA_FLAGS} ${JLEX} " ++ dirBase ++ "Yylex"
+            Antlr4 -> "${ANTLR4}" ++ "Boooh"
+      ]
   , Makefile.mkRule (dirBase ++ "sym.java " ++ dirBase ++ "parser.java")
       [ dirBase ++ name ++ ".cup" ]
       [ "${JAVA} ${JAVA_FLAGS} ${CUP} ${CUPFLAGS} " ++ dirBase ++ name ++ ".cup"
@@ -173,6 +180,7 @@ makefile name dirBase dirAbsyn absynFileNames jflex = vcat
           , "ComposVisitor.class", "AbstractVisitor.class"
           , "FoldVisitor.class", "AllVisitor.class", "parser.class"
           , "sym.class", "Test.class"]
+
 
 
 javaTest :: String -> String -> CF -> Doc
