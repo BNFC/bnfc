@@ -59,6 +59,47 @@ import BNFC.PrettyPrint
 -- FIXME: get everything to put the files in the right places.
 -- Adapt Makefile to do the business.
 -------------------------------------------------------------------
+
+
+parserLexerSelector :: JavaLexerParser -> ParserLexerSpecification
+parserLexerSelector JLexCup = ParseLexSpec{
+                    parser = CF2Parse { cf2parse = CFtoCup15.cf2Cup },
+                    lexer = CF2Lex    { cf2lex = CFtoJLex15.cf2jlex }
+                    }
+parserLexerSelector JFlexCup = ParseLexSpec{
+                   parser = CF2Parse { cf2parse = CFtoCup15.cf2Cup },
+                   lexer = CF2Lex    { cf2lex = CFtoJLex15.cf2jflex }
+                   }
+parserLexerSelector Antlr4 = ParseLexSpec{
+                   parser = CF2Parse { cf2parse = CFtoAntlr4Parser.cf2AntlrParse },
+                   lexer = CF2Lex    { cf2lex = CFtoAntlr4Lexer.cf2AntlrLex }
+}
+
+data ParserLexerSpecification = ParseLexSpec {
+    parser :: CFToParser
+    lexer :: CFToLexer
+    regexp :: RE2Lex
+}
+
+-- Chooses the translation from RE to lexing constructs of the tools.
+{-data RegExpToLexer = RE2Lex {
+    printRegExp :: Reg -> String
+    escape      :: Char -> String
+    reserved    :: [Char]
+}  well the lexer should be in charge of looking for it-}
+
+-- Chooses the translation from CF to the lexer
+data CFToLexer = CF2Lex {
+    cf2lex :: String -> CF -> (Doc, SymEnv)
+}
+
+-- Chooses the translation from CF to the parser
+data CFToParser = CF2Parse {
+    cf2parse :: String -> String -> CF -> SymEnv -> String
+}
+
+
+
 makeJava :: SharedOptions -> CF -> MkFiles ()
 makeJava options@Options{..} cf =
     do -- Create the package directories if necessary.

@@ -159,10 +159,13 @@ specificOptions =
       "Prepend <namespace> to the package/module name"
     , [TargetCpp, TargetCSharp, TargetHaskell, TargetHaskellGadt, TargetProfile, TargetJava] )
   , ( Option [] ["jflex"] (NoArg (\o -> o {javaLexerParser = JFlexCup}))
-          "Use JFlex instead of JLex for lexing"
+          "Lex with JFlex, parse with CUP"
     , [TargetJava] )
+    , ( Option [] ["jlex"] (NoArg (\o -> o {javaLexerParser = Antlr4}))
+                  "Lex with Jlex, parse with CUP (default)"
+            , [TargetJava] )
     , ( Option [] ["antlr4"] (NoArg (\o -> o {javaLexerParser = Antlr4}))
-              "Use antlr4 for both lexing and parsing"
+              "Lex and parse with antlr4"
         , [TargetJava] )
   , ( Option [] ["vs"] (NoArg (\o -> o {visualStudio = True}))
           "Generate Visual Studio solution/project files"
