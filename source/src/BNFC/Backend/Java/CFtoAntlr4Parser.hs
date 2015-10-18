@@ -37,7 +37,7 @@
 
    **************************************************************
 -}
-module BNFC.Backend.Java.CFtoCup15 ( cf2AntlrParse ) where
+module BNFC.Backend.Java.CFtoAntlr4Parser ( cf2AntlrParse ) where
 
 import BNFC.CF
 import Data.List
@@ -54,6 +54,9 @@ type Rules       = [(NonTerminal,[(Pattern,Action)])]
 type Pattern     = String
 type Action      = String
 type MetaVar     = String
+
+cf2AntlrParse :: String -> String -> CF -> SymEnv -> String
+cf2AntlrParse a b c d= "todo"
 
 --The environment comes from the CFtoJLex
 cf2Cup :: String -> String -> CF -> SymEnv -> String

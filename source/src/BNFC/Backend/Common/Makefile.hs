@@ -29,6 +29,17 @@ mkRule target deps recipes =
 mkVar :: String -> String -> Doc
 mkVar n v = text n <> "=" <> text v
 
+--- | Variable referencing
+--
+-- >>> mkRefVar "FOO"
+-- ${FOO}
+mkRefVar :: String -> Doc
+mkRefVar m  = case m of
+    "" -> ""
+    _ -> text $ refVar m
+
+refVar :: String -> String
+refVar m = "${" ++ m ++ "}"
 
 -- | Create the Makefile file using the name specified in the option
 -- record.
