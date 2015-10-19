@@ -45,6 +45,8 @@ import BNFC.Options as Options
 import BNFC.Backend.Base
 import BNFC.Backend.Java.CFtoCup15 ( cf2Cup )
 import BNFC.Backend.Java.CFtoJLex15
+--import BNFC.Backend.Java.CFtoAntlr4Parser
+import BNFC.Backend.Java.CFtoAntlr4Lexer
 import BNFC.Backend.Java.CFtoJavaAbs15 ( cf2JavaAbs )
 import BNFC.Backend.Java.CFtoJavaPrinter15
 import BNFC.Backend.Java.CFtoVisitSkel15
@@ -65,7 +67,7 @@ import BNFC.PrettyPrint
 parserLexerSelector :: String -> JavaLexerParser -> ParserLexerSpecification
 parserLexerSelector l JLexCup = mkParserLexerSpecification cf2JLex cf2cup --- FIXME cup file needs not be called as
 parserLexerSelector l JFlexCup = mkParserLexerSpecification cf2JFlex cf2cup
-parserLexerSelector l Antlr4 = mkParserLexerSpecification (cf2AntlrLex l) (cf2AntlrParse l)
+parserLexerSelector l Antlr4 = mkParserLexerSpecification (cf2AntlrLex' l) (cf2AntlrParse' l)
 
 data ParserLexerSpecification = ParseLexSpec{
     parser :: CFToParser  ,
@@ -98,8 +100,8 @@ mkCFtoLexer fu mf = CF2Lex {
 cf2JLex, cf2JFlex:: CFToLexer
 cf2JLex     = mkCFtoLexer BNFC.Backend.Java.CFtoJLex15.cf2jlex' jlexmakedetails
 cf2JFlex    = mkCFtoLexer BNFC.Backend.Java.CFtoJLex15.cf2jflex' jflexmakedetails
-cf2AntlrLex :: String -> CFToLexer
-cf2AntlrLex l = mkCFtoLexer BNFC.Backend.Java.CFtoJLex15.cf2jflex' jflexmakedetails -- TODO
+cf2AntlrLex' :: String -> CFToLexer
+cf2AntlrLex' l = mkCFtoLexer BNFC.Backend.Java.CFtoAntlr4Lexer.cf2AntlrLex (antlrmakedetails "TODO-nameof-grammar") -- TODO
 
 
 --- CF -> PARSER GENERATION TOOL BRIDGE
@@ -119,8 +121,8 @@ mkCFtoParser fu mf = CF2Parse {
 -- | Instances of cf-parsergen bridges
 cf2cup :: CFToParser
 cf2cup = mkCFtoParser BNFC.Backend.Java.CFtoCup15.cf2Cup cupmakedetails
-cf2AntlrParse :: String -> CFToParser
-cf2AntlrParse l = mkCFtoParser BNFC.Backend.Java.CFtoCup15.cf2Cup cupmakedetails -- TODO
+cf2AntlrParse' :: String -> CFToParser
+cf2AntlrParse' l = mkCFtoParser BNFC.Backend.Java.CFtoCup15.cf2Cup $ antlrmakedetails "TODO - Name of the grammar" --BNFC.Backend.Java.CFtoAntlr4Parser.cf2AntlrParse antlrmakedetails -- TODO
 
 
 -- | shorthand for Makefile command running javac or java

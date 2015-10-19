@@ -36,11 +36,11 @@ instance Print a => Print [a] where
   prt _ = prtList
 
 instance Print Char where
-  prt _ c = [escapeChar False c]
+  prt _ c = [escapeChar c]
   prtList s = map (concat . prt 0) s
 
 escapeChar :: Char -> String
-escapeChar '^' = "\\x5E" -- special case, since \^ is a control character escape
+-- escapeChar '^' = "\\x5E" -- special case, since \^ is a control character escape
 escapeChar x | x `elem` reserved = '\\' : [x]
 escapeChar x = [x]
 

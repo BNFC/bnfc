@@ -242,6 +242,8 @@ prAssigns ((t,n,nm):vs) (p:ps) =
 
 -- Different than the standard BNFC.Backend.Common.NamedVariables version
 -- because of the user-defined types.
+-- TODO gapag: categories for base types are defined in CF.
+-- Therefore to have BigInteger and BigDecimal instead of Integer and Double
 getVars :: [Cat] -> [UserDef] -> [IVar]
 getVars cs user = reverse $ singleToZero $ foldl addVar [] (map identCat cs)
  where
