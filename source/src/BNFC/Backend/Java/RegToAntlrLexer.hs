@@ -47,7 +47,7 @@ escapeChar x = [x]
 -- Characters that must be escaped in ANTLR regular expressions (not fully sure about this)
 -- FIXME Needs testing
 reserved :: [Char]
-reserved = ['?','\'', '*','+','|','(',')','~','$','.','[',']','{','}','"','\\']
+reserved = ['\'','\\']
 
 prPrec :: Int -> Int -> [String] -> [String]
 prPrec i j = if j<i then parenth else id
@@ -63,8 +63,8 @@ instance Print Reg where
    -- JLex does not support set difference
    --RMinus reg0 reg -> prPrec i 1 (concat [prt 2 reg0 , ["#"] , prt 2 reg])
    RMinus reg0 REps -> prt i reg0 -- REps is identity for set difference
-   RMinus RAny reg@(RChar _) ->  prPrec i 3 (concat [["[^"],prt 0 reg,["]"]])
-   RMinus RAny (RAlts str) ->  prPrec i 3 (concat [["[^"],prt 0 str,["]"]])
+   RMinus RAny reg@(RChar _) ->  prPrec i 3 (concat [["~["],prt 0 reg,["]"]])
+   RMinus RAny (RAlts str) ->  prPrec i 3 (concat [["~["],prt 0 str,["]"]])
    -- FIXME: maybe we could add cases for char - RDigit, RLetter etc.
    RMinus _ _ -> error $ "Antlr does not support general set difference"
 
@@ -72,7 +72,7 @@ instance Print Reg where
    RPlus reg -> prPrec i 3 (concat [prt 3 reg , ["+"]])
    ROpt reg  -> prPrec i 3 (concat [prt 3 reg , ["?"]])
    REps  -> prPrec i 3 ([""])
-   RChar c -> prPrec i 3 (concat [prt 0 c])
+   RChar c -> prPrec i 3 (concat [["'"], prt 0 c, ["'"]])
    RAlts str -> prPrec i 3 (concat [["["],prt 0 str,["]"]])
    RSeqs str -> prPrec i 2 (concat (map (prt 0) str))
    RDigit  -> prPrec i 3 (concat [["DIGIT"]])

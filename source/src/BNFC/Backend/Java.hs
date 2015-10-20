@@ -45,8 +45,8 @@ import BNFC.Options as Options
 import BNFC.Backend.Base
 import BNFC.Backend.Java.CFtoCup15 ( cf2Cup )
 import BNFC.Backend.Java.CFtoJLex15
---import BNFC.Backend.Java.CFtoAntlr4Parser
 import BNFC.Backend.Java.CFtoAntlr4Lexer
+import BNFC.Backend.Java.CFtoAntlr4Parser
 import BNFC.Backend.Java.CFtoJavaAbs15 ( cf2JavaAbs )
 import BNFC.Backend.Java.CFtoJavaPrinter15
 import BNFC.Backend.Java.CFtoVisitSkel15
@@ -65,8 +65,8 @@ import BNFC.PrettyPrint
 
 
 parserLexerSelector :: String -> JavaLexerParser -> ParserLexerSpecification
-parserLexerSelector l JLexCup = mkParserLexerSpecification cf2JLex cf2cup --- FIXME cup file needs not be called as
-parserLexerSelector l JFlexCup = mkParserLexerSpecification cf2JFlex cf2cup
+parserLexerSelector _ JLexCup = mkParserLexerSpecification cf2JLex cf2cup --- FIXME cup file needs not be called as
+parserLexerSelector _ JFlexCup = mkParserLexerSpecification cf2JFlex cf2cup
 parserLexerSelector l Antlr4 = mkParserLexerSpecification (cf2AntlrLex' l) (cf2AntlrParse' l)
 
 data ParserLexerSpecification = ParseLexSpec{
@@ -101,7 +101,7 @@ cf2JLex, cf2JFlex:: CFToLexer
 cf2JLex     = mkCFtoLexer BNFC.Backend.Java.CFtoJLex15.cf2jlex' jlexmakedetails
 cf2JFlex    = mkCFtoLexer BNFC.Backend.Java.CFtoJLex15.cf2jflex' jflexmakedetails
 cf2AntlrLex' :: String -> CFToLexer
-cf2AntlrLex' l = mkCFtoLexer BNFC.Backend.Java.CFtoAntlr4Lexer.cf2AntlrLex (antlrmakedetails "TODO-nameof-grammar") -- TODO
+cf2AntlrLex' l = mkCFtoLexer BNFC.Backend.Java.CFtoAntlr4Lexer.cf2AntlrLex $ antlrmakedetails $ l++"Lexer" -- TODO
 
 
 --- CF -> PARSER GENERATION TOOL BRIDGE
@@ -122,7 +122,7 @@ mkCFtoParser fu mf = CF2Parse {
 cf2cup :: CFToParser
 cf2cup = mkCFtoParser BNFC.Backend.Java.CFtoCup15.cf2Cup cupmakedetails
 cf2AntlrParse' :: String -> CFToParser
-cf2AntlrParse' l = mkCFtoParser BNFC.Backend.Java.CFtoCup15.cf2Cup $ antlrmakedetails "TODO - Name of the grammar" --BNFC.Backend.Java.CFtoAntlr4Parser.cf2AntlrParse antlrmakedetails -- TODO
+cf2AntlrParse' l = mkCFtoParser BNFC.Backend.Java.CFtoAntlr4Parser.cf2AntlrParse $ antlrmakedetails $ l++"Parser"
 
 
 -- | shorthand for Makefile command running javac or java
@@ -174,8 +174,8 @@ cupmakedetails, jflexmakedetails, jlexmakedetails :: MakeFileDetails
 jlexmakedetails  = mkMakeFileDetails (runJava "JLex.Main") "" "Yylex" "JLex" "1.2.6." False ["Yylex"]
 jflexmakedetails = mkMakeFileDetails "jflex" "" "Yylex" "JFlex" "?" False ["Yylex"]
 cupmakedetails = mkMakeFileDetails (runJava "java_cup.Main") "-nopositions -expect 100" ("~cup" +.+ "cup") "CUP" "0.10k" False ["sym", "parser"]
-antlrmakedetails :: String -> MakeFileDetails -- this unfortunately needs have the same name as the grammar.
-antlrmakedetails l = mkMakeFileDetails (runJava "org.antlr.v4.Tool") "" (l +.+ "g4") "ANTLRv4" "4.5" True ["sym", "parser"]
+antlrmakedetails :: String -> MakeFileDetails
+antlrmakedetails l = mkMakeFileDetails (runJava "org.antlr.v4.Tool") "" (l +.+ "g4") "ANTLRv4" "4.5" True ["sym", "parser"] -- TODO
 
 prependPath , appendExtension :: String -> [String] -> [String]
 prependPath s fi = [s ++ x | x<- fi]

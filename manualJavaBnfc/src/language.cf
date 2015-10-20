@@ -1,6 +1,6 @@
 -- Comments.
 comment "&";
-comment "/*" "*/";
+comment "'" "'";
 
 Entry. Ent ::= [Several];
 

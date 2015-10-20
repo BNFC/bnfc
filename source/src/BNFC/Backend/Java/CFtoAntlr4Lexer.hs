@@ -60,7 +60,7 @@ cf2jlex packageBase cf = (vcat
   where
    env = makeSymEnv (cfgSymbols cf ++ reservedWords cf) (0 :: Int)
    makeSymEnv [] _ = []
-   makeSymEnv (s:symbs) n = (s, "_SYMB_" ++ show n) : makeSymEnv symbs (n+1)
+   makeSymEnv (s:symbs) n = (s, "Surrogate_id_SYMB_" ++ show n) : makeSymEnv symbs (n+1)
 
 
 -- | File prelude
@@ -80,6 +80,9 @@ cMacros = vcat [
     , "SMALL   : [a-z\\u00DF-\\u00F6\\u00F8-\\u00FF];"
     , "DIGIT   : [0-9];"
   ]
+
+escapeChars :: String -> String
+escapeChars = concatMap escapeChar
 
 -- |
 -- This function seems to  take as input a boolean
@@ -103,9 +106,8 @@ lexSymbols :: SymEnv -> Doc
 lexSymbols ss = vcat $  map transSym ss
   where
     transSym (s,r) =
-     "Surrogate_id_"<> text r <>  " : " <> text (escapeChars s) <> " ;"
-    escapeChars :: String -> String
-    escapeChars = concatMap escapeChar
+     text r <>  " : '" <> text (escapeChars s) <> "' ;"
+
 
 restOfJLex :: CF -> Doc
 restOfJLex cf = vcat
@@ -129,10 +131,10 @@ restOfJLex cf = vcat
         "IDENT : IDENTIFIER_FIRST (IDENTIFIER_FIRST | DIGIT)*;"
         ]
     ,"// Whitespace"
-    ,"WS : (' ' | '\r' | '\t' | '\n')+ ->  skip;"
+    ,"WS : (' ' | '\\r' | '\\t' | '\\n')+ ->  skip;"
     , "// Escapable sequences"
     ,"fragment"
-    ,"Escapable : ('\"' | '\\' | 'n' | 't' | 'r');"
+    ,"Escapable : ('\"' | '\\\\' | 'n' | 't' | 'r');"
     , ifString stringmodes
     , ifChar charmodes
     ]
@@ -180,7 +182,7 @@ lexComments (m,s) =
 -- <YYINITIAL>"\""[^\n]*\n { /* skip */ }
 lexSingleComment :: String -> Doc
 lexSingleComment c =
-    "COMMENT:" <> cstring c <>  "~[\\r\\n]* '\\r'? '\\n' -> skip ;"
+    "COMMENT: '" <> text (escapeChars c) <>  "' ~[\\r\\n]* (('\\r'? '\\n')|EOF) -> skip ;"
 
 -- | Create lexer rule for multi-lines comments.
 --
@@ -201,4 +203,4 @@ lexSingleComment c =
 -- <COMMENT>[\n] { /* skip */ }
 lexMultiComment :: (String, String) -> Doc
 lexMultiComment (b,e) =
-    vcat ["MULTICOMMENT : '", (cstring b), "' (.)*? '", (cstring e), "' -> skip;"]
+    "MULTICOMMENT : '" <> text (escapeChars b) <>"' (.)*? '"<> text (escapeChars e) <> "' -> skip;"

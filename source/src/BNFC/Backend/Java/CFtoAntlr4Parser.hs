@@ -42,7 +42,7 @@ module BNFC.Backend.Java.CFtoAntlr4Parser ( cf2AntlrParse ) where
 import BNFC.CF
 import Data.List
 import BNFC.Backend.Common.NamedVariables
-import BNFC.Utils ( (+++) )
+import BNFC.Utils ( (+++), (+.+) )
 import BNFC.TypeChecker  -- We need to (re-)typecheck to figure out list instances in
                     -- defined rules.
 import ErrM
@@ -55,18 +55,16 @@ type Pattern     = String
 type Action      = String
 type MetaVar     = String
 
-cf2AntlrParse :: String -> String -> CF -> SymEnv -> String
-cf2AntlrParse a b c d= "todo"
 
---The environment comes from the CFtoJLex
-cf2Cup :: String -> String -> CF -> SymEnv -> String
-cf2Cup packageBase packageAbsyn cf env = unlines
+
+
+--The environment comes from CFtoAntlr4Lexer
+cf2AntlrParse :: String -> String -> CF -> SymEnv -> String
+cf2AntlrParse packageBase packageAbsyn cf env = unlines
     [
      header,
-     declarations packageAbsyn (allCats cf),
-     tokens
-     -- prEntryPoint cf,  gapag All categories are entry points in ANTLR.
-     prRules packageAbsyn (rulesForCup packageAbsyn cf env)
+     tokens,
+     prRules packageAbsyn (rulesForAntlr4 packageAbsyn cf env)
     ]
     where
       header :: String
@@ -81,114 +79,25 @@ cf2Cup packageBase packageAbsyn cf env = unlines
          "}"
         ]
 
-definedRules :: String -> CF -> String
-definedRules packageAbsyn cf =
-        unlines [ rule f xs e | FunDef f xs e <- cfgPragmas cf ]
-    where
-        ctx = buildContext cf
 
-        list = LC (\t -> "List" ++ unBase t) (const "cons")
-            where
-                unBase (ListT t) = unBase t
-                unBase (BaseT x) = show$normCat$strToCat x
-
-        rule f xs e =
-            case checkDefinition' list ctx f xs e of
-                Bad err -> error $ "Panic! This should have been caught already:\n" ++ err
-                Ok (args,(e',t)) -> unlines
-                    [ "public " ++ javaType t ++ " " ++ f ++ "_ (" ++
-                        intercalate ", " (map javaArg args) ++ ") {"
-                    , "  return " ++ javaExp e' ++ ";"
-                    , "}"
-                    ]
-            where
-
-                javaType :: Base -> String
-                javaType (ListT (BaseT x)) = packageAbsyn ++ ".List" ++ show (normCat$strToCat x)
-                javaType (ListT t)         = javaType t
-                javaType (BaseT x)
-                    | isToken x ctx = "String"
-                    | otherwise     = packageAbsyn ++ "." ++ show (normCat$strToCat x)
-
-                javaArg :: (String, Base) -> String
-                javaArg (x,t) = javaType t ++ " " ++ x ++ "_"
-
-                javaExp :: Exp -> String
-                javaExp (App "null" []) = "null"
-                javaExp (App x [])
-                    | x `elem` xs       = x ++ "_"      -- argument
-                javaExp (App t [e])
-                    | isToken t ctx     = call "new String" [e]
-                javaExp (App x es)
-                    | isUpper (head x)  = call ("new " ++ packageAbsyn ++ "." ++ x) es
-                    | otherwise         = call (x ++ "_") es
-                javaExp (LitInt n)      = "new Integer(" ++ show n ++ ")" -- Check if becomes a BigInteger
-                javaExp (LitDouble x)   = "new Double(" ++ show x ++ ")" -- Check if becomes a BigDecimal
-                javaExp (LitChar c)     = "new Character(" ++ show c ++ ")"
-                javaExp (LitString s)   = "new String(" ++ show s ++ ")"
-
-                call x es = x ++ "(" ++ intercalate ", " (map javaExp es) ++ ")"
-
-
--- peteg: FIXME JavaCUP can only cope with one entry point AFAIK.
-prEntryPoint :: CF -> String
-prEntryPoint cf = unlines ["", "start with " ++ show (firstEntry cf) ++ ";", ""]
-
-
---This generates a parser method for each entry point.
-parseMethod :: String -> Cat -> String
-parseMethod packageAbsyn cat =
-  if normCat cat /= cat
-    then ""
-    else unlines
-             [
-              "  public" +++ packageAbsyn ++ "." ++ cat' +++ "p" ++ cat' ++ "()"
-                ++ " throws Exception",
-              "  {",
-              "\tjava_cup.runtime.Symbol res = parse();",
-              "\treturn (" ++ packageAbsyn ++ "." ++ cat' ++ ") res.value;",
-              "  }"
-             ]
-    where cat' = identCat (normCat cat)
-
-
-
-
-specialToks :: CF -> String
-specialToks cf = unlines [
-  ifC catString "terminal String _STRING_;",
-  ifC catChar "terminal Character _CHAR_;",
-  ifC catInteger "terminal Integer _INTEGER_;",
-  ifC catDouble "terminal Double _DOUBLE_;",
-  ifC catIdent "terminal String _IDENT_;"
-  ]
-   where
-    ifC cat s = if isUsedCat cf cat then s else ""
-
--- This handles user defined tokens
--- FIXME
-specialRules:: CF -> String
-specialRules cf =
-    unlines ["terminal String " ++ name ++ ";" | name <- tokenNames cf]
 
 --The following functions are a (relatively) straightforward translation
 --of the ones in CFtoHappy.hs
-rulesForCup :: String -> CF -> SymEnv -> Rules
-rulesForCup packageAbsyn cf env = map mkOne $ ruleGroups cf where
+rulesForAntlr4 :: String -> CF -> SymEnv -> Rules
+rulesForAntlr4 packageAbsyn cf env = map mkOne $ ruleGroups cf where
   mkOne (cat,rules) = constructRule packageAbsyn cf env rules cat
 
 -- | For every non-terminal, we construct a set of rules. A rule is a sequence of
 -- terminals and non-terminals, and an action to be performed.
 constructRule :: String -> CF -> SymEnv -> [Rule] -> NonTerminal -> (NonTerminal,[(Pattern, Fun, Action)])
 constructRule packageAbsyn cf env rules nt =
-    (nt, [ (p , funruleR , generateAction packageAbsyn nt funruleR (revM b m) b)
+    (nt, [ (p , funRule r , generateAction packageAbsyn nt (funRule r) (revM b m) b)
           | r0 <- rules,
           let (b,r) = if isConsFun (funRule r0) && elem (valCat r0) revs
                           then (True, revSepListRule r0)
                           else (False, r0)
               (p,m) = generatePatterns env r])
  where
-   funruleR = (funRule r)
    revM False = id
    revM True = reverse
    revs = cfgReversibleCats cf
@@ -251,10 +160,16 @@ prRules :: String -> Rules -> String
 prRules _ [] = []
 prRules packabs ((_, []):rs) = prRules packabs rs --internal rule. It creates no output.
 prRules packabs ((nt,(p, fun, a):ls):rs) =
-  unwords [nt',"returns", "[" , packabs+.+fun, "result" , "]",":", p, "{", a, "}", "#", fun, '\n' : pr ls] ++ ";\n" ++ prRules rs
+  unwords [nt',"returns", "[" , packabs+.+catid, "result" , "]",":", p, "{", a, "}", "#", antlrRuleLabel fun, '\n' : pr ls] ++ ";\n" ++ (prRules packabs rs)
  where
   catid = identCat nt
-  nt' = toLower $ catid
+  nt' = map toLower catid
   pr []           = []
-  pr ((p,a):ls)   = unlines [unwords ["  |", p, "{", a , "}"]] ++ pr ls
+  pr ((p,fun,a):ls)   = unlines [unwords ["  |", p, "{", a , "}", "#", antlrRuleLabel fun]] ++ pr ls
+  antlrRuleLabel fnc = if isNilFun fnc
+                       then catid++"_Empty" else
+                       if isOneFun fnc
+                       then catid++"_AppendLast" else
+                       if isConsFun fnc
+                       then catid++"_PrependFirst" else fnc
 
