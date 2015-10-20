@@ -43,9 +43,9 @@ import BNFC.CF
 import Data.List
 import BNFC.Backend.Common.NamedVariables
 import BNFC.Utils ( (+++), (+.+) )
-import BNFC.TypeChecker  -- We need to (re-)typecheck to figure out list instances in
+--import BNFC.TypeChecker  -- We need to (re-)typecheck to figure out list instances in
                     -- defined rules.
-import ErrM
+--import ErrM
 
 import Data.Char
 
@@ -53,7 +53,7 @@ import Data.Char
 type Rules       = [(NonTerminal,[(Pattern, Fun, Action)])]
 type Pattern     = String
 type Action      = String
-type MetaVar     = String
+type MetaVar     = (String, Cat)
 
 
 
@@ -111,19 +111,31 @@ generateAction packageAbsyn nt f ms rev
     | isNilFun f = "$result = new " ++ c ++ "();"
     | isOneFun f = "$result = new " ++ c ++ "(); $result.addLast(" ++ p_1 ++ ");"
     | isConsFun f = "$result = " ++ p_2 ++ "; "
-                           ++ p_2 ++ "." ++ add ++ "(" ++ p_1 ++ ");"
-    | isCoercion f = "$result = " ++ p_1 ++ ";"
+                           ++ "$result." ++ add ++ "(" ++ p_1 ++ ");"
+    | isCoercion f = "$result = " ++  p_1 ++ ";"
     | isDefinedRule f = "$result = parser." ++ f ++ "_"
-                        ++ "(" ++ intercalate "," ms ++ ");"
+                        ++ "(" ++ intercalate "," (map resultvalue ms) ++ ");" -- not sure what is this
     | otherwise = "$result = new " ++ c
-                  ++ "(" ++ intercalate "," ms ++ ");"
+                  ++ "(" ++ intercalate "," (map resultvalue ms) ++ ");"
    where
      c = packageAbsyn ++ "." ++
            if isNilFun f || isOneFun f || isConsFun f
             then identCat (normCat nt) else f
-     p_1 = ms!!0
-     p_2 = ms!!1
+     p_1 = resultvalue $ ms!!0
+     p_2 = resultvalue $ ms!!1
      add = if rev then "addLast" else "addFirst"
+     gettext = "getText()"
+     parseint x = "Integer.parseInt("++x++")"
+     parsedouble x = "Double.parseDouble("++x++")"
+     charat = "charAt(0)"
+     resultvalue (n,c) = case c of
+                          TokenCat "Ident"   -> n'+.+gettext
+                          TokenCat "Integer" -> parseint $ n'+.+gettext
+                          TokenCat "Char"    -> n'+.+gettext+.+charat
+                          TokenCat "Double"  -> parsedouble $ n'+.+gettext
+                          TokenCat "String"  -> n'+.+gettext
+                          _         -> if isTokenCat c then n'+.+gettext else n'+.+"result"
+                          where n' = "$"++n
 
 -- | Generate patterns and a set of metavariables indicating
 -- where in the pattern the non-terminal
@@ -146,11 +158,11 @@ generatePatterns env r = case rhsRule r of
                   TokenCat "Char"    -> "CHAR"
                   TokenCat "Double"  -> "DOUBLE"
                   TokenCat "String"  -> "STRING"
-                  _         -> identCat c
+                  _         -> if isTokenCat c then identCat c else (map toLower $ identCat c)
         Right s -> case lookup s env of
             (Just x) -> x +++ mkIt (n+1) is
             (Nothing) -> mkIt n is
-    metas its = ["p_" ++ show i | (i,Left _) <- zip [1 :: Int ..] its]
+    metas its = [("p_" ++ show i, category) | (i,Left category) <- zip [1 :: Int ..] its]
 
 -- We have now constructed the patterns and actions,
 -- so the only thing left is to merge them into one string.

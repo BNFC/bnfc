@@ -40,6 +40,7 @@ module BNFC.Backend.Java ( makeJava ) where
 -------------------------------------------------------------------
 import System.FilePath (pathSeparator)
 import BNFC.Utils
+import Data.List ( intercalate)
 import BNFC.CF
 import BNFC.Options as Options
 import BNFC.Backend.Base
@@ -63,22 +64,25 @@ import BNFC.PrettyPrint
 -- Adapt Makefile to do the business.
 -------------------------------------------------------------------
 
+type TestClass = String -> String -> CF -> String
 
 parserLexerSelector :: String -> JavaLexerParser -> ParserLexerSpecification
-parserLexerSelector _ JLexCup = mkParserLexerSpecification cf2JLex cf2cup --- FIXME cup file needs not be called as
-parserLexerSelector _ JFlexCup = mkParserLexerSpecification cf2JFlex cf2cup
-parserLexerSelector l Antlr4 = mkParserLexerSpecification (cf2AntlrLex' l) (cf2AntlrParse' l)
+parserLexerSelector _ JLexCup = mkParserLexerSpecification cf2JLex cf2cup javaTest --- FIXME cup file needs not be called as
+parserLexerSelector _ JFlexCup = mkParserLexerSpecification cf2JFlex cf2cup javaTest
+parserLexerSelector l Antlr4 = mkParserLexerSpecification (cf2AntlrLex' l) (cf2AntlrParse' l) antlrTest
 
 data ParserLexerSpecification = ParseLexSpec{
     parser :: CFToParser  ,
-    lexer  :: CFToLexer
+    lexer  :: CFToLexer   ,
+    testclass :: TestClass
 }
 
--- shortcut for constructor
-mkParserLexerSpecification :: CFToLexer -> CFToParser -> ParserLexerSpecification
-mkParserLexerSpecification tl tp = ParseLexSpec {
+-- positional constructor
+mkParserLexerSpecification :: CFToLexer -> CFToParser -> TestClass -> ParserLexerSpecification
+mkParserLexerSpecification tl tp tc = ParseLexSpec {
     parser = tp,
-    lexer = tl
+    lexer = tl,
+    testclass = tc
 }
 
 --- CF -> LEXER GENERATION TOOL BRIDGE
@@ -137,6 +141,8 @@ mkRunProgram :: String -> String -> String
 mkRunProgram j s = (Makefile.refVar j) +++ (Makefile.refVar (j +-+ "FLAGS")) +++ s
 
 
+type OutputDirectory = String
+
 --- MAKEFILE DETAILS FROM RUNNING THE PARSER-LEXER GENERATION TOOLS
 -- | executable : the string that executes the generation tool
 -- | flags : a string containing flags to pass to the tool
@@ -149,33 +155,43 @@ mkRunProgram j s = (Makefile.refVar j) +++ (Makefile.refVar (j +-+ "FLAGS")) +++
 --             a make rule
 data MakeFileDetails = MakeDetails {
     executable::String,
-    flags::String,
+    flags::(OutputDirectory -> String),
     filename::String,
+    fileextension::String,
     toolname::String,
     toolversion::String,
     supportsEntryPoints::Bool,
-    results :: [String]
-} deriving Eq
+    results :: [String],
+    moveresults :: Bool
+}
 
 -- Positional constructor.
-mkMakeFileDetails :: String -> String -> String -> String -> String -> Bool -> [String] ->  MakeFileDetails
-mkMakeFileDetails x f fil tn tv sup res = MakeDetails{
+mkMakeFileDetails :: String -> (OutputDirectory->String) -> String -> String -> String -> String -> Bool -> [String] -> Bool -> MakeFileDetails
+mkMakeFileDetails x f fil ex tn tv sup res mr = MakeDetails{
     executable = x,
     flags = f,
     filename = fil,
+    fileextension = ex,
     toolname = tn,
     toolversion = tv,
     supportsEntryPoints = sup,
-    results = res
+    results = res,
+    moveresults = mr
 }
+
+mapEmpty :: a->String
+mapEmpty = (\_ -> "")
 
 -- Instances of makefile details.
 cupmakedetails, jflexmakedetails, jlexmakedetails :: MakeFileDetails
-jlexmakedetails  = mkMakeFileDetails (runJava "JLex.Main") "" "Yylex" "JLex" "1.2.6." False ["Yylex"]
-jflexmakedetails = mkMakeFileDetails "jflex" "" "Yylex" "JFlex" "?" False ["Yylex"]
-cupmakedetails = mkMakeFileDetails (runJava "java_cup.Main") "-nopositions -expect 100" ("~cup" +.+ "cup") "CUP" "0.10k" False ["sym", "parser"]
+jlexmakedetails  = mkMakeFileDetails (runJava "JLex.Main") mapEmpty "Yylex" "" "JLex" "1.2.6." False ["Yylex"] False
+jflexmakedetails = mkMakeFileDetails "jflex" mapEmpty "Yylex" "" "JFlex" "?" False ["Yylex"] False
+cupmakedetails = mkMakeFileDetails (runJava "java_cup.Main") (\_ -> "-nopositions -expect 100") "_cup" "cup" "CUP" "0.10k" False ["parser", "sym"] True
 antlrmakedetails :: String -> MakeFileDetails
-antlrmakedetails l = mkMakeFileDetails (runJava "org.antlr.v4.Tool") "" (l +.+ "g4") "ANTLRv4" "4.5" True ["sym", "parser"] -- TODO
+antlrmakedetails l = mkMakeFileDetails
+    (runJava "org.antlr.v4.Tool")
+    (\x -> intercalate " " $ map (+++(take ((length x) - 1 ) x )) [ "-lib", "-package"])
+    l "g4" "ANTLRv4" "4.5" True [l] False -- TODO
 
 prependPath , appendExtension :: String -> [String] -> [String]
 prependPath s fi = [s ++ x | x<- fi]
@@ -232,7 +248,7 @@ makeJava options@Options{..} cf =
                             cf2AbstractVisitor
                             cf2FoldVisitor
                             cf2AllVisitor
-                            javaTest
+                            (testclass parselexspec)
            makebnfcfile x = mkfile (javaex (fst $ x bnfcfiles)) $ (snd $ x bnfcfiles)
 
        let absynFiles = remDups $ cf2JavaAbs packageBase packageAbsyn cf
@@ -251,10 +267,10 @@ makeJava options@Options{..} cf =
 ---       mkfile ("Test" ++ name) $ "java " ++ dirBase ++ "Test $(1)"
        let (lex, env) = lexfun packageBase cf
        -- where the lexer file is created. lex is the content!
-       mkfile (dirBase ++ (filename lexmake) ) lex
+       mkfile (dirBase ++ (inputfile lexmake) ) lex
        liftIO $ putStrLn $ "   (Tested with "+++ (toolname lexmake ) +++ (toolversion lexmake ) +++")"
        -- where the parser file is created.
-       mkfile (dirBase ++ (filename parmake))
+       mkfile (dirBase ++ (inputfile parmake))
             $ parsefun packageBase packageAbsyn cf env
        liftIO $ putStrLn $ case (supportsEntryPoints parmake) of
                             False -> "   (Parser created only for category " ++ show (firstEntry cf) ++ ")" -- JLex- JFlex specific (in antlr you have a parser for each category)
@@ -292,10 +308,10 @@ makefile name dirBase dirAbsyn absynFileNames jlexpar = vcat $
             -- parser executable
                 ( "PARSER", (executable parmake)),
             -- parser flags
-                ( "PARSER_FLAGS", (flags parmake)),
+                ( "PARSER_FLAGS", (flags parmake) dirBase),
              -- lexer executable (and flags?)
                 ( "LEXER", (executable lexmake)),
-                ( "LEXER_FLAGS", (flags lexmake))
+                ( "LEXER_FLAGS", (flags lexmake) dirBase)
     ]
     ++
     makeRules [ ("all", [ "test" ], []),
@@ -306,19 +322,65 @@ makefile name dirBase dirAbsyn absynFileNames jlexpar = vcat $
                 ]++
     [
   -- running the lexergen: output of lexer -> input of lexer : calls lexer
-    let ff = filename lexmake
-        dirBaseff = dirBase ++ ff in
-        Makefile.mkRule (dirBaseff +.+ "java") [ dirBaseff ]
-        [ "${LEXER} ${LEXER_FLAGS} "++ dirBaseff ]
+    let ff = filename lexmake -- name of input file without extension
+        dirBaseff = dirBase ++ ff -- prepend directory
+        inp = dirBase ++ (inputfile lexmake) in
+        Makefile.mkRule (dirBaseff +.+ "java") [ inp ]
+        [ "${LEXER} ${LEXER_FLAGS} "++ inp ]
+
     -- running the parsergen, these there are its outputs
     -- output of parser -> input of parser : calls parser
   , let ff = filename parmake
-        dirBaseff = dirBase ++ ff in
-        Makefile.mkRule (dirBase ++ "sym.java " ++ dirBase ++ "parser.java")
-          [ dirBaseff ]
-          [ "${PARSER} ${PARSER_FLAGS} " ++ dirBaseff
-          , "mv " ++ (unwords $ dotJava $ results parmake)+++ dirBase ]
-    ]++(toolDependentMakefile name dirBase dirAbsyn absynJavaSrc absynJavaClass)
+        dirBaseff = dirBase ++ ff
+        inp = dirBase ++ (inputfile parmake) in
+        Makefile.mkRule (intercalate " " (map (dirBase++) $ (dotJava $ results parmake)))
+          [ inp ] $
+          [ "${PARSER} ${PARSER_FLAGS} " ++ inp
+          ]++ if moveresults parmake then ["mv " ++ (unwords $ dotJava $ results parmake)+++ dirBase ] else []
+
+  -- Class of the output of lexer generator wants java of : output of lexer and parser generator
+  ,
+    let lexerOutClass = dirBase ++ (filename lexmake) +.+ "class"
+        outname = \x -> dirBase ++ x +.+ "java"
+        deps = map outname ((results lexmake) ++ (results parmake)) in
+    Makefile.mkRule (lexerOutClass) deps []
+  ]++
+  -- Class of output of parser generator wants java of output of parser generator.
+  -- Changing this to the
+  --, Makefile.mkRule (dirBase ++ "sym.class") [ dirBase ++ "sym.java" ] []
+  --, Makefile.mkRule (dirBase ++ "parser.class") [ dirBase ++ "parser.java", dirBase ++ "sym.java" ] []
+  (reverse [Makefile.mkRule tar dep [] | (tar,dep) <- partialParserGoals dirBase (results parmake)])
+  -- This remains the same, it's the prettyprinting of BNFC
+  ++[ Makefile.mkRule (dirBase ++ "PrettyPrinter.class") [ dirBase ++ "PrettyPrinter.java" ] []
+
+  -- Removes all the class files created anywhere
+  , Makefile.mkRule "clean" [] [ "rm -f " ++ dirAbsyn ++ "*.class" ++ " " ++ dirBase ++ "*.class" ]
+
+  -- Remains the same
+  , Makefile.mkRule "distclean" [ "vclean" ] []
+
+  -- removes everything
+  , Makefile.mkRule "vclean" [] [ " rm -f " ++ absynJavaSrc ++ " " ++ absynJavaClass
+                                  , " rm -f " ++ dirAbsyn ++ "*.class"
+                                  --     , "rm -f " ++ "Test" ++ name
+                                  , " rmdir " ++ dirAbsyn
+                                  , " rm -f " ++ unwords (map (dirBase ++) $
+                                              [inputfile lexmake,
+                                              inputfile parmake]++
+                                              dotJava (results lexmake)++
+                                              ["VisitSkel.java",
+                                              "ComposVisitor.java",
+                                              "AbstractVisitor.java",
+                                              "FoldVisitor.java",
+                                              "AllVisitor.java",
+                                              "PrettyPrinter.java",
+                                              "Skeleton.java",
+                                              "Test.java"]++
+                                              (dotJava (results parmake))++
+                                              ["*.class"])
+                                  , " rm -f Makefile"
+                                  , " rmdir -p " ++ dirBase ]
+    ]
     where
       makeVars x = [Makefile.mkVar n v | (n,v) <- x]
       makeRules x = [Makefile.mkRule tar dep recipe  | (tar, dep, recipe) <- x]
@@ -326,59 +388,39 @@ makefile name dirBase dirAbsyn absynFileNames jlexpar = vcat $
       lexmake           = makelexerdetails (lexer jlexpar)
       absynJavaSrc      = unwords (dotJava absynFileNames)
       absynJavaClass    = unwords (dotClass absynFileNames)
-      classes = prependPath dirBase
-          [ "Yylex.class", "PrettyPrinter.class", "Test.class"
+      classes = prependPath dirBase lst
+      lst = (dotClass (results lexmake)) ++ [ "PrettyPrinter.class", "Test.class"
           , "ComposVisitor.class", "AbstractVisitor.class"
-          , "FoldVisitor.class", "AllVisitor.class", "parser.class"
-          , "sym.class", "Test.class"]
+          , "FoldVisitor.class", "AllVisitor.class"]++
+           (dotClass (results parmake)) ++ ["Test.class"]
 
 
 bnfcGenerated = [ "PrettyPrinter", "Test", "ComposVisitor", "AbstractVisitor", "FoldVisitor", "AllVisitor"]
 
+inputfile x = (filename x) ++ case fileextension x of
+                                        "" -> ""
+                                        a -> "."++a
+
+partialParserGoals :: String -> [String] -> [(String, [String])]
+partialParserGoals _ [] = []
+partialParserGoals dbas (x:rest) = ((dbas++x+.+"class"),(map (\y ->dbas++y+.+"java") (x:rest))):(partialParserGoals dbas rest)
 
 
 
-toolDependentMakefile name dirBase dirAbsyn absynJavaSrc absynJavaClass =
+
+antlrTest :: String -> String -> CF -> String
+antlrTest packageBase packageAbsyn cf = render $ vcat
     [
-    -- Class of the output of lexer generator wants java of : output of lexer and parser generator
-    Makefile.mkRule (dirBase ++ "Yylex.class") [ dirBase ++ "Yylex.java", dirBase ++ "sym.java" ] []
-
-    -- Class of output of parser generator wants java of output of parser generator
-    -- (in antlr this should actually be the whole directory in gen?)
-    , Makefile.mkRule (dirBase ++ "sym.class") [ dirBase ++ "sym.java" ] []
-    , Makefile.mkRule (dirBase ++ "parser.class") [ dirBase ++ "parser.java", dirBase ++ "sym.java" ] []
-
-    -- This remains the same, it's the prettyprinting of BNFC
-    , Makefile.mkRule (dirBase ++ "PrettyPrinter.class") [ dirBase ++ "PrettyPrinter.java" ] []
-
-    -- Removes all the class files created anywhere
-    , Makefile.mkRule "clean" [] [ "rm -f " ++ dirAbsyn ++ "*.class" ++ " " ++ dirBase ++ "*.class" ]
-
-    -- Remains the same
-    , Makefile.mkRule "distclean" [ "vclean" ] []
-
-    -- removes everything
-    , Makefile.mkRule "vclean" [] [ " rm -f " ++ absynJavaSrc ++ " " ++ absynJavaClass
-                                    , " rm -f " ++ dirAbsyn ++ "*.class"
-                                    --     , "rm -f " ++ "Test" ++ name
-                                    , " rmdir " ++ dirAbsyn
-                                    , " rm -f " ++ unwords (map (dirBase ++) [
-                                                "Yylex",
-                                                name ++ ".cup",
-                                                "Yylex.java",
-                                                "VisitSkel.java",
-                                                "ComposVisitor.java",
-                                                "AbstractVisitor.java",
-                                                "FoldVisitor.java",
-                                                "AllVisitor.java",
-                                                "PrettyPrinter.java",
-                                                "Skeleton.java",
-                                                "Test.java",
-                                                "sym.java",
-                                                "parser.java",
-                                                "*.class"])
-                                    , "rm -f Makefile"
-                                    , "rmdir -p " ++ dirBase ]
+        "package" <+> text packageBase <> ";"
+        ,"import org.antlr.v4.gui.TestRig;"
+        ,"public class Test"
+        ,codeblock 2
+          [ "public static void main(String args[]) throws Exception"
+            ,codeblock 2 [
+            "TestRig tr = new TestRig(args);"
+            ,"tr.process();"
+            ]
+          ]
     ]
 
 -- This needs not be here with antlr, you can use TestRig.
