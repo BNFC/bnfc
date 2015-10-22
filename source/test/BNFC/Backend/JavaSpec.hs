@@ -5,7 +5,6 @@ import BNFC.GetCF
 
 import Test.Hspec
 import BNFC.Hspec
-
 import BNFC.Backend.Java -- SUT
 
 calcOptions = defaultOptions { lang = "Calc" }
@@ -17,10 +16,9 @@ getCalc = parseCF  calcOptions TargetJava $
           , "EInt. Exp2  ::= Integer ;"
           , "coercions Exp 2 ;" ]
 
-spec =
-  describe "C backend" $
+spec = do
+  describe "Java backend" $
     it "respect the makefile option" $ do
       calc <- getCalc
       let opts = calcOptions { make = Just "MyMakefile" }
       makeJava opts calc `shouldGenerate` "MyMakefile"
-

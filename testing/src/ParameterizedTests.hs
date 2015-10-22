@@ -164,6 +164,8 @@ parameters =
                , tpBnfcOptions = ["--java", "-p","my.stuff", "-m"] }
   , javaParams { tpName = "Java (with jflex)"
                , tpBnfcOptions = ["--java", "--jflex", "-m"] }
+  , javaParams { tpName = "Java (with antlr)"
+                              , tpBnfcOptions = ["--java", "--antlr", "-m"] }
   ]
   where
     base = TP

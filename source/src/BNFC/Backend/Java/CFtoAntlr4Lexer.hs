@@ -40,22 +40,24 @@ module BNFC.Backend.Java.CFtoAntlr4Lexer ( cf2AntlrLex ) where
 
 import BNFC.CF
 import BNFC.Backend.Java.RegToAntlrLexer
-import BNFC.Utils (cstring)
 import BNFC.Backend.Common.NamedVariables
 import Text.PrettyPrint
 
-cf2AntlrLex :: String -> CF -> (Doc, SymEnv)
-cf2AntlrLex str cf = cf2jlex str cf
 
---The environment must be returned for the parser to use.
-cf2jlex :: String -> CF -> (Doc, SymEnv)
-cf2jlex packageBase cf = (vcat
+-- | Creates a lexer grammar.
+-- Since antlr token identifiers must start with an uppercase symbol,
+-- I prepend "Surrogate_id_SYMB_" to the identifier.
+-- This introduces risks of clashes if somebody uses the same identifier for
+-- user defined tokens. This is not handled.
+-- returns the environment because the parser uses it.
+cf2AntlrLex :: String -> CF -> (Doc, SymEnv)
+cf2AntlrLex packageBase cf = (vcat
  [
   prelude packageBase,
   cMacros,
   -- unnamed symbols (those in quotes, not in token definitions)
   lexSymbols env,
-  restOfJLex cf
+  restOfLexerGrammar cf
  ], env)
   where
    env = makeSymEnv (cfgSymbols cf ++ reservedWords cf) (0 :: Int)
@@ -95,22 +97,22 @@ escapeChars = concatMap escapeChar
 -- Here instead I am forced to make the token begin with a lowercase letter, risking clashes with user-defined tokens.
 -- Solution for now: prepend 'surrogate_id_' to all and ignore it.
 -- >>> lexSymbols [("foo","bar")]
--- surrogate_id_bar : 'foo';
+-- bar : 'foo' ;
 -- >>> lexSymbols [("\\","bar")]
--- surrogate_id_bar : '\\';
+-- bar : '\\' ;
 -- >>> lexSymbols [("/","bar")]
--- surrogate_id_bar : '/';
+-- bar : '/' ;
 -- >>> lexSymbols [("~","bar")]
--- surrogate_id_bar : '\~';
+-- bar : '~' ;
 lexSymbols :: SymEnv -> Doc
 lexSymbols ss = vcat $  map transSym ss
   where
     transSym (s,r) =
      text r <>  " : '" <> text (escapeChars s) <> "' ;"
 
-
-restOfJLex :: CF -> Doc
-restOfJLex cf = vcat
+-- | Writes rules for user defined tokens, and, if used, the predefined BNFC tokens.
+restOfLexerGrammar :: CF -> Doc
+restOfLexerGrammar cf = vcat
     [ lexComments (comments cf)
     , ""
     , userDefTokens
@@ -135,6 +137,7 @@ restOfJLex cf = vcat
     , "// Escapable sequences"
     ,"fragment"
     ,"Escapable : ('\"' | '\\\\' | 'n' | 't' | 'r');"
+    ,"ErrorToken : . ;"
     , ifString stringmodes
     , ifChar charmodes
     ]
@@ -176,10 +179,10 @@ lexComments (m,s) =
 -- | Create lexer rule for single-line comments.
 --
 -- >>> lexSingleComment "--"
--- <YYINITIAL>"--"[^\n]*\n { /* skip */ }
+-- COMMENT: '--' ~[\r\n]* (('\r'? '\n')|EOF) -> skip ;
 --
 -- >>> lexSingleComment "\""
--- <YYINITIAL>"\""[^\n]*\n { /* skip */ }
+-- COMMENT: '"' ~[\r\n]* (('\r'? '\n')|EOF) -> skip ;
 lexSingleComment :: String -> Doc
 lexSingleComment c =
     "COMMENT: '" <> text (escapeChars c) <>  "' ~[\\r\\n]* (('\\r'? '\\n')|EOF) -> skip ;"
@@ -191,16 +194,13 @@ lexSingleComment c =
 -- with another. However this seems rare.
 --
 -- >>> lexMultiComment ("{-", "-}")
--- <YYINITIAL>"{-" { yybegin(COMMENT); }
--- <COMMENT>"-}" { yybegin(YYINITIAL); }
--- <COMMENT>. { /* skip */ }
--- <COMMENT>[\n] { /* skip */ }
+-- MULTICOMMENT : '{-' (.)*? '-}' -> skip;
 --
 -- >>> lexMultiComment ("\"'", "'\"")
--- <YYINITIAL>"\"'" { yybegin(COMMENT); }
--- <COMMENT>"'\"" { yybegin(YYINITIAL); }
--- <COMMENT>. { /* skip */ }
--- <COMMENT>[\n] { /* skip */ }
+-- MULTICOMMENT : '"\'' (.)*? '\'"' -> skip;
 lexMultiComment :: (String, String) -> Doc
 lexMultiComment (b,e) =
-    "MULTICOMMENT : '" <> text (escapeChars b) <>"' (.)*? '"<> text (escapeChars e) <> "' -> skip;"
+    "MULTICOMMENT : '"
+        <> text (escapeChars b)
+        <>"' (.)*? '"<> text (escapeChars e)
+        <> "' -> skip;"

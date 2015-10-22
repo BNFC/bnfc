@@ -43,9 +43,6 @@ import BNFC.CF
 import Data.List
 import BNFC.Backend.Common.NamedVariables
 import BNFC.Utils ( (+++), (+.+) )
---import BNFC.TypeChecker  -- We need to (re-)typecheck to figure out list instances in
-                    -- defined rules.
---import ErrM
 
 import Data.Char
 
@@ -55,9 +52,7 @@ type Pattern     = String
 type Action      = String
 type MetaVar     = (String, Cat)
 
-
-
-
+-- | Creates the ANTLR parser grammar for this CF.
 --The environment comes from CFtoAntlr4Lexer
 cf2AntlrParse :: String -> String -> CF -> SymEnv -> String
 cf2AntlrParse packageBase packageAbsyn cf env = unlines
@@ -78,8 +73,6 @@ cf2AntlrParse packageBase packageAbsyn cf env = unlines
          "  tokenVocab = "++packageBase++"Lexer;",
          "}"
         ]
-
-
 
 --The following functions are a (relatively) straightforward translation
 --of the ones in CFtoHappy.hs
@@ -125,15 +118,16 @@ generateAction packageAbsyn nt f ms rev
      p_2 = resultvalue $ ms!!1
      add = if rev then "addLast" else "addFirst"
      gettext = "getText()"
+     removeQuotes x = "substring(1, "++ x +.+ gettext +.+ "length()-1)"
      parseint x = "Integer.parseInt("++x++")"
      parsedouble x = "Double.parseDouble("++x++")"
-     charat = "charAt(0)"
+     charat = "charAt(1)"
      resultvalue (n,c) = case c of
                           TokenCat "Ident"   -> n'+.+gettext
                           TokenCat "Integer" -> parseint $ n'+.+gettext
                           TokenCat "Char"    -> n'+.+gettext+.+charat
                           TokenCat "Double"  -> parsedouble $ n'+.+gettext
-                          TokenCat "String"  -> n'+.+gettext
+                          TokenCat "String"  -> n'+.+gettext+.+(removeQuotes n')
                           _         -> if isTokenCat c then n'+.+gettext else n'+.+"result"
                           where n' = "$"++n
 
@@ -142,7 +136,7 @@ generateAction packageAbsyn nt f ms rev
 -- >>> generatePatterns [] (Rule "myfun" (Cat "A") [])
 -- (" /* empty */ ",[])
 -- >>> generatePatterns [("def", "_SYMB_1")] (Rule "myfun" (Cat "A") [Right "def", Left (Cat "B")])
--- ("_SYMB_1 B:p_2 ",["p_2"])
+-- ("_SYMB_1 p_2=b ",[("p_2",B)])
 generatePatterns :: SymEnv -> Rule -> (Pattern,[MetaVar])
 generatePatterns env r = case rhsRule r of
     []  -> (" /* empty */ ",[])
@@ -166,8 +160,6 @@ generatePatterns env r = case rhsRule r of
 
 -- We have now constructed the patterns and actions,
 -- so the only thing left is to merge them into one string.
--- ANTLR4: You might add #NameOfRule to have it labeled, and enable precise parse-tree listeners
--- I need the type
 prRules :: String -> Rules -> String
 prRules _ [] = []
 prRules packabs ((_, []):rs) = prRules packabs rs --internal rule. It creates no output.
