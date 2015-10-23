@@ -41,10 +41,9 @@ module BNFC.Backend.Java.CFtoAntlr4Parser ( cf2AntlrParse ) where
 
 import BNFC.CF
 import Data.List
+import BNFC.Backend.Java.Utils
 import BNFC.Backend.Common.NamedVariables
-import BNFC.Utils ( (+++), (+.+) )
-
-import Data.Char
+import BNFC.Utils ( (+++), (+.+))
 
 -- Type declarations
 type Rules       = [(NonTerminal,[(Pattern, Fun, Action)])]
@@ -77,7 +76,8 @@ cf2AntlrParse packageBase packageAbsyn cf env = unlines
 --The following functions are a (relatively) straightforward translation
 --of the ones in CFtoHappy.hs
 rulesForAntlr4 :: String -> CF -> SymEnv -> Rules
-rulesForAntlr4 packageAbsyn cf env = map mkOne $ ruleGroups cf where
+rulesForAntlr4 packageAbsyn cf env = map mkOne $ getrules where
+  getrules = ruleGroups cf
   mkOne (cat,rules) = constructRule packageAbsyn cf env rules cat
 
 -- | For every non-terminal, we construct a set of rules. A rule is a sequence of
@@ -85,17 +85,18 @@ rulesForAntlr4 packageAbsyn cf env = map mkOne $ ruleGroups cf where
 constructRule :: String -> CF -> SymEnv -> [Rule] -> NonTerminal -> (NonTerminal,[(Pattern, Fun, Action)])
 constructRule packageAbsyn cf env rules nt =
     (nt, [ (p , funRule r , generateAction packageAbsyn nt (funRule r) (revM b m) b)
-          | r0 <- rules,
+          | (index ,r0) <- zip [1..(length rules)] rules, -- This additional index label is necessary for avoiding name clash in a rule in ANTLR.
           let (b,r) = if isConsFun (funRule r0) && elem (valCat r0) revs
                           then (True, revSepListRule r0)
                           else (False, r0)
-              (p,m) = generatePatterns env r])
+              (p,m) = generatePatterns index env r])
  where
    revM False = id
    revM True = reverse
    revs = cfgReversibleCats cf
 
 -- Generates a string containing the semantic action.
+-- TODO This function might be abstracted away to use ANTLR with other target languages
 generateAction :: String -> NonTerminal -> Fun -> [MetaVar]
                -> Bool   -- ^ Whether the list should be reversed or not.
                          --   Only used if this is a list rule.
@@ -137,14 +138,14 @@ generateAction packageAbsyn nt f ms rev
 -- (" /* empty */ ",[])
 -- >>> generatePatterns [("def", "_SYMB_1")] (Rule "myfun" (Cat "A") [Right "def", Left (Cat "B")])
 -- ("_SYMB_1 p_2=b ",[("p_2",B)])
-generatePatterns :: SymEnv -> Rule -> (Pattern,[MetaVar])
-generatePatterns env r = case rhsRule r of
+generatePatterns :: Int -> SymEnv -> Rule -> (Pattern,[MetaVar])
+generatePatterns ind env r = case rhsRule r of
     []  -> (" /* empty */ ",[])
     its -> (mkIt 1 its, metas its)
  where
     mkIt _ [] = []
     mkIt n (i:is) = case i of
-        Left c -> "p_" ++ show (n :: Int) ++ "="++ c' +++ mkIt (n+1) is
+        Left c -> "p_" ++(show ind)++"_"++ show (n :: Int) ++ "="++ c' +++ mkIt (n+1) is
           where
               c' = case c of
                   TokenCat "Ident"   -> "IDENT"
@@ -152,22 +153,25 @@ generatePatterns env r = case rhsRule r of
                   TokenCat "Char"    -> "CHAR"
                   TokenCat "Double"  -> "DOUBLE"
                   TokenCat "String"  -> "STRING"
-                  _         -> if isTokenCat c then identCat c else (map toLower $ identCat c)
+                  _         -> if isTokenCat c then identCat c else firstLowerCase (getRuleName (identCat c))
         Right s -> case lookup s env of
             (Just x) -> x +++ mkIt (n+1) is
             (Nothing) -> mkIt n is
-    metas its = [("p_" ++ show i, category) | (i,Left category) <- zip [1 :: Int ..] its]
+    metas its = [("p_" ++ show ind ++"_"++ show i, category) | (i,Left category) <- zip [1 :: Int ..] its]
 
 -- We have now constructed the patterns and actions,
 -- so the only thing left is to merge them into one string.
+-- ANTLR4: You might add #NameOfRule to have it labeled, and enable precise parse-tree listeners
+-- I need the type
 prRules :: String -> Rules -> String
 prRules _ [] = []
 prRules packabs ((_, []):rs) = prRules packabs rs --internal rule. It creates no output.
 prRules packabs ((nt,(p, fun, a):ls):rs) =
-  unwords [nt',"returns", "[" , packabs+.+catid, "result" , "]",":", p, "{", a, "}", "#", antlrRuleLabel fun, '\n' : pr ls] ++ ";\n" ++ (prRules packabs rs)
+  unwords [nt',"returns", "[" , packabs+.+normcat, "result" , "]",":", p, "{", a, "}", "#", antlrRuleLabel fun, '\n' : pr ls] ++ ";\n" ++ (prRules packabs rs)
  where
-  catid = identCat nt
-  nt' = map toLower catid
+  catid = (identCat nt)
+  normcat = identCat (normCat nt)
+  nt' = getRuleName $ firstLowerCase catid
   pr []           = []
   pr ((p,fun,a):ls)   = unlines [unwords ["  |", p, "{", a , "}", "#", antlrRuleLabel fun]] ++ pr ls
   antlrRuleLabel fnc = if isNilFun fnc
@@ -175,5 +179,6 @@ prRules packabs ((nt,(p, fun, a):ls):rs) =
                        if isOneFun fnc
                        then catid++"_AppendLast" else
                        if isConsFun fnc
-                       then catid++"_PrependFirst" else fnc
-
+                       then catid++"_PrependFirst" else
+                       if isCoercion fnc
+                       then "Coercion_"++catid else getLabelName fnc

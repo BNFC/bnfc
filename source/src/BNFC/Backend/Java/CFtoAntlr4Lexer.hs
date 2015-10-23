@@ -77,25 +77,17 @@ prelude packageBase = vcat
 cMacros :: Doc
 cMacros = vcat [
     "// Predefined regular expressions in BNFC"
-    , "LETTER  : CAPITAL | SMALL;"
-    , "CAPITAL : [A-Z\\u00C0-\\u00D6\\u00D8-\\u00DE];"
-    , "SMALL   : [a-z\\u00DF-\\u00F6\\u00F8-\\u00FF];"
-    , "DIGIT   : [0-9];"
+    , frg "LETTER  : CAPITAL | SMALL"
+    , frg "CAPITAL : [A-Z\\u00C0-\\u00D6\\u00D8-\\u00DE]"
+    , frg "SMALL   : [a-z\\u00DF-\\u00F6\\u00F8-\\u00FF]"
+    , frg "DIGIT   : [0-9]"
   ]
+  where frg a = "fragment" <+> a <+> ";"
 
 escapeChars :: String -> String
 escapeChars = concatMap escapeChar
 
 -- |
--- This function seems to  take as input a boolean
--- which decides which are the chars to escape (JFlex vs JLex)
--- and the "symbol" name, which is not provided in the .cf grammar,
--- but it is given as a surrogate identifier from the environment
--- The problem here is that the identifier starts with _.
--- This was ok with J(F)Lex implementation because anyway no user-defined identifiers for tokens
--- could start with _
--- Here instead I am forced to make the token begin with a lowercase letter, risking clashes with user-defined tokens.
--- Solution for now: prepend 'surrogate_id_' to all and ignore it.
 -- >>> lexSymbols [("foo","bar")]
 -- bar : 'foo' ;
 -- >>> lexSymbols [("\\","bar")]
@@ -173,8 +165,14 @@ restOfLexerGrammar cf = vcat
         ]
 
 lexComments :: ([(String, String)], [String]) -> Doc
+lexComments ([],[]) = ""
 lexComments (m,s) =
-    vcat (map lexSingleComment s ++ map lexMultiComment m)
+    vcat ((prod "COMMENT_antlr_builtin" lexSingleComment s) ++
+        (prod "MULTICOMMENT_antlr_builtin" lexMultiComment m) )
+        where
+            prod bg lc ty = [bg, ": ("] ++ (punctuate "|" (map lc ty)) ++ skiplex
+            skiplex = [") -> skip;"]
+
 
 -- | Create lexer rule for single-line comments.
 --
@@ -185,7 +183,7 @@ lexComments (m,s) =
 -- COMMENT: '"' ~[\r\n]* (('\r'? '\n')|EOF) -> skip ;
 lexSingleComment :: String -> Doc
 lexSingleComment c =
-    "COMMENT: '" <> text (escapeChars c) <>  "' ~[\\r\\n]* (('\\r'? '\\n')|EOF) -> skip ;"
+    "'" <>text (escapeChars c) <>  "' ~[\\r\\n]* (('\\r'? '\\n')|EOF)"
 
 -- | Create lexer rule for multi-lines comments.
 --
@@ -200,7 +198,6 @@ lexSingleComment c =
 -- MULTICOMMENT : '"\'' (.)*? '\'"' -> skip;
 lexMultiComment :: (String, String) -> Doc
 lexMultiComment (b,e) =
-    "MULTICOMMENT : '"
-        <> text (escapeChars b)
+         "'" <> text (escapeChars b)
         <>"' (.)*? '"<> text (escapeChars e)
-        <> "' -> skip;"
+        <> "'"

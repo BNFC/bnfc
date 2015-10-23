@@ -7,7 +7,8 @@ options {
 
 ent returns [ language.Absyn.Ent result ] : p_1=listseveral  { $result = new language.Absyn.Entry($p_1.result); } # Entry
 ;
-exp returns [ language.Absyn.Exp result ] : Surrogate_id_SYMB_0 p_2=IDENT p_3=PIPPO Surrogate_id_SYMB_1 p_5=type Surrogate_id_SYMB_2  { $result = new language.Absyn.NonInternal($p_2.getText(),$p_3.getText(),$p_5.result); } # NonInternal
+exp returns [ language.Absyn.Exp result ] :
+Surrogate_id_SYMB_0 p_2=IDENT p_3=PIPPO Surrogate_id_SYMB_1 p_5=type Surrogate_id_SYMB_2  { $result = new language.Absyn.NonInternal($p_2.getText(),$p_3.getText(),$p_5.result); } # NonInternal
   | Surrogate_id_SYMB_8 p_2=STRING  { $result = new language.Absyn.AnyExp($p_2.getText()); } # AnyExp
 ;
 listseveral returns [ language.Absyn.ListSeveral result ] :  /* empty */  { $result = new language.Absyn.ListSeveral(); } # ListSeveral_Empty 

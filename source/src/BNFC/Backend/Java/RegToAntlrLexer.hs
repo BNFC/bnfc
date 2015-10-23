@@ -79,4 +79,4 @@ instance Print Reg where
    RLetter  -> prPrec i 3 (concat [["LETTER"]])
    RUpper  -> prPrec i 3 (concat [["CAPITAL"]])
    RLower  -> prPrec i 3 (concat [["SMALL"]])
-   RAny  -> prPrec i 3 (concat [["."]])
+   RAny  -> prPrec i 3 (concat [["[\\u0000-\\u00FF]"]])

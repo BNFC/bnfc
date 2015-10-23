@@ -41,10 +41,10 @@ module BNFC.Backend.Java ( makeJava ) where
 import System.FilePath (pathSeparator)
 import BNFC.Utils
 import Data.List ( intercalate)
-import Data.Char (toLower)
 import BNFC.CF
 import BNFC.Options as Options
 import BNFC.Backend.Base
+import BNFC.Backend.Java.Utils
 import BNFC.Backend.Java.CFtoCup15 ( cf2Cup )
 import BNFC.Backend.Java.CFtoJLex15
 import BNFC.Backend.Java.CFtoAntlr4Lexer
@@ -56,7 +56,7 @@ import BNFC.Backend.Java.CFtoComposVisitor
 import BNFC.Backend.Java.CFtoAbstractVisitor
 import BNFC.Backend.Java.CFtoFoldVisitor
 import BNFC.Backend.Java.CFtoAllVisitor
-import BNFC.Backend.Common.NamedVariables (SymEnv)
+import BNFC.Backend.Common.NamedVariables (SymEnv, firstLowerCase)
 import qualified BNFC.Backend.Common.Makefile as Makefile
 import BNFC.PrettyPrint
 -------------------------------------------------------------------
@@ -250,11 +250,18 @@ antlrtest = (javaTest ["org.antlr.v4.runtime","org.antlr.v4.runtime.atn","org.an
                     (\x -> \i ->  vcat [x <> "(new ANTLRInputStream" <> i <>");", "l.addErrorListener(new BNFCErrorListener());"])
                     (\x -> \i -> vcat [x <> "(new CommonTokenStream" <> i <>");", "p.addErrorListener(new BNFCErrorListener());"])
                     (\pbase -> \pabs -> \enti -> vcat [
-                        pbase <> "." <> enti <> "Context pc = p."<>(text (map toLower (show enti)))<>"();",
-                        pabs <> "." <> enti <+> "parse_tree = pc.result;"
+                        let rulename = getRuleName (show enti)
+                            typename = text rulename
+                            methodname = text $ firstLowerCase rulename
+                        in
+                            pbase <> "." <> typename <> "Context pc = p."<>methodname<>"();",
+                            "org.antlr.v4.runtime.Token _tkn = p.getInputStream().getTokenSource().nextToken();",
+                            "if(_tkn.getType() != -1) throw new TestError(\"Stream does not end with EOF\",_tkn.getLine(),_tkn.getCharPositionInLine());",
+                            pabs <> "." <> enti <+> "parse_tree = pc.result;"
                         ])
                     "At line \" + e.line + \", column \" + e.column + \" :"
             )
+
 
 parserLexerSelector :: String -> JavaLexerParser -> ParserLexerSpecification
 parserLexerSelector _ JLexCup = mkParserLexerSpecification cf2JLex cf2cup cuptest
@@ -529,12 +536,12 @@ javaTest imports err errhand
             ,"p = new "<> (parserconstruction px "(l)")
         ]
         ,""
-        ,"public" <+> (text packageAbsyn) <> "." <> topentity <+>"parse() throws Exception"
+        ,"public" <+> (text packageAbsyn) <> "." <> absentity <+>"parse() throws Exception"
         , codeblock 2 [
             "/* The default parser is the first-defined entry point. */"
             , "/* You may want to change this. Other options are: */"
             , "/* " <> fsep (punctuate "," (showOpts (tail eps))) <> " */"
-            , invocation px (text packageAbsyn) topentity
+            , invocation px (text packageAbsyn) absentity
             , "System.out.println();"
             , "System.out.println(\"Parse Succesful!\");"
             , "System.out.println();"
@@ -568,7 +575,8 @@ javaTest imports err errhand
         importfun x = "import" <+> x <> ".*;"
         lx = text lexer
         px = text parser
-        topentity = text (show def)
+
+        absentity = text $ (show def)
         eps = allEntryPoints cf
         def = head eps
         showOpts [] = []
@@ -596,10 +604,12 @@ antlrErrorHandling te = ["class"<+>tedoc<+>"extends RuntimeException"
         ,codeblock 2[ "throw new"<+>tedoc<>"(\"Ambiguity at\",i,i1);" ]
     ,"@Override"
         ,"public void reportAttemptingFullContext(Parser parser, DFA dfa, int i, int i1, BitSet bitSet, ATNConfigSet atnConfigSet)"
-        ,codeblock 2 ["throw new"<+>tedoc<>"(\"Attempting full context\",i,i1);"]
+        ,codeblock 2 [{-"throw new"<+>tedoc<>"(\"Attempting full context\",i,i1);"-}]
     ,"@Override"
         ,"public void reportContextSensitivity(Parser parser, DFA dfa, int i, int i1, int i2, ATNConfigSet atnConfigSet)"
-        ,codeblock 2 [ "throw new"<+>tedoc<>"(\"Context sensitivity\",i,i1);"]
+        ,codeblock 2 [ {-"throw new"<+>tedoc<>"(\"Context sensitivity\",i,i1);"-}]
         ]
     ]
     where tedoc = text te
+
+
