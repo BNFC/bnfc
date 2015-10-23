@@ -400,7 +400,7 @@ jflexmakedetails = mkMakeFileDetails
                         "Yylex"
                         ""
                         "JFlex"
-                        "?"
+                        "1.4.3"
                         False
                         ["Yylex"]
                         False
@@ -425,7 +425,7 @@ antlrmakedetails l = mkMakeFileDetails
     l
     "g4"
     "ANTLRv4"
-    "4.5"
+    "4.5.1"
     True
     [l]
     False
