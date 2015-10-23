@@ -177,10 +177,10 @@ lexComments (m,s) =
 -- | Create lexer rule for single-line comments.
 --
 -- >>> lexSingleComment "--"
--- COMMENT: '--' ~[\r\n]* (('\r'? '\n')|EOF) -> skip ;
+-- '--' ~[\r\n]* (('\r'? '\n')|EOF)
 --
 -- >>> lexSingleComment "\""
--- COMMENT: '"' ~[\r\n]* (('\r'? '\n')|EOF) -> skip ;
+-- '"' ~[\r\n]* (('\r'? '\n')|EOF)
 lexSingleComment :: String -> Doc
 lexSingleComment c =
     "'" <>text (escapeChars c) <>  "' ~[\\r\\n]* (('\\r'? '\\n')|EOF)"
@@ -192,10 +192,10 @@ lexSingleComment c =
 -- with another. However this seems rare.
 --
 -- >>> lexMultiComment ("{-", "-}")
--- MULTICOMMENT : '{-' (.)*? '-}' -> skip;
+-- '{-' (.)*? '-}'
 --
 -- >>> lexMultiComment ("\"'", "'\"")
--- MULTICOMMENT : '"\'' (.)*? '\'"' -> skip;
+-- '"\'' (.)*? '\'"'
 lexMultiComment :: (String, String) -> Doc
 lexMultiComment (b,e) =
          "'" <> text (escapeChars b)
