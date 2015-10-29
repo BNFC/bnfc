@@ -40,7 +40,6 @@ module BNFC.Backend.Java ( makeJava ) where
 -------------------------------------------------------------------
 import System.FilePath (pathSeparator)
 import BNFC.Utils
-import Data.List ( intercalate)
 import BNFC.CF
 import BNFC.Options as Options
 import BNFC.Backend.Base
@@ -81,11 +80,11 @@ makeJava options@Options{..} cf =
                             cf2AbstractVisitor
                             cf2FoldVisitor
                             cf2AllVisitor
-                            ((testclass parselexspec)
-                                ((results lexmake) !! 0) -- lexer class
-                                ((results parmake) !! 0) -- parser class
+                            (testclass parselexspec
+                                (head $ results lexmake) -- lexer class
+                                (head $ results parmake) -- parser class
                                 )
-           makebnfcfile x = mkfile (javaex (fst $ x bnfcfiles)) $ (snd $ x bnfcfiles)
+           makebnfcfile x = mkfile (javaex (fst $ x bnfcfiles))  (snd $ x bnfcfiles)
 
        let absynFiles = remDups $ cf2JavaAbs packageBase packageAbsyn cf
            absynBaseNames = map fst absynFiles
@@ -103,15 +102,16 @@ makeJava options@Options{..} cf =
 ---       mkfile ("Test" ++ name) $ "java " ++ dirBase ++ "Test $(1)"
        let (lex, env) = lexfun packageBase cf
        -- where the lexer file is created. lex is the content!
-       mkfile (dirBase ++ (inputfile lexmake) ) lex
-       liftIO $ putStrLn $ "   (Tested with "+++ (toolname lexmake ) +++ (toolversion lexmake ) +++")"
+       mkfile (dirBase ++ inputfile lexmake ) lex
+       liftIO $ putStrLn $ "   (Tested with "+++ toolname lexmake +++ toolversion lexmake  +++")"
        -- where the parser file is created.
-       mkfile (dirBase ++ (inputfile parmake))
+       mkfile (dirBase ++ inputfile parmake)
             $ parsefun packageBase packageAbsyn cf env
-       liftIO $ putStrLn $ case (supportsEntryPoints parmake) of
-                            False -> "   (Parser created only for category " ++ show (firstEntry cf) ++ ")" -- JLex- JFlex specific (in antlr you have a parser for each category)
-                            _ -> "(Parser created for all categories)"
-       liftIO $ putStrLn $ "   (Tested with " +++ (toolname parmake) +++ (toolversion parmake ) +++ ")"
+       liftIO $ putStrLn (if supportsEntryPoints parmake then
+                              "(Parser created for all categories)" else
+                              "   (Parser created only for category " ++
+                                show (firstEntry cf) ++ ")")
+       liftIO $ putStrLn $ "   (Tested with " +++ toolname parmake +++ toolversion parmake +++ ")"
        Makefile.mkMakefile options $ makefile dirBase dirAbsyn absynFileNames parselexspec
     where
       remDups [] = []
@@ -142,16 +142,16 @@ makefile  dirBase dirAbsyn absynFileNames jlexpar = vcat $
                 ( "JAVA", "java"),
                 ( "JAVA_FLAGS", ""),
             -- parser executable
-                ( "PARSER", (executable parmake)),
+                ( "PARSER", executable parmake),
             -- parser flags
-                ( "PARSER_FLAGS", (flags parmake) dirBase),
+                ( "PARSER_FLAGS", flags parmake dirBase),
              -- lexer executable (and flags?)
-                ( "LEXER", (executable lexmake)),
-                ( "LEXER_FLAGS", (flags lexmake) dirBase)
+                ( "LEXER", executable lexmake),
+                ( "LEXER_FLAGS", flags lexmake dirBase)
     ]
     ++
     makeRules [ ("all", [ "test" ], []),
-                ( "test", ("absyn" : classes), []),
+                ( "test", "absyn" : classes, []),
                 ( ".PHONY", ["absyn"],     []),
                 ("%.class", [ "%.java" ],  [ runJavac "$^" ]),
                 ("absyn",   [absynJavaSrc],[ runJavac "$^" ])
@@ -160,30 +160,30 @@ makefile  dirBase dirAbsyn absynFileNames jlexpar = vcat $
   -- running the lexergen: output of lexer -> input of lexer : calls lexer
     let ff = filename lexmake -- name of input file without extension
         dirBaseff = dirBase ++ ff -- prepend directory
-        inp = dirBase ++ (inputfile lexmake) in
+        inp = dirBase ++ inputfile lexmake in
         Makefile.mkRule (dirBaseff +.+ "java") [ inp ]
         [ "${LEXER} ${LEXER_FLAGS} "++ inp ]
 
     -- running the parsergen, these there are its outputs
     -- output of parser -> input of parser : calls parser
-  , let inp = dirBase ++ (inputfile parmake) in
-        Makefile.mkRule (intercalate " " (map (dirBase++) $ (dotJava $ results parmake)))
+  , let inp = dirBase ++ inputfile parmake in
+        Makefile.mkRule (unwords (map (dirBase++) (dotJava $ results parmake)))
           [ inp ] $
-          [ "${PARSER} ${PARSER_FLAGS} " ++ inp
-          ]++ if moveresults parmake then ["mv " ++ (unwords $ dotJava $ results parmake)+++ dirBase ] else []
+          ("${PARSER} ${PARSER_FLAGS} " ++ inp) :
+          ["mv " ++ unwords (dotJava $ results parmake) +++ dirBase | moveresults parmake]
 
   -- Class of the output of lexer generator wants java of : output of lexer and parser generator
   ,
-    let lexerOutClass = dirBase ++ (filename lexmake) +.+ "class"
-        outname = \x -> dirBase ++ x +.+ "java"
-        deps = map outname ((results lexmake) ++ (results parmake)) in
-    Makefile.mkRule (lexerOutClass) deps []
+    let lexerOutClass = dirBase ++ filename lexmake +.+ "class"
+        outname x = dirBase ++ x +.+ "java"
+        deps = map outname (results lexmake ++ results parmake) in
+    Makefile.mkRule lexerOutClass deps []
   ]++
   -- Class of output of parser generator wants java of output of parser generator.
   -- Changing this to the
   --, Makefile.mkRule (dirBase ++ "sym.class") [ dirBase ++ "sym.java" ] []
   --, Makefile.mkRule (dirBase ++ "parser.class") [ dirBase ++ "parser.java", dirBase ++ "sym.java" ] []
-  (reverse [Makefile.mkRule tar dep [] | (tar,dep) <- partialParserGoals dirBase (results parmake)])
+  reverse [Makefile.mkRule tar dep [] | (tar,dep) <- partialParserGoals dirBase (results parmake)]
   -- This remains the same, it's the prettyprinting of BNFC
   ++[ Makefile.mkRule (dirBase ++ "PrettyPrinter.class") [ dirBase ++ "PrettyPrinter.java" ] []
 
@@ -210,7 +210,7 @@ makefile  dirBase dirAbsyn absynFileNames jlexpar = vcat $
                                               "PrettyPrinter.java",
                                               "Skeleton.java",
                                               "Test.java"]++
-                                              (dotJava (results parmake))++
+                                              dotJava (results parmake)++
                                               ["*.class"])
                                   , " rm -f Makefile"
                                   , " rmdir -p " ++ dirBase ]
@@ -223,32 +223,32 @@ makefile  dirBase dirAbsyn absynFileNames jlexpar = vcat $
       absynJavaSrc      = unwords (dotJava absynFileNames)
       absynJavaClass    = unwords (dotClass absynFileNames)
       classes = prependPath dirBase lst
-      lst = (dotClass (results lexmake)) ++ [ "PrettyPrinter.class", "Test.class"
+      lst = dotClass (results lexmake) ++ [ "PrettyPrinter.class", "Test.class"
           , "ComposVisitor.class", "AbstractVisitor.class"
           , "FoldVisitor.class", "AllVisitor.class"]++
-           (dotClass (results parmake)) ++ ["Test.class"]
+           dotClass (results parmake) ++ ["Test.class"]
 
 type TestClass = String -> String -> String -> String -> CF -> String
 
 -- | Test class details for J(F)Lex + CUP
 cuptest :: TestClass
-cuptest = (javaTest ["java_cup.runtime"]
+cuptest = javaTest ["java_cup.runtime"]
                     "Throwable"
-                    (\_ -> [])
-                    (\x -> \i -> x <> i <> ";")
-                    (\x -> \i -> x <> i <> ";")
-                    (\_ -> \pabs -> \enti -> pabs <> "." <> enti <+> "parse_tree = p."<> "p" <> enti <> "();")
+                    (const [])
+                    (\x i -> x <> i <> ";")
+                    (\x i -> x <> i <> ";")
+                    (\_ pabs enti -> pabs <> "." <> enti <+> "parse_tree = p."<> "p" <> enti <> "();")
                     "At line \" + String.valueOf(t.l.line_num()) + \", near \\\"\" + t.l.buff() + \"\\\" :"
-                    )
+
 
 -- | Test class details for ANTLR4
 antlrtest :: TestClass
-antlrtest = (javaTest ["org.antlr.v4.runtime","org.antlr.v4.runtime.atn","org.antlr.v4.runtime.dfa","java.util"]
+antlrtest = javaTest ["org.antlr.v4.runtime","org.antlr.v4.runtime.atn","org.antlr.v4.runtime.dfa","java.util"]
                     "TestError"
-                    (\x ->antlrErrorHandling x)
-                    (\x -> \i ->  vcat [x <> "(new ANTLRInputStream" <> i <>");", "l.addErrorListener(new BNFCErrorListener());"])
-                    (\x -> \i -> vcat [x <> "(new CommonTokenStream" <> i <>");", "p.addErrorListener(new BNFCErrorListener());"])
-                    (\pbase -> \pabs -> \enti -> vcat [
+                    antlrErrorHandling
+                    (\x i ->  vcat [x <> "(new ANTLRInputStream" <> i <>");", "l.addErrorListener(new BNFCErrorListener());"])
+                    (\x i -> vcat [x <> "(new CommonTokenStream" <> i <>");", "p.addErrorListener(new BNFCErrorListener());"])
+                    (\pbase pabs enti -> vcat [
                         let rulename = getRuleName (show enti)
                             typename = text rulename
                             methodname = text $ firstLowerCase rulename
@@ -259,7 +259,7 @@ antlrtest = (javaTest ["org.antlr.v4.runtime","org.antlr.v4.runtime.atn","org.an
                             pabs <> "." <> enti <+> "parse_tree = pc.result;"
                         ])
                     "At line \" + e.line + \", column \" + e.column + \" :"
-            )
+
 
 
 parserLexerSelector :: String -> JavaLexerParser -> ParserLexerSpecification
@@ -270,8 +270,8 @@ parserLexerSelector _ JLexCup = ParseLexSpec {
 }
 parserLexerSelector _ JFlexCup = (parserLexerSelector "" JLexCup){lexer = cf2JFlex}
 parserLexerSelector l Antlr4 = ParseLexSpec {
-     lexer = (cf2AntlrLex' l),
-     parser = (cf2AntlrParse' l),
+     lexer = cf2AntlrLex' l,
+     parser = cf2AntlrParse' l,
      testclass = antlrtest
  }
 
@@ -339,12 +339,12 @@ cf2AntlrParse' l = CF2Parse {
 
 -- | shorthand for Makefile command running javac or java
 runJavac , runJava:: String -> String
-runJava s = mkRunProgram "JAVA" s
-runJavac s = mkRunProgram "JAVAC" s
+runJava = mkRunProgram "JAVA"
+runJavac  = mkRunProgram "JAVAC"
 
 -- | function returning a string executing a program contained in a variable j on input s
 mkRunProgram :: String -> String -> String
-mkRunProgram j s = (Makefile.refVar j) +++ (Makefile.refVar (j +-+ "FLAGS")) +++ s
+mkRunProgram j s = Makefile.refVar j +++ Makefile.refVar (j +-+ "FLAGS") +++ s
 
 
 type OutputDirectory = String
@@ -362,7 +362,7 @@ type OutputDirectory = String
 -- | moveresults : if true, the files are moved to the base directory, otherwise they are left where they are
 data MakeFileDetails = MakeDetails {
     executable::String,
-    flags::(OutputDirectory -> String),
+    flags::OutputDirectory -> String,
     filename::String,
     fileextension::String,
     toolname::String,
@@ -375,13 +375,13 @@ data MakeFileDetails = MakeDetails {
 
 
 mapEmpty :: a->String
-mapEmpty = (\_ -> "")
+mapEmpty _ = ""
 
 -- Instances of makefile details.
 cupmakedetails, jflexmakedetails, jlexmakedetails :: MakeFileDetails
 
 jlexmakedetails = MakeDetails{
-        executable = (runJava "JLex.Main"),
+        executable = runJava "JLex.Main",
         flags = mapEmpty,
         filename = "Yylex",
         fileextension = "",
@@ -399,8 +399,8 @@ jflexmakedetails = jlexmakedetails{
                     }
 
 cupmakedetails = MakeDetails{
-         executable =             (runJava "java_cup.Main"),
-         flags = (\_ -> "-nopositions -expect 100"),
+         executable = runJava "java_cup.Main",
+         flags = const "-nopositions -expect 100",
          filename = "_cup",
          fileextension = "cup",
          toolname = "CUP",
@@ -414,8 +414,8 @@ cupmakedetails = MakeDetails{
 
 antlrmakedetails :: String -> MakeFileDetails
 antlrmakedetails l = MakeDetails{
-         executable = (runJava "org.antlr.v4.Tool"),
-         flags = (\x -> intercalate " " $ map (+++(take ((length x) - 1 ) x )) [ "-lib", "-package"]),
+         executable = runJava "org.antlr.v4.Tool",
+         flags = \x -> unwords $ map (+++take (length x - 1 ) x ) [ "-lib", "-package"],
          filename = l,
          fileextension = "g4",
          toolname = "ANTLRv4",
@@ -431,8 +431,8 @@ prependPath s fi = [s ++ x | x<- fi]
 appendExtension s fi = [x+.+s | x<- fi]
 
 dotJava,dotClass :: [String] -> [String]
-dotJava a = appendExtension "java" a
-dotClass a = appendExtension "class" a
+dotJava = appendExtension "java"
+dotClass = appendExtension "class"
 
 
 type CFToJava = String -> String -> CF -> String
@@ -465,14 +465,14 @@ bnfcVisitorsAndTests pbase pabsyn cf cf0 cf1 cf2 cf3 cf4 cf5 cf6 =
 
 -- bnfcGenerated = [ "PrettyPrinter", "Test", "ComposVisitor", "AbstractVisitor", "FoldVisitor", "AllVisitor"]
 
-inputfile x = (filename x) ++ case fileextension x of
+inputfile x = filename x ++ case fileextension x of
                                         "" -> ""
-                                        a -> "."++a
+                                        a -> '.':a
 
 -- |  constructs the rules regarding the parser in the makefile
 partialParserGoals :: String -> [String] -> [(String, [String])]
 partialParserGoals _ [] = []
-partialParserGoals dbas (x:rest) = ((dbas++x+.+"class"),(map (\y ->dbas++y+.+"java") (x:rest))):(partialParserGoals dbas rest)
+partialParserGoals dbas (x:rest) = (dbas++x+.+"class",map (\y ->dbas++y+.+"java") (x:rest)):partialParserGoals dbas rest
 
 
 -- | Creates the Test.java class.
@@ -506,8 +506,8 @@ javaTest imports err errhand
       , "import java.io.*;"
     ]++
 --      , "import java_cup.runtime.*;"
-        (map importfun imports)
-        ++ (errhand err)
+        map importfun imports
+        ++ errhand err
     ++[ ""
       , "public class Test"
       , codeblock 2 [
@@ -517,21 +517,21 @@ javaTest imports err errhand
         ,"public Test(String[] args)"
         , codeblock 2 [
             "try"
-            , codeblock 2 ([
+            , codeblock 2 [
                 "Reader input;"
                 ,"if (args.length == 0) input = new InputStreamReader(System.in);"
                 ,"else input = new FileReader(args[0]);"
-                ,"l = new "<>(lexerconstruction lx "(input)")
-            ])
+                ,"l = new "<>lexerconstruction lx "(input)"
+                ]
             ,"catch(IOException e)"
             ,codeblock 2 [
                 "System.err.println(\"Error: File not found: \" + args[0]);"
                 ,"System.exit(1);"
+                ]
+            ,"p = new "<> parserconstruction px "(l)"
             ]
-            ,"p = new "<> (parserconstruction px "(l)")
-        ]
         ,""
-        ,"public" <+> (text packageAbsyn) <> "." <> absentity <+>"parse() throws Exception"
+        ,"public" <+> text packageAbsyn <> "." <> absentity <+>"parse() throws Exception"
         , codeblock 2 [
             "/* The default parser is the first-defined entry point. */"
             , "/* You may want to change this. Other options are: */"
@@ -548,7 +548,7 @@ javaTest imports err errhand
             , "System.out.println();"
             , "System.out.println(PrettyPrinter.print(parse_tree));"
             , "return parse_tree;"
-        ]
+            ]
         , ""
         , "public static void main(String args[]) throws Exception"
         , codeblock 2 [
@@ -556,13 +556,13 @@ javaTest imports err errhand
             ,"try"
             ,codeblock 2 [
                 "t.parse();"
-            ]
-            ,"catch("<>(text err)<+>"e)"
+                ]
+            ,"catch("<>text err<+>"e)"
             ,codeblock 2 [
-                 "System.err.println(\""<>(text errmsg)<>"\");"
+                 "System.err.println(\""<>text errmsg<>"\");"
                 , "System.err.println(\"     \" + e.getMessage());"
                 , "System.exit(1);"
-            ]
+                ]
         ]
       ]
     ]
@@ -571,7 +571,7 @@ javaTest imports err errhand
         lx = text lexer
         px = text parser
 
-        absentity = text $ (show def)
+        absentity = text $ show def
         eps = allEntryPoints cf
         def = head eps
         showOpts [] = []
