@@ -600,10 +600,10 @@ antlrErrorHandling te = ["class"<+>tedoc<+>"extends RuntimeException"
         ,codeblock 2[ "throw new"<+>tedoc<>"(\"Ambiguity at\",i,i1);" ]
     ,"@Override"
         ,"public void reportAttemptingFullContext(Parser parser, DFA dfa, int i, int i1, BitSet bitSet, ATNConfigSet atnConfigSet)"
-        ,codeblock 2 [{-"throw new"<+>tedoc<>"(\"Attempting full context\",i,i1);"-}]
+        ,codeblock 2 []
     ,"@Override"
         ,"public void reportContextSensitivity(Parser parser, DFA dfa, int i, int i1, int i2, ATNConfigSet atnConfigSet)"
-        ,codeblock 2 [ {-"throw new"<+>tedoc<>"(\"Context sensitivity\",i,i1);"-}]
+        ,codeblock 2 []
         ]
     ]
     where tedoc = text te
