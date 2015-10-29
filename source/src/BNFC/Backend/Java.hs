@@ -264,9 +264,19 @@ antlrtest = (javaTest ["org.antlr.v4.runtime","org.antlr.v4.runtime.atn","org.an
 
 
 parserLexerSelector :: String -> JavaLexerParser -> ParserLexerSpecification
-parserLexerSelector _ JLexCup = mkParserLexerSpecification cf2JLex cf2cup cuptest
-parserLexerSelector _ JFlexCup = mkParserLexerSpecification cf2JFlex cf2cup cuptest
-parserLexerSelector l Antlr4 = mkParserLexerSpecification (cf2AntlrLex' l) (cf2AntlrParse' l) antlrtest
+parserLexerSelector _ JLexCup = ParseLexSpec {
+    lexer = cf2JLex,
+    parser = cf2cup,
+    testclass = cuptest
+}
+parserLexerSelector _ JFlexCup = (parserLexerSelector "" JLexCup){lexer = cf2JFlex}
+parserLexerSelector l Antlr4 = ParseLexSpec {
+     lexer = (cf2AntlrLex' l),
+     parser = (cf2AntlrParse' l),
+     testclass = antlrtest
+ }
+
+
 
 data ParserLexerSpecification = ParseLexSpec{
     parser :: CFToParser  ,
@@ -274,35 +284,35 @@ data ParserLexerSpecification = ParseLexSpec{
     testclass :: TestClass
 }
 
--- positional constructor
-mkParserLexerSpecification :: CFToLexer -> CFToParser -> TestClass -> ParserLexerSpecification
-mkParserLexerSpecification tl tp tc = ParseLexSpec {
-    parser = tp,
-    lexer = tl,
-    testclass = tc
-}
 
 -- |CF -> LEXER GENERATION TOOL BRIDGE
 -- | type of function translating the CF to an appropriate lexer generation tool.
 type CF2LexerFunction = String -> CF -> (Doc, SymEnv)
 -- Chooses the translation from CF to the lexer
 data CFToLexer = CF2Lex {
-    cf2lex :: String -> CF -> (Doc, SymEnv),
+    cf2lex :: CF2LexerFunction,
     makelexerdetails :: MakeFileDetails
 }
--- | Shorthand for positional constructor
-mkCFtoLexer :: CF2LexerFunction -> MakeFileDetails -> CFToLexer
-mkCFtoLexer fu mf = CF2Lex {
-    cf2lex = fu,
-    makelexerdetails = mf
-}
+
 
 -- | Instances of cf-lexergen bridges
 cf2JLex, cf2JFlex:: CFToLexer
-cf2JLex     = mkCFtoLexer BNFC.Backend.Java.CFtoJLex15.cf2jlex' jlexmakedetails
-cf2JFlex    = mkCFtoLexer BNFC.Backend.Java.CFtoJLex15.cf2jflex' jflexmakedetails
+
+cf2JLex     = CF2Lex {
+                  cf2lex = BNFC.Backend.Java.CFtoJLex15.cf2jlex',
+                  makelexerdetails = jlexmakedetails
+              }
+
+cf2JFlex    = CF2Lex {
+                 cf2lex = BNFC.Backend.Java.CFtoJLex15.cf2jflex',
+                 makelexerdetails = jflexmakedetails
+             }
+
 cf2AntlrLex' :: String -> CFToLexer
-cf2AntlrLex' l = mkCFtoLexer BNFC.Backend.Java.CFtoAntlr4Lexer.cf2AntlrLex $ antlrmakedetails $ l++"Lexer" -- TODO
+cf2AntlrLex' l = CF2Lex {
+                                  cf2lex = BNFC.Backend.Java.CFtoAntlr4Lexer.cf2AntlrLex,
+                                  makelexerdetails = antlrmakedetails $ l++"Lexer"
+                              }
 
 
 -- | CF -> PARSER GENERATION TOOL BRIDGE
@@ -313,17 +323,19 @@ data CFToParser = CF2Parse {
     cf2parse :: CF2ParserFunction,
     makeparserdetails :: MakeFileDetails
 }
--- |  Shorthand for positional constructor
-mkCFtoParser :: CF2ParserFunction -> MakeFileDetails -> CFToParser
-mkCFtoParser fu mf = CF2Parse {
-    cf2parse = fu,
-    makeparserdetails = mf
-}
+
 -- | Instances of cf-parsergen bridges
 cf2cup :: CFToParser
-cf2cup = mkCFtoParser BNFC.Backend.Java.CFtoCup15.cf2Cup cupmakedetails
+cf2cup = CF2Parse {
+     cf2parse = BNFC.Backend.Java.CFtoCup15.cf2Cup,
+     makeparserdetails = cupmakedetails
+ }
+
 cf2AntlrParse' :: String -> CFToParser
-cf2AntlrParse' l = mkCFtoParser BNFC.Backend.Java.CFtoAntlr4Parser.cf2AntlrParse $ antlrmakedetails $ l++"Parser"
+cf2AntlrParse' l = CF2Parse {
+                        cf2parse = BNFC.Backend.Java.CFtoAntlr4Parser.cf2AntlrParse,
+                        makeparserdetails = antlrmakedetails $ l++"Parser"
+                    }
 
 
 -- | shorthand for Makefile command running javac or java
@@ -361,21 +373,7 @@ data MakeFileDetails = MakeDetails {
     moveresults :: Bool
 }
 
--- Positional constructor.
-mkMakeFileDetails :: String -> (OutputDirectory->String) -> String -> String -> String -> String -> Bool -> [String] -> Bool -> MakeFileDetails
-mkMakeFileDetails x f fil ex tn tv sup res mr = MakeDetails{
-    executable = x,
-    flags = f,
-    filename = fil,
-    fileextension = ex,
-    toolname = tn,
-    toolversion = tv,
-    supportsEntryPoints = sup,
-    results = res, -- Note: the first class is the tool's main class,
-                   -- that is, the one whose objects represent the
-                   -- tool in a Java program
-    moveresults = mr
-}
+
 
 mapEmpty :: a->String
 mapEmpty = (\_ -> "")
@@ -383,52 +381,50 @@ mapEmpty = (\_ -> "")
 -- Instances of makefile details.
 cupmakedetails, jflexmakedetails, jlexmakedetails :: MakeFileDetails
 
-jlexmakedetails  = mkMakeFileDetails
-                        (runJava "JLex.Main")
-                        mapEmpty
-                        "Yylex"
-                        ""
-                        "JLex"
-                        "1.2.6."
-                        False
-                        ["Yylex"]
-                        False
+jlexmakedetails = MakeDetails{
+        executable = (runJava "JLex.Main"),
+        flags = mapEmpty,
+        filename = "Yylex",
+        fileextension = "",
+        toolname = "JLex",
+        toolversion = "1.2.6.",
+        supportsEntryPoints = False,
+        results = ["Yylex"],
+        moveresults = False
+    }
 
-jflexmakedetails = mkMakeFileDetails
-                        "jflex"
-                        mapEmpty
-                        "Yylex"
-                        ""
-                        "JFlex"
-                        "1.4.3"
-                        False
-                        ["Yylex"]
-                        False
+jflexmakedetails = jlexmakedetails{
+                    executable="jflex",
+                    toolname = "JFlex",
+                    toolversion = "1.4.3"
+                    }
 
+cupmakedetails = MakeDetails{
+         executable =             (runJava "java_cup.Main"),
+         flags = (\_ -> "-nopositions -expect 100"),
+         filename = "_cup",
+         fileextension = "cup",
+         toolname = "CUP",
+         toolversion = "0.10k",
+         supportsEntryPoints = False,
+         results = ["parser", "sym"],
+         moveresults = True
+}
 
-cupmakedetails = mkMakeFileDetails
-                    (runJava "java_cup.Main")
-                    (\_ -> "-nopositions -expect 100")
-                    "_cup"
-                    "cup"
-                    "CUP"
-                    "0.10k"
-                    False
-                    ["parser", "sym"]
-                    True
 
 
 antlrmakedetails :: String -> MakeFileDetails
-antlrmakedetails l = mkMakeFileDetails
-    (runJava "org.antlr.v4.Tool")
-    (\x -> intercalate " " $ map (+++(take ((length x) - 1 ) x )) [ "-lib", "-package"])
-    l
-    "g4"
-    "ANTLRv4"
-    "4.5.1"
-    True
-    [l]
-    False
+antlrmakedetails l = MakeDetails{
+         executable = (runJava "org.antlr.v4.Tool"),
+         flags = (\x -> intercalate " " $ map (+++(take ((length x) - 1 ) x )) [ "-lib", "-package"]),
+         filename = l,
+         fileextension = "g4",
+         toolname = "ANTLRv4",
+         toolversion = "4.5.1",
+         supportsEntryPoints = True,
+         results = [l],
+         moveresults = False
+}
 
 
 prependPath , appendExtension :: String -> [String] -> [String]
@@ -452,7 +448,7 @@ data BNFCGeneratedEntities = BNFCGenerated {
     bskel :: (String,  String)
 }
 
--- | Positional constructor.
+
 bnfcVisitorsAndTests :: String -> String -> CF ->
                             CFToJava ->  CFToJava -> CFToJava -> CFToJava -> CFToJava -> CFToJava -> CFToJava -> BNFCGeneratedEntities
 bnfcVisitorsAndTests pbase pabsyn cf cf0 cf1 cf2 cf3 cf4 cf5 cf6 =
