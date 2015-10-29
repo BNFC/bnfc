@@ -76,7 +76,7 @@ cf2AntlrParse packageBase packageAbsyn cf env = unlines
 --The following functions are a (relatively) straightforward translation
 --of the ones in CFtoHappy.hs
 rulesForAntlr4 :: String -> CF -> SymEnv -> Rules
-rulesForAntlr4 packageAbsyn cf env = map mkOne $ getrules where
+rulesForAntlr4 packageAbsyn cf env = map mkOne getrules where
   getrules = ruleGroups cf
   mkOne (cat,rules) = constructRule packageAbsyn cf env rules cat
 
@@ -127,9 +127,9 @@ generateAction packageAbsyn nt f ms rev
                           TokenCat "Integer" -> parseint $ n'+.+gettext
                           TokenCat "Char"    -> n'+.+gettext+.+charat
                           TokenCat "Double"  -> parsedouble $ n'+.+gettext
-                          TokenCat "String"  -> n'+.+gettext+.+(removeQuotes n')
-                          _         -> if isTokenCat c then n'+.+gettext else n'+.+"result"
-                          where n' = "$"++n
+                          TokenCat "String"  -> n'+.+gettext+.+removeQuotes n'
+                          _         -> (+.+) n' (if isTokenCat c then gettext else "result")
+                          where n' = '$':n
 
 -- | Generate patterns and a set of metavariables indicating
 -- where in the pattern the non-terminal
@@ -144,7 +144,7 @@ generatePatterns ind env r = case rhsRule r of
  where
     mkIt _ [] = []
     mkIt n (i:is) = case i of
-        Left c -> "p_" ++(show ind)++"_"++ show (n :: Int) ++ "="++ c' +++ mkIt (n+1) is
+        Left c -> "p_" ++show ind++"_"++ show (n :: Int) ++ "="++ c' +++ mkIt (n+1) is
           where
               c' = case c of
                   TokenCat "Ident"   -> "IDENT"
@@ -166,18 +166,16 @@ prRules :: String -> Rules -> String
 prRules _ [] = []
 prRules packabs ((_, []):rs) = prRules packabs rs --internal rule. It creates no output.
 prRules packabs ((nt,(p, fun, a):ls):rs) =
-  unwords [nt',"returns", "[" , packabs+.+normcat, "result" , "]",":", p, "{", a, "}", "#", antlrRuleLabel fun, '\n' : pr ls] ++ ";\n" ++ (prRules packabs rs)
+  unwords [nt',"returns", "[" , packabs+.+normcat, "result" , "]",":", p, "{", a, "}", "#", antlrRuleLabel fun, '\n' : pr ls] ++ ";\n" ++ prRules packabs rs
  where
-  catid = (identCat nt)
+  catid = identCat nt
   normcat = identCat (normCat nt)
   nt' = getRuleName $ firstLowerCase catid
   pr []           = []
   pr ((p,fun,a):ls)   = unlines [unwords ["  |", p, "{", a , "}", "#", antlrRuleLabel fun]] ++ pr ls
-  antlrRuleLabel fnc = if isNilFun fnc
-                       then catid++"_Empty" else
-                       if isOneFun fnc
-                       then catid++"_AppendLast" else
-                       if isConsFun fnc
-                       then catid++"_PrependFirst" else
-                       if isCoercion fnc
-                       then "Coercion_"++catid else getLabelName fnc
+  antlrRuleLabel fnc
+    | isNilFun fnc = catid ++ "_Empty"
+    | isOneFun fnc = catid ++ "_AppendLast"
+    | isConsFun fnc = catid ++ "_PrependFirst"
+    | isCoercion fnc = "Coercion_" ++ catid
+    | otherwise = getLabelName fnc

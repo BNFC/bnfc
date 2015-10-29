@@ -134,7 +134,7 @@ restOfLexerGrammar cf = vcat
     , ifChar charmodes
     ]
   where
-    ifC cat s = if isUsedCat cf cat then (vcat s) else ""
+    ifC cat s = if isUsedCat cf cat then vcat s else ""
     ifString = ifC catString
     ifChar = ifC catChar
     strdec = [
@@ -167,10 +167,10 @@ restOfLexerGrammar cf = vcat
 lexComments :: ([(String, String)], [String]) -> Doc
 lexComments ([],[]) = ""
 lexComments (m,s) =
-    vcat ((prod "COMMENT_antlr_builtin" lexSingleComment s) ++
-        (prod "MULTICOMMENT_antlr_builtin" lexMultiComment m) )
+    vcat (prod "COMMENT_antlr_builtin" lexSingleComment s ++
+         prod "MULTICOMMENT_antlr_builtin" lexMultiComment m )
         where
-            prod bg lc ty = [bg, ": ("] ++ (punctuate "|" (map lc ty)) ++ skiplex
+            prod bg lc ty = [bg, ": ("] ++ punctuate "|" (map lc ty) ++ skiplex
             skiplex = [") -> skip;"]
 
 

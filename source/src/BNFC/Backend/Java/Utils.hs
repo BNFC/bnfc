@@ -15,9 +15,7 @@ javaReserved = [
     ,"const" 	,"float" 	,"native" 	,"super" 	,"while"
     ]
 
-getRuleName z = case x `elem` (["grammar"]++javaReserved) of
-                True -> z ++ "_"
-                _ ->  z
+getRuleName z = if x `elem` ("grammar" : javaReserved) then z ++ "_" else z
                 where x = firstLowerCase z
 
-getLabelName z = mkName ["Rule"] CamelCase z
+getLabelName = mkName ["Rule"] CamelCase

@@ -30,22 +30,20 @@ parenth ss = ["("] ++ ss ++ [")"]
 class Print a where
   prt :: Int -> a -> [String]
   prtList :: [a] -> [String]
-  prtList = concat . map (prt 0)
+  prtList = concatMap (prt 0)
 
 instance Print a => Print [a] where
   prt _ = prtList
 
 instance Print Char where
   prt _ c = [escapeChar c]
-  prtList s = map (concat . prt 0) s
+  prtList = map (concat . prt 0)
 
 escapeChar :: Char -> String
--- escapeChar '^' = "\\x5E" -- special case, since \^ is a control character escape
 escapeChar x | x `elem` reserved = '\\' : [x]
 escapeChar x = [x]
 
--- Characters that must be escaped in ANTLR regular expressions (not fully sure about this)
--- FIXME Needs testing
+-- Characters that must be escaped in ANTLR regular expressions
 reserved :: [Char]
 reserved = ['\'','\\']
 
@@ -66,17 +64,17 @@ instance Print Reg where
    RMinus RAny reg@(RChar _) ->  prPrec i 3 (concat [["~["],prt 0 reg,["]"]])
    RMinus RAny (RAlts str) ->  prPrec i 3 (concat [["~["],prt 0 str,["]"]])
    -- FIXME: maybe we could add cases for char - RDigit, RLetter etc.
-   RMinus _ _ -> error $ "Antlr does not support general set difference"
+   RMinus _ _ -> error "Antlr does not support general set difference"
 
    RStar reg -> prPrec i 3 (concat [prt 3 reg , ["*"]])
    RPlus reg -> prPrec i 3 (concat [prt 3 reg , ["+"]])
    ROpt reg  -> prPrec i 3 (concat [prt 3 reg , ["?"]])
-   REps  -> prPrec i 3 ([""])
+   REps  -> prPrec i 3 [""]
    RChar c -> prPrec i 3 (concat [["'"], prt 0 c, ["'"]])
    RAlts str -> prPrec i 3 (concat [["["],prt 0 str,["]"]])
-   RSeqs str -> prPrec i 2 (concat (map (prt 0) str))
-   RDigit  -> prPrec i 3 (concat [["DIGIT"]])
-   RLetter  -> prPrec i 3 (concat [["LETTER"]])
-   RUpper  -> prPrec i 3 (concat [["CAPITAL"]])
-   RLower  -> prPrec i 3 (concat [["SMALL"]])
-   RAny  -> prPrec i 3 (concat [["[\\u0000-\\u00FF]"]])
+   RSeqs str -> prPrec i 2 (concatMap (prt 0) str)
+   RDigit  -> prPrec i 3 ["DIGIT"]
+   RLetter  -> prPrec i 3 ["LETTER"]
+   RUpper  -> prPrec i 3 ["CAPITAL"]
+   RLower  -> prPrec i 3 ["SMALL"]
+   RAny  -> prPrec i 3 ["[\\u0000-\\u00FF]"]
