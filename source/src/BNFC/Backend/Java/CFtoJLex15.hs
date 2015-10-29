@@ -45,10 +45,7 @@ import BNFC.Utils (cstring)
 import BNFC.Backend.Common.NamedVariables
 import Text.PrettyPrint
 
--- This is for now the workaround to differentiate JLex and JFlex.
--- FIXME This is terribly bad. Passing boolean flags all the way down is not
- -- good practice (code becomes unreadable, and as it is for now there are
- -- checks spreaded all way down to RegtoJLex -- )
+
 cf2jlex' str cf = cf2jlex str cf False
 cf2jflex' str cf = cf2jlex str cf True
 

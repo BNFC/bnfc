@@ -242,7 +242,6 @@ cuptest = (javaTest ["java_cup.runtime"]
                     )
 
 -- | Test class details for ANTLR4
--- TODO could make imports better by not importing the whole package (e.g. if they end with ., use star, otherwise don't)
 antlrtest :: TestClass
 antlrtest = (javaTest ["org.antlr.v4.runtime","org.antlr.v4.runtime.atn","org.antlr.v4.runtime.dfa","java.util"]
                     "TestError"

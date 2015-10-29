@@ -96,7 +96,6 @@ constructRule packageAbsyn cf env rules nt =
    revs = cfgReversibleCats cf
 
 -- Generates a string containing the semantic action.
--- TODO This function might be abstracted away to use ANTLR with other target languages
 generateAction :: String -> NonTerminal -> Fun -> [MetaVar]
                -> Bool   -- ^ Whether the list should be reversed or not.
                          --   Only used if this is a list rule.
