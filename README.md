@@ -54,7 +54,7 @@ https://bnfc.readthedocs.org/en/latest/
 Run tests
 ---------
 
-    Here is how to build and run the different test suites for bnfc.
+Here is how to build and run the different test suites for bnfc.
 
     cabal sandbox init # Cabal >= 1.18 only
     cabal install --only-dependencies --enable-tests
