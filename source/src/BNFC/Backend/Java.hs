@@ -218,7 +218,17 @@ makefile  dirBase dirAbsyn absynFileNames jlexpar = vcat $
           , "FoldVisitor.class", "AllVisitor.class"]++
            dotClass (results parmake) ++ ["Test.class"]
 
-type TestClass = String -> String -> String -> String -> CF -> String
+type TestClass = String
+    -- ^ class of the lexer
+    -> String
+    -- ^ class of the parser
+    -> String
+    -- ^ package where the non-abstract syntax classes are created
+    -> String
+    -- ^ package where the abstract syntax classes are created
+    -> CF
+    -- ^ the CF bundle
+    -> String
 
 -- | Test class details for J(F)Lex + CUP
 cuptest :: TestClass
@@ -484,34 +494,25 @@ partialParserGoals dbas (x:rest) =
         :partialParserGoals dbas rest
 
 -- | Creates the Test.java class.
-javaTest :: [Doc] -> String -> (String -> [Doc]) ->
-            (Doc -> Doc -> Doc) ->
-            (Doc -> Doc -> Doc)->
-            (Doc -> Doc -> Doc -> Doc) ->
-            String ->
-            TestClass
+javaTest :: [Doc]                   -- ^ list of imported packages
+            -> String -- ^ name of the exception thrown in case of parsing failure
+            -> (String -> [Doc]) -- ^ handler for the exception thrown
+            -> (Doc -> Doc -> Doc) -- ^ function formulating the construction of the lexer object
+            -> (Doc -> Doc -> Doc) -- ^ as above, for parser object
+            -> (Doc -> Doc -> Doc -> Doc) -- ^ function formulating the invocation of the parser tool within Java
+            -> String -- ^ error string output in consequence of a parsing failure
+            -> TestClass
 javaTest imports
-    -- | list of imported packages
     err
-    -- | name of the exception thrown in case of parsing failure
     errhand
-    -- | function formulating the construction of the lexer object
     lexerconstruction
-    -- | as above, for parser object
     parserconstruction
-    -- | function formulating the invocation of the parser tool within Java
     invocation
-    -- | error string output in consequence of a parsing failure
     errmsg
-    -- | class of the lexer
     lexer
-    -- | class of the parser
     parser
-    -- | package where the non-abstract syntax classes are created
     packageBase
-    -- | package where the abstract syntax classes are created
     packageAbsyn
-    -- | the CF bundle
     cf =
     render $ vcat $
         [ "package" <+> text packageBase <> ";"

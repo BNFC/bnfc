@@ -85,8 +85,6 @@ rulesForAntlr4 packageAbsyn cf env = map mkOne getrules
 constructRule :: String -> CF -> SymEnv -> [Rule] -> NonTerminal -> (NonTerminal,[(Pattern, Fun, Action)])
 constructRule packageAbsyn cf env rules nt =
     (nt, [ (p , funRule r , generateAction packageAbsyn nt (funRule r) (revM b m) b)
-            -- | The additional label 'index'
-            --   avoids name clashes in a rule in ANTLR.
           | (index ,r0) <- zip [1..(length rules)] rules,
           let (b,r) = if isConsFun (funRule r0) && elem (valCat r0) revs
                           then (True, revSepListRule r0)
@@ -170,7 +168,6 @@ generatePatterns ind env r = case rhsRule r of
 -- the rules.
 prRules :: String -> Rules -> String
 prRules _ [] = []
--- | internal rule creates no output.
 prRules packabs ((_, []):rs) = prRules packabs rs
 prRules packabs ((nt,(p, fun, a):ls):rs) =
     preamble ++ ";\n" ++ prRules packabs rs
