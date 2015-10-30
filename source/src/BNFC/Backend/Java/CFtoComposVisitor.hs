@@ -20,12 +20,12 @@
 
 module BNFC.Backend.Java.CFtoComposVisitor (cf2ComposVisitor) where
 
+import Data.List
+import Data.Either (lefts)
 import BNFC.CF
 import BNFC.Backend.Java.CFtoJavaAbs15 (typename)
 import BNFC.Utils ((+++))
 import BNFC.Backend.Common.NamedVariables
-import Data.List
-import Data.Either (lefts)
 import BNFC.PrettyPrint
 
 cf2ComposVisitor :: String -> String -> CF -> String
@@ -35,18 +35,19 @@ cf2ComposVisitor packageBase packageAbsyn cf =
     concatMap (prData packageAbsyn user) groups,
     "}"]
   where
-    user = fst (unzip (tokenPragmas cf))
-    groups = [ g | g@(c,_) <- fixCoercions (ruleGroupsInternals cf), not (isList c) ]
-    is = map (prInterface packageAbsyn) groups
+    user   = fst (unzip (tokenPragmas cf))
+    groups = [ g
+        | g@(c,_) <- fixCoercions (ruleGroupsInternals cf), not (isList c) ]
+    is     = map (prInterface packageAbsyn) groups
     header = unlines [
-      "package" +++ packageBase ++ ";",
-      "import" +++ packageAbsyn ++ ".*;",
-      "/** BNFC-Generated Composition Visitor",
-      "*/",
-      "",
-      "public class ComposVisitor<A> implements",
-      intercalate ",\n" $ map ("  "++) is,
-      "{"
+      "package" +++ packageBase ++ ";"
+      , "import" +++ packageAbsyn ++ ".*;"
+      , "/** BNFC-Generated Composition Visitor"
+      , "*/"
+      , ""
+      , "public class ComposVisitor<A> implements"
+      , intercalate ",\n" $ map ("  "++) is
+      , "{"
       ]
 
 
@@ -109,12 +110,13 @@ prCat user (cat, nt)
               $$ codeblock 2 [ nt <> ".add(x.accept(this,arg));" ]
   | otherwise = decl (var <> ".accept(this, arg)")
   where
-      var = "p." <> nt
-      varType = typename (identCat (normCat cat)) user
-      et = typename (show$normCatOfList cat) user
-      decl v = text varType <+> nt <+> "=" <+> v <> ";"
+    var     = "p." <> nt
+    varType = typename (identCat (normCat cat)) user
+    et      = typename (show$normCatOfList cat) user
+    decl v  = text varType <+> nt <+> "=" <+> v <> ";"
 
 --Just checks if something is a basic or user-defined type.
 isBasicType :: [UserDef] -> String -> Bool
-isBasicType user v = v `elem` (map show user ++ ["Integer","Character","String","Double"])
+isBasicType user v =
+    v `elem` (map show user ++ ["Integer","Character","String","Double"])
 

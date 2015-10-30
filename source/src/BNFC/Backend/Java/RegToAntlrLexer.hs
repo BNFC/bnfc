@@ -55,26 +55,27 @@ instance Print Ident where
 
 instance Print Reg where
   prt i e = case e of
-   RSeq reg0 reg -> prPrec i 2 (concat [prt 2 reg0 , prt 3 reg])
-   RAlt reg0 reg -> prPrec i 1 (concat [prt 1 reg0 , ["|"] , prt 2 reg])
-
+   RSeq reg0 reg
+              -> prPrec i 2 (concat [prt 2 reg0 , prt 3 reg])
+   RAlt reg0 reg
+              -> prPrec i 1 (concat [prt 1 reg0 , ["|"] , prt 2 reg])
    -- JLex does not support set difference
    --RMinus reg0 reg -> prPrec i 1 (concat [prt 2 reg0 , ["#"] , prt 2 reg])
    RMinus reg0 REps -> prt i reg0 -- REps is identity for set difference
-   RMinus RAny reg@(RChar _) ->  prPrec i 3 (concat [["~["],prt 0 reg,["]"]])
-   RMinus RAny (RAlts str) ->  prPrec i 3 (concat [["~["],prt 0 str,["]"]])
-   -- FIXME: maybe we could add cases for char - RDigit, RLetter etc.
+   RMinus RAny reg@(RChar _)
+              ->  prPrec i 3 (concat [["~["],prt 0 reg,["]"]])
+   RMinus RAny (RAlts str)
+              ->  prPrec i 3 (concat [["~["],prt 0 str,["]"]])
    RMinus _ _ -> error "Antlr does not support general set difference"
-
-   RStar reg -> prPrec i 3 (concat [prt 3 reg , ["*"]])
-   RPlus reg -> prPrec i 3 (concat [prt 3 reg , ["+"]])
-   ROpt reg  -> prPrec i 3 (concat [prt 3 reg , ["?"]])
-   REps  -> prPrec i 3 [""]
-   RChar c -> prPrec i 3 (concat [["'"], prt 0 c, ["'"]])
-   RAlts str -> prPrec i 3 (concat [["["],prt 0 str,["]"]])
-   RSeqs str -> prPrec i 2 (concatMap (prt 0) str)
-   RDigit  -> prPrec i 3 ["DIGIT"]
-   RLetter  -> prPrec i 3 ["LETTER"]
-   RUpper  -> prPrec i 3 ["CAPITAL"]
-   RLower  -> prPrec i 3 ["SMALL"]
-   RAny  -> prPrec i 3 ["[\\u0000-\\u00FF]"]
+   RStar reg  -> prPrec i 3 (concat [prt 3 reg , ["*"]])
+   RPlus reg  -> prPrec i 3 (concat [prt 3 reg , ["+"]])
+   ROpt reg   -> prPrec i 3 (concat [prt 3 reg , ["?"]])
+   REps       -> prPrec i 3 [""]
+   RChar c    -> prPrec i 3 (concat [["'"], prt 0 c, ["'"]])
+   RAlts str  -> prPrec i 3 (concat [["["],prt 0 str,["]"]])
+   RSeqs str  -> prPrec i 2 (concatMap (prt 0) str)
+   RDigit     -> prPrec i 3 ["DIGIT"]
+   RLetter    -> prPrec i 3 ["LETTER"]
+   RUpper     -> prPrec i 3 ["CAPITAL"]
+   RLower     -> prPrec i 3 ["SMALL"]
+   RAny       -> prPrec i 3 ["[\\u0000-\\u00FF]"]

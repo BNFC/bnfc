@@ -20,10 +20,11 @@
 
 module BNFC.Backend.Java.CFtoAllVisitor (cf2AllVisitor) where
 
+import Data.List
 import BNFC.CF
 import BNFC.Utils ((+++))
 import BNFC.Backend.Common.NamedVariables
-import Data.List
+
 
 cf2AllVisitor :: String -> String -> CF -> String
 cf2AllVisitor packageBase packageAbsyn cf =
@@ -37,8 +38,9 @@ cf2AllVisitor packageBase packageAbsyn cf =
            intercalate ",\n" $ map ("  "++) is,
            "{}"]
   where
-    groups = [ g | g@(c,_) <- fixCoercions (ruleGroupsInternals cf), not (isList c) ]
-    is = map (prInterface packageAbsyn) groups
+    groups = [ g
+        | g@(c,_) <- fixCoercions (ruleGroupsInternals cf), not (isList c) ]
+    is     = map (prInterface packageAbsyn) groups
 
 prInterface :: String -> (Cat, [Rule]) -> String
 prInterface packageAbsyn (cat, _) =
