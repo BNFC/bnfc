@@ -552,10 +552,10 @@ javaTest imports
                 , "/* You may want to change this. Other options are: */"
                 , "/* " <> fsep (punctuate "," (showOpts (tail eps))) <> " */"
                 , invocation px (text packageAbsyn) absentity
-                , printOuts [ "Parse Succesful!"
-                    , "[Abstract Syntax]"
+                , printOuts [ "\"Parse Succesful!\""
+                    , "\"[Abstract Syntax]\""
                     , "PrettyPrinter.show(parse_tree)"
-                    , "[Linearized Tree]"
+                    , "\"[Linearized Tree]\""
                     , "PrettyPrinter.print(parse_tree)"
                     ]
                 , "return parse_tree;"
@@ -576,7 +576,7 @@ javaTest imports
     where
       printOuts x    = vcat $ map javaPrintOut (messages x)
       messages x     = "":(intersperse "" x)
-      javaPrintOut x = text $ "System.out.println(\"" ++ x ++ "\");"
+      javaPrintOut x = text $ "System.out.println(" ++ x ++ ");"
       importfun x    = "import" <+> x <> ".*;"
       lx             = text lexer
       px             = text parser
