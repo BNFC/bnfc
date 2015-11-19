@@ -298,7 +298,7 @@ prList user c rules =
 -- <BLANKLINE>
 prCat :: Doc -> Either (Cat, Doc) String -> Doc
 prCat _ (Right t) = nest 7 ("render(\"" <> text(escapeChars t) <> "\");\n")
-prCat fnm (Left (Cat "String", nt))
+prCat fnm (Left (TokenCat "String", nt))
     = nest 7 ("printQuoted(" <> fnm <> "." <> nt <> ");\n")
 prCat _ (Left (InternalCat, _)) = empty
 prCat fnm (Left (cat, nt))
