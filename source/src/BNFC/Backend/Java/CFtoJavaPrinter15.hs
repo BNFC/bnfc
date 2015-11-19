@@ -288,7 +288,7 @@ prList user c rules =
 -- >>> prCat "F" (Right "++")
 --        render("++");
 -- <BLANKLINE>
--- >>> prCat "F" (Left (Cat "String", "string_"))
+-- >>> prCat "F" (Left (TokenCat "String", "string_"))
 --        printQuoted(F.string_);
 -- <BLANKLINE>
 -- >>> prCat "F" (Left (InternalCat, "#_"))
