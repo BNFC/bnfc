@@ -438,14 +438,14 @@ cupmakedetails = MakeDetails
 antlrmakedetails :: String -> MakeFileDetails
 antlrmakedetails l = MakeDetails
     { executable = runJava "org.antlr.v4.Tool"
-    , flags               = (\x -> unwords $
+    , flags               = \x -> unwords $
                                     let path    = take (length x - 1) x
                                         pointed = map cnv path
                                         cnv y   = if isPathSeparator y
                                                         then '.'
                                                         else y
                                         in [ "-lib", path
-                                           , "-package", pointed])
+                                           , "-package", pointed]
     , filename            = l
     , fileextension       = "g4"
     , toolname            = "ANTLRv4"
@@ -587,7 +587,7 @@ javaTest imports
         ]
     where
       printOuts x    = vcat $ map javaPrintOut (messages x)
-      messages x     = "":(intersperse "" x)
+      messages x     = "" : intersperse "" x
       javaPrintOut x = text $ "System.out.println(" ++ x ++ ");"
       importfun x    = "import" <+> x <> ".*;"
       lx             = text lexer
