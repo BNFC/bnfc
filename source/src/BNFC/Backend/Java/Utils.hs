@@ -19,3 +19,7 @@ getRuleName z = if x `elem` ("grammar" : javaReserved) then z ++ "_" else z
                 where x = firstLowerCase z
 
 getLabelName = mkName ["Rule"] CamelCase
+
+getLastInPackage :: String -> String
+getLastInPackage = 
+    last . words . map (\c -> if c == '.' then ' ' else c)
