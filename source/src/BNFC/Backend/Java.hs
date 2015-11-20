@@ -237,12 +237,15 @@ cuptest = javaTest ["java_cup.runtime"]
             (const [])
             (\x i -> x <> i <> ";")
             (\x i -> x <> i <> ";")
+            showOpts
             (\_ pabs enti ->
                 pabs <> "." <> enti <+> "parse_tree = p."<> "p" <> enti
                      <> "();")
             locs
     where locs = "At line \" + String.valueOf(t.l.line_num()) + \","
             ++ " near \\\"\" + t.l.buff() + \"\\\" :"
+          showOpts _ = ["not available."] 
+                    
 
 
 -- | Test class details for ANTLR4
@@ -260,6 +263,7 @@ antlrtest = javaTest [ "org.antlr.v4.runtime","org.antlr.v4.runtime.atn"
                     [x <> "(new CommonTokenStream" <> i <>");"
                     , "p.addErrorListener(new BNFCErrorListener());"
                     ])
+             showOpts 
              (\pbase pabs enti -> vcat
                     [
                     let rulename = getRuleName (show enti)
@@ -276,6 +280,9 @@ antlrtest = javaTest [ "org.antlr.v4.runtime","org.antlr.v4.runtime.atn"
                         pabs <> "." <> enti <+> "parse_tree = pc.result;"
                     ])
                     "At line \" + e.line + \", column \" + e.column + \" :"
+        where showOpts [] = [] 
+              showOpts (x:xs) | normCat x /= x = showOpts xs
+                              | otherwise      = text (firstLowerCase $ identCat x) : showOpts xs
 
 parserLexerSelector :: String -> JavaLexerParser -> ParserLexerSpecification
 parserLexerSelector _ JLexCup = ParseLexSpec
@@ -499,6 +506,7 @@ javaTest :: [Doc]                   -- ^ list of imported packages
             -> (String -> [Doc]) -- ^ handler for the exception thrown
             -> (Doc -> Doc -> Doc) -- ^ function formulating the construction of the lexer object
             -> (Doc -> Doc -> Doc) -- ^ as above, for parser object
+            -> ([Cat] -> [Doc])     -- ^ Function processing the names of the methods corresponding to entry points 
             -> (Doc -> Doc -> Doc -> Doc) -- ^ function formulating the invocation of the parser tool within Java
             -> String -- ^ error string output in consequence of a parsing failure
             -> TestClass
@@ -507,6 +515,7 @@ javaTest imports
     errhand
     lexerconstruction
     parserconstruction
+    showOpts
     invocation
     errmsg
     lexer
@@ -549,7 +558,7 @@ javaTest imports
                 <+>"parse() throws Exception"
             , codeblock 2
                 [ "/* The default parser is the first-defined entry point. */"
-                , "/* You may want to change this. Other options are: */"
+                , "/* Other options are: */"
                 , "/* " <> fsep (punctuate "," (showOpts (tail eps))) <> " */"
                 , invocation px (text packageAbsyn) absentity
                 , printOuts [ "\"Parse Succesful!\""
@@ -583,10 +592,6 @@ javaTest imports
       absentity      = text $ show def
       eps            = allEntryPoints cf
       def            = head eps
-      showOpts []    = []
-      showOpts (x:xs) | normCat x /= x = showOpts xs
-                      | otherwise      = text ('p' : identCat x) : showOpts xs
-
 
 -- | Error handling in ANTLR.
 -- By default, ANTLR does not stop after any parsing error and attempts to go
