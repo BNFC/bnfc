@@ -311,12 +311,12 @@ data CFToLexer = CF2Lex
 cf2JLex, cf2JFlex :: CFToLexer
 
 cf2JLex = CF2Lex
-       { cf2lex           = BNFC.Backend.Java.CFtoJLex15.cf2jlex'
+       { cf2lex           = BNFC.Backend.Java.CFtoJLex15.cf2jlex False
        , makelexerdetails = jlexmakedetails
        }
 
 cf2JFlex = CF2Lex
-       { cf2lex           = BNFC.Backend.Java.CFtoJLex15.cf2jflex'
+       { cf2lex           = BNFC.Backend.Java.CFtoJLex15.cf2jlex True
        , makelexerdetails = jflexmakedetails
        }
 

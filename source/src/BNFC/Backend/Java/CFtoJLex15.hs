@@ -37,7 +37,7 @@
    **************************************************************
 -}
 
-module BNFC.Backend.Java.CFtoJLex15 ( cf2jlex', cf2jflex' ) where
+module BNFC.Backend.Java.CFtoJLex15 ( cf2jlex ) where
 
 import BNFC.CF
 import BNFC.Backend.Java.RegToJLex
@@ -45,13 +45,9 @@ import BNFC.Utils (cstring)
 import BNFC.Backend.Common.NamedVariables
 import Text.PrettyPrint
 
-
-cf2jlex' str cf = cf2jlex str cf False
-cf2jflex' str cf = cf2jlex str cf True
-
 --The environment must be returned for the parser to use.
-cf2jlex :: String -> CF -> Bool -> (Doc, SymEnv)
-cf2jlex packageBase cf jflex = (vcat
+cf2jlex :: Bool -> String -> CF -> (Doc, SymEnv)
+cf2jlex jflex packageBase cf = (vcat
  [
   prelude jflex packageBase,
   cMacros,
@@ -62,7 +58,6 @@ cf2jlex packageBase cf jflex = (vcat
    env = makeSymEnv (cfgSymbols cf ++ reservedWords cf) (0 :: Int)
    makeSymEnv [] _ = []
    makeSymEnv (s:symbs) n = (s, "_SYMB_" ++ show n) : makeSymEnv symbs (n+1)
-
 
 -- | File prelude
 prelude :: Bool -> String -> Doc
