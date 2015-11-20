@@ -173,7 +173,8 @@ makefile  dirBase dirAbsyn absynFileNames jlexpar = vcat $
         deps = map outname (results lexmake ++ results parmake) in
         Makefile.mkRule lexerOutClass deps []
     ]++
-  reverse [Makefile.mkRule tar dep [] | (tar,dep) <- partialParserGoals dirBase (results parmake)]
+  reverse [Makefile.mkRule tar dep [] | 
+    (tar,dep) <- partialParserGoals dirBase (results parmake)]
   ++[ Makefile.mkRule (dirBase ++ "PrettyPrinter.class")
         [ dirBase ++ "PrettyPrinter.java" ] []
     -- Removes all the class files created anywhere
@@ -504,14 +505,24 @@ partialParserGoals dbas (x:rest) =
         :partialParserGoals dbas rest
 
 -- | Creates the Test.java class.
-javaTest :: [Doc]                   -- ^ list of imported packages
-            -> String -- ^ name of the exception thrown in case of parsing failure
-            -> (String -> [Doc]) -- ^ handler for the exception thrown
-            -> (Doc -> Doc -> Doc) -- ^ function formulating the construction of the lexer object
-            -> (Doc -> Doc -> Doc) -- ^ as above, for parser object
-            -> ([Cat] -> [Doc])     -- ^ Function processing the names of the methods corresponding to entry points 
-            -> (Doc -> Doc -> Doc -> Doc) -- ^ function formulating the invocation of the parser tool within Java
-            -> String -- ^ error string output in consequence of a parsing failure
+javaTest :: [Doc]                   
+            -- ^ list of imported packages
+            -> String 
+            -- ^ name of the exception thrown in case of parsing failure
+            -> (String -> [Doc]) 
+            -- ^ handler for the exception thrown
+            -> (Doc -> Doc -> Doc) 
+            -- ^ function formulating the construction of the lexer object
+            -> (Doc -> Doc -> Doc) 
+            -- ^ as above, for parser object
+            -> ([Cat] -> [Doc])
+            -- ^ Function processing the names of the methods corresponding 
+            -- to entry points 
+            -> (Doc -> Doc -> Doc -> Doc) 
+            -- ^ function formulating the invocation of the parser tool within 
+            -- Java
+            -> String 
+            -- ^ error string output in consequence of a parsing failure
             -> TestClass
 javaTest imports
     err
