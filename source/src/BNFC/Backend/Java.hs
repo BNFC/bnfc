@@ -239,7 +239,7 @@ cuptest = javaTest ["java_cup.runtime"]
             (\x i -> x <> i <> ";")
             showOpts
             (\_ pabs enti ->
-                pabs <> "." <> enti <+> "parse_tree = p."<> "p" <> enti
+                pabs <> "." <> enti <+> "ast = p."<> "p" <> enti
                      <> "();")
             locs
     where locs = "At line \" + String.valueOf(t.l.line_num()) + \","
@@ -277,7 +277,7 @@ antlrtest = javaTest [ "org.antlr.v4.runtime","org.antlr.v4.runtime.atn"
                         , "if(_tkn.getType() != -1) throw new TestError"
                           <> "(\"Stream does not end with EOF\","
                           <> "_tkn.getLine(),_tkn.getCharPositionInLine());",
-                        pabs <> "." <> enti <+> "parse_tree = pc.result;"
+                        pabs <> "." <> enti <+> "ast = pc.result;"
                     ])
                     "At line \" + e.line + \", column \" + e.column + \" :"
         where showOpts [] = [] 
@@ -566,11 +566,11 @@ javaTest imports
                 , invocation px (text packageAbsyn) absentity
                 , printOuts [ "\"Parse Succesful!\""
                     , "\"[Abstract Syntax]\""
-                    , "PrettyPrinter.show(parse_tree)"
+                    , "PrettyPrinter.show(ast)"
                     , "\"[Linearized Tree]\""
-                    , "PrettyPrinter.print(parse_tree)"
+                    , "PrettyPrinter.print(ast)"
                     ]
-                , "return parse_tree;"
+                , "return ast;"
                 ]
             , ""
             , "public static void main(String args[]) throws Exception"
