@@ -51,6 +51,7 @@ prelude name _ shareMod shareStrings byteStrings = [
   if byteStrings  then "import qualified Data.ByteString.Char8 as BS" else "",
   "import qualified Data.Bits",
   "import Data.Word (Word8)",
+  "import Data.Char (ord)",
   "}",
   ""
   ]
