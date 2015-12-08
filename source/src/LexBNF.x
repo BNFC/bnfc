@@ -9,6 +9,7 @@ module LexBNF where
 
 import qualified Data.Bits
 import Data.Word (Word8)
+import Data.Char (ord)
 }
 
 
