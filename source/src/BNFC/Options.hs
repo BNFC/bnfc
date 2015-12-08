@@ -55,6 +55,8 @@ data AlexVersion = Alex1 | Alex2 | Alex3
 data HappyMode = Standard | GLR
   deriving (Eq,Show,Bounded,Enum,Ord)
 
+data JavaLexerParser = JLexCup | JFlexCup | Antlr4
+    deriving (Eq,Show,Ord)
 -- | This is the option record that is passed to the different backends
 data SharedOptions = Options
   -- Option shared by at least 2 backends
@@ -67,7 +69,7 @@ data SharedOptions = Options
   , lang :: String
   -- Haskell specific:
   , alexMode :: AlexVersion
-  , jflex :: Bool
+  , javaLexerParser :: JavaLexerParser
   , inDir :: Bool
   , shareStrings :: Bool
   , byteStrings :: Bool
@@ -107,7 +109,7 @@ defaultOptions = Options
   , wcf = False
   , functor = False
   , outDir  = "."
-  , jflex = False
+  , javaLexerParser = JLexCup
   }
 
 -- ~~~ Option definition ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -122,7 +124,7 @@ globalOptions = [
 targetOptions :: [ OptDescr (SharedOptions -> SharedOptions)]
 targetOptions = 
   [ Option "" ["java"]          (NoArg (\o -> o {target = TargetJava}))
-    "Output Java code for use with JLex and CUP"
+    "Output Java code [default: for use with JLex and CUP]"
   , Option "" ["haskell"]       (NoArg (\o -> o {target = TargetHaskell}))
     "Output Haskell code for use with Alex and Happy (default)"
   , Option "" ["haskell-gadt"]  (NoArg (\o -> o {target = TargetHaskellGadt}))
@@ -151,14 +153,20 @@ specificOptions :: [(OptDescr (SharedOptions -> SharedOptions), [Target])]
 specificOptions =
   [ ( Option ['l'] [] (NoArg (\o -> o {linenumbers = True}))
         "Add and set line_number field for all syntax classes"
-    , [TargetCpp] )
+    , [TargetCpp, TargetJava] )
   , ( Option ['p'] []
       (ReqArg (\n o -> o {inPackage = Just n}) "<namespace>")
       "Prepend <namespace> to the package/module name"
     , [TargetCpp, TargetCSharp, TargetHaskell, TargetHaskellGadt, TargetProfile, TargetJava] )
-  , ( Option [] ["jflex"] (NoArg (\o -> o {jflex = True}))
-          "Use JFlex instead of JLex for lexing"
+  , ( Option [] ["jflex"] (NoArg (\o -> o {javaLexerParser = JFlexCup}))
+          "Lex with JFlex, parse with CUP"
     , [TargetJava] )
+    , ( Option [] ["jlex"] (NoArg (\o -> o {javaLexerParser = Antlr4}))
+                  "Lex with Jlex, parse with CUP (default)"
+            , [TargetJava] )
+    , ( Option [] ["antlr4"] (NoArg (\o -> o {javaLexerParser = Antlr4}))
+              "Lex and parse with antlr4"
+        , [TargetJava] )
   , ( Option [] ["vs"] (NoArg (\o -> o {visualStudio = True}))
           "Generate Visual Studio solution/project files"
     , [TargetCSharp] )

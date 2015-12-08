@@ -213,22 +213,25 @@ prEntryPoints packageAbsyn cf =
   prEntryPoint _ = ""
 
 prData :: String ->  [UserDef] -> (Cat, [Rule]) -> String
-prData packageAbsyn user (cat, rules) =
- if isList cat
- then unlines
- [
-  "  private static void pp(" ++ packageAbsyn ++ "."
-      ++ identCat (normCat cat) +++ "foo, int _i_)",
-  "  {",
-  render $ nest 5 $ prList user cat rules <> "  }"
- ]
- else unlines --not a list
- [
-  "  private static void pp(" ++ packageAbsyn ++ "." ++ identCat (normCat cat) +++ "foo, int _i_)",
-  "  {",
-  concat (addElse $ map (prRule packageAbsyn) rules) ++ "  }"
- ]
-  where addElse = map ("    "++). intersperse "else " . filter (not . null) . map (dropWhile isSpace)
+prData packageAbsyn user (cat, rules) = unlines k
+    where 
+      k = if isList cat
+           then 
+           ["  private static void pp(" ++ packageAbsyn ++ "."
+                ++ identCat (normCat cat) +++ "foo, int _i_)"
+            , "  {"
+            , render $ nest 5 $ prList user cat rules <> "  }"
+           ]
+           else --not a list
+           [
+            "  private static void pp(" ++ packageAbsyn ++ "." 
+                ++ identCat (normCat cat) +++ "foo, int _i_)",
+            "  {",
+            concat (addElse $ map (prRule packageAbsyn) rules) ++ "  }"
+           ]
+      addElse = map ("    "++). intersperse "else " . filter (not . null) 
+        . map (dropWhile isSpace) 
+ 
 
 prRule :: String -> Rule -> String
 prRule packageAbsyn r@(Rule fun _c cats) | not (isCoercion fun || isDefinedRule fun) = concat
@@ -288,7 +291,7 @@ prList user c rules =
 -- >>> prCat "F" (Right "++")
 --        render("++");
 -- <BLANKLINE>
--- >>> prCat "F" (Left (Cat "String", "string_"))
+-- >>> prCat "F" (Left (TokenCat "String", "string_"))
 --        printQuoted(F.string_);
 -- <BLANKLINE>
 -- >>> prCat "F" (Left (InternalCat, "#_"))
@@ -298,7 +301,7 @@ prList user c rules =
 -- <BLANKLINE>
 prCat :: Doc -> Either (Cat, Doc) String -> Doc
 prCat _ (Right t) = nest 7 ("render(\"" <> text(escapeChars t) <> "\");\n")
-prCat fnm (Left (Cat "String", nt))
+prCat fnm (Left (TokenCat "String", nt))
     = nest 7 ("printQuoted(" <> fnm <> "." <> nt <> ");\n")
 prCat _ (Left (InternalCat, _)) = empty
 prCat fnm (Left (cat, nt))
@@ -307,20 +310,22 @@ prCat fnm (Left (cat, nt))
 --The following methods generate the Show function.
 
 shData :: String -> [UserDef] -> (Cat, [Rule]) -> String
-shData packageAbsyn user (cat, rules) =
- if isList cat
- then unlines
- [
-  "  private static void sh(" ++ packageAbsyn ++ "." ++ identCat (normCat cat) +++ "foo)",
-  "  {",
-  shList user cat rules ++ "  }"
- ]
- else unlines
- [
-  "  private static void sh(" ++ packageAbsyn ++ "." ++ identCat (normCat cat) +++ "foo)",
-  "  {",
-  concatMap (shRule packageAbsyn) rules ++ "  }"
- ]
+shData packageAbsyn user (cat, rules) = unlines k
+    where 
+      k = if isList cat
+          then 
+          [ "  private static void sh(" ++ packageAbsyn ++ "." 
+                ++ identCat (normCat cat) +++ "foo)"
+          , "  {"
+          , shList user cat rules ++ "  }"
+          ]
+          else 
+          [ "  private static void sh(" ++ packageAbsyn ++ "." 
+                ++ identCat (normCat cat) +++ "foo)"
+          , "  {"
+          , concatMap (shRule packageAbsyn) rules ++ "  }"
+          ] 
+ 
 
 shRule :: String -> Rule -> String
 shRule packageAbsyn (Rule fun _c cats) | not (isCoercion fun || isDefinedRule fun) = unlines

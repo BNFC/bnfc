@@ -18,7 +18,7 @@
 -}
 
 module BNFC.Utils
-    ( (+++), (++++)
+    ( (+++), (++++), (+-+), (+.+)
     , mkName, mkNames, NameStyle(..)
     , lowerCase, upperCase, mixedCase, camelCase, snakeCase
     , replace, prParenth
@@ -40,9 +40,11 @@ infixr 5 ++++
 
 -- printing operations
 
-(+++), (++++) :: String -> String -> String
+(+.+), (+++), (++++), (+-+) :: String -> String -> String
 a +++ b   = a ++ " "    ++ b
 a ++++ b  = a ++ "\n"   ++ b
+a +-+ b   = a ++ "_"    ++ b
+a +.+ b   = a ++ "."    ++ b
 
 prParenth :: String -> String
 prParenth s = if s == "" then "" else "(" ++ s ++ ")"

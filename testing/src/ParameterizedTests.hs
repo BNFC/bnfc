@@ -133,7 +133,8 @@ data TestParameters = TP
 
 parameters :: [TestParameters]
 parameters =
-  [ hsParams { tpName = "Haskell" , tpBnfcOptions = ["--haskell", "-m"] }
+  [
+  hsParams { tpName = "Haskell" , tpBnfcOptions = ["--haskell", "-m"] }
   , hsParams { tpName = "Haskell (with functor)"
              , tpBnfcOptions = ["--haskell", "--functor", "-m"] }
   , hsParams { tpName = "Haskell (with namespace)"
@@ -158,12 +159,16 @@ parameters =
          , tpBnfcOptions = ["--cpp", "-m"] }
   , base { tpName = "C++ (no STL)"
          , tpBnfcOptions = ["--cpp-nostl", "-m"] }
-  , javaParams { tpName = "Java"
+  ,
+   javaParams { tpName = "Java"
                , tpBnfcOptions = ["--java", "-m"] }
+
   , javaParams { tpName = "Java (with namespace)"
                , tpBnfcOptions = ["--java", "-p","my.stuff", "-m"] }
   , javaParams { tpName = "Java (with jflex)"
                , tpBnfcOptions = ["--java", "--jflex", "-m"] }
+  , javaParams { tpName = "Java (with antlr)"
+                              , tpBnfcOptions = ["--java", "--antlr", "-m"] }
   ]
   where
     base = TP
