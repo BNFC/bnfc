@@ -1,0 +1,41 @@
+
+
+Flashlog . Declaration ::= [TopLevel];
+
+indented TopLevel;
+indented Member;
+
+Event . TopLevel ::= "event" Ident ":" [Member];
+Struct . TopLevel ::= "struct" Ident ":" [Member];
+NoTopLevel . TopLevel ::=;
+
+Field . Member ::= TypeName Ident Array;
+Docs  . Member ::= Documentation QuotedString; 
+NoMember . Member ::=;
+
+NoArray . Array ::= ;
+YesArray . Array ::= "[" Integer "]";
+
+Doc . Documentation ::= "doc";
+Descr . Documentation ::= "descr";
+Help . Documentation ::= "help";
+ 
+Single . QuotedString ::= String;
+Triple . QuotedString ::= TRIPLE_QUOTED_STRING;
+
+U8 . TypeName ::= "u8";
+S8 . TypeName ::= "s8";
+U16. TypeName ::= "u16";
+S16. TypeName ::= "s16";
+U32. TypeName ::= "u32";
+S32. TypeName ::= "s32";
+StructType. TypeName ::= "struct" Ident ;
+
+-- no, this is not correct. " can appear within a string, it's """ that cannot
+-- I think BNFC must then have a multilineString <delimiter> and this be implemented
+-- properly in the lexer.
+-- something like this:
+-- string Name [Delimiter,Delimiter] multiline
+-- and this becomes QuotedString 
+-- or, fuck off, just add MultilineString among the available builtin tokens
+token TRIPLE_QUOTED_STRING '"''"''"'  (char - '"')*   '"''"''"';
