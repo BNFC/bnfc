@@ -59,6 +59,7 @@ Here is how to build and run the different test suites for bnfc.
     cabal sandbox init # Cabal >= 1.18 only
     cabal install --only-dependencies --enable-tests
     cabal configure --enable-tests
+    cabal build
     cabal test
 
 Contribute
@@ -77,4 +78,3 @@ License
 -------
 
 The project is licensed under the GNU GENERAL PUBLIC LICENSE Version 2.
-
