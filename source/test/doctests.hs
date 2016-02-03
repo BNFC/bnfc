@@ -4,6 +4,7 @@ main = doctest
     , "-idist/build/autogen/"
     , "-idist/build/bnfc/bnfc-tmp"
     , "-XOverloadedStrings"
+    , "-XFlexibleContexts"
     , "-XRecordWildCards"
     , "src/PrintBNF.hs"
     , "src/Main.hs" ]
