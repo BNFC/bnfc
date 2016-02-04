@@ -99,7 +99,7 @@ mkHFile cf groups = unlines
 --Prints out visit functions for a category
 prDataH :: (Cat, [Rule]) -> String
 prDataH (cat, rules) =
- if "List" `isPrefixOf` identCat cat
+ if isList cat
  then concat ["  void visit", cl, "(", cl, " *", vname, ");"]
  else abstract ++ concatMap prRuleH rules
  where
@@ -183,7 +183,7 @@ mkCFile cf groups = concat
 --Visit functions for a category.
 prData :: [UserDef] -> (Cat, [Rule]) -> String
 prData user (cat, rules) =
- if "List" `isPrefixOf` (identCat cat)
+ if isList cat
  then unlines
  [
   "void Skeleton::visit" ++ cl ++ "("++ cl +++ "*" ++ vname ++ ")",
