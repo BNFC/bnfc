@@ -43,6 +43,7 @@ import BNFC.CF
 import BNFC.Utils ((+++))
 import BNFC.Backend.Common.NamedVariables
 import BNFC.Backend.Utils (isTokenType)
+import BNFC.Backend.CPP.Naming (mkVariable)
 import Data.List
 import Data.Char(toLower, toUpper)
 import Data.Either (lefts)
@@ -103,7 +104,7 @@ prDataH (cat, rules) =
  else abstract ++ concatMap prRuleH rules
  where
    cl = identCat (normCat cat)
-   vname = map toLower cl
+   vname = mkVariable cl
    abstract = case lookupRule (show cat) rules of
     Just _ -> ""
     Nothing ->  "  void visit" ++ cl ++ "(" ++ cl +++ "*" ++ vname ++ "); /* abstract class */\n"
@@ -113,7 +114,7 @@ prRuleH :: Rule -> String
 prRuleH (Rule fun _ _) | not (isCoercion fun) = concat
   ["  void visit", fun, "(", fun, " *", fnm, ");\n"]
    where
-    fnm = map toLower fun
+    fnm = mkVariable fun
 prRuleH _ = ""
 
 
@@ -191,7 +192,7 @@ prData user (cat, rules) =
   "  {",
   "    /* Code For " ++ cl ++ " Goes Here */",
   visitMember,
-  "    " ++ vname ++ " = " ++ vname ++ "->" ++ vname ++ "_;",
+  "    " ++ vname ++ " = " ++ vname ++ "->" ++ vname' ++ "_;",
   "  }",
   "}",
   ""
@@ -199,9 +200,10 @@ prData user (cat, rules) =
  else abstract ++ (concatMap (render . prRule user) rules)
  where
    cl = identCat (normCat cat)
-   vname = map toLower cl
+   vname = mkVariable cl
+   vname' = map toLower cl
    ecl = identCat (normCatOfList cat)
-   member = map toLower ecl ++ "_"
+   member = mkVariable ecl ++ "_"
    visitMember = if isBasic user member
      then "    visit" ++ (funName member) ++ "(" ++ vname ++ "->" ++ member ++ ");"
      else "    " ++ vname ++ "->" ++ member ++ "->accept(this);"
@@ -231,7 +233,7 @@ prRule user (Rule fun _ cats) | not (isCoercion fun) = vcat
   ]
    where
     cats' = vcat (map (prCat user fnm) (lefts (numVars cats)))
-    fnm = map toLower fun
+    fnm = mkVariable fun
 prRule _ _ = ""
 
 -- | Prints the actual instance-variable visiting.
