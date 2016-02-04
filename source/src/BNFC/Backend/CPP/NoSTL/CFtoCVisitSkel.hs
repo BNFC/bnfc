@@ -42,7 +42,6 @@ module BNFC.Backend.CPP.NoSTL.CFtoCVisitSkel (cf2CVisitSkel) where
 import BNFC.CF
 import BNFC.Utils ((+++))
 import BNFC.Backend.Common.NamedVariables
-import BNFC.Backend.Utils (isTokenType)
 import BNFC.Backend.CPP.Naming (mkVariable)
 import Data.List
 import Data.Char(toLower, toUpper)
@@ -197,7 +196,7 @@ prData user (cat, rules) =
   "}",
   ""
  ] --Not a list:
- else abstract ++ (concatMap (render . prRule user) rules)
+ else abstract ++ (concatMap (render . prRule) rules)
  where
    cl = identCat (normCat cat)
    vname = mkVariable cl
@@ -212,7 +211,7 @@ prData user (cat, rules) =
     Nothing ->  "void Skeleton::visit" ++ cl ++ "(" ++ cl +++ "*" ++ vname ++ ") {} //abstract class\n\n"
 
 -- | Visits all the instance variables of a category.
--- >>> prRule [Cat "A"] (Rule "F" (Cat "S") [Right "X", Left (Cat "A"), Left (Cat "B")])
+-- >>> prRule (Rule "F" (Cat "S") [Right "X", Left (TokenCat "A"), Left (Cat "B")])
 -- void Skeleton::visitF(F *f)
 -- {
 --   /* Code For F Goes Here */
@@ -221,8 +220,8 @@ prData user (cat, rules) =
 --   f->b_->accept(this);
 -- }
 -- <BLANKLINE>
-prRule :: [UserDef] -> Rule -> Doc
-prRule user (Rule fun _ cats) | not (isCoercion fun) = vcat
+prRule :: Rule -> Doc
+prRule (Rule fun _ cats) | not (isCoercion fun) = vcat
   [ text ("void Skeleton::visit" ++ fun ++ "(" ++ fun +++ "*" ++ fnm ++ ")")
   , codeblock 2
       [ text ("/* Code For " ++ fun ++ " Goes Here */")
@@ -232,20 +231,20 @@ prRule user (Rule fun _ cats) | not (isCoercion fun) = vcat
   , ""
   ]
    where
-    cats' = vcat (map (prCat user fnm) (lefts (numVars cats)))
+    cats' = vcat (map (prCat fnm) (lefts (numVars cats)))
     fnm = mkVariable fun
-prRule _ _ = ""
+prRule _ = ""
 
 -- | Prints the actual instance-variable visiting.
--- >>> prCat [] "Myfun" (Cat "Integer", "integer_")
+-- >>> prCat "Myfun" (TokenCat "Integer", "integer_")
 -- visitInteger(Myfun->integer_);
--- >>> prCat [] "Myfun" (ListCat (Cat "A"), "lista_")
+-- >>> prCat "Myfun" (ListCat (Cat "A"), "lista_")
 -- if (Myfun->lista_) {Myfun->lista_->accept(this);}
--- >>> prCat [] "Myfun" (Cat "A", "a_")
+-- >>> prCat "Myfun" (Cat "A", "a_")
 -- Myfun->a_->accept(this);
-prCat :: [Cat] -> String -> (Cat, Doc) -> Doc
-prCat user fnm (cat, nt)
-  | isTokenType user cat = "visit" <> text (funName (render nt)) <> parens (fname <> "->" <> nt) <> ";"
+prCat :: String -> (Cat, Doc) -> Doc
+prCat fnm (cat, nt)
+  | isTokenCat cat = "visit" <> text (funName (render nt)) <> parens (fname <> "->" <> nt) <> ";"
   | isList cat = "if" <+> parens (fname <> "->" <> nt) <+> braces accept
   | otherwise = accept
   where accept = fname <> "->" <> nt <> "->accept(this);"

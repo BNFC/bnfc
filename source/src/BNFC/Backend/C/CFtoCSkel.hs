@@ -42,7 +42,6 @@ module BNFC.Backend.C.CFtoCSkel (cf2CSkel) where
 import BNFC.CF
 import BNFC.Utils                       ( (+++) )
 import BNFC.Backend.Common.NamedVariables
-import BNFC.Backend.Utils (isTokenType)
 import Data.Char                ( toLower, toUpper )
 import Data.Either (lefts)
 
@@ -106,7 +105,7 @@ mkCFile :: CF -> [(Cat,[Rule])] -> String
 mkCFile cf groups = concat
    [
     header,
-    concatMap (prData user) groups,
+    concatMap prData groups,
     concatMap (prUser.show) user,
     footer
    ]
@@ -159,8 +158,8 @@ mkCFile cf groups = concat
      ]
 
 --Visit functions for a category.
-prData :: [UserDef] -> (Cat, [Rule]) -> String
-prData user (cat, rules)
+prData :: (Cat, [Rule]) -> String
+prData (cat, rules)
   | isList cat = unlines
                [
                 "void visit" ++ cl ++ "("++ cl +++ vname ++ ")",
@@ -181,7 +180,7 @@ prData user (cat, rules)
                 "{",
                 "  switch(_p_->kind)",
                 "  {",
-                concatMap (render . prPrintRule user) rules,
+                concatMap (render . prPrintRule) rules,
                 "  default:",
                 "    fprintf(stderr, \"Error: bad kind field when printing " ++ cl ++ "!\\n\");",
                 "    exit(1);",
@@ -195,28 +194,29 @@ prData user (cat, rules)
 
 -- | Visits all the instance variables of a category.
 -- >>> let ab = Cat "ab"
--- >>> prPrintRule [] (Rule "abc" undefined [Left ab, Left ab])
+-- >>> prPrintRule (Rule "abc" undefined [Left ab, Left ab])
 --   case is_abc:
 --     /* Code for abc Goes Here */
 --     visitab(_p_->u.abc_.ab_1);
 --     visitab(_p_->u.abc_.ab_2);
 --     break;
 -- <BLANKLINE>
--- >>> prPrintRule [ab] (Rule "abc" undefined [Left ab])
+-- >>> let ab = TokenCat "ab"
+-- >>> prPrintRule (Rule "abc" undefined [Left ab])
 --   case is_abc:
 --     /* Code for abc Goes Here */
 --     visitAb(_p_->u.abc_.ab_);
 --     break;
 -- <BLANKLINE>
--- >>> prPrintRule [ab] (Rule "abc" undefined [Left ab, Left ab])
+-- >>> prPrintRule (Rule "abc" undefined [Left ab, Left ab])
 --   case is_abc:
 --     /* Code for abc Goes Here */
 --     visitAb(_p_->u.abc_.ab_1);
 --     visitAb(_p_->u.abc_.ab_2);
 --     break;
 -- <BLANKLINE>
-prPrintRule :: [UserDef] -> Rule -> Doc
-prPrintRule user (Rule fun _c cats) | not (isCoercion fun) = nest 2 $ vcat
+prPrintRule :: Rule -> Doc
+prPrintRule (Rule fun _c cats) | not (isCoercion fun) = nest 2 $ vcat
     [ text $ "case is_" ++ fun ++ ":"
     , nest 2 (vcat
         [ "/* Code for " <> text fun <> " Goes Here */"
@@ -225,13 +225,13 @@ prPrintRule user (Rule fun _c cats) | not (isCoercion fun) = nest 2 $ vcat
         ])
     ]
   where
-    cats' = vcat $ map (prCat user fun) (lefts (numVars cats))
-prPrintRule _user (Rule _fun _ _) = ""
+    cats' = vcat $ map (prCat fun) (lefts (numVars cats))
+prPrintRule (Rule _fun _ _) = ""
 
 -- Prints the actual instance-variable visiting.
-prCat :: [UserDef] -> Fun -> (Cat, Doc) -> Doc
-prCat user fnm (cat, vname) =
-      let visitf = "visit" <> if isTokenType user cat
+prCat :: Fun -> (Cat, Doc) -> Doc
+prCat fnm (cat, vname) =
+      let visitf = "visit" <> if isTokenCat cat
                        then basicFunName cat
                        else text (identCat (normCat cat))
       in visitf <> parens ("_p_->u." <> text v <> "_." <> vname ) <> ";"

@@ -46,7 +46,6 @@ import BNFC.Utils ((+++))
 import BNFC.Backend.Common (renderListSepByPrecedence)
 import BNFC.Backend.Common.NamedVariables
 import BNFC.Backend.Common.StrUtils (renderCharOrString)
-import BNFC.Backend.Utils (isTokenType)
 import Data.List
 import Data.Char(toLower)
 import Data.Either (lefts)
@@ -148,17 +147,16 @@ mkCFile cf groups = concat
     prRender,
     concatMap prPrintFun eps,
     concatMap prShowFun eps,
-    concatMap (prPrintData user) groups,
+    concatMap prPrintData groups,
     printBasics,
     printTokens,
-    concatMap (prShowData user) groups,
+    concatMap prShowData groups,
     showBasics,
     showTokens,
     footer
    ]
   where
     eps = allEntryPoints cf
-    user = fst (unzip (tokenPragmas cf))
     header = unlines
      [
       "/*** BNFC-Generated Pretty Printer and Abstract Syntax Viewer ***/",
@@ -338,8 +336,8 @@ prPrintFun ep | normCat ep == ep = unlines
 prPrintFun _ = ""
 
 --Generates methods for the Pretty Printer
-prPrintData :: [UserDef] -> (Cat, [Rule]) -> String
-prPrintData user (cat, rules) = unlines $
+prPrintData :: (Cat, [Rule]) -> String
+prPrintData (cat, rules) = unlines $
  if isList cat
  then
  [
@@ -370,7 +368,7 @@ prPrintData user (cat, rules) = unlines $
    "{",
    "  switch(_p_->kind)",
    "  {",
-   concatMap (prPrintRule user) rules,
+   concatMap prPrintRule rules,
    "  default:",
    "    fprintf(stderr, \"Error: bad kind field when printing " ++ show cat ++ "!\\n\");",
    "    exit(1);",
@@ -400,8 +398,8 @@ renderX sep' = "render" <> char sc <> parens (text sep)
 
 
 --Pretty Printer methods for a rule.
-prPrintRule :: [UserDef] -> Rule -> String
-prPrintRule user r@(Rule fun _ cats) | not (isCoercion fun) = unlines
+prPrintRule :: Rule -> String
+prPrintRule r@(Rule fun _ cats) | not (isCoercion fun) = unlines
   [
    "  case is_" ++ fun ++ ":",
    lparen,
@@ -414,14 +412,14 @@ prPrintRule user r@(Rule fun _ cats) | not (isCoercion fun) = unlines
     (lparen, rparen) =
       ("    if (_i_ > " ++ show p ++ ") renderC(_L_PAREN);",
        "    if (_i_ > " ++ show p ++ ") renderC(_R_PAREN);")
-    cats' = concatMap (prPrintCat user fun) (numVars cats)
-prPrintRule _ _ = ""
+    cats' = concatMap (prPrintCat fun) (numVars cats)
+prPrintRule _ = ""
 
 --This goes on to recurse to the instance variables.
-prPrintCat :: [UserDef] -> String -> Either (Cat, Doc) String -> String
-prPrintCat user fnm (c) = case c of
+prPrintCat :: String -> Either (Cat, Doc) String -> String
+prPrintCat fnm (c) = case c of
   Right t -> "    " ++ render (renderX t) ++ ";\n"
-  Left (cat, nt) | isTokenType user cat -> "    pp" ++ basicFunName (render nt) ++ "(_p_->u." ++ v ++ "_." ++ render nt ++ ", " ++ show (precCat cat) ++ ");\n"
+  Left (cat, nt) | isTokenCat cat -> "    pp" ++ basicFunName (render nt) ++ "(_p_->u." ++ v ++ "_." ++ render nt ++ ", " ++ show (precCat cat) ++ ");\n"
   Left (InternalCat, _) -> "    /* Internal Category */\n"
   Left (cat, nt) -> "    pp" ++ identCat (normCat cat) ++ "(_p_->u." ++ v ++ "_." ++ render nt ++ ", " ++ show (precCat cat) ++ ");\n"
  where
@@ -446,8 +444,8 @@ prShowFun ep | normCat ep == ep = unlines
 prShowFun _ = ""
 
 --This prints the functions for Abstract Syntax tree printing.
-prShowData :: [UserDef] -> (Cat, [Rule]) -> String
-prShowData user (cat, rules) = unlines $
+prShowData :: (Cat, [Rule]) -> String
+prShowData (cat, rules) = unlines $
  if isList cat
  then
  [
@@ -476,7 +474,7 @@ prShowData user (cat, rules) = unlines $
    "{",
    "  switch(_p_->kind)",
    "  {",
-   concatMap (prShowRule user) rules,
+   concatMap prShowRule rules,
    "  default:",
    "    fprintf(stderr, \"Error: bad kind field when showing " ++ show cat ++ "!\\n\");",
    "    exit(1);",
@@ -491,8 +489,8 @@ prShowData user (cat, rules) = unlines $
    visitMember = "      sh" ++ ecl ++ "(" ++ vname ++ "->" ++ member ++ "_);"
 
 --Pretty Printer methods for a rule.
-prShowRule :: [UserDef] -> Rule -> String
-prShowRule user (Rule fun _ cats) | not (isCoercion fun) = unlines
+prShowRule :: Rule -> String
+prShowRule (Rule fun _ cats) | not (isCoercion fun) = unlines
   [
    "  case is_" ++ fun ++ ":",
    "  " ++ lparen,
@@ -508,7 +506,7 @@ prShowRule user (Rule fun _ cats) | not (isCoercion fun) = unlines
       else ("  bufAppendC(' ');\n", "  bufAppendC('(');\n","  bufAppendC(')');\n")
     cats' = if allTerms cats
         then ""
-        else concat (insertSpaces (map (prShowCat user fun) (lefts $ numVars cats)))
+        else concat (insertSpaces (map (prShowCat fun) (lefts $ numVars cats)))
     insertSpaces [] = []
     insertSpaces (x:[]) = [x]
     insertSpaces (x:xs) = if x == ""
@@ -517,12 +515,12 @@ prShowRule user (Rule fun _ cats) | not (isCoercion fun) = unlines
     allTerms [] = True
     allTerms (Left _:_) = False
     allTerms (_:zs) = allTerms zs
-prShowRule _ _ = ""
+prShowRule _ = ""
 
 --This goes on to recurse to the instance variables.
-prShowCat :: [UserDef] -> Fun -> (Cat, Doc) -> String
-prShowCat user fnm c = case c of
-    (cat,nt) | isTokenType user cat ->
+prShowCat :: Fun -> (Cat, Doc) -> String
+prShowCat fnm c = case c of
+    (cat,nt) | isTokenCat cat ->
         "    sh" ++ basicFunName (render nt) ++ "(_p_->u." ++ v ++ "_." ++ render nt ++ ");\n"
     (InternalCat, _) -> "    /* Internal Category */\n"
     (cat,nt) | show (normCat $ strToCat$ render nt) /= render nt ->
