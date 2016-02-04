@@ -148,19 +148,16 @@ parameters =
          }
   , base { tpName = "OCaml"
          , tpBnfcOptions = ["--ocaml", "-m"] }
-  , base { tpName = "C"
-         , tpBnfcOptions = ["--c", "-m"]
-         , tpBuild = do cmd "make"
-                        assertFileExists "Skeleton.h"
-                        assertFileExists "Skeleton.c"
-                        cmd "gcc" "-c" "Skeleton.c"
-         }
-  , base { tpName = "C++"
-         , tpBnfcOptions = ["--cpp", "-m"] }
-  , base { tpName = "C++ (no STL)"
-         , tpBnfcOptions = ["--cpp-nostl", "-m"] }
-  ,
-   javaParams { tpName = "Java"
+  -- C
+  , cBase { tpName = "C"
+          , tpBnfcOptions = ["--c", "-m"] }
+  -- C++
+  , cBase { tpName = "C++"
+          , tpBnfcOptions = ["--cpp", "-m"] }
+  , cBase { tpName = "C++ (no STL)"
+          , tpBnfcOptions = ["--cpp-nostl", "-m"] }
+  -- Java
+  , javaParams { tpName = "Java"
                , tpBnfcOptions = ["--java", "-m"] }
 
   , javaParams { tpName = "Java (with namespace)"
@@ -179,6 +176,7 @@ parameters =
             bin <- canonicalize ("." </> ("Test" <> lang))
             cmd bin args
         }
+    cBase = base { tpBuild = cmd "make" >> cmd "make" "Skeleton.o" }
     hsParams = base
         { tpBuild = do cmd "hlint" "-i" "Redundant bracket" "-i" "Use camelCase" "."
                        cmd "make"
