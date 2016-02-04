@@ -202,7 +202,7 @@ prData user (cat, rules) =
    vname = mkVariable cl
    vname' = map toLower cl
    ecl = identCat (normCatOfList cat)
-   member = mkVariable ecl ++ "_"
+   member = map toLower ecl ++ "_"
    visitMember = if isBasic user member
      then "    visit" ++ (funName member) ++ "(" ++ vname ++ "->" ++ member ++ ");"
      else "    " ++ vname ++ "->" ++ member ++ "->accept(this);"

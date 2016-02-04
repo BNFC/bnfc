@@ -41,8 +41,8 @@ module BNFC.Backend.CPP.STL.CFtoCVisitSkelSTL (cf2CVisitSkel) where
 
 import BNFC.CF
 import BNFC.Utils ((+++))
-import Data.Char(toLower)
 import BNFC.Backend.Common.OOAbstract
+import BNFC.Backend.CPP.Naming
 import BNFC.Backend.CPP.STL.STLUtils
 
 --Produces (.H file, .C file)
@@ -127,7 +127,7 @@ prList (cl,b) = unlines [
   "}"
   ]
  where
-   vname = map toLower cl
+   vname = mkVariable cl
 
 prCon (f,cs) = unlines [
   "void Skeleton::visit" ++ f ++ "(" ++ f ++ " *" ++ v ++ ")",
@@ -138,7 +138,7 @@ prCon (f,cs) = unlines [
   "}"
  ]
  where
-   v = map toLower f
+   v = mkVariable f
    visitArg (cat,isPt,var) =
      if isPt
        then (v ++ "->" ++ var ++ "->accept(this);")

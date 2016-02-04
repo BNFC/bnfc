@@ -167,4 +167,4 @@ showNum n = if n == 0 then [] else show n
 -- Makes the first letter a lowercase.
 firstLowerCase :: String -> String
 firstLowerCase "" = ""
-firstLowerCase (a:b) = (toLower a):b
+firstLowerCase (a:b) = toLower a:b
