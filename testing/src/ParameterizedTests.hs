@@ -133,8 +133,9 @@ data TestParameters = TP
 
 parameters :: [TestParameters]
 parameters =
-  [
-  hsParams { tpName = "Haskell" , tpBnfcOptions = ["--haskell", "-m"] }
+  -- Haskell
+  [ hsParams { tpName = "Haskell"
+             , tpBnfcOptions = ["--haskell", "-m"] }
   , hsParams { tpName = "Haskell (with functor)"
              , tpBnfcOptions = ["--haskell", "--functor", "-m"] }
   , hsParams { tpName = "Haskell (with namespace)"
@@ -146,6 +147,7 @@ parameters =
          , tpRunTestProg = \_ args -> do bin <- findFileRegex "Test\\w*$"
                                          cmd bin args
          }
+  -- OCaml
   , base { tpName = "OCaml"
          , tpBnfcOptions = ["--ocaml", "-m"] }
   -- C
@@ -159,13 +161,12 @@ parameters =
   -- Java
   , javaParams { tpName = "Java"
                , tpBnfcOptions = ["--java", "-m"] }
-
   , javaParams { tpName = "Java (with namespace)"
-               , tpBnfcOptions = ["--java", "-p","my.stuff", "-m"] }
+               , tpBnfcOptions = ["--java", "-p", "my.stuff", "-m"] }
   , javaParams { tpName = "Java (with jflex)"
                , tpBnfcOptions = ["--java", "--jflex", "-m"] }
   , javaParams { tpName = "Java (with antlr)"
-                              , tpBnfcOptions = ["--java", "--antlr", "-m"] }
+               , tpBnfcOptions = ["--java", "--antlr", "-m"] }
   ]
   where
     base = TP
