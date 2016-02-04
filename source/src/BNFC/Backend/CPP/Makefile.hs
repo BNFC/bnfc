@@ -45,7 +45,7 @@ makefile name = vcat
     , mkRule "Printer.o" [ "Printer.C", "Printer.H", "Absyn.H" ]
         [ "${CC} ${CCFLAGS} -c Printer.C" ]
     , mkRule "Skeleton.o" [ "Skeleton.C", "Skeleton.H", "Absyn.H" ]
-       [ "${CC} ${CCFLAGS} -c Skeleton.C" ]
+       [ "${CC} ${CCFLAGS} -Wno-unused-parameter -c Skeleton.C" ]
     , mkRule "Test.o" [ "Test.C", "Parser.H", "Printer.H", "Absyn.H" ]
         [ "${CC} ${CCFLAGS} -c Test.C" ]
     ]
