@@ -1,57 +1,114 @@
 import calendar
-import pyparsing as pp
+import pyparsing as pp 
 
-TRIPLE_QUOTES = pp.Literal("\"\"\"")
-# First problem: I cannot understand beforehand if somebody is trying to have a 
-# multiline quoted string.
-# Without any special actions.
-# Therefore I cannot use pyparsing's QuotedString but I need to make sure that 
-# the lexer matches correctly the contents of a multiline string
-# (difference set in bnfc, char-'\"''\"''\"')
+# builtin tokens in RE BNFC grammar.
+def _tok(all):
+    return pp.Regex("[%s]"%all)
 
-### String tokens ###
-single = pp.QuotedString(quoteChar='"""', multiline=True) 
-triple = pp.QuotedString(quoteChar='"', multiline=False)
+def _suppr(v):
+    return pp.Suppress(v)
+
+digit  = _tok("0-9")
+upper  = _tok("A-Z")
+lower  = _tok("a-z")
+letter = _tok("a-zA-Z")
+eps    = pp.Empty()
+char   = _tok("\x00-\x0F")
+
+def _usertok(v):
+    return pp.Combine(v)
+
+LIdent = _usertok(lower + pp.ZeroOrMore(letter|digit|"_"))
+UIdent = _usertok(upper + pp.ZeroOrMore(letter|digit|"_"))
+Wild   = _usertok("_"   + pp.ZeroOrMore(char))
+
+# builtin categories in BNFC grammar.
+
+def _checkChar(s,v,k):
+    if len(s) > 3:
+        raise pp.ParseFatalException('Too long char literal')
+
+Integer = pp.Word(pp.nums)
+Double = pp.Regex("[0-9]*\.[0-9]+")
+String = pp.QuotedString('"', escChar='\\')
+Char = pp.QuotedString("'", escChar='\\').addParseAction(_checkChar)
+Ident = pp.Word( pp.alphas, pp.alphanums + "_$" )
+
+V = UIdent
+A = Wild
+
+Var = V ^ A
+
+Atm = LIdent
+EAtm = "'" +Ident + "'"
+Atom = Atm ^ EAtm
+
+ListTerm = pp.Forward()
+
+List = pp.Forward()
+
+Empty = _suppr("[") + _suppr("]")
+Enum = _suppr("[") + ListTerm + _suppr("]")
+Cons  = _suppr("[") + ListTerm + _suppr("|") + List + _suppr("]")
+ConsV = _suppr("[") + ListTerm + _suppr("|") + Var + _suppr("]")
+
+List = Empty ^ Enum ^ Cons ^ ConsV
+
+TAtom = Atom
+VarT = Var
+Complex = Atom + _suppr("(") + pp.Group(ListTerm) + _suppr(")")
+TList = pp.Group(List)
+
+Term = TAtom ^ VarT ^ Complex ^ TList  
+
+APred = Atom("APred")
+CPred = Atom("Atom") +_suppr("(") + ListTerm("ListTerm") + _suppr(")")("CPred")
+Predicate = APred("APred") ^ CPred("CPred")
+ListPredicate = pp.delimitedList(Predicate, ",")
+
+Fact = Predicate ("Fact")
+Rule = pp.Group(Predicate + _suppr(":-") + Predicate)("Rule")
+Directive = pp.Group(_suppr(":-") + Predicate)("Directive")
+
+Clause = pp.Group(Fact ^ Rule ^ Directive)
+
+ListClause = pp.delimitedList(Clause, ".")
+ListTerm << pp.delimitedList(Term, ",")
+
+Db = ListClause
+Database = Db
 
 
-def keyword(str):
-    return pp.Keyword(str)
+ 
+simpsons = """
+child(bart,homer).
 
-def token(str):
-    return pp.Token(str)
+child(homer,abe).
 
-def ident(name):
-    return Word( alphas, alphanums + "_" )(name)
+child(maggie,homer).
 
-# maybe define tokens if you use them in several points...
-# Must follow the automated translation of BNFC, therefore DO repeat
-# since each function becomes a parser below
-# todo : Indentation to be implemented.
-flashlog = pp.ZeroOrMore(toplevel)
-toplevel = event ^ struct
+grandchild(X,Y) :-
+    child(X,Z),
+    child(Z,Y).
+    """
+simple = """
+append([],Ys,Ys).append([X|Xs],Ys,[X|Zs]) :-append(Xs,Ys,Zs)."""
 
-# implementation is : Word( alphas, alphanums + "_$" )
-event = keyword("event") + ident('ident') + token(":") + member
-struct = keyword("struct") + ident('ident') + token(":") + member
-#todo noMember
+parsed = Db.parseString(simpsons)
+#print(parsed)
+parsed = Db.parseString(simple)
+#print(parsed)
 
-field = typename + ident('ident') + 
+Exp = pp.Forward()
+Exp1 = pp.Forward()
+Exp2 = pp.Forward()
+# 
+Exp <<  Exp1 ^ pp.Group(Exp + ("+") + Exp1)  
+Exp1 <<  Exp2 \
+         ^ pp.Group(Exp1 + ("*") + Exp2) 
+Exp2 << Integer \
+        ^ ("(")+ Exp + (")")
 
-noarray = 
-yesarray = token("[") + pp.nums + token("]")
 
-quotedStr = (single ^ triple)
-
-u8 = keyword("u8")
-s8 = keyword("s8")
-u16= keyword("u16")
-s16= keyword("s16")
-u32= keyword("u32")
-s32= keyword("s32")
-structType = keyword("struct") + ident('ident') ;
-
-typename = (U8 ^ S8 ^ U16 ^ S16 ^ U32 ^ S32 ^ structType)
-
-parsed = (quotedStr('pippo')^quotedStr('aaa')).parseString("""\"O beh\" \"O allora\" """)
-print (parsed)
-
+ppa = Exp.parseString("1")
+print(ppa)
