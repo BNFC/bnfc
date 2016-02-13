@@ -77,7 +77,7 @@ makeJava options@Options{..} cf =
           bnfcfiles = bnfcVisitorsAndTests packageBase packageAbsyn cf
                     cf2JavaPrinter
                             cf2VisitSkel
-                            cf2ComposVisitor
+                            (cf2ComposVisitor linenumbers)
                             cf2AbstractVisitor
                             cf2FoldVisitor
                             cf2AllVisitor
@@ -88,7 +88,7 @@ makeJava options@Options{..} cf =
           makebnfcfile x = mkfile (javaex (fst $ x bnfcfiles))
                                             (snd $ x bnfcfiles)
 
-      let absynFiles = remDups $ cf2JavaAbs packageBase packageAbsyn cf
+      let absynFiles = remDups $ cf2JavaAbs linenumbers packageBase packageAbsyn cf
           absynBaseNames = map fst absynFiles
           absynFileNames = map (dirAbsyn ++) absynBaseNames
       let writeAbsyn (filename, contents) =
@@ -124,7 +124,7 @@ makeJava options@Options{..} cf =
                              Nothing -> (a, b) : remDups as
       pkgToDir :: String -> FilePath
       pkgToDir s = replace '.' pathSeparator s ++ [pathSeparator]
-      parselexspec = parserLexerSelector lang javaLexerParser
+      parselexspec = parserLexerSelector linenumbers lang javaLexerParser
       lexfun = cf2lex $ lexer parselexspec
       parsefun = cf2parse $ parser parselexspec
       parmake = makeparserdetails (parser parselexspec)
@@ -285,17 +285,17 @@ antlrtest = javaTest [ "org.antlr.v4.runtime","org.antlr.v4.runtime.atn"
               showOpts (x:xs) | normCat x /= x = showOpts xs
                               | otherwise      = text (firstLowerCase $ identCat x) : showOpts xs
 
-parserLexerSelector :: String -> JavaLexerParser -> ParserLexerSpecification
-parserLexerSelector _ JLexCup = ParseLexSpec
+parserLexerSelector :: Bool -> String -> JavaLexerParser -> ParserLexerSpecification
+parserLexerSelector _ _ JLexCup = ParseLexSpec
     { lexer     = cf2JLex
     , parser    = cf2cup
     , testclass = cuptest
     }
-parserLexerSelector _ JFlexCup =
-    (parserLexerSelector "" JLexCup){lexer = cf2JFlex}
-parserLexerSelector l Antlr4 = ParseLexSpec
-    { lexer     = cf2AntlrLex' l
-    , parser    = cf2AntlrParse' l
+parserLexerSelector _ _ JFlexCup =
+    (parserLexerSelector False "" JLexCup){lexer = cf2JFlex}
+parserLexerSelector pos l Antlr4 = ParseLexSpec
+    { lexer     = BNFC.Backend.Java.cf2AntlrLex l
+    , parser    = BNFC.Backend.Java.cf2AntlrParse pos l
     , testclass = antlrtest
     }
 
@@ -328,8 +328,8 @@ cf2JFlex = CF2Lex
        , makelexerdetails = jflexmakedetails
        }
 
-cf2AntlrLex' :: String -> CFToLexer
-cf2AntlrLex' l = CF2Lex
+cf2AntlrLex :: String -> CFToLexer
+cf2AntlrLex l = CF2Lex
                { cf2lex           =
                    BNFC.Backend.Java.CFtoAntlr4Lexer.cf2AntlrLex
                , makelexerdetails = antlrmakedetails $ l++"Lexer"
@@ -352,10 +352,10 @@ cf2cup = CF2Parse
     , makeparserdetails = cupmakedetails
     }
 
-cf2AntlrParse' :: String -> CFToParser
-cf2AntlrParse' l = CF2Parse
+cf2AntlrParse :: Bool -> String -> CFToParser
+cf2AntlrParse pos l = CF2Parse
                 { cf2parse          =
-                    BNFC.Backend.Java.CFtoAntlr4Parser.cf2AntlrParse
+                    BNFC.Backend.Java.CFtoAntlr4Parser.cf2AntlrParse pos
                 , makeparserdetails = antlrmakedetails $ l++"Parser"
                 }
 

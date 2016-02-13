@@ -53,11 +53,11 @@ type MetaVar     = (String, Cat)
 
 -- | Creates the ANTLR parser grammar for this CF.
 --The environment comes from CFtoAntlr4Lexer
-cf2AntlrParse :: String -> String -> CF -> SymEnv -> String
-cf2AntlrParse packageBase packageAbsyn cf env = unlines
+cf2AntlrParse ::Bool -> String -> String -> CF -> SymEnv -> String
+cf2AntlrParse pos packageBase packageAbsyn cf env = unlines
     [ header
     , tokens
-    , prRules packageAbsyn (rulesForAntlr4 packageAbsyn cf env)
+    , prRules packageAbsyn (rulesForAntlr4 pos packageAbsyn cf env)
     ]
   where
     header :: String
@@ -75,17 +75,17 @@ cf2AntlrParse packageBase packageAbsyn cf env = unlines
 
 --The following functions are a (relatively) straightforward translation
 --of the ones in CFtoHappy.hs
-rulesForAntlr4 :: String -> CF -> SymEnv -> Rules
-rulesForAntlr4 packageAbsyn cf env = map mkOne getrules
+rulesForAntlr4 :: Bool -> String -> CF -> SymEnv -> Rules
+rulesForAntlr4 pos packageAbsyn cf env = map mkOne getrules
   where
     getrules          = ruleGroups cf
-    mkOne (cat,rules) = constructRule packageAbsyn cf env rules cat
+    mkOne (cat,rules) = constructRule pos packageAbsyn cf env rules cat
 
 -- | For every non-terminal, we construct a set of rules. A rule is a sequence of
 -- terminals and non-terminals, and an action to be performed.
-constructRule :: String -> CF -> SymEnv -> [Rule] -> NonTerminal -> (NonTerminal,[(Pattern, Fun, Action)])
-constructRule packageAbsyn cf env rules nt =
-    (nt, [ (p , funRule r , generateAction packageAbsyn nt (funRule r) (revM b m) b)
+constructRule :: Bool -> String -> CF -> SymEnv -> [Rule] -> NonTerminal -> (NonTerminal,[(Pattern, Fun, Action)])
+constructRule pos packageAbsyn cf env rules nt =
+    (nt, [ (p , funRule r , generateAction pos packageAbsyn nt (funRule r) (revM b m) b)
           | (index ,r0) <- zip [1..(length rules)] rules,
           let (b,r) = if isConsFun (funRule r0) && elem (valCat r0) revs
                           then (True, revSepListRule r0)
@@ -97,11 +97,11 @@ constructRule packageAbsyn cf env rules nt =
    revs       = cfgReversibleCats cf
 
 -- Generates a string containing the semantic action.
-generateAction :: String -> NonTerminal -> Fun -> [MetaVar]
+generateAction :: Bool -> String -> NonTerminal -> Fun -> [MetaVar]
                -> Bool   -- ^ Whether the list should be reversed or not.
                          --   Only used if this is a list rule.
                -> Action
-generateAction packageAbsyn nt f ms rev
+generateAction position packageAbsyn nt f ms rev
     | isNilFun f = "$result = new " ++ c ++ "();"
     | isOneFun f = "$result = new " ++ c ++ "(); $result.addLast("
         ++ p_1 ++ ");"
@@ -111,8 +111,12 @@ generateAction packageAbsyn nt f ms rev
     | isDefinedRule f = "$result = parser." ++ f ++ "_"
                         ++ "(" ++ intercalate "," (map resultvalue ms) ++ ");"
     | otherwise = "$result = new " ++ c
-                  ++ "(" ++ intercalate "," (map resultvalue ms) ++ ");"
+                  ++ "(" ++ posInfo ++ intercalate "," (map resultvalue ms) ++ ");"
    where
+     positionString    = "_ctx.getStart().getLine(), _ctx.getStart().getCharPositionInLine()"
+     posInfo           = if position
+                            then if ms == [] then positionString else positionString++","
+                            else ""
      c                 = packageAbsyn ++ "." ++
                             if isNilFun f || isOneFun f || isConsFun f
                             then identCat (normCat nt) else f

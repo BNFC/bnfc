@@ -153,7 +153,11 @@ specificOptions :: [(OptDescr (SharedOptions -> SharedOptions), [Target])]
 specificOptions =
   [ ( Option ['l'] [] (NoArg (\o -> o {linenumbers = True}))
         "Add and set line_number field for all syntax classes"
-    , [TargetCpp, TargetJava] )
+    , [TargetCpp] )
+  , ( Option [] ["position"] (NoArg (\o -> o {linenumbers = True}))
+            ("Add and set fields (line|col)_number for all syntax classes"++     
+                "\n(only with --antlr4)")
+        , [TargetJava] )
   , ( Option ['p'] []
       (ReqArg (\n o -> o {inPackage = Just n}) "<namespace>")
       "Prepend <namespace> to the package/module name"

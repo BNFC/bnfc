@@ -28,11 +28,11 @@ import BNFC.Utils ((+++))
 import BNFC.Backend.Common.NamedVariables
 import BNFC.PrettyPrint
 
-cf2ComposVisitor :: String -> String -> CF -> String
-cf2ComposVisitor packageBase packageAbsyn cf =
+cf2ComposVisitor :: Bool ->  String -> String -> CF -> String
+cf2ComposVisitor pos packageBase packageAbsyn cf =
   concat [
     header,
-    concatMap (prData packageAbsyn user) groups,
+    concatMap (prData pos packageAbsyn user) groups,
     "}"]
   where
     user   = fst (unzip (tokenPragmas cf))
@@ -57,10 +57,10 @@ prInterface packageAbsyn (cat, _) =
   where q = packageAbsyn ++ "." ++ identCat cat
 
 --Traverses a category based on its type.
-prData :: String -> [UserDef] -> (Cat, [Rule]) -> String
-prData packageAbsyn user (cat, rules) = unlines
+prData :: Bool -> String -> [UserDef] -> (Cat, [Rule]) -> String
+prData pos packageAbsyn user (cat, rules) = unlines
     [ "/* " ++ identCat cat ++ " */"
-    , concatMap (render . prRule packageAbsyn user cat) rules
+    , concatMap (render . prRule pos packageAbsyn user cat) rules
     ]
 -- | traverses a standard rule.
 -- >>> prRule "lang.absyn" [Cat "A"] (Cat "B") (Rule "F" (Cat "B") [Left (Cat "A"), Right "+", Left (ListCat (Cat "B"))])
@@ -74,18 +74,21 @@ prData packageAbsyn user (cat, rules) = unlines
 --       }
 --       return new lang.absyn.F(a_, listb_);
 --     }
-prRule :: String -> [UserDef] -> Cat -> Rule -> Doc
-prRule packageAbsyn user cat (Rule fun _ cats)
+prRule :: Bool -> String -> [UserDef] -> Cat -> Rule -> Doc
+prRule pos packageAbsyn user cat (Rule fun _ cats)
   | not (isCoercion fun || isDefinedRule fun) = nest 4 $ vcat
     [ "public " <> text(identCat cat) <> " visit(" <> cls <> " p, A arg)"
     , codeblock 2
         [ vcat (map (prCat user) cats')
-        , "return new" <+> cls <> parens (hsep (punctuate "," vnames)) <> ";" ] ]
+        , "return new" <+> cls <> parens (hsep (punctuate "," vnames)) <> ";" ]<>"\n" ]
   where
     cats' = filter ((/= InternalCat) . fst) (lefts (numVars cats))
     cls = text (packageAbsyn ++ "." ++ fun)
-    vnames = map snd cats'
-prRule  _ _ _ _ = ""
+    noposvnames = map snd cats'
+    vnames = if pos
+                then ["p.lin_number_", "p.col_number_"] ++ noposvnames
+                else noposvnames
+prRule _ _ _ _ _ = ""
 
 -- | Traverses a class's instance variables.
 -- >>> prCat [Cat "A"] (Cat "A", "a_")
