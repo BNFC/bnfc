@@ -113,8 +113,9 @@ generateAction position packageAbsyn nt f ms rev
     | otherwise = "$result = new " ++ c
                   ++ "(" ++ posInfo ++ intercalate "," (map resultvalue ms) ++ ");"
    where
+     positionString    = "_ctx.getStart().getLine(), _ctx.getStart().getCharPositionInLine()"
      posInfo           = if position
-                            then if ms == [] then "0, 0" else "0, 0,"
+                            then if ms == [] then positionString else positionString++","
                             else ""
      c                 = packageAbsyn ++ "." ++
                             if isNilFun f || isOneFun f || isConsFun f
