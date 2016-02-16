@@ -28,6 +28,7 @@ data Mode
 data Target = TargetC | TargetCpp | TargetCppNoStl | TargetCSharp
             | TargetHaskell | TargetHaskellGadt | TargetLatex
             | TargetJava | TargetOCaml | TargetProfile | TargetPygments
+            | TargetPython
   deriving (Eq,Bounded, Enum,Ord)
 
 -- Create a list of all target using the enum and bounded classes
@@ -46,6 +47,7 @@ instance Show Target where
   show TargetOCaml        = "OCaml"
   show TargetProfile      = "Haskell (with permutation profiles)"
   show TargetPygments     = "Pygments"
+  show TargetPython       = "Python"
 
 -- | Which version of Alex is targeted?
 data AlexVersion = Alex1 | Alex2 | Alex3
@@ -145,6 +147,8 @@ targetOptions =
     "Output Haskell code for rules with permutation profiles"
   , Option "" ["pygments"]      (NoArg (\o -> o {target = TargetPygments}))
     "Output a Python lexer for Pygments"
+  , Option "" ["python"]      (NoArg (\o -> o {target = TargetPython}))
+      "Output Python code through Antlr4"
   ]
 
 -- | A list of the options and for each of them, the target language
@@ -154,10 +158,6 @@ specificOptions =
   [ ( Option ['l'] [] (NoArg (\o -> o {linenumbers = True}))
         "Add and set line_number field for all syntax classes"
     , [TargetCpp] )
-  , ( Option [] ["position"] (NoArg (\o -> o {linenumbers = True}))
-            ("Add and set fields (line|col)_number for all syntax classes"++     
-                "\n(only with --antlr4)")
-        , [TargetJava] )
   , ( Option ['p'] []
       (ReqArg (\n o -> o {inPackage = Just n}) "<namespace>")
       "Prepend <namespace> to the package/module name"
@@ -165,12 +165,16 @@ specificOptions =
   , ( Option [] ["jflex"] (NoArg (\o -> o {javaLexerParser = JFlexCup}))
           "Lex with JFlex, parse with CUP"
     , [TargetJava] )
-    , ( Option [] ["jlex"] (NoArg (\o -> o {javaLexerParser = Antlr4}))
+  , ( Option [] ["jlex"] (NoArg (\o -> o {javaLexerParser = Antlr4}))
                   "Lex with Jlex, parse with CUP (default)"
-            , [TargetJava] )
-    , ( Option [] ["antlr4"] (NoArg (\o -> o {javaLexerParser = Antlr4}))
+    , [TargetJava] )
+  , ( Option [] ["antlr4"] (NoArg (\o -> o {javaLexerParser = Antlr4}))
               "Lex and parse with antlr4"
-        , [TargetJava] )
+    , [TargetJava] )
+  , ( Option [] ["position"] (NoArg (\o -> o {linenumbers = True}))
+               ("Add and set fields (line|col)_number for all syntax classes"++     
+                   "\n(only with --antlr4)")
+    , [TargetJava] )
   , ( Option [] ["vs"] (NoArg (\o -> o {visualStudio = True}))
           "Generate Visual Studio solution/project files"
     , [TargetCSharp] )
@@ -213,6 +217,9 @@ specificOptions =
   , ( Option []    ["functor"] (NoArg (\o -> o {functor = True}))
           "Make the AST a functor and use it to store the position of the nodes"
     , [TargetHaskell] )
+  , ( Option [] ["position"] (NoArg (\o -> o {linenumbers = True}))
+                ("Add and set fields (line|col)_number for all syntax classes")
+            , [TargetPython] )
   ]
 
 
@@ -250,7 +257,8 @@ help = unlines $
     :usageInfo "Common option"      commonOption
     :usageInfo "Target languages" targetOptions
     :map targetUsage helpTargets
-  where helpTargets = [TargetHaskell, TargetJava, TargetCpp, TargetCSharp ]
+  where helpTargets = [TargetHaskell,TargetJava, TargetCpp, TargetCSharp 
+                        , TargetPython ]
         targetUsage t = usageInfo
                         (printf "Special options for the %s backend" (show t))
                         (map fst $ filter(elem t . snd)specificOptions)

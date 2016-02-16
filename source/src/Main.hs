@@ -37,6 +37,7 @@ import BNFC.Backend.Haskell
 import BNFC.Backend.HaskellGADT
 import BNFC.Backend.HaskellProfile
 import BNFC.Backend.Java
+import BNFC.Backend.Python
 import BNFC.Backend.Latex
 import BNFC.Backend.OCaml
 import BNFC.Backend.Pygments
@@ -84,3 +85,4 @@ maketarget t = case t of
     TargetOCaml        -> makeOCaml
     TargetProfile      -> error "Not implemented"
     TargetPygments     -> makePygments
+    TargetPython       -> makePython
