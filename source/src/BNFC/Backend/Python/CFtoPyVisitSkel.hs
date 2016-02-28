@@ -39,7 +39,69 @@
 -}
 
 module BNFC.Backend.Python.CFtoPyVisitSkel ( cf2PyVisitSkel ) where
-
+import BNFC.Backend.Python.Utils
+import BNFC.Backend.Python.AbsPython
 import BNFC.CF
+import Text.PrettyPrint
 cf2PyVisitSkel :: String -> CF -> String
-cf2PyVisitSkel packageBase cf = "visitskel"
+cf2PyVisitSkel packageBase cf = show $ absVcat [
+                                    imports packageBase
+                                    visitorClass
+                                ] 
+
+{-show $ vcat [
+                                            (text packageBase) <+> "Absyn"
+                                            ,indent $ vcat[
+                                                methods names
+                                                ,dictionary names
+                                                ,initmethod
+                                                ,visit
+                                            ]
+                                            ]
+                                where names = []
+                     
+-}
+
+imports x = Import $ Ident (x++".Absyn")
+{-
+Idea is similar: this function returns a Doc and those below construct an object
+using AbsPython objects, together with the information from the abstract syntax
+Position is not necessary anymore
+-}
+visitorClass :: [Entity]
+visitorClass = [Class (Ident "Visitor") NoInherit
+                , IndentedBlock 
+                    allVisitPrivate
+                    ++ dictionary
+                    ++ initMethod
+                    ++ visitMethod
+               ]
+
+allVisitPrivate :: CF -> [Entity]
+allVisitPrivate cf = concat 
+                        [privateVisit cf (c,labs) | 
+                          (c,labs) <- getAbstractSyntax cf, not $ isList c] 
+
+privateVisit :: CF -> [Entity]
+privateVisit cf = []
+
+initMethod :: Entity
+initMethod = emptyConstructor 
+
+{-def visit(self, item, env):
+        return self.index[item.__class__.__name__](self,item,env)
+-}
+visitMethod :: [Entity]
+visitMethod = method (Left "visit") args body 
+              where 
+                body = [Return Qualified []]
+                args = [self, item, env]
+                self = Left Self
+                item = ar "item"
+                env = ar "env"
+                ar s = Right (s, Nothing)
+
+
+visitTypeMethod ::
+
+methodDictionary ::

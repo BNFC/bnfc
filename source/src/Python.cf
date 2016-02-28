@@ -1,0 +1,58 @@
+{-
+    BNF Converter: Python Language internal definition for using its abstract 
+    syntax
+    Copyright (C) 2016  Author: Gabriele Paganelli
+
+    This program is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 2 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program; if not, write to the Free Software
+    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+-}
+
+Import . Entity ::= "import" Ident;
+
+Class . Entity ::= "class" Ident Inherit ":";
+YesInherit . Inherit ::=  "(" Ident ")";
+NoInherit . Inherit ::= ;
+
+PyComment . Entity ::= "#" String;
+
+Method . Entity ::= "def" Entity ":";
+IndentedBlock . Entity ::= [Entity];
+EmptyEntity . Entity ::= ;
+Init . MethodName ::= "__init__";
+Super . MethodName ::= "super";
+AnyMethod. MethodName ::= Ident;
+
+Assignment . Entity ::= [Entity] "=" [Entity];
+Return . Entity ::= "return" Entity;
+Pass . Entity ::= "pass";
+Function . Entity ::= MethodName "(" [Entity] ")";
+Call . Entity ::= Entity "(" [Entity] ")"
+Qualified . Entity ::= [Name]; 
+Argument . Entity ::= Ident ArgType;
+Self . Entity ::= "self";
+Entry . Entity ::= String ":" Entity;
+Dictionary . Entity ::= [Entity];
+
+YesType . ArgType ::= ":" Ident;
+NoType . ArgType ::= ;
+  
+Id . Entity ::= Ident Array;
+
+YesArray . Array ::= "[" Entity "]";
+NoArray . Array ::=;
+
+Name . Name ::= Entity;
+
+separator Name ".";
+separator Entity "," ;

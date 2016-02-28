@@ -1,4 +1,3 @@
-{-# LANGUAGE CPP #-}
 -- BNF Converter: Error Monad
 -- Copyright (C) 2004  Author:  Aarne Ranta
 
@@ -8,11 +7,7 @@ module ErrM where
 -- the Error monad: like Maybe type with error msgs
 
 import Control.Monad (MonadPlus(..), liftM)
-#if __GLASGOW_HASKELL__ < 710
 import Control.Applicative (Applicative(..), Alternative(..))
-#else
-import Control.Applicative (Alternative(..))
-#endif
 
 data Err a = Ok a | Bad String
   deriving (Read, Show, Eq, Ord)
