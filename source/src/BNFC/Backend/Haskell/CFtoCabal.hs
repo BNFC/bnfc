@@ -38,11 +38,8 @@ buildPackageDescription opt = emptyPackageDescription
       { pkgName = PackageName (lang opt)
       , pkgVersion = Version [0,1] []}
   , library =
-    Just Library
+    Just mempty
       { exposedModules = exposedMods opt
-      , reexportedModules = []
-      , requiredSignatures = []
-      , exposedSignatures = []
       , libExposed = True
       , libBuildInfo = emptyBuildInfo
           { buildable    = True
