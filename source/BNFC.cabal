@@ -56,7 +56,7 @@ Executable bnfc
     pretty >=1.1 && <1.2,
     filepath,
     deepseq,
-    Cabal == 1.22.*
+    Cabal >= 1.18 && < 1.23
   build-tools:         alex, happy
   Main-is: Main.hs
   HS-source-dirs: src/
@@ -200,7 +200,7 @@ Test-suite unit-tests
   Type: exitcode-stdio-1.0
   Build-Depends: base>=4 && <5, mtl, directory, array, process, filepath, pretty,
                  hspec, QuickCheck >= 2.5, HUnit,
-                 temporary, containers, deepseq, Cabal == 1.22.*
+                 temporary, containers, deepseq, Cabal >= 1.18 && < 1.23
   Main-is: unit-tests.hs
   HS-source-dirs: src test
   extensions:
