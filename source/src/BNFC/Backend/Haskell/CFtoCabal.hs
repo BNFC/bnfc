@@ -26,6 +26,7 @@ import Distribution.PackageDescription.Parse(showPackageDescription)
 
 import BNFC.Backend.Haskell.HsOpts
 import BNFC.Options hiding (Version)
+import Data.Monoid(mempty)
 
 -- to produce a Cabal file
 cf2Cabal :: SharedOptions -> String
