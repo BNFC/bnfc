@@ -45,7 +45,7 @@ xmlFile       = mkFile withLang "XML" "hs"
 xmlFileM      = mkMod  withLang "XML"
 composOpFile  = mkFile noLang   "ComposOp" "hs"
 composOpFileM = mkMod noLang    "ComposOp"
-
+cabalFile opt = lang opt ++  ".cabal"
 
 noLang :: Options -> String -> String
 noLang _ name = name

@@ -34,6 +34,7 @@ import BNFC.Backend.HaskellGADT.CFtoAbstractGADT
 import BNFC.Backend.HaskellGADT.CFtoTemplateGADT
 import BNFC.Backend.Haskell.CFtoPrinter
 import BNFC.Backend.Haskell.CFtoLayout
+import BNFC.Backend.Haskell.CFtoCabal
 import BNFC.Backend.XML
 import BNFC.Backend.Haskell.MkErrM
 import BNFC.Backend.Haskell.MkSharedString
@@ -71,6 +72,7 @@ makeHaskellGadt opts cf = do
     liftIO $ putStrLn "   (Tested with Happy 1.15)"
     mkfile (templateFile opts) $ cf2Template (templateFileM opts) absMod errMod cf
     mkfile (printerFile opts)  $ cf2Printer False False True prMod absMod cf
+    mkfile (cabalFile opts)    $ cf2Cabal opts
     when (hasLayout cf) $ mkfile (layoutFile opts) $ cf2Layout (alexMode opts == Alex1) (inDir opts) layMod lexMod cf
     mkfile (tFile opts)        $ Haskell.testfile opts cf
     mkfile (errFile opts) $ mkErrM errMod (ghcExtensions opts)

@@ -76,6 +76,7 @@ data SharedOptions = Options
   , glr :: HappyMode
   , xml :: Int
   , ghcExtensions :: Bool
+  , cabal :: Bool
   -- C++ specific
   , linenumbers :: Bool       -- ^ Add and set line_number field for syntax classes
   -- C# specific
@@ -103,6 +104,7 @@ defaultOptions = Options
   , glr = Standard
   , xml = 0
   , ghcExtensions = False
+  , cabal = False
   , lang = error "lang not set"
   , linenumbers = False
   , visualStudio = False
@@ -122,7 +124,7 @@ globalOptions = [
 -- | Options for the target languages
 -- targetOptions :: [ OptDescr Target ]
 targetOptions :: [ OptDescr (SharedOptions -> SharedOptions)]
-targetOptions = 
+targetOptions =
   [ Option "" ["java"]          (NoArg (\o -> o {target = TargetJava}))
     "Output Java code [default: for use with JLex and CUP]"
   , Option "" ["haskell"]       (NoArg (\o -> o {target = TargetHaskell}))
@@ -206,6 +208,9 @@ specificOptions =
   , ( Option []    ["ghc"] (NoArg (\o -> o {ghcExtensions = True}))
           "Use ghc-specific language extensions"
     , [TargetHaskell, TargetHaskellGadt, TargetProfile] )
+  , ( Option []    ["cabal"] (NoArg (\o -> o {cabal = True}))
+          "Also generate cabal file"
+    , [TargetHaskell,TargetHaskellGadt] )
   , ( Option []    ["functor"] (NoArg (\o -> o {functor = True}))
           "Make the AST a functor and use it to store the position of the nodes"
     , [TargetHaskell] )
@@ -277,28 +282,27 @@ isUsageError _ = False
 -- A translating function to maintain backward compatiblicy
 -- with the old option syntay
 translateOldOptions :: [String] -> [String]
-translateOldOptions = map translateOne
-  where translateOne "-java"          = "--java"
-        translateOne "-java1.5"       = "--java"
-        translateOne "-c"             = "--c"
-        translateOne "-cpp"           = "--cpp"
-        translateOne "-cpp_stl"       = "--cpp"
-        translateOne "-cpp_no_stl"    = "--cpp-nostl"
-        translateOne "-csharp"        = "--csharp"
-        translateOne "-ocaml"         = "--ocaml"
-        translateOne "-fsharp"        = "fsharp"
-        translateOne "-haskell"       = "--haskell"
-        translateOne "-prof"          = "--profile"
-        translateOne "-gadt"          = "--haskell-gadt"
-        translateOne "-alex1"         = "--alex1"
-        translateOne "-alex2"         = "--alex2"
-        translateOne "-alex3"         = "--alex3"
-        translateOne "-sharestrings"  = "--sharestring"
-        translateOne "-bytestrings"   = "--bytestring"
-        translateOne "-glr"           = "--glr"
-        translateOne "-xml"           = "--xml"
-        translateOne "-xmlt"          = "--xmlt"
-        translateOne "-vs"            = "--vs"
-        translateOne "-wcf"           = "--wcf"
-        translateOne other            = other
-
+translateOldOptions = concatMap translateOne
+  where translateOne "-java" = return "--java"
+        translateOne "-java1.5"       = return "--java"
+        translateOne "-c"             = return "--c"
+        translateOne "-cpp"           = return "--cpp"
+        translateOne "-cpp_stl"       = return "--cpp"
+        translateOne "-cpp_no_stl"    = return "--cpp-nostl"
+        translateOne "-csharp"        = return "--csharp"
+        translateOne "-ocaml"         = return "--ocaml"
+        translateOne "-fsharp"        = return "fsharp"
+        translateOne "-haskell"       = return "--haskell"
+        translateOne "-prof"          = return "--profile"
+        translateOne "-gadt"          = return "--haskell-gadt"
+        translateOne "-alex1"         = return "--alex1"
+        translateOne "-alex2"         = return "--alex2"
+        translateOne "-alex3"         = return "--alex3"
+        translateOne "-sharestrings"  = return "--sharestring"
+        translateOne "-bytestrings"   = return "--bytestring"
+        translateOne "-glr"           = return "--glr"
+        translateOne "-xml"           = return "--xml"
+        translateOne "-xmlt"          = return "--xmlt"
+        translateOne "-vs"            = return "--vs"
+        translateOne "-wcf"           = return "--wcf"
+        translateOne other            = return other
