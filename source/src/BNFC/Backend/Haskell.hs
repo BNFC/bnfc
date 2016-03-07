@@ -34,6 +34,7 @@ import BNFC.Backend.Haskell.CFtoAbstract
 import BNFC.Backend.Haskell.CFtoTemplate
 import BNFC.Backend.Haskell.CFtoPrinter
 import BNFC.Backend.Haskell.CFtoLayout
+import BNFC.Backend.Haskell.CFtoCabal
 import BNFC.Backend.XML
 import BNFC.Backend.Haskell.HsOpts
 import BNFC.Backend.Haskell.ToCNF as ToCNF
@@ -81,6 +82,7 @@ makeHaskell opts cf = do
     mkfile (txtFile opts)      $ cfToTxt (lang opts) cf
     mkfile (templateFile opts) $ cf2Template (templateFileM opts) absMod errMod (functor opts) cf
     mkfile (printerFile opts)  $ cf2Printer (byteStrings opts) (functor opts) False prMod absMod cf
+    mkfile (cabalFile opts)    $ cf2Cabal opts
     when (hasLayout cf) $ mkfile (layoutFile opts) $ cf2Layout (alex1 opts) (inDir opts) layMod lexMod cf
     mkfile (errFile opts) $ mkErrM errMod (ghcExtensions opts)
     when (shareStrings opts) $ mkfile (shareFile opts)    $ sharedString shareMod (byteStrings opts) cf
@@ -106,9 +108,10 @@ makefile opts = makeA where
             [ if cnf opts
               then "ghc --make TestCNF.hs"
               else "ghc --make " ++ tFile opts ++ " -o " ++ mkFile withLang "Test" "" opts])
-      , Makefile.mkRule "clean" []
+      , Makefile.mkRule "clean" [] $
           [ "-rm -f "  ++ unwords
-                (map (dir++) [ "*.log", "*.aux", "*.hi", "*.o", "*.dvi" ]) ]
+                (map (dir++) [ "*.log", "*.aux", "*.hi", "*.o", "*.dvi" ]) ]++
+          [ "cabal clean" | cabal opts ]
       ,  Makefile.mkRule "distclean" ["clean"]
           [ "-rm -f " ++ unwords
               [ mkFile withLang "Doc" "*" opts
@@ -120,6 +123,7 @@ makefile opts = makeA where
               , mkFile withLang "Test" "*" opts
               , mkFile withLang "Abs" "*" opts
               , mkFile withLang "Test" "" opts
+              , mkFile withLang "" "cabal*" opts
               , mkFile noLang   "ErrM" "*" opts
               , mkFile noLang   "SharedString" "*" opts
               , mkFile noLang "ComposOp" "*" opts
@@ -278,4 +282,3 @@ liftParser
    , "                            dec_fn f = decode (find f) r"
    , "                        in GLR_Result (\\ff -> dec_fn $ ff f) (dec_fn f)"
    ]
-

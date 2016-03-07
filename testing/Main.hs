@@ -2,6 +2,7 @@ module Main (main) where
 
 import Test.Framework (htfMain)
 
+import HaskellCabalTests
 import HaskellCnfTests
 import ParameterizedTests
 import PygmentsTests
@@ -12,4 +13,6 @@ main = htfMain [ ParameterizedTests.all
                , RegressionTests.all
                , PygmentsTests.all
                , HaskellCnfTests.all
-               , OutputParser.tests ]
+               , OutputParser.tests
+               , HaskellCabalTests.all
+               ]

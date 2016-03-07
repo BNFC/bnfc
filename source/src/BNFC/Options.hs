@@ -76,6 +76,7 @@ data SharedOptions = Options
   , glr :: HappyMode
   , xml :: Int
   , ghcExtensions :: Bool
+  , cabal :: Bool
   -- C++ specific
   , linenumbers :: Bool       -- ^ Add and set line_number field for syntax classes
   -- C# specific
@@ -103,6 +104,7 @@ defaultOptions = Options
   , glr = Standard
   , xml = 0
   , ghcExtensions = False
+  , cabal = False
   , lang = error "lang not set"
   , linenumbers = False
   , visualStudio = False
@@ -122,7 +124,7 @@ globalOptions = [
 -- | Options for the target languages
 -- targetOptions :: [ OptDescr Target ]
 targetOptions :: [ OptDescr (SharedOptions -> SharedOptions)]
-targetOptions = 
+targetOptions =
   [ Option "" ["java"]          (NoArg (\o -> o {target = TargetJava}))
     "Output Java code [default: for use with JLex and CUP]"
   , Option "" ["haskell"]       (NoArg (\o -> o {target = TargetHaskell}))
@@ -206,6 +208,9 @@ specificOptions =
   , ( Option []    ["ghc"] (NoArg (\o -> o {ghcExtensions = True}))
           "Use ghc-specific language extensions"
     , [TargetHaskell, TargetHaskellGadt, TargetProfile] )
+  , ( Option []    ["cabal"] (NoArg (\o -> o {cabal = True}))
+          "Also generate cabal file"
+    , [TargetHaskell,TargetHaskellGadt] )
   , ( Option []    ["functor"] (NoArg (\o -> o {functor = True}))
           "Make the AST a functor and use it to store the position of the nodes"
     , [TargetHaskell] )
@@ -301,4 +306,3 @@ translateOldOptions = concatMap translateOne
         translateOne "-vs"            = return "--vs"
         translateOne "-wcf"           = return "--wcf"
         translateOne other            = return other
-
