@@ -109,9 +109,9 @@ header inPackage name cf = unlines
     , "}"
     , "void " ++ ns ++ "yyerror(const char *str)"
     , "{"
-    , "  extern char *yytext;"
+    , "  extern char *"++ns++"yytext;"
     , "  fprintf(stderr,\"error: line %d: %s at %s\\n\", "
-    , "    yy_mylinenumber, str, yytext);"
+    , "    "++ns++"yy_mylinenumber, str, "++ns++"yytext);"
     , "}"
     , ""
     , definedRules cf
@@ -393,5 +393,3 @@ typeName "Char" = "_CHAR_"
 typeName "Integer" = "_INTEGER_"
 typeName "Double" = "_DOUBLE_"
 typeName x = x
-
-
