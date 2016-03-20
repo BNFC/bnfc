@@ -24,24 +24,27 @@ Class . Entity ::= "class" Ident Inherit ":";
 YesInherit . Inherit ::=  "(" Ident ")";
 NoInherit . Inherit ::= ;
 
+For . Entity ::= "for" Entity "in" Entity ":";
+
 PyComment . Entity ::= "#" String;
 
 Method . Entity ::= "def" Entity ":";
 IndentedBlock . Entity ::= [Entity];
 EmptyEntity . Entity ::= ;
-Init . MethodName ::= "__init__";
-Super . MethodName ::= "super";
-AnyMethod. MethodName ::= Ident;
+Init . Entity ::= "__init__";
+ClassField . Entity ::= "__class__";
+NameField . Entity ::= "__name__";
+Super . Entity ::= "super";
+AnyMethod. Entity  ::= Ident;
 
 Assignment . Entity ::= [Entity] "=" [Entity];
 Return . Entity ::= "return" Entity;
 Pass . Entity ::= "pass";
-Function . Entity ::= MethodName "(" [Entity] ")";
-Call . Entity ::= Entity "(" [Entity] ")"
+Function . Entity ::= Entity "(" [Entity] ")";
 Qualified . Entity ::= [Name]; 
 Argument . Entity ::= Ident ArgType;
 Self . Entity ::= "self";
-Entry . Entity ::= String ":" Entity;
+Entry . Entity ::= String ":" Entity ",";
 Dictionary . Entity ::= [Entity];
 
 YesType . ArgType ::= ":" Ident;

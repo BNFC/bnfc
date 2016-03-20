@@ -1,14 +1,20 @@
 module BNFC.Backend.Python.Utils where
+import BNFC.CF
 import BNFC.Backend.Python.PrintPython as PPP
 import BNFC.Backend.Python.AbsPython 
 import Text.PrettyPrint as TPP
+import BNFC.Backend.Common.NamedVariables
+import qualified Data.Map as Dma
 
 indent = nest 4
 
 importList li = vcat $ map ("import"<+>) li
 
-toNames :: [Entity] -> [Name]
-toNames ent = [Name n | n <- ent]
+mkId :: String -> Entity
+mkId x = Id (Ident x) NoArray
+
+toNames :: [Entity] -> Entity
+toNames ent = Qualified [Name n | n <- ent]
 
 absVcat :: [Entity] -> TPP.Doc
 absVcat [] = text ""
@@ -16,10 +22,10 @@ absVcat (e:es) = case e of
                 IndentedBlock body -> vcat [indent (absVcat body)
                                             , absVcat es
                                             ]
-                Dictionary body -> vcat ["{"
+                Dictionary body -> vcat ["dict = {"
                                         , indent (absVcat body)
-                                        , absVcat es
                                         , "}"
+                                        , absVcat es
                                         ]
                 _                  -> vcat [text $ PPP.printTree e
                                         , absVcat es
@@ -28,14 +34,14 @@ absVcat (e:es) = case e of
 emptyConstructor :: [Entity]
 emptyConstructor = method (Right Init) [Left Self] [Pass] 
 
-
+type MethodName = Either String Entity
 type FormalParameter = Either Entity (String, Maybe String)
 
-method :: Either String MethodName -> [FormalParameter] -> [Entity] -> [Entity]
+method :: MethodName -> [FormalParameter] -> [Entity] -> [Entity]
 method (Left x) args body  = absMethod (AnyMethod $ Ident x) args body 
 method (Right e) args  body = absMethod e args body
 
-absMethod :: MethodName -> [FormalParameter] -> [Entity] -> [Entity]
+absMethod :: Entity -> [FormalParameter] -> [Entity] -> [Entity]
 absMethod name args body = [ Method $ Function name (formalParams args)
                            , IndentedBlock body
                            ]
@@ -51,5 +57,39 @@ formalParam (Right (p, t)) = Argument (Ident p) (argType t)
                                     _        -> NoType 
 formalParam (Left p) = p
 
--- data PythonDefinition = PyMethod String [Cat] | PyClass | PyChildClass String   
+getUserCategories :: CF -> [(Cat, [(Fun, [Cat])])]
+getUserCategories cf = [(c,labs) | (c,labs) <- getAbstractSyntax cf , not $ isList c]
 
+getUserTokens :: CF -> [Cat]
+getUserTokens cf = [catIdent, catString] ++ (fst $ unzip $ tokenPragmas cf)
+
+filterTerminals :: CF -> [Cat] -> [Cat]
+filterTerminals cf ls = [ cat | cat <- ls , not $ cat `elem`  (getUserTokens cf)]
+
+dictionaryName :: Array -> Entity
+dictionaryName = Id $ (Ident "dict")
+
+dictionaryRef :: Entity
+dictionaryRef =  dictionaryName NoArray
+
+getParams :: [Cat] -> [(String,String)]
+getParams = nameFormalParameters Dma.empty 
+-- returns a list of pairs:
+--      fst: name of formal parameters
+--      snd: formal parameter type (type) 
+nameFormalParameters :: Dma.Map Cat Integer -> [Cat] -> [(String,String)]
+nameFormalParameters mp [] = []
+nameFormalParameters mp (f:fs) = [fparam]
+                                ++nameFormalParameters 
+                                        (Dma.insertWith (+) f 1 mp) 
+                                        fs
+    where
+      ident = identCat f
+      name = ident++"_"++case Dma.lookup f mp of
+                        Just x -> show x
+                        _      -> ""
+      fparam   = (fparName,typename) 
+      typename = if isList f
+                   then "list"
+                   else ident
+      fparName = firstLowerCase $ name

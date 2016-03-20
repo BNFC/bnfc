@@ -95,21 +95,21 @@ makePython options@Options{..} cf =
       -- todo: test file generation
       makebnfcfile btest
       -- todo: lexer and parser input file generation
-{-      let (lex, env) = lexfun packageBase cf
+      let (lex, env) = lexfun packageBase cf
       -- Where the lexer file is created. lex is the content!
       mkfile (dirBase ++ inputfile lexmake ) lex
       liftIO $ putStrLn $ "   (Tested with "+++ toolname lexmake
                                             +++ toolversion lexmake  +++")"
       -- where the parser file is created.
       mkfile (dirBase ++ inputfile parmake)
-            $ parsefun packageBase packageAbsyn cf env
+            $ parsefun packageBase "" cf env
       liftIO $ putStrLn (if supportsEntryPoints parmake then
                               "(Parser created for all categories)" else
                               "   (Parser created only for category " ++
                                 show (firstEntry cf) ++ ")")
       liftIO $ putStrLn $ "   (Tested with " +++ toolname parmake
                                              +++ toolversion parmake +++ ")"
-                                             -}
+                                             
 -- todo : Create makefile
     where
       remDups [] = []
@@ -149,8 +149,8 @@ makefile  dirBase dirAbsyn absynFileNames jlexpar = vcat $
     let ff = filename lexmake -- name of input file without extension
         dirBaseff = dirBase ++ ff -- prepend directory
         inp = dirBase ++ inputfile lexmake in
-        Makefile.mkRule (dirBaseff +.+ "java") [ inp ]
-        [ "${LEXER} ${LEXER_FLAGS} "++ inp ]
+            Makefile.mkRule (dirBaseff +.+ "java") [ inp ]
+            [ "${LEXER} ${LEXER_FLAGS} "++ inp ]
 
     -- running the parsergen, these there are its outputs
     -- output of parser -> input of parser : calls parser
@@ -165,7 +165,7 @@ makefile  dirBase dirAbsyn absynFileNames jlexpar = vcat $
   , let lexerOutClass = dirBase ++ filename lexmake +.+ "class"
         outname x = dirBase ++ x +.+ "java"
         deps = map outname (results lexmake ++ results parmake) in
-        Makefile.mkRule lexerOutClass deps []
+          Makefile.mkRule lexerOutClass deps []
     ]++
   reverse [Makefile.mkRule tar dep [] | 
     (tar,dep) <- partialParserGoals dirBase (results parmake)]
@@ -362,7 +362,7 @@ antlrmakedetails l = MakeDetails
                                         cnv y   = if isPathSeparator y
                                                         then '.'
                                                         else y
-                                        in [ "-lib", path
+                                          in [ "-lib", path
                                            , "-package", pointed]
     , filename            = l
     , fileextension       = "g4"
@@ -395,11 +395,11 @@ bnfcVisitorsAndTests :: String   -> CF      ->
                         CFToJava -> CFToJava -> CFToJava ->
                         CFToJava -> BNFCGeneratedEntities
 bnfcVisitorsAndTests pbase cf cf0 cf1 cf2 cf3 =
-    BNFCGenerated
-    { bprettyprinter = ( "PrettyPrinter" , app cf0)
-    , bskel          = ( "Visitor", app cf1)
-    , babsyn      = ( "Absyn" , app cf2)
-    , btest          = ( "Test" , app cf3)
+    BNFCGenerated{ 
+        bprettyprinter = ( "PrettyPrinter" , app cf0)
+        , bskel          = ( "Visitor", app cf1)
+        , babsyn      = ( "Absyn" , app cf2)
+        , btest          = ( "Test" , app cf3)
     }
       where app x = x pbase cf
 

@@ -44,23 +44,8 @@ import BNFC.Backend.Python.AbsPython
 import BNFC.CF
 import Text.PrettyPrint
 cf2PyVisitSkel :: String -> CF -> String
-cf2PyVisitSkel packageBase cf = show $ absVcat [
-                                    imports packageBase
-                                    visitorClass
-                                ] 
+cf2PyVisitSkel packageBase cf = show $ absVcat $ [imports packageBase] ++(visitorClass cf)
 
-{-show $ vcat [
-                                            (text packageBase) <+> "Absyn"
-                                            ,indent $ vcat[
-                                                methods names
-                                                ,dictionary names
-                                                ,initmethod
-                                                ,visit
-                                            ]
-                                            ]
-                                where names = []
-                     
--}
 
 imports x = Import $ Ident (x++".Absyn")
 {-
@@ -68,25 +53,100 @@ Idea is similar: this function returns a Doc and those below construct an object
 using AbsPython objects, together with the information from the abstract syntax
 Position is not necessary anymore
 -}
-visitorClass :: [Entity]
-visitorClass = [Class (Ident "Visitor") NoInherit
-                , IndentedBlock 
-                    allVisitPrivate
-                    ++ dictionary
+
+
+visitorClass :: CF -> [Entity]
+visitorClass cf = [Class (Ident "Visitor") NoInherit
+                , IndentedBlock $ 
+                    (allVisitPrivate cf absynCats)
+                    ++ [Dictionary (dictionary absynCats)]
                     ++ initMethod
                     ++ visitMethod
                ]
+               where 
+                 absynCats = getUserCategories cf
 
-allVisitPrivate :: CF -> [Entity]
-allVisitPrivate cf = concat 
-                        [privateVisit cf (c,labs) | 
-                          (c,labs) <- getAbstractSyntax cf, not $ isList c] 
+allVisitPrivate :: CF -> [(Cat, [(Fun, [Cat])])] -> [Entity]
+allVisitPrivate cf [] = []
+allVisitPrivate cf ((c,labels):rest) = (privateVisit cf labels)
+                                    ++allVisitPrivate cf rest  
 
-privateVisit :: CF -> [Entity]
-privateVisit cf = []
+privateVisitorName :: Fun -> String
+privateVisitorName x = "__visit_"++x
 
-initMethod :: Entity
+privateVisit :: CF -> [(Fun, [Cat])] -> [Entity]
+privateVisit cf [] = []
+privateVisit cf ((typ,content):rest) = method pvisit 
+                                        [Left Self, ar itemStr, ar envStr]
+                                        (visitBody $ zip filt params)++ (privateVisit cf rest) 
+                                    where
+                                      filt = (filterTerminals cf content)
+                                      params = getParams filt
+                                      pvisit = Left $ privateVisitorName typ 
+
+-- this creates the visit method's body.
+-- for each list object, creates a for loop;
+-- for each non-token object calls the dictionary.
+visitBody :: [(Cat,(String,String))] -> [Entity]
+visitBody [] = [Pass]
+visitBody ((c,(name,typ)):cs) = action -- ++ visitBody cs
+                    where 
+                     id = mkId name 
+                     action = if isList c
+                              then mkFor id
+                              else [mkVisit $ toNames[Self, id] ]
+
+mkFor :: Entity -> [Entity]
+mkFor e = [
+                        For loopVar (toNames [mkId itemStr, e]),
+                        IndentedBlock [
+                            call
+                        ]
+                    ] 
+                    where
+                      loopVar = mkId "x"
+                      call = visitCall loopVar
+                    
+
+mkVisit :: Entity -> Entity
+mkVisit e = visitCall $ e
+                      
+visitCall :: Entity -> Entity
+visitCall name = Function query [Self, name, ienv]
+                   where
+                     query = toNames [Self, dictionaryLookup name]
+                     ienv = mkId envStr
+                      
+                      
+initMethod :: [Entity]
 initMethod = emptyConstructor 
+
+
+dictionary :: [(Cat, [(Fun, [Cat])])] -> [Entity]
+dictionary [] = []
+dictionary ((_, labs):rest) = (entries funs)++(dictionary rest)
+                            where 
+                                funs = fst $ unzip labs
+                                entries = map typeContribution
+
+typeContribution :: Fun -> Entity
+typeContribution f =  Entry f (mkId $ privateVisitorName f)
+
+-- fun is a 
+classEntries :: (Fun, [Cat]) -> [Entity]
+classEntries (c, labs)= []
+
+dictionaryLookup :: Entity -> Entity
+dictionaryLookup x= dictionaryName $ YesArray $ lookupKey x 
+
+lookupKey :: Entity -> Entity
+lookupKey x = toNames [x, ClassField, NameField]
+
+envStr = "env"
+itemStr = "item"
+ar s = Right (s, Nothing)
+
+
 
 {-def visit(self, item, env):
         return self.index[item.__class__.__name__](self,item,env)
@@ -94,14 +154,18 @@ initMethod = emptyConstructor
 visitMethod :: [Entity]
 visitMethod = method (Left "visit") args body 
               where 
-                body = [Return Qualified []]
+                body = [Return $ Function query [Self, iitem, ienv]]
+                query = toNames [Self, dictionaryLookup iitem]
                 args = [self, item, env]
                 self = Left Self
-                item = ar "item"
-                env = ar "env"
-                ar s = Right (s, Nothing)
+                item = ar itemStr
+                env = ar envStr
+                iitem = mkId itemStr
+                ienv = mkId envStr
 
 
+{-
 visitTypeMethod ::
 
 methodDictionary ::
+-}
