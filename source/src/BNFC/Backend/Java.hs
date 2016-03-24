@@ -50,7 +50,7 @@ import BNFC.Backend.Java.CFtoJLex15
 import BNFC.Backend.Common.Antlr4.CFtoAntlr4Lexer
 import BNFC.Backend.Common.Antlr4.CFtoAntlr4Parser
 import BNFC.Backend.Java.CFtoJavaAbs15 ( cf2JavaAbs )
-import BNFC.Backend.Common.MultipleParserGenerationTools (ToolParameters (..))
+import BNFC.Backend.Common.MultipleParserGenerationTools
 import BNFC.Backend.Java.AntlrAdapter(generateAntlrAction)
 import BNFC.Backend.Java.CFtoJavaPrinter15
 import BNFC.Backend.Java.CFtoVisitSkel15
@@ -242,6 +242,12 @@ type TestClass = String
     -> CF
     -- ^ the CF bundle
     -> String
+
+data ParserLexerSpecification = ParseLexSpec
+    { parser    :: CFToParser
+    , lexer     :: CFToLexer
+    , testclass :: TestClass
+    }
 
 -- | Test class details for J(F)Lex + CUP
 cuptest :: TestClass

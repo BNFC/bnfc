@@ -36,9 +36,17 @@
    **************************************************************
 -}
 
-module BNFC.Backend.Common.MultipleParserGenerationTools where
+module BNFC.Backend.Common.MultipleParserGenerationTools
+ ( ToolParameters(..)
+ , CFToParser(..)
+ , CFToLexer(..)
+ 
+ )
+ where
 
 import BNFC.CF
+import BNFC.Backend.Common.Makefile
+import BNFC.Backend.Common.NamedVariables (SymEnv, firstLowerCase)
 import Data.List
 import Data.Char(toLower)
 
@@ -79,8 +87,3 @@ data CFToLexer = CF2Lex
     , makelexerdetails :: ToolParameters -> MakeFileDetails
     }
     
-data ParserLexerSpecification = ParseLexSpec
-    { parser    :: CFToParser
-    , lexer     :: CFToLexer
-    , testclass :: TestClass
-    }
