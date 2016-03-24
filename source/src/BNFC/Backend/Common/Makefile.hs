@@ -46,3 +46,30 @@ refVar m = "${" ++ m ++ "}"
 mkMakefile :: SharedOptions -> Doc -> Backend
 mkMakefile Options {make = Nothing} _ = return ()
 mkMakefile Options {make = Just makefile} content = mkfile makefile content
+
+type OutputDirectory = String
+
+-- | MAKEFILE DETAILS FROM RUNNING THE PARSER-LEXER GENERATION TOOLS
+data MakeFileDetails = MakeDetails
+    { -- | The string that executes the generation tool
+      executable          :: String
+      -- | Flags to pass to the tool
+    , flags               :: OutputDirectory -> String
+      -- | Input file to the tool
+    , filename            :: String
+      -- | Extension of input file to the tool
+    , fileextension       :: String
+      -- | name of the tool
+    , toolname            :: String
+      -- | Tool version
+    , toolversion         :: String
+      -- | true if the tool is a parser and supports entry points,
+      -- false otherwise
+    , supportsEntryPoints :: Bool
+      -- | list of names (without extension!) of files resulting from the
+      -- application of the tool which are relevant to a make rule
+    , results             :: [String]
+      -- | if true, the files are moved to the base directory, otherwise
+      -- they are left where they are
+    , moveresults         :: Bool
+    }

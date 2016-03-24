@@ -1,4 +1,4 @@
-module BNFC.Backend.Java.RegToAntlrLexer (printRegJLex, escapeChar) where
+module BNFC.Backend.Common.Antlr4.RegToAntlrLexer (printRegJLex, escapeChar) where
 
 -- modified from RegToJLex.hs
 

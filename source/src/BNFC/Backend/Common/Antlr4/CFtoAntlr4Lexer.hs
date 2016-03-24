@@ -36,12 +36,13 @@
    **************************************************************
 -}
 
-module BNFC.Backend.Java.CFtoAntlr4Lexer ( cf2AntlrLex ) where
+module BNFC.Backend.Common.Antlr4.CFtoAntlr4Lexer ( cf2AntlrLex ) where
 
 import Text.PrettyPrint
+import BNFC.Backend.Common.MultipleParserGenerationTools (ToolParameters (..))
 import BNFC.CF
-import BNFC.Backend.Java.RegToAntlrLexer
-import BNFC.Backend.Java.Utils
+import BNFC.Backend.Common.Antlr4.RegToAntlrLexer  
+import BNFC.Backend.Java.Utils 
 import BNFC.Backend.Common.NamedVariables
 
 -- | Creates a lexer grammar.
@@ -50,9 +51,9 @@ import BNFC.Backend.Common.NamedVariables
 -- This introduces risks of clashes if somebody uses the same identifier for
 -- user defined tokens. This is not handled.
 -- returns the environment because the parser uses it.
-cf2AntlrLex :: String -> CF -> (Doc, SymEnv)
-cf2AntlrLex packageBase cf = (vcat
-    [ prelude packageBase
+cf2AntlrLex :: ToolParameters -> CF -> (Doc, SymEnv)
+cf2AntlrLex tpar cf = (vcat
+    [ prelude $ packageBase tpar
     , cMacros
     -- unnamed symbols (those in quotes, not in token definitions)
     , lexSymbols env

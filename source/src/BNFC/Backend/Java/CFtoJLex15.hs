@@ -42,14 +42,15 @@ module BNFC.Backend.Java.CFtoJLex15 ( cf2jlex ) where
 import BNFC.CF
 import BNFC.Backend.Java.RegToJLex
 import BNFC.Utils (cstring)
+import BNFC.Backend.Common.MultipleParserGenerationTools (ToolParameters (..))
 import BNFC.Backend.Common.NamedVariables
 import Text.PrettyPrint
 
 --The environment must be returned for the parser to use.
-cf2jlex :: Bool -> String -> CF -> (Doc, SymEnv)
-cf2jlex jflex packageBase cf = (vcat
+cf2jlex :: Bool -> ToolParameters -> CF -> (Doc, SymEnv)
+cf2jlex jflex tpar cf = (vcat
  [
-  prelude jflex packageBase,
+  prelude jflex $ packageBase tpar,
   cMacros,
   lexSymbols jflex env,
   restOfJLex cf

@@ -68,7 +68,7 @@ This is what this module does.
 module BNFC.Backend.Common.NamedVariables where
 
 import BNFC.CF
-import Data.Char (toLower)
+import Data.Char (toLower, toUpper)
 import Data.List (nub)
 import Text.PrettyPrint
 import Control.Arrow (left, (&&&))
@@ -168,3 +168,8 @@ showNum n = if n == 0 then [] else show n
 firstLowerCase :: String -> String
 firstLowerCase "" = ""
 firstLowerCase (a:b) = (toLower a):b
+
+-- Makes the first letter an uppercase.
+firstUpperCase :: String -> String
+firstUpperCase "" = ""
+firstUpperCase (a:b) = (toUpper a):b
