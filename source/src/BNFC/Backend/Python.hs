@@ -125,7 +125,7 @@ makePython options@Options{..} cf =
       parsefun = cf2parse $ parser parselexspec
       parmake = (makeparserdetails (parser parselexspec)) tpar
       lexmake = (makelexerdetails (lexer parselexspec)) tpar
-      tpar = ToolParams{
+      tpar = AntlrSettings{
               commentString = "#",
               multilineComment = \x -> "\"\"\"" ++ x ++ "\"\"\"",
               preservePositions = linenumbers,
@@ -279,21 +279,9 @@ parserLexerSelector = ParseLexSpec
     , testclass = antlrtest
     }
 
-data ParserLexerSpecification = ParseLexSpec
-    { parser    :: CFToParser
-    , lexer     :: CFToLexer
-    , testclass :: TestClass
-    }
 
--- |CF -> LEXER GENERATION TOOL BRIDGE
--- | function translating the CF to an appropriate lexer generation tool.
-type CF2LexerFunction = ToolParameters -> CF -> (Doc, SymEnv)
 
--- Chooses the translation from CF to the lexer
-data CFToLexer = CF2Lex
-    { cf2lex           :: CF2LexerFunction
-    , makelexerdetails :: ToolParameters -> MakeFileDetails
-    }
+
 
 -- | Instances of cf-lexergen bridges
 
@@ -303,17 +291,6 @@ cf2AntlrLex = CF2Lex
                 BNFC.Backend.Common.Antlr4.CFtoAntlr4Lexer.cf2AntlrLex
                , makelexerdetails = antlrmakedetails
                }
-
--- | CF -> PARSER GENERATION TOOL BRIDGE
--- | function translating the CF to an appropriate parser generation tool.
-type CF2ParserFunction = ToolParameters -> CF -> SymEnv -> String
-
--- | Chooses the translation from CF to the parser
-data CFToParser = CF2Parse
-    { cf2parse          :: CF2ParserFunction
-    , makeparserdetails :: ToolParameters -> MakeFileDetails
-    }
-
 
 cf2AntlrParse :: CFToParser
 cf2AntlrParse = CF2Parse
