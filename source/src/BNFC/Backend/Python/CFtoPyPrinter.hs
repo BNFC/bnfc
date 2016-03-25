@@ -41,5 +41,49 @@
 module BNFC.Backend.Python.CFtoPyPrinter ( cf2PyPrinter ) where
 
 import BNFC.CF
+import BNFC.Backend.Python.Utils
+import BNFC.Backend.Python.AbsPython
 cf2PyPrinter :: String -> CF -> String
 cf2PyPrinter packageBase cf = "printer"
+
+
+i :: Entity
+i = mkId "i"
+
+pp :: Entity
+pp = mkId  "pp"
+
+pprender :: Entity
+pprender = mkId "render"
+
+l_paren :: Entity
+l_paren = mkId "_L_PAREN"
+
+r_paren :: Entity
+r_paren = mkId "_R_PAREN"
+
+prettyPrintingEntry :: [Entity]
+prettyPrintingEntry = 
+    [Class (Ident  "PPEntry") NoInherit
+    , methodDefinition Init [Self] body 
+    ]
+    where body = assigningConstructorBody ["sh_fun","pp_fun"]
+
+pPContext :: [Entity]
+pPContext = 
+    [Class (Ident "PPContext") NoInherit
+    , mdef Init consBody
+    , mdef Enter enterBody
+    , mdef Exit exitBody
+    ]
+    where 
+        mdef         = \x y -> methodDefinition x [Self] y 
+        consBody     = assigningConstructorBody ["pp", "i"]
+        callRender x = Function (toNames [Self, pp, pprender]) [x]
+        enterBody    = withBody l_paren
+        exitBody     = withBody r_paren
+        withBody x   = ifCascade [(condition, branch x)]
+        condition    = toNames [Self,i]
+        branch x     = [callRender $ toNames [Self, pp, x]]
+                        
+        

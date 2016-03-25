@@ -59,7 +59,7 @@ visitorClass :: CF -> [Entity]
 visitorClass cf = [Class (Ident "Visitor") NoInherit
                 , IndentedBlock $ 
                     (allVisitPrivate cf absynCats)
-                    ++ [Dictionary (dictionary absynCats)]
+                    ++ [Dictionary (dictionary typeContribution absynCats)]
                     ++ initMethod
                     ++ visitMethod
                ]
@@ -71,8 +71,13 @@ allVisitPrivate cf [] = []
 allVisitPrivate cf ((c,labels):rest) = (privateVisit cf labels)
                                     ++allVisitPrivate cf rest  
 
+privateVisitorEntity :: Entity -> String
+privateVisitorEntity (Id (Ident x) _) = privateVisitorName x
+privateVisitorEntity _ = "WRONG TYPE!"
+ 
 privateVisitorName :: Fun -> String
 privateVisitorName x = "__visit_"++x
+ 
 
 privateVisit :: CF -> [(Fun, [Cat])] -> [Entity]
 privateVisit cf [] = []
@@ -122,25 +127,14 @@ initMethod :: [Entity]
 initMethod = emptyConstructor 
 
 
-dictionary :: [(Cat, [(Fun, [Cat])])] -> [Entity]
-dictionary [] = []
-dictionary ((_, labs):rest) = (entries funs)++(dictionary rest)
-                            where 
-                                funs = fst $ unzip labs
-                                entries = map typeContribution
-
-typeContribution :: Fun -> Entity
-typeContribution f =  Entry f (mkId $ privateVisitorName f)
+typeContribution :: Entity -> Entity
+typeContribution f =  Entry f (mkId $ privateVisitorEntity f)
 
 -- fun is a 
 classEntries :: (Fun, [Cat]) -> [Entity]
 classEntries (c, labs)= []
 
-dictionaryLookup :: Entity -> Entity
-dictionaryLookup x= dictionaryName $ YesArray $ lookupKey x 
 
-lookupKey :: Entity -> Entity
-lookupKey x = toNames [x, ClassField, NameField]
 
 envStr = "env"
 itemStr = "item"

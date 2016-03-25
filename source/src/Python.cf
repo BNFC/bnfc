@@ -26,12 +26,27 @@ NoInherit . Inherit ::= ;
 
 For . Entity ::= "for" Entity "in" Entity ":";
 
+If . Entity ::= "if" Entity ":";
+Elif . Entity ::= "elif" Entity ":";
+Else . Entity ::= "else" ":";
+
+Try . Entity ::= "try" ":";
+Except . Entity ::= "except" ":";
+With . Entity ::= "with" ":";
+
+Gt . Entity ::= Entity ">" Entity;
+
+IsInstance . Entity ::= "isinstance";
+
 PyComment . Entity ::= "#" String;
+Formatting . Entity ::= String "%" Entity;
 
 Method . Entity ::= "def" Entity ":";
 IndentedBlock . Entity ::= [Entity];
 EmptyEntity . Entity ::= ;
 Init . Entity ::= "__init__";
+Enter . Entity ::= "__enter__";
+Exit . Entity ::= "__exit__";
 ClassField . Entity ::= "__class__";
 NameField . Entity ::= "__name__";
 Super . Entity ::= "super";
@@ -44,7 +59,7 @@ Function . Entity ::= Entity "(" [Entity] ")";
 Qualified . Entity ::= [Name]; 
 Argument . Entity ::= Ident ArgType;
 Self . Entity ::= "self";
-Entry . Entity ::= String ":" Entity ",";
+Entry . Entity ::= Entity ":" Entity ",";
 Dictionary . Entity ::= [Entity];
 
 YesType . ArgType ::= ":" Ident;

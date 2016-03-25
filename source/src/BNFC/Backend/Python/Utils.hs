@@ -13,8 +13,62 @@ importList li = vcat $ map ("import"<+>) li
 mkId :: String -> Entity
 mkId x = Id (Ident x) NoArray
 
+dictionary :: (Entity -> Entity) -> [(Cat, [(Fun, [Cat])])]  -> [Entity]
+dictionary _ [] = []
+dictionary tycon ((_, labs):rest) = (entries funs)++(dictionary tycon rest)
+                            where 
+                                funs = fst $ unzip labs
+                                entries = map (tycon . mkId)
+
+dictionaryLookup :: Entity -> Entity
+dictionaryLookup x= dictionaryName $ YesArray $ lookupKey x 
+
+lookupKey :: Entity -> Entity
+lookupKey x = toNames [x, ClassField]
+
 toNames :: [Entity] -> Entity
 toNames ent = Qualified [Name n | n <- ent]
+
+assigningConstructorBody :: [String] -> [Entity]
+assigningConstructorBody [] = [Pass]
+assigningConstructorBody [aName] = 
+    [Assignment [toNames [Self, i]] [i]]
+        where i = mkId aName
+assigningConstructorBody (name:s) =
+    assigningConstructorBody [name] ++ assigningConstructorBody s
+    
+-- should return an indented block
+methodDefinition :: Entity -> [Entity] -> [Entity] -> Entity
+methodDefinition name args body =
+    IndentedBlock [ Method $ Function name args,
+        IndentedBlock body
+        ]
+
+ifElseCascade :: [(Entity,[Entity])] -> [Entity] -> [Entity]
+ifElseCascade [] [] = [Pass]
+ifElseCascade branches [] = ifCascade branches
+ifElseCascade branches elseBranch = ifCascade branches ++ e
+    where 
+        e = [ Else
+            , IndentedBlock elseBranch
+            ]
+
+ifCascade :: [(Entity,[Entity])] -> [Entity]
+ifCascade [] = [Pass]
+ifCascade [(e,br)] =  [
+    If e,
+    IndentedBlock br
+    ]
+ifCascade (branch:es) = (ifCascade [branch]) ++ (elifCascade es)  
+
+elifCascade :: [(Entity,[Entity])] -> [Entity]
+elifCascade []       = [Pass]
+elifCascade [(e,br)] =  [
+    Elif e,
+    IndentedBlock br
+    ]
+elifCascade (branch:es) =
+    elifCascade [branch] ++ elifCascade es
 
 absVcat :: [Entity] -> TPP.Doc
 absVcat [] = text ""
