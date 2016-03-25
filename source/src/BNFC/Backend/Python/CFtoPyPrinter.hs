@@ -88,8 +88,8 @@ pPContextClass =
                         
 prettyPrinterClass :: CF -> [Entity]
 prettyPrinterClass cf = 
-    [ Class (Ident "PrettyPrinter")] ++
-    mapConcat IndentedBlock [ initDef cf
+    [ Class (Ident "PrettyPrinter") NoInherit] ++
+    map IndentedBlock [ initDef cf
                             , renderDef
                             , pprintDef
                             , showDef
