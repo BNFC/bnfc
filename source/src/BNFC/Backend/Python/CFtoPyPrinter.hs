@@ -62,15 +62,15 @@ l_paren = mkId "_L_PAREN"
 r_paren :: Entity
 r_paren = mkId "_R_PAREN"
 
-prettyPrintingEntry :: [Entity]
-prettyPrintingEntry = 
+prettyPrintingEntryClass :: [Entity]
+prettyPrintingEntryClass = 
     [Class (Ident  "PPEntry") NoInherit
     , methodDefinition Init [Self] body 
     ]
     where body = assigningConstructorBody ["sh_fun","pp_fun"]
 
-pPContext :: [Entity]
-pPContext = 
+pPContextClass :: [Entity]
+pPContextClass = 
     [Class (Ident "PPContext") NoInherit
     , mdef Init consBody
     , mdef Enter enterBody
@@ -86,4 +86,66 @@ pPContext =
         condition    = toNames [Self,i]
         branch x     = [callRender $ toNames [Self, pp, x]]
                         
+prettyPrinterClass :: CF -> [Entity]
+prettyPrinterClass cf = 
+    [ Class (Ident "PrettyPrinter")] ++
+    mapConcat IndentedBlock [ initDef cf
+                            , renderDef
+                            , pprintDef
+                            , showDef
+                            , __list_ppDef
+                            , __list_shDef
+                            , __pp_def cf
+                            , __sh_def cf
+                            , shDef 
+                            , ppDef 
+                            , printQuotedDef 
+                            , indentDef 
+                            , backupDef 
+                            , trimDefDef 
+                            ]
+    where 
+        absynCats = getUserCategories cf
         
+
+initDef :: CF -> [Entity]
+initDef cf = []
+
+renderDef :: [Entity]
+renderDef = []
+
+pprintDef :: [Entity]
+pprintDef = []
+ 
+showDef :: [Entity]
+showDef = []
+
+__list_ppDef :: [Entity]
+__list_ppDef = []
+
+__list_shDef :: [Entity]
+__list_shDef = []
+
+__pp_def :: CF -> [Entity]
+__pp_def cf = []
+
+__sh_def :: CF -> [Entity]
+__sh_def cf = []
+
+shDef :: [Entity]
+shDef = []
+ 
+ppDef :: [Entity]
+ppDef = []
+ 
+printQuotedDef :: [Entity]
+printQuotedDef = []
+ 
+indentDef :: [Entity]
+indentDef = []
+ 
+backupDef :: [Entity]
+backupDef = []
+ 
+trimDefDef :: [Entity]
+trimDefDef = []
