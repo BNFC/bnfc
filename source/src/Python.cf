@@ -19,6 +19,7 @@
 -}
 
 Import . Entity ::= "import" Ident;
+From . Entity ::= "from" Ident "import" "*";
 
 Class . Entity ::= "class" Ident Inherit ":";
 YesInherit . Inherit ::=  "(" Ident ")";
@@ -64,8 +65,8 @@ Dictionary . Entity ::= [Entity];
 
 YesType . ArgType ::= ":" Ident;
 NoType . ArgType ::= ;
-  
-Id . Entity ::= Ident Array;
+SquareBracketAccess . Entity ::= Entity Array;
+Id . Entity ::= Ident ;
 
 YesArray . Array ::= "[" Entity "]";
 NoArray . Array ::=;

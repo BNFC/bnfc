@@ -47,7 +47,7 @@ cf2PyVisitSkel :: String -> CF -> String
 cf2PyVisitSkel packageBase cf = show $ absVcat $ [imports packageBase] ++(visitorClass cf)
 
 
-imports x = Import $ Ident (x++".Absyn")
+imports x = From $ Ident "Absyn"
 {-
 Idea is similar: this function returns a Doc and those below construct an object
 using AbsPython objects, together with the information from the abstract syntax
@@ -72,7 +72,7 @@ allVisitPrivate cf ((c,labels):rest) = (privateVisit cf labels)
                                     ++allVisitPrivate cf rest  
 
 privateVisitorEntity :: Entity -> String
-privateVisitorEntity (Id (Ident x) _) = privateVisitorName x
+privateVisitorEntity (Id (Ident x)) = privateVisitorName x
 privateVisitorEntity _ = "WRONG TYPE!"
  
 privateVisitorName :: Fun -> String
@@ -99,7 +99,7 @@ visitBody ((c,(name,typ)):cs) = action -- ++ visitBody cs
                      id = mkId name 
                      action = if isList c
                               then mkFor id
-                              else [mkVisit $ toNames[Self, id] ]
+                              else [mkVisit $ toNames[mkId itemStr, id] ]
 
 mkFor :: Entity -> [Entity]
 mkFor e = [
@@ -117,9 +117,9 @@ mkVisit :: Entity -> Entity
 mkVisit e = visitCall $ e
                       
 visitCall :: Entity -> Entity
-visitCall name = Function query [Self, name, ienv]
+visitCall name = Function vcall [name, ienv]
                    where
-                     query = toNames [Self, dictionaryLookup name]
+                     vcall = toNames [Self, mkId "visit"]
                      ienv = mkId envStr
                       
                       

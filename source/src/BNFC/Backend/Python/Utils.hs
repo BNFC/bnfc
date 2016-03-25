@@ -11,7 +11,7 @@ indent = nest 4
 importList li = vcat $ map ("import"<+>) li
 
 mkId :: String -> Entity
-mkId x = Id (Ident x) NoArray
+mkId x = Id (Ident x) 
 
 dictionary :: (Entity -> Entity) -> [(Cat, [(Fun, [Cat])])]  -> [Entity]
 dictionary _ [] = []
@@ -21,7 +21,7 @@ dictionary tycon ((_, labs):rest) = (entries funs)++(dictionary tycon rest)
                                 entries = map (tycon . mkId)
 
 dictionaryLookup :: Entity -> Entity
-dictionaryLookup x= dictionaryName $ YesArray $ lookupKey x 
+dictionaryLookup x= SquareBracketAccess dictionaryName $ YesArray $ lookupKey x
 
 lookupKey :: Entity -> Entity
 lookupKey x = toNames [x, ClassField]
@@ -120,11 +120,11 @@ getUserTokens cf = [catIdent, catString] ++ (fst $ unzip $ tokenPragmas cf)
 filterTerminals :: CF -> [Cat] -> [Cat]
 filterTerminals cf ls = [ cat | cat <- ls , not $ cat `elem`  (getUserTokens cf)]
 
-dictionaryName :: Array -> Entity
+dictionaryName :: Entity
 dictionaryName = Id $ (Ident "dict")
 
 dictionaryRef :: Entity
-dictionaryRef =  dictionaryName NoArray
+dictionaryRef =  dictionaryName
 
 getParams :: [Cat] -> [(String,String)]
 getParams = nameFormalParameters Dma.empty 

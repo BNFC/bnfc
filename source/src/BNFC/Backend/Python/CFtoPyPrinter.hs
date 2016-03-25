@@ -148,4 +148,8 @@ backupDef :: [Entity]
 backupDef = []
  
 trimDefDef :: [Entity]
-trimDefDef = []
+trimDefDef = [
+    methodDefinition (mkId "trim") [] [
+        toNames [Self, mkId "buf_"]    
+        ]
+    ]
