@@ -380,10 +380,11 @@ shMethod :: CatDefs ->Rule -> [Entity]
 shMethod defs r@(Rule fun _c cats) | not (isCoercion fun || isDefinedRule fun || isNilCons fun) =  ruleMethod
   where
     p = precRule r    
-    ruleMethod = [ classMethodDefinition fname [fParam, i] methodBody]
+    ruleMethod = [ classMethodDefinition fname [fParam] methodBody]
     fname = mkId $ privateShName fun
     methodBody = [
         lparen
+        ,ctr $ "\""++fun++"\""
         ]++nonTerminalContributions++[rparen]
     nonTerminalContributions = case cats of
         [] -> [NothingPython]
@@ -397,14 +398,13 @@ shMethod defs r@(Rule fun _c cats) | not (isCoercion fun || isDefinedRule fun ||
     allTerms (_:zs) = allTerms zs
 shMethod _ _nm = [NothingPython]
 
--- todo must likely change signature (see error, you only need (Cat,Doc)
--- most of the stuff below you do not need
-shMethodStatement :: CatDefs -> Either (Cat, Doc) String -> [Entity]
-shMethodStatement _ (Right t) = [callToRender [mkId $ "\""++ t ++"\""]]
-shMethodStatement _ (Left (TokenCat "String", nt)) 
-    = [callTo printQuotedId [ toNames $ map mkId ["p" , render nt]]]
-shMethodStatement _ (Left (InternalCat, _)) = [NothingPython]
-shMethodStatement catdefs (Left (cat, nt)) = if isList cat 
+
+shMethodStatement :: CatDefs -> (Cat, Doc) -> [Entity]
+-- shMethodStatement _ (Right t) = [callToRender [mkId $ "\""++ t ++"\""]]
+-- shMethodStatement _ (Left (TokenCat "String", nt)) 
+--     = [callTo printQuotedId [ toNames $ map mkId ["p" , render nt]]]
+shMethodStatement _ (InternalCat, _) = [NothingPython]
+shMethodStatement catdefs (cat, nt) = if isList cat 
     then [
         callToRender [mkId "'['"]
         , callTo __list_shId [child]
@@ -412,6 +412,7 @@ shMethodStatement catdefs (Left (cat, nt)) = if isList cat
         ]
     else [callTo shId [child]]
     where
+        --child = NothingPython
         child = toNames [pid , ntid]
         separatorTuple = tupleLiteral [sep, term]
         precedence = mkId ( show $ precCat cat)
