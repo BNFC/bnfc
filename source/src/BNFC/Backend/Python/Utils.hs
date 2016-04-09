@@ -11,14 +11,18 @@ indent = nest 4
 importList li = vcat $ map ("import"<+>) li
 
 mkId :: String -> Entity
-mkId x = Id (Ident x) 
+mkId x = Id (Ident x)
+ 
+mkAccess :: Show a => String -> a -> Entity 
+mkAccess x y = SquareBracketAccess (mkId x) $ YesArray (mkId (show y)) 
 
-dictionary :: (Entity -> Entity) -> [(Cat, [(Fun, [Cat])])]  -> [Entity]
+-- todo tycon must be a different type --- it has to be given the Fun item
+dictionary :: (Fun -> Entity) -> [(Cat, [(Fun, [Cat])])]  -> [Entity]
 dictionary _ [] = []
 dictionary tycon ((_, labs):rest) = (entries funs)++(dictionary tycon rest)
                             where 
                                 funs = fst $ unzip labs
-                                entries = map (tycon . mkId)
+                                entries = map tycon
 
 dictionaryLookup :: Entity -> Entity
 dictionaryLookup x= SquareBracketAccess dictionaryName $ YesArray $ lookupKey x
@@ -43,6 +47,10 @@ methodDefinition name args body =
     IndentedBlock [ Method $ Function name args,
         IndentedBlock body
         ]
+        
+classMethodDefinition :: Entity -> [Entity] -> [Entity] -> Entity
+classMethodDefinition name ar body = methodDefinition name (concat [[Self], ar]) body
+
 
 ifElseCascade :: [(Entity,[Entity])] -> [Entity] -> [Entity]
 ifElseCascade [] [] = [Pass]
@@ -76,7 +84,7 @@ absVcat (e:es) = case e of
                 IndentedBlock body -> vcat [indent (absVcat body)
                                             , absVcat es
                                             ]
-                Dictionary body -> vcat ["dict = {"
+                Dictionary body -> vcat ["self.dict = {"
                                         , indent (absVcat body)
                                         , "}"
                                         , absVcat es
@@ -147,3 +155,8 @@ nameFormalParameters mp (f:fs) = [fparam]
                    then "list"
                    else ident
       fparName = firstLowerCase $ name
+
+tupleLiteral :: [Entity] -> Entity
+tupleLiteral x = Function (mkId "") x 
+
+instVar x = toNames [Self, mkId x]

@@ -59,8 +59,7 @@ visitorClass :: CF -> [Entity]
 visitorClass cf = [Class (Ident "Visitor") NoInherit
                 , IndentedBlock $ 
                     (allVisitPrivate cf absynCats)
-                    ++ [Dictionary (dictionary typeContribution absynCats)]
-                    ++ initMethod
+                    ++ initMethod absynCats
                     ++ visitMethod
                ]
                where 
@@ -71,9 +70,6 @@ allVisitPrivate cf [] = []
 allVisitPrivate cf ((c,labels):rest) = (privateVisit cf labels)
                                     ++allVisitPrivate cf rest  
 
-privateVisitorEntity :: Entity -> String
-privateVisitorEntity (Id (Ident x)) = privateVisitorName x
-privateVisitorEntity _ = "WRONG TYPE!"
  
 privateVisitorName :: Fun -> String
 privateVisitorName x = "__visit_"++x
@@ -103,7 +99,7 @@ visitBody ((c,(name,typ)):cs) = action -- ++ visitBody cs
 
 mkFor :: Entity -> [Entity]
 mkFor e = [
-                        For loopVar (toNames [mkId itemStr, e]),
+                        For [loopVar] (toNames [mkId itemStr, e]),
                         IndentedBlock [
                             call
                         ]
@@ -123,12 +119,13 @@ visitCall name = Function vcall [name, ienv]
                      ienv = mkId envStr
                       
                       
-initMethod :: [Entity]
-initMethod = emptyConstructor 
+initMethod :: [(Cat, [(Fun, [Cat])])] -> [Entity]
+initMethod absynCats = [methodDefinition Init [Self] 
+                [Dictionary (dictionary visitors absynCats)]] 
 
 
-typeContribution :: Entity -> Entity
-typeContribution f =  Entry f (mkId $ privateVisitorEntity f)
+visitors :: Fun -> Entity
+visitors f =  Entry (mkId f) (instVar $ privateVisitorName f)
 
 -- fun is a 
 classEntries :: (Fun, [Cat]) -> [Entity]

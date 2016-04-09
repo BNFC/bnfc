@@ -25,17 +25,23 @@ Class . Entity ::= "class" Ident Inherit ":";
 YesInherit . Inherit ::=  "(" Ident ")";
 NoInherit . Inherit ::= ;
 
-For . Entity ::= "for" Entity "in" Entity ":";
+For . Entity ::= "for" [Entity] "in" Entity ":";
 
 If . Entity ::= "if" Entity ":";
 Elif . Entity ::= "elif" Entity ":";
 Else . Entity ::= "else" ":";
+In . Entity ::= Entity "in" Entity;
 
 Try . Entity ::= "try" ":";
 Except . Entity ::= "except" ":";
-With . Entity ::= "with" ":";
+With . Entity ::= "with" Entity ":";
 
 Gt . Entity ::= Entity ">" Entity;
+Mul . Entity ::= Entity "*" Entity;
+Equals . Entity ::= Entity "==" Entity;
+NoEquals . Entity ::= Entity "!=" Entity;
+Plus . Entity ::= Entity "+" Entity;
+Minus . Entity ::= Entity "-" Entity;
 
 IsInstance . Entity ::= "isinstance";
 
@@ -72,6 +78,8 @@ YesArray . Array ::= "[" Entity "]";
 NoArray . Array ::=;
 
 Name . Name ::= Entity;
+
+NothingPython . Entity ::= ;
 
 separator Name ".";
 separator Entity "," ;
