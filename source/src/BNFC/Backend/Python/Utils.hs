@@ -1,10 +1,13 @@
 module BNFC.Backend.Python.Utils where
 import BNFC.CF
+import Data.Char (toLower)
 import BNFC.Backend.Python.PrintPython as PPP
 import BNFC.Backend.Python.AbsPython 
 import Text.PrettyPrint as TPP
 import BNFC.Backend.Common.NamedVariables
 import qualified Data.Map as Dma
+
+type CatDefs = (Cat -> [Rule])
 
 indent = nest 4
 
@@ -16,7 +19,7 @@ mkId x = Id (Ident x)
 mkAccess :: Show a => String -> a -> Entity 
 mkAccess x y = SquareBracketAccess (mkId x) $ YesArray (mkId (show y)) 
 
--- todo tycon must be a different type --- it has to be given the Fun item
+
 dictionary :: (Fun -> Entity) -> [(Cat, [(Fun, [Cat])])]  -> [Entity]
 dictionary _ [] = []
 dictionary tycon ((_, labs):rest) = (entries funs)++(dictionary tycon rest)
@@ -154,9 +157,12 @@ nameFormalParameters mp (f:fs) = [fparam]
       typename = if isList f
                    then "list"
                    else ident
-      fparName = firstLowerCase $ name
+      fparName = map toLower name
 
 tupleLiteral :: [Entity] -> Entity
 tupleLiteral x = Function (mkId "") x 
+
+listSingleton :: Entity -> Entity
+listSingleton x = SquareBracketAccess (mkId "") (YesArray x)
 
 instVar x = toNames [Self, mkId x]

@@ -53,8 +53,8 @@ cf2PyPrinter :: String -> CF -> String
 cf2PyPrinter packageBase cf = show $ absVcat entities
                     where
                         entities = concat [
-                                        -- lacking imports
-                                        prettyPrintingEntryClass
+                                        [From $ Ident "Absyn"]
+                                        , prettyPrintingEntryClass
                                         , pPContextClass
                                         , prettyPrinterClass cf]
                             
@@ -104,7 +104,7 @@ pPContextClass =
     [Class pPContextIdent NoInherit
     , mdef Init [pp, i] consBody
     , mdef  Enter [] enterBody
-    , mdef Exit [] exitBody
+    , mdef Exit exitArgs exitBody
     ]
     where 
         mdef         = classMethodDefinition 
@@ -115,6 +115,7 @@ pPContextClass =
         withBody x   = ifCascade [(condition, branch x)]
         condition    = Gt (toNames [Self,i]) $ mkId "0"
         branch x     = [callRender $ toNames [Self, pp, x]]
+        exitArgs = map mkId ["exc_type", "exc_val", "exc_tb"]
                         
 prettyPrinterClass :: CF -> [Entity]
 prettyPrinterClass cf = 
@@ -338,7 +339,6 @@ printOrShowMethodSet pm defs (cat, rules) = concatMap (pm defs) rules
 shMethodSet :: CatDefs -> (Cat, [Rule]) -> [Entity]
 shMethodSet defs (cat, rules) = printOrShowMethodSet shMethod defs (cat, rules)
 
-type CatDefs = (Cat -> [Rule])
 type PrintingMethod = CatDefs -> Rule -> [Entity]
 
 ppMethodSet :: CatDefs -> (Cat, [Rule]) -> [Entity]

@@ -52,7 +52,7 @@ import BNFC.Backend.Python.CFtoPyPrinter
 import BNFC.Backend.Python.CFtoPyVisitSkel
 import BNFC.Backend.Common.NamedVariables (SymEnv, firstLowerCase)
 import BNFC.Backend.Common.MultipleParserGenerationTools
-import BNFC.Backend.Python.AntlrAdapter(generateAntlrAction)
+import BNFC.Backend.Python.AntlrAdapter
 import BNFC.Backend.Common.Makefile
 import BNFC.PrettyPrint
 -------------------------------------------------------------------
@@ -132,8 +132,10 @@ makePython options@Options{..} cf =
               packageAbsyn = packBase,
               packageBase = packBase,
               generateAction = BNFC.Backend.Python.AntlrAdapter.generateAntlrAction,
-              lexerPreamble = text "",
-              parserPreamble = text ""
+              lexerHeader = "",
+              parserHeader= BNFC.Backend.Python.AntlrAdapter.pyAntlrHeader,
+              lexerMembers= "",
+              parserMembers= BNFC.Backend.Python.AntlrAdapter.pyAntlrMembers
             } 
 
 makefile ::  ToolParameters -> FilePath -> FilePath -> [String] -> ParserLexerSpecification -> Doc
@@ -294,14 +296,14 @@ cf2AntlrLex :: CFToLexer
 cf2AntlrLex = CF2Lex
                { cf2lex           =
                 BNFC.Backend.Common.Antlr4.CFtoAntlr4Lexer.cf2AntlrLex
-               , makelexerdetails = antlrmakedetails
+               , makelexerdetails = antlrmakedetails "Lexer"
                }
 
 cf2AntlrParse :: CFToParser
 cf2AntlrParse = CF2Parse
                 { cf2parse          =
                     BNFC.Backend.Common.Antlr4.CFtoAntlr4Parser.cf2AntlrParse
-                , makeparserdetails = antlrmakedetails 
+                , makeparserdetails = antlrmakedetails "Parser"
                 }
 
 
@@ -321,8 +323,8 @@ mkRunProgram j s = refVar j +++ refVar (j +-+ "FLAGS") +++ s
 mapEmpty :: a->String
 mapEmpty _ = ""
 
-antlrmakedetails :: ToolParameters -> MakeFileDetails
-antlrmakedetails tpar = MakeDetails
+antlrmakedetails :: String -> ToolParameters -> MakeFileDetails
+antlrmakedetails typ tpar = MakeDetails
     { executable = runJava "org.antlr.v4.Tool"
     , flags               = \x -> unwords $
                                     let path    = take (length x - 1) x
@@ -332,7 +334,7 @@ antlrmakedetails tpar = MakeDetails
                                                         else y
                                         in [ "-lib", path
                                            , "-package", pointed]
-    , filename            = (packageBase tpar)
+    , filename            = (packageBase tpar)++typ
     , fileextension       = "g4"
     , toolname            = "ANTLRv4"
     , toolversion         = "4.5.1"

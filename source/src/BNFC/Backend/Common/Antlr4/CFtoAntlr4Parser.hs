@@ -43,6 +43,7 @@ import BNFC.CF
 import BNFC.Backend.Java.Utils
 import BNFC.Backend.Common.NamedVariables
 import BNFC.Utils ( (+++), (+.+))
+import BNFC.Backend.Common.Antlr4.AntlrComponents
 
 -- Type declarations
 type Rules       = [(NonTerminal,[(Pattern, Fun, Action)])]
@@ -55,6 +56,8 @@ type MetaVar     = (String, Cat)
 cf2AntlrParse :: ToolParameters -> CF -> SymEnv -> String
 cf2AntlrParse tpar cf env = unlines
     [ header
+    , parserHeaderContent $ (parserHeader tpar)
+    , parserMembersContent $ (parserMembers tpar)
     , tokens
     , prRules (packageAbsyn tpar) (rulesForAntlr4 tpar cf env)
     ]

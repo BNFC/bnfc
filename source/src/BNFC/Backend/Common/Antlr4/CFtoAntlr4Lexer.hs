@@ -44,6 +44,7 @@ import BNFC.CF
 import BNFC.Backend.Common.Antlr4.RegToAntlrLexer  
 import BNFC.Backend.Java.Utils 
 import BNFC.Backend.Common.NamedVariables
+import BNFC.Backend.Common.Antlr4.AntlrComponents as Acomp
 
 -- | Creates a lexer grammar.
 -- Since antlr token identifiers must start with an uppercase symbol,
@@ -54,6 +55,8 @@ import BNFC.Backend.Common.NamedVariables
 cf2AntlrLex :: ToolParameters -> CF -> (Doc, SymEnv)
 cf2AntlrLex tpar cf = (vcat
     [ prelude $ packageBase tpar
+    , text $ lexerHeaderContent $ (lexerHeader tpar)
+    , text $ lexerMembersContent $ (lexerHeader tpar)
     , cMacros
     -- unnamed symbols (those in quotes, not in token definitions)
     , lexSymbols env

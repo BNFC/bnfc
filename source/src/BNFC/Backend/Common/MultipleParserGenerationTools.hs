@@ -63,8 +63,10 @@ data ToolParameters = ToolParams{
     packageAbsyn      :: String,
     generateAction    :: ToolParameters -> NonTerminal -> Fun -> [MetaVar] 
                             -> Bool -> Action,
-    lexerPreamble     :: Doc,
-    parserPreamble    :: Doc
+    lexerMembers     :: String ,
+    parserMembers    :: String ,
+    lexerHeader :: String ,
+    parserHeader :: String 
 } 
 
 -- | CF -> PARSER GENERATION TOOL BRIDGE
