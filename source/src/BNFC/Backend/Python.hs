@@ -334,14 +334,16 @@ antlrmakedetails typ tpar = MakeDetails
                                                         else y
                                         in [ "-lib", path
                                            , "-package", pointed]
-    , filename            = (packageBase tpar)++typ
+    , filename            = classname
     , fileextension       = "g4"
     , toolname            = "ANTLRv4"
     , toolversion         = "4.5.1"
     , supportsEntryPoints = True
-    , results             = [(packageBase tpar)]
+    , results             = [classname]
     , moveresults         = False
     }
+    where
+        classname = (packageBase tpar)++typ
 
 prependPath , appendExtension :: String -> [String] -> [String]
 prependPath s fi     = [s ++ x | x<- fi]

@@ -27,60 +27,73 @@ assignResult e = Assignment [result] [e]
 assignNewAbsynObject :: String -> [Entity] -> Entity
 assignNewAbsynObject s args = assignResult $ Function (mkId s) args 
 
+action :: [Entity] -> String
+action x = show $ absVcat x
+
 generateAntlrAction :: ToolParameters -> NonTerminal -> Fun -> [MetaVar]
                -> Bool   -- ^ Whether the list should be reversed or not.
                          --   Only used if this is a list rule.
                -> Action
-generateAntlrAction tpar nt f ms rev  
-    | isNilFun f = show $ absVcat [assignNewAbsynObject c []]
-    | isOneFun f = "$result = new " ++ c ++ "(); $result.addLast("
-        ++ p_1 ++ ");"
-    | isConsFun f = "$result = " ++ p_2 ++ "; "
-                           ++ "$result." ++ add ++ "(" ++ p_1 ++ ");"
-    | isCoercion f = "$result = " ++  p_1 ++ ";"
-    | isDefinedRule f = "$result = parser." ++ f ++ "_"
-                        ++ "(" ++ intercalate "," (map resultvalue ms) ++ ");"
-    | otherwise = "$result = new " ++ c
-                  ++ "(" ++ posInfo ++ intercalate "," (map resultvalue ms) ++ ");"
+generateAntlrAction tpar nt f ms rev = 
+        action $ [assignResult $ generateAntlrActionEntity tpar nt f ms rev]
+
+generateAntlrActionEntity :: ToolParameters -> NonTerminal -> Fun -> [MetaVar]
+               -> Bool   -- ^ Whether the list should be reversed or not.
+                         --   Only used if this is a list rule.
+               -> Entity
+generateAntlrActionEntity tpar nt f ms rev  
+    | isNilFun f = emptyList
+    | isOneFun f = call __append [emptyList, p_1]
+    | isConsFun f = call add [p_2 , p_1]
+    | isCoercion f = NothingPython --p_1 
+    | isDefinedRule f = NothingPython --"parser",  mkId f,  "_" -- no idea of what the fuck this is
+                        -- ++ "(" ++ intercalate "," (map resultvalue ms) ++ ")"
+    | otherwise = NothingPython --"$result = " ++ c
+                  -- ++ "(" ++ posInfo ++ intercalate "," (map resultvalue ms) ++ ")"
    where
-     positionString    = "_ctx.getStart().getLine(), _ctx.getStart().getCharPositionInLine()"
-     posInfo           = if (preservePositions tpar)
-                            then if ms == [] then positionString else positionString++","
-                            else ""
+--      positionString    = "_localctx.start.line, _localctx.start.start"
+--      posInfo           = if (preservePositions tpar)
+--                             then if ms == [] then positionString else positionString++","
+--                             else ""
      c                 =  if isNilFun f || isOneFun f || isConsFun f
                             then identCat (normCat nt) else f
      p_1               = resultvalue $ ms!!0
      p_2               = resultvalue $ ms!!1
-     add               = if rev then "addLast" else "addFirst"
-     gettext           = "getText()"
-     removeQuotes x    = "substring(1, "++ x +.+ gettext +.+ "length()-1)"
-     parseint x        = "Integer.parseInt("++x++")"
-     parsedouble x     = "Double.parseDouble("++x++")"
-     charat            = "charAt(1)"
+     call what how     = Function (toNames [Self, what]) how
+     __append          = mkId "__append"
+     __prepend         = mkId "__prepend"
+     add               = if rev then __append else __prepend
+     gettext           = mkId "text"
+     removeQuotes      = YesArray $ mkId "1:-1"
+     parseint y        = coercion "int" y
+     parsedouble y     = coercion "float" y
+     coercion x y      = Function (mkId x) [y]
+     charat            = listSingleton $ mkId "1"
      resultvalue (n,c) = case c of
-                          TokenCat "Ident"   -> n'+.+gettext
-                          TokenCat "Integer" -> parseint $ n'+.+gettext
-                          TokenCat "Char"    -> n'+.+gettext+.+charat
-                          TokenCat "Double"  -> parsedouble $ n'+.+gettext
-                          TokenCat "String"  -> n'+.+gettext+.+removeQuotes n'
-                          _         -> (+.+) n' (if isTokenCat c then gettext else "result")
-                          where n' = '$':n
-                          
+                          TokenCat "Ident"   -> toNames [n', gettext]
+                          TokenCat "Integer" -> parseint $ toNames [n', gettext]
+                          TokenCat "Char"    -> toNames [n', gettext, charat]
+                          TokenCat "Double"  -> parsedouble $ toNames [n', gettext]
+                          TokenCat "String"  -> SquareBracketAccess (toNames [n', gettext]) removeQuotes 
+                          _         -> toNames [n', (if isTokenCat c then gettext else mkId "result")]
+                          where n' = mkId ('$':n)
+
+
 generateParserMembers, generateParserHeader :: [Entity]
-generateParserMembers = [
-                        classMethodDefinition (mkId "__prepend") [l, e] [
-                            Assignment [l] [Plus listE l]
-                            , Return l
-                            ]
-                        , classMethodDefinition (mkId "__append") [l, e] [
-                            Function (toNames [l, mkId "append"]) [e]
-                            , Return l
-                          ]
-                        ]
+generateParserMembers = __prepend ++ __append
                         where
                             l = mkId "l"
                             e = mkId "e"
                             listE = listSingleton e
+                            met na body = [Method $ Function (mkId na) [Self, l ,e]
+                                          , IndentedBlock body]
+                            __prepend = met "__prepend" [
+                                        Assignment [l] [Plus listE l]
+                                        , Return l]
+                            __append  = met "__append" [
+                                        Function (toNames [l, mkId "append"]) [e]
+                                        , Return l]
+                            
                             
 generateParserHeader =  [
                        From $ Ident "Absyn"                        

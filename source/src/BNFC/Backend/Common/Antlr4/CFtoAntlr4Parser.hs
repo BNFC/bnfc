@@ -153,15 +153,13 @@ prRules packabs ((nt,(p, fun, a):ls):rs) =
                         , "]"
                         , ":"
                         , p
-                        , "{"
-                        , a
-                        , "}"
+                        , "{"++a++"}"
                         , "#"
                         , antlrRuleLabel fun
                         , '\n' : pr ls
                         ]
     alternative (p',fun',a')
-                      = unwords ["  |", p', "{", a' , "}", "#"
+                      = unwords ["  |", p', "{"++a'++"}", "#"
                         , antlrRuleLabel fun']
     catid             = identCat nt
     normcat           = identCat (normCat nt)

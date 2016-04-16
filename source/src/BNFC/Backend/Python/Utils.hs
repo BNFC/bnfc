@@ -165,4 +165,7 @@ tupleLiteral x = Function (mkId "") x
 listSingleton :: Entity -> Entity
 listSingleton x = SquareBracketAccess (mkId "") (YesArray x)
 
+emptyList :: Entity
+emptyList = listSingleton NothingPython
+
 instVar x = toNames [Self, mkId x]

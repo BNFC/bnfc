@@ -429,7 +429,7 @@ antlrmakedetails typ tpar = MakeDetails
     , toolname            = "ANTLRv4"
     , toolversion         = "4.5.1"
     , supportsEntryPoints = True
-    , results             = [(packageBase tpar)]
+    , results             = [(packageBase tpar)++typ]
     , moveresults         = False
     }
 
