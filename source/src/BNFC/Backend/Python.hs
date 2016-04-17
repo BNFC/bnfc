@@ -45,6 +45,8 @@ import BNFC.CF
 import BNFC.Options as Options
 import BNFC.Backend.Base
 import BNFC.Backend.Java.Utils
+import BNFC.Backend.Python.AbsPython
+import BNFC.Backend.Python.Utils
 import BNFC.Backend.Common.Antlr4.CFtoAntlr4Lexer
 import BNFC.Backend.Common.Antlr4.CFtoAntlr4Parser
 import BNFC.Backend.Python.CFtoPyAbsyn
@@ -245,39 +247,116 @@ data ParserLexerSpecification = ParseLexSpec
 
 -- | Test class details for ANTLR4
 antlrtest :: TestClass
-antlrtest = javaTest [ "org.antlr.v4.runtime","org.antlr.v4.runtime.atn"
-             , "org.antlr.v4.runtime.dfa","java.util"
-             ]
-             "TestError"
-             antlrErrorHandling
-             (\x i ->  vcat
-                    [ x <> "(new ANTLRInputStream" <> i <>");"
-                    , "l.addErrorListener(new BNFCErrorListener());"
-                    ])
-             (\x i -> vcat
-                    [x <> "(new CommonTokenStream" <> i <>");"
-                    , "p.addErrorListener(new BNFCErrorListener());"
-                    ])
-             showOpts 
-             (\pbase pabs enti -> vcat
-                    [
-                    let rulename = getRuleName (show enti)
-                        typename = text rulename
-                        methodname = text $ firstLowerCase rulename
-                    in
-                        pbase <> "." <> typename <> "Context pc = p."
-                              <> methodname <> "();"
-                        , "org.antlr.v4.runtime.Token _tkn = p.getInputStream()"
-                          <> ".getTokenSource().nextToken();"
-                        , "if(_tkn.getType() != -1) throw new TestError"
-                          <> "(\"Stream does not end with EOF\","
-                          <> "_tkn.getLine(),_tkn.getCharPositionInLine());",
-                        pabs <> "." <> enti <+> "ast = pc.result;"
-                    ])
-                    "At line \" + e.line + \", column \" + e.column + \" :"
+antlrtest le pa pack cf = "# this is a test" 
         where showOpts [] = [] 
               showOpts (x:xs) | normCat x /= x = showOpts xs
                               | otherwise      = text (firstLowerCase $ identCat x) : showOpts xs
+              eps            = allEntryPoints cf
+              absentity      = text $ show def
+              def            = head eps
+              
+
+
+testscript :: String -> String -> String -> [Entity]
+testscript le pa entry = [
+    Import $ Ident "sys"
+    , From (Ident le)
+    , From (Ident pa)
+    , From (Ident "PrettyPrinter")
+    , Class (Ident testErrorId) (YesInherit $ Ident "BaseException")
+    , classMethodDefinition Init [emsg, eli, eco] $ assigningConstructorBody [msg, li, co]
+    , Class (Ident strBnfcErrorListener) (YesInherit $ Ident "DiagnosticErrorListener")
+    , classMethodDefinition reportAmbiguity [r, d, start, stop, e, a, c] [
+        Raise $ testerror [Formatting "Ambiguity at indexes start=%s stop=%s" (tupleLiteral [start, stop]) ]
+        ]
+    , classMethodDefinition syntaxError [r, o , l, c, m, e] [
+        Raise $ testerror [m, l, c]
+        ]
+    , NothingPython
+    , NothingPython]++
+     ifCascade [(Equals NameField $ pyStringLiteral "__main__"
+        , [Try
+            , IndentedBlock [
+                input =:= (callFilestream [argv1])
+                , lexer =:= (callLexerObject [input])
+                , lis =:= (callBnfcErrorListener [])
+                , callAddErrorListenerOnLexer [lis]
+                , stream =:= callCommonTokenStream [lexer]
+                    ]
+            , Except
+            , IndentedBlock [
+                pyPrint $  Formatting "Error: File not found: %s" argv1
+                , exit1    
+                ]
+            , parser =:= (callParserObject [stream])
+            , callAddErrorListenerOnLexer [lis]
+            , tree =:= callEntry []
+            , tok =:= nextToken]++
+            ifCascade [(NoEquals tokType minusOne, [
+                Raise $ testerror [(pyStringLiteral "Stream does not end with EOF"), tokline, tokcolumn ]
+                ])]
+            ++[
+            pp =:= callPrettyPrinter []
+            , pyPrintConstant ""
+            , pyPrintConstant "Parse Successful!"
+            , pyPrintConstant ""
+            , pyPrintConstant "[Abstract Syntax]"
+            , pyPrintConstant ""
+            , pyPrint $ ppShow [getresult]
+            , pyPrintConstant "[Linearized Tree]"
+            , pyPrintConstant ""
+            , pyPrint $ ppPrint [getresult]
+            ]
+        )]
+    
+    where
+        (=:=) :: Entity -> Entity -> Entity
+        (=:=) x y = Assignment [x] [y]
+        [input, parser, lexer, lis, stream, tree, 
+            tok, type_, tokenSource, _token, getInputStream, line, column, sys,
+            argv, one, exit, filestream, lexerObject, parserObject, bnfcErrorListener, 
+            commonTokenStream, prettyPrinter, entryMethod, minusOne, result]
+                = map mkId ["input", "parser", "lexer", "lis", "stream", "tree", 
+                    "tok", "type", "tokenSource", "_token", "getInputStream",
+                    "line", "column", "sys", "argv", "1", "exit",
+                    "FileStream", le, pa, strBnfcErrorListener, 
+                    "CommonTokenStream", "PrettyPrinter", entry, "-1", "result"]
+        tokType = toNames [tok, type_]
+        getresult = toNames [tree , result]
+        [callFilestream, callLexerObject, callParserObject,
+            callBnfcErrorListener, callCommonTokenStream, callPrettyPrinter, 
+            callAddErrorListenerOnParser, callAddErrorListenerOnLexer, callEntry,
+            callGetInputStream, ppShow, ppPrint] 
+                = map (\x -> \y -> Function x y) [filestream, lexerObject, parserObject,
+                                                 bnfcErrorListener, commonTokenStream, prettyPrinter,
+                                                 addErrorListenerTo parser, addErrorListenerTo lexer,
+                                                 toNames [parser, entryMethod],
+                                                 toNames [parser, getInputStream],
+                                                 
+                                                 toNames [pp, showId],
+                                                 toNames [pp, pprintId]
+                                                 ]
+        nextToken = toNames [callGetInputStream [], tokenSource ,_token]
+        strBnfcErrorListener = "BNFCErrorListener"
+        addErrorListenerTo subj = toNames [subj, addErrorListener]
+        tokline = toNames [tok, line]
+        tokcolumn = toNames [tok, column]
+        exit1 = Function (toNames [sys, exit]) [one]
+        emsg = mkId msg
+        eli = mkId li
+        eco = mkId co
+        argv1 = toNames [sys, (SquareBracketAccess argv (YesArray one))]
+        msg = "msg"
+        li = "li"
+        co = "co"
+        testErrorId = "TestError"
+        [r, o, l, m, d, start, stop, e, a, c] = map mkId ["r", "o", "l", "m", "d", "start", "stop", "e", "a", "c"] 
+        [reportAmbiguity, syntaxError, addErrorListener ] = map mkId ["reportAmbiguity" , "syntaxError", "addErrorListener"]
+        testerror args = Function (mkId "TestError") args
+    
+
+     
+
 
 parserLexerSelector :: ParserLexerSpecification
 parserLexerSelector = ParseLexSpec
@@ -370,7 +449,7 @@ bnfcVisitorsAndTests pbase cf cf0 cf1 cf2 cf3 =
     BNFCGenerated{ 
         bprettyprinter = ( "PrettyPrinter" , app cf0)
         , bskel          = ( "Visitor", app cf1)
-        , babsyn      = ( "Absyn" , app cf2)
+        , babsyn         = ( "Absyn" , app cf2)
         , btest          = ( "Test" , app cf3)
     }
       where app x = x pbase cf
@@ -386,138 +465,3 @@ partialParserGoals dbas (x:rest) =
     (dbas++x+.+"class",map (\y ->dbas++y+.+"java")(x:rest))
         :partialParserGoals dbas rest
 
--- | Creates the Test.java class.
-javaTest :: [Doc]                   
-            -- ^ list of imported packages
-            -> String 
-            -- ^ name of the exception thrown in case of parsing failure
-            -> (String -> [Doc]) 
-            -- ^ handler for the exception thrown
-            -> (Doc -> Doc -> Doc) 
-            -- ^ function formulating the construction of the lexer object
-            -> (Doc -> Doc -> Doc) 
-            -- ^ as above, for parser object
-            -> ([Cat] -> [Doc])
-            -- ^ Function processing the names of the methods corresponding 
-            -- to entry points 
-            -> (Doc -> Doc -> Doc -> Doc) 
-            -- ^ function formulating the invocation of the parser tool within 
-            -- Java
-            -> String 
-            -- ^ error string output in consequence of a parsing failure
-            -> TestClass
-javaTest imports
-    err
-    errhand
-    lexerconstruction
-    parserconstruction
-    showOpts
-    invocation
-    errmsg
-    lexer
-    parser
-    packageBase
-    cf =
-    render $ vcat $
-        [ "package" <+> text packageBase <> ";"
-        , "import" <+> text packageBase <> ".*;"
-        , "import java.io.*;"
-        ]
-        ++ map importfun imports
-        ++ errhand err
-        ++[ ""
-        , "public class Test"
-        , codeblock 2
-            [ lx <+> "l;"
-            , px <+> "p;"
-            , ""
-            , "public Test(String[] args)"
-            , codeblock 2 [
-                "try"
-                , codeblock 2 [ "Reader input;"
-                    , "if (args.length == 0)"
-                       <> "input = new InputStreamReader(System.in);"
-                    , "else input = new FileReader(args[0]);"
-                    , "l = new "<>lexerconstruction lx "(input)"
-                    ]
-                , "catch(IOException e)"
-                , codeblock 2 [ "System.err.println"
-                        <>"(\"Error: File not found: \" + args[0]);"
-                    , "System.exit(1);"
-                    ]
-                , "p = new "<> parserconstruction px "(l)"
-                ]
-            , ""
-            
-            , codeblock 2
-                [ "/* The default parser is the first-defined entry point. */"
-                , "/* Other options are: */"
-                , "/* " <> fsep (punctuate "," (showOpts (tail eps))) <> " */"
-                
-                , printOuts [ "\"Parse Succesful!\""
-                    , "\"[Abstract Syntax]\""
-                    , "PrettyPrinter.show(ast)"
-                    , "\"[Linearized Tree]\""
-                    , "PrettyPrinter.print(ast)"
-                    ]
-                , "return ast;"
-                ]
-            , ""
-            , "public static void main(String args[]) throws Exception"
-            , codeblock 2 [ "Test t = new Test(args);"
-                , "try"
-                , codeblock 2 [ "t.parse();" ]
-                ,"catch("<>text err<+>"e)"
-                , codeblock 2 [ "System.err.println(\""<>text errmsg<>"\");"
-                    , "System.err.println(\"     \" + e.getMessage());"
-                    , "System.exit(1);"
-                    ]
-                ]
-            ]
-        ]
-    where
-      printOuts x    = vcat $ map javaPrintOut (messages x)
-      messages x     = "" : intersperse "" x
-      javaPrintOut x = text $ "System.out.println(" ++ x ++ ");"
-      importfun x    = "import" <+> x <> ".*;"
-      lx             = text lexer
-      px             = text parser
-      absentity      = text $ show def
-      eps            = allEntryPoints cf
-      def            = head eps
-
--- | Error handling in ANTLR.
--- By default, ANTLR does not stop after any parsing error and attempts to go
--- on, delivering what it has been able to parse.
--- It does not throw any exception, unlike J(F)lex+CUP.
--- The below code makes the test class behave as with J(F)lex+CUP.
-antlrErrorHandling :: String -> [Doc]
-antlrErrorHandling te = [ "class"<+>tedoc<+>"extends RuntimeException"
-    , codeblock 2 [ "int line;"
-        , "int column;"
-        , "public"<+>tedoc<>"(String msg, int l, int c)"
-        , codeblock 2 [ "super(msg);"
-            , "line = l;"
-            , "column = c;"
-            ]
-        ]
-    , "class BNFCErrorListener implements ANTLRErrorListener"
-    , codeblock 2 [ "@Override"
-        , "public void syntaxError(Recognizer<?, ?> recognizer, Object o, int i"
-            <> ", int i1, String s, RecognitionException e)"
-        , codeblock 2 [ "throw new"<+>tedoc<>"(s,i,i1);"]
-        , "@Override"
-        , "public void reportAmbiguity(Parser parser, DFA dfa, int i, int i1, "
-            <>"boolean b, BitSet bitSet, ATNConfigSet atnConfigSet)"
-        , codeblock 2[ "throw new"<+>tedoc<>"(\"Ambiguity at\",i,i1);" ]
-        , "@Override"
-        , "public void reportAttemptingFullContext(Parser parser, DFA dfa, "
-            <>"int i, int i1, BitSet bitSet, ATNConfigSet atnConfigSet)"
-        , codeblock 2 []
-        , "@Override"
-        ,"public void reportContextSensitivity(Parser parser, DFA dfa, int i, "
-            <>"int i1, int i2, ATNConfigSet atnConfigSet)"
-        ,codeblock 2 []
-        ]
-    ]
-    where tedoc = text te

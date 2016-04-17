@@ -48,6 +48,8 @@ IsInstance . Entity ::= "isinstance";
 PyComment . Entity ::= "#" String;
 Formatting . Entity ::= String "%" Entity;
 
+Raise . Entity ::= "raise" Entity;
+
 Method . Entity ::= "def" Entity ":";
 IndentedBlock . Entity ::= [Entity];
 EmptyEntity . Entity ::= ;

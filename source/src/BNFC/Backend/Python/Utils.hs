@@ -54,6 +54,25 @@ methodDefinition name args body =
 classMethodDefinition :: Entity -> [Entity] -> [Entity] -> Entity
 classMethodDefinition name ar body = methodDefinition name (concat [[Self], ar]) body
 
+pp, pprintId, showId :: Entity
+pp = mkId  "pp"
+pprintId = mkId "pprint"
+showId = mkId "show"
+
+pyStringLiteral :: String -> Entity
+pyStringLiteral x = mkId ("\""++x++"\"")
+
+pyPrintConstant :: String -> Entity
+pyPrintConstant x = pyPrint $ pyStringLiteral x
+  
+pyPrint :: Entity -> Entity
+pyPrint e = Function (mkId "print") [e]
+
+callTo :: Entity -> [Entity] -> Entity
+callTo member args = callOn [Self, member] args
+
+callOn :: [Entity] -> [Entity] -> Entity
+callOn who args = Function (toNames who) args
 
 ifElseCascade :: [(Entity,[Entity])] -> [Entity] -> [Entity]
 ifElseCascade [] [] = [Pass]

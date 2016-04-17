@@ -66,9 +66,6 @@ cf2PyPrinter packageBase cf = show $ absVcat entities
 i :: Entity
 i = mkId "i"
 
-pp :: Entity
-pp = mkId  "pp"
-
 pprender :: Entity
 pprender = mkId "render"
 
@@ -272,10 +269,9 @@ joinAndClear = [Assignment [s] [Function join [buf_]]
                 join = toNames $ map mkId ["\"\"","join"]
 
 
-
 pprintDef :: [Entity]
 pprintDef = [
-    classMethodDefinition (mkId "pprint") [s] ([
+    classMethodDefinition pprintId [s] ([
             lookupFun $ Function pp [s, mkId "0"]
             , callTo trimId []
         ] ++ joinAndClear)
@@ -427,9 +423,6 @@ isInstance x = Function (mkId "isinstance") [x, str]
 
 enumerate :: Entity -> Entity
 enumerate x = Function (mkId "enumerate") [x]
-
-callTo :: Entity -> [Entity] -> Entity
-callTo member args = Function (toNames [Self, member]) args
 
 shDef :: [Entity]
 shDef = [
