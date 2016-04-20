@@ -45,17 +45,20 @@ generateAntlrActionEntity tpar nt f ms rev
     | isNilFun f = emptyList
     | isOneFun f = call __append [emptyList, p_1]
     | isConsFun f = call add [p_2 , p_1]
-    | isCoercion f = NothingPython --p_1 
-    | isDefinedRule f = NothingPython --"parser",  mkId f,  "_" -- no idea of what the fuck this is
-                        -- ++ "(" ++ intercalate "," (map resultvalue ms) ++ ")"
-    | otherwise = NothingPython --"$result = " ++ c
+    | isCoercion f = p_1 
+    | isDefinedRule f =   definedrule
+    | otherwise =  otherwiserule --"$result = " ++ c
                   -- ++ "(" ++ posInfo ++ intercalate "," (map resultvalue ms) ++ ")"
    where
---      positionString    = "_localctx.start.line, _localctx.start.start"
---      posInfo           = if (preservePositions tpar)
---                             then if ms == [] then positionString else positionString++","
---                             else ""
-     c                 =  if isNilFun f || isOneFun f || isConsFun f
+     [_localctx, start, line, column] = map mkId ["_localctx", "start", "line", "column"]
+     positionArgs = map toNames [[_localctx, start, line], [_localctx, start,column]]
+     posInfo           = if (preservePositions tpar)
+                             then positionArgs 
+                             else []
+     otherwiserule     = Function  c  (posInfo++arguments)
+     definedrule       = Function (toNames $ map mkId ["parser", f++"_"]) arguments 
+     arguments         = (map resultvalue ms)
+     c                 =  mkId $ if isNilFun f || isOneFun f || isConsFun f
                             then identCat (normCat nt) else f
      p_1               = resultvalue $ ms!!0
      p_2               = resultvalue $ ms!!1

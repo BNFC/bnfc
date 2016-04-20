@@ -71,6 +71,9 @@ pyPrint e = Function (mkId "print") [e]
 callTo :: Entity -> [Entity] -> Entity
 callTo member args = callOn [Self, member] args
 
+(=:=) :: Entity -> Entity -> Entity
+(=:=) x y = Assignment [x] [y]
+
 callOn :: [Entity] -> [Entity] -> Entity
 callOn who args = Function (toNames who) args
 

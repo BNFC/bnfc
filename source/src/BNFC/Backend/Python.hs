@@ -310,8 +310,6 @@ testscript le pa entry = [
         )]
     
     where
-        (=:=) :: Entity -> Entity -> Entity
-        (=:=) x y = Assignment [x] [y]
         [input, parser, lexer, lis, stream, tree, 
             tok, type_, tokenSource, _token, getInputStream, line, column, sys,
             argv, one, exit, filestream, lexerObject, parserObject, bnfcErrorListener, 
