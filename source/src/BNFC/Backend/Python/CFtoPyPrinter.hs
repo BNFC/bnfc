@@ -45,12 +45,11 @@ import BNFC.Backend.Python.Utils
 import BNFC.Backend.Python.AbsPython
 import BNFC.Backend.Common.StrUtils
 import BNFC.Backend.Common.NamedVariables
-import Data.Char
 import Data.Either (lefts)
 import Text.PrettyPrint
 
 cf2PyPrinter :: String -> CF -> String
-cf2PyPrinter packageBase cf = show $ absVcat entities
+cf2PyPrinter _ cf = show $ absVcat entities
                     where
                         entities = concat [
                                         [From $ Ident "Absyn"]
@@ -131,10 +130,7 @@ prettyPrinterClass cf =
                             , indentDef 
                             , backupDef 
                             , trimDefDef 
-                            ]
-    where 
-        absynCats = getUserCategories cf
-        
+                            ]    
 
 
 
@@ -330,7 +326,7 @@ __sh_def cf = concatMap (shMethodSet $ rulesForNormalizedCat cf) groups
         groups = fixCoercions (ruleGroupsInternals cf)
 
 printOrShowMethodSet :: PrintingMethod -> CatDefs -> (Cat, [Rule]) -> [Entity]
-printOrShowMethodSet pm defs (cat, rules) = concatMap (pm defs) rules 
+printOrShowMethodSet pm defs (_, rules) = concatMap (pm defs) rules 
 
 shMethodSet :: CatDefs -> (Cat, [Rule]) -> [Entity]
 shMethodSet defs (cat, rules) = printOrShowMethodSet shMethod defs (cat, rules)
@@ -343,9 +339,8 @@ ppMethodSet defs (cat, rules) = printOrShowMethodSet ppMethod defs (cat, rules)
 fParam = mkId "p"
 
 ppMethod :: CatDefs ->Rule -> [Entity]
-ppMethod defs r@(Rule fun _c cats) | not (isCoercion fun || isDefinedRule fun || isNilCons fun) =  ruleMethod
-  where
-    p = precRule r    
+ppMethod defs (Rule fun _c cats) | not (isCoercion fun || isDefinedRule fun || isNilCons fun) =  ruleMethod
+  where    
     ruleMethod = [ classMethodDefinition fname [fParam, i] nonTerminalContributions]
     fname = mkId $ privatePpName fun
     nonTerminalContributions = case cats of
@@ -373,9 +368,8 @@ ppMethodStatement catdefs (Left (cat, nt)) = if isList cat
                          , if hasOneFunc rules then "" else sator)
 
 shMethod :: CatDefs ->Rule -> [Entity]
-shMethod defs r@(Rule fun _c cats) | not (isCoercion fun || isDefinedRule fun || isNilCons fun) =  ruleMethod
-  where
-    p = precRule r    
+shMethod defs (Rule fun _c cats) | not (isCoercion fun || isDefinedRule fun || isNilCons fun) =  ruleMethod
+  where    
     ruleMethod = [ classMethodDefinition fname [fParam] methodBody]
     fname = mkId $ privateShName fun
     methodBody = [
@@ -400,7 +394,7 @@ shMethodStatement :: CatDefs -> (Cat, Doc) -> [Entity]
 -- shMethodStatement _ (Left (TokenCat "String", nt)) 
 --     = [callTo printQuotedId [ toNames $ map mkId ["p" , render nt]]]
 shMethodStatement _ (InternalCat, _) = [NothingPython]
-shMethodStatement catdefs (cat, nt) = if isList cat 
+shMethodStatement _ (cat, nt) = if isList cat 
     then [
         callToRender [mkId "'['"]
         , callTo __list_shId [child]
@@ -408,15 +402,8 @@ shMethodStatement catdefs (cat, nt) = if isList cat
         ]
     else [callTo shId [child]]
     where
-        --child = NothingPython
         child = toNames [pid , ntid]
-        separatorTuple = tupleLiteral [sep, term]
-        precedence = mkId ( show $ precCat cat)
-        [pid,ntid, sep, term] = map mkId ["p", render nt, ssator, stator]
-        rules = catdefs cat
-        [ssator, stator] = map (\x -> "\""++ x ++"\"") [sator, tator]
-        (sator, tator) = (escapeChars $ getCons rules
-                         , if hasOneFunc rules then "" else sator)
+        [pid,ntid] = map mkId ["p", render nt]
 
 isInstance :: Entity -> Entity
 isInstance x = Function (mkId "isinstance") [x, str]
@@ -497,7 +484,6 @@ indentDef = [
             ]
         ]
         where
-            appendId = mkId "append"
             timesSelfN = Mul whiteSpaceChar n
  
 whiteSpaceChar , buf_Id, backupId, shId, endsWithId :: Entity

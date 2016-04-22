@@ -58,7 +58,7 @@ import BNFC.Backend.Java.CFtoComposVisitor
 import BNFC.Backend.Java.CFtoAbstractVisitor
 import BNFC.Backend.Java.CFtoFoldVisitor
 import BNFC.Backend.Java.CFtoAllVisitor
-import BNFC.Backend.Common.NamedVariables (SymEnv, firstLowerCase)
+import BNFC.Backend.Common.NamedVariables (firstLowerCase)
 import BNFC.Backend.Common.Makefile
 import BNFC.PrettyPrint
 -------------------------------------------------------------------

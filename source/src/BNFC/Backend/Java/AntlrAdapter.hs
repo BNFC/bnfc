@@ -1,15 +1,11 @@
 module BNFC.Backend.Java.AntlrAdapter(generateAntlrAction) where
 
-import BNFC.Backend.Common.MultipleParserGenerationTools (ToolParameters (..))
 import BNFC.CF
 import Data.List
-import BNFC.Backend.Java.Utils
-import BNFC.Backend.Common.NamedVariables
-import BNFC.Utils ( (+++), (+.+))
+import BNFC.Utils ((+.+))
+import BNFC.Backend.Common.MultipleParserGenerationTools (ToolParameters (..))
 
 -- Type declarations
-type Rules       = [(NonTerminal,[(Pattern, Fun, Action)])]
-type Pattern     = String
 type Action      = String
 type MetaVar     = (String, Cat)
 

@@ -38,14 +38,10 @@ module BNFC.Backend.Python ( makePython ) where
 -------------------------------------------------------------------
 -- Dependencies.
 -------------------------------------------------------------------
-import System.FilePath (pathSeparator, isPathSeparator)
-import Data.List ( intersperse )
-import Data.Char (toLower)
 import BNFC.Utils
 import BNFC.CF
 import BNFC.Options as Options
 import BNFC.Backend.Base
-import BNFC.Backend.Java.Utils
 import BNFC.Backend.Python.AbsPython
 import BNFC.Backend.Python.Utils
 import BNFC.Backend.Common.Antlr4.CFtoAntlr4Lexer
@@ -53,11 +49,13 @@ import BNFC.Backend.Common.Antlr4.CFtoAntlr4Parser
 import BNFC.Backend.Python.CFtoPyAbsyn
 import BNFC.Backend.Python.CFtoPyPrinter
 import BNFC.Backend.Python.CFtoPyVisitSkel
-import BNFC.Backend.Common.NamedVariables (SymEnv, firstLowerCase)
+import BNFC.Backend.Common.NamedVariables (firstLowerCase)
 import BNFC.Backend.Common.MultipleParserGenerationTools
 import BNFC.Backend.Python.AntlrAdapter
 import BNFC.Backend.Common.Makefile
 import BNFC.PrettyPrint
+import System.FilePath (pathSeparator)
+import Data.Char (toLower)
 -------------------------------------------------------------------
 -- | Build the Java output.
 -------------------------------------------------------------------
@@ -113,12 +111,8 @@ makePython options@Options{..} cf =
                              Nothing -> lang
                              Just p -> p ++ "." ++ lang
       dirBase      = pkgToDir inPackage packBase
-      remDups [] = []
-      remDups ((a,b):as) = case lookup a as of
-                             Just {} -> remDups as
-                             Nothing -> (a, b) : remDups as
       pkgToDir :: Maybe String  -> String -> FilePath
-      pkgToDir Nothing s = ""
+      pkgToDir Nothing _ = ""
       pkgToDir _ s = replace '.' pathSeparator s ++ [pathSeparator]
       parselexspec = parserLexerSelector 
       lexfun = cf2lex $ lexer parselexspec
@@ -231,18 +225,18 @@ data ParserLexerSpecification = ParseLexSpec
 
 -- | Test class details for ANTLR4
 antlrtest :: TestClass
-antlrtest le pa pack cf = render $ absVcat $ testscript le pa $ show def 
+antlrtest le pa _ cf = render $ absVcat $ testscript le pa def $ unwords alternatives 
         where showOpts [] = [] 
               showOpts (x:xs) | normCat x /= x = showOpts xs
-                              | otherwise      = text (firstLowerCase $ identCat x) : showOpts xs
+                              | otherwise      =  (firstLowerCase $ identCat x) : showOpts xs
+              alternatives   = map (","++) (showOpts eps) 
               eps            = allEntryPoints cf
-              absentity      = text $ show def
-              def            = head eps
+              def            = show $ head eps
               
 
 
-testscript :: String -> String -> String -> [Entity]
-testscript le pa entry = [
+testscript :: String -> String -> String -> String -> [Entity]
+testscript le pa entry alternatives = [
     Import $ Ident "sys"
     , From (Ident le)
     , From (Ident pa)
@@ -273,7 +267,8 @@ testscript le pa entry = [
                 , exit1    
                 ]
             , parser =:= (callParserObject [stream])
-            , callAddErrorListenerOnLexer [lis]
+            , callAddErrorListenerOnParser [lis]
+            , PyComment $ "Other alternatives: "++alternatives
             , tree =:= callEntry []
             , tok =:= nextToken]++
             ifCascade [(NoEquals tokType minusOne, [
@@ -369,9 +364,8 @@ cf2AntlrParse = CF2Parse
 
 
 -- | shorthand for Makefile command running javac or java
-runJavac , runJava:: String -> String
+runJava:: String -> String
 runJava   = mkRunProgram "JAVA"
-runJavac  = mkRunProgram "JAVAC"
 
 -- | function returning a string executing a program contained in a variable j
 -- on input s
@@ -380,14 +374,10 @@ mkRunProgram j s = refVar j +++ refVar (j +-+ "FLAGS") +++ s
 
 
 
-
-mapEmpty :: a->String
-mapEmpty _ = ""
-
 antlrmakedetails :: String -> ToolParameters -> MakeFileDetails
 antlrmakedetails typ tpar = MakeDetails
     { executable = runJava "org.antlr.v4.Tool"
-    , flags               = \x -> unwords ["-Dlanguage=Python3"]
+    , flags               = \_ -> unwords ["-Dlanguage=Python3"]
     , filename            = classname
     , fileextension       = "g4"
     , toolname            = "ANTLRv4"

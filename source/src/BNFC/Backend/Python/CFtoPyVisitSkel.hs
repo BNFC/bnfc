@@ -39,15 +39,17 @@
 -}
 
 module BNFC.Backend.Python.CFtoPyVisitSkel ( cf2PyVisitSkel ) where
+
+import BNFC.CF
 import BNFC.Backend.Python.Utils
 import BNFC.Backend.Python.AbsPython
-import BNFC.CF
-import Text.PrettyPrint
+
+
 cf2PyVisitSkel :: String -> CF -> String
-cf2PyVisitSkel packageBase cf = show $ absVcat $ [imports packageBase] ++(visitorClass cf)
+cf2PyVisitSkel _ cf = show $ absVcat $ [imports] ++(visitorClass cf)
 
 
-imports x = From $ Ident "Absyn"
+imports = From $ Ident "absyn"
 {-
 Idea is similar: this function returns a Doc and those below construct an object
 using AbsPython objects, together with the information from the abstract syntax
@@ -66,8 +68,8 @@ visitorClass cf = [Class (Ident "Visitor") NoInherit
                  absynCats = getUserCategories cf
 
 allVisitPrivate :: CF -> [(Cat, [(Fun, [Cat])])] -> [Entity]
-allVisitPrivate cf [] = []
-allVisitPrivate cf ((c,labels):rest) = (privateVisit cf labels)
+allVisitPrivate _ [] = []
+allVisitPrivate cf ((_,labels):rest) = (privateVisit cf labels)
                                     ++allVisitPrivate cf rest  
 
  
@@ -76,7 +78,7 @@ privateVisitorName x = "__visit_"++x
  
 
 privateVisit :: CF -> [(Fun, [Cat])] -> [Entity]
-privateVisit cf [] = []
+privateVisit _ [] = []
 privateVisit cf ((typ,content):rest) = method pvisit 
                                         [Left Self, ar itemStr, ar envStr]
                                         (visitBody $ zip filt params)++ (privateVisit cf rest) 
@@ -90,7 +92,7 @@ privateVisit cf ((typ,content):rest) = method pvisit
 -- for each non-token object calls the dictionary.
 visitBody :: [(Cat,(String,String))] -> [Entity]
 visitBody [] = [Pass]
-visitBody ((c,(name,typ)):cs) = action -- ++ visitBody cs
+visitBody ((c,(name,_)):_) = action -- ++ visitBody cs
                     where 
                      id = mkId name 
                      action = if isList c
@@ -99,14 +101,14 @@ visitBody ((c,(name,typ)):cs) = action -- ++ visitBody cs
 
 mkFor :: Entity -> [Entity]
 mkFor e = [
-                        For [loopVar] (toNames [mkId itemStr, e]),
-                        IndentedBlock [
-                            call
-                        ]
-                    ] 
-                    where
-                      loopVar = mkId "x"
-                      call = visitCall loopVar
+            For [loopVar] (toNames [mkId itemStr, e]),
+            IndentedBlock [
+                call
+            ]
+        ] 
+        where
+          loopVar = mkId "x"
+          call = visitCall loopVar
                     
 
 mkVisit :: Entity -> Entity
@@ -126,11 +128,6 @@ initMethod absynCats = [methodDefinition Init [Self]
 
 visitors :: Fun -> Entity
 visitors f =  Entry (mkId f) (instVar $ privateVisitorName f)
-
--- fun is a 
-classEntries :: (Fun, [Cat]) -> [Entity]
-classEntries (c, labs)= []
-
 
 
 envStr = "env"

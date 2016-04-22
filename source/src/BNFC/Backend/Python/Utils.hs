@@ -1,10 +1,10 @@
 module BNFC.Backend.Python.Utils where
+
 import BNFC.CF
-import Data.Char (toLower)
 import BNFC.Backend.Python.PrintPython as PPP
 import BNFC.Backend.Python.AbsPython 
+import Data.Char (toLower)
 import Text.PrettyPrint as TPP
-import BNFC.Backend.Common.NamedVariables
 import qualified Data.Map as Dma
 
 type CatDefs = (Cat -> [Rule])
@@ -165,7 +165,7 @@ getParams = nameFormalParameters Dma.empty
 --      fst: name of formal parameters
 --      snd: formal parameter type (type) 
 nameFormalParameters :: Dma.Map Cat Integer -> [Cat] -> [(String,String)]
-nameFormalParameters mp [] = []
+nameFormalParameters _ [] = []
 nameFormalParameters mp (f:fs) = [fparam]
                                 ++nameFormalParameters 
                                         (Dma.insertWith (+) f 1 mp) 

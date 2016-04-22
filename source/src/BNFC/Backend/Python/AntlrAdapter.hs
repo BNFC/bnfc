@@ -2,19 +2,13 @@ module BNFC.Backend.Python.AntlrAdapter(generateAntlrAction,
                                 pyAntlrMembers, 
                                 pyAntlrHeader) where
 
-
-import BNFC.Backend.Common.MultipleParserGenerationTools (ToolParameters (..))
 import BNFC.CF
 import BNFC.Backend.Python.Utils
 import BNFC.Backend.Python.AbsPython
-import BNFC.Backend.Common.NamedVariables
-import BNFC.Utils ( (+++), (+.+))
-import Data.List
+import BNFC.Backend.Common.MultipleParserGenerationTools (ToolParameters (..))
 import Text.PrettyPrint
 
 -- Type declarations
-type Rules       = [(NonTerminal,[(Pattern, Fun, Action)])]
-type Pattern     = String
 type Action      = String
 type MetaVar     = (String, Cat)
 
@@ -23,9 +17,6 @@ result = mkId "$result"
 
 assignResult :: Entity -> Entity
 assignResult e = Assignment [result] [e]
-
-assignNewAbsynObject :: String -> [Entity] -> Entity
-assignNewAbsynObject s args = assignResult $ Function (mkId s) args 
 
 action :: [Entity] -> String
 action x = show $ absVcat x

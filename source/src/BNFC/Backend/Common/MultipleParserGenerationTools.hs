@@ -46,10 +46,7 @@ module BNFC.Backend.Common.MultipleParserGenerationTools
 
 import BNFC.CF
 import BNFC.Backend.Common.Makefile
-import BNFC.Backend.Common.NamedVariables (SymEnv, firstLowerCase)
-import Data.List
-import Data.Char(toLower)
-
+import BNFC.Backend.Common.NamedVariables (SymEnv)
 import Text.PrettyPrint
 
 type Action      = String
