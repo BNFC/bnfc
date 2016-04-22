@@ -40,6 +40,7 @@ module BNFC.Backend.Python ( makePython ) where
 -------------------------------------------------------------------
 import System.FilePath (pathSeparator, isPathSeparator)
 import Data.List ( intersperse )
+import Data.Char (toLower)
 import BNFC.Utils
 import BNFC.CF
 import BNFC.Options as Options
@@ -88,13 +89,9 @@ makePython options@Options{..} cf =
       mapM_ writeAbsyn absynFiles
       -}
       makebnfcfile babsyn
-      --todo: visitor prettyprinter class file
       makebnfcfile bprettyprinter      
-      --todo: visitor skeleton class file
       makebnfcfile bskel
-      -- todo: test file generation
       makebnfcfile btest
-      -- todo: lexer and parser input file generation
       let (lex, env) = lexfun tpar cf
       -- Where the lexer file is created. lex is the content!
       mkfile (dirBase ++ inputfile lexmake ) lex
@@ -110,18 +107,19 @@ makePython options@Options{..} cf =
       liftIO $ putStrLn $ "   (Tested with " +++ toolname parmake
                                              +++ toolversion parmake +++ ")"
                                              
--- todo : Create makefile
+      mkMakefile options $ makefile tpar dirBase parselexspec
     where
       packBase  = case inPackage of
                              Nothing -> lang
                              Just p -> p ++ "." ++ lang
-      dirBase      = pkgToDir packBase
+      dirBase      = pkgToDir inPackage packBase
       remDups [] = []
       remDups ((a,b):as) = case lookup a as of
                              Just {} -> remDups as
                              Nothing -> (a, b) : remDups as
-      pkgToDir :: String -> FilePath
-      pkgToDir s = replace '.' pathSeparator s ++ [pathSeparator]
+      pkgToDir :: Maybe String  -> String -> FilePath
+      pkgToDir Nothing s = ""
+      pkgToDir _ s = replace '.' pathSeparator s ++ [pathSeparator]
       parselexspec = parserLexerSelector 
       lexfun = cf2lex $ lexer parselexspec
       parsefun = cf2parse $ parser parselexspec
@@ -140,8 +138,8 @@ makePython options@Options{..} cf =
               parserMembers= BNFC.Backend.Python.AntlrAdapter.pyAntlrMembers
             } 
 
-makefile ::  ToolParameters -> FilePath -> FilePath -> [String] -> ParserLexerSpecification -> Doc
-makefile  tpar dirBase dirAbsyn absynFileNames jlexpar = vcat $
+makefile ::  ToolParameters -> FilePath -> ParserLexerSpecification -> Doc
+makefile  tpar dirBase jlexpar = vcat $
     makeVars [  ("JAVAC", "javac"),
                 ("JAVAC_FLAGS", "-sourcepath ."),
                 ( "JAVA", "java"),
@@ -157,77 +155,63 @@ makefile  tpar dirBase dirAbsyn absynFileNames jlexpar = vcat $
     ++
     makeRules [ ("all", [ "test" ], []),
                 ( "test", "absyn" : classes, []),
-                ( ".PHONY", ["absyn"],     []),
-                ("%.class", [ "%.java" ],  [ runJavac "$^" ]),
-                ("absyn",   [absynJavaSrc],[ runJavac "$^" ])
+                ( ".PHONY", ["absyn"],     [])
                 ]++
     [-- running the lexergen: output of lexer -> input of lexer : calls lexer
     let ff = filename lexmake -- name of input file without extension
         dirBaseff = dirBase ++ ff -- prepend directory
         inp = dirBase ++ inputfile lexmake in
-            mkRule (dirBaseff +.+ "java") [ inp ]
+            mkRule (dirBaseff +.+ "py") [ inp ]
             [ "${LEXER} ${LEXER_FLAGS} "++ inp ]
 
     -- running the parsergen, these there are its outputs
     -- output of parser -> input of parser : calls parser
   , let inp = dirBase ++ inputfile parmake in
-        mkRule (unwords (map (dirBase++) (dotJava $ results parmake)))
+        mkRule (unwords (map (dirBase++) (dotPy $ results parmake)))
           [ inp ] $
           ("${PARSER} ${PARSER_FLAGS} " ++ inp) :
-          ["mv " ++ unwords (dotJava $ results parmake) +++ dirBase
+          ["mv " ++ unwords (dotPy $ results parmake) +++ dirBase
               | moveresults parmake]
   -- Class of the output of lexer generator wants java of :
   -- output of lexer and parser generator
-  , let lexerOutClass = dirBase ++ filename lexmake +.+ "class"
-        outname x = dirBase ++ x +.+ "java"
+  , let lexerOutClass = dirBase ++ filename lexmake +.+ "pyc"
+        outname x = dirBase ++ x +.+ "py"
         deps = map outname (results lexmake ++ results parmake) in
           mkRule lexerOutClass deps []
     ]++
   reverse [mkRule tar dep [] | 
     (tar,dep) <- partialParserGoals dirBase (results parmake)]
-  ++[ mkRule (dirBase ++ "PrettyPrinter.class")
-        [ dirBase ++ "PrettyPrinter.java" ] []
+  ++[ mkRule (dirBase ++ prettyPrinterFileName +.+ "pyc")
+        [ dirBase ++ prettyPrinterFileName +.+"py" ] []
     -- Removes all the class files created anywhere
-    , mkRule "clean" [] [ "rm -f " ++ dirAbsyn ++ "*.class" ++ " "
-                                            ++ dirBase ++ "*.class" ]
+    , mkRule "clean" [] [ "rm -f " ++ dirBase ++ "*.pyc" ]
     -- Remains the same
     , mkRule "distclean" [ "vclean" ] []
     -- removes everything
     , mkRule "vclean" []
-        [ " rm -f " ++ absynJavaSrc ++ " " ++ absynJavaClass
-          , " rm -f " ++ dirAbsyn ++ "*.class"
-          , " rmdir " ++ dirAbsyn
+        [ " rm -f *.g4 "
           , " rm -f " ++ unwords (map (dirBase ++) $
                       [ inputfile lexmake
                       , inputfile parmake
                       ]
-                      ++ dotJava (results lexmake)
-                      ++ [ "VisitSkel.java"
-                        , "ComposVisitor.java"
-                        , "AbstractVisitor.java"
-                        , "FoldVisitor.java"
-                        , "AllVisitor.java"
-                        , "PrettyPrinter.java"
-                        , "Skeleton.java"
-                        , "Test.java"
-                        ]
-                      ++ dotJava (results parmake)
-                      ++["*.class"])
+                      ++ dotPy (results lexmake)
+                      ++ dotPyc (results lexmake)
+                      ++ dotPy generated
+                      ++ dotPyc generated
+                      ++ dotPy (results parmake)
+                      ++ dotPyc (results parmake)
+                      ++["*.pyc"])
           , " rm -f Makefile"
-          , " rmdir -p " ++ dirBase ]
+          , if null dirBase then "" else " rmdir -p " ++ dirBase ]
     ]
     where
       makeVars x = [mkVar n v | (n,v) <- x]
       makeRules x = [mkRule tar dep recipe  | (tar, dep, recipe) <- x]
       parmake           = (makeparserdetails (parser jlexpar)) tpar
       lexmake           = (makelexerdetails (lexer jlexpar)) tpar
-      absynJavaSrc      = unwords (dotJava absynFileNames)
-      absynJavaClass    = unwords (dotClass absynFileNames)
       classes = prependPath dirBase lst
-      lst = dotClass (results lexmake) ++ [ "PrettyPrinter.class", "Test.class"
-          , "ComposVisitor.class", "AbstractVisitor.class"
-          , "FoldVisitor.class", "AllVisitor.class"]++
-           dotClass (results parmake) ++ ["Test.class"]
+      lst = dotPyc (results lexmake) ++ 
+           dotPyc (results parmake)
 
 type TestClass = String
     -- ^ class of the lexer
@@ -247,7 +231,7 @@ data ParserLexerSpecification = ParseLexSpec
 
 -- | Test class details for ANTLR4
 antlrtest :: TestClass
-antlrtest le pa pack cf = "# this is a test" 
+antlrtest le pa pack cf = render $ absVcat $ testscript le pa $ show def 
         where showOpts [] = [] 
               showOpts (x:xs) | normCat x /= x = showOpts xs
                               | otherwise      = text (firstLowerCase $ identCat x) : showOpts xs
@@ -318,7 +302,7 @@ testscript le pa entry = [
                     "tok", "type", "tokenSource", "_token", "getInputStream",
                     "line", "column", "sys", "argv", "1", "exit",
                     "FileStream", le, pa, strBnfcErrorListener, 
-                    "CommonTokenStream", "PrettyPrinter", entry, "-1", "result"]
+                    "CommonTokenStream", "PrettyPrinter", map toLower entry, "-1", "result"]
         tokType = toNames [tok, type_]
         getresult = toNames [tree , result]
         [callFilestream, callLexerObject, callParserObject,
@@ -403,14 +387,7 @@ mapEmpty _ = ""
 antlrmakedetails :: String -> ToolParameters -> MakeFileDetails
 antlrmakedetails typ tpar = MakeDetails
     { executable = runJava "org.antlr.v4.Tool"
-    , flags               = \x -> unwords $
-                                    let path    = take (length x - 1) x
-                                        pointed = map cnv path
-                                        cnv y   = if isPathSeparator y
-                                                        then '.'
-                                                        else y
-                                        in [ "-lib", path
-                                           , "-package", pointed]
+    , flags               = \x -> unwords ["-Dlanguage=Python3"]
     , filename            = classname
     , fileextension       = "g4"
     , toolname            = "ANTLRv4"
@@ -426,9 +403,9 @@ prependPath , appendExtension :: String -> [String] -> [String]
 prependPath s fi     = [s ++ x | x<- fi]
 appendExtension s fi = [x+.+s | x<- fi]
 
-dotJava,dotClass :: [String] -> [String]
-dotJava  = appendExtension "java"
-dotClass = appendExtension "class"
+dotPy :: [String] -> [String]
+dotPy = appendExtension "py"
+dotPyc = appendExtension "pyc"
 
 type CFtoPython = String ->  CF -> String
 -- | Contains the pairs filename/content for all the files
@@ -440,15 +417,19 @@ data BNFCGeneratedEntities = BNFCGenerated
     , bskel          :: (String,  String)
     }
 
+generated = [prettyPrinterFileName, visitorFileName, absynFileName, testFileName]  
+[prettyPrinterFileName, visitorFileName, absynFileName, testFileName] =
+    ["prettyprinter", "visitor","absyn", "test"]
+
 bnfcVisitorsAndTests :: String   -> CF      ->
                         CFtoPython -> CFtoPython -> CFtoPython ->
                         CFtoPython -> BNFCGeneratedEntities
 bnfcVisitorsAndTests pbase cf cf0 cf1 cf2 cf3 =
     BNFCGenerated{ 
-        bprettyprinter = ( "PrettyPrinter" , app cf0)
-        , bskel          = ( "Visitor", app cf1)
-        , babsyn         = ( "Absyn" , app cf2)
-        , btest          = ( "Test" , app cf3)
+        bprettyprinter = ( prettyPrinterFileName , app cf0)
+        , bskel          = ( visitorFileName, app cf1)
+        , babsyn         = ( absynFileName , app cf2)
+        , btest          = ( testFileName , app cf3)
     }
       where app x = x pbase cf
 
@@ -460,6 +441,6 @@ inputfile x = filename x ++ case fileextension x of
 partialParserGoals :: String -> [String] -> [(String, [String])]
 partialParserGoals _ []          = []
 partialParserGoals dbas (x:rest) =
-    (dbas++x+.+"class",map (\y ->dbas++y+.+"java")(x:rest))
+    (dbas++x+.+"pyc",map (\y ->dbas++y+.+"py")(x:rest))
         :partialParserGoals dbas rest
 
