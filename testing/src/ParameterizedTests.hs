@@ -169,6 +169,8 @@ parameters =
                , tpBnfcOptions = ["--java", "--jflex", "-m"] }
   , javaParams { tpName = "Java (with antlr)"
                               , tpBnfcOptions = ["--java", "--antlr", "-m"] }
+  , pyParams { tpName = "Python (with antlr)"
+                             , tpBnfcOptions = ["--python", "-m"] }
   ]
   where
     base = TP
@@ -194,7 +196,13 @@ parameters =
             class_ <- liftM dropExtension (findFile "Test.class")
             cmd "java" class_ args
         }
-
+    pyParams = base
+        { tpBuild =
+            do {cmd "make";}
+        , tpRunTestProg = \_ args -> do
+            te_ <- liftM id     (findFile "test.py")
+            cmd "python3" te_ args
+        }
 -- | Helper function that runs bnfc with the context's options
 tpBnfc :: TestParameters -> FilePath -> Sh ()
 tpBnfc params grammar = run_ "bnfc" args
