@@ -37,12 +37,12 @@
 
    **************************************************************
 -}
-module BNFC.Backend.Common.Antlr4.CFtoAntlr4Parser ( cf2AntlrParse ) where
+module BNFC.Backend.Common.Antlr4.CFtoAntlr4Parser ( cf2AntlrParse , defaultAntlrParameters, getRuleName) where
 import BNFC.Backend.Common.MultipleParserGenerationTools (ToolParameters (..))
 import BNFC.CF
 import BNFC.Backend.Java.Utils
 import BNFC.Backend.Common.NamedVariables
-import BNFC.Utils ( (+++), (+.+))
+import BNFC.Utils ( (+++), (+.+), mkName, NameStyle(..))
 import BNFC.Backend.Common.Antlr4.AntlrComponents
 
 -- Type declarations
@@ -50,6 +50,20 @@ type Rules       = [(NonTerminal,[(Pattern, Fun, Action)])]
 type Pattern     = String
 type Action      = String
 type MetaVar     = (String, Cat)
+
+defaultAntlrParameters = ToolParams{
+    targetReservedWords  = ["grammar"],
+    commentString  = "",
+    multilineComment  = \x -> x,
+    preservePositions = True,
+    packageBase       = "",
+    packageAbsyn      = "",
+    generateAction    = \_ _ _ _ _ -> "",
+    lexerMembers     = "",
+    parserMembers    = "",
+    lexerHeader = "" ,
+    parserHeader = ""
+}
 
 -- | Creates the ANTLR parser grammar for this CF.
 --The environment comes from CFtoAntlr4Lexer
@@ -59,7 +73,7 @@ cf2AntlrParse tpar cf env = unlines
     , parserHeaderContent $ (parserHeader tpar)
     , parserMembersContent $ (parserMembers tpar)
     , tokens
-    , prRules (packageAbsyn tpar) (rulesForAntlr4 tpar cf env)
+    , prRules tpar (packageAbsyn tpar) (rulesForAntlr4 tpar cf env)
     ]
   where
     header :: String
@@ -92,7 +106,7 @@ constructRule tpar cf env rules nt =
           let (b,r) = if isConsFun (funRule r0) && elem (valCat r0) revs
                           then (True, revSepListRule r0)
                           else (False, r0)
-              (p,m) = generatePatterns index env r])
+              (p,m) = generatePatterns tpar index env r])
  where
    revM False = id
    revM True  = reverse
@@ -111,8 +125,8 @@ generateJavaAction gen nt f ms rev = (generateAction gen) gen nt f ms rev
 -- (" /* empty */ ",[])
 -- >>> generatePatterns 3 [("def", "_SYMB_1")] (Rule "myfun" (Cat "A") [Right "def", Left (Cat "B")])
 -- ("_SYMB_1 p_3_2=b ",[("p_3_2",B)])
-generatePatterns :: Int -> SymEnv -> Rule -> (Pattern,[MetaVar])
-generatePatterns ind env r = case rhsRule r of
+generatePatterns :: ToolParameters -> Int -> SymEnv -> Rule -> (Pattern,[MetaVar])
+generatePatterns tpar ind env r = case rhsRule r of
     []  -> (" /* empty */ ",[])
     its -> (mkIt 1 its, metas its)
  where
@@ -130,7 +144,7 @@ generatePatterns ind env r = case rhsRule r of
                   _                  -> if isTokenCat c
                                           then identCat c
                                           else firstLowerCase
-                                                (getRuleName (identCat c))
+                                                (getRuleName tpar (identCat c))
         Right s -> case lookup s env of
             (Just x) -> x +++ mkIt (n+1) is
             (Nothing) -> mkIt n is
@@ -139,11 +153,11 @@ generatePatterns ind env r = case rhsRule r of
 
 -- | Puts together the pattern and actions and returns a string containing all
 -- the rules.
-prRules :: String -> Rules -> String
-prRules _ [] = []
-prRules packabs ((_, []):rs) = prRules packabs rs
-prRules packabs ((nt,(p, fun, a):ls):rs) =
-    preamble ++ ";\n" ++ prRules packabs rs
+prRules :: ToolParameters -> String -> Rules -> String
+prRules _ _ [] = []
+prRules tpar packabs ((_, []):rs) = prRules tpar packabs rs
+prRules tpar packabs ((nt,(p, fun, a):ls):rs) =
+    preamble ++ ";\n" ++ prRules tpar packabs rs
   where
     preamble          = unwords [ nt'
                         , "returns"
@@ -163,7 +177,7 @@ prRules packabs ((nt,(p, fun, a):ls):rs) =
                         , antlrRuleLabel fun']
     catid             = identCat nt
     normcat           = identCat (normCat nt)
-    nt'               = getRuleName $ firstLowerCase catid
+    nt'               = getRuleName tpar $ firstLowerCase catid
     pr []             = []
     pr (k:ls) = unlines [alternative k] ++ pr ls
     antlrRuleLabel fnc
@@ -172,3 +186,8 @@ prRules packabs ((nt,(p, fun, a):ls):rs) =
       | isConsFun fnc  = catid ++ "_PrependFirst"
       | isCoercion fnc = "Coercion_" ++ catid
       | otherwise      = getLabelName fnc
+  
+getRuleName tpar z = if x `elem` (targetReservedWords tpar) then z ++ "_" else z
+                where x = firstLowerCase z
+
+getLabelName = mkName ["Rule"] CamelCase

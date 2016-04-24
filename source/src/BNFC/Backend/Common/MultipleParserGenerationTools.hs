@@ -40,7 +40,6 @@ module BNFC.Backend.Common.MultipleParserGenerationTools
  ( ToolParameters(..)
  , CFToParser(..)
  , CFToLexer(..)
- 
  )
  where
 
@@ -60,11 +59,14 @@ data ToolParameters = ToolParams{
     packageAbsyn      :: String,
     generateAction    :: ToolParameters -> NonTerminal -> Fun -> [MetaVar] 
                             -> Bool -> Action,
+    targetReservedWords    :: [String],
     lexerMembers     :: String ,
     parserMembers    :: String ,
     lexerHeader :: String ,
     parserHeader :: String 
-} 
+}
+
+
 
 -- | CF -> PARSER GENERATION TOOL BRIDGE
 -- | function translating the CF to an appropriate parser generation tool.

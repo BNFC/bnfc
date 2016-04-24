@@ -46,7 +46,7 @@ generateAntlrActionEntity tpar nt f ms rev
      posInfo           = if (preservePositions tpar)
                              then positionArgs 
                              else []
-     otherwiserule     = Function  c  (posInfo++arguments)
+     otherwiserule     = Function (toNames [mkId absyn,c])  (posInfo++arguments)
      definedrule       = Function (toNames $ map mkId ["parser", f++"_"]) arguments 
      arguments         = (map resultvalue ms)
      c                 =  mkId $ if isNilFun f || isOneFun f || isConsFun f
@@ -62,11 +62,11 @@ generateAntlrActionEntity tpar nt f ms rev
      parseint y        = coercion "int" y
      parsedouble y     = coercion "float" y
      coercion x y      = Function (mkId x) [y]
-     charat            = listSingleton $ mkId "1"
+     charat            = YesArray $ mkId "1"
      resultvalue (n,c) = case c of
                           TokenCat "Ident"   -> toNames [n', gettext]
                           TokenCat "Integer" -> parseint $ toNames [n', gettext]
-                          TokenCat "Char"    -> toNames [n', gettext, charat]
+                          TokenCat "Char"    -> SquareBracketAccess (toNames [n', gettext]) charat
                           TokenCat "Double"  -> parsedouble $ toNames [n', gettext]
                           TokenCat "String"  -> SquareBracketAccess (toNames [n', gettext]) removeQuotes 
                           _         -> toNames [n', (if isTokenCat c then gettext else mkId "result")]
@@ -90,9 +90,11 @@ generateParserMembers = __prepend ++ __append
                             
                             
 generateParserHeader =  [
-                       From $ Ident "Absyn"                        
+                       Import $ Ident absyn                        
                        ]
-                       
+
+absyn = "absyn"
+
 pyAntlrHeader, pyAntlrMembers :: String
 pyAntlrHeader = render $ absVcat generateParserHeader
 pyAntlrMembers = render $ absVcat generateParserMembers

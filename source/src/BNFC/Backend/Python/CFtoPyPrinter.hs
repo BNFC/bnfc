@@ -52,7 +52,7 @@ cf2PyPrinter :: String -> CF -> String
 cf2PyPrinter _ cf = show $ absVcat entities
                     where
                         entities = concat [
-                                        [From $ Ident "Absyn"]
+                                        [From $ Ident "absyn"]
                                         , prettyPrintingEntryClass
                                         , pPContextClass
                                         , prettyPrinterClass cf]
@@ -316,7 +316,7 @@ __list_shDef = [
 
 -- Should call  and push a Cat -> [RuleP] function?
 __pp_def :: CF -> [Entity]
-__pp_def cf = concatMap (ppMethodSet $ rulesForNormalizedCat cf) groups
+__pp_def cf = concatMap (ppMethodSet $ rulesForCat cf) groups
     where
         groups = fixCoercions (ruleGroupsInternals cf)
 
@@ -344,16 +344,16 @@ ppMethod defs (Rule fun _c cats) | not (isCoercion fun || isDefinedRule fun || i
     ruleMethod = [ classMethodDefinition fname [fParam, i] nonTerminalContributions]
     fname = mkId $ privatePpName fun
     nonTerminalContributions = case cats of
-        [] -> [NothingPython]
+        [] -> [Pass]
         _  -> map (ppMethodStatement defs) (numVars cats)
     
 ppMethod _ _nm = [NothingPython]
 
 ppMethodStatement :: CatDefs -> Either (Cat, Doc) String -> Entity
-ppMethodStatement _ (Right t) = callToRender [mkId $ "\""++ t ++"\""]
+ppMethodStatement _ (Right t) = callToRender [mkId $ "\""++ (escapeChars t) ++"\""]
 ppMethodStatement _ (Left (TokenCat "String", nt)) 
-    = callTo printQuotedId [ toNames $ map mkId ["p" , render nt]]
-ppMethodStatement _ (Left (InternalCat, _)) = NothingPython
+    = callTo printQuotedId [ toNames $ map mkId ["p" , escapeChars$ render nt]]
+ppMethodStatement _ (Left (InternalCat, _)) = Pass
 ppMethodStatement catdefs (Left (cat, nt)) = if isList cat 
     then callTo __list_ppId [separatorTuple, child, precedence ]
     else callTo pp [child, precedence]
@@ -393,7 +393,7 @@ shMethodStatement :: CatDefs -> (Cat, Doc) -> [Entity]
 -- shMethodStatement _ (Right t) = [callToRender [mkId $ "\""++ t ++"\""]]
 -- shMethodStatement _ (Left (TokenCat "String", nt)) 
 --     = [callTo printQuotedId [ toNames $ map mkId ["p" , render nt]]]
-shMethodStatement _ (InternalCat, _) = [NothingPython]
+shMethodStatement _ (InternalCat, _) = [Pass]
 shMethodStatement _ (cat, nt) = if isList cat 
     then [
         callToRender [mkId "'['"]

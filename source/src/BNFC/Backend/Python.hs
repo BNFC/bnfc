@@ -114,7 +114,7 @@ makePython options@Options{..} cf =
       pkgToDir :: Maybe String  -> String -> FilePath
       pkgToDir Nothing _ = ""
       pkgToDir _ s = replace '.' pathSeparator s ++ [pathSeparator]
-      parselexspec = parserLexerSelector 
+      parselexspec = parserLexerSelector tpar
       lexfun = cf2lex $ lexer parselexspec
       parsefun = cf2parse $ parser parselexspec
       parmake = (makeparserdetails (parser parselexspec)) tpar
@@ -126,6 +126,7 @@ makePython options@Options{..} cf =
               packageAbsyn = packBase,
               packageBase = packBase,
               generateAction = BNFC.Backend.Python.AntlrAdapter.generateAntlrAction,
+              targetReservedWords = pythonReserved++(targetReservedWords defaultAntlrParameters),
               lexerHeader = "",
               parserHeader= BNFC.Backend.Python.AntlrAdapter.pyAntlrHeader,
               lexerMembers= "",
@@ -224,32 +225,48 @@ data ParserLexerSpecification = ParseLexSpec
     }
 
 -- | Test class details for ANTLR4
-antlrtest :: TestClass
-antlrtest le pa _ cf = render $ absVcat $ testscript le pa def $ unwords alternatives 
+antlrtest :: ToolParameters -> TestClass
+antlrtest tpar le pa _ cf = render $ absVcat $ testscript le pa def $ unwords alternatives 
         where showOpts [] = [] 
               showOpts (x:xs) | normCat x /= x = showOpts xs
                               | otherwise      =  (firstLowerCase $ identCat x) : showOpts xs
-              alternatives   = map (","++) (showOpts eps) 
+              alternatives   = map getNames (showOpts eps) 
               eps            = allEntryPoints cf
-              def            = show $ head eps
+              def            = getRuleName tpar $ head $ showOpts eps
+              getNames       = (","++) . (getRuleName tpar)
               
 
 
 testscript :: String -> String -> String -> String -> [Entity]
-testscript le pa entry alternatives = [
+testscript _ _ [] _ = [NothingPython]
+testscript le pa (entri:es) alternatives = [
     Import $ Ident "sys"
     , From (Ident le)
     , From (Ident pa)
-    , From (Ident "PrettyPrinter")
+    , From (Ident prettyPrinterFileName)
     , Class (Ident testErrorId) (YesInherit $ Ident "BaseException")
     , classMethodDefinition Init [emsg, eli, eco] $ assigningConstructorBody [msg, li, co]
     , Class (Ident strBnfcErrorListener) (YesInherit $ Ident "DiagnosticErrorListener")
-    , classMethodDefinition reportAmbiguity [r, d, start, stop, e, a, c] [
-        Raise $ testerror [Formatting "Ambiguity at indexes start=%s stop=%s" (tupleLiteral [start, stop]) ]
+    , classMethodDefinition 
+        reportAmbiguity [r, d, start, stop, e, a, c] [
+            Raise $ testerror [
+                        Formatting 
+                            "Ambiguity at indexes start=%s stop=%s" 
+                                    (tupleLiteral [start, stop]) 
+                        ]
         ]
-    , classMethodDefinition syntaxError [r, o , l, c, m, e] [
-        Raise $ testerror [m, l, c]
-        ]
+    , classMethodDefinition 
+        syntaxError [r, o , l, c, m, e] [
+            Raise $ testerror [m, l, c]
+            ]
+    , classMethodDefinition 
+        reportAttemptingFullContext [r,d,start,stop, cA, con] [
+            Pass
+            ]
+    , classMethodDefinition 
+        reportContextSensitivity [r,d,start,stop, pred, con] [
+            Pass
+            ]
     , NothingPython
     , NothingPython]++
      ifCascade [(Equals NameField $ pyStringLiteral "__main__"
@@ -268,7 +285,7 @@ testscript le pa entry alternatives = [
                 ]
             , parser =:= (callParserObject [stream])
             , callAddErrorListenerOnParser [lis]
-            , PyComment $ "Other alternatives: "++alternatives
+            , PyComment $ "Available entry points: "++alternatives
             , tree =:= callEntry []
             , tok =:= nextToken]++
             ifCascade [(NoEquals tokType minusOne, [
@@ -297,7 +314,7 @@ testscript le pa entry alternatives = [
                     "tok", "type", "tokenSource", "_token", "getInputStream",
                     "line", "column", "sys", "argv", "1", "exit",
                     "FileStream", le, pa, strBnfcErrorListener, 
-                    "CommonTokenStream", "PrettyPrinter", map toLower entry, "-1", "result"]
+                    "CommonTokenStream", "PrettyPrinter", (toLower entri:es), "-1", "result"]
         tokType = toNames [tok, type_]
         getresult = toNames [tree , result]
         [callFilestream, callLexerObject, callParserObject,
@@ -327,19 +344,27 @@ testscript le pa entry alternatives = [
         li = "li"
         co = "co"
         testErrorId = "TestError"
-        [r, o, l, m, d, start, stop, e, a, c] = map mkId ["r", "o", "l", "m", "d", "start", "stop", "e", "a", "c"] 
-        [reportAmbiguity, syntaxError, addErrorListener ] = map mkId ["reportAmbiguity" , "syntaxError", "addErrorListener"]
+        [r, o, l, m, d 
+            , start, stop, e, a, c
+            , cA, pred, con] 
+                = map mkId ["r", "o", "l", "m", "d"
+                        , "start", "stop", "e", "a", "c"
+                        , "cA", "pred", "con"] 
+        [reportAmbiguity, syntaxError, addErrorListener
+            ,reportAttemptingFullContext, reportContextSensitivity] = 
+            map mkId ["reportAmbiguity" , "syntaxError", "addErrorListener"
+                        ,"reportAttemptingFullContext", "reportContextSensitivity"]
         testerror args = Function (mkId "TestError") args
     
 
      
 
 
-parserLexerSelector :: ParserLexerSpecification
-parserLexerSelector = ParseLexSpec
+parserLexerSelector :: ToolParameters -> ParserLexerSpecification
+parserLexerSelector tpar = ParseLexSpec
     { lexer     = BNFC.Backend.Python.cf2AntlrLex 
     , parser    = BNFC.Backend.Python.cf2AntlrParse 
-    , testclass = antlrtest
+    , testclass = antlrtest tpar
     }
 
 

@@ -2,10 +2,10 @@ module BNFC.Backend.Python.Utils where
 
 import BNFC.CF
 import BNFC.Backend.Python.PrintPython as PPP
-import BNFC.Backend.Python.AbsPython 
-import Data.Char (toLower)
+import BNFC.Backend.Python.AbsPython
+import BNFC.Backend.Common.NamedVariables(numVars)
 import Text.PrettyPrint as TPP
-import qualified Data.Map as Dma
+
 
 type CatDefs = (Cat -> [Rule])
 
@@ -160,26 +160,28 @@ dictionaryRef :: Entity
 dictionaryRef =  dictionaryName
 
 getParams :: [Cat] -> [(String,String)]
-getParams = nameFormalParameters Dma.empty 
+getParams cats = [(TPP.render c,"") | Left (_, c)<- numVars [Left x | x <- cats]] 
 -- returns a list of pairs:
 --      fst: name of formal parameters
 --      snd: formal parameter type (type) 
-nameFormalParameters :: Dma.Map Cat Integer -> [Cat] -> [(String,String)]
-nameFormalParameters _ [] = []
-nameFormalParameters mp (f:fs) = [fparam]
-                                ++nameFormalParameters 
-                                        (Dma.insertWith (+) f 1 mp) 
-                                        fs
-    where
-      ident = identCat f
-      name = ident++"_"++case Dma.lookup f mp of
-                        Just x -> show x
-                        _      -> ""
-      fparam   = (fparName,typename) 
-      typename = if isList f
-                   then "list"
-                   else ident
-      fparName = map toLower name
+-- nameFormalParameters :: Dma.Map Cat Integer -> [Cat] -> [(String,String)]
+-- nameFormalParameters _ [] = []
+-- nameFormalParameters mp (f:fs) = [fparam]
+--                                 ++nameFormalParameters 
+--                                         (Dma.insertWith (+) f 1 mp)    
+--                                         fs
+--     where
+--       ident = identCat f
+--       name = ident++"_"++case Dma.lookup f mp of
+--                         Just x -> show x
+--                         _      -> if f `elem` fs then "1" else ""
+--       fparam   = (fparName,typename) 
+--       typename = if isList f
+--                    then "list"
+--                    else ident
+--       fparName = map toLower name
+
+
 
 tupleLiteral :: [Entity] -> Entity
 tupleLiteral x = Function (mkId "") x 
@@ -191,3 +193,6 @@ emptyList :: Entity
 emptyList = listSingleton NothingPython
 
 instVar x = toNames [Self, mkId x]
+
+pythonReserved = ["def", "class", "type", "list", "tuple","int", "object", "Token"]
+    

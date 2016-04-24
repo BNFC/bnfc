@@ -122,7 +122,7 @@ makeJava options@Options{..} cf =
                              Nothing -> (a, b) : remDups as
       pkgToDir :: String -> FilePath
       pkgToDir s = replace '.' pathSeparator s ++ [pathSeparator]
-      parselexspec = parserLexerSelector javaLexerParser
+      parselexspec = parserLexerSelector tpar javaLexerParser
       lexfun = cf2lex $ lexer parselexspec
       parsefun = cf2parse $ parser parselexspec
       parmake = makeparserdetails (parser parselexspec) $ tpar
@@ -138,6 +138,7 @@ makeJava options@Options{..} cf =
         packageAbsyn = packAbsyn,
         packageBase = packBase,
         generateAction = BNFC.Backend.Java.AntlrAdapter.generateAntlrAction,
+        targetReservedWords = javaReserved++(targetReservedWords defaultAntlrParameters),
         lexerHeader = "",
         parserHeader = "",
         lexerMembers = "",
@@ -270,8 +271,8 @@ cuptest = javaTest ["java_cup.runtime"]
 
 
 -- | Test class details for ANTLR4
-antlrtest :: TestClass
-antlrtest = javaTest [ "org.antlr.v4.runtime","org.antlr.v4.runtime.atn"
+antlrtest :: ToolParameters -> TestClass
+antlrtest tpar = javaTest [ "org.antlr.v4.runtime","org.antlr.v4.runtime.atn"
              , "org.antlr.v4.runtime.dfa","java.util"
              ]
              "TestError"
@@ -287,7 +288,7 @@ antlrtest = javaTest [ "org.antlr.v4.runtime","org.antlr.v4.runtime.atn"
              showOpts 
              (\pbase pabs enti -> vcat
                     [
-                    let rulename = getRuleName (show enti)
+                    let rulename = getRuleName tpar (show enti)
                         typename = text rulename
                         methodname = text $ firstLowerCase rulename
                     in
@@ -305,19 +306,19 @@ antlrtest = javaTest [ "org.antlr.v4.runtime","org.antlr.v4.runtime.atn"
               showOpts (x:xs) | normCat x /= x = showOpts xs
                               | otherwise      = text (firstLowerCase $ identCat x) : showOpts xs
 
-parserLexerSelector :: JavaLexerParser -> ParserLexerSpecification
-parserLexerSelector JLexCup = ParseLexSpec
+parserLexerSelector :: ToolParameters -> JavaLexerParser -> ParserLexerSpecification
+parserLexerSelector _ JLexCup = ParseLexSpec
     { lexer     = cf2JLex
     , parser    = cf2cup
     , testclass = cuptest
     }
-parserLexerSelector JFlexCup =
-    (parserLexerSelector JLexCup){lexer = cf2JFlex}
+parserLexerSelector tpar JFlexCup =
+    (parserLexerSelector tpar JLexCup){lexer = cf2JFlex}
     
-parserLexerSelector Antlr4 = ParseLexSpec
+parserLexerSelector tpar Antlr4 = ParseLexSpec
     { lexer     = BNFC.Backend.Java.cf2AntlrLex
     , parser    = BNFC.Backend.Java.cf2AntlrParse 
-    , testclass = antlrtest
+    , testclass = antlrtest tpar
     }
 
 

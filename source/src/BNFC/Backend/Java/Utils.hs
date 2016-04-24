@@ -1,6 +1,4 @@
 module BNFC.Backend.Java.Utils where
-import BNFC.Backend.Common.NamedVariables
-import BNFC.Utils ( mkName, NameStyle(..))
 
 javaReserved = [
     "abstract" 	,"continue" 	,"for" 	,"new" 	,"switch"
@@ -15,10 +13,6 @@ javaReserved = [
     ,"const" 	,"float" 	,"native" 	,"super" 	,"while"
     ]
 
-getRuleName z = if x `elem` ("grammar" : javaReserved) then z ++ "_" else z
-                where x = firstLowerCase z
-
-getLabelName = mkName ["Rule"] CamelCase
 
 getLastInPackage :: String -> String
 getLastInPackage = 
