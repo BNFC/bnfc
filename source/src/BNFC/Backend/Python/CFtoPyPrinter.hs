@@ -54,7 +54,6 @@ cf2PyPrinter _ cf = show $ absVcat entities
                         entities = concat [
                                         [From $ Ident "absyn"]
                                         , prettyPrintingEntryClass
-                                        , pPContextClass
                                         , prettyPrinterClass cf]
                             
                    
@@ -67,12 +66,6 @@ i = mkId "i"
 
 pprender :: Entity
 pprender = mkId "render"
-
-l_paren :: Entity
-l_paren = mkId "_L_PAREN"
-
-r_paren :: Entity
-r_paren = mkId "_R_PAREN"
 
 buf_  :: Entity
 buf_ = toNames [Self, buf_Id] 
@@ -91,28 +84,9 @@ prettyPrintingEntryClass =
     where 
         body = assigningConstructorBody ["sh","pp"]
         
-pPContextStr = "PPContext"
-pPContextIdent = Ident pPContextStr
-pPContextEntity = mkId pPContextStr
-
-pPContextClass :: [Entity]
-pPContextClass = 
-    [Class pPContextIdent NoInherit
-    , mdef Init [pp, i] consBody
-    , mdef  Enter [] enterBody
-    , mdef Exit exitArgs exitBody
-    ]
-    where 
-        mdef         = classMethodDefinition 
-        consBody     = assigningConstructorBody ["pp", "i"]
-        callRender x = Function (toNames [Self, pp, pprender]) [x]
-        enterBody    = withBody l_paren
-        exitBody     = withBody r_paren
-        withBody x   = ifCascade [(condition, branch x)]
-        condition    = Gt (toNames [Self,i]) $ mkId "0"
-        branch x     = [callRender $ toNames [Self, pp, x]]
-        exitArgs = map mkId ["exc_type", "exc_val", "exc_tb"]
                         
+callRender x = Function (toNames [Self, pp, pprender]) [x]
+
 prettyPrinterClass :: CF -> [Entity]
 prettyPrinterClass cf = 
     [ Class (Ident "PrettyPrinter") NoInherit] ++
@@ -345,7 +319,12 @@ ppMethod defs (Rule fun _c cats) | not (isCoercion fun || isDefinedRule fun || i
     fname = mkId $ privatePpName fun
     nonTerminalContributions = case cats of
         [] -> [Pass]
-        _  -> map (ppMethodStatement defs) (numVars cats)
+        _  ->   lp ++ content ++ rp
+                
+    content = map (ppMethodStatement defs) (numVars cats)
+    lp = ifpar _l_paren
+    rp = ifpar _r_paren
+    ifpar x = ifCascade [(Gt i (mkId ( show $ precCat _c)), [callRender x])]
     
 ppMethod _ _nm = [NothingPython]
 
@@ -444,10 +423,8 @@ ppDef = [
             Try,
             IndentedBlock [
                 Assignment [fu] [di],
-                With context,
-                IndentedBlock [
-                    Function fupp [s, i] 
-                ]
+                Function fupp [s, i] 
+                
             ],
             Except,
             IndentedBlock [
@@ -462,7 +439,7 @@ ppDef = [
         di = toNames [Self, dictionaryLookup s]
         fu = mkId "fu"
         fupp = toNames [fu, pp]
-        context = Function pPContextEntity [Self, i]
+        
         
 s :: Entity
 s = mkId "s"
