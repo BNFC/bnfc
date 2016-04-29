@@ -271,9 +271,17 @@ testscript le pa (entri:es) alternatives = [
     , NothingPython]++
      ifCascade [(Equals NameField $ pyStringLiteral "__main__"
         , [Try
-            , IndentedBlock [
-                input =:= (callFilestream [argv1])
-                , lexer =:= (callLexerObject [input])
+            , IndentedBlock $
+                ifElseCascade 
+                    [(
+                        Gt (callLen [sysargv]) one,
+                         [input =:= (callFilestream [argv1])])]
+                    [
+                        input_text =:= (callJoin [sysstdin]) 
+                        , input =:= (callInputStream [input_text])
+                    ]++
+                [ 
+                 lexer =:= (callLexerObject [input])
                 , lis =:= (callBnfcErrorListener [])
                 , callAddErrorListenerOnLexer [lis]
                 , stream =:= callCommonTokenStream [lexer]
@@ -306,29 +314,31 @@ testscript le pa (entri:es) alternatives = [
         )]
     
     where
-        [input, parser, lexer, lis, stream, tree, 
+        [_emptyString, join, stdin, input_text, input, parser, lexer, lis, stream, tree, 
             tok, type_, tokenSource, _token, getInputStream, line, column, sys,
-            argv, one, exit, filestream, lexerObject, parserObject, bnfcErrorListener, 
-            commonTokenStream, prettyPrinter, entryMethod, minusOne, result]
-                = map mkId ["input", "parser", "lexer", "lis", "stream", "tree", 
+            argv, one, exit, inputstream, filestream, lexerObject, parserObject, bnfcErrorListener, 
+            commonTokenStream, prettyPrinter, entryMethod, minusOne, result, len]
+                = map mkId ["\"\"","join","stdin", "input_text", "input", "parser", "lexer", "lis", "stream", "tree", 
                     "tok", "type", "tokenSource", "_token", "getInputStream",
                     "line", "column", "sys", "argv", "1", "exit",
-                    "FileStream", le, pa, strBnfcErrorListener, 
-                    "CommonTokenStream", "PrettyPrinter", (toLower entri:es), "-1", "result"]
+                    "InputStream","FileStream", le, pa, strBnfcErrorListener, 
+                    "CommonTokenStream", "PrettyPrinter", (toLower entri:es), "-1", "result", "len"]
         tokType = toNames [tok, type_]
         getresult = toNames [tree , result]
         [callFilestream, callLexerObject, callParserObject,
             callBnfcErrorListener, callCommonTokenStream, callPrettyPrinter, 
             callAddErrorListenerOnParser, callAddErrorListenerOnLexer, callEntry,
-            callGetInputStream, ppShow, ppPrint] 
+            callGetInputStream, ppShow, ppPrint, callLen, callJoin, callInputStream] 
                 = map (\x -> \y -> Function x y) [filestream, lexerObject, parserObject,
                                                  bnfcErrorListener, commonTokenStream, prettyPrinter,
                                                  addErrorListenerTo parser, addErrorListenerTo lexer,
                                                  toNames [parser, entryMethod],
                                                  toNames [parser, getInputStream],
-                                                 
                                                  toNames [pp, showId],
-                                                 toNames [pp, pprintId]
+                                                 toNames [pp, pprintId],
+                                                 len,
+                                                 toNames [_emptyString, join],
+                                                 inputstream
                                                  ]
         nextToken = toNames [callGetInputStream [], tokenSource ,_token]
         strBnfcErrorListener = "BNFCErrorListener"
@@ -340,6 +350,8 @@ testscript le pa (entri:es) alternatives = [
         eli = mkId li
         eco = mkId co
         argv1 = toNames [sys, (SquareBracketAccess argv (YesArray one))]
+        sysargv  = toNames [sys, argv]
+        sysstdin = toNames [sys, stdin]
         msg = "msg"
         li = "li"
         co = "co"
