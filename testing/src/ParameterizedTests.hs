@@ -156,6 +156,8 @@ parameters =
   -- C++
   , cBase { tpName = "C++"
           , tpBnfcOptions = ["--cpp", "-m"] }
+  , cBase { tpName = "C++ (with namespace)"
+          , tpBnfcOptions = ["--cpp", "-p foobar", "-m"] }
   , cBase { tpName = "C++ (no STL)"
           , tpBnfcOptions = ["--cpp-nostl", "-m"] }
   -- Java
