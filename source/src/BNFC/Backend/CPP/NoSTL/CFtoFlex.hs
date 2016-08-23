@@ -143,7 +143,7 @@ restOfFlex inPackage cf env = concat
     ]
    footer = unlines
     [
-     "int " ++ ns ++ "initialize_lexer(FILE *inp) { yyrestart(inp); BEGIN YYINITIAL; }",
+     "void " ++ ns ++ "initialize_lexer(FILE *inp) { yyrestart(inp); BEGIN YYINITIAL; }",
      "int yywrap(void) { return 1; }"
     ]
 
