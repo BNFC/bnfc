@@ -71,7 +71,7 @@ cf2Bison ln inPackage name cf env
  = unlines
     [header inPackage name cf,
      render $ union inPackage (positionCats cf ++ allCats cf),
-     maybe "" (\ns -> "%name-prefix=\"" ++ ns ++ "yy\"") inPackage,
+     maybe "" (\ns -> "%define api.prefix {" ++ ns ++ "yy}") inPackage,
      "%token _ERROR_",
      tokens user env,
      declarations cf,
