@@ -138,7 +138,7 @@ prRuleH c (fun, cats) =
       show c ++ " make_" ++ fun ++ "(" ++ (prParamsH 0 (getVars cats)) ++ ");\n"
    where
      prParamsH :: Int -> [(String, a)] -> String
-     prParamsH _ [] = ""
+     prParamsH _ [] = "void"
      prParamsH n ((t,_):[]) = t ++ " p" ++ (show n)
      prParamsH n ((t,_):vs) = (t ++ " p" ++ (show n) ++ ", ") ++ (prParamsH (n+1) vs)
 
