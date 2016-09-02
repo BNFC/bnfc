@@ -57,10 +57,10 @@ executable bnfc-system-tests
   -- other-extensions:
 
   -- Other library packages from which modules are imported.
-  build-depends:       base >=4.5 && <4.8,
+  build-depends:       base >=4.5 && <4.9,
                        regex-posix,
                        HUnit == 1.2.*,
-                       shelly == 1.5.6,
+                       shelly == 1.5.*,
                        system-filepath,
                        text,
                        HTF

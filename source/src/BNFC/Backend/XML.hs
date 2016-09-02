@@ -137,6 +137,7 @@ parenth s = "(" ++ s ++ ")"
 -- derive an XML printer from a BNF grammar
 cf2XMLPrinter :: Bool -> SharedOptions -> String -> CF -> String
 cf2XMLPrinter typ opts absMod cf = unlines [
+  pragmas opts,
   prologue typ opts absMod,
   integerRule cf,
   doubleRule cf,
@@ -146,6 +147,11 @@ cf2XMLPrinter typ opts absMod cf = unlines [
   rules cf
   ]
 
+pragmas :: SharedOptions -> String
+pragmas opts =
+  if target opts == TargetHaskellGadt
+  then "{-# LANGUAGE TypeSynonymInstances, FlexibleInstances, GADTs #-}"
+  else ""
 
 prologue :: Bool -> SharedOptions -> String -> String
 prologue b opts _ = unlines [
