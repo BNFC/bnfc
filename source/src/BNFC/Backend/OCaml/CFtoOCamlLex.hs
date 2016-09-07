@@ -193,15 +193,16 @@ rules cf = mkRule "token" $
     ++
     [ (mkRegexMultilineComment b e, "token lexbuf") | (b,e) <- multilineC]
     ++
+    -- reserved keywords
+    [ ( "rsyms"
+      , "let id = lexeme lexbuf in try Hashtbl.find symbol_table id with Not_found -> failwith (\"internal lexer error: reserved symbol \" ^ id ^ \" not found in hashtable\")" )
+      | not (null (cfgSymbols cf))]
+    ++
     -- user tokens
     [ (text n , tokenAction (text t)) | (n,_,t) <- userTokens cf]
     ++
     -- predefined tokens
     [ ( "l i*", tokenAction "Ident" ) ]
-    ++
-    [ ( "rsyms"
-      , "let id = lexeme lexbuf in try Hashtbl.find symbol_table id with Not_found -> failwith (\"internal lexer error: reserved symbol \" ^ id ^ \" not found in hashtable\")" )
-      | not (null (cfgSymbols cf))]
     ++
     -- integers
     [ ( "d+", "let i = lexeme lexbuf in TOK_Integer (int_of_string i)" )
