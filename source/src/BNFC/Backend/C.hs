@@ -127,7 +127,7 @@ ctest cf =
     "#include \"Printer.h\"",
     "#include \"Absyn.h\"",
     "",
-    "void usage() {",
+    "void usage(void) {",
     "  printf(\"usage: Call with one of the following argument " ++
       "combinations:\\n\");",
     "  printf(\"\\t--help\\t\\tDisplay this help message.\\n\");",
