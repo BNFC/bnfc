@@ -152,6 +152,7 @@ parameters =
          , tpBnfcOptions = ["--ocaml", "-m"] }
   -- C
   , cBase { tpName = "C"
+          , tpBuild = run_ "make" ["CCFLAGS=-Wstrict-prototypes -Werror"]
           , tpBnfcOptions = ["--c", "-m"] }
   -- C++
   , cBase { tpName = "C++"
