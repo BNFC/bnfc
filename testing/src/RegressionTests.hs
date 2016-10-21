@@ -18,7 +18,9 @@ all = makeTestSuite "Regression tests"
     , issue108, issue110, issue111, issue114, issue113
     , issue127, issue128
     , issue151
-    , issue170a, issue170b, issue172
+    , issue170a, issue170b
+    , issue172
+    , issue186
     ]
 
 issue30 :: Test
@@ -180,3 +182,21 @@ issue172 = makeShellyTest "#172 Prefixes not generated correctly in CPP" $
             , "End.   S ::= ;" ]
         cmd "bnfc" "-m" "--cpp" "-p" "Haskell" "Test.cf"
         cmd "make"
+
+-- | Issue #186
+issue186 :: Test
+issue186 = makeShellyTest "#186 Rule labels have to start with uppercase char" $
+  withTmpDir $ \tmp -> do
+      cd tmp
+      writefile "test.cf" "cat . Bar ::= \"Foo\";"
+      errExit False $ do
+        cmd "bnfc" "test.cf"
+        code <- lastExitCode
+        err <- lastStderr
+        assertEqual 1 code
+        let expectedErr = T.unlines
+                [ "Bad rule name: cat"
+                , "   Rule labels have to begin with a capital letter"
+                , ""
+                ]
+        assertEqual expectedErr err
