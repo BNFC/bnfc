@@ -1,0 +1,31 @@
+
+-- Production. Production ::= NonTerminal "::" Type ":" [RightHandSide] ;
+-- RightHandSide. RightHandSide ::= [Symbol] { Expression } ;
+-- NonTerminal. NonTerminal ::= Ident ;
+-- IdentType. Type ::= Ident ;
+-- PairType. Type ::= "(" Type "," Type ")" ;
+-- AppType. Type ::= Type Type ;
+-- Symbol. Symbol ::= NonTerminal.
+
+
+token Terminal '"' ((char - ["\"\\"]) | ('\\' ["\"\\nt"]))* '"' ;
+
+P. Production ::= Ident "::" "{" Type "}" ":" [RightHandSide] ;
+Rhs. RightHandSide ::= [Symbol] "{" Expression "}" ;
+NonTerm. Symbol ::= Ident ;
+QuotedTerm. Symbol ::= Terminal ;
+IdentTerm. Symbol ::= Ident ;
+
+EIdent. Expression2 ::= Ident ;
+EPair. Expression2 ::= "(" Expression "," Expression ")" ;
+EApp. Expression1 ::= Expression1 Expression2 ;
+coercions Expression 2 ;
+
+separator nonempty RightHandSide "|" ;
+separator Symbol "" ;
+
+TIdent. Type2 ::= Ident ;
+TPair. Type2 ::= "(" Type "," Type ")" ;
+TList. Type2 ::= "[" Type "]" ;
+TApp. Type1 ::= Type1 Type2 ;
+coercions Type 2

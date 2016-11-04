@@ -17,21 +17,18 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 -}
 
-module BNFC.Backend.Haskell.CFtoHappy (cf2HappyS, convert) where
+module BNFC.Backend.Haskell.CFtoHappy where
+
+import Data.String (IsString(..))
 
 import BNFC.CF
 import BNFC.Backend.Common.StrUtils (escapeChars)
-import BNFC.Backend.Haskell.Utils (parserName, catToType)
---import Lexer
-import Data.Char
+import BNFC.Backend.Haskell.Utils (parserName)
+import qualified BNFC.Backend.Haskell.AbsHappy as Happy
+import BNFC.Backend.Haskell.PrintHappy (printTree)
+import Data.Char (isLower)
 import BNFC.Options (HappyMode(..))
 import BNFC.PrettyPrint
--- Type declarations
-
-type Rules       = [(NonTerminal,[(Pattern,Action)])]
-type Pattern     = String
-type Action      = String
-type MetaVar     = String
 
 -- default naming
 
@@ -58,13 +55,16 @@ cf2HappyS = cf2Happy
 cf2Happy name absName lexName errName mode byteStrings functor cf
  = unlines
     [header name absName lexName errName mode byteStrings,
-     render $ declarations mode (allEntryPoints cf),
+    -- directives
+     render $ declarations mode,
+     render $ vcat $ map (mkParserName functor) (allEntryPoints cf),
      tokens (cfTokens cf),
-     specialToks cf,
+     render $ nest 2 $ specialToks functor cf,
      delimiter,
-     specialRules byteStrings cf,
-     render $ prRules functor (rulesForHappy absName functor cf),
-     finalize byteStrings cf]
+     -- Productions
+     render $ productions absName byteStrings functor cf,
+     -- optional module trailer
+     finalize byteStrings functor cf]
 
 -- construct the header.
 header :: String -> String -> String -> String -> HappyMode -> Bool -> String
@@ -83,23 +83,30 @@ header modName absName lexName errName mode byteStrings = unlines
          ]
 
 -- | The declarations of a happy file.
--- >>> declarations Standard [Cat "A", Cat "B", ListCat (Cat "B")]
--- %name pA A
--- %name pB B
--- %name pListB ListB
+-- >>> declarations Standard
 -- -- no lexer declaration
 -- %monad { Err } { thenM } { returnM }
 -- %tokentype {Token}
-declarations :: HappyMode -> [Cat] -> Doc
-declarations mode ns = vcat
-    [ vcat $ map generateP ns
-    , case mode of
+declarations :: HappyMode -> Doc
+declarations mode = vcat
+    [ case mode of
         Standard -> "-- no lexer declaration"
         GLR      -> "%lexer { myLexer } { Err _ }",
       "%monad { Err } { thenM } { returnM }",
       "%tokentype" <+> braces (text tokenName) ]
-  where generateP n = "%name" <+> parserName n <+> text n'
-          where n' = identCat n
+
+-- | Generate the parser name directive
+-- See: https://www.haskell.org/happy/doc/html/sec-directives.html#sec-parser-name
+-- Example:
+-- %name pExp Exp
+--
+-- In case we use a functor, we need to generate internal names:
+-- %name pExp_internal Exp
+mkParserName :: Bool -> Cat -> Doc
+mkParserName functor cat =
+    "%name" <+> parserName cat <> (if functor then "_internal" else "")
+    <+> text (identCat cat)
+
 
 -- The useless delimiter symbol.
 delimiter :: String
@@ -119,117 +126,127 @@ tokens toks = "%token\n" ++ prTokens toks
 convert :: String -> Doc
 convert = quotes . text . escapeChars
 
-rulesForHappy :: String -> Bool -> CF -> Rules
-rulesForHappy absM functor cf = map mkOne $ ruleGroups cf
+
+-- ------------------------------------------------------------------------- --
+-- Productions
+-- ------------------------------------------------------------------------- --
+
+productions :: String -> Bool -> Bool -> CF -> Doc
+productions absModule byteStrings functor cf =
+    vcat $ map (text . printTree)
+    (specialRules byteStrings functor cf
+    ++
+    map (mkProduction absModule functor reversibles) rulesForNonInternalCats)
   where
-    mkOne (cat,rules) = (cat, map (constructRule absM functor reversibles) rules)
+    rulesForNonInternalCats = [ x | x@(_, _:_) <- ruleGroups cf]
     reversibles = cfgReversibleCats cf
 
--- | For every non-terminal, we construct a set of rules. A rule is a sequence
--- of terminals and non-terminals, and an action to be performed
--- >>> constructRule "Foo" False [] (Rule "EPlus" (Cat "Exp") [Left (Cat "Exp"), Right "+", Left (Cat "Exp")])
--- ("Exp '+' Exp","Foo.EPlus $1 $3")
---
--- If we're using functors, it adds an void value:
--- >>> constructRule "Foo" True [] (Rule "EPlus" (Cat "Exp") [Left (Cat "Exp"), Right "+", Left (Cat "Exp")])
--- ("Exp '+' Exp","Foo.EPlus () $1 $3")
---
--- List constructors should not be prefixed by the abstract module name:
--- >>> constructRule "Foo" False [] (Rule "(:)" (ListCat (Cat "A")) [Left (Cat "A"), Right",", Left (ListCat (Cat "A"))])
--- ("A ',' ListA","(:) $1 $3")
--- >>> constructRule "Foo" False [] (Rule "(:[])" (ListCat (Cat "A")) [Left (Cat "A")])
--- ("A","(:[]) $1")
---
--- Coercion are much simpler:
--- >>> constructRule "Foo" True [] (Rule "_" (Cat "Exp") [Right "(", Left (Cat "Exp"), Right ")"])
--- ("'(' Exp ')'","$2")
---
--- As an optimization, a pair of list rules [C] ::= "" | C k [C] is
--- left-recursivized into [C] ::= "" | [C] C k.
--- This could be generalized to cover other forms of list rules.
--- >>> constructRule "Foo" False [ListCat (Cat "A")] (Rule "(:)" (ListCat (Cat "A")) [Left (Cat "A"), Right",", Left (ListCat (Cat "A"))])
--- ("ListA A ','","flip (:) $1 $2")
---
--- Note that functors don't concern list constructors:
--- >>> constructRule "Abs" True [ListCat (Cat "A")] (Rule "(:)" (ListCat (Cat "A")) [Left (Cat "A"), Right",", Left (ListCat (Cat "A"))])
--- ("ListA A ','","flip (:) $1 $2")
-constructRule :: String -> Bool -> [Cat] -> Rule -> (Pattern,Action)
-constructRule absName functor revs r0@(Rule fun cat _) = (pattern, action)
+
+-- | Generate an expression that represent the semantic value of a non-terminal
+-- according to a given rule.
+action :: String -> Bool -> [Cat] -> Rule -> Happy.Expression
+action absName functor reversibles r@(Rule label cat _) =
+    if functor then Happy.EPair position node else node
   where
-    (pattern,metavars) = generatePatterns revs r
-    action | isCoercion fun                 = unwords metavars
-           | isConsFun fun && elem cat revs = unwords ("flip" : fun : metavars)
-           | isNilCons fun                  = unwords (underscore fun : metavars)
-           | functor                        = unwords (underscore fun : "()" : metavars)
-           | otherwise                      = unwords (underscore fun : metavars)
-    r | isConsFun (funRule r0) && elem (valCat r0) revs = revSepListRule r0
-      | otherwise                                       = r0
-    underscore f | isConsFun f || isNilCons f = f
-                 | isDefinedRule f = absName ++ "." ++ f ++ "_"
-                 | otherwise       = absName ++ "." ++ f
+    position = getPosition rhs'
+    node | isCoercion label = head metavars
+         | otherwise = foldl Happy.EApp constructor metavars
+    constructor
+      | isConsFun label && elem cat reversibles = Happy.EApp "flip" (fromString label)
+      | isNilCons label = fromString label
+      | functor = Happy.EApp label' position
+      | otherwise = label'
+    label' | isDefinedRule label = fromString (absName ++ "." ++ label ++ "_")
+           | otherwise = fromString (absName ++ "." ++ label)
+    metavars = do
+        (i, Left cat) <- zip [1..] rhs'
+        return $
+            (if not (isConsFun label) && elem cat reversibles
+            then Happy.EApp "reverse" else id)
+            $ (if functor then Happy.EApp "snd" else id)
+            (mkMetaVariable i)
+    Rule _ _ rhs' | isConsFun label && elem cat reversibles = revSepListRule r
+                  | otherwise = r
 
--- Generate patterns and a set of metavariables indicating
--- where in the pattern the non-terminal
 
-generatePatterns :: [Cat] -> Rule -> (Pattern,[MetaVar])
-generatePatterns revs r = case rhsRule r of
-  []  -> ("{- empty -}",[])
-  its -> (unwords (map mkIt its), metas its)
- where
-   mkIt i = case i of
-     Left c -> identCat c
-     Right s -> render (convert s)
-   metas its = [revIf c ('$': show i) | (i,Left c) <- zip [1 ::Int ..] its]
-   revIf c m = if not (isConsFun (funRule r)) && elem c revs
-                 then "(reverse " ++ m ++ ")"
-                 else m  -- no reversal in the left-recursive Cons rule itself
-
--- We have now constructed the patterns and actions,
--- so the only thing left is to merge them into one string.
-
--- |
--- >>> prRules False [(Cat "Expr", [("Integer", "EInt $1"), ("Expr '+' Expr", "EPlus $1 $3")])]
--- Expr :: { Expr }
--- Expr : Integer { EInt $1 } | Expr '+' Expr { EPlus $1 $3 }
---
--- if there's a lot of cases, print on several lignes:
--- >>> prRules False [(Cat "Expr", [("Abcd", "Action"), ("P2", "A2"), ("P3", "A3"), ("P4", "A4"), ("P5","A5")])]
--- Expr :: { Expr }
--- Expr : Abcd { Action }
---      | P2 { A2 }
---      | P3 { A3 }
---      | P4 { A4 }
---      | P5 { A5 }
---
--- >>> prRules False [(Cat "Internal", [])] -- nt has only internal use
--- <BLANKLINE>
---
--- The functor case:
--- >>> prRules True [(Cat "Expr", [("Integer", "EInt () $1"), ("Expr '+' Expr", "EPlus () $1 $3")])]
--- Expr :: { (Expr ()) }
--- Expr : Integer { EInt () $1 } | Expr '+' Expr { EPlus () $1 $3 }
---
--- A list with coercion: in the type signature we need to get rid of the
--- coercion
--- >>> prRules True [(ListCat (CoercCat "Exp" 2), [("Exp2", "(:[]) $1"), ("Exp2 ',' ListExp2","(:) $1 $3")])]
--- ListExp2 :: { [Exp ()] }
--- ListExp2 : Exp2 { (:[]) $1 } | Exp2 ',' ListExp2 { (:) $1 $3 }
-prRules :: Bool -> Rules -> Doc
-prRules functor = vcat . map prOne
+-- | This function is used when bnfc is called with the --functor option.
+-- It generates the code that computes the current node position from the
+-- positions stored in the meta-variables.
+getPosition :: [Either Cat String] -> Happy.Expression
+getPosition rhs = case rhs of
+    [] -> Happy.EIdent (Happy.Ident "Nothing")
+    (Left _:_) -> Happy.EApp "fst" metavar
+    (Right _:_) -> Happy.EApp "Just" (Happy.EApp "tokenLineCol" metavar)
   where
-    type' = catToType (if functor then Just "()" else Nothing)
-    prOne (_,[]) = empty -- nt has only internal use
-    prOne (nt,(p,a):ls) =
-      hsep [ nt', "::", "{", type' nt, "}" ]
-      $$ nt' <+> sep (pr ":" (p, a) : map (pr "|") ls)
-     where
-       nt' = text (identCat nt)
-       pr pre (p,a) = hsep [pre, text p, "{", text a , "}"]
+    metavar = mkMetaVariable 1
+
+-- | Make a happy meta-variable, e.g. $2
+mkMetaVariable :: Int -> Happy.Expression
+mkMetaVariable = Happy.EIdent . Happy.Ident . ("$" ++) . show
+
+-- Generate a pattern for the given rule. A pattern is a list of terminals and
+-- non-terminals that goes in the right-hand side of a happy production.
+mkPattern :: [Cat] -> Rule -> [Happy.Symbol]
+mkPattern reversibles r@(Rule label cat _) = case rhs' of
+    []  -> []
+    items -> [mkSymbol i | i <- items]
+  where
+    mkSymbol (Left cat) = Happy.NonTerm (mkNonTerminal cat)
+    mkSymbol (Right s) = Happy.QuotedTerm (mkTerminal s)
+    Rule _ _ rhs' | isConsFun label && elem cat reversibles = revSepListRule r
+                  | otherwise = r
+
+mkNonTerminal :: Cat -> Happy.Ident
+mkNonTerminal = Happy.Ident . identCat
+
+
+-- | Create a terminal identifier for a bnfc terminal, i.e. a literal string
+-- in a rule.
+mkTerminal :: String -> Happy.Terminal
+mkTerminal s = Happy.Terminal $ "'" ++ escapeChars s ++ "'"
+
+-- | Create a terminal identifier for a toker category
+mkTokenTerminal :: String -> Happy.Symbol
+mkTokenTerminal cat = Happy.IdentTerm $ Happy.Ident $ case cat of
+    "Ident"   -> "L_ident"
+    "String"  -> "L_quoted"
+    "Integer" -> "L_integ"
+    "Double"  -> "L_doubl"
+    "Char"    -> "L_charac"
+    _       -> "L_" ++ cat
+
+-- | Builds the return type of a production for a given category.
+mkProductionType :: Bool -> Cat -> Happy.Type
+mkProductionType functor cat
+    | functor = Happy.TPair maybeIntIntT (catToType (Just maybeIntIntT) cat)
+    | otherwise = catToType Nothing cat
+  where
+    maybeT = Happy.TIdent (Happy.Ident "Maybe")
+    intT = Happy.TIdent (Happy.Ident "Int")
+    maybeIntIntT = Happy.TApp maybeT (Happy.TPair intT intT)
+    catToType :: Maybe Happy.Type -> Cat -> Happy.Type
+    catToType _ InternalCat = error "Can't create a haskell type for internal category"
+    catToType t (ListCat c) = Happy.TList (catToType t c)
+    catToType (Just _) c@(TokenCat _) = catToType Nothing c
+    catToType (Just t) c = Happy.TApp (catToType Nothing c) t
+    catToType Nothing c = Happy.TIdent $ Happy.Ident $ show $ normCat c
+
+-- | Generate a Happy Production for the given set of rules
+mkProduction :: String -> Bool -> [Cat] -> (Cat, [Rule]) -> Happy.Production
+mkProduction absMod functor reversibles (cat, rules) =
+    Happy.P
+      (mkNonTerminal cat)
+      (mkProductionType functor cat)
+      (map mkRhs rules)
+  where
+    mkRhs rule = Happy.Rhs
+        (mkPattern reversibles rule)
+        (action absMod functor reversibles rule)
 
 -- Finally, some haskell code.
 
-finalize :: Bool -> CF -> String
-finalize byteStrings cf = unlines $
+finalize :: Bool -> Bool -> CF -> String
+finalize byteStrings functor cf = unlines $
    [
      "{",
      "\nreturnM :: a -> Err a",
@@ -244,12 +261,18 @@ finalize byteStrings cf = unlines $
      "    [Err _] -> \" due to lexer error\"",
      "    t:_ -> \" before `\" ++ " ++ stringUnpack ++ "(prToken t) ++ \"'\"",
      "",
-     "myLexer = tokens"
+     "myLexer = tokens",
+     "",
+     if functor
+     then render $ vcat $ map mkParserFun (allEntryPoints cf)
+     else ""
    ] ++ definedRules cf ++ [ "}" ]
    where
      stringUnpack
        | byteStrings = "BS.unpack"
        | otherwise   = "id"
+     mkParserFun cat =
+          parserName cat <+> "=" <+>  "(>>= return . snd)" <+> "." <+> parserName cat <> "_internal"
 
 
 definedRules cf = [ mkDef f xs e | FunDef f xs e <- cfgPragmas cf ]
@@ -267,36 +290,108 @@ definedRules cf = [ mkDef f xs e | FunDef f xs e <- cfgPragmas cf ]
 -- Markus's modifs 11/02/2002
 
 -- GF literals
-specialToks :: CF -> String
-specialToks cf = unlines (map aux (literals cf))
- where aux cat =
-        case show cat of
-          "Ident"  -> "L_ident  { PT _ (TV $$) }"
-          "String" -> "L_quoted { PT _ (TL $$) }"
-          "Integer" -> "L_integ  { PT _ (TI $$) }"
-          "Double" -> "L_doubl  { PT _ (TD $$) }"
-          "Char"   -> "L_charac { PT _ (TC $$) }"
-          own      -> "L_" ++ own ++ " { PT _ (T_" ++ own ++ " " ++ posn ++ ") }"
-         where
-           posn = if isPositionCat cf cat then "_" else "$$"
+specialToks :: Bool -> CF -> Doc
+specialToks functor cf = vsep (map aux (literals cf))
+ where aux cat = specialTok cat (isPositionCat cf cat || functor)
 
-specialRules :: Bool -> CF -> String
-specialRules byteStrings cf = unlines $
-                  map aux (literals cf)
+
+-- | Generate a Happy terminal symbol declaration for the BNFC token rules,
+-- both built-in and user defined.
+-- >>> specialTok (TokenCat "Ident") False
+-- L_ident {PT _ (TV $$)}
+--
+-- >>> specialTok (TokenCat "Foo") False
+-- L_Foo {PT _ (T_Foo $$)}
+--
+-- The boolean argument tells us if we need to keep the position, in which case
+-- we cannot use the Happy $$ magic projection.
+-- >>> specialTok (TokenCat "Bar") True
+-- L_Bar {PT _ (T_Bar _)}
+--
+-- Note that we might also need to keep the position for built-in tokens:
+-- >>> specialTok (TokenCat "Integer") True
+-- L_integ {PT _ (TI _)}
+specialTok :: Cat -> Bool -> Doc
+specialTok (TokenCat cat) keepPos =
+    terminalName cat <+> braces ("PT _" <+> parens (cons <+> posn))
+  where
+    cons = case cat of
+        "Ident"   -> "TV"
+        "String"  -> "TL"
+        "Integer" -> "TI"
+        "Double"  -> "TD"
+        "Char"    -> "TC"
+        own       -> "T_" <> text own
+    posn = if keepPos then "_" else "$$"
+specialTok _ _ = error "specialTok is only for TokenCat"
+
+
+specialRules :: Bool -> Bool -> CF -> [Happy.Production]
+specialRules byteStrings functor cf = map aux (literals cf)
  where
-   aux cat =
-     case show cat of
-         "Ident"   -> "Ident   :: { Ident }   : L_ident  { Ident $1 }"
-         "String"  -> "String  :: { String }  : L_quoted { "++stringUnpack++" $1 }"
-         "Integer" -> "Integer :: { Integer } : L_integ  { (read ("++stringUnpack++" $1)) :: Integer }"
-         "Double"  -> "Double  :: { Double }  : L_doubl  { (read ("++stringUnpack++" $1)) :: Double }"
-         "Char"    -> "Char    :: { Char }    : L_charac { (read ("++stringUnpack++" $1)) :: Char }"
-         own       -> own ++ "    :: { " ++ own ++ "} : L_" ++ own ++ " { " ++ own ++ " ("++ posn ++ "$1)}"
-                -- PCC: take "own" as type name? (manual says newtype)
-      where
-         posn = if isPositionCat cf cat then "mkPosToken " else ""
+   aux cat = specialRule byteStrings (isPositionCat cf cat) functor cat
 
-   stringUnpack
-     | byteStrings = "BS.unpack"
-     | otherwise   = ""
 
+-- | Generate grammar rules for each kind of token in the LBNF grammar.
+-- Rules for the built-in token types (Integer, String, Double...) return a
+-- literate value in haskell (e.g. the rule for Integer will actually return
+-- an integer).
+specialRule :: Bool -> Bool -> Bool -> Cat -> Happy.Production
+specialRule byteStrings isPositionToken keepPos c@(TokenCat cat) = Happy.P
+    (mkNonTerminal c)
+    (mkProductionType keepPos c)
+    [ Happy.Rhs
+        [mkTokenTerminal cat]
+        (mkTokenAction isPositionToken byteStrings keepPos cat)]
+  where
+specialRule _ _ _ _ = error "specialRule is only for TokenCat"
+
+
+-- | Generate the action (the expression in braces in the right-hand side of a
+-- happy production) for Token categories
+mkTokenAction :: Bool -> Bool -> Bool -> String -> Happy.Expression
+mkTokenAction isPositionToken byteStrings functor catName =
+    if functor then Happy.EPair position value
+               else value
+  where
+    value = case catName of
+        "String" ->  unpack (prToken metavar)
+        _ | catName `elem` ["Integer", "Double", "Char"] ->
+            Happy.EApp read (unpack (prToken metavar))
+        _ -> Happy.EApp cons (mkPosToken (prToken metavar))
+    -- generate a function application
+    app :: String -> Happy.Expression -> Happy.Expression
+    app f = Happy.EApp (Happy.EIdent (Happy.Ident f))
+    position = app "Just" $ app "tokenLineCol" metavar
+    cons = Happy.EIdent (Happy.Ident catName)
+    read = Happy.EIdent (Happy.Ident "read")
+    metavar = mkMetaVariable 1
+    unpack | byteStrings = app "BS.unpack"
+           | otherwise = id
+    mkPosToken | isPositionToken = app "mkPosToken"
+               | otherwise = id
+    prToken | functor = app "prToken"
+            | otherwise = id
+
+-- | Generate a terminal name for a given category name that will be used to
+-- link a pattern in the %token declarations and the grammar rules.  Note that
+-- this is only meaningful for TokenCat.
+terminalName :: String -> Doc
+terminalName cat =
+    case cat of
+        "Ident"   -> "L_ident"
+        "String"  -> "L_quoted"
+        "Integer" -> "L_integ"
+        "Double"  -> "L_doubl"
+        "Char"    -> "L_charac"
+        own       -> "L_" <> text own
+
+
+-- | Useful to be able to use a literal string directly as an identifier in
+-- an Happy AST.
+-- E.g. instead of writing
+-- Happy.EApp (Happy.EIdent (Happy.Ident "foo")) (Happy.EIdent (Happy.Ident "bar"")
+-- We can write:
+-- Happy.EApp "foo" "bar"
+instance IsString Happy.Expression where
+    fromString = Happy.EIdent . Happy.Ident
