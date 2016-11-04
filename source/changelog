@@ -1,4 +1,5 @@
 2.9.0 (Development version)
+	* Haskell: bnfc now generates IsString instances for token types [#192]
 	* C: Emit correct function prototypes
 	* Java: Add an experimental ANTLR4 backend
 	* C, C++, OCaml, Java: Accept ' or " as comment delimiters [#146]
