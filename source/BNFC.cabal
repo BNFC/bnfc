@@ -198,6 +198,7 @@ Test-suite unit-tests
   Main-is: unit-tests.hs
   HS-source-dirs: src test
   extensions: OverloadedStrings RecordWildCards FlexibleContexts
+  ghc-options:     -W
   Other-modules:
    BNFC.Backend.Common.MakefileSpec
    BNFC.Backend.Haskell.CFtoHappySpec
