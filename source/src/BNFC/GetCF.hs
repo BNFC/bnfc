@@ -418,7 +418,7 @@ checkRule cf (Rule (f,_) cat rhs)
    isBadType (Cat s) = isBadCatName s
    isBadType (TokenCat s) = isBadCatName s
    isBadCatName s = not (isUpper (head s) || s == show InternalCat || (head s == '@'))
-   badFunName = not (all (\c -> isAlphaNum c || c == '_') f {-isUpper (head f)-}
+   badFunName = not (all (\c -> isAlphaNum c || c == '_') f && isUpper (head f)
                        || isCoercion f || isNilCons f)
 
 
@@ -475,3 +475,4 @@ expandRules (Abs.Grammar defs) =
         i <- liftM (maybe 1 (+1) . lookup cat) get
         modify ((cat, i):)
         return (cat ++ show i)
+

@@ -195,8 +195,7 @@ issue186 = makeShellyTest "#186 Rule labels have to start with uppercase char" $
         err <- lastStderr
         assertEqual 1 code
         let expectedErr = T.unlines
-                [ "Bad rule name: cat"
-                , "   Rule labels have to begin with a capital letter"
+                [ "Bad constructor name cat in cat. Bar ::= \"Foo\""
                 , ""
                 ]
         assertEqual expectedErr err

@@ -34,3 +34,10 @@ spec = do
             expected =
                 "no production for Baz, appearing in rule\n    Foo. Bar ::= Baz"
         checkRule cf rulep `shouldBe` Just expected
+
+    it "returns an error if the rule label begins with a lowercase character" $ do
+        let rulep = Rule ("foo", ("Foo", [])) (Cat "Bar") [Left (Cat "Baz")]
+            rule = Rule "foo" (Cat "Bar") [Left (Cat "Baz")]
+            cf = CFG [] [] [] [] [] [rule]
+            expected = "Bad constructor name foo in foo. Bar ::= Baz"
+        checkRule cf rulep `shouldBe` Just expected

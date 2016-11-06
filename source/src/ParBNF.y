@@ -5,7 +5,7 @@ module ParBNF where
 import AbsBNF
 import LexBNF
 import ErrM
-import Data.Char(isUpper)
+
 }
 
 %name pLGrammar LGrammar
@@ -146,7 +146,7 @@ Label : LabelId { AbsBNF.LabNoP $1 }
       | LabelId LabelId ListProfItem { AbsBNF.LabPF $1 $2 $3 }
       | LabelId LabelId { AbsBNF.LabF $1 $2 }
 LabelId :: { LabelId }
-LabelId : Ident { % parseRuleLabel $1 }
+LabelId : Ident { AbsBNF.Id $1 }
         | '_' { AbsBNF.Wild }
         | '[' ']' { AbsBNF.ListE }
         | '(' ':' ')' { AbsBNF.ListCons }
@@ -227,16 +227,6 @@ Reg : Reg1 { $1 }
 ListIdent :: { [Ident] }
 ListIdent : Ident { (:[]) $1 } | Ident ',' ListIdent { (:) $1 $3 }
 {
-parseRuleLabel ::  Ident -> Err (AbsBNF.LabelId)
-parseRuleLabel i@(Ident s)
-  | beginsWithCapital i = return $ AbsBNF.Id i
-  | otherwise           = fail $
-      "Bad rule name: "++ s++
-      "\n   Rule labels have to begin with a capital letter\n"
-
-beginsWithCapital :: Ident -> Bool
-beginsWithCapital (Ident (c:_)) = isUpper c
-beginsWithCapital _ = False
 
 returnM :: a -> Err a
 returnM = return
@@ -246,7 +236,7 @@ thenM = (>>=)
 
 happyError :: [Token] -> Err a
 happyError ts =
-  Bad $ "syntax error at " ++ tokenPos ts ++
+  Bad $ "syntax error at " ++ tokenPos ts ++ 
   case ts of
     [] -> []
     [Err _] -> " due to lexer error"
@@ -254,3 +244,4 @@ happyError ts =
 
 myLexer = tokens
 }
+
