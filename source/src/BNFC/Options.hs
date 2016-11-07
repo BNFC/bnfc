@@ -63,7 +63,7 @@ data Mode
 data Target = TargetC | TargetCpp | TargetCppNoStl
             | TargetHaskell | TargetHaskellGadt | TargetLatex
             | TargetJava | TargetOCaml | TargetPygments
-            | TargetCheck
+            | TargetCheck | TargetFSharp
   deriving (Eq, Bounded, Enum, Ord)
 
 -- | List of Haskell target.
@@ -74,6 +74,7 @@ instance Show Target where
   show TargetC            = "C"
   show TargetCpp          = "C++"
   show TargetCppNoStl     = "C++ (without STL)"
+  show TargetFSharp       = "F#"
   show TargetHaskell      = "Haskell"
   show TargetHaskellGadt  = "Haskell (with GADT)"
   show TargetLatex        = "Latex"
@@ -303,6 +304,8 @@ targetOptions =
     "Output C++ code for use with FLex and Bison"
   , Option "" ["cpp-nostl"]     (NoArg (\o -> o {target = TargetCppNoStl}))
     "Output C++ code (without STL) for use with FLex and Bison"
+  , Option "" ["fsharp"]        (NoArg (\o -> o {target = TargetFSharp}))
+    "Output F# code for use with FsLex and FsYacc"
   , Option "" ["ocaml"]         (NoArg (\o -> o {target = TargetOCaml}))
     "Output OCaml code for use with ocamllex and ocamlyacc"
   , Option "" ["ocaml-menhir"]  (NoArg (\ o -> o{ target = TargetOCaml, ocamlParser = Menhir }))
@@ -523,6 +526,7 @@ instance Maintained Target where
     TargetLatex       -> True
     TargetJava        -> True
     TargetOCaml       -> True
+    TargetFSharp      -> True
     TargetPygments    -> True
     TargetCheck       -> True
 

@@ -113,6 +113,7 @@ library
     , deepseq
     , directory
     , filepath
+    , interpolate
     , mtl         >= 2.2.1
     , pretty      >= 1.1   && < 1.2
     , process
@@ -246,6 +247,17 @@ library
     BNFC.Backend.CPP.STL.CFtoSTLAbs
     BNFC.Backend.CPP.STL.STLUtils
     BNFC.Backend.CPP.STL.CFtoCVisitSkelSTL
+
+    -- F# backend
+    BNFC.Backend.FSharp,
+    BNFC.Backend.FSharp.FSharpUtil,
+    BNFC.Backend.FSharp.CFtoFSharpTest,
+    BNFC.Backend.FSharp.CFtoFSharpShow,
+    BNFC.Backend.FSharp.CFtoFSharpPrinter,
+    BNFC.Backend.FSharp.CFtoFSharpTemplate,
+    BNFC.Backend.FSharp.CFtoFSharpAbs,
+    BNFC.Backend.FSharp.CFtoFsYacc,
+    BNFC.Backend.FSharp.CFtoFsLex,
 
     -- Java backend
     BNFC.Backend.Java
