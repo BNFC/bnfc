@@ -83,7 +83,7 @@ mkHFile useStl inPackage cf groups = unlines
     "  /* You may wish to change them */",
     "  void render(Char c);",
     "  void render(String s);",
-    if useStl then "void render(char *s);" else "",
+    if useStl then "void render(const char *s);" else "",
     "  void indent(void);",
     "  void backup(void);",
     " public:",
@@ -711,7 +711,7 @@ prRender useStl = unlines
                                  [ "bufAppend(s);"
                                  , "bufAppend(' ');" ] ]
       in if useStl then render renderString else "",
-      "void PrintAbsyn::render(char *s)",
+      "void PrintAbsyn::render(const char *s)",
       "{",
       "  if(strlen(s) > 0)",
       "  {",
