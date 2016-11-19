@@ -30,12 +30,13 @@ mkTest target desc bnfcParams =
   makeShellyTest description $ withTmpDir $ \tmp -> do
     cd tmp
     writefile "Test.cf" $ unlines
-      [ "Start. S ::= S \"a\" ;"
+      [ "Start. S ::= S \"parseMe\" ;"
       , "End.   S ::= ;" ]
     run_ "bnfc" args
     assertFileExists "Test.cabal"
     cmd "cabal" "configure"
     cmd "cabal" "build"
+    cmd "echo" "parseMe" -|- cmd "cabal" "run"
     where
       args :: [Text]
       args = target:"--cabal":bnfcParams ++ ["Test.cf"]
