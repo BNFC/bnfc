@@ -38,32 +38,49 @@ buildPackageDescription opt = emptyPackageDescription
     PackageIdentifier
       { pkgName = PackageName (lang opt)
       , pkgVersion = Version [0,1] []}
-  , library =
-    Just mempty
-      { exposedModules = exposedMods opt
-      , libExposed = True
-      , libBuildInfo = emptyBuildInfo
-          { buildable    = True
-          , hsSourceDirs = ["."]
-          , targetBuildDepends = dependencies opt
-          }
-      }
+  , library = Just (createLibrary opt)
+  , executables = [createExecutable opt]
   , extraSrcFiles = [ happyFile opt, alexFile opt ]
   , buildType = Just Simple
   , license = AllRightsReserved
+  , specVersionRaw = Right (orLaterVersion $ Version [1,22] [])
    }
 
 dependencies :: SharedOptions -> [Dependency]
 dependencies opt =
-    [ Dependency (PackageName "base") (laterVersion $ Version [4] [])
+    [ Dependency (PackageName "base") (orLaterVersion $ Version [4] [])
     , Dependency (PackageName "array") anyVersion
     ] ++
     [ Dependency (PackageName "mtl") anyVersion | TargetHaskellGadt == target opt ]
 
+createLibrary :: SharedOptions -> Library
+createLibrary opt = mempty
+  { exposedModules = exposedLibMods opt
+  , libExposed = True
+  , libBuildInfo = emptyBuildInfo
+          { buildable    = True
+          , hsSourceDirs = ["."]
+          , targetBuildDepends = dependencies opt
+          }
+  }
 
--- |returns a list of all exposed modules
-exposedMods :: SharedOptions -> [ModuleName]
-exposedMods opt = map fromString $
+createExecutable :: SharedOptions -> Executable
+createExecutable opt = Executable name mainIs buildInfo where
+  name :: String
+  name = "Test" ++ lang opt
+
+  mainIs :: FilePath
+  mainIs = tFile opt
+
+  buildInfo :: BuildInfo
+  buildInfo = mempty
+    { targetBuildDepends = dependencies opt
+    , otherModules = exposedLibMods opt
+    }
+
+-- |returns a list of all modules the library exposes
+exposedLibMods :: SharedOptions -> [ModuleName]
+exposedLibMods opt = map fromString $
   [absFileM opt
   ,errFileM opt
   ,printerFileM opt
