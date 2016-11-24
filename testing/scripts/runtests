@@ -1,5 +1,9 @@
 #!/bin/sh -u
+export PATH=$PATH:~/.local/bin
 export CLASSPATH=.:$(pwd)/data/javatools.jar
-mkdir -p dist/test
-cabal build
-cabal exec -- cabal run -- --xml=dist/test/bnfc-system-tests.xml $*
+cd ../source
+stack test
+stack install
+cd ../testing
+stack build
+stack exec bnfc-system-tests

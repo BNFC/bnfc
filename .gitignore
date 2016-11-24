@@ -12,3 +12,6 @@ cabal.sandbox.config
 
 # local HTF files
 .HTF
+
+# stack files
+.stack-work
