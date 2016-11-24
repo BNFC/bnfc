@@ -2,8 +2,12 @@
 export PATH=$PATH:~/.local/bin
 export CLASSPATH=.:$(pwd)/data/javatools.jar
 cd ../source
+stack setup
+stack init
 stack test
 stack install
 cd ../testing
+stack setup
+stack init
 stack build
 stack exec bnfc-system-tests
