@@ -149,6 +149,7 @@ parameters =
          }
   -- OCaml
   , base { tpName = "OCaml"
+         , tpBuild = run_ "make" ["OCAMLCFLAGS=-safe-string"]
          , tpBnfcOptions = ["--ocaml", "-m"] }
   -- C
   , cBase { tpName = "C"
