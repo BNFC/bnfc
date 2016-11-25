@@ -60,8 +60,8 @@ issue108 = makeShellyTest "#108 C like comments and alex" $
         cmd "make"
         setStdin "int a; /* **/ int b; /* */"
         out <- cmd =<< canonicalize "./TestC"
-        liftIO $ assertBool "Couldn't find `int b` in output"
-                            ("int b ;" `T.isInfixOf` out)
+        liftIO $ assertBool ("Couldn't find `int b` in output:\n" ++ T.unpack out)
+                            ("int b" `T.isInfixOf` out)
 
 issue110 :: Test
 issue110 = makeShellyTest "#110 Parse error while building BNFC generated parser" $
