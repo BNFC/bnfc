@@ -112,10 +112,14 @@ codeDir opts = let pref = maybe "" pkgToDir (inPackage opts)
 
 makefile :: SharedOptions -> Doc
 makefile opts = vcat
-    [ mkRule "all" []
-        [ "ocamlyacc " ++ ocamlyaccFile opts
-        , "ocamllex "  ++ ocamllexFile opts
-        , "ocamlc -o " ++ mkFile withLang "Test" "" opts +++
+    [ mkVar "OCAMLC" "ocamlc"
+    , mkVar "OCAMLYACC" "ocamlyacc"
+    , mkVar "OCAMLLEX" "ocamllex"
+    , mkVar "OCAMLCFLAGS" ""
+    , mkRule "all" []
+        [ "$(OCAMLYACC) " ++ ocamlyaccFile opts
+        , "$(OCAMLLEX) "  ++ ocamllexFile opts
+        , "$(OCAMLC) $(OCAMLCFLAGS) -o " ++ mkFile withLang "Test" "" opts +++
                           utilFile opts +++
                           absFile opts +++ templateFile opts +++
                           showFile opts +++ printerFile opts +++
