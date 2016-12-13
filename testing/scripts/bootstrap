@@ -1,0 +1,34 @@
+#!/bin/sh -eu
+
+# Setup sandbox
+cabal sandbox init
+cabal install --only-dependencies
+cabal sandbox add-source ../source
+cabal install bnfc
+
+# Check for tools required to run system tests
+missing=""
+
+check() {
+  echo -n "Checking for $1... "
+  if ! type $1 &> /dev/null ; then
+    missing+=" $1"
+    echo -e "\033[33mmissing\033[0m"
+  else
+    echo -e "\033[32mOK\033[0m"
+  fi
+}
+
+check flex
+check bison
+check hlint
+check javac
+check jflex
+check ocamllex
+check ocamlyacc
+
+if [ ! -z "$missing" ]; then
+  >&2 echo -e "\033[31mSome tests will fail as they require tools that are missing from your system:\033[0m"
+  >&2 echo -e "\033[31m$missing\033[0m"
+  exit 1
+fi
