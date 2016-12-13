@@ -48,7 +48,7 @@ Executable bnfc
     array,
     process,
     containers,
-    pretty,
+    pretty >=1.1 && <1.2,
     filepath,
     deepseq
   if  impl(ghc < 7.6.1)
