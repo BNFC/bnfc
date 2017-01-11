@@ -103,7 +103,6 @@ header name cf = unlines
     , "#include <stdlib.h>"
     , "#include <stdio.h>"
     , "#include <string.h>"
-    , "#include <iostream>"
     , "#include \"Absyn.H\""
     , "int yyparse(void);"
     , "int yylex(void);"
