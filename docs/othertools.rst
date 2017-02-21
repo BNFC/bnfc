@@ -1,6 +1,17 @@
 =============
-Similar tools
+Other tools
 =============
+
+LBNF tools
+----------
+`LBNF for Sublime Text`_
+  Provides syntax highlighting for LBNF in Sublime Text.
+
+.. _LBNF for Sublime Text: https://github.com/Centril/sublime-lbnf-syntax
+
+
+Similar tools
+-------------
 
 bnfc-meta_
     Like BNFC for haskell but allows you to define your grammar in a .hs file
@@ -20,4 +31,3 @@ ANTLR_
 .. _ANTLR: http://www.antlr.org/
 .. _BNF for Java: http://bnf-for-java.sourceforge.net/
 .. _GF: http://www.grammaticalframework.org/
-

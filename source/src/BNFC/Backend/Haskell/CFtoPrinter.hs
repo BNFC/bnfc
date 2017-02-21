@@ -69,13 +69,13 @@ prologue byteStrings useGadt name absMod = unlines $
   "    \"}\" : \";\":ts -> new (i-1) . space \"}\" . showChar ';' . new (i-1) . rend (i-1) ts",
   "    \"}\"      :ts -> new (i-1) . showChar '}' . new (i-1) . rend (i-1) ts",
   "    \";\"      :ts -> showChar ';' . new i . rend i ts",
-  "    t  : \",\" :ts -> showString t . space \",\" . rend i ts",
-  "    t  : \")\" :ts -> showString t . showChar ')' . rend i ts",
-  "    t  : \"]\" :ts -> showString t . showChar ']' . rend i ts",
+  "    t  : ts@(p:_) | closingOrPunctuation p -> showString t . rend i ts",
   "    t        :ts -> space t . rend i ts",
   "    _            -> id",
   "  new i   = showChar '\\n' . replicateS (2*i) (showChar ' ') . dropWhile isSpace",
   "  space t = showString t . (\\s -> if null s then \"\" else ' ':s)",
+  "  closingOrPunctuation [c] = c `elem` \")],;.\"",
+  "  closingOrPunctuation _   = False",
   "",
   "parenth :: Doc -> Doc",
   "parenth ss = doc (showChar '(') . ss . doc (showChar ')')",
@@ -278,4 +278,3 @@ mkRhs args its =
   mk args       (Right s : items)    = ("doc (showString" <+> text (show s) <> ")") : mk args items
   mk _          _                    = []
   prt c = "prt" <+> integer (precCat c)
-

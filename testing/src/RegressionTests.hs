@@ -17,7 +17,7 @@ all = makeTestSuite "Regression tests"
     , issue60
     , issue108, issue110, issue111, issue114, issue113
     , issue127, issue128
-    , issue151
+    , issue151, issue159
     , issue170a, issue170b
     , issue172
     , issue186
@@ -149,6 +149,20 @@ issue151 = makeShellyTest "#151 Shouldn't print all categories in error message"
                   [ "no production for Baz, appearing in rule"
                   , "    Foo. Bar ::= Baz", "" ]
           assertEqual expectedErr err
+
+-- |Issue #172
+issue159 :: Test
+issue159 = makeShellyTest "#159 String rendering in Java does not work" $
+    withTmpDir $ \tmp -> do
+        cd tmp
+        writefile "issue.cf" $ T.unlines
+            [ "One . BugOne ::= \"the_following_is_a_quoted_string\" String;" ]
+        cmd "bnfc" "-m" "--java" "issue.cf"
+        cmd "make"
+        let input = "the_following_is_a_quoted_string \"here I am\""
+        setStdin input
+        out <- cmd "java"  "issue/Test"
+        liftIO $ assertBool "Invalid output" (input `T.isInfixOf` out)
 
 issue170a :: Test
 issue170a = makeShellyTest "#170 Module Xml cannot be compiled with GADT backend (--xml)" $

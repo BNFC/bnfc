@@ -1,3 +1,22 @@
+2.9.0 (Development version)
+	* C: Emit correct function prototypes
+	* Java: Add an experimental ANTLR4 backend
+	* C, C++, OCaml, Java: Accept ' or " as comment delimiters [#146]
+	* Improve error messages [#144]
+	* Haskell: Generated code mostly hlint-warning free
+	* bnfc is now more accepting about border-line terminals [#149]
+	* Cleaner error message on undefined categories [#151]
+	* C++: Fix regression introduced in 2.8 in Squeleton.H [#164]
+	* C++: Replace `%name-prefix` with `%define api.prefix` in bison files
+	* C++: Fix a bug that appeared if you had a category named "List"
+	* C, C++: Add usage output to the test program
+	* C, C++: Fix a bug in the parser file when using -p [#172]
+	* OCaml: Reserved symbols now have a higher precedence than predefined
+	  tokens as in Haskell
+
+2.8.1 Grégoire Détrez <gregoire.detrez@gu.se> May 2015
+	* Fix compatibility with GHC 7.10.2 and Alex 3.14
+
 2.8 Grégoire Détrez <gregoire.detrez@gu.se>  May 2015
 	* Builds with ghc 7.10.1
 	* Add support for JFlex (java)
