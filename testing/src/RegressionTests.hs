@@ -188,14 +188,15 @@ issue186 :: Test
 issue186 = makeShellyTest "#186 Rule labels have to start with uppercase char" $
   withTmpDir $ \tmp -> do
       cd tmp
-      writefile "test.cf" "cat . Bar ::= \"Foo\";"
-      errExit False $ do
-        cmd "bnfc" "test.cf"
-        code <- lastExitCode
-        err <- lastStderr
-        assertEqual 1 code
-        let expectedErr = T.unlines
-                [ "Bad constructor name cat in cat. Bar ::= \"Foo\""
-                , ""
-                ]
-        assertEqual expectedErr err
+      writefile "Foobar.cf" $ T.unlines
+        ["cat . Bar ::= \"cat\" ;"
+        ,"dog . Bar ::= \"dog\" ;"
+        ,"Cat . Bar ::= \"Cat\" ;"
+        ]
+      out <- cmd "bnfc" "Foobar.cf"
+      let expectedMessageCat = "Warning: bad constructor name cat in cat. Bar ::= \"cat\""
+          expectedMessageDog = "Warning: bad constructor name dog in dog. Bar ::= \"dog\""
+      liftIO $ assertBool
+        "Didn't print out warning for lower case constructors"
+        (expectedMessageCat `T.isInfixOf` out &&
+         expectedMessageDog `T.isInfixOf` out)

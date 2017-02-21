@@ -50,6 +50,9 @@ parseCFP opts target content = do
                     >>= getCFP (cnf opts)
                     >>= markTokenCategories
   let cf = cfp2cf cfp
+
+  checkForLowerCaseConstructors cfp
+
   runErr $ checkDefinitions cf
   let msgs3 = checkTokens cf
 
@@ -418,7 +421,7 @@ checkRule cf (Rule (f,_) cat rhs)
    isBadType (Cat s) = isBadCatName s
    isBadType (TokenCat s) = isBadCatName s
    isBadCatName s = not (isUpper (head s) || s == show InternalCat || (head s == '@'))
-   badFunName = not (all (\c -> isAlphaNum c || c == '_') f && isUpper (head f)
+   badFunName = not (all (\c -> isAlphaNum c || c == '_') f -- && isUpper (head f)
                        || isCoercion f || isNilCons f)
 
 
@@ -476,3 +479,24 @@ expandRules (Abs.Grammar defs) =
         modify ((cat, i):)
         return (cat ++ show i)
 
+-- This function prints a warning for each constructor starting with a
+-- lower case. In The future this warning might be turned into an error.
+-- See https://github.com/BNFC/bnfc/pull/188 for details.
+checkForLowerCaseConstructors :: CFP -> IO ()
+checkForLowerCaseConstructors cf =
+  mapM_ warnIfLowercase $ cfgRules cf where
+
+  warnIfLowercase :: Rul (String,a) -> IO ()
+  warnIfLowercase (Rule _ (Cat ('@':_)) _) = return ()
+  warnIfLowercase (Rule (f,_) cat rhs)
+    | badFunName     = putStrLn $ "Warning: bad constructor name" +++ f +++ "in" +++ s
+    | otherwise      = return ()
+   where
+     s  = f ++ "." +++ show cat +++ "::=" +++
+          unwords (map (either show show) rhs)
+
+     badFunName = not $
+      all (\c -> isAlphaNum c || c == '_') f &&
+      isUpper (head f) ||
+      isCoercion f ||
+      isNilCons f
