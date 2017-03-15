@@ -43,7 +43,7 @@ To install bnfc from git:
     cd bnfc/source
     cabal install
 
-To download the latest realease, see the bnfc website: http://bnfc.digitalgrammars.com/
+To download the latest release, see the bnfc website: http://bnfc.digitalgrammars.com/
 
 
 Documentation
