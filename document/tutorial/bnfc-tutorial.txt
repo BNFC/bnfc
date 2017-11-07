@@ -1133,7 +1133,7 @@ See LBNF report for more information.
 
 The position of a token can be passed to the syntax tree:
 ```
-  position token CIdent (letter | (letter | digit | '_')*) ;
+  position token CIdent (letter (letter | digit | '_')*) ;
 ```
 See LBNF report for more information.
 
