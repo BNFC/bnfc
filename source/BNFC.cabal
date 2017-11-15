@@ -22,11 +22,11 @@ Description:
   a Happy, CUP, or Bison parser generator file,
   a pretty-printer as a Haskell/Java/C++/C module,
   a Latex file containing a readable specification of the language.
-tested-with:        GHC == 7.6.3
-                    GHC == 7.8,4
-                    GHC == 7.10.3
-                    GHC == 8.0.2
-                    GHC == 8.2.1
+tested-with: GHC == 7.6.3
+           , GHC == 7.8.4
+           , GHC == 7.10.3
+           , GHC == 8.0.2
+           , GHC == 8.2.1
 Extra-source-files: src/BNF.cf TODO changelog Makefile
 
 Source-repository head
