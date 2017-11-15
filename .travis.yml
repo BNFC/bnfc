@@ -2,7 +2,7 @@ language: haskell
 ghc:
   - 7.6
   - 7.8
-  - 7.10
+  - 7.10.3
   - 8.0
   - 8.2
 script:
@@ -13,6 +13,6 @@ before_install:
   - sudo apt-get install jlex cup openjdk-6-jdk
   - sudo apt-get install g++
   - sudo apt-get install texlive-latex-base
-  - cabal install alex happy
+  - sudo apt-get install alex happy
   - cd source
 env: CLASSPATH=".:/usr/share/java/JLex.jar:/usr/share/java/cup.jar"
