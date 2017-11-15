@@ -1,4 +1,6 @@
 language: haskell
+ghc:
+  - 7.6.3
 script:
     - cabal install
     - cabal configure --enable-tests && cabal build && cabal test
