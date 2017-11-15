@@ -22,6 +22,11 @@ Description:
   a Happy, CUP, or Bison parser generator file,
   a pretty-printer as a Haskell/Java/C++/C module,
   a Latex file containing a readable specification of the language.
+tested-with:        GHC == 7.6.3
+                    GHC == 7.8,4
+                    GHC == 7.10.3
+                    GHC == 8.0.2
+                    GHC == 8.2.1
 Extra-source-files: src/BNF.cf TODO changelog Makefile
 
 Source-repository head
@@ -31,7 +36,7 @@ Source-repository head
 
 Library
   hs-source-dirs: runtime, src
-  Build-Depends: base>=4.4 && <5, array
+  Build-Depends: base>=4.6 && <5, array
   exposed-modules:
    Algebra.RingUtils
    Data.Pair
@@ -42,7 +47,7 @@ Library
 
 Executable bnfc
   Build-Depends:
-    base>=4.4 && <5,
+    base>=4.6 && <5,
     mtl,
     directory,
     array,
@@ -51,8 +56,6 @@ Executable bnfc
     pretty >=1.1 && <1.2,
     filepath,
     deepseq
-  if  impl(ghc < 7.6.1)
-    Build-depends: ghc-prim
   build-tools:         alex, happy
   Main-is: Main.hs
   HS-source-dirs: src/
