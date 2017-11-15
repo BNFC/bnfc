@@ -19,10 +19,10 @@ spec = do
 
   describe "hasWarnings" $ do
 
-    it "returns true if the computation has warnings" $
+    it "returns True if the computation produces warnings" $
       hasWarnings computationWithWarnings `shouldBe` True
 
-    it "returns Fasle if the computation doesn't have any warnings" $
+    it "returns False if the computation does not produce any warnings" $
       hasWarnings (return ()) `shouldBe` False
 
   where computationWithWarnings = warn "Coucou" >> warn "Hi" >> return 3
