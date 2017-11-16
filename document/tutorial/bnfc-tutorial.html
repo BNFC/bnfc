@@ -117,7 +117,7 @@ BNFC is licensed under GPL.
 <H2>Calling BNFC</H2>
 
 <P>
-When you have BNFC in place (i.e. on your path), you can all it by
+When you have BNFC in place (i.e. on your path), you can call it via
 </P>
 
 <PRE>
@@ -361,7 +361,7 @@ can try out in the following way:
 </P>
 
 <PRE>
-    echo "23 + 4 * 70" | ./testCalc
+    echo "23 + 4 * 70" | ./TestCalc
   
     Parse Successful!
     [Abstract Syntax]
@@ -391,7 +391,7 @@ program always results in <CODE>error: parse error</CODE>, check the version wit
 <!-- NEW -->
 </P>
 
-<H2>What there is in a BNFC file</H2>
+<H2>Content of a BNFC file</H2>
 
 <P>
 A BNFC source file is a sequence of <B>rules</B>, where most rules have the
@@ -410,20 +410,18 @@ The <CODE>PRODUCTION</CODE> is a sequence of
 </P>
 
 <UL>
-<LI>identifiers, called <B>nonterminals</B>
-<LI><B>string literals</B> (with quotes), called <B>terminals</B>
+<LI>identifiers, called <B>nonterminals</B>, and/or
+<LI><B>string literals</B> (with quotes), called <B>terminals</B>.
 </UL>
 
 <P>
 The rule has the following semantics:
 </P>
-
-<UL>
-<LI>a <B>tree</B> of type <CODE>VALUE_CATEGORY</CODE> can be built with <CODE>LABEL</CODE> as the
-  topmost node, from any sequence specified by the production, so that
-  whose nonterminals give the subtrees of this new tree
-</UL>
-
+	<BLOCKQUOTE>
+	A <B>tree</B> of type <CODE>VALUE_CATEGORY</CODE> can be built with <CODE>LABEL</CODE> as the
+	topmost node, from any sequence specified by the production,
+	whose nonterminals give the subtrees of this new tree.
+	</BLOCKQUOTE>
 <P>
 Types of trees are the <B>categories</B> of the grammar. Tree labels are
 the <B>constructors</B> of those categories.
@@ -439,9 +437,9 @@ All categories and constructors should
 </P>
 
 <UL>
-<LI>begin with a capital letter
-<LI>contain only ASCII letters, digits, and underscores (<CODE>_</CODE>)
-<LI>be distinct from each other
+<LI>begin with a capital letter,
+<LI>contain only ASCII letters, digits, and underscores (<CODE>_</CODE>), and
+<LI>be distinct from each other.
 </UL>
 
 <P>
@@ -537,7 +535,7 @@ An expression of higher level can always be used on lower levels as well.
 </P>
 
 <UL>
-<LI><CODE>2 + 3</CODE> is OK: level 2 is used on levels 0 and 1, respectively
+<LI><CODE>2 + 3</CODE> is fine: level 2 (<CODE>EInt</CODE>) is used on levels 0 and 1, respectively.
 </UL>
 
 <P>
@@ -546,7 +544,7 @@ it in parentheses.
 </P>
 
 <UL>
-<LI><CODE>(5 + 6)</CODE> is an expression of level 2
+<LI><CODE>(5 + 6)</CODE> is an expression of level 2.
 </UL>
 
 <P>
@@ -616,8 +614,8 @@ The <B>compiler back end</B> can either
 </P>
 
 <UL>
-<LI>generate some target code (compiler)
-<LI>run the source code tree directly (interpreter)
+<LI>generate some target code (compiler), or
+<LI>run the source code tree directly (interpreter).
 </UL>
 
 <P>
@@ -631,8 +629,8 @@ The hub of a modern compiler:
 </P>
 
 <UL>
-<LI>target of the front end
-<LI>starting point of the back end
+<LI>target of the front end, and
+<LI>starting point of the back end.
 </UL>
 
 <P>
@@ -723,7 +721,7 @@ We write a module reading string input calling <CODE>Interpreter.interpret</CODE
 </P>
 <P>
 The string is first lexed and parsed. The file
-<A HREF="calc/haskell/Interpret.hs"><CODE>Interpret.hs</CODE></A>.
+<A HREF="calc/haskell/Interpret.hs"><CODE>Interpret.hs</CODE></A>
 is modified from
 <A HREF="calc/haskell/TestCalc.hs"><CODE>TestCalc.hs</CODE></A>.
 </P>
@@ -1523,14 +1521,19 @@ See LBNF report for more information.
 <H2>Common problems</H2>
 
 <P>
-Java: CLASSPATH, should contain <CODE>.</CODE>, Cup directory, JLex directory
+Java: CLASSPATH, should contain:
 </P>
-<P>
-C and C++: Bison version, should be 1.875
-</P>
-<P>
+
+<UL>
+<LI>the current directory <CODE>.</CODE>
+<LI>Cup directory
+<LI>JLex directory
+<P></P>
+C and C++: Bison version, should be 1.875.
+<P></P>
 All grammars: conflicts. Use parser diagnosis tools to find and solve them!
-</P>
+</UL>
+
 <P>
 <!-- NEW -->
 </P>

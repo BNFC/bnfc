@@ -82,7 +82,7 @@ BNFC is licensed under GPL.
 
 ==Calling BNFC==
 
-When you have BNFC in place (i.e. on your path), you can all it by
+When you have BNFC in place (i.e. on your path), you can call it via
 ```
   bnfc
 ```
@@ -246,7 +246,7 @@ Assuming you want to work in C or C++, do the following:
 If everything goes fine, this will create a parser test executable, which you
 can try out in the following way:
 ```
-  echo "23 + 4 * 70" | ./testCalc
+  echo "23 + 4 * 70" | ./TestCalc
 
   Parse Successful!
   [Abstract Syntax]
@@ -272,7 +272,7 @@ program always results in ``error: parse error``, check the version with
 
 #NEW
 
-==What there is in a BNFC file==
+==Content of a BNFC file==
 
 A BNFC source file is a sequence of **rules**, where most rules have the
 format
@@ -282,14 +282,15 @@ format
 The ``LABEL`` and ``VALUE_CATEGORY`` are **identifiers** (without quotes).
 
 The ``PRODUCTION`` is a sequence of
-- identifiers, called **nonterminals**
-- **string literals** (with quotes), called **terminals**
+- identifiers, called **nonterminals**, and/or
+- **string literals** (with quotes), called **terminals**.
 
 
 The rule has the following semantics:
-- a **tree** of type ``VALUE_CATEGORY`` can be built with ``LABEL`` as the
-  topmost node, from any sequence specified by the production, so that
-  whose nonterminals give the subtrees of this new tree
+
+	A **tree** of type ``VALUE_CATEGORY`` can be built with ``LABEL`` as the
+	topmost node, from any sequence specified by the production,
+	whose nonterminals give the subtrees of this new tree.
 
 
 Types of trees are the **categories** of the grammar. Tree labels are
@@ -301,9 +302,9 @@ the **constructors** of those categories.
 ==Common problems with identifiers==
 
 All categories and constructors should
-- begin with a capital letter
-- contain only ASCII letters, digits, and underscores (``_``)
-- be distinct from each other
+- begin with a capital letter,
+- contain only ASCII letters, digits, and underscores (``_``), and
+- be distinct from each other.
 
 
 These three conditions guarantee that the grammar
@@ -365,12 +366,12 @@ on the left of ``*`` and of level 2 on the right.
 ==Semantics of precedence levels==
 
 An expression of higher level can always be used on lower levels as well.
-- ``2 + 3`` is OK: level 2 is used on levels 0 and 1, respectively
+- ``2 + 3`` is fine: level 2 (``EInt``) is used on levels 0 and 1, respectively.
 
 
 An expression of any level can be lifted to the highest level by putting
 it in parentheses.
-- ``(5 + 6)`` is an expression of level 2
+- ``(5 + 6)`` is an expression of level 2.
 
 
 The rule ``coercions Exp 2`` says that 2 is the highest level for ``Exp``.
@@ -417,8 +418,8 @@ BNFC generates the following components:
 The first three belong to a **compiler front end**, analysing the source code.
 
 The **compiler back end** can either
-- generate some target code (compiler)
-- run the source code tree directly (interpreter)
+- generate some target code (compiler), or
+- run the source code tree directly (interpreter).
 
 
 
@@ -427,8 +428,8 @@ The **compiler back end** can either
 ==Abstract syntax==
 
 The hub of a modern compiler:
-- target of the front end
-- starting point of the back end
+- target of the front end, and
+- starting point of the back end.
 
 
 In the middle of the front end and back end, there is manipulation of
@@ -499,7 +500,7 @@ The complete code is in the file
 We write a module reading string input calling ``Interpreter.interpret``.
 
 The string is first lexed and parsed. The file
-[``Interpret.hs`` calc/haskell/Interpret.hs].
+[``Interpret.hs`` calc/haskell/Interpret.hs]
 is modified from
 [``TestCalc.hs`` calc/haskell/TestCalc.hs].
 ```
@@ -1139,9 +1140,12 @@ See LBNF report for more information.
 
 ==Common problems==
 
-Java: CLASSPATH, should contain ``.``, Cup directory, JLex directory
+Java: CLASSPATH, should contain:
+- the current directory ``.``
+- Cup directory
+- JLex directory
 
-C and C++: Bison version, should be 1.875
+C and C++: Bison version, should be 1.875.
 
 All grammars: conflicts. Use parser diagnosis tools to find and solve them!
 
