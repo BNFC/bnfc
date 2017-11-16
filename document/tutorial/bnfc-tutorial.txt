@@ -1122,7 +1122,7 @@ Precise definitions are given in the LBNF report.
 A grammar can define new token types by using regular expressions.
 Here is an example of the format:
 ```
-  token CIdent (letter | (letter | digit | '_')*) ;
+  token CIdent (letter (letter | digit | '_')*) ;
 ```
 See LBNF report for more information.
 

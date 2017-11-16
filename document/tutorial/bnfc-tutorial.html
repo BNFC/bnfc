@@ -1501,7 +1501,7 @@ Here is an example of the format:
 </P>
 
 <PRE>
-    token CIdent (letter | (letter | digit | '_')*) ;
+    token CIdent (letter (letter | digit | '_')*) ;
 </PRE>
 
 <P>
@@ -1518,7 +1518,7 @@ The position of a token can be passed to the syntax tree:
 </P>
 
 <PRE>
-    position token CIdent (letter | (letter | digit | '_')*) ;
+    position token CIdent (letter (letter | digit | '_')*) ;
 </PRE>
 
 <P>
