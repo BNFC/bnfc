@@ -1,18 +1,20 @@
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
 <HTML>
 <HEAD>
-<META NAME="generator" CONTENT="http://txt2tags.sf.net">
+<META NAME="generator" CONTENT="http://txt2tags.org">
 <TITLE>BNF Converter Tutorial</TITLE>
 </HEAD><BODY BGCOLOR="white" TEXT="black">
-<P ALIGN="center"><CENTER><H1>BNF Converter Tutorial</H1>
-<FONT SIZE="4">
-<I>Aarne Ranta</I><BR>
-</FONT></CENTER>
+<CENTER>
+<H1>BNF Converter Tutorial</H1>
+<FONT SIZE="4"><I>Aarne Ranta</I></FONT><BR>
+</CENTER>
 
 <P>
 <!-- NEW -->
 </P>
+
 <H2>BNFC = BNF Converter</H2>
+
 <P>
 BNF = Backus-Naur Form (also known as Context-Free Grammars).
 </P>
@@ -37,10 +39,13 @@ BNFC can be used for projects carried out in C, C++, C#, F#, Haskell, Java, OCam
 <P>
 <!-- NEW -->
 </P>
+
 <H2>What BNFC can be used for</H2>
+
 <P>
 Strongest case: when designing and implementing a new programming language
 </P>
+
 <UL>
 <LI>rapid development
 <LI>guaranteed consistency of components
@@ -51,6 +56,7 @@ Strongest case: when designing and implementing a new programming language
 <P>
 BNFC also scales up to legacy programming languages
 </P>
+
 <UL>
 <LI>Ansi C and Java have been implemented
 <LI>but some languages have rough corners (e.g. Haskell)
@@ -59,14 +65,17 @@ BNFC also scales up to legacy programming languages
 <P>
 <!-- NEW -->
 </P>
+
 <H2>How to obtain BNFC</H2>
+
 <P>
-BNFC homepage: 
+BNFC homepage:
 <A HREF="http://digitalgrammars.com/bnfc/"><CODE>digitalgrammars.com/bnfc/</CODE></A>
 </P>
 <P>
 You can obtain
 </P>
+
 <UL>
 <LI>a Windows binary
 <LI>a Linux (i386) binary
@@ -85,9 +94,11 @@ can find executables (such as <CODE>/usr/local/bin</CODE> on Unix-like platforms
 <P>
 <!-- NEW -->
 </P>
+
 <H2>Working with BNFC sources</H2>
+
 <P>
-If you choose the source package, you need the 
+If you choose the source package, you need the
 <A HREF="http://www.haskell.org/ghc/">GHC Haskell Compiler</A>. With GHC in place,
 just unpack the sources, <CODE>cd</CODE> to <CODE>BNFC</CODE>, and type <CODE>make</CODE>.
 </P>
@@ -95,11 +106,13 @@ just unpack the sources, <CODE>cd</CODE> to <CODE>BNFC</CODE>, and type <CODE>ma
 If you want to contribute to BNFC (12 persons have!), make sure you use the
 latest Darcs version: give the command
 </P>
+
 <PRE>
     darcs get --partial http://www.cs.chalmers.se/Cs/Research/Language-technology/darcs/BNFC/
 </PRE>
+
 <P>
-This requires the version control system 
+This requires the version control system
 <A HREF="http://darcs.net">Darcs</A>. Contributions can be sent in email as darcs patches.
 </P>
 <P>
@@ -108,38 +121,48 @@ BNFC is licensed under GPL.
 <P>
 <!-- NEW -->
 </P>
+
 <H2>Calling BNFC</H2>
+
 <P>
 When you have BNFC in place (i.e. on your path), you can all it by
 </P>
+
 <PRE>
     bnfc
 </PRE>
+
 <P>
 This gives you a list of available options. The most common choices are:
 </P>
+
 <PRE>
     bnfc -m -c       FILE.cf      # to generate C
     bnfc -m -cpp_stl FILE.cf      # to generate C++ with STL
     bnfc -m -java1.5 FILE.cf      # to generate Java 1.5
     bnfc -m -haskell FILE.cf      # to generate Haskell
 </PRE>
+
 <P>
 The <CODE>-m</CODE> flag makes BNFC to generate a <CODE>Makefile</CODE>. This means
 that, after running <CODE>bnfc</CODE>, you can create an executable parser by
 </P>
+
 <PRE>
     make
 </PRE>
+
 <P>
 Let us now create our first application from a BNFC source file.
 </P>
 <P>
 <!-- NEW -->
 </P>
+
 <H2>My first compiler: calculator</H2>
+
 <P>
-We start with everyone's favourite: the desktop calculator. 
+We start with everyone's favourite: the desktop calculator.
 </P>
 <P>
 To make it the simplest possible, we restrict ourselves to integers, with
@@ -148,6 +171,7 @@ addition, subtraction, multiplication, and (lossy) division.
 <P>
 The input language is defined with the following BNFC grammar.
 </P>
+
 <PRE>
     EAdd. Exp  ::= Exp  "+" Exp1 ;
     ESub. Exp  ::= Exp  "-" Exp1 ;
@@ -157,6 +181,7 @@ The input language is defined with the following BNFC grammar.
   
     coercions Exp 2 ;
 </PRE>
+
 <P>
 Copy this code into a file called <CODE>Calc.cf</CODE>.
 </P>
@@ -166,42 +191,51 @@ We return to the details of the notation after trying this out in BNFC.
 <P>
 <!-- NEW -->
 </P>
+
 <H2>Compiling the compiler in Java</H2>
+
 <P>
 If you want to work in Haskell, C, or C++, skip a few sections now.
 </P>
 <P>
 Assuming you want to work in Java, do the following:
 </P>
+
 <PRE>
     bnfc -m -java1.5 Calc.cf
     make
 </PRE>
+
 <P>
 If everything goes fine, this will create a parser test class, which you
 can try out in the following way:
 </P>
+
 <PRE>
-    echo "23 + 4 * 70" | java Calc/Test 
+    echo "23 + 4 * 70" | java Calc/Test
   
     Parse Succesful!
     [Abstract Syntax]
-    (EAdd (EInt 23) (EMul (EInt 4) (EInt 70))) 
+    (EAdd (EInt 23) (EMul (EInt 4) (EInt 70)))
     [Linearized Tree]
     23 + 4 * 70
 </PRE>
+
 <P>
 However, this will probably not work at first time: you will have to
-install some more software and set a classpath. 
+install some more software and set a classpath.
 </P>
 <P>
 <!-- NEW -->
 </P>
+
 <H2>Putting parser and lexer tools for Java in place</H2>
+
 <P>
 When you called BNFC, you saw it generate lots of files. Most of them were
 <CODE>.java</CODE> files, but there were two special ones:
 </P>
+
 <UL>
 <LI><CODE>Calc/Yylex</CODE>: lexer specification file in the JLex format
 <LI><CODE>Calc/Calc.cup</CODE>: parser specification file in the Cup format
@@ -210,17 +244,18 @@ When you called BNFC, you saw it generate lots of files. Most of them were
 <P>
 You will need to download and install both of the required tools:
 </P>
+
 <UL>
 <LI><A HREF="http://www.cs.princeton.edu/~appel/modern/java/CUP/">Cup</A>, version 0.10k
 <LI><A HREF="http://www.cs.princeton.edu/~appel/modern/java/JLex/">JLex</A>, version 1.2.6
 </UL>
 
 <P>
-It is safest to take the named versions, 
+It is safest to take the named versions,
 even if there were newer ones available.
 </P>
 <P>
-In addition to these, you of course need the Java compiler and runtime 
+In addition to these, you of course need the Java compiler and runtime
 environment available from <A HREF="http://java.sun.com">Sun</A>.
 </P>
 <P>
@@ -228,60 +263,72 @@ Cup comes as a package of java and class files. Just unpack it in some
 directory, e.g. <CODE>/usr/local/java/Cup</CODE>.
 </P>
 <P>
-JLex is just one Java file. Put it in some directory, 
+JLex is just one Java file. Put it in some directory,
 e.g. <CODE>/usr/local/java/JLex</CODE>. Compile it with <CODE>javac Main.java</CODE> in that
 directory.
 </P>
 <P>
 <!-- NEW -->
 </P>
+
 <H2>Setting the Java class path</H2>
+
 <P>
 After installing Cup and JLex, compiling with
 </P>
+
 <PRE>
     bnfc -m -java1.5 Calc.cf
     make
 </PRE>
+
 <P>
-will probably still fail, with a message saying that a class was not found. 
+will probably still fail, with a message saying that a class was not found.
 Fix this by
 </P>
+
 <PRE>
     export CLASSPATH=.:/usr/local/java/Cup:/usr/local/java
 </PRE>
+
 <P>
 provided you put Cup and JLex in places as specified above. Notice also the
 inclusion of the current working directory (<CODE>.</CODE>).
 </P>
 <P>
-If <CODE>export</CODE> doesn't work: in some Unix shells, 
+If <CODE>export</CODE> doesn't work: in some Unix shells,
 the <CODE>CLASSPATH</CODE> variable is set with the command
 </P>
+
 <PRE>
     setenv CLASSPATH .:/usr/local/java/Cup:/usr/local/java
 </PRE>
-<P></P>
+
 <P>
 <I>Now</I> you will hopefully be able to compile and run the compiler.
 </P>
 <P>
 <!-- NEW -->
 </P>
+
 <H2>Compiling the compiler in Haskell</H2>
+
 <P>
 Assuming you want to work in Haskell, do the following:
 </P>
+
 <PRE>
     bnfc -m -haskell Calc.cf
     make
 </PRE>
+
 <P>
 If everything goes fine, this will create a parser test executable, which you
 can try out in the following way:
 </P>
+
 <PRE>
-    echo "23 + 4 * 70" | ./TestCalc 
+    echo "23 + 4 * 70" | ./TestCalc
   
     Parse Successful!
     [Abstract Syntax]
@@ -289,9 +336,11 @@ can try out in the following way:
     [Linearized tree]
     23 + 4 * 70
 </PRE>
+
 <P>
 The tools that you need to have installed are
 </P>
+
 <UL>
 <LI><A HREF="http://www.haskell.org/ghc/">GHC</A>, the Glasgow Haskell compiler
 <LI><A HREF="http://www.haskell.org/alex/">Alex</A>, a lexer generator for Haskell
@@ -301,21 +350,26 @@ The tools that you need to have installed are
 <P>
 <!-- NEW -->
 </P>
+
 <H2>Compiling the compiler in C and C++</H2>
+
 <P>
 Assuming you want to work in C or C++, do the following:
 </P>
+
 <PRE>
     bnfc -m -c Calc.cf           # in C
     bnfc -m -cpp_stl Calc.cf     # in C++
     make
 </PRE>
+
 <P>
 If everything goes fine, this will create a parser test executable, which you
 can try out in the following way:
 </P>
+
 <PRE>
-    echo "23 + 4 * 70" | ./testCalc 
+    echo "23 + 4 * 70" | ./testCalc
   
     Parse Successful!
     [Abstract Syntax]
@@ -323,12 +377,14 @@ can try out in the following way:
     [Linearized tree]
     23 + 4 * 70
 </PRE>
+
 <P>
 The tools that you need to have installed are
 </P>
+
 <UL>
 <LI><A HREF="http://gcc.gnu.org/">GCC</A> compiler for C and C++
-<LI><A HREF="http://www.gnu.org/software/bison/">Bison</A> parser generator for C and C++, 
+<LI><A HREF="http://www.gnu.org/software/bison/">Bison</A> parser generator for C and C++,
   version 1.875
 <LI><A HREF="http://www.gnu.org/software/flex/">Flex</A> lexer generator for C and C++,
   version 2.5.4
@@ -342,28 +398,34 @@ program always results in <CODE>error: parse error</CODE>, check the version wit
 <P>
 <!-- NEW -->
 </P>
+
 <H2>What there is in a BNFC file</H2>
+
 <P>
 A BNFC source file is a sequence of <B>rules</B>, where most rules have the
 format
 </P>
+
 <PRE>
     LABEL . VALUE_CATEGORY ::= PRODUCTION ;
 </PRE>
+
 <P>
 The <CODE>LABEL</CODE> and <CODE>VALUE_CATEGORY</CODE> are <B>identifiers</B> (without quotes).
 </P>
 <P>
-The <CODE>PRODUCTION</CODE> is a sequence of 
+The <CODE>PRODUCTION</CODE> is a sequence of
 </P>
+
 <UL>
-<LI>identifiers, called <B>nonterminals</B> 
+<LI>identifiers, called <B>nonterminals</B>
 <LI><B>string literals</B> (with quotes), called <B>terminals</B>
 </UL>
 
 <P>
 The rule has the following semantics:
 </P>
+
 <UL>
 <LI>a <B>tree</B> of type <CODE>VALUE_CATEGORY</CODE> can be built with <CODE>LABEL</CODE> as the
   topmost node, from any sequence specified by the production, so that
@@ -377,10 +439,13 @@ the <B>constructors</B> of those categories.
 <P>
 <!-- NEW -->
 </P>
+
 <H2>Common problems with identifiers</H2>
+
 <P>
 All categories and constructors should
 </P>
+
 <UL>
 <LI>begin with a capital letter
 <LI>contain only ASCII letters, digits, and underscores (<CODE>_</CODE>)
@@ -388,25 +453,31 @@ All categories and constructors should
 </UL>
 
 <P>
-These three conditions guarantee that the grammar 
+These three conditions guarantee that the grammar
 will work on <I>all</I> platforms.
 </P>
 <P>
 <!-- NEW -->
 </P>
+
 <H2>Example of a tree</H2>
+
 <P>
 In the examples above, the string
 </P>
+
 <PRE>
     23 + 4 * 70
 </PRE>
+
 <P>
 was compiled into a tree displayed as follows:
 </P>
+
 <PRE>
     EAdd (EInt 23) (EMul (EInt 4) (EInt 70))
 </PRE>
+
 <P>
 This is just a handy (machine-readable!) notation for the "real" tree
 </P>
@@ -420,13 +491,17 @@ use for specifying trees.)
 <P>
 <!-- NEW -->
 </P>
+
 <H2>Precedence levels</H2>
+
 <P>
 How does BNFC know that addition is above multiplication? I.e., why isn't the tree
 </P>
+
 <PRE>
     EMul (EAdd (EInt 23) (EInt 4)) (EInt 70)
 </PRE>
+
 <P>
 This is due to the fact that multiplication expressions are given
 <B>higher precedence</B>.
@@ -438,9 +513,11 @@ The nonterminal <CODE>Exp</CODE> has <B>precedence level</B> 0 (actually, we cou
 <P>
 The rule
 </P>
+
 <PRE>
     EAdd. Exp  ::= Exp  "+" Exp1 ;
 </PRE>
+
 <P>
 says: <CODE>EAdd</CODE> forms an expression of level 0 from an expression of level 0
 on the left of <CODE>+</CODE> and of level 1 on the right.
@@ -448,9 +525,11 @@ on the left of <CODE>+</CODE> and of level 1 on the right.
 <P>
 Likewise, the rule
 </P>
+
 <PRE>
     EMul. Exp1 ::= Exp1 "*" Exp2 ;
 </PRE>
+
 <P>
 says: <CODE>EMul</CODE> form an expression of level 1 from an expression of level 1
 on the left of <CODE>*</CODE> and of level 2 on the right.
@@ -458,10 +537,13 @@ on the left of <CODE>*</CODE> and of level 2 on the right.
 <P>
 <!-- NEW -->
 </P>
+
 <H2>Semantics of precedence levels</H2>
+
 <P>
 An expression of higher level can always be used on lower levels as well.
 </P>
+
 <UL>
 <LI><CODE>2 + 3</CODE> is OK: level 2 is used on levels 0 and 1, respectively
 </UL>
@@ -470,6 +552,7 @@ An expression of higher level can always be used on lower levels as well.
 An expression of any level can be lifted to the highest level by putting
 it in parentheses.
 </P>
+
 <UL>
 <LI><CODE>(5 + 6)</CODE> is an expression of level 2
 </UL>
@@ -480,6 +563,7 @@ The rule <CODE>coercions Exp 2</CODE> says that 2 is the highest level for <CODE
 <P>
 All precedence variants of a nonterminal denote the same type.
 </P>
+
 <UL>
 <LI><CODE>2</CODE>, <CODE>2 + 2</CODE>, and <CODE>2 * 2</CODE> are of the same type, <CODE>Exp</CODE>.
 </UL>
@@ -491,30 +575,38 @@ of category <CODE>Exp</CODE><I>i</I> is changed into a subtree of <CODE>Exp</COD
 <P>
 <!-- NEW -->
 </P>
+
 <H2>The deeper semantics of precedence levels: dummy labels</H2>
+
 <P>
 BNFC permits a <B>dummy label</B>, which does not construct a new tree but
 just returns the old one (which must be of same type):
 </P>
+
 <PRE>
     _. Exp2 ::= "(" Exp ")" ;
 </PRE>
+
 <P>
 The rule (<CODE>coercions Exp 2</CODE>) is a shorthand for a group of dummy rules:
 </P>
+
 <PRE>
     _. Exp  ::= Exp1 ;
     _. Exp1 ::= Exp2 ;
     _. Exp2 ::= "(" Exp ")" ;
 </PRE>
-<P></P>
+
 <P>
 <!-- NEW -->
 </P>
+
 <H2>Compiler components</H2>
+
 <P>
 BNFC generates the following components:
 </P>
+
 <UL>
 <LI>lexer: the JLex/Alex/Flex file
 <LI>parser: the Cup/Happy/Bison file
@@ -530,6 +622,7 @@ The first three belong to a <B>compiler front end</B>, analysing the source code
 <P>
 The <B>compiler back end</B> can either
 </P>
+
 <UL>
 <LI>generate some target code (compiler)
 <LI>run the source code tree directly (interpreter)
@@ -538,10 +631,13 @@ The <B>compiler back end</B> can either
 <P>
 <!-- NEW -->
 </P>
+
 <H2>Abstract syntax</H2>
+
 <P>
-The hub of a modern compiler: 
+The hub of a modern compiler:
 </P>
+
 <UL>
 <LI>target of the front end
 <LI>starting point of the back end
@@ -554,6 +650,7 @@ abstract syntax, such as type checking and optimizations.
 <P>
 Abstract syntax representations in programming languages (as generated by BNFC):
 </P>
+
 <UL>
 <LI>Haskell: algebraic datatypes
 <LI>Java and C++: classes and subclasses
@@ -563,13 +660,16 @@ Abstract syntax representations in programming languages (as generated by BNFC):
 <P>
 <!-- NEW -->
 </P>
+
 <H2>Abstract syntax in Haskell</H2>
+
 <P>
 This is the most straightforward, so we start from it.
 </P>
 <P>
 For every type in the grammar, a <CODE>data</CODE> definition is produced:
 </P>
+
 <PRE>
     data Exp =
        EAdd Exp Exp
@@ -579,6 +679,7 @@ For every type in the grammar, a <CODE>data</CODE> definition is produced:
      | EInt Integer
       deriving (Eq,Ord,Show)
 </PRE>
+
 <P>
 The <CODE>deriving</CODE> part says that the type <CODE>Exp</CODE> has equality and order
 predicates, and its objects can be shown as strings.
@@ -590,14 +691,17 @@ The complete code is in the file
 <P>
 <!-- NEW -->
 </P>
+
 <H2>An interpreter in Haskell: the tree traversal</H2>
+
 <P>
-We write a program that parses an arithmetic expression and returns a 
+We write a program that parses an arithmetic expression and returns a
 numeric value.
 </P>
 <P>
 Here is the tree traversal: pattern matching on the type <CODE>Exp</CODE>.
 </P>
+
 <PRE>
     module Interpreter where
   
@@ -611,6 +715,7 @@ Here is the tree traversal: pattern matching on the type <CODE>Exp</CODE>.
       EDiv exp0 exp  -&gt; interpret exp0 `div` interpret exp
       EInt n  -&gt; n
 </PRE>
+
 <P>
 The complete code is in the file
 <A HREF="calc/haskell/Interpreter.hs"><CODE>Interpreter.hs</CODE></A>.
@@ -618,16 +723,19 @@ The complete code is in the file
 <P>
 <!-- NEW -->
 </P>
+
 <H2>An interpreter in Haskell: the main function</H2>
+
 <P>
 We write a module reading string input calling <CODE>Interpreter.interpret</CODE>.
 </P>
 <P>
-The string is first lexed and parsed. The file 
+The string is first lexed and parsed. The file
 <A HREF="calc/haskell/Interpret.hs"><CODE>Interpret.hs</CODE></A>.
-is modified from 
+is modified from
 <A HREF="calc/haskell/TestCalc.hs"><CODE>TestCalc.hs</CODE></A>.
 </P>
+
 <PRE>
     module Main where
   
@@ -642,24 +750,27 @@ is modified from
       interact calc
       putStrLn ""
   
-    calc s = 
-      let Ok e = pExp (myLexer s) 
+    calc s =
+      let Ok e = pExp (myLexer s)
       in show (interpret e)
 </PRE>
-<P></P>
+
 <P>
 <!-- NEW -->
 </P>
+
 <H2>Skeleton for tree processing in Haskell</H2>
+
 <P>
 Recursive functions making case analysis on trees is used in almost all
 components of the compiler.
 </P>
 <P>
 BNFC gives a template for this, the <B>skeleton</B> file
-<A HREF="calc/haskell/SkelCalc.hs"><CODE>SkelCalc.hs</CODE></A>, 
+<A HREF="calc/haskell/SkelCalc.hs"><CODE>SkelCalc.hs</CODE></A>,
 with a dummy tree processing function:
 </P>
+
 <PRE>
     transExp :: Exp -&gt; Result
     transExp x = case x of
@@ -674,38 +785,48 @@ with a dummy tree processing function:
     failure :: Show a =&gt; a -&gt; Result
     failure x = Bad $ "Undefined case: " ++ show x
 </PRE>
-<P></P>
+
 <P>
 <!-- NEW -->
 </P>
+
 <H2>Compiling and running the interpreter in Haskell</H2>
+
 <P>
 Compile with GHC:
 </P>
+
 <PRE>
     ghc --make Interpret.hs
 </PRE>
+
 <P>
 Run on command-line input:
 </P>
+
 <PRE>
-    echo "1 + 2 * 3" | ./Interpret 
+    echo "1 + 2 * 3" | ./Interpret
     7
 </PRE>
+
 <P>
 Run on file input (<A HREF="calc/ex1.calc"><CODE>ex1.calc</CODE></A>):
 </P>
+
 <PRE>
     ./Interpret &lt; ex1.calc
     9102
 </PRE>
+
 <P>
 Now, if you are not working in Java, C, or C++, you can take a long leap.
 </P>
 <P>
 <!-- NEW -->
 </P>
+
 <H2>Abstract syntax in Java</H2>
+
 <P>
 For each category in the grammar, an abstract base class is generated.
 </P>
@@ -713,9 +834,10 @@ For each category in the grammar, an abstract base class is generated.
 For each constructor of the category, a class extending the base class.
 </P>
 <P>
-This means quite a few files, put into the subdirectory 
+This means quite a few files, put into the subdirectory
 <A HREF="calc/java/Calc/Absyn/"><CODE>Calc/Absyn/</CODE></A>:
 </P>
+
 <PRE>
     Calc/Absyn/EAdd.java
     Calc/Absyn/EDiv.java
@@ -724,11 +846,13 @@ This means quite a few files, put into the subdirectory
     Calc/Absyn/ESub.java
     Calc/Absyn/Exp.java
 </PRE>
-<P></P>
+
 <P>
 <!-- NEW -->
 </P>
+
 <H2>Inside the abstract syntax Java classes</H2>
+
 <PRE>
     public abstract class Exp implements java.io.Serializable {
   
@@ -749,11 +873,13 @@ This means quite a few files, put into the subdirectory
       public EInt(Integer p1) { integer_ = p1; }
     }
 </PRE>
-<P></P>
+
 <P>
 <!-- NEW -->
 </P>
+
 <H2>Tree processing in Java: the Visitor</H2>
+
 <P>
 For each category in the grammar, a Visitor interface and
 an abstract accept method are generated.
@@ -762,6 +888,7 @@ an abstract accept method are generated.
 For each constructor of the category, an accept method overriding the
 abstract accept.
 </P>
+
 <PRE>
     public abstract class Exp implements java.io.Serializable {
       public abstract &lt;R,A&gt; R accept(Exp.Visitor&lt;R,A&gt; v, A arg);
@@ -778,23 +905,26 @@ abstract accept.
       public final Exp exp_1, exp_2;
       public EAdd(Exp p1, Exp p2) { exp_1 = p1; exp_2 = p2; }
   
-      public &lt;R,A&gt; R accept(Calc.Absyn.Exp.Visitor&lt;R,A&gt; v, A arg) 
-      { 
-        return v.visit(this, arg); 
+      public &lt;R,A&gt; R accept(Calc.Absyn.Exp.Visitor&lt;R,A&gt; v, A arg)
+      {
+        return v.visit(this, arg);
       }
 </PRE>
-<P></P>
+
 <P>
 <!-- NEW -->
 </P>
+
 <H2>The meaning of the Java Visitor</H2>
+
 <P>
-<CODE>interface Exp.Visitor &lt;R,A&gt;</CODE>: collection of methods for 
+<CODE>interface Exp.Visitor &lt;R,A&gt;</CODE>: collection of methods for
 </P>
+
 <UL>
-<LI>visiting trees of type <CODE>Exp</CODE> 
+<LI>visiting trees of type <CODE>Exp</CODE>
 <LI>returning a value of type <CODE>R</CODE>
-<LI>using an extra argument of type <CODE>A</CODE> 
+<LI>using an extra argument of type <CODE>A</CODE>
 </UL>
 
 <P>
@@ -802,8 +932,9 @@ abstract accept.
 returning a value
 </P>
 <P>
-Recursive tree traversal: 
+Recursive tree traversal:
 </P>
+
 <UL>
 <LI>write a class that implements <CODE>Exp.Visitor</CODE>
 <LI>override the default <CODE>visit</CODE> methods
@@ -812,11 +943,14 @@ Recursive tree traversal:
 <P>
 <!-- NEW -->
 </P>
+
 <H2>An interpreter in Java: tree processing</H2>
+
 <P>
 The program uses the visitor skeleton as basis, with <CODE>Integer</CODE> as return type
 and <CODE>Object</CODE> as argument type (a dummy argument):
 </P>
+
 <PRE>
     private static class Calculator implements Exp.Visitor&lt;Integer,Object&gt; {
   
@@ -833,30 +967,33 @@ and <CODE>Object</CODE> as argument type (a dummy argument):
       {
         return p.integer_;
       }
-    }    
+    }
 </PRE>
-<P></P>
+
 <P>
 <!-- NEW -->
 </P>
+
 <H2>Java code around tree processing</H2>
+
 <P>
-The complete code is in the file 
+The complete code is in the file
 <A HREF="calc/java/Calc/Interpreter.java"><CODE>Interpreter.java</CODE></A>:
 </P>
+
 <PRE>
     package Calc;
     import Calc.Absyn.*;
   
     public class Interpreter {
-    
-      public static Integer interpret(Exp e) 
+  
+      public static Integer interpret(Exp e)
       {
   	Exp exp = (Exp)e ;
   	return interpretExp(exp, null) ;
       }
   
-      private static Integer interpretExp(Exp e, Object o) 
+      private static Integer interpretExp(Exp e, Object o)
       {
   	return e.accept(new Calculator(), null) ;
       }
@@ -864,19 +1001,22 @@ The complete code is in the file
       private static class Calculator implements Exp.Visitor&lt;Integer,Object&gt; {
   
       // the tree traversal: see previous section
-      }    
+      }
     }
 </PRE>
-<P></P>
+
 <P>
 <!-- NEW -->
 </P>
+
 <H2>Tree processing in Java: the skeleton</H2>
+
 <P>
 You can use the BNFC-generated file
 <A HREF="calc/java/Calc/VisitSkel.java"><CODE>Calc/VisitSkel.java</CODE></A> as a template for
 writing your own visitor applications:
 </P>
+
 <PRE>
     public class VisitSkel {
       public class ExpVisitor&lt;R,A&gt; implements Exp.Visitor&lt;R,A&gt; {
@@ -897,19 +1037,22 @@ writing your own visitor applications:
       }
     }
 </PRE>
-<P></P>
+
 <P>
 <!-- NEW -->
 </P>
+
 <H2>An interpreter in Java: main class</H2>
+
 <P>
-The program 
+The program
 <A HREF="calc/java/Calc/Interpret.java"><CODE>Interpret.java</CODE></A>
 modifies the BNFC-generated
 <A HREF="calc/java/Calc/Test.java"><CODE>Test.java</CODE></A>,
 by changing the tree output
 to a call of the interpreter:
 </P>
+
 <PRE>
     public class Interpret {
       public static void main(String args[]) throws Exception
@@ -921,38 +1064,48 @@ to a call of the interpreter:
       }
     }
 </PRE>
+
 <P>
 (We have omitted error handling.)
 </P>
 <P>
 <!-- NEW -->
 </P>
+
 <H2>Compiling and running the interpreter in Java</H2>
+
 <P>
 Compile with javac:
 </P>
+
 <PRE>
     javac Calc/Interpret.java
 </PRE>
+
 <P>
 Run on command-line input:
 </P>
+
 <PRE>
     echo "1 + 2 * 3" | java Calc/Interpret
     7
 </PRE>
+
 <P>
 Run on file input:
 </P>
+
 <PRE>
     java Calc/Interpret &lt; ex1.calc
     9102
 </PRE>
-<P></P>
+
 <P>
 <!-- NEW -->
 </P>
+
 <H2>Abstract syntax in C</H2>
+
 <P>
 Simpler than in Java but more complex than in Haskell.
 </P>
@@ -960,6 +1113,7 @@ Simpler than in Java but more complex than in Haskell.
 For every type in the grammar, a structure containing a
 tagged union of structures is created:
 </P>
+
 <PRE>
     struct Exp_ {
       enum { is_EAdd, is_ESub, is_EMul, is_EDiv, is_EInt } kind;
@@ -980,6 +1134,7 @@ tagged union of structures is created:
     Exp make_EDiv(Exp p0, Exp p1);
     Exp make_EInt(Integer p0);
 </PRE>
+
 <P>
 The complete code is in the files
 <A HREF="calc/c/Absyn.h"><CODE>Absyn.h</CODE></A> and
@@ -988,11 +1143,14 @@ The complete code is in the files
 <P>
 <!-- NEW -->
 </P>
+
 <H2>An interpreter in C: tree traversal</H2>
+
 <P>
-We modify the skeleton (next section), 
+We modify the skeleton (next section),
 changing the return type and the name of <CODE>visitExp</CODE>:
 </P>
+
 <PRE>
     int interpret(Exp _p_)
     {
@@ -1011,6 +1169,7 @@ changing the return type and the name of <CODE>visitExp</CODE>:
       }
     }
 </PRE>
+
 <P>
 The complete code is in the files
 <A HREF="calc/c/Interpreter.h"><CODE>Interpreter.h</CODE></A> and
@@ -1019,11 +1178,14 @@ The complete code is in the files
 <P>
 <!-- NEW -->
 </P>
+
 <H2>Tree processing skeleton in C</H2>
+
 <P>
 The skeleton defines <CODE>visit</CODE> functions for all categories using
 case analysis over constructor tags.
 </P>
+
 <PRE>
     void visitInteger(Integer i);
   
@@ -1046,6 +1208,7 @@ case analysis over constructor tags.
       }
     }
 </PRE>
+
 <P>
 The complete code is in the files
 <A HREF="calc/c/Skeleton.h"><CODE>Skeleton.h</CODE></A> and
@@ -1054,10 +1217,13 @@ The complete code is in the files
 <P>
 <!-- NEW -->
 </P>
+
 <H2>An interpreter in C: main function</H2>
+
 <P>
-The string is first lexed and parsed. 
+The string is first lexed and parsed.
 </P>
+
 <PRE>
     #include &lt;stdio.h&gt;
     #include &lt;stdlib.h&gt;
@@ -1079,57 +1245,68 @@ The string is first lexed and parsed.
       return 1;
     }
 </PRE>
+
 <P>
 The complete code is in the file
 <A HREF="calc/c/Interpret.c"><CODE>Interpret.c</CODE></A>,
-modified from the BNFC-generated 
+modified from the BNFC-generated
 <A HREF="calc/c/Test.c"><CODE>Test.c</CODE></A>.
 </P>
 <P>
 <!-- NEW -->
 </P>
+
 <H2>Compiling and running the interpreter in C</H2>
+
 <P>
 Compile with GCC:
 </P>
+
 <PRE>
     gcc -c Interpreter.c Interpret.c
     gcc *.o -o interpret
 </PRE>
+
 <P>
 Run on command-line input:
 </P>
+
 <PRE>
-    echo "1 + 2 * 3" | ./interpret 
+    echo "1 + 2 * 3" | ./interpret
     7
 </PRE>
+
 <P>
 Run on file input:
 </P>
+
 <PRE>
     ./interpret &lt; ex1.calc
     9102
 </PRE>
-<P></P>
+
 <P>
 <!-- NEW -->
 </P>
+
 <H2>A larger source language</H2>
+
 <P>
 We want to build a grammar of "C--", a fragment of C sufficient for
 parsing the following Fibonacci program:
 </P>
+
 <PRE>
     // a fibonacci function showing most features of the CMM language
   
-    int mx () 
+    int mx ()
     {
       return 5000000 ;
     }
   
-    int main () 
+    int main ()
     {
-      int lo ; 
+      int lo ;
       int hi ;
       lo = 1 ;
       hi = lo ;
@@ -1142,40 +1319,49 @@ parsing the following Fibonacci program:
     return 0 ;
     }
 </PRE>
-<P></P>
+
 <P>
 <!-- NEW -->
 </P>
+
 <H2>List categories</H2>
+
 <P>
-<B>Lists</B> are used everywhere in grammars. BNFC the category symbol 
+<B>Lists</B> are used everywhere in grammars. BNFC the category symbol
 <CODE>[C]</CODE> for a list of <CODE>C</CODE>s.
 </P>
 <P>
 Thus a program is a list of functions:
 </P>
+
 <PRE>
     Prog. Program ::= [Function] ;
 </PRE>
+
 <P>
 A function has a list of declarations and a list of statements:
 </P>
+
 <PRE>
     Fun. Function ::= Type Ident "(" [Decl] ")" "{" [Stm] "}" ;
 </PRE>
-<P></P>
+
 <P>
 <!-- NEW -->
 </P>
+
 <H2>Terminators and separators</H2>
+
 <P>
 Lists have <B>terminators</B> and <B>separators</B>:
 </P>
+
 <PRE>
     terminator Function "" ;
     terminator Stm "" ;
     separator Decl "," ;
 </PRE>
+
 <P>
 The empty terminator <CODE>""</CODE> means the elements are just written next to
 each other.
@@ -1183,14 +1369,17 @@ each other.
 <P>
 A list can be forced to have at least one element:
 </P>
+
 <PRE>
     separator nonempty Ident "," ;
 </PRE>
-<P></P>
+
 <P>
 <!-- NEW -->
 </P>
+
 <H2>Abstract syntax for lists</H2>
+
 <P>
 Haskell: <CODE>[C]</CODE> is translated as <CODE>[C]</CODE>
 </P>
@@ -1207,7 +1396,9 @@ of <CODE>C</CODE>.
 <P>
 <!-- NEW -->
 </P>
+
 <H2>Comments</H2>
+
 <P>
 Comments are parts of source codes that the compiler ignores.
 </P>
@@ -1217,10 +1408,12 @@ BNFC permits the definition of two kinds of comments: one-line and enclosed.
 <P>
 They are defined in the following ways for C--:
 </P>
+
 <PRE>
     comment "//" ;
     comment "/*" "*/" ;
 </PRE>
+
 <P>
 Thus one-line comment definitions define the beginning of a comment, and
 enclosed comment definitions the beginning and the end.
@@ -1232,7 +1425,9 @@ nested comments are not possible.
 <P>
 <!-- NEW -->
 </P>
+
 <H2>Complete grammar for C--</H2>
+
 <PRE>
   comment "//" ;
   comment "/*" "*/" ;
@@ -1270,14 +1465,17 @@ nested comments are not possible.
   TInt.    Type ::= "int" ;
   TDouble. Type ::= "double" ;
 </PRE>
-<P></P>
+
 <P>
 <!-- NEW -->
 </P>
+
 <H2>Built-in token types</H2>
+
 <P>
 These types are hard-coded and cannot be value types of rules:
 </P>
+
 <UL>
 <LI><CODE>Integer</CODE>: sequence of digits, e.g. <CODE>123445425425436</CODE>
 <LI><CODE>Double</CODE>: two sequences of digits with a decimal point in between,
@@ -1294,39 +1492,49 @@ Precise definitions are given in the LBNF report.
 <P>
 <!-- NEW -->
 </P>
+
 <H2>Token definitions</H2>
+
 <P>
-A grammar can define new token types by using regular expressions. 
+A grammar can define new token types by using regular expressions.
 Here is an example of the format:
 </P>
+
 <PRE>
     token CIdent (letter | (letter | digit | '_')*) ;
 </PRE>
+
 <P>
 See LBNF report for more information.
 </P>
 <P>
 <!-- NEW -->
 </P>
+
 <H2>Remembering the position of a token</H2>
+
 <P>
 The position of a token can be passed to the syntax tree:
 </P>
+
 <PRE>
     position token CIdent (letter | (letter | digit | '_')*) ;
 </PRE>
+
 <P>
 See LBNF report for more information.
 </P>
 <P>
 <!-- NEW -->
 </P>
+
 <H2>Common problems</H2>
+
 <P>
 Java: CLASSPATH, should contain <CODE>.</CODE>, Cup directory, JLex directory
 </P>
 <P>
-C and C++: Bison version, should be 1.875 
+C and C++: Bison version, should be 1.875
 </P>
 <P>
 All grammars: conflicts. Use parser diagnosis tools to find and solve them!
@@ -1334,9 +1542,11 @@ All grammars: conflicts. Use parser diagnosis tools to find and solve them!
 <P>
 <!-- NEW -->
 </P>
+
 <H2>Further reading</H2>
+
 <P>
-BNFC homepage: 
+BNFC homepage:
 <A HREF="http://digitalgrammars.com/bnfc"><CODE>digitalgrammars.com/bnfc</CODE></A>
 </P>
 <P>
@@ -1345,17 +1555,17 @@ The LBNF report, covering the whole Labelled BNF grammar language used in BNFC:
 </P>
 <P>
 Chalmers Programming Languages course notes:
-<A HREF="http://www.cs.chalmers.se/Cs/Grundutb/Kurser/progs/current/"><CODE>www.cs.chalmers.se/Cs/Grundutb/Kurser/progs/current/</CODE></A> 
+<A HREF="http://www.cs.chalmers.se/Cs/Grundutb/Kurser/progs/current/"><CODE>www.cs.chalmers.se/Cs/Grundutb/Kurser/progs/current/</CODE></A>
 </P>
 <P>
 Appel's book series <I>Modern Compiler Implementation in ML/C/Java</I>.
 BNFC generates abstract syntax representations as used in these books.
 </P>
 <P>
-Dragon book: Aho, Lam, Sethi, Ullman, 
+Dragon book: Aho, Lam, Sethi, Ullman,
 <I>Compilers Principles, Techniques and Tools</I>, 2007.
 </P>
 
-<!-- html code generated by txt2tags 2.4 (http://txt2tags.sf.net) -->
+<!-- html code generated by txt2tags 2.6 (http://txt2tags.org) -->
 <!-- cmdline: txt2tags -thtml bnfc-tutorial.txt -->
 </BODY></HTML>

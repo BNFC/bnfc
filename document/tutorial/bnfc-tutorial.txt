@@ -46,7 +46,7 @@ BNFC also scales up to legacy programming languages
 
 ==How to obtain BNFC==
 
-BNFC homepage: 
+BNFC homepage:
 [``digitalgrammars.com/bnfc/`` http://digitalgrammars.com/bnfc/]
 
 You can obtain
@@ -67,7 +67,7 @@ can find executables (such as ``/usr/local/bin`` on Unix-like platforms).
 
 ==Working with BNFC sources==
 
-If you choose the source package, you need the 
+If you choose the source package, you need the
 [GHC Haskell Compiler http://www.haskell.org/ghc/]. With GHC in place,
 just unpack the sources, ``cd`` to ``BNFC``, and type ``make``.
 
@@ -76,7 +76,7 @@ latest Darcs version: give the command
 ```
   darcs get --partial http://www.cs.chalmers.se/Cs/Research/Language-technology/darcs/BNFC/
 ```
-This requires the version control system 
+This requires the version control system
 [Darcs http://darcs.net]. Contributions can be sent in email as darcs patches.
 
 BNFC is licensed under GPL.
@@ -109,7 +109,7 @@ Let us now create our first application from a BNFC source file.
 
 ==My first compiler: calculator==
 
-We start with everyone's favourite: the desktop calculator. 
+We start with everyone's favourite: the desktop calculator.
 
 To make it the simplest possible, we restrict ourselves to integers, with
 addition, subtraction, multiplication, and (lossy) division.
@@ -143,16 +143,16 @@ Assuming you want to work in Java, do the following:
 If everything goes fine, this will create a parser test class, which you
 can try out in the following way:
 ```
-  echo "23 + 4 * 70" | java Calc/Test 
+  echo "23 + 4 * 70" | java Calc/Test
 
   Parse Succesful!
   [Abstract Syntax]
-  (EAdd (EInt 23) (EMul (EInt 4) (EInt 70))) 
+  (EAdd (EInt 23) (EMul (EInt 4) (EInt 70)))
   [Linearized Tree]
   23 + 4 * 70
 ```
 However, this will probably not work at first time: you will have to
-install some more software and set a classpath. 
+install some more software and set a classpath.
 
 
 #NEW
@@ -170,16 +170,16 @@ You will need to download and install both of the required tools:
 - [JLex http://www.cs.princeton.edu/~appel/modern/java/JLex/], version 1.2.6
 
 
-It is safest to take the named versions, 
+It is safest to take the named versions,
 even if there were newer ones available.
 
-In addition to these, you of course need the Java compiler and runtime 
+In addition to these, you of course need the Java compiler and runtime
 environment available from [Sun http://java.sun.com].
 
 Cup comes as a package of java and class files. Just unpack it in some
 directory, e.g. ``/usr/local/java/Cup``.
 
-JLex is just one Java file. Put it in some directory, 
+JLex is just one Java file. Put it in some directory,
 e.g. ``/usr/local/java/JLex``. Compile it with ``javac Main.java`` in that
 directory.
 
@@ -193,7 +193,7 @@ After installing Cup and JLex, compiling with
   bnfc -m -java1.5 Calc.cf
   make
 ```
-will probably still fail, with a message saying that a class was not found. 
+will probably still fail, with a message saying that a class was not found.
 Fix this by
 ```
   export CLASSPATH=.:/usr/local/java/Cup:/usr/local/java
@@ -201,7 +201,7 @@ Fix this by
 provided you put Cup and JLex in places as specified above. Notice also the
 inclusion of the current working directory (``.``).
 
-If ``export`` doesn't work: in some Unix shells, 
+If ``export`` doesn't work: in some Unix shells,
 the ``CLASSPATH`` variable is set with the command
 ```
   setenv CLASSPATH .:/usr/local/java/Cup:/usr/local/java
@@ -222,7 +222,7 @@ Assuming you want to work in Haskell, do the following:
 If everything goes fine, this will create a parser test executable, which you
 can try out in the following way:
 ```
-  echo "23 + 4 * 70" | ./TestCalc 
+  echo "23 + 4 * 70" | ./TestCalc
 
   Parse Successful!
   [Abstract Syntax]
@@ -250,7 +250,7 @@ Assuming you want to work in C or C++, do the following:
 If everything goes fine, this will create a parser test executable, which you
 can try out in the following way:
 ```
-  echo "23 + 4 * 70" | ./testCalc 
+  echo "23 + 4 * 70" | ./testCalc
 
   Parse Successful!
   [Abstract Syntax]
@@ -260,7 +260,7 @@ can try out in the following way:
 ```
 The tools that you need to have installed are
 - [GCC http://gcc.gnu.org/] compiler for C and C++
-- [Bison http://www.gnu.org/software/bison/] parser generator for C and C++, 
+- [Bison http://www.gnu.org/software/bison/] parser generator for C and C++,
   version 1.875
 - [Flex http://www.gnu.org/software/flex/] lexer generator for C and C++,
   version 2.5.4
@@ -285,8 +285,8 @@ format
 ```
 The ``LABEL`` and ``VALUE_CATEGORY`` are **identifiers** (without quotes).
 
-The ``PRODUCTION`` is a sequence of 
-- identifiers, called **nonterminals** 
+The ``PRODUCTION`` is a sequence of
+- identifiers, called **nonterminals**
 - **string literals** (with quotes), called **terminals**
 
 
@@ -310,7 +310,7 @@ All categories and constructors should
 - be distinct from each other
 
 
-These three conditions guarantee that the grammar 
+These three conditions guarantee that the grammar
 will work on //all// platforms.
 
 
@@ -430,7 +430,7 @@ The **compiler back end** can either
 
 ==Abstract syntax==
 
-The hub of a modern compiler: 
+The hub of a modern compiler:
 - target of the front end
 - starting point of the back end
 
@@ -472,7 +472,7 @@ The complete code is in the file
 
 ==An interpreter in Haskell: the tree traversal==
 
-We write a program that parses an arithmetic expression and returns a 
+We write a program that parses an arithmetic expression and returns a
 numeric value.
 
 Here is the tree traversal: pattern matching on the type ``Exp``.
@@ -502,9 +502,9 @@ The complete code is in the file
 
 We write a module reading string input calling ``Interpreter.interpret``.
 
-The string is first lexed and parsed. The file 
+The string is first lexed and parsed. The file
 [``Interpret.hs`` calc/haskell/Interpret.hs].
-is modified from 
+is modified from
 [``TestCalc.hs`` calc/haskell/TestCalc.hs].
 ```
   module Main where
@@ -520,8 +520,8 @@ is modified from
     interact calc
     putStrLn ""
 
-  calc s = 
-    let Ok e = pExp (myLexer s) 
+  calc s =
+    let Ok e = pExp (myLexer s)
     in show (interpret e)
 ```
 
@@ -534,7 +534,7 @@ Recursive functions making case analysis on trees is used in almost all
 components of the compiler.
 
 BNFC gives a template for this, the **skeleton** file
-[``SkelCalc.hs`` calc/haskell/SkelCalc.hs], 
+[``SkelCalc.hs`` calc/haskell/SkelCalc.hs],
 with a dummy tree processing function:
 ```
   transExp :: Exp -> Result
@@ -562,7 +562,7 @@ Compile with GHC:
 ```
 Run on command-line input:
 ```
-  echo "1 + 2 * 3" | ./Interpret 
+  echo "1 + 2 * 3" | ./Interpret
   7
 ```
 Run on file input ([``ex1.calc`` calc/ex1.calc]):
@@ -581,7 +581,7 @@ For each category in the grammar, an abstract base class is generated.
 
 For each constructor of the category, a class extending the base class.
 
-This means quite a few files, put into the subdirectory 
+This means quite a few files, put into the subdirectory
 [``Calc/Absyn/`` calc/java/Calc/Absyn/]:
 ```
   Calc/Absyn/EAdd.java
@@ -643,9 +643,9 @@ abstract accept.
     public final Exp exp_1, exp_2;
     public EAdd(Exp p1, Exp p2) { exp_1 = p1; exp_2 = p2; }
 
-    public <R,A> R accept(Calc.Absyn.Exp.Visitor<R,A> v, A arg) 
-    { 
-      return v.visit(this, arg); 
+    public <R,A> R accept(Calc.Absyn.Exp.Visitor<R,A> v, A arg)
+    {
+      return v.visit(this, arg);
     }
 ```
 
@@ -655,16 +655,16 @@ abstract accept.
 ==The meaning of the Java Visitor==
 
 
-``interface Exp.Visitor <R,A>``: collection of methods for 
-- visiting trees of type ``Exp`` 
+``interface Exp.Visitor <R,A>``: collection of methods for
+- visiting trees of type ``Exp``
 - returning a value of type ``R``
-- using an extra argument of type ``A`` 
+- using an extra argument of type ``A``
 
 
 ``R accept(Exp.Visitor<R,A> v, A arg)``: a method for using a visitor and
 returning a value
 
-Recursive tree traversal: 
+Recursive tree traversal:
 - write a class that implements ``Exp.Visitor``
 - override the default ``visit`` methods
 
@@ -692,28 +692,28 @@ and ``Object`` as argument type (a dummy argument):
     {
       return p.integer_;
     }
-  }    
+  }
 ```
 
 #NEW
 
 ==Java code around tree processing==
 
-The complete code is in the file 
+The complete code is in the file
 [``Interpreter.java`` calc/java/Calc/Interpreter.java]:
 ```
   package Calc;
   import Calc.Absyn.*;
 
   public class Interpreter {
-  
-    public static Integer interpret(Exp e) 
+
+    public static Integer interpret(Exp e)
     {
 	Exp exp = (Exp)e ;
 	return interpretExp(exp, null) ;
     }
 
-    private static Integer interpretExp(Exp e, Object o) 
+    private static Integer interpretExp(Exp e, Object o)
     {
 	return e.accept(new Calculator(), null) ;
     }
@@ -721,7 +721,7 @@ The complete code is in the file
     private static class Calculator implements Exp.Visitor<Integer,Object> {
 
     // the tree traversal: see previous section
-    }    
+    }
   }
 ```
 
@@ -761,7 +761,7 @@ writing your own visitor applications:
 
 ==An interpreter in Java: main class==
 
-The program 
+The program
 [``Interpret.java`` calc/java/Calc/Interpret.java]
 modifies the BNFC-generated
 [``Test.java`` calc/java/Calc/Test.java],
@@ -840,7 +840,7 @@ The complete code is in the files
 
 ==An interpreter in C: tree traversal==
 
-We modify the skeleton (next section), 
+We modify the skeleton (next section),
 changing the return type and the name of ``visitExp``:
 ```
   int interpret(Exp _p_)
@@ -903,7 +903,7 @@ The complete code is in the files
 
 ==An interpreter in C: main function==
 
-The string is first lexed and parsed. 
+The string is first lexed and parsed.
 ```
   #include <stdio.h>
   #include <stdlib.h>
@@ -927,7 +927,7 @@ The string is first lexed and parsed.
 ```
 The complete code is in the file
 [``Interpret.c`` calc/c/Interpret.c],
-modified from the BNFC-generated 
+modified from the BNFC-generated
 [``Test.c`` calc/c/Test.c].
 
 
@@ -943,7 +943,7 @@ Compile with GCC:
 ```
 Run on command-line input:
 ```
-  echo "1 + 2 * 3" | ./interpret 
+  echo "1 + 2 * 3" | ./interpret
   7
 ```
 Run on file input:
@@ -964,14 +964,14 @@ parsing the following Fibonacci program:
 ```
   // a fibonacci function showing most features of the CMM language
 
-  int mx () 
+  int mx ()
   {
     return 5000000 ;
   }
 
-  int main () 
+  int main ()
   {
-    int lo ; 
+    int lo ;
     int hi ;
     lo = 1 ;
     hi = lo ;
@@ -990,7 +990,7 @@ parsing the following Fibonacci program:
 
 ==List categories==
 
-**Lists** are used everywhere in grammars. BNFC the category symbol 
+**Lists** are used everywhere in grammars. BNFC the category symbol
 ``[C]`` for a list of ``C``s.
 
 Thus a program is a list of functions:
@@ -1119,7 +1119,7 @@ Precise definitions are given in the LBNF report.
 
 ==Token definitions==
 
-A grammar can define new token types by using regular expressions. 
+A grammar can define new token types by using regular expressions.
 Here is an example of the format:
 ```
   token CIdent (letter | (letter | digit | '_')*) ;
@@ -1145,7 +1145,7 @@ See LBNF report for more information.
 
 Java: CLASSPATH, should contain ``.``, Cup directory, JLex directory
 
-C and C++: Bison version, should be 1.875 
+C and C++: Bison version, should be 1.875
 
 All grammars: conflicts. Use parser diagnosis tools to find and solve them!
 
@@ -1155,7 +1155,7 @@ All grammars: conflicts. Use parser diagnosis tools to find and solve them!
 
 ==Further reading==
 
-BNFC homepage: 
+BNFC homepage:
 [``digitalgrammars.com/bnfc`` http://digitalgrammars.com/bnfc]
 
 
@@ -1164,16 +1164,10 @@ The LBNF report, covering the whole Labelled BNF grammar language used in BNFC:
 
 
 Chalmers Programming Languages course notes:
-[``www.cs.chalmers.se/Cs/Grundutb/Kurser/progs/current/`` http://www.cs.chalmers.se/Cs/Grundutb/Kurser/progs/current/] 
+[``www.cs.chalmers.se/Cs/Grundutb/Kurser/progs/current/`` http://www.cs.chalmers.se/Cs/Grundutb/Kurser/progs/current/]
 
 Appel's book series //Modern Compiler Implementation in ML/C/Java//.
 BNFC generates abstract syntax representations as used in these books.
 
-Dragon book: Aho, Lam, Sethi, Ullman, 
+Dragon book: Aho, Lam, Sethi, Ullman,
 //Compilers Principles, Techniques and Tools//, 2007.
-
-
-
-
-
-
