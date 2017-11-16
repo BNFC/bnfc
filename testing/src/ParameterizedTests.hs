@@ -7,7 +7,8 @@
  - -}
 module ParameterizedTests where
 
-import Control.Monad (forM_, liftM)
+import Control.Monad (forM_)
+import Data.Functor
 import Data.Monoid ((<>))
 import Data.Text (Text)
 import Filesystem.Path (filename, dropExtension, basename, replaceExtension)
@@ -102,7 +103,7 @@ testCases params =
             tpBnfc params (dir </> "test.cf")
             echo "§ Build"
             tpBuild params
-            good <- liftM (filter (matchFilePath "good[0-9]*.in$")) (ls dir)
+            good <- filter (matchFilePath "good[0-9]*.in$") <$> ls dir
             forM_ good $ \f -> do
                 output <- tpRunTestProg params "test" [f]
                 goldExists <- test_f (replaceExtension f "out")
@@ -111,7 +112,7 @@ testCases params =
                     let (_, goldLT) = parseOutput gold
                         (_, actualLT) = parseOutput output
                     assertEqual goldLT actualLT
-            bad <- liftM (filter (matchFilePath "bad[0-9]*.in$")) (ls dir)
+            bad <- filter (matchFilePath "bad[0-9]*.in$") <$> ls dir
             forM_ bad $ \f -> do
                 errExit False $ tpRunTestProg params "test" [f]
                 lastExitCode >>= assertEqual 1
@@ -194,7 +195,7 @@ parameters =
         { tpBuild =
             do { cmd "make" ; cmd "javac" =<< findFile "VisitSkel.java" }
         , tpRunTestProg = \_ args -> do
-            class_ <- liftM dropExtension (findFile "Test.class")
+            class_ <- dropExtension <$> findFile "Test.class"
             cmd "java" class_ args
         }
 
