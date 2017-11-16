@@ -71,13 +71,9 @@ If you choose the source package, you need the
 [GHC Haskell Compiler http://www.haskell.org/ghc/]. With GHC in place,
 just unpack the sources, ``cd`` to ``BNFC``, and type ``make``.
 
-If you want to contribute to BNFC (12 persons have!), make sure you use the
-latest Darcs version: give the command
-```
-  darcs get --partial http://www.cs.chalmers.se/Cs/Research/Language-technology/darcs/BNFC/
-```
-This requires the version control system
-[Darcs http://darcs.net]. Contributions can be sent in email as darcs patches.
+If you want to contribute to BNFC (more than 12 persons have!), you
+can fork the [BNFC repository https://github.com/BNFC/bnfc] on github.com
+and submit pull requests.
 
 BNFC is licensed under GPL.
 
