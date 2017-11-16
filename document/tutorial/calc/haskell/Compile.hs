@@ -11,5 +11,5 @@ import ErrM
 main = do
   file:_ <- getArgs
   s      <- readFile file
-  let Ok e = pExp (myLexer s) 
+  let Ok e = pExp (myLexer s)
   compile e

@@ -11,6 +11,6 @@ main = do
   interact calc
   putStrLn ""
 
-calc s = 
-  let Ok e = pExp (myLexer s) 
+calc s =
+  let Ok e = pExp (myLexer s)
   in show (interpret e)
