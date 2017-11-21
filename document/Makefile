@@ -1,4 +1,9 @@
-all:
+all : LBNF-report.pdf
+
+%.pdf : %.tex
+	latexmk -pdf $<
+
+CC-2004:
 	latex CC-2004
 	latex CC-2004
 	bibtex CC-2004
