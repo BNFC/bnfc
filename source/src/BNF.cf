@@ -52,10 +52,10 @@ LabPF    . Label ::= LabelId LabelId [ProfItem] ;
 LabF     . Label ::= LabelId LabelId ;
 
 -- functional labels
-Id       . LabelId ::= Ident ; 
-Wild     . LabelId ::= "_" ; 
+Id       . LabelId ::= Ident ;
+Wild     . LabelId ::= "_" ;
 ListE    . LabelId ::= "[" "]" ;
-ListCons . LabelId ::= "(" ":" ")" ; 
+ListCons . LabelId ::= "(" ":" ")" ;
 ListOne  . LabelId ::= "(" ":" "[" "]" ")" ;
 
 -- profiles (= permutation and binding patterns)
@@ -70,7 +70,7 @@ terminator nonempty ProfItem "" ;
 -- Pragmas
 Comment  .  Def ::= "comment" String ;
 Comments .  Def ::= "comment" String String ;
-Internal .  Def ::= "internal" Label "." Cat "::=" [Item] ; 
+Internal .  Def ::= "internal" Label "." Cat "::=" [Item] ;
 Token.      Def ::= "token" Ident Reg ;
 PosToken.   Def ::= "position" "token" Ident Reg ;
 Entryp.     Def ::= "entrypoints" [Ident] ;
@@ -93,14 +93,14 @@ Arg. Arg ::= Ident ;
 separator Arg "" ;
 
 -- Expressions
-Cons.	    Exp  ::= Exp1 ":" Exp ;
-App.	    Exp1 ::= Ident [Exp2] ;
-Var.	    Exp2 ::= Ident ;
-LitInt.	    Exp2 ::= Integer ;
+Cons.       Exp  ::= Exp1 ":" Exp ;
+App.        Exp1 ::= Ident [Exp2] ;
+Var.        Exp2 ::= Ident ;
+LitInt.     Exp2 ::= Integer ;
 LitChar.    Exp2 ::= Char ;
 LitString.  Exp2 ::= String ;
 LitDouble.  Exp2 ::= Double ;
-List.	    Exp2 ::= "[" [Exp] "]" ;
+List.       Exp2 ::= "[" [Exp] "]" ;
 
 
 coercions Exp 2;
@@ -117,9 +117,9 @@ MNonempty.  MinimumSize ::= "nonempty" ;
 MEmpty.     MinimumSize ::=  ;
 
 -- regular expressions
-RSeq.   Reg2 ::= Reg2 Reg3 ;
-RAlt.   Reg1 ::= Reg1 "|" Reg2 ;
-RMinus. Reg1 ::= Reg2 "-" Reg2 ;
+RSeq.   Reg2 ::= Reg2 Reg3     ;  -- left-associative
+RAlt.   Reg1 ::= Reg1 "|" Reg2 ;  -- left-associative
+RMinus. Reg1 ::= Reg2 "-" Reg2 ;  -- non-associative
 
 RStar.  Reg3 ::= Reg3 "*" ;
 RPlus.  Reg3 ::= Reg3 "+" ;
@@ -149,5 +149,3 @@ _. Reg3 ::= "(" Reg ")" ;
 -- comments in BNF source
 comment "--" ;
 comment "{-" "-}" ;
-
-
