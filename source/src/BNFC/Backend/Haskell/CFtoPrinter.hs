@@ -74,6 +74,8 @@ prologue byteStrings useGadt name absMod = unlines $
   "    _            -> id",
   "  new i   = showChar '\\n' . replicateS (2*i) (showChar ' ') . dropWhile isSpace",
   "  space t = showString t . (\\s -> if null s then \"\" else ' ':s)",
+  "",
+  "  closingOrPunctuation :: String -> Bool",
   "  closingOrPunctuation [c] = c `elem` \")],;\"",
   "  closingOrPunctuation _   = False",
   "",
