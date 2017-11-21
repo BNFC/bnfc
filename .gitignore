@@ -6,6 +6,8 @@
 *.blg
 *.chi
 *.chs.h
+*.fdb_latexmk
+*.fls
 *.hi
 *.log
 *.o
@@ -25,3 +27,4 @@ cabal.sandbox.config
 # TODO: ignore *.dvi and *.ps in general?
 /document/CC-2004.dvi
 /document/CC-2004.ps
+/document/LBNF-report.dvi
