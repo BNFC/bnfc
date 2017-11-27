@@ -14,7 +14,7 @@ cnf = TP "Haskell/CNF" ["--haskell", "--cnf", "-m"]
             cmd bin args
          )
 
--- The CNF backend doen't exactly work like other backend and some tests are
+-- The CNF backend does not exactly work like other backend and some tests are
 -- not applicable as-is. We create a restricted test suite just for it.
 all :: Test
 all = makeTestSuite "Haskell/CNF"
