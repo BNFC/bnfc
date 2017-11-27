@@ -134,16 +134,17 @@ showsPrintRule cf t = unlines $ [
 
 identRule byteStrings cf = ownPrintRule byteStrings cf catIdent
 
-ownPrintRule byteStrings cf own = unlines $ [
-  "instance Print " ++ show own ++ " where",
-  "  prt _ (" ++ show own ++ posn ++ ") = doc (showString ("++stringUnpack++" i))",
-  ifList cf own
+ownPrintRule :: Bool -> CF -> Cat -> String
+ownPrintRule byteStrings cf own = unlines $
+  [ "instance Print " ++ show own ++ " where"
+  , "  prt _ (" ++ show own ++ posn ++ ") = doc (showString " ++ stringUnpack ++ ")"
+  , ifList cf own
   ]
  where
    posn = if isPositionCat cf own then " (_,i)" else " i"
 
-   stringUnpack | byteStrings = "BS.unpack"
-                | otherwise   = ""
+   stringUnpack | byteStrings = "(BS.unpack i)"
+                | otherwise   = "i"
 
 -- copy and paste from BNFC.Backend.Haskell.CFtoTemplate
 
