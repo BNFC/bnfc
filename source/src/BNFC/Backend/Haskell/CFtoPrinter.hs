@@ -123,15 +123,20 @@ prologue byteStrings useGadt name absMod = unlines $
   ""
   ]
 
+integerRule :: CF -> String
 integerRule cf = showsPrintRule cf "Integer"
+
+doubleRule :: CF -> String
 doubleRule cf = showsPrintRule cf "Double"
 
-showsPrintRule cf t = unlines $ [
-  "instance Print " ++ t ++ " where",
-  "  prt _ x = doc (shows x)",
-  ifList cf (Cat t)
+showsPrintRule :: CF -> String -> String
+showsPrintRule cf t = unlines $
+  [ "instance Print " ++ t ++ " where"
+  , "  prt _ x = doc (shows x)"
+  , ifList cf (Cat t)
   ]
 
+identRule :: Bool -> CF -> String
 identRule byteStrings cf = ownPrintRule byteStrings cf catIdent
 
 ownPrintRule :: Bool -> CF -> Cat -> String
