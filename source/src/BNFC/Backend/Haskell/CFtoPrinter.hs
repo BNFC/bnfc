@@ -193,7 +193,7 @@ case_fun functor cat xs = vcat
 mkPrintCase :: Bool -> (Fun, (Cat, [Either Cat String])) -> Doc
 mkPrintCase functor (f, (cat, rhs)) =
     text f <+> (if functor then "_" else empty) <+> hsep variables <+> "->"
-    <+> "prPrec i" <+> integer (precCat cat) <+> mkRhs (map render variables) rhs
+    <+> "prPrec i" <+> integer (precCat cat) <+> parens (mkRhs (map render variables) rhs)
   where
     -- Creating variables names used in pattern matching. In addition to
     -- haskell's reserved words, `e` and `i` are used in the printing function
@@ -216,17 +216,17 @@ ifList cf cat = render $ nest 2 $ vcat [ mkPrtListCase r | r <- rules ]
 
 -- | Pattern match on the list constructor and the coercion level
 -- >>> mkPrtListCase (Rule "[]" (ListCat (Cat "Foo")) [])
--- prtList _ [] = (concatD [])
+-- prtList _ [] = concatD []
 -- >>> mkPrtListCase (Rule "(:[])" (ListCat (Cat "Foo")) [Left (Cat "FOO")])
--- prtList _ [x] = (concatD [prt 0 x])
+-- prtList _ [x] = concatD [prt 0 x]
 -- >>> mkPrtListCase (Rule "(:)" (ListCat (Cat "Foo")) [Left (Cat "Foo"), Left (ListCat (Cat "Foo"))])
--- prtList _ (x:xs) = (concatD [prt 0 x, prt 0 xs])
+-- prtList _ (x:xs) = concatD [prt 0 x, prt 0 xs]
 -- >>> mkPrtListCase (Rule "[]" (ListCat (CoercCat "Foo" 2)) [])
--- prtList 2 [] = (concatD [])
+-- prtList 2 [] = concatD []
 -- >>> mkPrtListCase (Rule "(:[])" (ListCat (CoercCat "Foo" 2)) [Left (CoercCat "Foo" 2)])
--- prtList 2 [x] = (concatD [prt 2 x])
+-- prtList 2 [x] = concatD [prt 2 x]
 -- >>> mkPrtListCase (Rule "(:)" (ListCat (CoercCat "Foo" 2)) [Left (CoercCat "Foo" 2), Left (ListCat (CoercCat "Foo" 2))])
--- prtList 2 (x:xs) = (concatD [prt 2 x, prt 2 xs])
+-- prtList 2 (x:xs) = concatD [prt 2 x, prt 2 xs]
 mkPrtListCase :: Rule -> Doc
 mkPrtListCase (Rule f (ListCat c) rhs)
   | isNilFun f = "prtList" <+> precPattern <+> "[]" <+> "=" <+> body
@@ -270,17 +270,17 @@ compareRules _ _ = EQ
 
 -- |
 -- >>> mkRhs ["expr1", "n", "expr2"] [Left (Cat "Expr"), Right "-", Left (TokenCat "Integer"), Left (Cat "Expr")]
--- (concatD [prt 0 expr1, doc (showString "-"), prt 0 n, prt 0 expr2])
+-- concatD [prt 0 expr1, doc (showString "-"), prt 0 n, prt 0 expr2]
 --
 -- Coercions on the right hand side should be passed to prt:
 -- >>> mkRhs ["expr1"] [Left (CoercCat "Expr" 2)]
--- (concatD [prt 2 expr1])
+-- concatD [prt 2 expr1]
 -- >>> mkRhs ["expr2s"] [Left (ListCat (CoercCat "Expr" 2))]
--- (concatD [prt 2 expr2s])
+-- concatD [prt 2 expr2s]
 mkRhs :: [String] -> [Either Cat String] -> Doc
 mkRhs args its =
-    parens ("concatD" <+> brackets (hsep (punctuate "," (mk args its))))
- where
+  "concatD" <+> brackets (hsep (punctuate "," (mk args its)))
+  where
   mk args (Left InternalCat : items) = mk args items
   mk (arg:args) (Left c  : items)    = (prt c <+> text arg) : mk args items
   mk args       (Right s : items)    = ("doc (showString" <+> text (show s) <> ")") : mk args items
