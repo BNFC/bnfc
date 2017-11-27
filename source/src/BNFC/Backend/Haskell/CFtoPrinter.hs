@@ -22,22 +22,25 @@ module BNFC.Backend.Haskell.CFtoPrinter (cf2Printer, compareRules) where
 import BNFC.Backend.Haskell.Utils (hsReservedWords)
 import BNFC.CF
 import BNFC.Utils
-import Data.Char(toLower)
+import Data.Char   (toLower)
 import Data.Either (lefts)
-import Data.List (sortBy)
-import Data.Maybe (fromJust)
+import Data.List   (sortBy)
+import Data.Maybe  (fromJust)
 import Text.PrettyPrint
 
--- derive pretty-printer from a BNF grammar. AR 15/2/2002
+-- | Derive pretty-printer from a BNF grammar. AR 15/2/2002
+
 cf2Printer :: Bool -> Bool -> Bool -> String -> String -> CF -> String
-cf2Printer byteStrings functor useGadt name absMod cf = unlines [
-  prologue byteStrings useGadt name absMod,
-  integerRule cf,
-  doubleRule cf,
-  if hasIdent cf then identRule byteStrings cf else "",
-  unlines [ownPrintRule byteStrings cf own | (own,_) <- tokenPragmas cf],
+cf2Printer byteStrings functor useGadt name absMod cf = unlines $
+  [ prologue byteStrings useGadt name absMod
+  , integerRule cf
+  , doubleRule cf
+  , if hasIdent cf then identRule byteStrings cf else ""
+  ] ++
+  [ ownPrintRule byteStrings cf own | (own,_) <- tokenPragmas cf
+  ] ++
   rules functor cf
-  ]
+
 
 
 prologue :: Bool -> Bool -> String -> String -> String
@@ -141,9 +144,8 @@ ownPrintRule byteStrings cf own = unlines $ [
 
 -- copy and paste from BNFC.Backend.Haskell.CFtoTemplate
 
-rules :: Bool -> CF -> String
-rules functor cf = unlines $
-
+rules :: Bool -> CF -> [String]
+rules functor cf =
   map (\(s,xs) -> render (case_fun functor s (map toArgs xs)) ++++ ifList cf s) $ cf2data cf
  where
    toArgs (cons,_) = (cons, ruleOf cons)
