@@ -184,9 +184,10 @@ parameters =
         }
     cBase = base { tpBuild = cmd "make" >> cmd "make" "Skeleton.o" }
     hsParams = base
-        { tpBuild = do cmd "hlint" "-i" "Redundant bracket" "-i" "Use camelCase" "."
-                       cmd "make"
-                       cmd "ghc" =<< findFileRegex "Skel.*\\.hs$"
+        { tpBuild = do
+            cmd "hlint" "-i" "Redundant bracket" "-i" "Use camelCase" "-i" "Use newtype instead of data" "-i" "Use fmap" "."
+            cmd "make"
+            cmd "ghc" =<< findFileRegex "Skel.*\\.hs$"
         , tpRunTestProg = \_ args -> do
             bin <- findFileRegex "Test\\w*$"
             cmd bin args
