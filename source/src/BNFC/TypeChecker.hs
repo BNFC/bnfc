@@ -2,8 +2,10 @@
 module BNFC.TypeChecker where
 
 import Control.Monad
-import Data.List
+
 import Data.Char
+import Data.Function (on)
+import Data.List
 
 import BNFC.CF
 import ErrM
@@ -76,12 +78,9 @@ checkContext ctx =
         -- keys.
         groupSnd :: Ord a => [(a,b)] -> [(a,[b])]
         groupSnd =
-            map ((fst . head) /\ map snd)
-            . groupBy ((==) **.* fst)
-            . sortBy (compare **.* fst)
-
-        (f /\ g) x     = (f x, g x)
-        (f **.* g) x y = f (g x) (g y)
+            map (\ ps -> (fst (head ps), map snd ps))
+            . groupBy ((==) `on` fst)
+            . sortBy (compare `on` fst)
 
         checkEntry (f,ts) =
             case nub ts of
