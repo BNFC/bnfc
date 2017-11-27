@@ -24,24 +24,27 @@ instance Show Base where
 instance Show Type where
     show (FunT ts t) = unwords $ map show ts ++ ["->", show t]
 
-data Context = Ctx  { ctxLabels :: [(String, Type)]
-                    , ctxTokens :: [String]
-                    }
+data Context = Ctx
+  { ctxLabels :: [(String, Type)]
+  , ctxTokens :: [String]
+  }
 
 catchErr :: Err a -> (String -> Err a) -> Err a
 catchErr (Bad s) f = f s
 catchErr (Ok x) _  = Ok x
 
 buildContext :: CF -> Context
-buildContext cf@CFG{..} =
-    Ctx
-    [ (f, mkType cat args) | Rule f cat args <- cfgRules
-                           , not (isCoercion f)
-                           , not (isNilCons f)
-    ]
-    ("Ident" : tokenNames cf)
+buildContext cf@CFG{..} = Ctx
+  { ctxLabels =
+      [ (f, mkType cat args)
+        | Rule f cat args <- cfgRules
+        , not (isCoercion f)
+        , not (isNilCons f)
+      ]
+  , ctxTokens =
+      ("Ident" : tokenNames cf)
+  }
   where
-
     mkType cat args = FunT [ mkBase t | Left t <- args, t /= InternalCat ]
                            (mkBase cat)
     mkBase t
@@ -141,4 +144,3 @@ checkExp _ _ e@(LitDouble _) (BaseT "Double")   = return e
 checkExp _ _ e@(LitChar _) (BaseT "Char")       = return e
 checkExp _ _ e@(LitString _) (BaseT "String")   = return e
 checkExp _ _ e t = fail $ show e ++ " does not have type " ++ show t ++ "."
-
