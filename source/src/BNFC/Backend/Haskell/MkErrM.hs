@@ -53,7 +53,6 @@ mkErrM errMod ghc = vcat
     , "  (Bad s) <*> _ = Bad s"
     , "  (Ok f) <*> o  = liftM f o"
     , ""
-    , ""
     , "instance Functor Err where"
     , "  fmap = liftM"
     , ""
@@ -64,4 +63,5 @@ mkErrM errMod ghc = vcat
     , ""
     , "instance Alternative Err where"
     , "  empty = mzero"
-    , "  (<|>) = mplus"]
+    , "  (<|>) = mplus"
+    ]
