@@ -124,7 +124,7 @@ makeJava options@Options{..} cf =
                              Nothing -> (a, b) : remDups as
       pkgToDir :: String -> FilePath
       pkgToDir s = replace '.' pathSeparator s ++ [pathSeparator]
-      parselexspec = parserLexerSelector lang javaLexerParser
+      parselexspec = parserLexerSelector lang javaLexerParser (Options.linenumbers options)
       lexfun = cf2lex $ lexer parselexspec
       parsefun = cf2parse $ parser parselexspec
       parmake = makeparserdetails (parser parselexspec)
@@ -285,15 +285,18 @@ antlrtest = javaTest [ "org.antlr.v4.runtime","org.antlr.v4.runtime.atn"
               showOpts (x:xs) | normCat x /= x = showOpts xs
                               | otherwise      = text (firstLowerCase $ identCat x) : showOpts xs
 
-parserLexerSelector :: String -> JavaLexerParser -> ParserLexerSpecification
-parserLexerSelector _ JLexCup = ParseLexSpec
-    { lexer     = cf2JLex
+parserLexerSelector :: String 
+    -> JavaLexerParser
+    -> Bool -- ^Pass line numbers to the symbols
+    -> ParserLexerSpecification
+parserLexerSelector _ JLexCup ln = ParseLexSpec
+    { lexer     = cf2JLex ln
     , parser    = cf2cup
     , testclass = cuptest
     }
-parserLexerSelector _ JFlexCup =
-    (parserLexerSelector "" JLexCup){lexer = cf2JFlex}
-parserLexerSelector l Antlr4 = ParseLexSpec
+parserLexerSelector _ JFlexCup ln =
+    (parserLexerSelector "" JLexCup ln){lexer = cf2JFlex ln}
+parserLexerSelector l Antlr4 _ = ParseLexSpec
     { lexer     = cf2AntlrLex' l
     , parser    = cf2AntlrParse' l
     , testclass = antlrtest
@@ -316,15 +319,15 @@ data CFToLexer = CF2Lex
     }
 
 -- | Instances of cf-lexergen bridges
-cf2JLex, cf2JFlex :: CFToLexer
+cf2JLex, cf2JFlex :: Bool -> CFToLexer
 
-cf2JLex = CF2Lex
-       { cf2lex           = BNFC.Backend.Java.CFtoJLex15.cf2jlex False
+cf2JLex ln = CF2Lex
+       { cf2lex           = BNFC.Backend.Java.CFtoJLex15.cf2jlex (ln, False)
        , makelexerdetails = jlexmakedetails
        }
 
-cf2JFlex = CF2Lex
-       { cf2lex           = BNFC.Backend.Java.CFtoJLex15.cf2jlex True
+cf2JFlex ln = CF2Lex
+       { cf2lex           = BNFC.Backend.Java.CFtoJLex15.cf2jlex (ln, True)
        , makelexerdetails = jflexmakedetails
        }
 
