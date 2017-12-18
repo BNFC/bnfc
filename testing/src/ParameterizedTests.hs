@@ -166,10 +166,14 @@ parameters =
   -- Java
   , javaParams { tpName = "Java"
                , tpBnfcOptions = ["--java", "-m"] }
+  , javaParams { tpName = "Java (with line numbers)"
+               , tpBnfcOptions = ["--java", "-m", "-l"] }
   , javaParams { tpName = "Java (with namespace)"
                , tpBnfcOptions = ["--java", "-p", "my.stuff", "-m"] }
   , javaParams { tpName = "Java (with jflex)"
                , tpBnfcOptions = ["--java", "--jflex", "-m"] }
+  , javaParams { tpName = "Java (with jflex and line numbers)"
+               , tpBnfcOptions = ["--java", "--jflex", "-m", "-l"] }
   , javaParams { tpName = "Java (with antlr)"
                , tpBnfcOptions = ["--java", "--antlr", "-m"] }
   ]
