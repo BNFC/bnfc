@@ -72,8 +72,7 @@ prelude (ln, jflex) packageBase = vcat
     , (if ln 
       then vcat
         [ "%line"
-        , (if jflex then "%column" else "")
-        , "%char" ]
+        , (if jflex then "%column" else "") ]
       else "")
     , "%public"
     , "%{"
@@ -85,14 +84,13 @@ prelude (ln, jflex) packageBase = vcat
         , positionDeclarations
         , "public int line_num() { return (yyline+1); }"
         , "public ComplexSymbolFactory.Location left_loc() {"
-        , "  return new ComplexSymbolFactory.Location(yyline+1, yycolumn+1, yychar);"
+        , "  return new ComplexSymbolFactory.Location(yyline+1, yycolumn+1);"
         , "}"
         , "public ComplexSymbolFactory.Location right_loc() {"
-        , "  ComplexSymbolFactory.Location right = left_loc();"
+        , "  ComplexSymbolFactory.Location left = left_loc();"
         , (if ln
-            then "right.move(0, yylength(), yylength());"
-            else "")
-        , "  return right;"
+            then "  return new ComplexSymbolFactory.Location(left.getLine(), left.getColumn()+yylength());"
+            else "  return left;")
         , "}"
         , "public String buff()" <+> braces
             (if jflex
@@ -107,10 +105,10 @@ prelude (ln, jflex) packageBase = vcat
       if jflex then ""
         else if ln then "int yycolumn = unknown - 1;"
           else vcat
-            -- subtract one so that one based numbering still ends up with unknown.
+            -- subtract one so that one based numbering still ends up with
+            -- unknown.
             [ "int yyline = unknown - 1;"
-            , "int yychar = unknown - 1;"
-            , "int yycolumn = unknown;" ]
+            , "int yycolumn = unknown - 1;" ]
 
 --For now all categories are included.
 --Optimally only the ones that are used should be generated.
