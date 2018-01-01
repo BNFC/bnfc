@@ -1,5 +1,6 @@
 2.9.0 (Development version)
-	* Java: Add support for passing line numbers to parser.
+	* bnfc puts current timestamp on all created files, even unchanged ones [#217]
+	* Java: Add support for passing line numbers to parser
 	* C: Emit correct function prototypes
 	* Java: Add an experimental ANTLR4 backend
 	* C, C++, OCaml, Java: Accept ' or " as comment delimiters [#146]
