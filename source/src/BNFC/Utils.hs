@@ -217,26 +217,39 @@ disambiguateNames = disamb []
 --
 -- >>> parseIdent "ILoveNY"
 -- ["I","Love","NY"]
+
 parseIdent :: String -> [String]
 parseIdent = p [] . map (classify &&& id)
   where
+    classify :: Char -> CharClass
     classify c
         | isUpper c = U
         | isLower c = L
         | otherwise = O
-    p [] [] = []
-    p acc [] = reverse acc: p [] []
-    p [] ((L,c):cs) = p [c] cs
-    p [] ((U,c):cs) = p [c] cs
-    p [] ((O,_):cs) = p [] cs
-    p acc ((L,c1):cs@((L,_):_)) = p (c1:acc) cs
-    p acc ((U,c1):cs@((L,_):_)) = reverse acc:p [c1] cs
-    p acc ((U,c1):cs@((U,_):_)) = p (c1:acc) cs
-    p acc ((L,c1):cs@((U,_):_)) = reverse (c1:acc) : p [] cs
-    p acc ((U,c1):(O,_):cs) = reverse (c1:acc) : p [] cs
-    p acc ((L,c1):(O,_):cs) = reverse (c1:acc) : p [] cs
-    p acc ((O,_):cs) = reverse acc : p [] cs
-    p acc [(_,c)] = p (c:acc) []
+
+    p :: String -> [(CharClass,Char)] -> [String]
+    -- Done:
+    p []  []                       = []
+    p acc []                       = reverse acc : p [] []
+    -- Starting a new component with the next letter:
+    p []  ((L,c)  : cs)            = p [c] cs
+    p []  ((U,c)  : cs)            = p [c] cs
+    p []  ((O,_)  : cs)            = p [] cs
+
+    -- Continue if consecutive characters have same case.
+    p acc ((L,c) : cs@((L,_) : _)) = p (c:acc) cs
+    p acc ((U,c) : cs@((U,_) : _)) = p (c:acc) cs
+
+    -- Break if consecutive characters have different case.
+    p acc ((U,c) : cs@((L,_) : _)) = reverse acc : p [c] cs
+    p acc ((L,c) : cs@((U,_) : _)) = reverse (c:acc) : p [] cs
+
+    -- Discard "other" characters, and break to next component.
+    p acc ((U,c) :     (O,_) : cs) = reverse (c:acc) : p [] cs
+    p acc ((L,c) :     (O,_) : cs) = reverse (c:acc) : p [] cs
+    p acc ((O,_)  : cs)            = reverse acc : p [] cs
+
+    p acc [(_,c)]                  = p (c:acc) []
 
 data CharClass = U | L | O
 
