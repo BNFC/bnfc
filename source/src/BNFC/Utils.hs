@@ -28,11 +28,14 @@ module BNFC.Utils
 
 import Control.Arrow ((&&&))
 import Control.DeepSeq (rnf)
+
 import Data.Char
 import Data.List (intercalate)
+
 import System.IO (IOMode(ReadMode),hClose,hGetContents,openFile)
 import System.IO.Error (tryIOError)
-import System.Directory (renameFile, removeFile)
+-- import System.Directory (renameFile, removeFile)
+
 import BNFC.PrettyPrint
 
 infixr 5 +++, ++++, +-+, +.+
@@ -86,20 +89,15 @@ writeFileRep path s =
 
     -- Case: file exists with content @old@.
     updateFile old = do
-      -- First, write content to a .tmp file.
-      let tmp = path ++ ".tmp"
-      writeFile tmp s
-      -- We read the just written file, the content @new@ should be identical to @s@, no?
-      new <- readFile' tmp
-      if new == old  -- test is O(1) space, O(n) time
+      -- Write new content.
+      writeFile path s
+      if s == old  -- test is O(1) space, O(n) time
          then do
-           putStrLn $ "no change to file " ++ path
-           removeFile tmp
+           putStrLn $ "refreshing unchanged file " ++ path
          else do
            let bak = path ++ ".bak"
            putStrLn $ "writing file " ++ path ++ " (saving old file as " ++ bak ++ ")"
-           renameFile path bak
-           renameFile tmp path
+           writeFile bak old
 
     -- Force reading of contents of files to achieve compatibility with
     -- Windows IO handling, as combining lazy IO with `readFile` and
