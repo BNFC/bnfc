@@ -17,6 +17,7 @@ install:
 	cabal install
 
 test:
+	cabal configure --enable-tests
 	cabal test
 
 doc:
