@@ -304,21 +304,23 @@ endDocument = unlines
   ]
 
 latexRegExp :: Reg -> String
-latexRegExp = rex (0 :: Int) where
-  rex i e = case e of
-    RSeq reg0 reg  -> ifPar i 2 $ rex 2 reg0 +++ rex 2 reg
-    RAlt reg0 reg  -> ifPar i 1 $ rex 1 reg0 +++ "\\mid" +++ rex 1 reg
-    RMinus reg0 reg  -> ifPar i 1 $ rex 2 reg0 +++ "-" +++ rex 2 reg
-    RStar reg  -> rex 3 reg ++ "*"
-    RPlus reg  -> rex 3 reg ++ "+"
-    ROpt reg  -> rex 3 reg ++ "?"
-    REps  -> "\\epsilon"
-    RChar c  -> "\\mbox{`" ++ prt [c] ++ "'}"
-    RAlts str  -> "[" ++ "\\mbox{``" ++ prt str ++ "''}" ++ "]"
-    RSeqs str  -> "\\{" ++ "\\mbox{``" ++ prt str ++ "''}" ++ "\\}"
-    RDigit  -> "{\\nonterminal{digit}}"
-    RLetter  -> "{\\nonterminal{letter}}"
-    RUpper  -> "{\\nonterminal{upper}}"
-    RLower  -> "{\\nonterminal{lower}}"
-    RAny  -> "{\\nonterminal{anychar}}"
+latexRegExp = rex 0
+  where
+  rex :: Int -> Reg -> String
+  rex i = \case
+    RSeq r0 r   -> ifPar i 2 $ rex 2 r0 +++ rex 2 r
+    RAlt r0 r   -> ifPar i 1 $ rex 1 r0 +++ "\\mid" +++ rex 1 r
+    RMinus r0 r -> ifPar i 1 $ rex 2 r0 +++ "-" +++ rex 2 r
+    RStar r     -> rex 3 r ++ "*"
+    RPlus r     -> rex 3 r ++ "+"
+    ROpt r      -> rex 3 r ++ "?"
+    REps        -> "\\epsilon"
+    RChar c     -> "\\mbox{`" ++ prt [c] ++ "'}"
+    RAlts s     -> "[" ++ "\\mbox{``" ++ prt s ++ "''}" ++ "]"
+    RSeqs s     -> "\\{" ++ "\\mbox{``" ++ prt s ++ "''}" ++ "\\}"
+    RDigit      -> "{\\nonterminal{digit}}"
+    RLetter     -> "{\\nonterminal{letter}}"
+    RUpper      -> "{\\nonterminal{upper}}"
+    RLower      -> "{\\nonterminal{lower}}"
+    RAny        -> "{\\nonterminal{anychar}}"
   ifPar i j s = if i > j then "(" ++ s ++ ")" else s
