@@ -35,17 +35,27 @@ import System.IO.Error (tryIOError)
 import System.Directory (renameFile, removeFile)
 import BNFC.PrettyPrint
 
-infixr 5 +++
-infixr 5 ++++
+infixr 5 +++, ++++, +-+, +.+
 
 -- printing operations
 
-(+.+), (+++), (++++), (+-+) :: String -> String -> String
+-- | Concatenate strings by a space.
+(+++) :: String -> String -> String
 a +++ b   = a ++ " "    ++ b
+
+-- | Concatenate strings by a newline.
+(++++) :: String -> String -> String
 a ++++ b  = a ++ "\n"   ++ b
+
+-- | Concatenate strings by an underscore.
+(+-+) :: String -> String -> String
 a +-+ b   = a ++ "_"    ++ b
+
+-- | Concatenate strings by a dot.
+(+.+) :: String -> String -> String
 a +.+ b   = a ++ "."    ++ b
 
+-- | Parenthesize a string unless it is empty.
 prParenth :: String -> String
 prParenth s = if s == "" then "" else "(" ++ s ++ ")"
 
@@ -101,11 +111,12 @@ writeFileRep path s =
 -- Because naming is hard (http://blog.codinghorror.com/i-shall-call-it-somethingmanager/)
 
 -- | Different case style
-data NameStyle = LowerCase  -- ^ e.g. @lowercase@
-               | UpperCase  -- ^ e.g. @UPPERCASE@
-               | SnakeCase  -- ^ e.g. @snake_case@
-               | CamelCase  -- ^ e.g. @CamelCase@
-               | MixedCase  -- ^ e.g. @mixedCase@
+data NameStyle
+  = LowerCase  -- ^ e.g. @lowercase@
+  | UpperCase  -- ^ e.g. @UPPERCASE@
+  | SnakeCase  -- ^ e.g. @snake_case@
+  | CamelCase  -- ^ e.g. @CamelCase@
+  | MixedCase  -- ^ e.g. @mixedCase@
   deriving (Show, Eq)
 
 -- | Generate a name in the given case style taking into account the reserved
@@ -113,23 +124,33 @@ data NameStyle = LowerCase  -- ^ e.g. @lowercase@
 -- to be used in code rendering (type Doc), we return a String here to allow
 -- further manipulation of the name (like disambiguation) which is not possible
 -- in the Doc type.
+--
 -- Examples:
+--
 -- >>> mkName [] LowerCase "FooBAR"
 -- "foobar"
+--
 -- >>> mkName [] UpperCase "FooBAR"
 -- "FOOBAR"
+--
 -- >>> mkName [] SnakeCase "FooBAR"
 -- "foo_bar"
+--
 -- >>> mkName [] CamelCase "FooBAR"
 -- "FooBAR"
+--
 -- >>> mkName [] CamelCase "Foo_bar"
 -- "FooBar"
+--
 -- >>> mkName [] MixedCase "FooBAR"
 -- "fooBAR"
+--
 -- >>> mkName ["foobar"] LowerCase "FooBAR"
 -- "foobar_"
+--
 -- >>> mkName ["foobar", "foobar_"] LowerCase "FooBAR"
 -- "foobar__"
+
 mkName :: [String] -> NameStyle -> String -> String
 mkName reserved style s = notReserved name'
   where
@@ -150,15 +171,19 @@ mkName reserved style s = notReserved name'
 
 -- | Same as above but accept a list as argument and make sure that the
 -- names generated are uniques.
+--
 -- >>> mkNames ["c"] LowerCase ["A", "b_", "a_", "c"]
 -- ["a1","b","a2","c_"]
+
 mkNames :: [String] -> NameStyle -> [String] -> [String]
 mkNames reserved style = disambiguateNames . map (mkName reserved style)
 
 -- | This one takes a list of names and makes sure each is unique, appending
--- numerical suffix if needed
+-- numerical suffix if needed.
+--
 -- >>> disambiguateNames ["a", "b", "a", "c"]
 -- ["a1","b","a2","c"]
+
 disambiguateNames :: [String] -> [String]
 disambiguateNames = disamb []
   where
@@ -168,7 +193,7 @@ disambiguateNames = disamb []
       | otherwise = n : disamb (n:ns1) ns2
     disamb _ [] = []
 
--- | Heuristic to "parse" an identifier into separate componennts
+-- | Heuristic to "parse" an identifier into separate components.
 --
 -- >>> parseIdent "abc"
 -- ["abc"]
@@ -185,7 +210,8 @@ disambiguateNames = disamb []
 -- >>> parseIdent "why-so-serious"
 -- ["why","so","serious"]
 --
--- Some corner cases
+-- Some corner cases:
+--
 -- >>> parseIdent "LBNFParser"
 -- ["LBNF","Parser"]
 --
@@ -214,29 +240,38 @@ parseIdent = p [] . map (classify &&& id)
 
 data CharClass = U | L | O
 
--- | Ident to lower case
+-- | Ident to lower case.
 -- >>> lowerCase "MyIdent"
 -- myident
+
 lowerCase :: String -> Doc
 lowerCase = text . mkName [] LowerCase
--- | Ident to upper case
+
+-- | Ident to upper case.
 -- >>> upperCase "MyIdent"
 -- MYIDENT
+
 upperCase :: String -> Doc
 upperCase = text . mkName [] UpperCase
--- | Ident to camel case
+
+-- | Ident to camel case.
 -- >>> camelCase "my_ident"
 -- MyIdent
+
 camelCase :: String -> Doc
 camelCase = text . mkName [] CamelCase
--- | To mixed case
+
+-- | To mixed case.
 -- >>> mixedCase "my_ident"
 -- myIdent
+
 mixedCase :: String -> Doc
 mixedCase = text . mkName [] MixedCase
--- | To snake case
+
+-- | To snake case.
 -- >>> snakeCase "MyIdent"
 -- my_ident
+
 snakeCase :: String -> Doc
 snakeCase = text . mkName [] SnakeCase
 
