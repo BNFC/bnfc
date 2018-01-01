@@ -83,7 +83,7 @@ mkHFile useStl inPackage cf groups = unlines
     "  /* You may wish to change them */",
     "  void render(Char c);",
     if useStl then "  void render(String s);" else "",
-    "void render(const char *s);",
+    "  void render(const char *s);",
     "  void indent(void);",
     "  void backup(void);",
     " public:",
