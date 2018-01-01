@@ -196,7 +196,11 @@ parameters =
             bin <- canonicalize ("." </> ("Test" <> lang))
             cmd bin args
         }
-    cBase = base { tpBuild = cmd "make" >> cmd "make" "Skeleton.o" }
+    cBase = base
+        { tpBuild = do
+            cmd "make"
+            cmd "make" "Skeleton.o"
+        }
     hsParams = base
         { tpBuild = do
             cmd "hlint" "-i" "Redundant bracket" "-i" "Use camelCase" "-i" "Use newtype instead of data" "-i" "Use fmap" "."
@@ -207,8 +211,9 @@ parameters =
             cmd bin args
         }
     javaParams = base
-        { tpBuild =
-            do { cmd "make" ; cmd "javac" =<< findFile "VisitSkel.java" }
+        { tpBuild = do
+            cmd "make"
+            cmd "javac" =<< findFile "VisitSkel.java"
         , tpRunTestProg = \_ args -> do
             class_ <- dropExtension <$> findFile "Test.class"
             cmd "java" class_ args
