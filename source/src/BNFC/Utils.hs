@@ -215,6 +215,9 @@ disambiguateNames = disamb []
 -- >>> parseIdent "LBNFParser"
 -- ["LBNF","Parser"]
 --
+-- >>> parseIdent "aLBNFParser"
+-- ["a","LBNF","Parser"]
+--
 -- >>> parseIdent "ILoveNY"
 -- ["I","Love","NY"]
 
@@ -229,27 +232,26 @@ parseIdent = p [] . map (classify &&& id)
 
     p :: String -> [(CharClass,Char)] -> [String]
     -- Done:
-    p []  []                       = []
-    p acc []                       = reverse acc : p [] []
-    -- Starting a new component with the next letter:
-    p []  ((L,c)  : cs)            = p [c] cs
-    p []  ((U,c)  : cs)            = p [c] cs
-    p []  ((O,_)  : cs)            = p [] cs
+    p acc []                       = emit acc []
 
     -- Continue if consecutive characters have same case.
     p acc ((L,c) : cs@((L,_) : _)) = p (c:acc) cs
     p acc ((U,c) : cs@((U,_) : _)) = p (c:acc) cs
 
     -- Break if consecutive characters have different case.
-    p acc ((U,c) : cs@((L,_) : _)) = reverse acc : p [c] cs
-    p acc ((L,c) : cs@((U,_) : _)) = reverse (c:acc) : p [] cs
+    p acc ((U,c) : cs@((L,_) : _)) = emit acc     $ p [c] cs
+    p acc ((L,c) : cs@((U,_) : _)) = emit (c:acc) $ p [] cs
 
     -- Discard "other" characters, and break to next component.
-    p acc ((U,c) :     (O,_) : cs) = reverse (c:acc) : p [] cs
-    p acc ((L,c) :     (O,_) : cs) = reverse (c:acc) : p [] cs
-    p acc ((O,_)  : cs)            = reverse acc : p [] cs
+    p acc ((U,c) :     (O,_) : cs) = emit (c:acc) $ p [] cs
+    p acc ((L,c) :     (O,_) : cs) = emit (c:acc) $ p [] cs
+    p acc ((O,_) : cs)             = emit acc     $ p [] cs
 
     p acc [(_,c)]                  = p (c:acc) []
+
+    emit :: String -> [String] -> [String]
+    emit []  rest = rest
+    emit acc rest = reverse acc : rest
 
 data CharClass = U | L | O
 
