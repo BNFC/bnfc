@@ -82,8 +82,8 @@ mkHFile useStl inPackage cf groups = unlines
     "  /* The following are simple heuristics for rendering terminals */",
     "  /* You may wish to change them */",
     "  void render(Char c);",
-    "  void render(String s);",
-    if useStl then "void render(char *s);" else "",
+    if useStl then "  void render(String s);" else "",
+    "  void render(const char *s);",
     "  void indent(void);",
     "  void backup(void);",
     " public:",
@@ -711,7 +711,7 @@ prRender useStl = unlines
                                  [ "bufAppend(s);"
                                  , "bufAppend(' ');" ] ]
       in if useStl then render renderString else "",
-      "void PrintAbsyn::render(char *s)",
+      "void PrintAbsyn::render(const char *s)",
       "{",
       "  if(strlen(s) > 0)",
       "  {",
