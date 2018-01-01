@@ -15,6 +15,16 @@ import Filesystem.Path (filename, dropExtension, basename, replaceExtension)
 import Filesystem.Path.CurrentOS (encodeString)
 import Prelude hiding (FilePath)
 import Shelly
+  ( FilePath, Sh, (</>)
+  , absPath, appendfile
+  , canonicalize, cd, cp, cmd
+  , echo, errExit
+  , lastExitCode, ls
+  , readfile, run_
+  , setStdin
+  , test_f, toTextArg
+  , when, withTmpDir, writefile
+  )
 
 import TestUtils
 import TestData
