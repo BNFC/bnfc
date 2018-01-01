@@ -93,7 +93,6 @@ header inPackage name cf = unlines
     , "#include <stdlib.h>"
     , "#include <stdio.h>"
     , "#include <string.h>"
-    , "#include <iostream>"
     , "#include <algorithm>"
     , "#include \"Absyn.H\""
     , "typedef struct yy_buffer_state *YY_BUFFER_STATE;"
