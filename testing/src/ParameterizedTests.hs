@@ -219,7 +219,9 @@ parameters =
             cmd "java" class_ args
         }
 
--- | Helper function that runs bnfc with the context's options
+-- | Helper function that runs bnfc with the context's options.
+--   It will simply invoke the bnfc that is in the system's path.
+
 tpBnfc :: TestParameters -> FilePath -> Sh ()
 tpBnfc params grammar = run_ "bnfc" args
   where args = tpBnfcOptions params ++ [toTextArg grammar]
