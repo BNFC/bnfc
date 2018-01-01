@@ -59,10 +59,10 @@ data ProfItem = ProfIt [IntList] [Integer]
 data IntList = Ints [Integer]
   deriving (Eq, Ord, Show, Read, Data, Typeable, Generic)
 
-data Separation = SepNone | SepTerm String | SepSepar String
+data Arg = Arg Ident
   deriving (Eq, Ord, Show, Read, Data, Typeable, Generic)
 
-data Arg = Arg Ident
+data Separation = SepNone | SepTerm String | SepSepar String
   deriving (Eq, Ord, Show, Read, Data, Typeable, Generic)
 
 data Exp

@@ -68,14 +68,14 @@ transProfItem x = case x of
 transIntList :: IntList -> Result
 transIntList x = case x of
   Ints integers -> failure x
+transArg :: Arg -> Result
+transArg x = case x of
+  Arg ident -> failure x
 transSeparation :: Separation -> Result
 transSeparation x = case x of
   SepNone -> failure x
   SepTerm string -> failure x
   SepSepar string -> failure x
-transArg :: Arg -> Result
-transArg x = case x of
-  Arg ident -> failure x
 transExp :: Exp -> Result
 transExp x = case x of
   Cons exp1 exp2 -> failure x

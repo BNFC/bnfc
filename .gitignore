@@ -28,3 +28,7 @@ cabal.sandbox.config
 /document/CC-2004.dvi
 /document/CC-2004.ps
 /document/LBNF-report.dvi
+/source/src/LexBNF.hs
+/source/src/LexBNF.info
+/source/src/ParBNF.hs
+/source/src/ParBNF.info

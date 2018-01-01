@@ -17,7 +17,7 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 -}
 
--- A Grammar is a sequence of definitions
+-- Multi-view grammars (undocumented)
 
 LGr.      LGrammar ::= [LDef] ;
 
@@ -26,37 +26,41 @@ DefSome.  LDef ::= [Ident] ":" Def ;
 LDefView. LDef ::= "views" [Ident] ;
 
 separator LDef ";" ;
+separator nonempty Ident "," ;
+
+-- A Grammar is a sequence of definitions
 
 Grammar . Grammar ::= [Def] ;
 
 separator Def ";" ;
 
-[]  . [Item] ::= ;
-(:) . [Item] ::= Item [Item] ;
-
---The rules of the grammar
-Rule . Def ::= Label "." Cat "::=" [Item] ;
+-- The rules of the grammar
+Rule .    Def ::= Label "." Cat "::=" [Item] ;
 
 -- Items
 Terminal  . Item ::= String ;
 NTerminal . Item ::= Cat ;
 
--- Categories
+terminator Item "" ;
+
+-- Categories (non-terminals)
 ListCat  . Cat ::= "[" Cat "]" ;
 IdCat    . Cat ::= Ident ;
 
--- labels with or without profiles
+-- Labels with or without profiles
 LabNoP   . Label ::= LabelId ;
 LabP     . Label ::= LabelId [ProfItem] ;
+-- A second label can be given in use of profiles and serves as
+-- ``original function name'' (undocumented feature).
 LabPF    . Label ::= LabelId LabelId [ProfItem] ;
 LabF     . Label ::= LabelId LabelId ;
 
 -- functional labels
-Id       . LabelId ::= Ident ;
-Wild     . LabelId ::= "_" ;
-ListE    . LabelId ::= "[" "]" ;
-ListCons . LabelId ::= "(" ":" ")" ;
-ListOne  . LabelId ::= "(" ":" "[" "]" ")" ;
+Id       . LabelId ::= Ident               ;  -- AST constructor
+Wild     . LabelId ::= "_"                 ;  -- No AST constructor (embedding)
+ListE    . LabelId ::= "[" "]"             ;  -- Empty list
+ListCons . LabelId ::= "(" ":" ")"         ;  -- Cons
+ListOne  . LabelId ::= "(" ":" "[" "]" ")" ;  -- Singleton list
 
 -- profiles (= permutation and binding patterns)
 ProfIt   . ProfItem ::= "(" "[" [IntList] "]" "," "[" [Integer] "]" ")" ;
@@ -68,29 +72,33 @@ separator IntList "," ;
 terminator nonempty ProfItem "" ;
 
 -- Pragmas
-Comment  .  Def ::= "comment" String ;
-Comments .  Def ::= "comment" String String ;
-Internal .  Def ::= "internal" Label "." Cat "::=" [Item] ;
-Token.      Def ::= "token" Ident Reg ;
-PosToken.   Def ::= "position" "token" Ident Reg ;
-Entryp.     Def ::= "entrypoints" [Ident] ;
-Separator.  Def ::= "separator" MinimumSize Cat String ;
-Terminator. Def ::= "terminator" MinimumSize Cat String ;
-Delimiters. Def ::= "delimiters" Cat String String Separation MinimumSize;
-Coercions.  Def ::= "coercions" Ident Integer ;
-Rules.      Def ::= "rules" Ident "::=" [RHS] ;
-Function.   Def ::= "define" Ident [Arg] "=" Exp ;
+Comment  .  Def ::= "comment"  String                     ; -- Line comment
+Comments .  Def ::= "comment"  String String              ; -- Block comment
+Internal .  Def ::= "internal" Label "." Cat "::=" [Item] ; -- No parsing, AST and printing only
+Token.      Def ::=            "token" Ident Reg          ; -- Lexer token
+PosToken.   Def ::= "position" "token" Ident Reg          ; -- Lexer token with position info
+Entryp.     Def ::= "entrypoints" [Ident]                 ; -- Names of parsers
+Separator.  Def ::= "separator"   MinimumSize Cat String  ; -- List
+Terminator. Def ::= "terminator"  MinimumSize Cat String  ; -- List
+Delimiters. Def ::= "delimiters"  Cat String String Separation MinimumSize;
+Coercions.  Def ::= "coercions"   Ident Integer           ; -- Embeddings and parenthesized exprs.
+Rules.      Def ::= "rules"       Ident "::=" [RHS]       ; -- Automatically generated lables (e.g. enums)
+Function.   Def ::= "define"      Ident [Arg] "=" Exp     ;
 
+Arg.        Arg ::= Ident ;
+separator   Arg "" ;
+
+-- Lists
 SepNone.    Separation ::= ;
 SepTerm.    Separation ::= "terminator" String;
-SepSepar.   Separation ::= "separator" String;
+SepSepar.   Separation ::= "separator"  String;
 
-Layout.     Def ::= "layout" [String] ;
-LayoutStop. Def ::= "layout" "stop" [String] ;
-LayoutTop.  Def ::= "layout" "toplevel" ;
+-- Layout
+Layout.     Def ::= "layout" [String]        ; -- Layout start keywords
+LayoutStop. Def ::= "layout" "stop" [String] ; -- Layout stop keywords
+LayoutTop.  Def ::= "layout" "toplevel"      ; -- Should the toplevel be a block?
 
-Arg. Arg ::= Ident ;
-separator Arg "" ;
+separator nonempty String "," ;
 
 -- Expressions
 Cons.       Exp  ::= Exp1 ":" Exp ;
@@ -102,50 +110,41 @@ LitString.  Exp2 ::= String ;
 LitDouble.  Exp2 ::= Double ;
 List.       Exp2 ::= "[" [Exp] "]" ;
 
+coercions   Exp 2;
 
-coercions Exp 2;
-separator nonempty Exp2 "" ;
-separator Exp "," ;
+separator   Exp ","        ; -- list list
+separator nonempty Exp2 "" ; -- argument list
 
-separator nonempty String "," ;
-
+RHS.      RHS ::= [Item] ;
 separator nonempty RHS "|" ;
-RHS. RHS ::= [Item] ;
 
 -- List size condition
 MNonempty.  MinimumSize ::= "nonempty" ;
 MEmpty.     MinimumSize ::=  ;
 
--- regular expressions
-RSeq.   Reg2 ::= Reg2 Reg3     ;  -- left-associative
-RAlt.   Reg1 ::= Reg1 "|" Reg2 ;  -- left-associative
-RMinus. Reg1 ::= Reg2 "-" Reg2 ;  -- non-associative
+-- Regular expressions
+RSeq.    Reg2 ::= Reg2 Reg3     ;  -- left-associative
+RAlt.    Reg1 ::= Reg1 "|" Reg2 ;  -- left-associative
+RMinus.  Reg1 ::= Reg2 "-" Reg2 ;  -- non-associative
 
-RStar.  Reg3 ::= Reg3 "*" ;
-RPlus.  Reg3 ::= Reg3 "+" ;
-ROpt.   Reg3 ::= Reg3 "?" ;
+RStar.   Reg3 ::= Reg3 "*" ;
+RPlus.   Reg3 ::= Reg3 "+" ;
+ROpt.    Reg3 ::= Reg3 "?" ;
 
-REps.   Reg3 ::= "eps" ;
+REps.    Reg3 ::= "eps" ;
 
-RChar.  Reg3 ::= Char ;           -- single character
-RAlts.  Reg3 ::= "[" String "]" ; -- list of alternative characters
-RSeqs.  Reg3 ::= "{" String "}" ; -- character sequence
+RChar.   Reg3 ::= Char ;           -- single character
+RAlts.   Reg3 ::= "[" String "]" ; -- list of alternative characters
+RSeqs.   Reg3 ::= "{" String "}" ; -- character sequence
 
-RDigit.  Reg3 ::= "digit" ;
+RDigit.  Reg3 ::= "digit"  ;
 RLetter. Reg3 ::= "letter" ;
-RUpper.  Reg3 ::= "upper" ;
-RLower.  Reg3 ::= "lower" ;
-RAny.    Reg3 ::= "char" ;
+RUpper.  Reg3 ::= "upper"  ;
+RLower.  Reg3 ::= "lower"  ;
+RAny.    Reg3 ::= "char"   ;
 
-_. Reg  ::= Reg1 ;
-_. Reg1 ::= Reg2 ;
-_. Reg2 ::= Reg3 ;
-_. Reg3 ::= "(" Reg ")" ;
+coercions Reg 3;
 
--- list of categories in the entrypoint pragma
-(:[]).  [Ident] ::= Ident ;
-(:).    [Ident] ::= Ident "," [Ident] ;
-
--- comments in BNF source
-comment "--" ;
+-- Comments in BNF source
+comment "--"      ;
 comment "{-" "-}" ;

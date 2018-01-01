@@ -11,11 +11,12 @@ import ErrM
 %name pLGrammar LGrammar
 %name pLDef LDef
 %name pListLDef ListLDef
+%name pListIdent ListIdent
 %name pGrammar Grammar
 %name pListDef ListDef
-%name pListItem ListItem
 %name pDef Def
 %name pItem Item
+%name pListItem ListItem
 %name pCat Cat
 %name pLabel Label
 %name pLabelId LabelId
@@ -24,23 +25,22 @@ import ErrM
 %name pListInteger ListInteger
 %name pListIntList ListIntList
 %name pListProfItem ListProfItem
-%name pSeparation Separation
 %name pArg Arg
 %name pListArg ListArg
+%name pSeparation Separation
+%name pListString ListString
 %name pExp Exp
 %name pExp1 Exp1
 %name pExp2 Exp2
-%name pListExp2 ListExp2
 %name pListExp ListExp
-%name pListString ListString
-%name pListRHS ListRHS
+%name pListExp2 ListExp2
 %name pRHS RHS
+%name pListRHS ListRHS
 %name pMinimumSize MinimumSize
 %name pReg2 Reg2
 %name pReg1 Reg1
 %name pReg3 Reg3
 %name pReg Reg
-%name pListIdent ListIdent
 -- no lexer declaration
 %monad { Err } { thenM } { returnM }
 %tokentype {Token}
@@ -86,8 +86,8 @@ import ErrM
   '|' { PT _ (TS _ 39) }
   '}' { PT _ (TS _ 40) }
 
-L_quoted { PT _ (TL $$) }
 L_ident  { PT _ (TV $$) }
+L_quoted { PT _ (TL $$) }
 L_integ  { PT _ (TI $$) }
 L_charac { PT _ (TC $$) }
 L_doubl  { PT _ (TD $$) }
@@ -95,8 +95,8 @@ L_doubl  { PT _ (TD $$) }
 
 %%
 
-String  :: { String }  : L_quoted {  $1 }
 Ident   :: { Ident }   : L_ident  { Ident $1 }
+String  :: { String }  : L_quoted {  $1 }
 Integer :: { Integer } : L_integ  { (read ( $1)) :: Integer }
 Char    :: { Char }    : L_charac { (read ( $1)) :: Char }
 Double  :: { Double }  : L_doubl  { (read ( $1)) :: Double }
@@ -111,14 +111,14 @@ ListLDef :: { [LDef] }
 ListLDef : {- empty -} { [] }
          | LDef { (:[]) $1 }
          | LDef ';' ListLDef { (:) $1 $3 }
+ListIdent :: { [Ident] }
+ListIdent : Ident { (:[]) $1 } | Ident ',' ListIdent { (:) $1 $3 }
 Grammar :: { Grammar }
 Grammar : ListDef { AbsBNF.Grammar $1 }
 ListDef :: { [Def] }
 ListDef : {- empty -} { [] }
         | Def { (:[]) $1 }
         | Def ';' ListDef { (:) $1 $3 }
-ListItem :: { [Item] }
-ListItem : {- empty -} { [] } | ListItem Item { flip (:) $1 $2 }
 Def :: { Def }
 Def : Label '.' Cat '::=' ListItem { AbsBNF.Rule $1 $3 (reverse $5) }
     | 'comment' String { AbsBNF.Comment $2 }
@@ -138,6 +138,8 @@ Def : Label '.' Cat '::=' ListItem { AbsBNF.Rule $1 $3 (reverse $5) }
     | 'layout' 'toplevel' { AbsBNF.LayoutTop }
 Item :: { Item }
 Item : String { AbsBNF.Terminal $1 } | Cat { AbsBNF.NTerminal $1 }
+ListItem :: { [Item] }
+ListItem : {- empty -} { [] } | ListItem Item { flip (:) $1 $2 }
 Cat :: { Cat }
 Cat : '[' Cat ']' { AbsBNF.ListCat $2 } | Ident { AbsBNF.IdCat $1 }
 Label :: { Label }
@@ -166,14 +168,17 @@ ListIntList : {- empty -} { [] }
 ListProfItem :: { [ProfItem] }
 ListProfItem : ProfItem { (:[]) $1 }
              | ProfItem ListProfItem { (:) $1 $2 }
-Separation :: { Separation }
-Separation : {- empty -} { AbsBNF.SepNone }
-           | 'terminator' String { AbsBNF.SepTerm $2 }
-           | 'separator' String { AbsBNF.SepSepar $2 }
 Arg :: { Arg }
 Arg : Ident { AbsBNF.Arg $1 }
 ListArg :: { [Arg] }
 ListArg : {- empty -} { [] } | ListArg Arg { flip (:) $1 $2 }
+Separation :: { Separation }
+Separation : {- empty -} { AbsBNF.SepNone }
+           | 'terminator' String { AbsBNF.SepTerm $2 }
+           | 'separator' String { AbsBNF.SepSepar $2 }
+ListString :: { [String] }
+ListString : String { (:[]) $1 }
+           | String ',' ListString { (:) $1 $3 }
 Exp :: { Exp }
 Exp : Exp1 ':' Exp { AbsBNF.Cons $1 $3 } | Exp1 { $1 }
 Exp1 :: { Exp }
@@ -186,19 +191,16 @@ Exp2 : Ident { AbsBNF.Var $1 }
      | Double { AbsBNF.LitDouble $1 }
      | '[' ListExp ']' { AbsBNF.List $2 }
      | '(' Exp ')' { $2 }
-ListExp2 :: { [Exp] }
-ListExp2 : Exp2 { (:[]) $1 } | Exp2 ListExp2 { (:) $1 $2 }
 ListExp :: { [Exp] }
 ListExp : {- empty -} { [] }
         | Exp { (:[]) $1 }
         | Exp ',' ListExp { (:) $1 $3 }
-ListString :: { [String] }
-ListString : String { (:[]) $1 }
-           | String ',' ListString { (:) $1 $3 }
-ListRHS :: { [RHS] }
-ListRHS : RHS { (:[]) $1 } | RHS '|' ListRHS { (:) $1 $3 }
+ListExp2 :: { [Exp] }
+ListExp2 : Exp2 { (:[]) $1 } | Exp2 ListExp2 { (:) $1 $2 }
 RHS :: { RHS }
 RHS : ListItem { AbsBNF.RHS (reverse $1) }
+ListRHS :: { [RHS] }
+ListRHS : RHS { (:[]) $1 } | RHS '|' ListRHS { (:) $1 $3 }
 MinimumSize :: { MinimumSize }
 MinimumSize : 'nonempty' { AbsBNF.MNonempty }
             | {- empty -} { AbsBNF.MEmpty }
@@ -224,8 +226,6 @@ Reg3 : Reg3 '*' { AbsBNF.RStar $1 }
      | '(' Reg ')' { $2 }
 Reg :: { Reg }
 Reg : Reg1 { $1 }
-ListIdent :: { [Ident] }
-ListIdent : Ident { (:[]) $1 } | Ident ',' ListIdent { (:) $1 $3 }
 {
 
 returnM :: a -> Err a

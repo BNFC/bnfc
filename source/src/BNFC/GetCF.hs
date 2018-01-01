@@ -435,9 +435,9 @@ checkRule cf (Rule (f,_) cat rhs)
 -- let Ok tree = expandRules (Abs.Grammar [rules1])
 -- in putStrLn (printTree tree)
 -- :}
--- Foo_abc . Foo ::= "abc" ;
--- FooA . Foo ::= A ;
--- Foo1 . Foo ::= "foo" "bar" ;
+-- Foo_abc . Foo ::= "abc";
+-- FooA . Foo ::= A;
+-- Foo1 . Foo ::= "foo" "bar";
 -- Foo2 . Foo ::= "++"
 --
 -- Note that if there are two `rules` macro with the same category, the
@@ -452,7 +452,7 @@ checkRule cf (Rule (f,_) cat rhs)
 -- let Ok tree = expandRules (Abs.Grammar [rules1, rules2])
 -- in putStrLn (printTree tree)
 -- :}
--- Foo1 . Foo ::= "foo" "bar" ;
+-- Foo1 . Foo ::= "foo" "bar";
 -- Foo2 . Foo ::= "foo" "foo"
 --
 -- This is using a State monad to remember the last used index for a category.
