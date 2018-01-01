@@ -111,6 +111,7 @@ ListLDef :: { [LDef] }
 ListLDef : {- empty -} { [] }
          | LDef { (:[]) $1 }
          | LDef ';' ListLDef { (:) $1 $3 }
+         | ';' ListLDef { $2 }
 ListIdent :: { [Ident] }
 ListIdent : Ident { (:[]) $1 } | Ident ',' ListIdent { (:) $1 $3 }
 Grammar :: { Grammar }
@@ -119,6 +120,7 @@ ListDef :: { [Def] }
 ListDef : {- empty -} { [] }
         | Def { (:[]) $1 }
         | Def ';' ListDef { (:) $1 $3 }
+        | ';' ListDef { $2 }
 Def :: { Def }
 Def : Label '.' Cat '::=' ListItem { AbsBNF.Rule $1 $3 (reverse $5) }
     | 'comment' String { AbsBNF.Comment $2 }

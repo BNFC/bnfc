@@ -32,3 +32,4 @@ cabal.sandbox.config
 /source/src/LexBNF.info
 /source/src/ParBNF.hs
 /source/src/ParBNF.info
+/source/src/TestBNF

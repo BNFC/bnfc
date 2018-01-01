@@ -49,7 +49,7 @@ exitCodeTest params =
     makeShellyTest "Test program exits with code 1 on failure" $
         withTmpDir $ \tmp -> do
             cd tmp
-            writefile "Abra.cf" "F. C ::= \"abracadabra\";"
+            writefile "Abra.cf" ";; F. C ::= \"abracadabra\" ;"  -- leading semicolon for #215
             tpBnfc params "Abra.cf"
             tpBuild params
             setStdin "bad"

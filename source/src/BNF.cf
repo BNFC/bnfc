@@ -25,14 +25,25 @@ DefAll.   LDef ::= Def ;
 DefSome.  LDef ::= [Ident] ":" Def ;
 LDefView. LDef ::= "views" [Ident] ;
 
-separator LDef ";" ;
+-- separator LDef ";" ;
+[].       [LDef] ::= ;
+(:[]).    [LDef] ::= LDef ;
+(:).      [LDef] ::= LDef ";" [LDef] ;
+-- extra semicolons allowed
+_.        [LDef] ::= ";" [LDef] ;
+
 separator nonempty Ident "," ;
 
 -- A Grammar is a sequence of definitions
 
 Grammar . Grammar ::= [Def] ;
 
-separator Def ";" ;
+-- separator Def ";" ;  -- Note: this still permits a final semicolon.
+[].       [Def] ::= ;
+(:[]).    [Def] ::= Def ;
+(:).      [Def] ::= Def ";" [Def] ;
+-- extra semicolons allowed
+_.        [Def] ::= ";" [Def] ;
 
 -- The rules of the grammar
 Rule .    Def ::= Label "." Cat "::=" [Item] ;
