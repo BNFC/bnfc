@@ -74,38 +74,46 @@ replace x y xs = [ if z == x then y else z | z <- xs]
 -- If an old version of the file exist and the new version is the same,
 -- keep the old file and don't create a .bak file.
 -- / New version by TH, 2010-09-23
+
 writeFileRep :: FilePath -> String -> IO ()
 writeFileRep path s =
     either newFile updateFile =<< tryIOError (readFile' path)
   where
-    newFile _ =
-        do putStrLn $ "writing new file "++path
-           writeFile path s
-    updateFile old =
-        do let tmp=path++".tmp"
-           writeFile tmp s
-           new <- readFile' tmp
-           if new==old  -- test is O(1) space, O(n) time
-              then do putStrLn $ "no change to file "++path
-                      removeFile tmp
-              else do let bak=path++".bak"
-                      putStrLn $ "writing file "++path
-                                   ++" (saving old file as "++bak++")"
-                      renameFile path bak
-                      renameFile tmp path
+    -- Case: file does not exist yet.
+    newFile _ = do
+      putStrLn $ "writing new file " ++ path
+      writeFile path s
 
-    -- force reading of contents of files to achieve compatibility with
-    -- Windows IO handling as combining lazy IO with `readFile` and
-    -- 2x `renameFile` on the open `path` file complains with
+    -- Case: file exists with content @old@.
+    updateFile old = do
+      -- First, write content to a .tmp file.
+      let tmp = path ++ ".tmp"
+      writeFile tmp s
+      -- We read the just written file, the content @new@ should be identical to @s@, no?
+      new <- readFile' tmp
+      if new == old  -- test is O(1) space, O(n) time
+         then do
+           putStrLn $ "no change to file " ++ path
+           removeFile tmp
+         else do
+           let bak = path ++ ".bak"
+           putStrLn $ "writing file " ++ path ++ " (saving old file as " ++ bak ++ ")"
+           renameFile path bak
+           renameFile tmp path
+
+    -- Force reading of contents of files to achieve compatibility with
+    -- Windows IO handling, as combining lazy IO with `readFile` and
+    -- 2x `renameFile` on the open `path` file complains with:
+    --
     -- "bnfc.exe: Makefile: MoveFileEx "Makefile" "Makefile.bak": permission
     -- denied (The process cannot access the file because it is being used
     -- by another process.)"
     readFile' :: FilePath -> IO String
-    readFile' path' =
-        do inFile <- openFile path' ReadMode
-           contents <- hGetContents inFile
-           rnf contents `seq` hClose inFile
-           return contents
+    readFile' path' = do
+      inFile   <- openFile path' ReadMode
+      contents <- hGetContents inFile
+      rnf contents `seq` hClose inFile
+      return contents
 
 -- *** Naming ***
 -- Because naming is hard (http://blog.codinghorror.com/i-shall-call-it-somethingmanager/)
