@@ -8,8 +8,10 @@ import PygmentsTests
 import RegressionTests
 import OutputParser
 
-main = htfMain [ ParameterizedTests.all
-               , RegressionTests.all
-               , PygmentsTests.all
-               , HaskellCnfTests.all
-               , OutputParser.tests ]
+main = htfMain
+  [ RegressionTests.all
+  , ParameterizedTests.all
+  , PygmentsTests.all
+  , HaskellCnfTests.all
+  , OutputParser.tests
+  ]
