@@ -177,24 +177,30 @@ case_fun functor cat xs = vcat
     type_ | functor   = parens (text (show cat) <+> "a")
           | otherwise = text (show cat)
 
---  When writing the Print instance for a category (in case_fun), we have
+-- | When writing the Print instance for a category (in case_fun), we have
 -- a different case for each constructor for this category.
+--
 -- >>> mkPrintCase False ("AA", (Cat "A", [Right "xxx"]))
 -- AA -> prPrec i 0 (concatD [doc (showString "xxx")])
 --
--- Coercion levels are passed to prPrec
+-- Coercion levels are passed to @prPrec@.
+--
 -- >>> mkPrintCase False ("EInt", (CoercCat "Expr" 2, [Left (TokenCat "Integer")]))
 -- EInt n -> prPrec i 2 (concatD [prt 0 n])
--- >>> mkPrintCase False ("EPlus", (CoercCat "Expr" 1, [Left (Cat "Expr"), Right "+", Left (Cat "Expr")]))
--- EPlus expr0 expr -> prPrec i 1 (concatD [prt 0 expr0, doc (showString "+"), prt 0 expr])
 --
--- If the AST is a functor, ignore first argument
+-- >>> mkPrintCase False ("EPlus", (CoercCat "Expr" 1, [Left (Cat "Expr"), Right "+", Left (Cat "Expr")]))
+-- EPlus expr1 expr2 -> prPrec i 1 (concatD [prt 0 expr1, doc (showString "+"), prt 0 expr2])
+--
+-- If the AST is a functor, ignore first argument.
+--
 -- >>> mkPrintCase True ("EInt", (CoercCat "Expr" 2, [Left (TokenCat "Integer")]))
 -- EInt _ n -> prPrec i 2 (concatD [prt 0 n])
 --
--- Skip internal categories
+-- Skip internal categories.
+--
 -- >>> mkPrintCase True ("EInternal", (Cat "Expr", [Left InternalCat, Left (Cat "Expr")]))
 -- EInternal _ expr -> prPrec i 0 (concatD [prt 0 expr])
+--
 mkPrintCase :: Bool -> (Fun, (Cat, [Either Cat String])) -> Doc
 mkPrintCase functor (f, (cat, rhs)) =
     text f <+> (if functor then "_" else empty) <+> hsep variables <+> "->"
