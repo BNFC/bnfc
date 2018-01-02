@@ -97,7 +97,7 @@ definedRules packageAbsyn cf =
   where
     ctx = buildContext cf
 
-    list = LC (\t -> "List" ++ unBase t) (const "cons")
+    list = LC (\ t -> "List" ++ unBase t) (const "cons")
       where
          unBase (ListT t) = unBase t
          unBase (BaseT x) = show$normCat$strToCat x

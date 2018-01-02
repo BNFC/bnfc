@@ -128,7 +128,7 @@ definedRules cf =
   where
     ctx = buildContext cf
 
-    list = LC (const "[]") (\t -> "List" ++ unBase t)
+    list = LC (const "[]") (\ t -> "List" ++ unBase t)
       where
         unBase (ListT t) = unBase t
         unBase (BaseT x) = show $ normCat $ strToCat x
