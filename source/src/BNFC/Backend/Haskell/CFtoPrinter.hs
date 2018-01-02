@@ -28,9 +28,17 @@ import Data.List   (sortBy)
 import Data.Maybe  (fromJust)
 import Text.PrettyPrint
 
--- | Derive pretty-printer from a BNF grammar. AR 15/2/2002
+-- AR 15/2/2002
 
-cf2Printer :: Bool -> Bool -> Bool -> String -> String -> CF -> String
+-- | Derive pretty-printer from a BNF grammar.
+cf2Printer
+  :: Bool    -- ^ Are identifiers @ByteString@s rather than @String@s?  (Option @--bytestrings@)
+  -> Bool    -- ^ Option @--functor@?
+  -> Bool    -- ^ @--haskell-gadt@?
+  -> String  -- ^ Name of created Haskell module.
+  -> String  -- ^ Name of Haskell module for abstract syntax.
+  -> CF      -- ^ Grammar.
+  -> String
 cf2Printer byteStrings functor useGadt name absMod cf = unlines $
   [ prologue byteStrings useGadt name absMod
   , integerRule cf
@@ -139,6 +147,7 @@ showsPrintRule cf t = unlines $
 identRule :: Bool -> CF -> String
 identRule byteStrings cf = ownPrintRule byteStrings cf catIdent
 
+-- | Printing identifiers and terminals.
 ownPrintRule :: Bool -> CF -> Cat -> String
 ownPrintRule byteStrings cf own = unlines $
   [ "instance Print " ++ show own ++ " where"
