@@ -12,7 +12,8 @@ import TestUtils
 import Shelly
 import Prelude hiding (all)
 
-all = makeTestSuite "Regression tests"
+all = makeTestSuite "Regression tests" $
+    [ issue222 ] ++
     [ issue30, issue31
     , issue60
     , issue108, issue110, issue111, issue114, issue113
@@ -207,3 +208,10 @@ issue172 = makeShellyTest "#172 Prefixes not generated correctly in CPP" $
             , "End.   S ::= ;" ]
         cmd "bnfc" "-m" "--cpp" "-p" "Haskell" "Test.cf"
         cmd "make"
+
+issue222 :: Test
+issue222 =
+  haskellRegressionTest
+    "#222 Haskell: printing of Integer lists with separator"
+    "222_IntegerList"
+    "IntegerList"
