@@ -22,10 +22,13 @@ module BNFC.Backend.Haskell.CFtoPrinter (cf2Printer, compareRules) where
 import BNFC.Backend.Haskell.Utils (hsReservedWords)
 import BNFC.CF
 import BNFC.Utils
+
 import Data.Char   (toLower)
 import Data.Either (lefts)
 import Data.List   (sortBy)
 import Data.Maybe  (fromJust)
+
+-- import Debug.Trace (trace)
 import Text.PrettyPrint
 
 -- AR 15/2/2002
@@ -229,10 +232,16 @@ mkPrintCase functor (f, (cat, rhs)) =
     var xs = map toLower $ show xs
 
 ifList :: CF -> Cat -> String
-ifList cf cat = render $ nest 2 $ vcat [ mkPrtListCase r | r <- rules ]
+ifList cf cat =
+    -- trace ("ifList cf    = " ++ show cf   ) $
+    -- trace ("ifList cat   = " ++ show cat  ) $
+    -- trace ("ifList rules = " ++ show rules) $
+    -- trace ("ifList rulesForCat cf (ListCat cat) = " ++ show (rulesForCat cf (ListCat cat))) $
+    -- trace "" $
+    render $ nest 2 $ vcat cases
   where
     rules = sortBy compareRules $ rulesForNormalizedCat cf (ListCat cat)
-
+    cases = [ mkPrtListCase r | r <- rules ]
 
 -- | Pattern match on the list constructor and the coercion level
 --
