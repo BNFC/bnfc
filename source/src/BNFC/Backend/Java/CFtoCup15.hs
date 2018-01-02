@@ -78,14 +78,14 @@ cf2Cup packageBase packageAbsyn cf env = unlines
       , definedRules packageAbsyn cf
       , "public void syntax_error(java_cup.runtime.Symbol cur_token)"
       , "{"
-      , "\treport_error(\"Syntax Error, trying to recover and continue"
+      , "  report_error(\"Syntax Error, trying to recover and continue"
         ++ " parse...\", cur_token);"
       , "}"
       , ""
       , "public void unrecovered_syntax_error(java_cup.runtime.Symbol "
         ++ "cur_token) throws java.lang.Exception"
       , "{"
-      , "\tthrow new Exception(\"Unrecoverable Syntax Error\");"
+      , "  throw new Exception(\"Unrecoverable Syntax Error\");"
       , "}"
       , ""
       , ":}"
@@ -159,8 +159,8 @@ parseMethod packageAbsyn cat =
              [ "  public" +++ packageAbsyn ++ "." ++ cat' +++ "p" ++ cat' ++ "()"
                  ++ " throws Exception"
              , "  {"
-             , "\tjava_cup.runtime.Symbol res = parse();"
-             , "\treturn (" ++ packageAbsyn ++ "." ++ cat' ++ ") res.value;"
+             , "    java_cup.runtime.Symbol res = parse();"
+             , "    return (" ++ packageAbsyn ++ "." ++ cat' ++ ") res.value;"
              , "  }"
              ]
     where cat' = identCat (normCat cat)
