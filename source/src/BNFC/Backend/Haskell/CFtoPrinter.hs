@@ -156,9 +156,9 @@ ownPrintRule byteStrings cf own = unlines $
 rules :: Bool -> CF -> [String]
 rules functor cf =
   map (\(s,xs) -> render (case_fun functor s (map toArgs xs)) ++++ ifList cf s) $ cf2data cf
- where
-   toArgs (cons,_) = (cons, ruleOf cons)
-   ruleOf s = fromJust $ lookupRule s (cfgRules cf)
+  where
+    toArgs (cons,_) = (cons, ruleOf cons)
+    ruleOf s = fromJust $ lookupRule s (cfgRules cf)
 
 -- |
 -- >>> case_fun False (Cat "A") [("AA", (Cat "AB", [Right "xxx"]))]
@@ -192,7 +192,7 @@ case_fun functor cat xs = vcat
 -- >>> mkPrintCase True ("EInt", (CoercCat "Expr" 2, [Left (TokenCat "Integer")]))
 -- EInt _ n -> prPrec i 2 (concatD [prt 0 n])
 --
--- Skip intertal categories
+-- Skip internal categories
 -- >>> mkPrintCase True ("EInternal", (Cat "Expr", [Left InternalCat, Left (Cat "Expr")]))
 -- EInternal _ expr -> prPrec i 0 (concatD [prt 0 expr])
 mkPrintCase :: Bool -> (Fun, (Cat, [Either Cat String])) -> Doc
@@ -211,7 +211,7 @@ mkPrintCase functor (f, (cat, rhs)) =
     var (TokenCat "String")  = "str"
     var (TokenCat "Char")    = "c"
     var (TokenCat "Double")  = "d"
-    var xs        = map toLower $ show xs
+    var xs = map toLower $ show xs
 
 ifList :: CF -> Cat -> String
 ifList cf cat = render $ nest 2 $ vcat [ mkPrtListCase r | r <- rules ]
@@ -220,18 +220,25 @@ ifList cf cat = render $ nest 2 $ vcat [ mkPrtListCase r | r <- rules ]
 
 
 -- | Pattern match on the list constructor and the coercion level
+--
 -- >>> mkPrtListCase (Rule "[]" (ListCat (Cat "Foo")) [])
 -- prtList _ [] = concatD []
+--
 -- >>> mkPrtListCase (Rule "(:[])" (ListCat (Cat "Foo")) [Left (Cat "FOO")])
 -- prtList _ [x] = concatD [prt 0 x]
+--
 -- >>> mkPrtListCase (Rule "(:)" (ListCat (Cat "Foo")) [Left (Cat "Foo"), Left (ListCat (Cat "Foo"))])
 -- prtList _ (x:xs) = concatD [prt 0 x, prt 0 xs]
+--
 -- >>> mkPrtListCase (Rule "[]" (ListCat (CoercCat "Foo" 2)) [])
 -- prtList 2 [] = concatD []
+--
 -- >>> mkPrtListCase (Rule "(:[])" (ListCat (CoercCat "Foo" 2)) [Left (CoercCat "Foo" 2)])
 -- prtList 2 [x] = concatD [prt 2 x]
+--
 -- >>> mkPrtListCase (Rule "(:)" (ListCat (CoercCat "Foo" 2)) [Left (CoercCat "Foo" 2), Left (ListCat (CoercCat "Foo" 2))])
 -- prtList 2 (x:xs) = concatD [prt 2 x, prt 2 xs]
+--
 mkPrtListCase :: Rule -> Doc
 mkPrtListCase (Rule f (ListCat c) rhs)
   | isNilFun f = "prtList" <+> precPattern <+> "[]" <+> "=" <+> body
@@ -245,21 +252,28 @@ mkPrtListCase _ = error "mkPrtListCase undefined for non-list categories"
 
 
 -- | Define an ordering on lists' rules with the following properties:
+--
 -- - rules with a higher coercion level should come first, i.e. the rules for
 --   [Foo3] are before rules for [Foo1] and they are both lower than rules for
 --   [Foo].
+--
 -- - [] < [_] < _:_
+--
 -- This is desiged to correctly order the rules in the prtList function so that
 -- the pattern matching works as expectd.
 --
 -- >>> compareRules (Rule "[]" (ListCat (CoercCat "Foo" 3)) []) (Rule "[]" (ListCat (CoercCat "Foo" 1)) [])
 -- LT
+--
 -- >>> compareRules (Rule "[]" (ListCat (CoercCat "Foo" 3)) []) (Rule "[]" (ListCat (Cat "Foo")) [])
 -- LT
+--
 -- >>> compareRules (Rule "[]" (ListCat (Cat "Foo")) []) (Rule "(:[])" (ListCat (Cat "Foo")) [])
 -- LT
+--
 -- >>> compareRules (Rule "(:[])" (ListCat (Cat "Foo")) []) (Rule "(:)" (ListCat (Cat "Foo")) [])
 -- LT
+--
 compareRules :: Rule -> Rule -> Ordering
 compareRules r1 r2 | precRule r1 > precRule r2 = LT
 compareRules r1 r2 | precRule r1 < precRule r2 = GT
@@ -274,14 +288,18 @@ compareRules _ _ = EQ
 
 
 -- |
+--
 -- >>> mkRhs ["expr1", "n", "expr2"] [Left (Cat "Expr"), Right "-", Left (TokenCat "Integer"), Left (Cat "Expr")]
 -- concatD [prt 0 expr1, doc (showString "-"), prt 0 n, prt 0 expr2]
 --
 -- Coercions on the right hand side should be passed to prt:
+--
 -- >>> mkRhs ["expr1"] [Left (CoercCat "Expr" 2)]
 -- concatD [prt 2 expr1]
+--
 -- >>> mkRhs ["expr2s"] [Left (ListCat (CoercCat "Expr" 2))]
 -- concatD [prt 2 expr2s]
+--
 mkRhs :: [String] -> [Either Cat String] -> Doc
 mkRhs args its =
   "concatD" <+> brackets (hsep (punctuate "," (mk args its)))

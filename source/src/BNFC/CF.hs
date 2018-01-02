@@ -261,7 +261,7 @@ catToStr (CoercCat s i) = s ++ show i
 instance Show Cat where
   show = catToStr
 
--- | Reads a string into a category. This should only needs to handle
+-- | Reads a string into a category. This should only need to handle
 -- the case of simple categories (with or without coercion) since list
 -- categories are parsed in the grammar already. To be on the safe side here,
 -- we still call the parser function that parses categries.

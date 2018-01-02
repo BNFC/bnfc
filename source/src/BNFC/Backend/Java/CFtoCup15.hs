@@ -100,7 +100,7 @@ definedRules packageAbsyn cf =
     list = LC (\ t -> "List" ++ unBase t) (const "cons")
       where
          unBase (ListT t) = unBase t
-         unBase (BaseT x) = show$normCat$strToCat x
+         unBase (BaseT x) = show $ normCat $ strToCat x
 
     rule f xs e =
         case checkDefinition' list ctx f xs e of
