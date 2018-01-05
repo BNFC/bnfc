@@ -963,8 +963,8 @@ The symbols used in BNF are the following::
 Comments
 --------
 
-| Single-line comments begin with .
-| Multiple-line comments are enclosed with and .
+| Single-line comments begin with `--`.
+| Multiple-line comments are enclosed with `{-` and `-}`.
 
 The syntactic structure of BNF
 ==============================
