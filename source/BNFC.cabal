@@ -56,13 +56,7 @@ Executable bnfc
     pretty >=1.1 && <1.2,
     filepath,
     deepseq,
-<<<<<<< 8ca1dcdab8cf1f9ee5b4c9567d30e95ec0a19b31
-    Cabal >= 1.18 && < 1.23
-=======
     Cabal >= 1.16 && < 1.23
-  if  impl(ghc < 7.6.1)
-    Build-depends: ghc-prim
->>>>>>> even cabal 1.16 should work
   build-tools:         alex, happy
   Main-is: Main.hs
   HS-source-dirs: src/
@@ -204,9 +198,21 @@ Executable bnfc
 -- --- Testing --------------------------------------------------------------
 Test-suite unit-tests
   Type: exitcode-stdio-1.0
-  Build-Depends: base>=4 && <5, mtl, directory, array, process, filepath, pretty,
-                 hspec, QuickCheck >= 2.5, HUnit,
-                 temporary, containers, deepseq, Cabal >= 1.16 && < 1.23
+  Build-Depends:
+    base>=4 && <5,
+    mtl,
+    directory,
+    array,
+    process,
+    filepath,
+    pretty,
+    hspec,
+    QuickCheck >= 2.5,
+    HUnit,
+    temporary,
+    containers,
+    deepseq,
+    Cabal >= 1.16 && < 1.23
   Main-is: unit-tests.hs
   HS-source-dirs: src test
   extensions:
