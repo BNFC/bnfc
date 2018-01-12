@@ -152,7 +152,7 @@ targetOptions =
 specificOptions :: [(OptDescr (SharedOptions -> SharedOptions), [Target])]
 specificOptions =
   [ ( Option ['l'] [] (NoArg (\o -> o {linenumbers = True}))
-        "Add and set line_number field for all syntax classes"
+        "Add and set line_number field for all syntax classes\nJava requires cup 0.11b-2014-06-11 or greater"
     , [TargetCpp, TargetJava] )
   , ( Option ['p'] []
       (ReqArg (\n o -> o {inPackage = Just n}) "<namespace>")
