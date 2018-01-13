@@ -82,6 +82,7 @@ prelude (ln, jflex) packageBase = vcat
         , "final int unknown = -1;"
         , "ComplexSymbolFactory.Location left = new ComplexSymbolFactory.Location(unknown, unknown);"
         , "ComplexSymbolFactory cf = new ComplexSymbolFactory();"
+        , "public SymbolFactory getSymbolFactory() { return cf; }"
         , positionDeclarations
         , "public int line_num() { return (yyline+1); }"
         , "public ComplexSymbolFactory.Location left_loc() {"
@@ -101,6 +102,9 @@ prelude (ln, jflex) packageBase = vcat
             else "return new String(yy_buffer,yy_buffer_index,10).trim();")
         ]
     , "%}"
+    , "%eofval{"
+    , "  return cf.newSymbol(\"EOF\", sym.EOF, left_loc(), left_loc());"
+    , "%eofval}"
     ]
   where
     positionDeclarations =

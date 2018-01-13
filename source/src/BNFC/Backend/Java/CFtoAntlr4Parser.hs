@@ -53,8 +53,9 @@ type MetaVar     = (String, Cat)
 
 -- | Creates the ANTLR parser grammar for this CF.
 --The environment comes from CFtoAntlr4Lexer
-cf2AntlrParse :: String -> String -> CF -> SymEnv -> String
-cf2AntlrParse packageBase packageAbsyn cf env = unlines
+--The bool is line numbering, which is currently not supported.
+cf2AntlrParse :: String -> String -> CF -> Bool -> SymEnv -> String
+cf2AntlrParse packageBase packageAbsyn cf _ env = unlines
     [ header
     , tokens
     , prRules packageAbsyn (rulesForAntlr4 packageAbsyn cf env)
