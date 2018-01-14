@@ -3,7 +3,7 @@
 -- part of BSc thesis at Chalmers University of Technology
 --
 -- NOTICE: the C program may need to be preprocessed by cpp. Also types defined
--- by typedefs have to be eliminated (these are known problems with the 
+-- by typedefs have to be eliminated (these are known problems with the
 -- BNF grammar of Ansi C).
 
 entrypoints Program, Stm, Exp ;
@@ -27,7 +27,7 @@ NoDeclarator.  Dec ::= [Declaration_specifier] ";";
 Declarators.   Dec ::= [Declaration_specifier] [Init_declarator] ";" ;
 
 (:[]).    [Dec] ::= Dec;
-(:).      [Dec] ::= Dec [Dec];  
+(:).      [Dec] ::= Dec [Dec];
 
 (:[]).  [Declaration_specifier] ::= Declaration_specifier ;
 (:).    [Declaration_specifier] ::= Declaration_specifier [Declaration_specifier] ;
@@ -128,7 +128,7 @@ PointQualPoint. Pointer ::= "*" [Type_qualifier] Pointer ;
 AllSpec.  Parameter_type ::= Parameter_declarations ;
 More.     Parameter_type ::= Parameter_declarations "," "..." ;
 
-ParamDec.     Parameter_declarations ::= Parameter_declaration ;                   
+ParamDec.     Parameter_declarations ::= Parameter_declaration ;
 MoreParamDec. Parameter_declarations ::= Parameter_declarations "," Parameter_declaration ;
 
 OnlyType.      Parameter_declaration ::= [Declaration_specifier] ;
@@ -234,7 +234,7 @@ token CDouble (((digit+ '.')|('.' digit+))(('e'|'E') ('-')? digit+)?)|
 token CFloat (((digit+ '.' digit+)|(digit+ '.')|('.' digit+))(('e'|'E')('-')? digit+)?
                                ('f'|'F'))|((digit+ ('e'|'E')('-')? digit+)('f'|'F'));
 
-token CLongDouble (((digit+ '.' digit+)|(digit+ '.')|('.' digit+))(('e'|'E')('-')? 
+token CLongDouble (((digit+ '.' digit+)|(digit+ '.')|('.' digit+))(('e'|'E')('-')?
                    digit+)?('l'|'L'))|((digit+ ('e'|'E')('-')? digit+)('l'|'L'));
 
 
@@ -293,7 +293,7 @@ Eoctalunslong. Constant ::= OctalUnsLong;
 Ecdouble.      Constant ::= CDouble;
 Ecfloat.       Constant ::= CFloat;
 Eclongdouble.  Constant ::= CLongDouble;
-Eint.          Constant ::= Integer;  
+Eint.          Constant ::= Integer;
 
 internal Elonger. Constant ::= Integer;
 internal Edouble. Constant ::= Double;
