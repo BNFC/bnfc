@@ -48,7 +48,7 @@ haskellRegressionTest title base mod =
     cfF  = base <.> "cf"
 
 issue30 :: Test
-issue30 = makeShellyTest "#30 With -d option XML module is not generated inside the directorty" $
+issue30 = makeShellyTest "#30 With -d option XML module is not generated inside the directory" $
     withTmpDir $ \tmp -> do
         cd tmp
         writefile "Test.cf" $ T.unlines
@@ -60,14 +60,14 @@ issue30 = makeShellyTest "#30 With -d option XML module is not generated inside 
 
 -- | Issue #31
 issue31 :: Test
-issue31 = makeShellyTest "#31 Problem with multiples `rules` declaration with a common prefix" $
+issue31 = makeShellyTest "#31 Problem with multiple `rules` declaration with a common prefix" $
     withTmpDir $ \tmp -> do
         cp "regression-tests/31_multirules.cf" (tmp </> "grammar.cf")
         cd tmp
         cmd "bnfc" "--java" "grammar.cf"
 
 issue60 :: Test
-issue60 = makeShellyTest "#60 Compilation error in Java when a production uses more than one user-defined tokens" $
+issue60 = makeShellyTest "#60 Compilation error in Java when a production uses more than one user-defined token" $
     withTmpDir $ \tmp -> do
         cd tmp
         writefile "multiple_token.cf" $ T.unlines
