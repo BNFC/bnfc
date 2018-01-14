@@ -1,7 +1,7 @@
 {-# LANGUAGE PatternGuards, DeriveFunctor #-}
 {-
     BNF Converter: Abstract syntax
-    Copyright (C) 2004  Author:  Markus Forberg, Michael Pellauer, Aarne Ranta
+    Copyright (C) 2004  Author:  Markus Forsberg, Michael Pellauer, Aarne Ranta
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -117,42 +117,46 @@ import qualified AbsBNF
 import ErrM
 
 -- | A context free grammar consists of a set of rules and some extended
--- information (e.g. pragmas, literals, symbols, keywords)
+-- information (e.g. pragmas, literals, symbols, keywords).
+
 type CF = CFG Fun
 
 -- | A rule consists of a function name, a main category and a sequence of
 -- terminals and non-terminals.
--- function_name . Main_Cat ::= sequence
+-- @
+--   function_name . Main_Cat ::= sequence
+-- @
+
 type Rule = Rul Fun
 
--- | Polymorphic rule type for common type signatures for CF and CFP
-data Rul function = Rule { funRule :: function
-                           -- ^ The function (semantic action) of a
-                           -- rule. In order to be able to generate
-                           -- data types this must be a constructor
-                           -- (or an identity function).
-                         , valCat :: Cat -- ^ The value category
-                         , rhsRule :: [Either Cat String]
-                           -- ^ The list of Terminals/NonTerminals in
-                           -- the right-hand-side of a rule.
-                         }
-                deriving (Eq,Functor)
+-- | Polymorphic rule type for common type signatures for CF and CFP.
+
+data Rul function = Rule
+  { funRule :: function
+      -- ^ The function (semantic action) of a rule.
+      --   In order to be able to generate data types this must be a constructor
+      --   (or an identity function).
+  , valCat  :: Cat
+      -- ^ The value category, i.e., the defined non-terminal.
+  , rhsRule :: [Either Cat String]
+      -- ^ The sentential form, i.e.,
+      --   the list of (non)terminals in the right-hand-side of a rule.
+  } deriving (Eq, Functor)
 
 instance (Show function) => Show (Rul function) where
   show (Rule f cat rhs) =
       unwords (show f : "." : show cat : "::=" : map (either show id) rhs)
 
--- | Polymorphic CFG type for common type signatures for CF and CFP
+-- | Polymorphic CFG type for common type signatures for CF and CFP.
+
 data CFG function = CFG
     { cfgPragmas        :: [Pragma]
-    , cfgLiterals       :: [Literal]  -- ^ Char, String, Ident, Integer, Double
-                                      -- Strings are quoted strings,
-                                      -- and Ident are unquoted.
-    , cfgSymbols        :: [Symbol]   -- ^ symbols in the grammar,
-                                      -- e.g. “*”, '->'
-    , cfgKeywords       :: [KeyWord]  -- ^ reserved words, e.g. 'if' 'while'
-    , cfgReversibleCats :: [Cat]      -- ^ categories that is left-recursive
-                                      -- transformable.
+    , cfgLiterals       :: [Literal]  -- ^ @Char, String, Ident, Integer, Double@.
+                                      --   @String@s are quoted strings,
+                                      --   and @Ident@s are unquoted.
+    , cfgSymbols        :: [Symbol]   -- ^ Symbols in the grammar, e.g. “*”, '->'.
+    , cfgKeywords       :: [KeyWord]  -- ^ Reserved words, e.g. 'if' 'while'.
+    , cfgReversibleCats :: [Cat]      -- ^ Categories that can be made left-recursive.
     , cfgRules          :: [Rul function]
     } deriving (Functor)
 
@@ -161,7 +165,8 @@ instance (Show function) => Show (CFG function) where
   show CFG{..} = unlines $ map show cfgRules
 
 
--- Expressions for function definitions
+-- | Expressions for function definitions.
+
 data Exp = App String [Exp]
          | LitInt Integer
          | LitDouble Double
@@ -197,7 +202,8 @@ instance Show Exp where
                 | Right es <- listView e2   = Right $ e1:es
             listView x = Left x
 
--- | Pragmas
+-- | Pragmas.
+
 data Pragma = CommentS  String -- ^ for single line comments
             | CommentM (String,String) -- ^  for multiple-line comments.
             | TokenReg String Bool Reg -- ^ for tokens
@@ -211,11 +217,11 @@ data Pragma = CommentS  String -- ^ for single line comments
 
 -- | User-defined regular expression tokens
 tokenPragmas :: CFG f -> [(Cat,Reg)]
-tokenPragmas cf = [(TokenCat name,e) | TokenReg name _ e <- cfgPragmas cf]
+tokenPragmas cf = [ (TokenCat name, e) | TokenReg name _ e <- cfgPragmas cf ]
 
--- | The names of all user-defined tokens
+-- | The names of all user-defined tokens.
 tokenNames :: CFG f -> [String]
-tokenNames cf = map (show.fst) (tokenPragmas cf)
+tokenNames cf = map (show . fst) (tokenPragmas cf)
 
 layoutPragmas :: CF -> (Bool,[String],[String])
 layoutPragmas cf = let ps = cfgPragmas cf in (
@@ -238,14 +244,14 @@ type KeyWord = String
 ------------------------------------------------------------------------------
 
 -- | Categories are the Non-terminals of the grammar.
-data Cat = InternalCat       -- | Internal category, inserted in 1st
-                             -- position in "internal" rules,
-                             -- essentially ensuring that they are
-                             -- never parsed.
-         | Cat String
-         | TokenCat String   -- ^ Token types (like Ident)
-         | ListCat Cat
-         | CoercCat String Integer
+data Cat
+  = InternalCat       -- ^ Internal category, inserted in 1st
+                      -- position in "internal" rules,
+                      -- essentially ensuring that they are never parsed.
+  | Cat String
+  | TokenCat String   -- ^ Token types (like @Ident@).
+  | ListCat Cat
+  | CoercCat String Integer
   deriving (Eq, Ord)
 
 -- An alias for Cat used in many backends:
@@ -301,20 +307,20 @@ isDataOrListCat (Cat ('@':_))   = False
 isDataOrListCat (ListCat c)     = isDataOrListCat c
 isDataOrListCat _               = True
 
--- | Categories C1, C2,... (one digit in end) are variants of C. This function
+-- | Categories C1, C2,... (one digit at the end) are variants of C. This function
 -- returns true if two category are variants of the same abstract category.
 -- E.g.
+--
 -- >>> sameCat (Cat "Abc") (CoercCat "Abc" 44)
 -- True
+
 sameCat :: Cat -> Cat -> Bool
 sameCat (CoercCat c1 _) (CoercCat c2 _) = c1 == c2
-sameCat (Cat c1 ) (CoercCat c2 _) = c1 == c2
-sameCat (CoercCat c1 _) (Cat c2) = c1 == c2
-sameCat c1 c2 = c1 == c2
+sameCat (Cat c1)        (CoercCat c2 _) = c1 == c2
+sameCat (CoercCat c1 _) (Cat c2)        = c1 == c2
+sameCat c1              c2              = c1 == c2
 
-
-
--- | Removes precendence information. C1 => C, [C2] => [C]
+-- | Removes precedence information. C1 => C, [C2] => [C]
 normCat :: Cat -> Cat
 normCat (ListCat c) = ListCat (normCat c)
 normCat (CoercCat c _) = Cat c
@@ -338,20 +344,20 @@ isTokenCat :: Cat -> Bool
 isTokenCat (TokenCat _) = True
 isTokenCat _            = False
 
--- | Unwraps the list constructor from the category name. Eg. [C1] => C1
--- E.g.
+-- | Unwraps the list constructor from the category name.
+--   E.g. @[C1] => C1@.
 catOfList :: Cat -> Cat
 catOfList (ListCat c) = c
 catOfList c = c
+
 ------------------------------------------------------------------------------
 -- Functions
 ------------------------------------------------------------------------------
+
 -- | Fun is the function name of a rule.
 type Fun     = String
--- | Either Cat or Fun
 
-
--- | Is this function just a coercion? (Ie. the identity)
+-- | Is this function just a coercion? (I.e. the identity)
 isCoercion :: Fun -> Bool
 isCoercion = (== "_") -- perhaps this should be changed to "id"?
 
@@ -379,7 +385,9 @@ isNilFun f  = f == "[]"
 isOneFun f  = f == "(:[])"
 isConsFun f = f == "(:)"
 isConcatFun f = f == "(++)"
+
 ------------------------------------------------------------------------------
+
 type Name = String
 
 -- | Abstract syntax tree.
@@ -388,7 +396,7 @@ newtype Tree = Tree (Fun,[Tree])
 -- | The abstract syntax of a grammar.
 type Data = (Cat, [(Fun,[Cat])])
 
--- | firstCat returns the first Category appearing in the grammar.
+-- | @firstCat@ returns the first @Cat@egory appearing in the grammar.
 firstCat :: CF -> Cat
 firstCat = valCat . head . cfgRules
 
@@ -405,7 +413,7 @@ notUniqueNames reserved cf = [head xs | xs <- xss, length xs > 1] where
   names = reserved ++ allCatsIdNorm cf ++ allFuns cf
   allFuns g = [ f | f <- map funRule (cfgRules g), not (isNilCons f || isCoercion f)]
 
--- extract the comment pragmas.
+-- | Extract the comment pragmas.
 commentPragmas :: [Pragma] -> [Pragma]
 commentPragmas = filter isComment
  where isComment (CommentS _) = True
@@ -503,7 +511,7 @@ prTree (Tree (fun,trees)) = fun +++ unwords (map pr2 trees) where
 
 -- * abstract syntax trees: data type definitions
 --
--- The abstract syncax, instanciated by the Data type, is the type signatures
+-- The abstract syntax, instantiated by the Data type, is the type signatures
 -- of all the constructors.
 
 -- | Return the abstract syntax of the grammar.
@@ -523,10 +531,11 @@ getAbstractSyntax cf = [ ( c, nub (constructors c) ) | c <- allCatsNorm cf ]
         return (f, cs)
 
 
--- All the function bellow are variation arround the idea of getting the
+-- | All the functions below implement the idea of getting the
 -- abstract syntax of the grammar with some variation but they seem to do a
--- poor job at handling corner cases involving coercions. Use getAbstractSyntax
--- instead if possible.
+-- poor job at handling corner cases involving coercions.
+-- Use 'getAbstractSyntax' instead if possible.
+
 cf2data' :: (Cat -> Bool) -> CF -> [Data]
 cf2data' predicate cf =
   [(cat, nub (map mkData [r | r <- cfgRules cf,
@@ -539,7 +548,6 @@ cf2data' predicate cf =
 
 cf2data :: CF -> [Data]
 cf2data = cf2data' isDataCat
-
 
 cf2dataLists :: CF -> [Data]
 cf2dataLists = cf2data' isDataOrListCat
