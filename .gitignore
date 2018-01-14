@@ -28,8 +28,14 @@ cabal.sandbox.config
 /document/CC-2004.dvi
 /document/CC-2004.ps
 /document/LBNF-report.dvi
+
+# compiler-compiler generated files
 /source/src/LexBNF.hs
 /source/src/LexBNF.info
 /source/src/ParBNF.hs
 /source/src/ParBNF.info
 /source/src/TestBNF
+
+# bnfc generated files
+/examples/prolog/Makefile
+/examples/prolog/Prolog/
