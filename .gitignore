@@ -39,3 +39,9 @@ cabal.sandbox.config
 # bnfc generated files
 /examples/prolog/Makefile
 /examples/prolog/Prolog/
+/examples/Javalette/JavaletteLight/
+/examples/Javalette/Makefile
+/testing/regression-tests/#100_coercion_lists/Makefile
+/testing/regression-tests/#100_coercion_lists/Test/
+/examples/C/C/
+/examples/C/Makefile
