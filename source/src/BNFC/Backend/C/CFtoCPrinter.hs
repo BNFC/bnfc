@@ -463,6 +463,7 @@ prShowData (cat, rules) = unlines $
  [
   "void sh" ++ cl ++ "("++ cl +++ vname ++ ")",
   "{",
+  "  bufAppendC('[');",
   "  while(" ++ vname +++ "!= 0)",
   "  {",
   "    if (" ++ vname ++ "->" ++ vname ++ "_)",
@@ -477,6 +478,7 @@ prShowData (cat, rules) = unlines $
   "      " ++ vname ++ " = 0;",
   "    }",
   "  }",
+  "  bufAppendC(']');",
   "}",
   ""
  ] -- Not a list:
@@ -537,14 +539,8 @@ prShowCat fnm c = case c of
     (cat,nt) | isTokenCat cat ->
         "    sh" ++ basicFunName (render nt) ++ "(_p_->u." ++ v ++ "_." ++ render nt ++ ");\n"
     (InternalCat, _) -> "    /* Internal Category */\n"
-    (cat,nt) | show (normCat $ strToCat$ render nt) /= render nt ->
+    (cat,nt) ->
         "    sh" ++ identCat (normCat cat) ++ "(_p_->u." ++ v ++ "_." ++ render nt ++ ");\n"
-    (cat,nt) -> concat
-          [
-           "    bufAppendC('[');\n",
-           "    sh" ++ identCat (normCat cat) ++ "(_p_->u." ++ v ++ "_." ++ render nt ++ ");\n",
-           "    bufAppendC(']');\n"
-          ]
   where v = map toLower (normFun fnm)
 
 {- **** Helper Functions Section **** -}
