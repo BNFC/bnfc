@@ -214,9 +214,9 @@ prEntryPoints packageAbsyn cf =
 
 prData :: String ->  [UserDef] -> (Cat, [Rule]) -> String
 prData packageAbsyn user (cat, rules) = unlines k
-    where 
+    where
       k = if isList cat
-           then 
+           then
            ["  private static void pp(" ++ packageAbsyn ++ "."
                 ++ identCat (normCat cat) +++ "foo, int _i_)"
             , "  {"
@@ -224,14 +224,14 @@ prData packageAbsyn user (cat, rules) = unlines k
            ]
            else --not a list
            [
-            "  private static void pp(" ++ packageAbsyn ++ "." 
+            "  private static void pp(" ++ packageAbsyn ++ "."
                 ++ identCat (normCat cat) +++ "foo, int _i_)",
             "  {",
             concat (addElse $ map (prRule packageAbsyn) rules) ++ "  }"
            ]
-      addElse = map ("    "++). intersperse "else " . filter (not . null) 
-        . map (dropWhile isSpace) 
- 
+      addElse = map ("    "++). intersperse "else " . filter (not . null)
+        . map (dropWhile isSpace)
+
 
 prRule :: String -> Rule -> String
 prRule packageAbsyn r@(Rule fun _c cats) | not (isCoercion fun || isDefinedRule fun) = concat
@@ -269,6 +269,7 @@ prRule _nm _ = ""
 --     render(".");
 --   }
 -- }
+
 prList :: [UserDef] -> Cat -> [Rule] -> Doc
 prList user c rules =
     "for (java.util.Iterator<" <> et <> "> it = foo.iterator(); it.hasNext();)"
@@ -311,21 +312,21 @@ prCat fnm (Left (cat, nt))
 
 shData :: String -> [UserDef] -> (Cat, [Rule]) -> String
 shData packageAbsyn user (cat, rules) = unlines k
-    where 
+    where
       k = if isList cat
-          then 
-          [ "  private static void sh(" ++ packageAbsyn ++ "." 
+          then
+          [ "  private static void sh(" ++ packageAbsyn ++ "."
                 ++ identCat (normCat cat) +++ "foo)"
           , "  {"
           , shList user cat rules ++ "  }"
           ]
-          else 
-          [ "  private static void sh(" ++ packageAbsyn ++ "." 
+          else
+          [ "  private static void sh(" ++ packageAbsyn ++ "."
                 ++ identCat (normCat cat) +++ "foo)"
           , "  {"
           , concatMap (shRule packageAbsyn) rules ++ "  }"
-          ] 
- 
+          ]
+
 
 shRule :: String -> Rule -> String
 shRule packageAbsyn (Rule fun _c cats) | not (isCoercion fun || isDefinedRule fun) = unlines
