@@ -60,12 +60,13 @@ import Text.PrettyPrint
 --They also allow users to use the Visitor design pattern.
 
 type IVar = (String, Int, String)
---The type of an instance variable
---a # unique to that type
---and an optional name (handles typedefs).
+-- ^ The type of an instance variable,
+--   a number unique to that type,
+--   and an optional name (handles typedefs).
 
---The result is a list of files which must be written to disk.
---The tuple is (FileName, FileContents)
+-- | The result is a list of files which must be written to disk.
+--   The tuple is (FileName, FileContents)
+
 cf2JavaAbs :: String -> String -> CF -> [(FilePath, String)]
 cf2JavaAbs _ packageAbsyn cf =
     concatMap (prData header packageAbsyn user) rules
@@ -74,7 +75,8 @@ cf2JavaAbs _ packageAbsyn cf =
   user = [n | (n,_) <- tokenPragmas cf]
   rules = getAbstractSyntax cf
 
---Generates a (possibly abstract) category class, and classes for all its rules.
+-- | Generates a (possibly abstract) category class, and classes for all its rules.
+
 prData :: String -> String -> [UserDef] -> Data ->[(String, String)]
 prData header packageAbsyn user (cat, rules) =
   categoryClass ++ mapMaybe (prRule header packageAbsyn funs user cat) rules
@@ -103,10 +105,11 @@ prVisitor packageAbsyn funs =
     where
     prVisitFun f = "    public R visit(" ++ packageAbsyn ++ "." ++ f ++ " p, A arg);"
 
---Generates classes for a rule, depending on what type of rule it is.
-prRule :: String   -- ^ Header
-       -> String   -- ^ Abstract syntax package name
-       -> [String] -- ^ Names of all constructors in the category
+-- | Generates classes for a rule, depending on what type of rule it is.
+
+prRule :: String   -- ^ Header.
+       -> String   -- ^ Abstract syntax package name.
+       -> [String] -- ^ Names of all constructors in the category.
        -> [UserDef] -> Cat -> (Fun, [Cat]) -> Maybe (String, String)
 prRule h packageAbsyn funs user c (fun, cats)
   | isNilFun fun || isOneFun fun = Nothing  --these are not represented in the AbSyn
@@ -140,12 +143,14 @@ prRule h packageAbsyn funs user c (fun, cats)
      et = typename (show $ normCatOfList c) user
 
 
---The standard accept function for the Visitor pattern
+-- | The standard accept function for the Visitor pattern.
+
 prAccept :: String -> Cat -> String -> String
 prAccept pack cat _ = "\n  public <R,A> R accept(" ++ pack ++ "." ++ show cat
                       ++ ".Visitor<R,A> v, A arg) { return v.visit(this, arg); }\n"
 
--- Creates the equals() method.
+-- | Creates the equals() method.
+
 prEquals :: String -> String -> [IVar] -> String
 prEquals pack fun vs =
     unlines $ map ("  "++) $ ["public boolean equals(Object o) {",
@@ -164,7 +169,8 @@ prEquals pack fun vs =
   checkKid iv = "this." ++ v ++ ".equals(x." ++ v ++ ")"
       where v = render (iVarName iv)
 
--- Creates the equals() method.
+-- | Creates the equals() method.
+
 prHashCode :: String -> String -> [IVar] -> String
 prHashCode _ _ vs =
     unlines $ map ("  "++) ["public int hashCode() {",
@@ -180,9 +186,11 @@ prHashCode _ _ vs =
 
 
 -- | A class's instance variables.
+--
 -- >>> prInstVars [("A",1,""), ("B",1,""), ("A",2,"abc")]
 -- public final A _1, abc_2;
 -- public final B _1;
+
 prInstVars :: [IVar] -> Doc
 prInstVars [] = empty
 prInstVars vars@((t,_,_):_) =
@@ -199,22 +207,29 @@ prInstVars vars@((t,_,_):_) =
     | t == t2 = remType t ts
     | otherwise = (t2,n,nm) : remType t ts
 
--- | Convert IVar to java name
+-- | Convert IVar to java name.
+--
 -- >>> iVarName ("A",1,"abc")
 -- abc_1
+--
 -- >>> iVarName ("C", 2, "")
 -- _2
+--
 -- >>> iVarName ("Integer", 0, "integer")
 -- integer_
+
 iVarName :: IVar -> Doc
 iVarName (_,n,nm) = text (varName nm) <> text (showNum n)
 
 -- | The constructor just assigns the parameters to the corresponding instance
 -- variables.
+--
 -- >>> prConstructor "bla" [] [("A",1,"a"),("B",1,""),("A",2,"")] [Cat "A",Cat "B", Cat "C"]
 -- public bla(A p1, B p2, C p3) { a_1 = p1; _ = p2; _2 = p3; }
+--
 -- >>> prConstructor "EInt" [] [("Integer",0,"integer")] [Cat "Integer"]
 -- public EInt(Integer p1) { integer_ = p1; }
+
 prConstructor :: String -> [UserDef] -> [IVar] -> [Cat] -> Doc
 prConstructor c u vs cats =
     "public" <+> text c <> parens (interleave types params)
@@ -223,13 +238,15 @@ prConstructor c u vs cats =
    (types, params) = unzip (prParams cats u (length cats) (length cats+1))
    interleave xs ys = hsep $ punctuate "," $ zipWith ((<+>) `on` text) xs ys
 
---Prints the parameters to the constructors.
+-- | Prints the parameters to the constructors.
+
 prParams :: [Cat] -> [UserDef] -> Int -> Int -> [(String,String)]
 prParams [] _ _ _ = []
 prParams (c:cs) u n m = (typename (identCat c) u, 'p' : show (m-n))
                         : prParams cs u (n-1) m
 
---This algorithm peeks ahead in the list so we don't use map or fold
+-- | This algorithm peeks ahead in the list so we don't use @map@ or @fold@.
+
 prAssigns :: [IVar] -> [String] -> String
 prAssigns [] _ = []
 prAssigns _ [] = []
@@ -240,8 +257,9 @@ prAssigns ((t,n,nm):vs) (p:ps) =
     _ -> varName nm ++ showNum n +++ "=" +++ p ++ ";" +++ prAssigns vs ps
  else varName nm ++ showNum n +++ "=" +++ p ++ ";" +++ prAssigns vs ps
 
--- Different than the standard BNFC.Backend.Common.NamedVariables version
+-- | Different than the standard ''BNFC.Backend.Common.NamedVariables'' version
 -- because of the user-defined types.
+
 getVars :: [Cat] -> [UserDef] -> [IVar]
 getVars cs user = reverse $ singleToZero $ foldl addVar [] (map identCat cs)
  where
@@ -256,7 +274,8 @@ varName :: String -- ^ category name
         -> String -- ^ Variable name
 varName c = map toLower c ++ "_"
 
---This makes up for the fact that there's no typedef in Java
+-- | This makes up for the fact that there's no typedef in Java.
+
 typename :: String -> [UserDef] -> String
 typename t user | t == "Ident"            = "String"
                 | t == "Char"             = "Character"
