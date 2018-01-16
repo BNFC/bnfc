@@ -112,28 +112,25 @@ prRule :: String   -- ^ Header.
        -> [String] -- ^ Names of all constructors in the category.
        -> [UserDef] -> Cat -> (Fun, [Cat]) -> Maybe (String, String)
 prRule h packageAbsyn funs user c (fun, cats)
-  | isNilFun fun || isOneFun fun = Nothing  --these are not represented in the AbSyn
-  | isConsFun fun =Just (fun', --this is the linked list case.
-    unlines
-    [
-     h,
-     "public class" +++ fun' +++ "extends java.util.LinkedList<"++ et ++"> {",
-     "}"
-    ])
-  | otherwise = Just (fun, --a standard rule
-    unlines
-    [
-     h,
-     "public class" +++ fun ++ ext +++ "{",
-     render $ nest 2 $ vcat
-        [ prInstVars vs
-        , prConstructor fun user vs cats],
-     prAccept packageAbsyn c fun,
-     prEquals packageAbsyn fun vs,
-     prHashCode packageAbsyn fun vs,
-     if isAlsoCategory then prVisitor packageAbsyn funs else "",
-     "}"
-    ])
+  | isNilFun fun || isOneFun fun = Nothing  -- these are not represented in the Absyn
+  | isConsFun fun = Just . (fun',) . unlines $ -- this is the linked list case.
+      [ h
+      , "public class" +++ fun' +++ "extends java.util.LinkedList<"++ et ++"> {"
+      , "}"
+      ]
+  | otherwise = Just . (fun,) . unlines $ -- a standard rule
+      [ h
+      , "public class" +++ fun ++ ext +++ "{"
+      , render $ nest 2 $ vcat
+          [ prInstVars vs
+          , prConstructor fun user vs cats
+          ]
+      , prAccept packageAbsyn c fun
+      , prEquals packageAbsyn fun vs
+      , prHashCode packageAbsyn fun vs
+      , if isAlsoCategory then prVisitor packageAbsyn funs else ""
+      , "}"
+      ]
    where
      vs = getVars cats user
      fun' = identCat (normCat c)

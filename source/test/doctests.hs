@@ -9,6 +9,7 @@ main = doctest
     , "-XOverloadedStrings"
     , "-XRecordWildCards"
     , "-XScopedTypeVariables"
+    , "-XTupleSections"
     , "src/PrintBNF.hs"
     , "src/Main.hs"
     ]
