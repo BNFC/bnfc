@@ -53,7 +53,7 @@ cf2jlex jflex rp packageBase cf = (vcat
   prelude jflex rp packageBase,
   cMacros,
   lexSymbols jflex env,
-  restOfJLex cf
+  restOfJLex jflex rp cf
  ], env)
   where
    env = makeSymEnv (cfgSymbols cf ++ reservedWords cf) (0 :: Int)
@@ -103,9 +103,10 @@ prelude jflex rp packageBase = vcat
             else "return new String(yy_buffer,yy_buffer_index,10).trim();")
         ]
     , "%}"
-    , "%eofval{"
-    , "  return cf.newSymbol(\"EOF\", sym.EOF, left_loc(), left_loc());"
-    , "%eofval}"
+    , if jflex /= JFlexCup then vcat ["%eofval{"
+      , "  return cf.newSymbol(\"EOF\", sym.EOF, left_loc(), left_loc());"
+      , "%eofval}"]
+        else ""
     ]
   where
     positionDeclarations =
@@ -157,8 +158,8 @@ lexSymbols jflex ss = vcat $  map transSym ss
     escapeChars :: String -> String
     escapeChars = concatMap (escapeChar jflex)
 
-restOfJLex :: CF -> Doc
-restOfJLex cf = vcat
+restOfJLex :: JavaLexerParser -> RecordPositions -> CF -> Doc
+restOfJLex jflex rp cf = vcat
     [ lexComments (comments cf)
     , ""
     , userDefTokens
@@ -171,6 +172,13 @@ restOfJLex cf = vcat
     , ifC catIdent
         "<YYINITIAL>{LETTER}{IDENT}* { return cf.newSymbol(\"\", sym._IDENT_, left_loc(), right_loc(), yytext().intern()); }"
     , "<YYINITIAL>[ \\t\\r\\n\\f] { /* ignore white space. */ }"
+    , if jflex == JFlexCup
+        then "<<EOF>> { return cf.newSymbol(\"EOF\", sym.EOF, left_loc(), left_loc()); }"
+        else ""
+    , if rp == RecordPositions
+        then ". { throw new Error(\"Illegal Character <\"+yytext()+\"> at \"+(yyline+1)" <>
+          (if jflex == JFlexCup then "+\":\"+(yycolumn+1)+\"(\"+yychar+\")\"" else "") <> "); }"
+        else ". { throw new Error(\"Illegal Character <\"+yytext()+\">\"); }"
     ]
   where
     ifC cat s = if isUsedCat cf cat then s else ""
@@ -184,20 +192,45 @@ restOfJLex cf = vcat
         , "<STRING>\\\\ { yybegin(ESCAPED); }"
         , "<STRING>\\\" { String foo = pstring; pstring = new String(); yybegin(YYINITIAL); return cf.newSymbol(\"\", sym._STRING_, left, right_loc(), foo.intern()); }"
         , "<STRING>.  { pstring += yytext(); }"
+        , "<STRING>\\r\\n|\\r|\\n { throw new Error(\"Unterminated string on line \" + left.getLine() " <>
+          (if jflex == JFlexCup then "+ \" begining at column \" + left.getColumn()" else "") <> "); }"
+        , if jflex == JFlexCup 
+          then "<STRING><<EOF>> { throw new Error(\"Unterminated string at EOF, beginning at \" + left.getLine() + \":\" + left.getColumn()); }"
+          else ""
         , "<ESCAPED>n { pstring +=  \"\\n\"; yybegin(STRING); }"
         , "<ESCAPED>\\\" { pstring += \"\\\"\"; yybegin(STRING); }"
         , "<ESCAPED>\\\\ { pstring += \"\\\\\"; yybegin(STRING); }"
         , "<ESCAPED>t  { pstring += \"\\t\"; yybegin(STRING); }"
         , "<ESCAPED>.  { pstring += yytext(); yybegin(STRING); }"
+        , "<ESCAPED>\\r\\n|\\r|\\n { throw new Error(\"Unterminated string on line \" + left.getLine() " <>
+          (if jflex == JFlexCup then "+ \" beginning at column \" + left.getColumn()" else "") <> "); }"
+        , if jflex == JFlexCup
+          then "<ESCAPED><<EOF>> { throw new Error(\"Unterminated string at EOF, beginning at \" + left.getLine() + \":\" + left.getColumn()); }"
+          else ""
         ]
     chStates = vcat --These handle escaped characters in Chars.
         [ "<YYINITIAL>\"'\" { left = left_loc(); yybegin(CHAR); }"
         , "<CHAR>\\\\ { yybegin(CHARESC); }"
         , "<CHAR>[^'] { yybegin(CHAREND); return cf.newSymbol(\"\", sym._CHAR_, left, right_loc(), new Character(yytext().charAt(0))); }"
+        , "<CHAR>\\r\\n|\\r|\\n { throw new Error(\"Unterminated character literal on line \" + left.getLine() " <>
+          (if jflex == JFlexCup then "+ \" beginning at column \" + left.getColumn()" else "") <> "); }"
+        , if jflex == JFlexCup
+          then "<CHAR><<EOF>> { throw new Error(\"Unterminated character literal at EOF, beginning at \" + left.getLine() + \":\" + left.getColumn()); }"
+          else ""
         , "<CHARESC>n { yybegin(CHAREND); return cf.newSymbol(\"\", sym._CHAR_, left, right_loc(), new Character('\\n')); }"
         , "<CHARESC>t { yybegin(CHAREND); return cf.newSymbol(\"\", sym._CHAR_, left, right_loc(), new Character('\\t')); }"
         , "<CHARESC>. { yybegin(CHAREND); return cf.newSymbol(\"\", sym._CHAR_, left, right_loc(), new Character(yytext().charAt(0))); }"
+        , "<CHARESC>\\r\\n|\\r|\\n { throw new Error(\"Unterminated character literal on line \" + left.getLine() " <>
+          (if jflex == JFlexCup then "+ \" beginning at column \" + left.getColumn()" else "") <> "); }"
+        , if jflex == JFlexCup
+          then "<CHARESC><<EOF>> { throw new Error(\"Unterminated character literal at EOF, beginning at \" + left.getLine() + \":\" + left.getColumn()); }"
+          else ""
         , "<CHAREND>\"'\" {yybegin(YYINITIAL);}"
+        , "<CHAREND>\\r\\n|\\r|\\n { throw new Error(\"Unterminated character literal on line \" + left.getLine() " <>
+          (if jflex == JFlexCup then "+ \" beginning at column \" + left.getColumn()" else "") <> "); }"
+        , if jflex == JFlexCup
+          then "<CHAREND><<EOF>> { throw new Error(\"Unterminated character literal at EOF, beginning at \" + left.getLine() + \":\" + left.getColumn()); }"
+          else ""
         ]
 
 lexComments :: ([(String, String)], [String]) -> Doc
