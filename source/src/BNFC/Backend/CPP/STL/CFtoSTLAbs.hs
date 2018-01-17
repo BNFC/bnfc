@@ -42,14 +42,15 @@ module BNFC.Backend.CPP.STL.CFtoSTLAbs (cf2CPPAbs) where
 
 import BNFC.Backend.Common.OOAbstract
 import BNFC.CF
+import BNFC.Options (RecordPositions(..))
 import BNFC.Utils((+++))
 import Data.List
 import BNFC.Backend.CPP.STL.STLUtils
 
 --The result is two files (.H file, .C file)
 
-cf2CPPAbs :: Bool -> Maybe String -> String -> CF -> (String, String)
-cf2CPPAbs ln inPackage _ cf = (mkHFile ln inPackage cab, mkCFile inPackage cab)
+cf2CPPAbs :: RecordPositions -> Maybe String -> String -> CF -> (String, String)
+cf2CPPAbs rp inPackage _ cf = (mkHFile rp inPackage cab, mkCFile inPackage cab)
   where
     cab = cf2cabs cf
 
@@ -57,8 +58,8 @@ cf2CPPAbs ln inPackage _ cf = (mkHFile ln inPackage cab, mkCFile inPackage cab)
 -- **** Header (.H) File Functions **** --
 
 --Makes the Header file.
-mkHFile :: Bool -> Maybe String -> CAbs -> String
-mkHFile ln inPackage cf = unlines
+mkHFile :: RecordPositions -> Maybe String -> CAbs -> String
+mkHFile rp inPackage cf = unlines
  [
   "#ifndef " ++ hdef,
   "#define " ++ hdef,
@@ -85,7 +86,7 @@ mkHFile ln inPackage cf = unlines
   "",
   "/********************   Abstract Syntax Classes    ********************/",
   "",
-  unlines [prAbs ln c | c <- absclasses cf],
+  unlines [prAbs rp c | c <- absclasses cf],
   "",
   unlines [prCon (c,r) | (c,rs) <- signatures cf, r <- rs],
   "",
@@ -125,13 +126,13 @@ prVisitor cf = unlines [
   "};"
  ]
 
-prAbs :: Bool -> String -> String
-prAbs ln c = unlines [
+prAbs :: RecordPositions -> String -> String
+prAbs rp c = unlines [
   "class " ++ c ++ " : public Visitable",
   "{",
   "public:",
   "  virtual " ++ c ++ " *clone() const = 0;",
-  if ln then "  int line_number;" else "",
+  if rp == RecordPositions then "  int line_number;" else "",
   "};"
   ]
 

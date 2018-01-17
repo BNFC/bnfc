@@ -42,6 +42,7 @@ module BNFC.Backend.Java.CFtoCup15 ( cf2Cup ) where
 import BNFC.CF
 import Data.List
 import BNFC.Backend.Common.NamedVariables
+import BNFC.Options (RecordPositions(..))
 import BNFC.Utils ( (+++) )
 import BNFC.TypeChecker  -- We need to (re-)typecheck to figure out list instances in
                     -- defined rules.
@@ -55,15 +56,15 @@ type Action  = String
 type MetaVar = String
 
 --The environment comes from the CFtoJLex
-cf2Cup :: String -> String -> CF -> Bool -> SymEnv -> String
-cf2Cup packageBase packageAbsyn cf ln env = unlines
+cf2Cup :: String -> String -> CF -> RecordPositions -> SymEnv -> String
+cf2Cup packageBase packageAbsyn cf rp env = unlines
     [ header
     , declarations packageAbsyn (allCats cf)
     , tokens env
     , specialToks cf
     , specialRules cf
     , prEntryPoint cf
-    , prRules (rulesForCup packageAbsyn cf ln env)
+    , prRules (rulesForCup packageAbsyn cf rp env)
     ]
   where
     header :: String
@@ -206,16 +207,16 @@ specialRules cf =
 
 --The following functions are a (relatively) straightforward translation
 --of the ones in CFtoHappy.hs
-rulesForCup :: String -> CF -> Bool -> SymEnv -> Rules
-rulesForCup packageAbsyn cf ln env = map mkOne $ ruleGroups cf where
-  mkOne (cat,rules) = constructRule packageAbsyn cf ln env rules cat
+rulesForCup :: String -> CF -> RecordPositions -> SymEnv -> Rules
+rulesForCup packageAbsyn cf rp env = map mkOne $ ruleGroups cf where
+  mkOne (cat,rules) = constructRule packageAbsyn cf rp env rules cat
 
 -- | For every non-terminal, we construct a set of rules. A rule is a sequence of
 -- terminals and non-terminals, and an action to be performed.
-constructRule :: String -> CF -> Bool -> SymEnv -> [Rule] -> NonTerminal
+constructRule :: String -> CF -> RecordPositions -> SymEnv -> [Rule] -> NonTerminal
     -> (NonTerminal,[(Pattern,Action)])
-constructRule packageAbsyn cf ln env rules nt =
-    (nt, [ (p, generateAction packageAbsyn nt (funRule r) (revM b m) b ln)
+constructRule packageAbsyn cf rp env rules nt =
+    (nt, [ (p, generateAction packageAbsyn nt (funRule r) (revM b m) b rp)
           | r0 <- rules,
           let (b,r) = if isConsFun (funRule r0) && elem (valCat r0) revs
                           then (True, revSepListRule r0)
@@ -230,9 +231,9 @@ constructRule packageAbsyn cf ln env rules nt =
 generateAction :: String -> NonTerminal -> Fun -> [MetaVar]
                -> Bool   -- ^ Whether the list should be reversed or not.
                          --   Only used if this is a list rule.
-               -> Bool   -- ^ Record line and column info.
+               -> RecordPositions   -- ^ Record line and column info.
                -> Action
-generateAction packageAbsyn nt f ms rev ln
+generateAction packageAbsyn nt f ms rev rp
     | isNilFun f      = "RESULT = new " ++ c ++ "();"
     | isOneFun f      = "RESULT = new " ++ c ++ "(); RESULT.addLast("
                            ++ p_1 ++ ");"
@@ -251,7 +252,7 @@ generateAction packageAbsyn nt f ms rev ln
      p_2 = ms !! 1
      add = if rev then "addLast" else "addFirst"
      lineInfo =
-        if ln
+        if rp == RecordPositions
           then case ms of
             [] -> "\n((" ++ c ++ ")RESULT).line_num = -1;" ++
                   "\n((" ++ c ++ ")RESULT).col_num = -1;" ++

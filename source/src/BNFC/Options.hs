@@ -57,6 +57,10 @@ data HappyMode = Standard | GLR
 
 data JavaLexerParser = JLexCup | JFlexCup | Antlr4
     deriving (Eq,Show,Ord)
+
+data RecordPositions = RecordPositions | NoRecordPositions
+    deriving (Eq,Show,Ord)
+
 -- | This is the option record that is passed to the different backends
 data SharedOptions = Options
   -- Option shared by at least 2 backends
@@ -77,7 +81,7 @@ data SharedOptions = Options
   , xml :: Int
   , ghcExtensions :: Bool
   -- C++ specific
-  , linenumbers :: Bool       -- ^ Add and set line_number field for syntax classes
+  , linenumbers :: RecordPositions -- ^ Add and set line_number field for syntax classes
   -- C# specific
   , visualStudio :: Bool      -- ^ Generate Visual Studio solution/project files
   , wcf :: Bool               -- ^ Windows Communication Foundation
@@ -104,7 +108,7 @@ defaultOptions = Options
   , xml = 0
   , ghcExtensions = False
   , lang = error "lang not set"
-  , linenumbers = False
+  , linenumbers = NoRecordPositions
   , visualStudio = False
   , wcf = False
   , functor = False
@@ -151,7 +155,7 @@ targetOptions =
 -- they apply to.
 specificOptions :: [(OptDescr (SharedOptions -> SharedOptions), [Target])]
 specificOptions =
-  [ ( Option ['l'] [] (NoArg (\o -> o {linenumbers = True}))
+  [ ( Option ['l'] [] (NoArg (\o -> o {linenumbers = RecordPositions}))
         "Add and set line_number field for all syntax classes\nJava requires cup 0.11b-2014-06-11 or greater"
     , [TargetCpp, TargetJava] )
   , ( Option ['p'] []
