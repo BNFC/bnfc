@@ -36,11 +36,14 @@ cf2ComposVisitor packageBase packageAbsyn cf =
     "}"]
   where
     user   = fst (unzip (tokenPragmas cf))
-    groups = [ g
-        | g@(c,_) <- fixCoercions (ruleGroupsInternals cf), not (isList c) ]
+    groups =
+        [ g
+        | g@(c,_) <- fixCoercions (ruleGroupsInternals cf)
+        , not (isList c)
+        ]
     is     = map (prInterface packageAbsyn) groups
-    header = unlines [
-      "package" +++ packageBase ++ ";"
+    header = unlines
+      [ "package" +++ packageBase ++ ";"
       , "import" +++ packageAbsyn ++ ".*;"
       , "/** BNFC-Generated Composition Visitor"
       , "*/"
@@ -56,13 +59,16 @@ prInterface packageAbsyn (cat, _) =
     q ++ ".Visitor<" ++ q ++ ",A>"
   where q = packageAbsyn ++ "." ++ identCat cat
 
---Traverses a category based on its type.
+-- | Traverses a category based on its type.
+
 prData :: String -> [UserDef] -> (Cat, [Rule]) -> String
 prData packageAbsyn user (cat, rules) = unlines
     [ "/* " ++ identCat cat ++ " */"
     , concatMap (render . prRule packageAbsyn user cat) rules
     ]
--- | traverses a standard rule.
+
+-- | Traverses a standard rule.
+--
 -- >>> prRule "lang.absyn" [Cat "A"] (Cat "B") (Rule "F" (Cat "B") [Left (Cat "A"), Right "+", Left (ListCat (Cat "B"))])
 --     public B visit(lang.absyn.F p, A arg)
 --     {
@@ -74,6 +80,7 @@ prData packageAbsyn user (cat, rules) = unlines
 --       }
 --       return new lang.absyn.F(a_, listb_);
 --     }
+
 prRule :: String -> [UserDef] -> Cat -> Rule -> Doc
 prRule packageAbsyn user cat (Rule fun _ cats)
   | not (isCoercion fun || isDefinedRule fun) = nest 4 $ vcat
@@ -88,18 +95,23 @@ prRule packageAbsyn user cat (Rule fun _ cats)
 prRule  _ _ _ _ = ""
 
 -- | Traverses a class's instance variables.
+--
 -- >>> prCat [Cat "A"] (Cat "A", "a_")
 -- String a_ = p.a_;
+--
 -- >>> prCat [] (ListCat (Cat "Integer"), "listinteger_")
 -- ListInteger listinteger_ = p.listinteger_;
+--
 -- >>> prCat [] (ListCat (Cat "N"), "listn_")
 -- ListN listn_ = new ListN();
 -- for (N x : p.listn_)
 -- {
 --   listn_.add(x.accept(this,arg));
 -- }
+--
 -- >>> prCat [] (Cat "N", "n_")
 -- N n_ = p.n_.accept(this, arg);
+
 prCat :: [UserDef]  -- ^ User defined token categories
       -> (Cat, Doc) -- ^ Variable category and names
       -> Doc        -- ^ Code for visiting the variable
@@ -112,11 +124,11 @@ prCat user (cat, nt)
   where
     var     = "p." <> nt
     varType = typename (identCat (normCat cat)) user
-    et      = typename (show$normCatOfList cat) user
+    et      = typename (identCat (normCatOfList cat)) user
     decl v  = text varType <+> nt <+> "=" <+> v <> ";"
 
---Just checks if something is a basic or user-defined type.
+-- | Just checks if something is a basic or user-defined type.
+
 isBasicType :: [UserDef] -> String -> Bool
 isBasicType user v =
     v `elem` (map show user ++ ["Integer","Character","String","Double"])
-
