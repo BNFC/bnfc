@@ -283,7 +283,7 @@ prList user c rules =
         , "}"
         ]
    where
-    et = text (typename (show $ normCatOfList c) user)
+    et = text $ cat2JavaType user $ normCatOfList c
     sep = escapeChars $ getCons rules
     optsep = if hasOneFunc rules then "" else sep
     renderSep x = "render(\"" <> text x <>"\")"
@@ -365,7 +365,7 @@ shList user c _rules = unlines
    "     }"
   ]
     where
-    et = typename (show $ normCatOfList c) user
+    et = cat2JavaType user $ normCatOfList c
 
 -- |
 -- >>> shCat "F" (ListCat (Cat "A"), "lista_")

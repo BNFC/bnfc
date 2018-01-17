@@ -44,7 +44,7 @@
    **************************************************************
 -}
 
-module BNFC.Backend.Java.CFtoJavaAbs15 (cf2JavaAbs, typename) where
+module BNFC.Backend.Java.CFtoJavaAbs15 (cf2JavaAbs, typename, cat2JavaType) where
 
 import BNFC.CF
 import BNFC.Utils((+++),(++++))
@@ -115,12 +115,12 @@ prRule h packageAbsyn funs user c (fun, cats)
   | isNilFun fun || isOneFun fun = Nothing  -- these are not represented in the Absyn
   | isConsFun fun = Just . (fun',) . unlines $ -- this is the linked list case.
       [ h
-      , "public class" +++ fun' +++ "extends java.util.LinkedList<"++ et ++"> {"
+      , unwords [ "public class", fun', "extends", cat2JavaTypeTopList user c, "{" ]
       , "}"
       ]
   | otherwise = Just . (fun,) . unlines $ -- a standard rule
       [ h
-      , "public class" +++ fun ++ ext +++ "{"
+      , unwords [ "public class", fun, ext, "{" ]
       , render $ nest 2 $ vcat
           [ prInstVars vs
           , prConstructor fun user vs cats
@@ -137,8 +137,6 @@ prRule h packageAbsyn funs user c (fun, cats)
      isAlsoCategory = fun == show c
      --This handles the case where a LBNF label is the same as the category.
      ext = if isAlsoCategory then "" else " extends" +++ identCat c
-     et = typename (show $ normCatOfList c) user
-
 
 -- | The standard accept function for the Visitor pattern.
 
@@ -278,3 +276,19 @@ typename t user | t == "Ident"            = "String"
                 | t == "Char"             = "Character"
                 | t `elem` map show user  = "String"
                 | otherwise               = t
+
+-- | Print the Java type corresponding to a category.
+cat2JavaType :: [UserDef] -> Cat -> String
+cat2JavaType user = loop
+  where
+  loop = \case
+    ListCat c -> "List" ++ loop c
+    -- ListCat c -> "java.util.LinkedList<" ++ loop c ++ ">"
+    c -> typename (show $ normCat c) user
+
+-- | Print the Java type corresponding to a category.
+--   The top list is printed as @java.util.LinkedList<...>@.
+cat2JavaTypeTopList :: [UserDef] -> Cat -> String
+cat2JavaTypeTopList user = \case
+  ListCat c -> "java.util.LinkedList<" ++ cat2JavaType user c ++ ">"
+  c -> cat2JavaType user c
