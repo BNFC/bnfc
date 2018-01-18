@@ -5,7 +5,7 @@ ghc:
   - 7.10.3
   - 8.0
   - 8.2
-env: CLASSPATH=".:/usr/share/java/JLex.jar:/usr/share/java/cup.jar"
+env:
   - PACKAGEDIR="source"
   - PACKAGEDIR="testing"
 script:
@@ -17,4 +17,5 @@ before_install:
   - sudo apt-get install g++
   - sudo apt-get install texlive-latex-base
   - sudo apt-get install alex happy
+  - export CLASSPATH=".:/usr/share/java/JLex.jar:/usr/share/java/cup.jar"
   - cd ${PACKAGEDIR}
