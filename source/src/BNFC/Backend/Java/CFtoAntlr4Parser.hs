@@ -43,6 +43,7 @@ import Data.List
 import BNFC.CF
 import BNFC.Backend.Java.Utils
 import BNFC.Backend.Common.NamedVariables
+import BNFC.Options (RecordPositions(..))
 import BNFC.Utils ( (+++), (+.+))
 
 -- Type declarations
@@ -53,8 +54,8 @@ type MetaVar     = (String, Cat)
 
 -- | Creates the ANTLR parser grammar for this CF.
 --The environment comes from CFtoAntlr4Lexer
-cf2AntlrParse :: String -> String -> CF -> SymEnv -> String
-cf2AntlrParse packageBase packageAbsyn cf env = unlines
+cf2AntlrParse :: String -> String -> CF -> RecordPositions -> SymEnv -> String
+cf2AntlrParse packageBase packageAbsyn cf _ env = unlines
     [ header
     , tokens
     , prRules packageAbsyn (rulesForAntlr4 packageAbsyn cf env)

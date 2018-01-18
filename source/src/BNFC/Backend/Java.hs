@@ -91,7 +91,7 @@ makeJava options@Options{..} cf = do
         makebnfcfile x = mkfile (javaex (fst $ x bnfcfiles))
                                         (snd $ x bnfcfiles)
 
-    let absynFiles = remDups $ cf2JavaAbs packageBase packageAbsyn cf
+    let absynFiles = remDups $ cf2JavaAbs packageBase packageAbsyn cf rp
         absynBaseNames = map fst absynFiles
         absynFileNames = map (dirAbsyn ++) absynBaseNames
     let writeAbsyn (filename, contents) =
@@ -111,7 +111,7 @@ makeJava options@Options{..} cf = do
                                           +++ toolversion lexmake  +++")"
     -- where the parser file is created.
     mkfile (dirBase ++ inputfile parmake)
-          $ parsefun packageBase packageAbsyn cf env
+          $ parsefun packageBase packageAbsyn cf rp env
     liftIO $ putStrLn $
       if supportsEntryPoints parmake
        then "(Parser created for all categories)"
@@ -128,11 +128,12 @@ makeJava options@Options{..} cf = do
     pkgToDir :: String -> FilePath
     pkgToDir s = replace '.' pathSeparator s ++ [pathSeparator]
 
-    parselexspec = parserLexerSelector lang javaLexerParser (Options.linenumbers options)
+    parselexspec = parserLexerSelector lang javaLexerParser rp
     lexfun       = cf2lex $ lexer parselexspec
     parsefun     = cf2parse $ parser parselexspec
     parmake      = makeparserdetails (parser parselexspec)
     lexmake      = makelexerdetails  (lexer parselexspec)
+    rp           = (Options.linenumbers options)
 
 makefile ::  FilePath -> FilePath -> [String] -> ParserLexerSpecification -> Doc
 makefile  dirBase dirAbsyn absynFileNames jlexpar = vcat $
@@ -244,7 +245,7 @@ cuptest =
     "Throwable"
     (const [])
     (\x i -> x <> i <> ";")
-    (\x i -> x <> i <> ";")
+    (\x i -> x <> "(" <> i <> ", " <> i <> ".getSymbolFactory());")
     showOpts
     (\_ pabs enti ->
         pabs <> "." <> enti <+> "ast = p."<> "p" <> enti
@@ -271,7 +272,7 @@ antlrtest =
            , "l.addErrorListener(new BNFCErrorListener());"
            ])
     (\x i -> vcat
-           [x <> "(new CommonTokenStream" <> i <>");"
+           [x <> "(new CommonTokenStream(" <> i <>"));"
            , "p.addErrorListener(new BNFCErrorListener());"
            ])
     showOpts
@@ -299,15 +300,15 @@ antlrtest =
 
 parserLexerSelector :: String
     -> JavaLexerParser
-    -> Bool -- ^Pass line numbers to the symbols
+    -> RecordPositions -- ^Pass line numbers to the symbols
     -> ParserLexerSpecification
-parserLexerSelector _ JLexCup ln = ParseLexSpec
-    { lexer     = cf2JLex ln
-    , parser    = cf2cup
+parserLexerSelector _ JLexCup rp = ParseLexSpec
+    { lexer     = cf2JLex rp
+    , parser    = cf2cup rp
     , testclass = cuptest
     }
-parserLexerSelector _ JFlexCup ln =
-    (parserLexerSelector "" JLexCup ln){lexer = cf2JFlex ln}
+parserLexerSelector _ JFlexCup rp =
+    (parserLexerSelector "" JLexCup rp){lexer = cf2JFlex rp}
 parserLexerSelector l Antlr4 _ = ParseLexSpec
     { lexer     = cf2AntlrLex' l
     , parser    = cf2AntlrParse' l
@@ -331,15 +332,15 @@ data CFToLexer = CF2Lex
     }
 
 -- | Instances of cf-lexergen bridges
-cf2JLex, cf2JFlex :: Bool -> CFToLexer
+cf2JLex, cf2JFlex :: RecordPositions -> CFToLexer
 
-cf2JLex ln = CF2Lex
-       { cf2lex           = BNFC.Backend.Java.CFtoJLex15.cf2jlex (ln, False)
+cf2JLex rp = CF2Lex
+       { cf2lex           = BNFC.Backend.Java.CFtoJLex15.cf2jlex JLexCup rp
        , makelexerdetails = jlexmakedetails
        }
 
-cf2JFlex ln = CF2Lex
-       { cf2lex           = BNFC.Backend.Java.CFtoJLex15.cf2jlex (ln, True)
+cf2JFlex rp = CF2Lex
+       { cf2lex           = BNFC.Backend.Java.CFtoJLex15.cf2jlex JFlexCup rp
        , makelexerdetails = jflexmakedetails
        }
 
@@ -352,7 +353,7 @@ cf2AntlrLex' l = CF2Lex
 
 -- | CF -> PARSER GENERATION TOOL BRIDGE
 -- | function translating the CF to an appropriate parser generation tool.
-type CF2ParserFunction = String -> String -> CF -> SymEnv -> String
+type CF2ParserFunction = String -> String -> CF -> RecordPositions -> SymEnv -> String
 
 -- | Chooses the translation from CF to the parser
 data CFToParser = CF2Parse
@@ -361,10 +362,10 @@ data CFToParser = CF2Parse
     }
 
 -- | Instances of cf-parsergen bridges
-cf2cup :: CFToParser
-cf2cup = CF2Parse
+cf2cup :: RecordPositions -> CFToParser
+cf2cup rp = CF2Parse
     { cf2parse          = BNFC.Backend.Java.CFtoCup15.cf2Cup
-    , makeparserdetails = cupmakedetails
+    , makeparserdetails = cupmakedetails rp
     }
 
 cf2AntlrParse' :: String -> CFToParser
@@ -417,7 +418,8 @@ mapEmpty :: a -> String
 mapEmpty _ = ""
 
 -- Instances of makefile details.
-cupmakedetails, jflexmakedetails, jlexmakedetails :: MakeFileDetails
+jflexmakedetails, jlexmakedetails :: MakeFileDetails
+cupmakedetails :: RecordPositions -> MakeFileDetails
 
 jlexmakedetails = MakeDetails
     { executable          = runJava "JLex.Main"
@@ -437,9 +439,9 @@ jflexmakedetails = jlexmakedetails
     , toolversion = "1.4.3"
     }
 
-cupmakedetails = MakeDetails
+cupmakedetails rp = MakeDetails
     { executable          = runJava "java_cup.Main"
-    , flags               = const "-nopositions -expect 100"
+    , flags               = const (lnFlags ++ " -expect 100")
     , filename            = "_cup"
     , fileextension       = "cup"
     , toolname            = "CUP"
@@ -448,6 +450,8 @@ cupmakedetails = MakeDetails
     , results             = ["parser", "sym"]
     , moveresults         = True
     }
+  where
+    lnFlags = if rp == RecordPositions then "-locations" else "-nopositions"
 
 
 antlrmakedetails :: String -> MakeFileDetails
@@ -580,7 +584,7 @@ javaTest imports
                         <>"(\"Error: File not found: \" + args[0]);"
                     , "System.exit(1);"
                     ]
-                , "p = new "<> parserconstruction px "(l)"
+                , "p = new "<> parserconstruction px "l"
                 ]
             , ""
             , "public" <+> text packageAbsyn <> "." <> absentity

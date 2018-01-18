@@ -52,6 +52,7 @@ import BNFC.Backend.C.CFtoBisonC (startSymbol)
 import BNFC.Backend.CPP.STL.STLUtils
 import BNFC.Backend.Common.NamedVariables hiding (varName)
 import BNFC.CF
+import BNFC.Options (RecordPositions(..))
 import BNFC.PrettyPrint
 import BNFC.TypeChecker
 import BNFC.Utils ((+++))
@@ -66,8 +67,8 @@ type Action      = String
 type MetaVar     = String
 
 --The environment comes from the CFtoFlex
-cf2Bison :: Bool -> Maybe String -> String -> CF -> SymEnv -> String
-cf2Bison ln inPackage name cf env
+cf2Bison :: RecordPositions -> Maybe String -> String -> CF -> SymEnv -> String
+cf2Bison rp inPackage name cf env
  = unlines
     [header inPackage name cf,
      render $ union inPackage (positionCats cf ++ allCats cf),
@@ -78,7 +79,7 @@ cf2Bison ln inPackage name cf env
      startSymbol cf,
      specialToks cf,
      "%%",
-     prRules (rulesForBison ln inPackage name cf env)
+     prRules (rulesForBison rp inPackage name cf env)
     ]
   where
    user = fst (unzip (tokenPragmas cf))
@@ -289,9 +290,9 @@ specialToks cf = concat [
 
 --The following functions are a (relatively) straightforward translation
 --of the ones in CFtoHappy.hs
-rulesForBison :: Bool -> Maybe String -> String -> CF -> SymEnv -> Rules
-rulesForBison ln inPackage _ cf env = map mkOne (ruleGroups cf) ++ posRules where
-  mkOne (cat,rules) = constructRule ln inPackage cf env rules cat
+rulesForBison :: RecordPositions -> Maybe String -> String -> CF -> SymEnv -> Rules
+rulesForBison rp inPackage _ cf env = map mkOne (ruleGroups cf) ++ posRules where
+  mkOne (cat,rules) = constructRule rp inPackage cf env rules cat
   posRules = map mkPos $ positionCats cf
   mkPos cat = (cat, [(fromMaybe (show cat) (lookup (show cat) env),
    "$$ = new " ++ show cat ++ "($1," ++ nsString inPackage ++ "yy_mylinenumber) ; YY_RESULT_" ++
@@ -299,9 +300,9 @@ rulesForBison ln inPackage _ cf env = map mkOne (ruleGroups cf) ++ posRules wher
 
 -- For every non-terminal, we construct a set of rules.
 constructRule ::
-  Bool -> Maybe String -> CF -> SymEnv -> [Rule] -> NonTerminal -> (NonTerminal,[(Pattern,Action)])
-constructRule ln inPackage cf env rules nt =
-  (nt,[(p, generateAction ln inPackage nt (ruleName r) b m +++ result) |
+  RecordPositions -> Maybe String -> CF -> SymEnv -> [Rule] -> NonTerminal -> (NonTerminal,[(Pattern,Action)])
+constructRule rp inPackage cf env rules nt =
+  (nt,[(p, generateAction rp inPackage nt (ruleName r) b m +++ result) |
      r0 <- rules,
      let (b,r) = if isConsFun (funRule r0) && elem (valCat r0) revs
                    then (True,revSepListRule r0)
@@ -318,8 +319,8 @@ constructRule ln inPackage cf env rules nt =
    result = if isEntry nt then (nsScope inPackage ++ resultName (identCat (normCat nt))) ++ "= $$;" else ""
 
 -- Generates a string containing the semantic action.
-generateAction :: Bool -> Maybe String -> NonTerminal -> Fun -> Bool -> [(MetaVar,Bool)] -> Action
-generateAction ln inPackage cat f b mbs =
+generateAction :: RecordPositions -> Maybe String -> NonTerminal -> Fun -> Bool -> [(MetaVar,Bool)] -> Action
+generateAction rp inPackage cat f b mbs =
   reverses ++
   if isCoercion f
   then "$$ = " ++ unwords ms ++ ";"
@@ -334,11 +335,11 @@ generateAction ln inPackage cat f b mbs =
   else if isDefinedRule f
   then concat ["$$ = ", scope, f, "_", "(", intercalate ", " ms, ");" ]
   else concat
-    ["$$ = ", "new ", scope, f, "(", intercalate ", " ms, ");" ++ addLn ln]
+    ["$$ = ", "new ", scope, f, "(", intercalate ", " ms, ");" ++ addLn rp]
  where
   ms = map fst mbs
   lastms = last ms
-  addLn ln = if ln then " $$->line_number = " ++ nsString inPackage ++ "yy_mylinenumber;" else ""  -- O.F.
+  addLn rp = if rp == RecordPositions then " $$->line_number = " ++ nsString inPackage ++ "yy_mylinenumber;" else ""  -- O.F.
   identCatV = identCat . normCat
   reverses = unwords [
     "std::reverse(" ++ m ++"->begin(),"++m++"->end()) ;" |
