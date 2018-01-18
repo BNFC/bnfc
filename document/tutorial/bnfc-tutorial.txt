@@ -769,7 +769,7 @@ to a call of the interpreter:
     public static void main(String args[]) throws Exception
     {
       Yylex l  = new Yylex(System.in) ;
-      parser p = new parser(l) ;
+      parser p = new parser(l, l.getSymbolFactory()) ;
       Calc.Absyn.Exp parse_tree = p.pExp() ;
       System.out.println(Interpreter.interpret(parse_tree)) ;
     }

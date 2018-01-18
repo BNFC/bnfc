@@ -9,7 +9,7 @@ import java.io.*;
     public static void main(String args[]) throws Exception
     {
       Yylex l  = new Yylex(System.in);
-      parser p = new parser(l) ;
+      parser p = new parser(l, l.getSymbolFactory()) ;
       Calc.Absyn.Exp parse_tree = p.pExp() ;
       System.out.println(Interpreter.interpret(parse_tree)) ;
     }
@@ -33,7 +33,7 @@ public class Interpret
      System.err.println("Error: File not found: " + args[0]);
      System.exit(1);
     }
-    p = new parser(l);
+    p = new parser(l, l.getSymbolFactory());
     //    /* The default parser is the first-defined entry point. * /
     // You may want to change this. Other options are: * /
     try
