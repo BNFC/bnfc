@@ -1,3 +1,5 @@
+{-# LANGUAGE NoImplicitPrelude #-}
+
 {-
     BNF Converter: C Abstract syntax
     Copyright (C) 2004  Author:  Michael Pellauer
@@ -40,6 +42,7 @@
 
 module BNFC.Backend.C.CFtoCAbs (cf2CAbs) where
 
+import Prelude'
 
 import BNFC.CF
 import BNFC.PrettyPrint

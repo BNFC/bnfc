@@ -1,3 +1,5 @@
+{-# LANGUAGE NoImplicitPrelude #-}
+
 {-
     BNF Converter: Java Top File
     Copyright (C) 2004  Author:  Markus Forsberg, Peter Gammie,
@@ -34,6 +36,8 @@
 -------------------------------------------------------------------
 
 module BNFC.Backend.Java ( makeJava ) where
+
+import Prelude'
 
 import System.FilePath (pathSeparator, isPathSeparator)
 import Data.List ( intersperse )

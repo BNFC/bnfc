@@ -1,3 +1,5 @@
+{-# LANGUAGE NoImplicitPrelude #-}
+
 {-
     BNF Converter: Haskell error monad
     Copyright (C) 2004-2007  Author:  Markus Forberg, Peter Gammie,
@@ -18,6 +20,8 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 -}
 module BNFC.Backend.Haskell.MkErrM where
+
+import Prelude'
 
 import BNFC.PrettyPrint
 

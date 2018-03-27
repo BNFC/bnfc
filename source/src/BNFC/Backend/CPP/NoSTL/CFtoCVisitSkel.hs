@@ -1,3 +1,5 @@
+{-# LANGUAGE NoImplicitPrelude #-}
+
 {-
     BNF Converter: C++ Skeleton generation
     Copyright (C) 2004  Author:  Michael Pellauer
@@ -38,6 +40,8 @@
 -}
 
 module BNFC.Backend.CPP.NoSTL.CFtoCVisitSkel (cf2CVisitSkel) where
+
+import Prelude'
 
 import BNFC.CF
 import BNFC.Utils ((+++))

@@ -1,5 +1,9 @@
+{-# LANGUAGE NoImplicitPrelude #-}
+
 module BNFC.Lexing
     ( mkLexer, LexType(..) ) where
+
+import Prelude'
 
 import Control.Arrow ((&&&))
 import Data.List (inits)

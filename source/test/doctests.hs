@@ -1,7 +1,8 @@
 import Test.DocTest
 
 main = doctest
-    [ "-isrc"
+    [ "-icompat"
+    , "-isrc"
     , "-idist/build/autogen/"
     , "-idist/build/bnfc/bnfc-tmp"
     , "-XLambdaCase"

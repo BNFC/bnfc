@@ -58,7 +58,7 @@ Executable bnfc
     deepseq
   build-tools:         alex, happy
   Main-is: Main.hs
-  HS-source-dirs: src/
+  HS-source-dirs: compat src
   ghc-options:     -W
   extensions:
     FlexibleContexts
@@ -77,6 +77,7 @@ Executable bnfc
     PrintBNF,
     ErrM,
     -- BNFC core
+    Prelude',
     BNFC.Utils,
     BNFC.CF,
     BNFC.ToCNFCore,
@@ -202,7 +203,7 @@ Test-suite unit-tests
                  hspec, QuickCheck >= 2.5, HUnit,
                  temporary, containers, deepseq
   Main-is: unit-tests.hs
-  HS-source-dirs: src test
+  HS-source-dirs: compat src test
   extensions:
     FlexibleContexts
     LambdaCase

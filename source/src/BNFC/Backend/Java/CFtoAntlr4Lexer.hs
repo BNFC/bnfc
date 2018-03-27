@@ -1,3 +1,5 @@
+{-# LANGUAGE NoImplicitPrelude #-}
+
 {-
     BNF Converter: Java Antlr4 Lexer generator
     Copyright (C) 2015  Author:  Gabriele Paganelli
@@ -37,6 +39,8 @@
 -}
 
 module BNFC.Backend.Java.CFtoAntlr4Lexer ( cf2AntlrLex ) where
+
+import Prelude'
 
 import Text.PrettyPrint
 import BNFC.CF

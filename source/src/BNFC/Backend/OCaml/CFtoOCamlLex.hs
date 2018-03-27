@@ -1,3 +1,5 @@
+{-# LANGUAGE NoImplicitPrelude #-}
+
 {-
     BNF Converter: ocamllex Generator
     Copyright (C) 2005  Author:  Kristofer Johannisson
@@ -21,6 +23,8 @@
 -- based on BNFC Haskell backend
 
 module BNFC.Backend.OCaml.CFtoOCamlLex (cf2ocamllex) where
+
+import Prelude'
 
 import Control.Arrow ((&&&))
 import Data.List

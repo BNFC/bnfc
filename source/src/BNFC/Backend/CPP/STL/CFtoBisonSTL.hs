@@ -1,3 +1,5 @@
+{-# LANGUAGE NoImplicitPrelude #-}
+
 {-
     BNF Converter: C++ Bison generator
     Copyright (C) 2004  Author:  Michael Pellauer
@@ -43,6 +45,8 @@
 
 
 module BNFC.Backend.CPP.STL.CFtoBisonSTL (cf2Bison, union) where
+
+import Prelude'
 
 import Data.Char (toLower,isUpper)
 import Data.List (nub, intercalate)

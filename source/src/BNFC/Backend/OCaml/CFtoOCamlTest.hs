@@ -1,3 +1,5 @@
+{-# LANGUAGE NoImplicitPrelude #-}
+
 {-
     BNF Converter: Generate main/test module for OCaml
     Copyright (C) 2005  Author:  Kristofer Johannisson
@@ -18,6 +20,8 @@
 -}
 
 module BNFC.Backend.OCaml.CFtoOCamlTest where
+
+import Prelude'
 
 import Text.PrettyPrint
 

@@ -1,3 +1,5 @@
+{-# LANGUAGE NoImplicitPrelude #-}
+
 -- Extends Text.PrettyPrint
 module BNFC.PrettyPrint
   ( module Text.PrettyPrint
@@ -6,6 +8,8 @@ module BNFC.PrettyPrint
   , vsep
   , (<=>)
   ) where
+
+import Prelude'
 
 import Text.PrettyPrint
 

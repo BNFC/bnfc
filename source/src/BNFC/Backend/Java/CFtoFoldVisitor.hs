@@ -1,3 +1,5 @@
+{-# LANGUAGE NoImplicitPrelude #-}
+
 {-
     BNF Converter: Java 1.5 Fold Vistor generator
     Copyright (C) 2006 Bjorn Bringert
@@ -19,6 +21,8 @@
 -}
 
 module BNFC.Backend.Java.CFtoFoldVisitor (cf2FoldVisitor) where
+
+import Prelude'
 
 import BNFC.CF
 import BNFC.Backend.Java.CFtoJavaAbs15 (typename)

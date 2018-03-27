@@ -1,3 +1,4 @@
+{-# LANGUAGE NoImplicitPrelude #-}
 
 {-
     BNF Converter: Named instance variables
@@ -66,6 +67,8 @@ This is what this module does.
 -}
 
 module BNFC.Backend.Common.NamedVariables where
+
+import Prelude'
 
 import BNFC.CF
 import Data.Char (toLower)

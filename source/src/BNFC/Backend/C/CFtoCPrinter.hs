@@ -1,3 +1,5 @@
+{-# LANGUAGE NoImplicitPrelude #-}
+
 {-
     BNF Converter: C Pretty Printer printer
     Copyright (C) 2004  Author:  Michael Pellauer
@@ -40,6 +42,8 @@
 -}
 
 module BNFC.Backend.C.CFtoCPrinter (cf2CPrinter) where
+
+import Prelude'
 
 import BNFC.CF
 import BNFC.Utils ((+++))

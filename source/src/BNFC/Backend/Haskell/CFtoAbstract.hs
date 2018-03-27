@@ -1,3 +1,5 @@
+{-# LANGUAGE NoImplicitPrelude #-}
+
 {-
     BNF Converter: Abstract syntax Generator
     Copyright (C) 2004  Author:  Markus Forberg
@@ -18,6 +20,8 @@
 -}
 
 module BNFC.Backend.Haskell.CFtoAbstract (cf2Abstract) where
+
+import Prelude'
 
 import BNFC.CF
 import BNFC.Utils((+++))
