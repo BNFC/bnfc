@@ -1,3 +1,5 @@
+{-# LANGUAGE NoImplicitPrelude #-}
+
 {-
     BNF Converter: Java Pretty Printer generator
     Copyright (C) 2004  Author:  Michael Pellauer, Bjorn Bringert
@@ -45,6 +47,8 @@
    **************************************************************
 -}
 module BNFC.Backend.Java.CFtoJavaPrinter15 ( cf2JavaPrinter ) where
+
+import Prelude'
 
 import BNFC.Backend.Java.CFtoJavaAbs15
 

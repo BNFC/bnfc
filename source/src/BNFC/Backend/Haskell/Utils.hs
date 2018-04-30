@@ -1,9 +1,13 @@
+{-# LANGUAGE NoImplicitPrelude #-}
+
 module BNFC.Backend.Haskell.Utils
   ( parserName
   , hsReservedWords
   , catToType
   , catvars
   ) where
+
+import Prelude'
 
 import Text.PrettyPrint
 import BNFC.CF (Cat(..), identCat, normCat)

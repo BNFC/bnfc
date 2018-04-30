@@ -1,3 +1,5 @@
+{-# LANGUAGE NoImplicitPrelude #-}
+
 {-
     BNF Converter: Java Vistor skeleton generator
     Copyright (C) 2004  Author:  Michael Pellauer, Bjorn Bringert
@@ -39,6 +41,8 @@
    **************************************************************
 -}
 module BNFC.Backend.Java.CFtoVisitSkel15 (cf2VisitSkel) where
+
+import Prelude'
 
 import BNFC.CF
 import BNFC.Backend.Java.CFtoJavaAbs15 (typename)

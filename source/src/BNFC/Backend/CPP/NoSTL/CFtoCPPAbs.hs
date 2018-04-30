@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE NoImplicitPrelude, OverloadedStrings #-}
 {-
     BNF Converter: C++ abstract syntax generator
     Copyright (C) 2004  Author:  Michael Pellauer
@@ -40,6 +40,8 @@
 -}
 
 module BNFC.Backend.CPP.NoSTL.CFtoCPPAbs (cf2CPPAbs) where
+
+import Prelude'
 
 import BNFC.CF
 import BNFC.Utils((+++),(++++))

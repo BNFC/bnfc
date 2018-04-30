@@ -1,3 +1,5 @@
+{-# LANGUAGE NoImplicitPrelude #-}
+
 {-
     BNF Converter: Template Generator
     Copyright (C) 2004  Author:  Markus Forberg
@@ -19,6 +21,8 @@
 
 
 module BNFC.Backend.Haskell.CFtoTemplate (cf2Template) where
+
+import Prelude'
 
 import BNFC.Backend.Haskell.Utils (catvars)
 import BNFC.CF

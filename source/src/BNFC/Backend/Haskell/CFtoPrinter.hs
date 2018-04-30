@@ -1,3 +1,5 @@
+{-# LANGUAGE NoImplicitPrelude #-}
+
 {-
     BNF Converter: Pretty-printer generator
     Copyright (C) 2004  Author:  Aarne Ranta
@@ -18,6 +20,8 @@
 -}
 
 module BNFC.Backend.Haskell.CFtoPrinter (cf2Printer, compareRules) where
+
+import Prelude'
 
 import BNFC.Backend.Haskell.Utils (hsReservedWords)
 import BNFC.CF

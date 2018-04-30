@@ -1,3 +1,5 @@
+{-# LANGUAGE NoImplicitPrelude #-}
+
 {-
    **************************************************************
     BNF Converter Module
@@ -21,6 +23,8 @@
 -}
 
 module BNFC.Backend.CPP.PrettyPrinter (cf2CPPPrinter, prRender) where
+
+import Prelude'
 
 import BNFC.CF
 import BNFC.Utils ((+++))

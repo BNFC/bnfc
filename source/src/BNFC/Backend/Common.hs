@@ -1,6 +1,10 @@
+{-# LANGUAGE NoImplicitPrelude #-}
+
 -- | Functions common to different backends.
 
 module BNFC.Backend.Common (renderListSepByPrecedence) where
+
+import Prelude'
 
 import BNFC.PrettyPrint
 

@@ -1,3 +1,5 @@
+{-# LANGUAGE NoImplicitPrelude #-}
+
 {-
     BNF Converter: C Main file
     Copyright (C) 2004  Author:  Michael Pellauer
@@ -17,6 +19,8 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 -}
 module BNFC.Backend.C (makeC) where
+
+import Prelude'
 
 import BNFC.Utils
 import BNFC.CF

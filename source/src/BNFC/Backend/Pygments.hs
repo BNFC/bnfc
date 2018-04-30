@@ -1,3 +1,5 @@
+{-# LANGUAGE NoImplicitPrelude #-}
+
 {- Generates a Pygments lexer from a BNF grammar.
  -
  - Resources:
@@ -7,6 +9,7 @@
  - -}
 module BNFC.Backend.Pygments where
 
+import Prelude'
 
 import AbsBNF (Reg(..))
 import BNFC.Backend.Base (mkfile, Backend)

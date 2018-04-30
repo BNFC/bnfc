@@ -1,3 +1,5 @@
+{-# LANGUAGE NoImplicitPrelude #-}
+
 {-
     BNF Converter: Java JLex generator
     Copyright (C) 2004  Author:  Michael Pellauer
@@ -38,6 +40,8 @@
 -}
 
 module BNFC.Backend.Java.CFtoJLex15 ( cf2jlex ) where
+
+import Prelude'
 
 import BNFC.CF
 import BNFC.Backend.Common.NamedVariables

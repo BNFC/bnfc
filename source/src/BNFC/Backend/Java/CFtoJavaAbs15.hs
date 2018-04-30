@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE NoImplicitPrelude, OverloadedStrings #-}
 {-
     BNF Converter: Java 1.5 Abstract Syntax
     Copyright (C) 2004  Author:  Michael Pellauer, Bjorn Bringert
@@ -45,6 +45,8 @@
 -}
 
 module BNFC.Backend.Java.CFtoJavaAbs15 (cf2JavaAbs, typename, cat2JavaType) where
+
+import Prelude'
 
 import BNFC.CF
 import BNFC.Options (RecordPositions(..))

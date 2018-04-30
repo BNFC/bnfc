@@ -1,3 +1,5 @@
+{-# LANGUAGE NoImplicitPrelude #-}
+
 {-
     BNF Converter: Java 1.5 Compositional Vistor generator
     Copyright (C) 2006 Bjorn Bringert
@@ -19,6 +21,8 @@
 -}
 
 module BNFC.Backend.Java.CFtoComposVisitor (cf2ComposVisitor) where
+
+import Prelude'
 
 import Data.List
 import Data.Either (lefts)

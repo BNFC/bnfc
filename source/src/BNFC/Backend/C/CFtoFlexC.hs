@@ -1,3 +1,5 @@
+{-# LANGUAGE NoImplicitPrelude #-}
+
 {-
     BNF Converter: C flex generator
     Copyright (C) 2004  Author:  Michael Pellauer
@@ -36,6 +38,8 @@
    **************************************************************
 -}
 module BNFC.Backend.C.CFtoFlexC (cf2flex, lexComments, cMacros) where
+
+import Prelude'
 
 import Data.Maybe (fromMaybe)
 
