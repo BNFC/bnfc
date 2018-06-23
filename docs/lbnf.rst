@@ -26,7 +26,7 @@ addition expressions with “1”:
 
 ::
 
-      EPlus. Exp ::= Exp "+" Num ;
+      EPlus. Exp ::= Exp "+" Exp ;
       ENum.  Exp ::= Num ;
       NOne.  Num ::= "1" ;
 
