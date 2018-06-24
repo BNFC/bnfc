@@ -26,9 +26,9 @@ addition expressions with “1”:
 
 ::
 
-      EPlus. Exp ::= Exp "+" Num ;
-      ENum.  Exp ::= Num ;
-      NOne.  Num ::= "1" ;
+      EPlus. Expr   ::= Expr "+" Number ;
+      ENum.  Expr   ::= Number ;
+      NOne.  Number ::= "1" ;
 
 Apart from the *labels*, EPlus, ENum, and NOne, the rules are ordinary
 BNF rules, with terminal symbols enclosed in double quotes and
@@ -41,8 +41,8 @@ syntax is implemented as a system of datatype definitions
 
 ::
 
-      data Exp = EPlus Exp Exp | ENum Num
-      data Num = NOne
+      data Expr   = EPlus Expr Number | ENum Number
+      data Number = NOne
 
 For other languages—C, C++, and Java—an equivalent representation is
 given, following the methodology defined in Appel’s books series *Modern
@@ -135,7 +135,7 @@ example:
 
 ::
 
-      Char_a. Char ::= "a" ; 
+      Char_a. Char ::= "a" ;
       Char_b. Char ::= "b" ;
 
 This is, however, cumbersome and inefficient. Instead, we have decided
@@ -292,7 +292,7 @@ labels, and list brackets in category names:
       [].  [Def] ::= ;
       (:). [Def] ::= Def ";" [Def] ;
 
-As the general rule, we have 
+As the general rule, we have
 
 .. highlights::
    ``[C]``, the category of lists of type ``C``,
@@ -465,7 +465,7 @@ For instance, the Java comment convention is defined as follows:
 ::
 
       comment "//" ;
-      comment "/*" "*/" ; 
+      comment "/*" "*/" ;
 
 .. _pragmas:
 
@@ -663,8 +663,8 @@ is shorthand for
 ::
 
       Type_0.      Type ::= Type "[" Integer "]" ;
-      Type_float.  Type ::= "float" ; 
-      Type_double. Type ::= "double" ; 
+      Type_float.  Type ::= "float" ;
+      Type_double. Type ::= "double" ;
       Type_3.      Type ::= Type "*" ;
 
 The labels are created automatically. A label starts with the value
@@ -738,7 +738,7 @@ Here is an example of an Alfa source file using layout:
 
 ::
 
-      c :: Nat = case x of 
+      c :: Nat = case x of
         True -> b
         False -> case y of
           False -> b
@@ -977,7 +977,7 @@ belong to the BNF notation. All other symbols are terminals.
 ::
 
     <Grammar> ::= <ListDef>
-    
+
     <ListDef> ::= ε
               |   <Def> ; <ListDef>
     <ListItem> ::= ε
@@ -1010,7 +1010,7 @@ belong to the BNF notation. All other symbols are terminals.
               | ( : [ ] )
     <ProfItem> ::= ( [ <ListIntList> ] , [ <ListInteger> ] )
     <IntList> ::= [ <ListInteger> ]
-    
+
     <ListInteger> ::= ε
                   | <Integer>
                   | <Integer> , <ListInteger>
@@ -1028,7 +1028,7 @@ belong to the BNF notation. All other symbols are terminals.
                   | ε
     <Reg2> ::= <Reg2> <Reg3>
            | <Reg3>
-    
+
     <Reg1> ::= <Reg1> | <Reg2>
            | <Reg2> − <Reg2>
            | <Reg2>
