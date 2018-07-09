@@ -56,3 +56,9 @@ spec = do
       calc <- getCalc
       let options = calcOptions { make = Just "MyMakefile" }
       makeHaskell options calc `shouldGenerate` "MyMakefile"
+
+  context "with option --cabal and the Calc grammar" $ do
+    it "generates a cabal file" $ do
+      calc <- getCalc
+      let options = calcOptions { cabal = True }
+      makeHaskell options calc `shouldGenerate` "Calc.cabal"      

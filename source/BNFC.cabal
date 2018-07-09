@@ -55,7 +55,8 @@ Executable bnfc
     containers,
     pretty >=1.1 && <1.2,
     filepath,
-    deepseq
+    deepseq,
+    Cabal >= 1.16 && < 1.23
   build-tools:         alex, happy
   Main-is: Main.hs
   HS-source-dirs: compat src
@@ -104,6 +105,7 @@ Executable bnfc
     BNFC.Backend.Haskell,
     BNFC.Backend.Haskell.ToCNF,
     BNFC.Backend.Haskell.RegToAlex,
+    BNFC.Backend.Haskell.CFtoCabal,
     BNFC.Backend.Haskell.CFtoTemplate,
     BNFC.Backend.Haskell.CFtoAlex3,
     BNFC.Backend.Haskell.CFtoAlex2,
@@ -199,9 +201,21 @@ Executable bnfc
 -- --- Testing --------------------------------------------------------------
 Test-suite unit-tests
   Type: exitcode-stdio-1.0
-  Build-Depends: base>=4 && <5, mtl, directory, array, process, filepath, pretty,
-                 hspec, QuickCheck >= 2.5, HUnit,
-                 temporary, containers, deepseq
+  Build-Depends:
+    base>=4 && <5,
+    mtl,
+    directory,
+    array,
+    process,
+    filepath,
+    pretty,
+    hspec,
+    QuickCheck >= 2.5,
+    HUnit,
+    temporary,
+    containers,
+    deepseq,
+    Cabal >= 1.16 && < 1.23
   Main-is: unit-tests.hs
   HS-source-dirs: compat src test
   extensions:
