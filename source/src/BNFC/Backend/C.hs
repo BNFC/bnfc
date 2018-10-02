@@ -37,12 +37,12 @@ import qualified BNFC.Backend.Common.Makefile as Makefile
 
 makeC :: SharedOptions -> CF -> MkFiles ()
 makeC opts cf = do
-    let (hfile, cfile) = cf2CAbs prefix cf
+    let (hfile, cfile) = cf2CAbs (linenumbers opts) prefix cf
     mkfile "Absyn.h" hfile
     mkfile "Absyn.c" cfile
     let (flex, env) = cf2flex prefix cf
     mkfile (name ++ ".l") flex
-    let bison = cf2Bison prefix cf env
+    let bison = cf2Bison (linenumbers opts) prefix cf env
     mkfile (name ++ ".y") bison
     let header = mkHeaderFile cf (allCats cf) (allEntryPoints cf) env
     mkfile "Parser.h" header
@@ -205,8 +205,16 @@ mkHeaderFile cf cats eps env = unlines
   "  char* string_;",
   concatMap mkVar cats ++ "} YYSTYPE;",
   "",
+  "typedef struct YYLTYPE",
+  "{",
+  "  int first_line;",
+  "  int first_column;",
+  "  int last_line;",
+  "  int last_column;",
+  "} YYLTYPE;",
   "#define _ERROR_ 258",
   mkDefines (259::Int) env,
+  "extern YYLTYPE yylloc;",
   "extern YYSTYPE yylval;",
   concatMap mkFunc eps,
   "",

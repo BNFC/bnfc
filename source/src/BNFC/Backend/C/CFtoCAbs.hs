@@ -47,6 +47,7 @@ import Prelude'
 import BNFC.CF
 import BNFC.PrettyPrint
 import BNFC.Utils((+++))
+import BNFC.Options (RecordPositions(..))
 import BNFC.Backend.Common.NamedVariables
 import Data.Function (on)
 import Data.List
@@ -54,15 +55,15 @@ import Data.Char(toLower)
 
 
 --The result is two files (.H file, .C file)
-cf2CAbs :: String -> CF -> (String, String)
-cf2CAbs _ cf = (mkHFile cf, mkCFile cf)
+cf2CAbs :: RecordPositions -> String -> CF -> (String, String)
+cf2CAbs rp _ cf = (mkHFile rp cf, mkCFile cf)
 
 
 {- **** Header (.H) File Functions **** -}
 
 --Makes the Header file.
-mkHFile :: CF -> String
-mkHFile cf = unlines
+mkHFile :: RecordPositions -> CF -> String
+mkHFile rp cf = unlines
  [
   "#ifndef ABSYN_HEADER",
   "#define ABSYN_HEADER",
@@ -73,7 +74,7 @@ mkHFile cf = unlines
   concatMap prForward classes,
   "",
   "/********************   Abstract Syntax Classes    ********************/\n",
-  concatMap prDataH (getAbstractSyntax cf),
+  concatMap (prDataH rp) (getAbstractSyntax cf),
   "",
   "#endif"
  ]
@@ -98,13 +99,15 @@ mkHFile cf = unlines
    else "_"
 
 -- | Prints struct definitions for all categories.
-prDataH :: Data -> String
-prDataH (cat, rules) =
+prDataH :: RecordPositions -> Data -> String
+prDataH rp (cat, rules) =
    if isList cat
       then unlines
        [
         "struct " ++ c' ++ "_",
         "{",
+        if rp == RecordPositions then "  int line_number;" else "",
+        if rp == RecordPositions then "  int char_number;" else "", 
         "  " ++ mem +++ varName mem ++ ";",
         "  " ++ c' +++ varName c' ++ ";",
         "};",
@@ -114,8 +117,9 @@ prDataH (cat, rules) =
       else unlines
        [
         "struct " ++ show cat ++ "_",
-
         "{",
+        if rp == RecordPositions then "  int line_number;" else "",
+        if rp == RecordPositions then "  int char_number;" else "",
         "  enum { " ++ intercalate ", " (map prKind rules) ++ " } kind;",
         "  union",
         "  {",

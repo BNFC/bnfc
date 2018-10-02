@@ -42,6 +42,7 @@
 module BNFC.Backend.C.CFtoBisonC (cf2Bison, startSymbol) where
 
 import BNFC.CF
+import BNFC.Options (RecordPositions(..))
 import Data.List (intercalate)
 import Data.Maybe (fromMaybe)
 import BNFC.Backend.Common.NamedVariables hiding (varName)
@@ -57,8 +58,8 @@ type Action      = String
 type MetaVar     = String
 
 --The environment comes from the CFtoFlex
-cf2Bison :: String -> CF -> SymEnv -> String
-cf2Bison name cf env
+cf2Bison :: RecordPositions -> String -> CF -> SymEnv -> String
+cf2Bison rp name cf env
  = unlines
     [header name cf,
      union (allCatsNorm cf),
@@ -262,7 +263,7 @@ prRules :: Rules -> String
 prRules [] = []
 prRules ((_, []):rs) = prRules rs --internal rule
 prRules ((nt, (p,a) : ls):rs) =
-  unwords [nt', ":" , p, "{ $$ =", a, "}", '\n' : pr ls] ++ ";\n" ++ prRules rs
+  unwords [nt', ":" , p, "{ $$ =", a, "; $$->line_number=@$.first_line; $$->char_number=@$.first_column;", "}", '\n' : pr ls] ++ ";\n" ++ prRules rs
  where
   nt' = identCat nt
   pr []           = []
