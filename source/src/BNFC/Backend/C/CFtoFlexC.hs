@@ -179,7 +179,18 @@ restOfFlex cf env = concat
      "<CHARESC>.      \t BEGIN CHAREND; yylval.char_ = yytext[0]; return _CHAR_;",
      "<CHAREND>\"'\"      \t BEGIN YYINITIAL;"
     ]
-   footer = "void init_lexer(FILE *inp) { yyrestart(inp); BEGIN YYINITIAL; }"
+   footer = unlines
+    [
+     "void init_lexer(FILE *inp)",
+     "{",
+     "  yyrestart(inp);",
+     "  yylloc.first_line = 1;",
+     "  yylloc.first_column = 1;",
+     "  yylloc.last_line = 1;",
+     "  yylloc.last_column = 1;",
+     "  BEGIN YYINITIAL;",
+     "}"
+    ]
 
 -- ---------------------------------------------------------------------------
 -- Comments
