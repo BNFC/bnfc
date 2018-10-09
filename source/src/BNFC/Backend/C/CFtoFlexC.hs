@@ -193,11 +193,11 @@ restOfFlex cf env = concat
 -- delimiters.
 --
 -- >>> lexComments (Just "myns.") ([("{-","-}")],["--"])
--- <YYINITIAL>"--"[^\n]*\n ++myns.yy_mylinenumber; // BNFC: comment "--";
+-- <YYINITIAL>"--"[^\n]*\n /* skip */; // BNFC: comment "--";
 -- <YYINITIAL>"{-" BEGIN COMMENT; // BNFC: comment "{-" "-}";
 -- <COMMENT>"-}" BEGIN YYINITIAL;
 -- <COMMENT>. /* skip */;
--- <COMMENT>[\n] ++myns.yy_mylinenumber;
+-- <COMMENT>[\n] /* skip */;
 lexComments :: Maybe String -> ([(String, String)], [String]) -> Doc
 lexComments _ (m,s) =
     vcat (map lexSingleComment s ++ map lexMultiComment m)
@@ -208,13 +208,13 @@ lexComments _ (m,s) =
 -- comment.
 --
 -- >>> lexSingleComment (Just "mypackage.") "--"
--- <YYINITIAL>"--"[^\n]*\n ++mypackage.yy_mylinenumber; // BNFC: comment "--";
+-- <YYINITIAL>"--"[^\n]*\n /* skip */; // BNFC: comment "--";
 --
 -- >>> lexSingleComment Nothing "--"
--- <YYINITIAL>"--"[^\n]*\n ++yy_mylinenumber; // BNFC: comment "--";
+-- <YYINITIAL>"--"[^\n]*\n /* skip */; // BNFC: comment "--";
 --
 -- >>> lexSingleComment Nothing "\""
--- <YYINITIAL>"\""[^\n]*\n ++yy_mylinenumber; // BNFC: comment "\"";
+-- <YYINITIAL>"\""[^\n]*\n /* skip */ // BNFC: comment "\"";
 lexSingleComment :: String -> Doc
 lexSingleComment c =
     "<YYINITIAL>" <> cstring c <> "[^\\n]*\\n"

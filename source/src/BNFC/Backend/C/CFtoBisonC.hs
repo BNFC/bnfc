@@ -247,7 +247,7 @@ generateAction rp nt f b ms
   | otherwise    = concat ["make_", f, "(", intercalate ", " ms', ");", loc]
  where
   ms' = if b then reverse ms else ms
-  loc = if rp == RecordPositions then " $$->line_number=@$.first_line; $$->char_number=@$.first_column;" else ""
+  loc = if rp == RecordPositions then " $$->line_number = @$.first_line; $$->char_number = @$.first_column;" else ""
 
 -- Generate patterns and a set of metavariables indicating
 -- where in the pattern the non-terminal
