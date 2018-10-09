@@ -203,12 +203,23 @@ declarations cf = concatMap (typeNT cf) (allCats cf)
    typeNT _ _ = ""
 
 --declares terminal types.
+-- token name "literal"
+-- "Syntax error messages passed to yyerror from the parser will reference the literal string instead of the token name."
+-- https://www.gnu.org/software/bison/manual/html_node/Token-Decl.html
 tokens :: [UserDef] -> SymEnv -> String
 tokens user = concatMap (declTok user)
  where
   declTok u (s,r) = if s `elem` map show u
-    then "%token<string_> " ++ r ++ "    /*   " ++ s ++ "   */\n"
-    else "%token " ++ r ++ "    /*   " ++ s ++ "   */\n"
+    then "%token<string_> " ++ r ++ "    \"" ++ cStringEscape s ++ "\"\n"
+    else "%token " ++ r ++ "    \"" ++ cStringEscape s ++ "\"\n"
+
+-- escape characters inside a c string
+cStringEscape :: String -> String
+cStringEscape = concatMap escChar
+  where
+    escChar c
+      | c `elem` ("\"\\" :: String) = '\\':[c]
+      | otherwise = [c]
 
 specialToks :: CF -> String
 specialToks cf = concat [
