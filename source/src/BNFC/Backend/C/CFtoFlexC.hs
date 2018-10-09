@@ -207,14 +207,11 @@ lexComments _ (m,s) =
 -- The second argument is the delimiter that marks the beginning of the
 -- comment.
 --
--- >>> lexSingleComment (Just "mypackage.") "--"
+-- >>> lexSingleComment "--"
 -- <YYINITIAL>"--"[^\n]*\n /* skip */; // BNFC: comment "--";
 --
--- >>> lexSingleComment Nothing "--"
--- <YYINITIAL>"--"[^\n]*\n /* skip */; // BNFC: comment "--";
---
--- >>> lexSingleComment Nothing "\""
--- <YYINITIAL>"\""[^\n]*\n /* skip */ // BNFC: comment "\"";
+-- >>> lexSingleComment "\""
+-- <YYINITIAL>"\""[^\n]*\n /* skip */; // BNFC: comment "\"";
 lexSingleComment :: String -> Doc
 lexSingleComment c =
     "<YYINITIAL>" <> cstring c <> "[^\\n]*\\n"
@@ -229,19 +226,13 @@ lexSingleComment c =
 -- comments. They could possibly start a comment with one character and end it
 -- with another.  However this seems rare.
 --
--- >>> lexMultiComment Nothing ("{-", "-}")
+-- >>> lexMultiComment ("{-", "-}")
 -- <YYINITIAL>"{-" BEGIN COMMENT; // BNFC: comment "{-" "-}";
 -- <COMMENT>"-}" BEGIN YYINITIAL;
 -- <COMMENT>. /* skip */;
 -- <COMMENT>[\n] /* skip */;
 --
--- >>> lexMultiComment (Just "foo.") ("{-", "-}")
--- <YYINITIAL>"{-" BEGIN COMMENT; // BNFC: comment "{-" "-}";
--- <COMMENT>"-}" BEGIN YYINITIAL;
--- <COMMENT>. /* skip */;
--- <COMMENT>[\n] /* skip */;
---
--- >>> lexMultiComment Nothing ("\"'", "'\"")
+-- >>> lexMultiComment ("\"'", "'\"")
 -- <YYINITIAL>"\"'" BEGIN COMMENT; // BNFC: comment "\"'" "'\"";
 -- <COMMENT>"'\"" BEGIN YYINITIAL;
 -- <COMMENT>. /* skip */;

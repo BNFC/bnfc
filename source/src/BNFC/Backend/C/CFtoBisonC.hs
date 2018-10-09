@@ -226,17 +226,17 @@ constructRule rp cf env rules nt = (nt,[(p, generateAction rp (identCat (normCat
    result = if isEntry nt then resultName (identCat (normCat nt)) ++ "= $$;" else ""
 
 -- | Generates a string containing the semantic action.
--- >>> generateAction "Foo" "Bar" False ["$1"]
+-- >>> generateAction NoRecordPositions "Foo" "Bar" False ["$1"]
 -- "make_Bar($1);"
--- >>> generateAction "Foo" "_" False ["$1"]
+-- >>> generateAction NoRecordPositions "Foo" "_" False ["$1"]
 -- "$1;"
--- >>> generateAction "ListFoo" "[]" False []
+-- >>> generateAction NoRecordPositions "ListFoo" "[]" False []
 -- "0;"
--- >>> generateAction "ListFoo" "(:[])" False ["$1"]
+-- >>> generateAction NoRecordPositions "ListFoo" "(:[])" False ["$1"]
 -- "make_ListFoo($1, 0);"
--- >>> generateAction "ListFoo" "(:)" False ["$1","$2"]
+-- >>> generateAction NoRecordPositions "ListFoo" "(:)" False ["$1","$2"]
 -- "make_ListFoo($1, $2);"
--- >>> generateAction "ListFoo" "(:)" True ["$1","$2"]
+-- >>> generateAction NoRecordPositions "ListFoo" "(:)" True ["$1","$2"]
 -- "make_ListFoo($2, $1);"
 generateAction :: RecordPositions -> String -> Fun -> Bool -> [MetaVar] -> Action
 generateAction rp nt f b ms
