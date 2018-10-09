@@ -37,12 +37,15 @@
 -}
 module BNFC.Backend.CPP.NoSTL.CFtoFlex (cf2flex) where
 
+import Data.Maybe (fromMaybe)
+
 import BNFC.CF
-import BNFC.Backend.C.CFtoFlexC (lexComments, cMacros)
+import BNFC.Backend.C.CFtoFlexC (cMacros)
 import BNFC.Backend.C.RegToFlex
 import BNFC.Backend.Common.NamedVariables
 import BNFC.Backend.CPP.STL.STLUtils
 import BNFC.PrettyPrint
+import BNFC.Utils (cstring)
 
 --The environment must be returned for the parser to use.
 cf2flex :: Maybe String -> String -> CF -> (String, SymEnv)
@@ -148,6 +151,92 @@ restOfFlex inPackage cf env = concat
     ]
 
 
+-- ---------------------------------------------------------------------------
+-- Comments
+
+-- | Create flex rules for single-line and multi-lines comments.
+-- The first argument is an optional namespace (for C++); the second
+-- argument is the set of comment delimiters as returned by BNFC.CF.comments.
+--
+-- This function is only compiling the results of applying either
+-- lexSingleComment or lexMultiComment on each comment delimiter or pair of
+-- delimiters.
+--
+-- >>> lexComments (Just "myns.") ([("{-","-}")],["--"])
+-- <YYINITIAL>"--"[^\n]*\n ++myns.yy_mylinenumber; // BNFC: comment "--";
+-- <YYINITIAL>"{-" BEGIN COMMENT; // BNFC: comment "{-" "-}";
+-- <COMMENT>"-}" BEGIN YYINITIAL;
+-- <COMMENT>. /* skip */;
+-- <COMMENT>[\n] ++myns.yy_mylinenumber;
+lexComments :: Maybe String -> ([(String, String)], [String]) -> Doc
+lexComments ns (m,s) =
+    vcat (map (lexSingleComment ns) s ++ map (lexMultiComment ns) m)
+
+-- | Create a lexer rule for single-line comments.
+-- The first argument is -- an optional c++ namespace
+-- The second argument is the delimiter that marks the beginning of the
+-- comment.
+--
+-- >>> lexSingleComment (Just "mypackage.") "--"
+-- <YYINITIAL>"--"[^\n]*\n ++mypackage.yy_mylinenumber; // BNFC: comment "--";
+--
+-- >>> lexSingleComment Nothing "--"
+-- <YYINITIAL>"--"[^\n]*\n ++yy_mylinenumber; // BNFC: comment "--";
+--
+-- >>> lexSingleComment Nothing "\""
+-- <YYINITIAL>"\""[^\n]*\n ++yy_mylinenumber; // BNFC: comment "\"";
+lexSingleComment :: Maybe String -> String -> Doc
+lexSingleComment ns c =
+    "<YYINITIAL>" <> cstring c <> "[^\\n]*\\n"
+    <+> "++"<> text (fromMaybe "" ns)<>"yy_mylinenumber;"
+    <+> "// BNFC: comment" <+> cstring c <> ";"
+
+-- | Create a lexer rule for multi-lines comments.
+-- The first argument is -- an optional c++ namespace
+-- The second arguments is the pair of delimiter for the multi-lines comment:
+-- start deleminiter and end delimiter.
+-- There might be a possible bug here if a language includes 2 multi-line
+-- comments. They could possibly start a comment with one character and end it
+-- with another.  However this seems rare.
+--
+-- >>> lexMultiComment Nothing ("{-", "-}")
+-- <YYINITIAL>"{-" BEGIN COMMENT; // BNFC: comment "{-" "-}";
+-- <COMMENT>"-}" BEGIN YYINITIAL;
+-- <COMMENT>. /* skip */;
+-- <COMMENT>[\n] ++yy_mylinenumber;
+--
+-- >>> lexMultiComment (Just "foo.") ("{-", "-}")
+-- <YYINITIAL>"{-" BEGIN COMMENT; // BNFC: comment "{-" "-}";
+-- <COMMENT>"-}" BEGIN YYINITIAL;
+-- <COMMENT>. /* skip */;
+-- <COMMENT>[\n] ++foo.yy_mylinenumber;
+--
+-- >>> lexMultiComment Nothing ("\"'", "'\"")
+-- <YYINITIAL>"\"'" BEGIN COMMENT; // BNFC: comment "\"'" "'\"";
+-- <COMMENT>"'\"" BEGIN YYINITIAL;
+-- <COMMENT>. /* skip */;
+-- <COMMENT>[\n] ++yy_mylinenumber;
+lexMultiComment :: Maybe String -> (String, String) -> Doc
+lexMultiComment ns (b,e) = vcat
+    [ "<YYINITIAL>" <> cstring b <+> "BEGIN COMMENT;"
+        <+> "// BNFC: comment" <+> cstring b <+> cstring e <> ";"
+    , "<COMMENT>" <> cstring e <+> "BEGIN YYINITIAL;"
+    , "<COMMENT>. /* skip */;"
+    , "<COMMENT>[\\n] ++"<> text (fromMaybe "" ns) <>"yy_mylinenumber;"
+    ]
+
+-- --There might be a possible bug here if a language includes 2 multi-line comments.
+-- --They could possibly start a comment with one character and end it with another.
+-- --However this seems rare.
+-- --
+-- lexMultiComment :: Maybe String -> (String, String) -> String
+-- lexMultiComment inPackage (b,e) = unlines [
+--   "<YYINITIAL>\"" ++ b ++ "\"      \t BEGIN COMMENT;",
+--   "<COMMENT>\"" ++ e ++ "\"      \t BEGIN YYINITIAL;",
+--   "<COMMENT>.      \t /* BNFC multi-line comment */;",
+--   "<COMMENT>[\\n]   ++" ++ nsString inPackage ++ "yy_mylinenumber ; \t /* BNFC multi-line comment */;"
+--  ---- "\\n  ++yy_mylinenumber ;"
+--   ]
 --Helper function that escapes characters in strings
 escapeChars :: String -> String
 escapeChars [] = []
