@@ -190,7 +190,7 @@ ctest cf =
    def = show $ head (allEntryPoints cf)
 
 mkHeaderFile :: RecordPositions -> CF -> [Cat] -> [Cat] -> [(a, String)] -> String
-mkHeaderFile rp cf cats eps env = unlines
+mkHeaderFile _ cf cats eps env = unlines
  [
   "#ifndef PARSER_HEADER_FILE",
   "#define PARSER_HEADER_FILE",
@@ -241,6 +241,7 @@ mkHeaderFile rp cf cats eps env = unlines
   mkIdent n =  if isUsedCat cf catIdent
    then ("#define _IDENT_ " ++ show n ++ "\n")
    else ""
-  mkFunc s | normCat s == s = identCat s ++ " p" ++ identCat s ++ "(FILE *inp);\n"
+  mkFunc s | normCat s == s = identCat s +++ " p" ++ identCat s ++ "(FILE *inp);\n" ++
+                              identCat s +++ "ps" ++ identCat s ++ "(const char *str);\n"
   mkFunc _ = ""
 

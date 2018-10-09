@@ -72,7 +72,7 @@ prelude name = unlines
    "#define yylloc " ++ name ++ "lloc",
    "#define YY_BUFFER_APPEND " ++ name ++ "_BUFFER_APPEND",
    "#define YY_BUFFER_RESET " ++ name ++ "_BUFFER_RESET",
-   "#define initialize_lexer " ++ name ++ "_initialize_lexer",
+   "#define init_lexer " ++ name ++ "_init_lexer",
    "#include <string.h>",
    "#include \"Parser.h\"",
    "#define YY_BUFFER_LENGTH 4096",
@@ -179,7 +179,7 @@ restOfFlex cf env = concat
      "<CHARESC>.      \t BEGIN CHAREND; yylval.char_ = yytext[0]; return _CHAR_;",
      "<CHAREND>\"'\"      \t BEGIN YYINITIAL;"
     ]
-   footer = "void initialize_lexer(FILE *inp) { yyrestart(inp); BEGIN YYINITIAL; }"
+   footer = "void init_lexer(FILE *inp) { yyrestart(inp); BEGIN YYINITIAL; }"
 
 -- ---------------------------------------------------------------------------
 -- Comments

@@ -84,15 +84,17 @@ header name cf = unlines
           "#include <stdio.h>",
           "#include <string.h>",
           "#include \"Absyn.h\"",
-          "#define initialize_lexer " ++ name ++ "_initialize_lexer",
+          "typedef struct " ++ name ++ "_buffer_state *YY_BUFFER_STATE;",
+          "YY_BUFFER_STATE " ++ name ++ "_scan_string(const char *str);",
+          "void " ++ name ++ "_delete_buffer(YY_BUFFER_STATE buf);",
           "extern int yyparse(void);",
           "extern int yylex(void);",
-          "extern int initialize_lexer(FILE * inp);",
+          "extern int " ++ name ++ "_init_lexer(FILE * inp);",
           -- this must be deferred until yylloc is defined
           "extern void yyerror(const char *str);",
           "",
           -- M.F. 2004-09-17 changed allEntryPoints to allCatsIdNorm. Seems to fix the [Ty2] bug.
-          unlines $ map parseMethod (allCatsNorm cf), -- (allEntryPoints cf),
+          unlines $ map (parseMethod name) (allCatsNorm cf), -- (allEntryPoints cf),
           concatMap reverseList (filter isList (allCatsNorm cf)),
           "%}"
           ]
@@ -109,18 +111,35 @@ errorHandler name = unlines
           ]
 
 --This generates a parser method for each entry point.
-parseMethod :: Cat -> String
-parseMethod cat =
+parseMethod :: String -> Cat -> String
+parseMethod name cat =
 --  if normCat cat /= cat      M.F. 2004-09-17 comment. No duplicates from allCatsIdNorm
 --  then ""
 --  else
   unlines
   [
-   cat' +++ resultName cat' +++ "= 0;",
+   "static " ++ cat' +++ resultName cat' +++ "= 0;",
    cat' ++ " p" ++ cat' ++ "(FILE *inp)",
    "{",
-   "  initialize_lexer(inp);",
-   "  if (yyparse())",
+   "  " ++ name ++ "_init_lexer(inp);",
+   "  int result = yyparse();",
+   "  if (result)",
+   "  { /* Failure */",
+   "    return 0;",
+   "  }",
+   "  else",
+   "  { /* Success */",
+   "    return" +++ resultName cat' ++ ";",
+   "  }",
+   "}",
+   cat' ++ " ps" ++ cat' ++ "(const char *str)",
+   "{",
+   "  YY_BUFFER_STATE buf;",
+   "  " ++ name ++ "_init_lexer(0);",
+   "  buf = " ++ name ++ "_scan_string(str);",
+   "  int result = yyparse();",
+   "  " ++ name ++ "_delete_buffer(buf);",
+   "  if (result)",
    "  { /* Failure */",
    "    return 0;",
    "  }",
