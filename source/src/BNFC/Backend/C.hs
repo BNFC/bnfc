@@ -204,6 +204,8 @@ mkHeaderFile rp cf cats eps env = unlines
   "  double double_;",
   "  char* string_;",
   concatMap mkVar cats ++ "} YYSTYPE;",
+  "",
+  -- https://www.gnu.org/software/bison/manual/html_node/Location-Type.html#Location-Type
   "typedef struct YYLTYPE",
   "{",
   "  int first_line;",

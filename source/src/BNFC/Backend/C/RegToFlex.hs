@@ -50,7 +50,8 @@ instance Print Reg where
    RSeq reg0 reg -> prPrec i 2 (concat [prt 2 reg0 , prt 3 reg])
    RAlt reg0 reg -> prPrec i 1 (concat [prt 1 reg0 , ["|"] , prt 2 reg])
 
-   -- Flex does not support set difference
+   -- Flex does not support set difference. See link for valid patterns.
+   -- https://westes.github.io/flex/manual/Patterns.html#Patterns
    -- RMinus reg0 reg -> prPrec i 1 (concat [prt 2 reg0 , ["#"] , prt 2 reg])
    RMinus reg0 REps -> prt i reg0 -- REps is identity for set difference
    RMinus RAny reg@(RChar _) ->  prPrec i 3 (concat [["[^"],prt 0 reg,["]"]])

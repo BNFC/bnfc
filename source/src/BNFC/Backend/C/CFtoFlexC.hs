@@ -87,6 +87,10 @@ prelude name = unlines
    "  for(x = 0; x < YY_BUFFER_LENGTH; x++)",
    "    YY_PARSED_STRING[x] = 0;",
    "}",
+   -- https://www.gnu.org/software/bison/manual/html_node/Token-Locations.html
+   -- Flex is responsible for keeping tracking of the yylloc for Bison.
+   -- Flex also doesn't do this automatically so we need this function
+   -- https://stackoverflow.com/a/22125500/425756
    "static void update_loc(YYLTYPE* loc, char* text)",
    "{",
    "  loc->first_line = loc->last_line;",
