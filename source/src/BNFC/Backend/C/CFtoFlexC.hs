@@ -41,10 +41,8 @@ module BNFC.Backend.C.CFtoFlexC (cf2flex, lexComments, cMacros) where
 
 import Prelude'
 
-import Data.Maybe (fromMaybe)
-
 import BNFC.CF
-import BNFC.Backend.CPP.NoSTL.RegToFlex
+import BNFC.Backend.C.RegToFlex
 import BNFC.Backend.Common.NamedVariables
 import BNFC.PrettyPrint
 import BNFC.Utils (cstring)
@@ -78,7 +76,6 @@ prelude name = unlines
    "#include <string.h>",
    "#include \"Parser.h\"",
    "#define YY_BUFFER_LENGTH 4096",
-   "extern int yy_mylinenumber ;",
    "char YY_PARSED_STRING[YY_BUFFER_LENGTH];",
    "void YY_BUFFER_APPEND(char *s)",
    "{",
@@ -141,7 +138,6 @@ restOfFlex cf env = concat
    ifC catDouble  "<YYINITIAL>{DIGIT}+\".\"{DIGIT}+(\"e\"(\\-)?{DIGIT}+)?      \t yylval.double_ = atof(yytext); return _DOUBLE_;\n",
    ifC catInteger "<YYINITIAL>{DIGIT}+      \t yylval.int_ = atoi(yytext); return _INTEGER_;\n",
    ifC catIdent   "<YYINITIAL>{LETTER}{IDENT}*      \t yylval.string_ = strdup(yytext); return _IDENT_;\n",
-   "\\n ++yy_mylinenumber ;\n",
    "<YYINITIAL>[ \\t\\r\\n\\f]      \t /* ignore white space. */;\n",
    "<YYINITIAL>.      \t return _ERROR_;\n",
    "%%\n",
@@ -199,8 +195,8 @@ restOfFlex cf env = concat
 -- <COMMENT>. /* skip */;
 -- <COMMENT>[\n] ++myns.yy_mylinenumber;
 lexComments :: Maybe String -> ([(String, String)], [String]) -> Doc
-lexComments ns (m,s) =
-    vcat (map (lexSingleComment ns) s ++ map (lexMultiComment ns) m)
+lexComments _ (m,s) =
+    vcat (map lexSingleComment s ++ map lexMultiComment m)
 
 -- | Create a lexer rule for single-line comments.
 -- The first argument is -- an optional c++ namespace
@@ -215,10 +211,10 @@ lexComments ns (m,s) =
 --
 -- >>> lexSingleComment Nothing "\""
 -- <YYINITIAL>"\""[^\n]*\n ++yy_mylinenumber; // BNFC: comment "\"";
-lexSingleComment :: Maybe String -> String -> Doc
-lexSingleComment ns c =
+lexSingleComment :: String -> Doc
+lexSingleComment c =
     "<YYINITIAL>" <> cstring c <> "[^\\n]*\\n"
-    <+> "++"<> text (fromMaybe "" ns)<>"yy_mylinenumber;"
+    <+> "/* skip */;"
     <+> "// BNFC: comment" <+> cstring c <> ";"
 
 -- | Create a lexer rule for multi-lines comments.
@@ -233,26 +229,26 @@ lexSingleComment ns c =
 -- <YYINITIAL>"{-" BEGIN COMMENT; // BNFC: comment "{-" "-}";
 -- <COMMENT>"-}" BEGIN YYINITIAL;
 -- <COMMENT>. /* skip */;
--- <COMMENT>[\n] ++yy_mylinenumber;
+-- <COMMENT>[\n] /* skip */;
 --
 -- >>> lexMultiComment (Just "foo.") ("{-", "-}")
 -- <YYINITIAL>"{-" BEGIN COMMENT; // BNFC: comment "{-" "-}";
 -- <COMMENT>"-}" BEGIN YYINITIAL;
 -- <COMMENT>. /* skip */;
--- <COMMENT>[\n] ++foo.yy_mylinenumber;
+-- <COMMENT>[\n] /* skip */;
 --
 -- >>> lexMultiComment Nothing ("\"'", "'\"")
 -- <YYINITIAL>"\"'" BEGIN COMMENT; // BNFC: comment "\"'" "'\"";
 -- <COMMENT>"'\"" BEGIN YYINITIAL;
 -- <COMMENT>. /* skip */;
--- <COMMENT>[\n] ++yy_mylinenumber;
-lexMultiComment :: Maybe String -> (String, String) -> Doc
-lexMultiComment ns (b,e) = vcat
+-- <COMMENT>[\n] /* skip */;
+lexMultiComment :: (String, String) -> Doc
+lexMultiComment (b,e) = vcat
     [ "<YYINITIAL>" <> cstring b <+> "BEGIN COMMENT;"
         <+> "// BNFC: comment" <+> cstring b <+> cstring e <> ";"
     , "<COMMENT>" <> cstring e <+> "BEGIN YYINITIAL;"
     , "<COMMENT>. /* skip */;"
-    , "<COMMENT>[\\n] ++"<> text (fromMaybe "" ns) <>"yy_mylinenumber;"
+    , "<COMMENT>[\\n] /* skip */;"
     ]
 
 -- --There might be a possible bug here if a language includes 2 multi-line comments.

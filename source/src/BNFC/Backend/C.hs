@@ -44,7 +44,7 @@ makeC opts cf = do
     mkfile (name ++ ".l") flex
     let bison = cf2Bison (linenumbers opts) prefix cf env
     mkfile (name ++ ".y") bison
-    let header = mkHeaderFile cf (allCats cf) (allEntryPoints cf) env
+    let header = mkHeaderFile (linenumbers opts) cf (allCats cf) (allEntryPoints cf) env
     mkfile "Parser.h" header
     let (skelH, skelC) = cf2CSkel cf
     mkfile "Skeleton.h" skelH
@@ -189,8 +189,8 @@ ctest cf =
   where
    def = show $ head (allEntryPoints cf)
 
-mkHeaderFile :: CF -> [Cat] -> [Cat] -> [(a, String)] -> String
-mkHeaderFile cf cats eps env = unlines
+mkHeaderFile :: RecordPositions -> CF -> [Cat] -> [Cat] -> [(a, String)] -> String
+mkHeaderFile rp cf cats eps env = unlines
  [
   "#ifndef PARSER_HEADER_FILE",
   "#define PARSER_HEADER_FILE",
@@ -204,7 +204,6 @@ mkHeaderFile cf cats eps env = unlines
   "  double double_;",
   "  char* string_;",
   concatMap mkVar cats ++ "} YYSTYPE;",
-  "",
   "typedef struct YYLTYPE",
   "{",
   "  int first_line;",

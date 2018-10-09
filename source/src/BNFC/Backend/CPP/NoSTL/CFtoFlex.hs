@@ -39,7 +39,7 @@ module BNFC.Backend.CPP.NoSTL.CFtoFlex (cf2flex) where
 
 import BNFC.CF
 import BNFC.Backend.C.CFtoFlexC (lexComments, cMacros)
-import BNFC.Backend.CPP.NoSTL.RegToFlex
+import BNFC.Backend.C.RegToFlex
 import BNFC.Backend.Common.NamedVariables
 import BNFC.Backend.CPP.STL.STLUtils
 import BNFC.PrettyPrint

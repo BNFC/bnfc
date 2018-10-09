@@ -106,8 +106,6 @@ prDataH rp (cat, rules) =
        [
         "struct " ++ c' ++ "_",
         "{",
-        if rp == RecordPositions then "  int line_number;" else "",
-        if rp == RecordPositions then "  int char_number;" else "", 
         "  " ++ mem +++ varName mem ++ ";",
         "  " ++ c' +++ varName c' ++ ";",
         "};",
@@ -118,8 +116,7 @@ prDataH rp (cat, rules) =
        [
         "struct " ++ show cat ++ "_",
         "{",
-        if rp == RecordPositions then "  int line_number;" else "",
-        if rp == RecordPositions then "  int char_number;" else "",
+        if rp == RecordPositions then "  int line_number, char_number;" else "",
         "  enum { " ++ intercalate ", " (map prKind rules) ++ " } kind;",
         "  union",
         "  {",
