@@ -80,9 +80,7 @@ mkHFile cf groups = unlines
     "#include \"Absyn.h\"",
     ""
    ]
-  prUserH user = "void visit" ++ u' ++ "(" ++ show user ++ " p);"
-    where
-     u' = let u = show user in toUpper (head u) : map toLower (tail u) --this is a hack to fix a potential capitalization problem.
+  prUserH u = "void visit" ++ basicFunName u ++ "(" ++ show u ++ " p);"
   footer = unlines
    [
     "void visitIdent(Ident i);",
@@ -110,7 +108,7 @@ mkCFile cf groups = concat
    [
     header,
     concatMap prData groups,
-    concatMap (prUser.show) user,
+    concatMap prUser user,
     footer
    ]
   where
@@ -129,13 +127,11 @@ mkCFile cf groups = concat
       ]
     prUser u = unlines
      [
-      "void visit" ++ u' ++ "(" ++ u ++ " p)",
+      "void visit" ++ basicFunName u ++ "(" ++ show u ++ " p)",
       "{",
-      "  /* Code for " ++ u ++ " Goes Here */",
+      "  /* Code for " ++ show u ++ " Goes Here */",
       "}"
      ]
-     where
-      u' = toUpper (head u) : map toLower (tail u) --this is a hack to fix a potential capitalization problem.
     footer = unlines
      [
       "void visitIdent(Ident i)",
@@ -180,9 +176,9 @@ prData (cat, rules)
       -- Not a list:
   | otherwise = unlines
                [
-                "void visit" ++ cl ++ "(" ++ cl ++ " _p_)",
+                "void visit" ++ cl ++ "(" ++ cl ++ " p)",
                 "{",
-                "  switch(_p_->kind)",
+                "  switch(p->kind)",
                 "  {",
                 concatMap (render . prPrintRule) rules,
                 "  default:",
@@ -201,22 +197,22 @@ prData (cat, rules)
 -- >>> prPrintRule (Rule "abc" undefined [Left ab, Left ab])
 --   case is_abc:
 --     /* Code for abc Goes Here */
---     visitab(_p_->u.abc_.ab_1);
---     visitab(_p_->u.abc_.ab_2);
+--     visitab(p->u.abc_.ab_1);
+--     visitab(p->u.abc_.ab_2);
 --     break;
 -- <BLANKLINE>
 -- >>> let ab = TokenCat "ab"
 -- >>> prPrintRule (Rule "abc" undefined [Left ab])
 --   case is_abc:
 --     /* Code for abc Goes Here */
---     visitAb(_p_->u.abc_.ab_);
+--     visitAb(p->u.abc_.ab_);
 --     break;
 -- <BLANKLINE>
 -- >>> prPrintRule (Rule "abc" undefined [Left ab, Left ab])
 --   case is_abc:
 --     /* Code for abc Goes Here */
---     visitAb(_p_->u.abc_.ab_1);
---     visitAb(_p_->u.abc_.ab_2);
+--     visitAb(p->u.abc_.ab_1);
+--     visitAb(p->u.abc_.ab_2);
 --     break;
 -- <BLANKLINE>
 prPrintRule :: Rule -> Doc
@@ -236,11 +232,11 @@ prPrintRule (Rule _fun _ _) = ""
 prCat :: Fun -> (Cat, Doc) -> Doc
 prCat fnm (cat, vname) =
       let visitf = "visit" <> if isTokenCat cat
-                       then basicFunName cat
+                       then text $ basicFunName cat
                        else text (identCat (normCat cat))
-      in visitf <> parens ("_p_->u." <> text v <> "_." <> vname ) <> ";"
+      in visitf <> parens ("p->u." <> text v <> "_." <> vname ) <> ";"
     where v = map toLower $ normFun fnm
 
 --The visit-function name of a basic type
-basicFunName :: Cat -> Doc
-basicFunName c = text (toUpper (head (show c)): tail (show c))
+basicFunName :: Cat -> String
+basicFunName c = (toUpper (head (show c)): tail (show c))
