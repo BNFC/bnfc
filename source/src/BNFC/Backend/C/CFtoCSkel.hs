@@ -80,7 +80,7 @@ mkHFile cf groups = unlines
     "#include \"Absyn.h\"",
     ""
    ]
-  prUserH u = "void visit" ++ basicFunName u ++ "(" ++ show u ++ " p);"
+  prUserH u = "void visit" ++ basicFunName (show u) ++ "(" ++ show u ++ " p);"
   footer = unlines
    [
     "void visitIdent(Ident i);",
@@ -127,7 +127,7 @@ mkCFile cf groups = concat
       ]
     prUser u = unlines
      [
-      "void visit" ++ basicFunName u ++ "(" ++ show u ++ " p)",
+      "void visit" ++ basicFunName (show u) ++ "(" ++ show u ++ " p)",
       "{",
       "  /* Code for " ++ show u ++ " Goes Here */",
       "}"
@@ -232,11 +232,11 @@ prPrintRule (Rule _fun _ _) = ""
 prCat :: Fun -> (Cat, Doc) -> Doc
 prCat fnm (cat, vname) =
       let visitf = "visit" <> if isTokenCat cat
-                       then text $ basicFunName cat
+                       then text $ basicFunName (show cat)
                        else text (identCat (normCat cat))
       in visitf <> parens ("p->u." <> text v <> "_." <> vname ) <> ";"
     where v = map toLower $ normFun fnm
 
 --The visit-function name of a basic type
-basicFunName :: Cat -> String
-basicFunName c = (toUpper (head (show c)): tail (show c))
+basicFunName :: String -> String
+basicFunName name = (toUpper (head name): tail name)
