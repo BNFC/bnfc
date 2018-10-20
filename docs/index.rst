@@ -15,7 +15,6 @@ Welcome to BNFC's documentation!
 
    user_guide
    lbnf
-   changes
    othertools
    dev/release
 
