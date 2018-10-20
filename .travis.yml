@@ -5,6 +5,7 @@ ghc:
   - 7.10.3
   - 8.0
   - 8.2
+  - 8.4
 env:
   - PACKAGEDIR="source"
   - PACKAGEDIR="testing"
