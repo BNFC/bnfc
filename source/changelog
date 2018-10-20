@@ -1,4 +1,5 @@
-2.9.0 (Development version)
+2.8.2 (Development version)
+	* GHC 8.4 compatibility
 	* bnfc puts current timestamp on all created files, even unchanged ones [#217]
 	* Java: Add support for passing line numbers to parser
 	* C: Emit correct function prototypes
@@ -15,6 +16,7 @@
 	* C, C++: Fix a bug in the parser file when using -p [#172]
 	* OCaml: Reserved symbols now have a higher precedence than predefined
 	  tokens as in Haskell
+	* And various small fixes
 
 2.8.1 Grégoire Détrez <gregoire.detrez@gu.se> May 2015
 	* Fix compatibility with GHC 7.10.2 and Alex 3.14
