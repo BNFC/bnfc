@@ -20,18 +20,10 @@
 
 module BNFC.MultiView where
 
-import System.Directory	( doesFileExist, renameFile )
-
-import qualified BNFC.CF as CF
-import BNFC.Utils
 import ParBNF
 import PrintBNF
-import Data.List(nub,partition)
 import AbsBNF
--- import LexBNF
 import ErrM
-import Data.Char
-import BNFC.TypeChecker
 
 preprocessMCF :: FilePath -> IO ([FilePath],String)
 preprocessMCF f = do

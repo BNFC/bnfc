@@ -19,7 +19,7 @@ putWarnings c = do
   return v
 
 hasWarnings :: WithWarnings a -> Bool
-hasWarnings c = let (v,warnings) = run c in not (null warnings)
+hasWarnings c = let (_,warnings) = run c in not (null warnings)
 
 -- Output a warning
 warn :: String -> WithWarnings ()
