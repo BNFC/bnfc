@@ -1,11 +1,12 @@
 language: haskell
+# Make sure to update tested-with in source/BNFC.cabal when updating these:
 ghc:
   - 7.6.3
   - 7.8.4
   - 7.10.3
-  - 8.0
-  - 8.2
-  - 8.4
+  - 8.0.2
+  - 8.2.1
+  - 8.4.4
 env:
   - PACKAGEDIR="source"
   - PACKAGEDIR="testing"
