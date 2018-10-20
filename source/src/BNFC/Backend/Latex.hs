@@ -19,6 +19,7 @@
 module BNFC.Backend.Latex where
 
 import Data.List
+import Data.Monoid
 import System.FilePath ((<.>),replaceExtension)
 import Text.Printf
 
