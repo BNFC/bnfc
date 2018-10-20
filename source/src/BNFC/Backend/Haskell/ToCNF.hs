@@ -37,6 +37,7 @@ import BNFC.Backend.Haskell.HsOpts
 import Control.Applicative hiding (Const)
 #endif
 import qualified Data.Map as M
+import Data.Monoid
 import Data.Pair
 import Text.PrettyPrint.HughesPJ hiding (first,(<>))
 
