@@ -8,10 +8,11 @@ ghc:
   - 7.8.4
   - 7.6.3
 env:
-  include:
-    - PACKAGEDIR="source"
+  - PACKAGEDIR="source"
+  - PACKAGEDIR="testing"
+matrix:
   allow_failures:
-    - PACKAGEDIR="testing"
+    - env: PACKAGEDIR="testing"
 script:
     - cabal install
     - cabal configure --enable-tests && cabal build && cabal test
