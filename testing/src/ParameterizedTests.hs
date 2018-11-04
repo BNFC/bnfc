@@ -24,6 +24,7 @@ import Shelly
   , setStdin
   , test_f, toTextArg
   , when, withTmpDir, writefile
+  -- , print_stdout, print_stderr
   )
 
 import TestUtils
@@ -52,6 +53,10 @@ exitCodeTest params =
             writefile "Abra.cf" ";; F. C ::= \"abracadabra\" ;"  -- leading semicolon for #215
             tpBnfc params "Abra.cf"
             tpBuild params
+            -- setStdin "If this text is printed, then setStdin works\n"
+            -- print_stdout True $ run_ "cat" []
+            setStdin "abracadabra\n"
+            tpRunTestProg params "Abra" []
             setStdin "bad"
             errExit False $ tpRunTestProg params "Abra" []
             lastExitCode >>= assertEqual 1
@@ -207,7 +212,10 @@ parameters =
             cmd "make"
             cmd "ghc" =<< findFileRegex "Skel.*\\.hs$"
         , tpRunTestProg = \_ args -> do
+            -- cmd "echo" "Looking for Test* binary"  -- can't print anything here because then the setStdin input is used up here
             bin <- findFileRegex "Test[^.]*$"
+            -- cmd "echo" "Running" bin  -- ditto
+            -- print_stdout True $ print_stderr True $ do
             cmd bin args
         }
     javaParams = base
