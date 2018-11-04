@@ -14,7 +14,7 @@
 
     You should have received a copy of the GNU General Public License
     along with this program; if not, write to the Free Software
-    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+    Foundation, 51 Franklin Street, Fifth Floor, Boston, MA 02110-1335, USA
 -}
 
 module Untok where
@@ -31,4 +31,3 @@ untok = unto (1,1) where
         ls = replicate ns '\n'
         cs = replicate (if ns == 0 then c - c0 else c-1) ' '
     in ls ++ cs ++ s ++ unto (l,c + length s) ts
-

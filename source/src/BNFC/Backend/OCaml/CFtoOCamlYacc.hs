@@ -14,7 +14,7 @@
 
     You should have received a copy of the GNU General Public License
     along with this program; if not, write to the Free Software
-    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+    Foundation, 51 Franklin Street, Fifth Floor, Boston, MA 02110-1335, USA
 -}
 
 -- based on BNFC Haskell backend
@@ -65,7 +65,7 @@ header _ absName _ cf = unlines
 definedRules :: CF -> String
 definedRules cf = unlines [mkDef f xs e | FunDef f xs e <- cfgPragmas cf]
     where
-        mkDef f xs e = 
+        mkDef f xs e =
             "let " ++ f ++ " " ++ mkTuple xs ++ " = " ++ ocamlExp e
             where
                 ocamlExp :: Exp -> String
@@ -235,6 +235,3 @@ specialRules cf = unlines $
                 -- PCC: take "own" as type name? (manual says newtype)
       where -- ignore position categories for now
          posn = "" -- if isPositionCat cf cat then "mkPosToken " else ""
-
-
-

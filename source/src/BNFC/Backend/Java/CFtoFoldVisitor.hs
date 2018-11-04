@@ -17,7 +17,7 @@
 
     You should have received a copy of the GNU General Public License
     along with this program; if not, write to the Free Software
-    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+    Foundation, 51 Franklin Street, Fifth Floor, Boston, MA 02110-1335, USA
 -}
 
 module BNFC.Backend.Java.CFtoFoldVisitor (cf2FoldVisitor) where
@@ -103,4 +103,3 @@ prCat user (cat,nt)
 --Just checks if something is a basic or user-defined type.
 isBasicType :: [UserDef] -> String -> Bool
 isBasicType user v = v `elem` (map show user ++ ["Integer","Character","String","Double"])
-

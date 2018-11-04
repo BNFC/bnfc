@@ -14,7 +14,7 @@
 
     You should have received a copy of the GNU General Public License
     along with this program; if not, write to the Free Software
-    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+    Foundation, 51 Franklin Street, Fifth Floor, Boston, MA 02110-1335, USA
 -}
 
 {-
@@ -84,11 +84,11 @@ header name cf = unlines
           "#define initialize_lexer " ++ name ++ "_initialize_lexer",
           "extern int yyparse(void);",
           "extern int yylex(void);",
-          "int yy_mylinenumber;", 
+          "int yy_mylinenumber;",
           "extern int initialize_lexer(FILE * inp);",
           "void yyerror(const char *str)",
           "{",
-          "  extern char *" ++ name ++ "text;", 
+          "  extern char *" ++ name ++ "text;",
           "  fprintf(stderr,\"error: line %d: %s at %s\\n\",",
           "    yy_mylinenumber + 1, str, " ++ name ++ "text);",
           "}",
@@ -230,7 +230,7 @@ constructRule cf env rules nt = (nt,[(p, generateAction (identCat (normCat nt)) 
 -- >>> generateAction "ListFoo" "(:)" True ["$1","$2"]
 -- "make_ListFoo($2, $1);"
 generateAction :: String -> Fun -> Bool -> [MetaVar] -> Action
-generateAction nt f b ms 
+generateAction nt f b ms
   | isCoercion f = unwords ms ++ ";"
   | isNilFun f   = "0;"
   | isOneFun f   = concat ["make_", nt, "(", intercalate ", " ms', ", 0);"]

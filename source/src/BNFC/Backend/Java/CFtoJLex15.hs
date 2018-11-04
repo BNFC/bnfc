@@ -16,7 +16,7 @@
 
     You should have received a copy of the GNU General Public License
     along with this program; if not, write to the Free Software
-    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+    Foundation, 51 Franklin Street, Fifth Floor, Boston, MA 02110-1335, USA
 -}
 
 {-
@@ -198,7 +198,7 @@ restOfJLex jflex rp cf = vcat
         , "<STRING>.  { pstring += yytext(); }"
         , "<STRING>\\r\\n|\\r|\\n { throw new Error(\"Unterminated string on line \" + left.getLine() " <>
           (if jflex == JFlexCup then "+ \" begining at column \" + left.getColumn()" else "") <> "); }"
-        , if jflex == JFlexCup 
+        , if jflex == JFlexCup
           then "<STRING><<EOF>> { throw new Error(\"Unterminated string at EOF, beginning at \" + left.getLine() + \":\" + left.getColumn()); }"
           else ""
         , "<ESCAPED>n { pstring +=  \"\\n\"; yybegin(STRING); }"

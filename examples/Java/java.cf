@@ -14,7 +14,7 @@
 
     You should have received a copy of the GNU General Public License
     along with this program; if not, write to the Free Software
-    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+    Foundation, 51 Franklin Street, Fifth Floor, Boston, MA 02110-1335, USA
 
 	************************
 	* Java LBNF definition *
@@ -29,7 +29,7 @@
 	http://www.cs.chalmers.se/~markus/BNFC/
 
 	Please send bug reports/fixes to mrainey@uchicago.edu.  Both are greatly
-	encouraged!  If you're enterprising, maybe update this definition to 
+	encouraged!  If you're enterprising, maybe update this definition to
 	Java 1.5 ;)
 
 -}
@@ -40,7 +40,7 @@ Prpkg.		ProgramFile ::= "package" [Ident] [Semi] [Import] [TypeDecl];
 ProgF.		ProgramFile ::= [Import] [TypeDecl];
 
 ImportN. 	Import ::= "import" [Ident] [Semi];
-ImportA.	Import ::= "import" [Ident] ".*" [Semi];	
+ImportA.	Import ::= "import" [Ident] ".*" [Semi];
 separator Import "";
 
 TypeDecl.	TypeDecl ::= ClassHeader "{" [FieldDeclaration] "}";
@@ -292,7 +292,7 @@ token JDouble (((digit+ '.')|('.' digit+))(('e'|'E') ('-')? digit+)?)|
 token JFloat (((digit+ '.' digit+)|(digit+ '.')|('.' digit+))(('e'|'E')('-')? digit+)?
                                ('f'|'F'))|((digit+ ('e'|'E')('-')? digit+)('f'|'F'));
 
-token JLongDouble (((digit+ '.' digit+)|(digit+ '.')|('.' digit+))(('e'|'E')('-')? 
+token JLongDouble (((digit+ '.' digit+)|(digit+ '.')|('.' digit+))(('e'|'E')('-')?
                    digit+)?('l'|'L'))|((digit+ ('e'|'E')('-')? digit+)('l'|'L'));
 
 token UnicodeChar '\'' '\\' 'u' (digit | ["abcdef"] | ["ABCDEF"]) (digit | ["abcdef"] | ["ABCDEF"]) (digit | ["abcdef"] | ["ABCDEF"]) (digit | ["abcdef"] | ["ABCDEF"]) '\'';
@@ -316,7 +316,7 @@ Eoctalunslong. Constant ::= OctalUnsLong;
 Ecdouble.      Constant ::= JDouble;
 Ecfloat.       Constant ::= JFloat;
 Eclongdouble.  Constant ::= JLongDouble;
-Eint.          Constant ::= Integer;  
+Eint.          Constant ::= Integer;
 Etrue.	       Constant ::= "true";
 Efalse.	       Constant ::= "false";
 
@@ -345,12 +345,12 @@ Sem1.	Semi ::=  ";";
 terminator Semi "";
 
 {-
-	there is a problem with comments... 
+	there is a problem with comments...
 	the first 2 commented out directives fail to work.
 	some alex hacking is probably in order to get a full
 	java parser; i've noticed the unbalanced /*'s appear
 	enough to be annoying
--}   	
+-}
 --comment "/**" "*/" ;
 --comment "/*" "**/" ;
 comment "/**" "**/" ;
