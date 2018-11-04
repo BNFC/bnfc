@@ -65,8 +65,8 @@ executable bnfc-system-tests
   -- Other library packages from which modules are imported.
   build-depends:       base >=4.5 && <5,
                        regex-posix,
-                       HUnit == 1.2.*,
-                       shelly == 1.6.*,
+                       HUnit >= 1.2,
+                       shelly >= 1.6,
                        system-filepath,
                        text,
                        HTF
