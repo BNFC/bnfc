@@ -1,25 +1,29 @@
-2.8.2 (Development version)
-	* GHC 8.4 compatibility
-	* bnfc puts current timestamp on all created files, even unchanged ones [#217]
-	* Java: Add support for passing line numbers to parser
-	* C: Emit correct function prototypes
-	* Java: Add an experimental ANTLR4 backend
+2.8.2 Andreas Abel <andreas.abel@gu.se>  November 2018
+	* GHC 8.4 compatibility [#227,#236]
+	* bnfc puts current timestamp on all created files, even unchanged ones [#219]
+	* Java: Add support for passing line numbers to parser [#217,#224,#226]
+	* C: Emit correct function prototypes [#185]
+	* Java: Add an experimental ANTLR4 backend [#155]
 	* C, C++, OCaml, Java: Accept ' or " as comment delimiters [#146]
 	* Improve error messages [#144]
 	* Haskell: Generated code mostly hlint-warning free
+	* Haskell: Small fixes [#166,#170,#222]
 	* bnfc is now more accepting about border-line terminals [#149]
 	* Cleaner error message on undefined categories [#151]
-	* C++: Fix regression introduced in 2.8 in Squeleton.H [#164]
-	* C++: Replace `%name-prefix` with `%define api.prefix` in bison files
+	* C++: Fix buffer overrun in pretty printer [#242]
+	* C++: Fix regression introduced in 2.8 in Skeleton.H [#164]
+	* C++: Replace `%name-prefix` with `%define api.prefix` in bison files [#181]
 	* C++: Fix a bug that appeared if you had a category named "List"
-	* C, C++: Add usage output to the test program
+	* C, C++: Add usage output to the test program [#141]
 	* C, C++: Fix a bug in the parser file when using -p [#172]
 	* OCaml: Reserved symbols now have a higher precedence than predefined
 	  tokens as in Haskell
-	* And various small fixes
+	* Some updates of the documentation [#211,#223]
+	* And various small fixes [#139,#159,#195,#201,#215]
 
-2.8.1 Grégoire Détrez <gregoire.detrez@gu.se> May 2015
+2.8.1 Grégoire Détrez <gregoire.detrez@gu.se>  February 2016
 	* Fix compatibility with GHC 7.10.2 and Alex 3.14
+	* Fixed #160
 
 2.8 Grégoire Détrez <gregoire.detrez@gu.se>  May 2015
 	* Builds with ghc 7.10.1
