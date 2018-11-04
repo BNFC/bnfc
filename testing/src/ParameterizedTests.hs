@@ -155,7 +155,7 @@ parameters =
              , tpBnfcOptions = ["--haskell", "--ghc", "-m"] }
   , base { tpName = "Haskell/GADT"
          , tpBnfcOptions = ["--haskell-gadt", "-m"]
-         , tpRunTestProg = \_ args -> do bin <- findFileRegex "Test\\w*$"
+         , tpRunTestProg = \_ args -> do bin <- findFileRegex "Test[^.]*$"
                                          cmd bin args
          }
   -- OCaml
@@ -207,7 +207,7 @@ parameters =
             cmd "make"
             cmd "ghc" =<< findFileRegex "Skel.*\\.hs$"
         , tpRunTestProg = \_ args -> do
-            bin <- findFileRegex "Test\\w*$"
+            bin <- findFileRegex "Test[^.]*$"
             cmd bin args
         }
     javaParams = base
