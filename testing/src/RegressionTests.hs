@@ -119,7 +119,7 @@ issue113 = makeShellyTest "#113 BNFC to Java creates non-compilable code when us
         cp "regression-tests/113_javatokens.cf" (tmp </> "grammar.cf")
         cd tmp
         cmd "bnfc" "--java" "grammar.cf"
-        cmd "javac" "grammar/VisitSkel.java"
+        cmd "javac" "-sourcepath" "." "grammar/VisitSkel.java"
 
 -- | Issue #127
 issue127 :: Test
@@ -173,7 +173,7 @@ issue159 = makeShellyTest "#159 String rendering in Java does not work" $
         cmd "make"
         let input = "the_following_is_a_quoted_string \"here I am\""
         setStdin input
-        out <- cmd "java"  "issue/Test"
+        out <- cmd "java" "issue/Test"
         liftIO $ assertBool "Invalid output" (input `T.isInfixOf` out)
 
 issue170a :: Test
