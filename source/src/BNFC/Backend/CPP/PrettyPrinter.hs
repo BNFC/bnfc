@@ -106,14 +106,17 @@ mkHFile useStl inPackage cf groups = unlines
    ] ++ ["  void visit" ++ t ++ "(String s);" | t <- tokenNames cf] ++
    [
     " protected:",
+    "  char *buf_;",
+    "  int cur_, buf_size;",
+    "",
     "  void inline bufAppend(const char *s)",
     "  {",
     "    int len = strlen(s);",
-    "    while (cur_ + len > buf_size)",
+    "    while (cur_ + len >= buf_size)",
     "    {",
     "      buf_size *= 2; /* Double the buffer size */",
-    "      resizeBuffer();",
     "    }",
+    "    resizeBuffer();",
     "    for(int n = 0; n < len; n++)",
     "    {",
     "      buf_[cur_ + n] = s[n];",
@@ -124,7 +127,7 @@ mkHFile useStl inPackage cf groups = unlines
     "",
     "  void inline bufAppend(const char c)",
     "  {",
-    "    if (cur_ == buf_size)",
+    "    if (cur_ >= buf_size)",
     "    {",
     "      buf_size *= 2; /* Double the buffer size */",
     "      resizeBuffer();",
@@ -163,8 +166,6 @@ mkHFile useStl inPackage cf groups = unlines
     "    }",
     "    buf_ = temp;",
     "  }",
-    "  char *buf_;",
-    "  int cur_, buf_size;",
     "};",
     ""
    ]
