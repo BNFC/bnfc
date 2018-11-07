@@ -126,7 +126,7 @@ makefile opts basename = makeA where
               , dir ++ lang opts ++ ".dtd"
               , mkFile withLang "XML" "*" opts
               , basename ]
-          , if null dir then "" else "\t-rmdir -p " ++ dir ]
+          , if null dir then "" else "-rmdir -p " ++ dir ]
       ]
 
 testfile :: Options -> CF -> String
