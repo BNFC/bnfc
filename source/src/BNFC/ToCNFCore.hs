@@ -240,7 +240,7 @@ leftRight pos s (Rule _ c rhs) = M.singleton (show c) (lkCat x s)
 lkCat (Right t) _ = [Right t]
 lkCat (Left c) s = Left c:lookupMulti (show c) s
 
--- neighbors A B = ∃ A' B'. P ::= A' B' ∧  A ∈ rightOf A'  ∧  B ∈ leftOf B
+-- neighbors A B = ∃ A' B'.  P ::= A' B'  &  A ∈ rightOf A'  &  B ∈ leftOf B
 neighborSet cf = map (second (nub . sort)) $ group' [(x',lkCat y leftSet) | Rule _ _ [x,y] <- cfgRules cf, x' <- lkCat x rightSet]
   where leftSet  = fixpointOnGrammar "left set"  (leftRight head) cf
         rightSet = fixpointOnGrammar "right set" (leftRight last) cf
