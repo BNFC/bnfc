@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-
     BNF Converter: Latex Generator
     Copyright (C) 2004  Author:  Markus Forberg, Aarne Ranta
@@ -19,7 +20,9 @@
 module BNFC.Backend.Latex where
 
 import Data.List
+#if !(MIN_VERSION_base(4,8,0))
 import Data.Monoid
+#endif
 import System.FilePath ((<.>),replaceExtension)
 import Text.Printf
 

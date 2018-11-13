@@ -20,6 +20,8 @@
 
 module BNFC.MultiView where
 
+import Data.Maybe
+
 import ParBNF
 import PrintBNF
 import AbsBNF
@@ -39,17 +41,14 @@ preprocessMCF f = do
 
 extract :: String -> LGrammar -> [(FilePath, Grammar)]
 extract name (LGr ldefs) =
-  [(file lang,Grammar [unldef ldef | ldef <- ldefs, isFor lang ldef]) |
+  [(file lang,Grammar $ mapMaybe (getDef lang) ldefs) |
       lang <- views]
  where
    views = [lang | LDefView langs <- ldefs, Ident lang <- langs]
-   isFor lang ldef = case ldef of
-     DefAll _ -> True
-     DefSome ids _ -> elem (Ident lang) ids
-     _ -> False
-   unldef ldef = case ldef of
-     DefAll d -> d
-     DefSome _ d -> d
+   getDef lang ldef = case ldef of
+     DefAll d -> Just d
+     DefSome ids d | elem (Ident lang) ids -> Just d
+     _ -> Nothing
    file lang = name ++ "_" ++ lang ++ ".cf"
 
 --- the entrypoint is the same for all languages - could be different
@@ -59,11 +58,11 @@ entrypoint (LGr rs0) = head $
   [c | Entryp (Ident c:_) <- rs] ++
   [c | Rule _ (IdCat (Ident c)) _ <- rs]
  where
-   rs = concatMap getR rs0
+   rs = mapMaybe getR rs0
    getR d = case d of
-     DefAll d -> [d]
-     DefSome _ d -> [d]
-     _ -> [] --- LDefView
+     DefAll d -> Just d
+     DefSome _ d -> Just d
+     _ -> Nothing
 
 writeCF :: (FilePath, Grammar) -> IO ()
 writeCF (file,gr) = do
@@ -87,14 +86,14 @@ mkMakefileMulti xx file files = do
   let content = makefile xx abs cncs
   writeFile "Makefile" content
 
-makefile xx abs cncs = unlines $
+makefile _ abs cncs = unlines $
   "all:" :
   ["\tmake -f Makefile_" ++ cnc | cnc <- cncs] ++
   ["\tghc --make -o TestTrans" ++ abs ++ " TestTrans" ++ abs,
    ""
   ]
 
-testfile cat xx abs cncs = unlines $
+testfile cat _ abs cncs = unlines $
   ["module Main where"] ++
   ["import qualified Lex" ++ cnc | cnc <- cncs] ++
   ["import qualified Par" ++ cnc | cnc <- cncs] ++
