@@ -1,4 +1,10 @@
+dist: xenial
 language: haskell
+cache:
+  directories:
+    - $HOME/.cabal
+    - $HOME/.ghc
+    - $TRAVIS_BUILD_DIR/testing/.cabal-sandbox
 # Make sure to update tested-with in source/BNFC.cabal when updating these:
 ghc:
   - 8.4.4
@@ -14,13 +20,10 @@ matrix:
   allow_failures:
     - env: PACKAGEDIR="testing"
 script:
-    - cabal install
-    - cabal configure --enable-tests && cabal build && cabal test
+  - if [ "$PACKAGEDIR" = source  ]; then cabal configure --enable-tests && cabal build && cabal test; fi
+  - if [ "$PACKAGEDIR" = testing ]; then source scripts/env && ./scripts/bootstrap && ./scripts/runtests; fi
 before_install:
   - sudo apt-get update -qq
-  - sudo apt-get install jlex cup openjdk-6-jdk
-  - sudo apt-get install g++
-  - sudo apt-get install texlive-latex-base
   - sudo apt-get install alex happy
-  - export CLASSPATH=".:/usr/share/java/JLex.jar:/usr/share/java/cup.jar"
+  - if [ "$PACKAGEDIR" = testing ]; then sudo apt-get install openjdk-9-jdk-headless jflex antlr4 ocaml texlive-latex-base hlint; fi
   - cd ${PACKAGEDIR}
