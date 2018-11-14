@@ -92,7 +92,7 @@ header opts
               ,"readInteger = read"
               ,"readDouble :: String -> Double"
               ,"readDouble = read"
-              ,"instance RingP [(CATEGORY,Any)] where"
+              ,"instance RingP [(CATEGORY,a)] where"
               ,"  mul p a b = trav [map (app tx ty) l :/: map (app tx ty) r | (x,tx) <- a, (y,ty) <- b, let l:/:r = combine p x y]"
               ,"    where trav :: [Pair [a]] -> Pair [a]"
               ,"          trav [] = pure []"
@@ -118,7 +118,7 @@ genDesc cf descs = vcat ["describe " <> catTag s <> " = " <> text (show (descOf 
 
 genCombTable :: UnitRel Cat -> CFG Exp -> Doc
 genCombTable units cf =
-     "combine :: Bool -> CATEGORY -> CATEGORY -> Pair [(CATEGORY, Any -> Any -> Any)]"
+     "combine :: Bool -> CATEGORY -> CATEGORY -> Pair [(CATEGORY, a -> a -> a)]"
   $$ genCombine units cf
   $$ "combine _ _ _ = pure []"
 
@@ -152,7 +152,7 @@ alt _ _ = error "Only works with binary rules"
 
 
 genTokTable :: UnitRel Cat -> CFG Exp -> Doc
-genTokTable units cf = "tokenToCats :: Bool -> Token -> Pair [(CATEGORY,Any)]" $$
+genTokTable units cf = "tokenToCats :: Bool -> Token -> Pair [(CATEGORY,a)]" $$
                        vcat (map (genSpecEntry cf units) (tokInfo cf)) $$
                        vcat (map (genTokEntry cf units) (cfTokens cf)) $$
                        "tokenToCats p t = error (\"unknown token: \" ++ show t)"
@@ -207,7 +207,7 @@ genBenchmark opts = render $ vcat
    ,"import Criterion.Main"
    ,"import Algebra.RingUtils"
    ,"import Control.Applicative"
-   ,"type T = [(CATEGORY,Any)]"
+   ,"type T = [(CATEGORY,a)]"
    ,"pLGrammar :: [Pair T] -> MT2 T"
    ,"pLGrammar = mkTree"
    ,"main = do"
