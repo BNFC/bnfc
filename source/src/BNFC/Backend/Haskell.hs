@@ -95,8 +95,8 @@ makeHaskell opts cf = do
       mkfile "BenchCNF.hs" $ ToCNF.genBenchmark opts
 
 
-makefile :: Options -> Doc
-makefile opts = makeA where
+makefile :: Options -> String -> Doc
+makefile opts basename = makeA where
   glr_params = if glr opts == GLR then "--glr --decode " else ""
   dir = let d = codeDir opts in if null d then "" else d ++ [pathSeparator]
   makeA = vcat
@@ -125,7 +125,7 @@ makefile opts = makeA where
               , mkFile noLang "ComposOp" "*" opts
               , dir ++ lang opts ++ ".dtd"
               , mkFile withLang "XML" "*" opts
-              , "Makefile*" ]
+              , basename ]
           , if null dir then "" else "\t-rmdir -p " ++ dir ]
       ]
 

@@ -64,8 +64,8 @@ makeC opts cf = do
         name = lang opts
 
 
-makefile :: String -> String -> Doc
-makefile name prefix = vcat
+makefile :: String -> String -> String -> Doc
+makefile name prefix basename = vcat
     [ "CC = gcc"
     , "CCFLAGS = -g -W -Wall"
     , ""
@@ -88,8 +88,10 @@ makefile name prefix = vcat
     , Makefile.mkRule "distclean" ["clean"]
       [ "rm -f " ++ unwords
         [ "Absyn.h", "Absyn.c", "Test.c", "Parser.c", "Parser.h", "Lexer.c",
-          "Skeleton.c", "Skeleton.h", "Printer.c", "Printer.h", "Makefile " ]
-        ++ name ++ ".l " ++ name ++ ".y " ++ name ++ ".tex "]
+          "Skeleton.c", "Skeleton.h", "Printer.c", "Printer.h", basename,
+          name ++ ".l", name ++ ".y", name ++ ".tex"
+        ]
+      ]
     , Makefile.mkRule testName ["${OBJS}", "Test.o"]
       [ "@echo \"Linking " ++ testName ++ "...\""
       , "${CC} ${CCFLAGS} ${OBJS} Test.o -o " ++ testName ]

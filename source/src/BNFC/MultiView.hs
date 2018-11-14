@@ -62,7 +62,7 @@ entrypoint (LGr rs0) = head $
    getR d = case d of
      DefAll d -> Just d
      DefSome _ d -> Just d
-     _ -> Nothing
+     _LDefView -> Nothing
 
 writeCF :: (FilePath, Grammar) -> IO ()
 writeCF (file,gr) = do
