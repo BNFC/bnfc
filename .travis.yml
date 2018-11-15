@@ -5,6 +5,7 @@ cache:
     - $HOME/.cabal
     - $HOME/.ghc
     - $TRAVIS_BUILD_DIR/testing/.cabal-sandbox
+    - $HOME/.stack
 # Make sure to update tested-with in source/BNFC.cabal when updating these:
 ghc:
   - 8.4.4
@@ -14,16 +15,28 @@ ghc:
   - 7.8.4
   - 7.6.3
 env:
-  - PACKAGEDIR="source"
-  - PACKAGEDIR="testing"
+  - CABAL=yes PACKAGEDIR="source"
+  - CABAL=yes PACKAGEDIR="testing"
+  - STACK=yes
 matrix:
-  allow_failures:
-    - env: PACKAGEDIR="testing"
+  exclude:
+    - ghc: 7.6.3
+      env: STACK=yes
 script:
-  - if [ "$PACKAGEDIR" = source  ]; then cabal configure --enable-tests && cabal build && cabal test; fi
-  - if [ "$PACKAGEDIR" = testing ]; then source scripts/env && ./scripts/bootstrap && ./scripts/runtests; fi
+  - if [ "$CABAL" = yes -a "$PACKAGEDIR" = source  ]; then cabal configure --enable-tests && cabal build && cabal test; fi
+  - if [ "$CABAL" = yes -a "$PACKAGEDIR" = testing ]; then source scripts/env && ./scripts/bootstrap; fi # && ./scripts/runtests; fi
+  - if [ "$STACK" = yes ]; then stack --no-terminal --stack-yaml stack-$GHCVER.yaml build --test --no-run-tests; fi
 before_install:
+  - export GHCVER=${GHCVER:-$TRAVIS_HASKELL_VERSION}
   - sudo apt-get update -qq
-  - sudo apt-get install alex happy
-  - if [ "$PACKAGEDIR" = testing ]; then sudo apt-get install openjdk-9-jdk-headless jflex antlr4 ocaml texlive-latex-base hlint; fi
-  - cd ${PACKAGEDIR}
+  - if [ "$CABAL" = yes ]; then sudo apt-get install alex happy; fi
+  - if [ "$STACK" = yes ]; then
+      mkdir -p $HOME/.local/bin &&
+      export PATH=$HOME/.local/bin:$PATH &&
+      travis_retry curl -L https://get.haskellstack.org/stable/linux-x86_64.tar.gz | tar xz --wildcards --strip-components=1 -C $HOME/.local/bin '*/stack' &&
+      stack config set system-ghc --global true;
+    fi
+  - if [ "$CABAL" = yes -a "$PACKAGEDIR" = testing ]; then sudo apt-get install openjdk-9-jdk-headless jflex antlr4 ocaml texlive-latex-base hlint; fi
+install:
+  - if [ "$CABAL" = yes ]; then cd $PACKAGEDIR && cabal install --enable-tests --dependencies-only; fi
+  - if [ "$STACK" = yes ]; then stack --no-terminal --stack-yaml stack-$GHCVER.yaml build --test --dependencies-only; fi
