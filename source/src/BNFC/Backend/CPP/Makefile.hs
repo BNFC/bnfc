@@ -3,8 +3,8 @@ module BNFC.Backend.CPP.Makefile (makefile) where
 import BNFC.Backend.Common.Makefile
 import BNFC.PrettyPrint
 
-makefile :: String -> Doc
-makefile name = vcat
+makefile :: String -> String -> Doc
+makefile name basename = vcat
     [ mkVar "CC" "g++"
     , mkVar "CCFLAGS" "-g -W -Wall"
     , ""
@@ -27,8 +27,10 @@ makefile name = vcat
     , mkRule "distclean" ["clean"]
         [ "rm -f " ++ unwords
             [ "Absyn.C", "Absyn.H", "Test.C", "Parser.C", "Parser.H", "Lexer.C",
-              "Skeleton.C", "Skeleton.H", "Printer.C", "Printer.H", "Makefile " ]
-            ++ name ++ ".l " ++ name ++ ".y " ++ name ++ ".tex "]
+              "Skeleton.C", "Skeleton.H", "Printer.C", "Printer.H", basename,
+              name ++ ".l", name ++ ".y", name ++ ".tex"
+            ]
+        ]
     , mkRule testName [ "${OBJS}", "Test.o" ]
         [ "@echo \"Linking " ++ testName ++ "...\""
         , "${CC} ${CCFLAGS} ${OBJS} Test.o -o " ++ testName ]

@@ -139,8 +139,8 @@ makeJava options@Options{..} cf = do
     lexmake      = makelexerdetails  (lexer parselexspec)
     rp           = (Options.linenumbers options)
 
-makefile ::  FilePath -> FilePath -> [String] -> ParserLexerSpecification -> Doc
-makefile  dirBase dirAbsyn absynFileNames jlexpar = vcat $
+makefile ::  FilePath -> FilePath -> [String] -> ParserLexerSpecification -> String -> Doc
+makefile  dirBase dirAbsyn absynFileNames jlexpar basename = vcat $
     makeVars [  ("JAVAC", "javac"),
                 ("JAVAC_FLAGS", "-sourcepath ."),
                 ( "JAVA", "java"),
@@ -211,8 +211,10 @@ makefile  dirBase dirAbsyn absynFileNames jlexpar = vcat $
                       , "Test.java"
                       ]
                     ++ dotJava (results parmake)
-                    ++ ["*.class"])
-        , " rm -f Makefile"
+                    ++ ["*.class"]
+                    ++ other_results lexmake
+                    ++ other_results parmake)
+        , " rm -f " ++ basename
         , " rmdir -p " ++ dirBase
         ]
     ]
@@ -412,6 +414,10 @@ data MakeFileDetails = MakeDetails
       -- | list of names (without extension!) of files resulting from the
       -- application of the tool which are relevant to a make rule
     , results             :: [String]
+      -- | list of names of files resulting from the application of
+      -- the tool which are irrelevant to the make rules but need to
+      -- be cleaned
+    , other_results       :: [String]
       -- | if true, the files are moved to the base directory, otherwise
       -- they are left where they are
     , moveresults         :: Bool
@@ -434,6 +440,7 @@ jlexmakedetails = MakeDetails
     , toolversion         = "1.2.6."
     , supportsEntryPoints = False
     , results             = ["Yylex"]
+    , other_results       = []
     , moveresults         = False
     }
 
@@ -452,6 +459,7 @@ cupmakedetails rp = MakeDetails
     , toolversion         = "0.10k"
     , supportsEntryPoints = False
     , results             = ["parser", "sym"]
+    , other_results       = []
     , moveresults         = True
     }
   where
@@ -475,6 +483,7 @@ antlrmakedetails l = MakeDetails
     , toolversion         = "4.5.1"
     , supportsEntryPoints = True
     , results             = [l]
+    , other_results       = map (l ++) [".tokens","BaseListener.java","Listener.java"]
     , moveresults         = False
     }
 

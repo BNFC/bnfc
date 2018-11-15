@@ -100,7 +100,7 @@ writeMakefile opts namespace = do
   liftIO $ putStrLn "-----------------------------------------------------------------------------"
   liftIO $ putStrLn ""
   where
-    makefile = vcat
+    makefile basename = vcat
         ["MONO = mono", "MONOC = gmcs"
         , "MONOCFLAGS = -optimize -reference:${PARSERREF}"
         , "GPLEX = ${MONO} gplex.exe", "GPPG = ${MONO} gppg.exe"
@@ -114,7 +114,7 @@ writeMakefile opts namespace = do
         , Makefile.mkRule "distclean" [ "clean" ]
             [ "rm -f ${CSFILES}"
             , "rm -f " ++ unwords [namespace <.> ext | ext <- [ "l","y","tex" ]]
-            , "rm -f Makefile" ]
+            , "rm -f " ++ basename ]
         , Makefile.mkRule "test" [ "Parser.cs", "Scanner.cs" ]
             [ "@echo \"Compiling test...\""
             , "${MONOC} ${MONOCFLAGS} -out:bin/test.exe ${CSFILES}" ]

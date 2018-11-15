@@ -110,8 +110,8 @@ codeDir opts = let pref = maybe "" pkgToDir (inPackage opts)
                    sep = if null pref || null dir then "" else [pathSeparator]
                  in pref ++ sep ++ dir
 
-makefile :: SharedOptions -> Doc
-makefile opts = vcat
+makefile :: SharedOptions -> String -> Doc
+makefile opts basename = vcat
     [ mkVar "OCAMLC" "ocamlc"
     , mkVar "OCAMLYACC" "ocamlyacc"
     , mkVar "OCAMLLEX" "ocamllex"
@@ -140,7 +140,7 @@ makefile opts = vcat
                                  mkFile withLang "Abs" "*" opts,
                                  mkFile withLang "Test" "" opts,
                                  utilFile opts,
-                                 "Makefile*" ]]
+                                 basename ]]
     ]
   where dir = let d = codeDir opts in if null d then "" else d ++ [pathSeparator]
 

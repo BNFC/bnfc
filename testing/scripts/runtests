@@ -1,5 +1,5 @@
 #!/bin/sh -u
-export CLASSPATH=.:$(pwd)/data/java-cup-11b-runtime.jar:$(pwd)/data/javatools.jar
 mkdir -p dist/test
+cabal configure
 cabal build
 cabal exec -- cabal run -- --xml=dist/test/bnfc-system-tests.xml $*

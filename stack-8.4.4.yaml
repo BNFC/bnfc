@@ -1,0 +1,4 @@
+resolver: lts-12.18
+packages:
+- source
+- testing

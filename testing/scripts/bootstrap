@@ -1,4 +1,4 @@
-#!/bin/sh -eu
+#!/bin/bash -eu
 
 # Setup sandbox
 cabal sandbox init
@@ -9,9 +9,12 @@ cabal install bnfc
 # Check for tools required to run system tests
 missing=""
 
+# $1: Command name
+# $2: Command line to test if $1 is available (default: `type $1`)
 check() {
   echo -n "Checking for $1... "
-  if ! type $1 &> /dev/null ; then
+  test=${2:-type $1}
+  if ! $test &> /dev/null ; then
     missing+=" $1"
     echo -e "\033[33mmissing\033[0m"
   else
@@ -19,11 +22,18 @@ check() {
   fi
 }
 
+check bnfc
+check gcc
 check flex
 check bison
+check alex
+check happy
 check hlint
 check javac
 check jflex
+check cup "javap java_cup.Main"
+check antlr "javap org.antlr.v4.Tool"
+check ocamlc
 check ocamllex
 check ocamlyacc
 

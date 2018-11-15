@@ -15,7 +15,7 @@ import Filesystem.Path (filename, dropExtension, basename, replaceExtension)
 import Filesystem.Path.CurrentOS (encodeString)
 import Prelude hiding (FilePath)
 import Shelly
-  ( FilePath, Sh, (</>)
+  ( FilePath, Sh, ShellCmd, (</>)
   , absPath, appendfile
   , canonicalize, cd, cp, cmd
   , echo, errExit
@@ -40,6 +40,7 @@ allWithParams params = makeTestSuite (tpName params) $
     [ exitCodeTest params
     , entrypointTest params
     , exampleTests params
+    , distcleanTest params
     ] ++ testCases params
 
 
@@ -132,6 +133,19 @@ testCases params =
                 errExit False $ tpRunTestProg params "test" [f]
                 lastExitCode >>= assertEqual 1
 
+-- | To test that @distclean@ removes all generated files.
+distcleanTest :: TestParameters -> Test
+distcleanTest params =
+  makeShellyTest "distclean removes all generated files" $ withTmpDir $ \tmp -> do
+    cd tmp
+    let cfFile = "G.cf"
+    writefile cfFile "L. C ::= \"t\" ;"
+    tpBnfc params cfFile
+    tpBuild params
+    tpDistclean
+    dContents <- ls "."
+    assertEqual [cfFile] (map filename dContents)
+
 -- ~~~ Parameters ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 -- Test parameters are the combination of bnfc options (that define the
 -- backend to use) a build command to compile the resulting parser and a run
@@ -151,65 +165,65 @@ parameters :: [TestParameters]
 parameters =
   -- Haskell
   [ hsParams { tpName = "Haskell"
-             , tpBnfcOptions = ["--haskell", "-m"] }
+             , tpBnfcOptions = ["--haskell"] }
   , hsParams { tpName = "Haskell (with functor)"
-             , tpBnfcOptions = ["--haskell", "--functor", "-m"] }
+             , tpBnfcOptions = ["--haskell", "--functor"] }
   , hsParams { tpName = "Haskell (with namespace)"
-             , tpBnfcOptions = ["--haskell", "-p", "Language", "-d", "-m"] }
+             , tpBnfcOptions = ["--haskell", "-p", "Language", "-d"] }
   , hsParams { tpName = "Haskell (with ghc)"
-             , tpBnfcOptions = ["--haskell", "--ghc", "-m"] }
+             , tpBnfcOptions = ["--haskell", "--ghc"] }
   , base { tpName = "Haskell/GADT"
-         , tpBnfcOptions = ["--haskell-gadt", "-m"]
+         , tpBnfcOptions = ["--haskell-gadt"]
          , tpRunTestProg = \_ args -> do bin <- findFileRegex "Test[^.]*$"
                                          cmd bin args
          }
   -- OCaml
   , base { tpName = "OCaml"
-         , tpBuild = run_ "make" ["OCAMLCFLAGS=-safe-string"]
-         , tpBnfcOptions = ["--ocaml", "-m"] }
+         , tpBuild = tpMake ["OCAMLCFLAGS=-safe-string"]
+         , tpBnfcOptions = ["--ocaml"] }
   -- C
   , cBase { tpName = "C"
-          , tpBuild = run_ "make" ["CCFLAGS=-Wstrict-prototypes -Werror"]
-          , tpBnfcOptions = ["--c", "-m"] }
+          , tpBuild = tpMake ["CCFLAGS=-Wstrict-prototypes -Werror"]
+          , tpBnfcOptions = ["--c"] }
   -- C++
   , cBase { tpName = "C++"
-          , tpBnfcOptions = ["--cpp", "-m"] }
+          , tpBnfcOptions = ["--cpp"] }
   , cBase { tpName = "C++ (with namespace)"
-          , tpBnfcOptions = ["--cpp", "-p foobar", "-m"] }
+          , tpBnfcOptions = ["--cpp", "-p foobar"] }
   , cBase { tpName = "C++ (no STL)"
-          , tpBnfcOptions = ["--cpp-nostl", "-m"] }
+          , tpBnfcOptions = ["--cpp-nostl"] }
   -- Java
   , javaParams { tpName = "Java"
-               , tpBnfcOptions = ["--java", "-m"] }
+               , tpBnfcOptions = ["--java"] }
   , javaParams { tpName = "Java (with line numbers)"
-               , tpBnfcOptions = ["--java", "-m", "-l"] }
+               , tpBnfcOptions = ["--java", "-l"] }
   , javaParams { tpName = "Java (with namespace)"
-               , tpBnfcOptions = ["--java", "-p", "my.stuff", "-m"] }
+               , tpBnfcOptions = ["--java", "-p", "my.stuff"] }
   , javaParams { tpName = "Java (with jflex)"
-               , tpBnfcOptions = ["--java", "--jflex", "-m"] }
+               , tpBnfcOptions = ["--java", "--jflex"] }
   , javaParams { tpName = "Java (with jflex and line numbers)"
-               , tpBnfcOptions = ["--java", "--jflex", "-m", "-l"] }
+               , tpBnfcOptions = ["--java", "--jflex", "-l"] }
   , javaParams { tpName = "Java (with antlr)"
-               , tpBnfcOptions = ["--java", "--antlr", "-m"] }
+               , tpBnfcOptions = ["--java", "--antlr"] }
   ]
   where
     base = TP
         { tpName = undefined
         , tpBnfcOptions = undefined
-        , tpBuild = run_ "make" []
+        , tpBuild = tpMake
         , tpRunTestProg = \lang args -> do
             bin <- canonicalize ("." </> ("Test" <> lang))
             cmd bin args
         }
     cBase = base
         { tpBuild = do
-            cmd "make"
-            cmd "make" "Skeleton.o"
+            tpMake
+            tpMake "Skeleton.o"
         }
     hsParams = base
         { tpBuild = do
             cmd "hlint" "-i" "Redundant bracket" "-i" "Use camelCase" "-i" "Use newtype instead of data" "-i" "Use fmap" "."
-            cmd "make"
+            tpMake
             cmd "ghc" =<< findFileRegex "Skel.*\\.hs$"
         , tpRunTestProg = \_ args -> do
             -- cmd "echo" "Looking for Test* binary"  -- can't print anything here because then the setStdin input is used up here
@@ -220,16 +234,30 @@ parameters =
         }
     javaParams = base
         { tpBuild = do
-            cmd "make"
+            tpMake
             cmd "javac" =<< findFile "VisitSkel.java"
         , tpRunTestProg = \_ args -> do
             class_ <- dropExtension <$> findFile "Test.class"
             cmd "java" class_ args
         }
 
--- | Helper function that runs bnfc with the context's options.
+-- | Helper function that runs bnfc with the context's options and an
+--   option to generate 'tpMakefile'.
 --   It will simply invoke the bnfc that is in the system's path.
 
 tpBnfc :: TestParameters -> FilePath -> Sh ()
 tpBnfc params grammar = run_ "bnfc" args
-  where args = tpBnfcOptions params ++ [toTextArg grammar]
+  where args = ["-m" <> toTextArg tpMakefile] ++ tpBnfcOptions params ++ [toTextArg grammar]
+
+-- | Default test parameter specifying the makefile name to be used
+--   by 'tpBnfc' and 'tpMake'.
+tpMakefile :: FilePath
+tpMakefile = "MyMakefile"
+
+-- | Helper function that runs @make@ using 'tpMakefile' as makefile.
+tpMake :: ShellCmd result => result
+tpMake = cmd "make" "-f" tpMakefile
+
+-- | Helper function that runs the command for removing generated files.
+tpDistclean :: Sh ()
+tpDistclean = tpMake "distclean"

@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-
     BNF Converter: Latex Generator
     Copyright (C) 2004  Author:  Markus Forberg, Aarne Ranta
@@ -19,7 +20,9 @@
 module BNFC.Backend.Latex where
 
 import Data.List
+#if !(MIN_VERSION_base(4,8,0))
 import Data.Monoid
+#endif
 import System.FilePath ((<.>),replaceExtension)
 import Text.Printf
 
@@ -41,7 +44,7 @@ makeLatex opts cf = do
 
 -- | Create a makefile for the given tex file
 --
--- >>> makefile "myFile.tex"
+-- >>> makefile "myFile.tex" "Makefile"
 -- all: myFile.pdf
 -- <BLANKLINE>
 -- myFile.pdf: myFile.tex
@@ -53,8 +56,8 @@ makeLatex opts cf = do
 -- cleanall: clean
 -- 	-rm Makefile myFile.tex
 -- <BLANKLINE>
-makefile :: String -> Doc
-makefile texfile = vcat
+makefile :: String -> String -> Doc
+makefile texfile basename = vcat
     [ Makefile.mkRule "all" [pdffile]
         []
     , Makefile.mkRule pdffile [texfile]
@@ -62,7 +65,7 @@ makefile texfile = vcat
     , Makefile.mkRule "clean" []
         [ unwords [ "-rm", pdffile, auxfile, logfile ]]
     , Makefile.mkRule "cleanall" ["clean"]
-        [ "-rm Makefile " ++ texfile ]
+        [ unwords [ "-rm", basename, texfile ]]
     ]
   where pdffile = replaceExtension texfile "pdf"
         auxfile = replaceExtension texfile "aux"

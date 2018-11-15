@@ -11,4 +11,4 @@ spec = do
   describe "mkMakefile" $ do
     it "uses the names in the options dictionary" $
       let opts = defaultOptions { make = Just "MyMakefile" } in
-      execBackend (mkMakefile opts "") `shouldReturn` [("MyMakefile","")]
+      execBackend (mkMakefile opts (const "")) `shouldReturn` [("MyMakefile","")]

@@ -7,8 +7,8 @@ import ParameterizedTests hiding (all)
 import TestUtils
 
 cnf :: TestParameters
-cnf = TP "Haskell/CNF" ["--haskell", "--cnf", "-m"]
-         (cmd "make")
+cnf = TP "Haskell/CNF" ["--haskell", "--cnf"]
+         tpMake
          (\_lang args -> do
             bin <- canonicalize ("." </> "TestCNF")
             cmd bin args
