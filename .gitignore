@@ -45,3 +45,5 @@ cabal.sandbox.config
 /testing/regression-tests/#100_coercion_lists/Test/
 /examples/C/C/
 /examples/C/Makefile
+/examples/Java/Java/
+/examples/Java/Makefile
