@@ -47,3 +47,4 @@ cabal.sandbox.config
 /examples/C/Makefile
 /examples/Java/Java/
 /examples/Java/Makefile
+/examples/GF/GF/
