@@ -48,3 +48,4 @@ cabal.sandbox.config
 /examples/Java/Java/
 /examples/Java/Makefile
 /examples/GF/GF/
+/document/BNF_Report.pdf
