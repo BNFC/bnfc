@@ -107,6 +107,9 @@ delimiter = "\n%%\n"
 
 -- Generate the list of tokens and their identifiers.
 tokens :: [(String,Int)] -> String
+tokens []   = "-- no tokens\n"
+  -- Andreas, 2019-01-02: "%token" followed by nothing is a Happy parse error.
+  -- Thus, if we have no tokens, do not output anything.
 tokens toks = "%token\n" ++ prTokens toks
  where prTokens []         = []
        prTokens ((t,k):tk) = "  " ++ render (convert t) ++
