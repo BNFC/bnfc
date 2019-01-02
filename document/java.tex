@@ -7,18 +7,18 @@
 \begin{verbatim}
 public class PROGRAM {
   public ListEXP listexp_;
-  public PROGRAM(ListEXP p1) 
+  public PROGRAM(ListEXP p1)
             { listexp_ = p1; }
 }
 public abstract class EXP {}
 public class EAnd extends EXP {
   public EXP exp_1, exp_2;
-  public EAnd(EXP p1, EXP p2) 
+  public EAnd(EXP p1, EXP p2)
      { exp_1 = p1; exp_2 = p2; }
 }
 public class EOr extends EXP {
   public EXP exp_1, exp_2;
-  public EOr(EXP p1, EXP p2) 
+  public EOr(EXP p1, EXP p2)
      { exp_1 = p1; exp_2 = p2; }
 }
 public class ETrue extends EXP {
@@ -29,12 +29,12 @@ public class EFalse extends EXP {
 }
 public class EVar extends EXP {
   public String ident_;
-  public EVar(String p1) 
+  public EVar(String p1)
                { ident_ = p1; }
 }
 public class ListEXP {
   public EXP exp_;
-  public ListEXP listexp_; 
+  public ListEXP listexp_;
   public ListEXP(EXP p1, ListEXP p2)
     { exp_ = p1; listexp_ = p2; }
 }
@@ -51,23 +51,23 @@ terminal _SYMB_4;    //   )
 terminal _SYMB_5;    //   false
 terminal _SYMB_6;    //   true
 terminal String _IDENT_;
-PROGRAM ::= ListEXP:p_1  {: 
+PROGRAM ::= ListEXP:p_1  {:
     if (p_1 != null) p_1 = p_1.reverse();
-      RESULT = new Absyn.PROGRAM(p_1); :} 
+      RESULT = new Absyn.PROGRAM(p_1); :}
 ;
-EXP ::= EXP:p_1 _SYMB_0 EXP1:p_3  {: 
-     RESULT = new Absyn.EOr(p_1, p_3); :} 
+EXP ::= EXP:p_1 _SYMB_0 EXP1:p_3  {:
+     RESULT = new Absyn.EOr(p_1, p_3); :}
   | EXP1:p_1  {:  RESULT = (p_1); :}
 ;
 EXP1 ::= EXP1:p_1 _SYMB_1 EXP2:p_3  {:
-    RESULT = new Absyn.EAnd(p_1, p_3); :} 
+    RESULT = new Absyn.EAnd(p_1, p_3); :}
   | EXP2:p_1  {:  RESULT = (p_1); :}
 ;
 EXP2 ::= _SYMB_6 {:
-           RESULT = new Absyn.ETrue(); :} 
+           RESULT = new Absyn.ETrue(); :}
   | _SYMB_5 {:
           RESULT = new Absyn.EFalse(); :}
-  | _IDENT_:p_1 {: 
+  | _IDENT_:p_1 {:
          RESULT = new Absyn.EVar(p_1); :}
 \end{verbatim}
 \normalsize
@@ -90,7 +90,7 @@ ListEXP ::= /*empty*/{: RESULT = null; :}
 \textbf{C. Pretty Printer}
 \scriptsize
 \begin{verbatim}
-  private static void 
+  private static void
   pp(Absyn.EXP exp, int _i_) {
     if (exp instanceof Absyn.EOr) {
        Absyn.EOr eor = (Absyn.EOr) exp;
@@ -141,7 +141,7 @@ ListEXP ::= /*empty*/{: RESULT = null; :}
   public void visitEAnd(Absyn.EAnd eand) {
     /* Code For EAnd Goes Here */
     ...
-  public void 
+  public void
   visitListEXP(Absyn.ListEXP listexp) {
     while(listexp!= null) {
       /* Code For ListEXP Goes Here */
@@ -157,4 +157,3 @@ ListEXP ::= /*empty*/{: RESULT = null; :}
 \caption{Java source code fragments generated from Figure \ref{fig:source}}
 \label{fig:java}
 \end{figure}
-

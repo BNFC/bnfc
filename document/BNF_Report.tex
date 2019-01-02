@@ -45,19 +45,19 @@
 
 \begin{abstract}
 This paper introduces
-the grammar formalism \textit{Labelled BNF} (LBNF), 
+the grammar formalism \textit{Labelled BNF} (LBNF),
 and the compiler construction tool
 \textit{BNF Converter}.
 Given a grammar written in LBNF,
-the BNF Converter produces a complete compiler 
-front end (up to, but excluding, type checking), 
-i.e.\ a lexer, a parser, and an abstract 
-syntax definition. Moreover, it produces a pretty-printer 
-and a language specification in \LaTeX, as well as 
+the BNF Converter produces a complete compiler
+front end (up to, but excluding, type checking),
+i.e.\ a lexer, a parser, and an abstract
+syntax definition. Moreover, it produces a pretty-printer
+and a language specification in \LaTeX, as well as
 a template file for the compiler back end.
 
 A language specification in LBNF is completely declarative and therefore
-portable. It reduces dramatically the effort of implementing a language. 
+portable. It reduces dramatically the effort of implementing a language.
 The price to pay is that the language must be ``well-behaved'', i.e.\ that
 its lexical structure must be describable by a regular expression and
 its syntax by a context-free grammar.
@@ -66,54 +66,54 @@ its syntax by a context-free grammar.
 
 \subsubsection*{Keywords}
 
-\textit{compiler construction, parser generator, grammar, labelled BNF, 
+\textit{compiler construction, parser generator, grammar, labelled BNF,
         abstract syntax, pretty printer, document automation}
 
 \section{Introduction}
 
-This paper defends an old idea: 
+This paper defends an old idea:
 a programming language is defined by a BNF grammar \cite{algol}.
-This idea is usually not followed for two reasons. One reason is that 
-a language may require more 
+This idea is usually not followed for two reasons. One reason is that
+a language may require more
 powerful methods (consider, for example, languages with layout rules). The
-other reason is that, when parsing, one wants to do other things already 
+other reason is that, when parsing, one wants to do other things already
 (such as type checking etc).
-Hence the idea of extending pure BNF with semantic actions, 
+Hence the idea of extending pure BNF with semantic actions,
 written in a general-purpose
-programming language. However, such actions destroy declarativity and portability. 
+programming language. However, such actions destroy declarativity and portability.
 To describe the language, it becomes
 necessary to write a separate document, since the BNF no longer defines
 the language. Also the problem of synchronization arises: how to
-guarantee that the different modules---the lexer, the parser, 
+guarantee that the different modules---the lexer, the parser,
 and the document, etc.---describe the same language and that they fit together?
 
 The idea in LBNF is to use BNF, with construction of syntax trees as
 the only semantic action. This gives a unique source for all language-related
 modules, and it also solves the problem of synchronization. Thereby it
 dramatically reduces the effort of implementing a new language. Generating
-syntax trees instead of using more complex semantic actions is 
+syntax trees instead of using more complex semantic actions is
 a natural phase of \textit{multi-phase compilation}, which is recommended by most
 modern-day text books about compiler construction (e.g. Appel\cite{appel}).
 BNF grammars are an ingredient of all modern compilers.
 When designing LBNF, we tried to keep it so simple and intuitive that
 it can be learnt in a few minutes by anyone who knows ordinary BNF.
 
-Of course, the are some drawbacks with our approach. 
+Of course, the are some drawbacks with our approach.
 Not all languages can be completely
-defined, although surprisingly many can (see Section~\ref{results}). 
-Another drawback is that the modules generated are not quite as good 
-as handwritten. But this is a general problem when generating code instead 
+defined, although surprisingly many can (see Section~\ref{results}).
+Another drawback is that the modules generated are not quite as good
+as handwritten. But this is a general problem when generating code instead
 of handwriting it: a problem shared by all compilers, including the
 standard parser and lexer generation tools.
 
 To use LBNF descriptions as implementations, we have
-built the \textit{BNF Converter}\cite{bnfc}. 
+built the \textit{BNF Converter}\cite{bnfc}.
 Given an input LBNF grammar,
-the BNF Converter produces a lexer, a parser, and an abstract 
-syntax definition. Moreover, it produces a pretty-printer 
-and a language specification in \LaTeX. 
+the BNF Converter produces a lexer, a parser, and an abstract
+syntax definition. Moreover, it produces a pretty-printer
+and a language specification in \LaTeX.
 Since all this is generated from a \textit{single source}, we can be sure
-that the documentation corresponds to the actual 
+that the documentation corresponds to the actual
 language, and that the lexer, parser and abstract syntax fit
 seamlessly together.
 
@@ -126,15 +126,15 @@ Happy is a parser generator tool, similar to YACC\cite{johnson-yacc}, which
 from a BNF-like description
 builds an LALR(1) parser.
 Alex is a lexer generator tool, similar to Lex\cite{lesk-lex},
-which converts a regular expression 
-into a finite-state automaton. 
+which converts a regular expression
+into a finite-state automaton.
 %new
-Over the years, Haskell and these tools have 
-proven to be excellent devices for compiler construction, 
+Over the years, Haskell and these tools have
+proven to be excellent devices for compiler construction,
 %NEW
-to a large extent because of Haskell's 
-algebraic data types and a convenient method of 
-syntax-directed translation via pattern matching; 
+to a large extent because of Haskell's
+algebraic data types and a convenient method of
+syntax-directed translation via pattern matching;
 %new
 yet they do not quite remove the need for repetitive and low-level
 coding. The BNF Converter can be seen as a high-level front end
@@ -143,34 +143,34 @@ However, due to its declarative nature, LBNF
 does not crucially depend on the target language, and
 it is therefore possible to redirect the BNF Converter as a front end to
 another set of compiler tools. This has in fact recently been done
-for Java, CUP \cite{cup}, and 
+for Java, CUP \cite{cup}, and
 JLex \cite{jlex}\footnote{Work by Michael Pellauer at Chalmers}.
 %NEW
 The only essential difference between Haskell/Happy/Alex
 and Java/CUP/JLex or C/YACC/Lex
 is the target language included in the parser and
-lexer description. 
+lexer description.
 %new
 
 
 \section{The LBNF Grammar Formalism}
 
-As the first example of LBNF, 
+As the first example of LBNF,
 consider a triple of rules defining addition expressions with ``1'':
 \begin{verbatim}
   EPlus. Exp ::= Exp "+" Num ;
   ENum.  Exp ::= Num ;
   NOne.  Num ::= "1" ;
 \end{verbatim}
-Apart from the \textit{labels}, {\tt EPlus}, {\tt ENum}, and {\tt NOne}, 
+Apart from the \textit{labels}, {\tt EPlus}, {\tt ENum}, and {\tt NOne},
 the rules are
 ordinary BNF rules, with terminal symbols enclosed in
 double quotes and nonterminals written without quotes.
 The labels serve as \textit{constructors} for
 syntax trees.
 
-From an LBNF grammar, the BNF Converter extracts 
-an \textit{abstract syntax}\ and  
+From an LBNF grammar, the BNF Converter extracts
+an \textit{abstract syntax}\ and
 a \textit{concrete syntax}.
 The abstract syntax is implemented, in Haskell, as a system of
 datatype definitions
@@ -193,7 +193,7 @@ Briefly, an LBNF grammar is a BNF grammar where every rule is given a label.
 The label is used for constructing a syntax tree whose subtrees are
 given by the nonterminals of the rule, in the same order.
 
-More formally, an LBNF grammar consists of a collection of rules, 
+More formally, an LBNF grammar consists of a collection of rules,
 which have the following form (expressed by a regular expression;
 Appendix A gives a complete BNF definition of the notation):
 \bequ
@@ -205,12 +205,12 @@ arrow ({\tt ::=}) is the list of production items. An item is either
 a quoted string (\textit{terminal}) or a category symbol (\textit{non-terminal}).
 A rule whose value category is $C$ is also called a \textit{production}\ for $C$.
 
-Identifiers, that is, rule names and category symbols, can be 
+Identifiers, that is, rule names and category symbols, can be
 chosen {\em ad libitum}, with the restrictions imposed by the target language. To
 satisfy Haskell, and C and Java as well, the following rule is imposed
 \bequ
-An identifier is a nonempty sequence of letters, starting with a 
-capital letter. 
+An identifier is a nonempty sequence of letters, starting with a
+capital letter.
 \enqu
 
 LBNF is clearly sufficient for defining any context-free language.
@@ -227,9 +227,9 @@ described in the following subsection.
 
 The first convention are predefined basic types.
 Basic types, such as integer and character, can of course be
-defined in a labelled BNF, for example: 
+defined in a labelled BNF, for example:
 \begin{verbatim}
-  Char_a. Char ::= "a" ; 
+  Char_a. Char ::= "a" ;
   Char_b. Char ::= "b" ;
 \end{verbatim}
 This is, however, cumbersome and inefficient. Instead, we have decided to
@@ -243,10 +243,10 @@ the regular expression syntax):
 
 {\tt Double} of floating point numbers, defined
 \verb6digit+ '.' digit+ ('e' '-'? digit+)?6
- 
+
 {\tt Char} of characters (in single quotes), defined
 \verb6'\'' ((char - ["'\\"]) | ('\\' ["'\\nt"])) '\''6
- 
+
 {\tt String} of strings (in double quotes), defined
 \verb6'"' ((char - ["\"\\"]) | ('\\' ["\"\\nt"]))* '"'6
 
@@ -269,9 +269,9 @@ generate the abstract syntax
   data Exp = EVar Ident | EInt Integer | EStr String
 \end{verbatim}
 where {\tt Integer} and {\tt String} have their standard Haskell meanings.
-The lexer only produces the high-precision variants of integers and 
+The lexer only produces the high-precision variants of integers and
 floats; authors of applications can
-truncate these numbers later if they want to have 
+truncate these numbers later if they want to have
 low precision instead.
 
 Predefined categories may not have explicit productions in the
@@ -289,16 +289,16 @@ a BNF rule making the parser accept extra semicolons after statements:
 \end{verbatim}
 As this rule is semantically dummy, we do not want to represent it by a
 constructors in the abstract syntax.
-Instead, we introduce the following convention: 
+Instead, we introduce the following convention:
 \bequ
-A rule label can be an underscore {\tt \_}, which 
+A rule label can be an underscore {\tt \_}, which
 does not add anything to the syntax tree.
 \enqu
 Thus we can write the following rule in LBNF:
 \begin{verbatim}
   _ . Stm ::= Stm ";" ;
 \end{verbatim}
-Underscores are of course only meaningful as replacements of 
+Underscores are of course only meaningful as replacements of
 one-argument constructors where the value type is the same as the
 argument type.
 Semantic dummies leave no trace in the pretty-printer.
@@ -329,8 +329,8 @@ and constructors (from the last three rules) with no semantic content.
 The BNF Converter solution is to distinguish among
 category symbols those that are just indexed variants of each other:
 \bequ
-A category symbol can end with an integer index 
-(i.e.\ a sequence of digits), and is then treated as a type 
+A category symbol can end with an integer index
+(i.e.\ a sequence of digits), and is then treated as a type
 synonym of the corresponding non-indexed symbol.
 \enqu
 Thus {\tt Exp2} and {\tt Exp3} are indexed variants of {\tt Exp}.
@@ -357,11 +357,11 @@ and the syntax tree for {\tt 2*(3+1)} is
   ETimes (EInt 2) (EPlus (EInt 3) (EInt 1))
 \end{verbatim}
 
-Indexed categories {\em can} be used for other purposes than 
+Indexed categories {\em can} be used for other purposes than
 precedence, since the only thing we can formally check is the
-type skeleton (see the section \ref{typecheck}). 
+type skeleton (see the section \ref{typecheck}).
 The parser does not need to know
-that the indices mean precedence, but only that indexed 
+that the indices mean precedence, but only that indexed
 variants have values of the same type.
 The pretty-printer, however, assumes that
 indexed categories are used for precedence, and may produce
@@ -376,8 +376,8 @@ It is easy to define monomorphic list types in LBNF:
   ConsDef. ListDef ::= Def ";" ListDef ;
 \end{verbatim}
 However, compiler writers in languages like
-Haskell may want to use predefined 
-polymorphic lists, because of the language support for these constructs. 
+Haskell may want to use predefined
+polymorphic lists, because of the language support for these constructs.
 LBNF permits the use of Haskell's list constructors
 as labels, and list brackets in category names:
 \begin{verbatim}
@@ -387,24 +387,24 @@ as labels, and list brackets in category names:
 As the general rule, we have
 \bequ
 {\tt[}$C${\tt ]}, the category of lists of type $C$,
- 
+
 {\tt []} and {\tt (:)}, the Nil and Cons rule labels,
 
-{\tt (:[])}, the rule label for one-element lists. 
+{\tt (:[])}, the rule label for one-element lists.
 \enqu
 The third rule label is used to place an at-least-one restriction,
 but also to permit special treatment of one-element lists
-in the concrete syntax. 
+in the concrete syntax.
 
-In the \LaTeX\ document (for stylistic reasons) and in the Happy file (for 
-syntactic reasons), the category name {\tt [X]} is replaced by {\tt ListX}. 
-In order for this not to cause clashes, {\tt ListX} 
+In the \LaTeX\ document (for stylistic reasons) and in the Happy file (for
+syntactic reasons), the category name {\tt [X]} is replaced by {\tt ListX}.
+In order for this not to cause clashes, {\tt ListX}
 may not be at the same time used explicitly in the grammar.
 
 The list category constructor can be iterated: {\tt [[X]]}, {\tt [[[X]]]}, etc
 behave in the expected way.
 
-The list notation can also be seen as a variant of the Kleene star and plus, and 
+The list notation can also be seen as a variant of the Kleene star and plus, and
 hence as an ingredient from Extended BNF.
 
 
@@ -424,13 +424,13 @@ the easiest for the programmer to understand error messages
 related to the source, the BNF Converter performs some checks,
 which are mostly connected with the sanity of the abstract syntax.
 
-The type checker uses a notion of the 
-\textit{category skeleton} of a rule, which is a pair 
+The type checker uses a notion of the
+\textit{category skeleton} of a rule, which is a pair
 \[
   (C, A\ldots B)
 \]
 where $C$ is the unindexed left-hand-side non-terminal and $A\ldots B$
-is the sequence of unindexed right-hand-side non-terminals of the rule. 
+is the sequence of unindexed right-hand-side non-terminals of the rule.
 In other words, the category skeleton of a rule expresses the abstract-syntax
 type of the semantic action associated to that rule.
 
@@ -443,14 +443,14 @@ a regular category is none of
 {\tt[}$C${\tt]},{\tt Integer}, {\tt Double}, {\tt Char}, {\tt String}
 and {\tt Ident}.
 A regular rule label is none of
-{\tt \_}, {\tt []}, {\tt (:)}, and {\tt (:[])}. 
+{\tt \_}, {\tt []}, {\tt (:)}, and {\tt (:[])}.
 
 The type checking rules are now the following:
 \bequ
 A rule labelled by {\tt \_} must have a category skeleton of form $(C,C)$.
 
 A rule labelled by {\tt []} must have a category skeleton of form $([C],)$.
- 
+
 A rule labelled by {\tt (:)} must have a category skeleton of form $([C],C[C])$.
 
 A rule labelled by {\tt (:[])} must have a category skeleton of form $([C],C)$.
@@ -464,9 +464,9 @@ All rules with the same regular rule label must have the same
 category skeleton.
 \enqu
 The second-last rule corresponds to the absence of empty data types in Haskell.
-The last rule could 
-be strengthened so as to require that all regular rule labels be unique: 
-this is needed to guarantee error-free pretty-printing. 
+The last rule could
+be strengthened so as to require that all regular rule labels be unique:
+this is needed to guarantee error-free pretty-printing.
 Violating this strengthened rule currently
 generates only a warning, not a type error.
 
@@ -478,7 +478,7 @@ Even well-behaved languages have features that
 cannot be expressed naturally in its BNF grammar.
 To take care of them, while preserving the single-source nature of
 the BNF Converter, we extend the notation with what we call \textit{pragmas}.
-All these pragmas are completely declarative, and the pragmas are also 
+All these pragmas are completely declarative, and the pragmas are also
 reflected in the documentation.
 
 
@@ -492,12 +492,12 @@ treat certain pieces of text as comments and thus to ignore them
 (except for their contribution to the position information used in
 parser error messages).
 
-The simplest solution to the comment 
-problem would be to use some default comments 
+The simplest solution to the comment
+problem would be to use some default comments
 that are hard-coded into the system, e.g.\ Haskell's comments.
 But this definition can hardly be stated as a condition for a language
 to be well-behaved, and we could not even
-define C or Java or ML then. So we have added a comment pragma, whose 
+define C or Java or ML then. So we have added a comment pragma, whose
 regular-expression syntax is
 \bequ
   "{\tt comment}" String String? "{\tt ;}"
@@ -509,7 +509,7 @@ For instance, to describe the Haskell comment convention,
 we write the following lines in our LBNF source file:
 \begin{verbatim}
   comment "--" ;
-  comment "{-" "-}" ; 
+  comment "{-" "-}" ;
 \end{verbatim}
 Since comments are treated in the lexical analyzer, they must
 be recognized by a finite state automaton.
@@ -524,10 +524,10 @@ due to the complexities in the lexer caused by longer end markers.
 
 \subsection{Internal pragmas}
 
-Sometimes we want to include in the abstract syntax 
-structures that are not part of the concrete syntax, 
-and hence not parsable. 
-They can be, for instance, syntax trees that are produced by a 
+Sometimes we want to include in the abstract syntax
+structures that are not part of the concrete syntax,
+and hence not parsable.
+They can be, for instance, syntax trees that are produced by a
 type-annotating type checker.
 Even though they are not parsable, we may want to
 pretty-print them, for instance, in the type checker's
@@ -549,11 +549,11 @@ introduces a type-annotated variant of a variable expression.
 \label{reg}
 The predefined lexical types are sufficient in
 most cases, but sometimes we would like to have more control over the
-lexer. This is provided by \textit{token pragmas}. They use  
+lexer. This is provided by \textit{token pragmas}. They use
 regular expressions to define new token types.
 
-If we, for example, want to make a finer distinction for identifiers, 
-a distinction between lower- and upper-case letters, we can introduce 
+If we, for example, want to make a finer distinction for identifiers,
+a distinction between lower- and upper-case letters, we can introduce
 two new token types, {\tt UIdent}\ and {\tt LIdent}, as follows.
 \begin{verbatim}
   token UIdent (upper (letter | digit | '\_')*) ;
@@ -578,10 +578,10 @@ This is currently not supported by Alex, however.}
 
 \subsection{Entry point pragmas}
 
-The BNF Converter generates, by default, a parser for every category in 
+The BNF Converter generates, by default, a parser for every category in
 the grammar. This is unnecessarily rich in most cases, and makes the parser
 larger than needed. If the size of the parser becomes critical,
-the \textit{entry points pragma} enables the user 
+the \textit{entry points pragma} enables the user
 to define which of the parsers are actually exported:
 \begin{verbatim}
   entrypoints (Ident ",")* Ident ;
@@ -598,7 +598,7 @@ the only entry points:
 
 \subsection{The files}
 
-Given an LBNF source file {\tt Foo.cf}, 
+Given an LBNF source file {\tt Foo.cf},
 the BNF Converter generates the following files:
 \begin{itemize}
  \item {\tt AbsFoo.hs}: The abstract syntax (Haskell source file)
@@ -618,7 +618,7 @@ included in the BNF Converter distribution.
 
 \subsection{Example: {\tt JavaletteLight.cf}}
 
-The following LBNF grammar defines a small C-like language, 
+The following LBNF grammar defines a small C-like language,
 Javalette Light\footnote{It is a fragment of the
 language Javalette used at compiler construction courses at Chalmers University}.
 % \end{doublespace}
@@ -700,7 +700,7 @@ BNF Converter is essentially what a Haskell programmer would write by hand:
 
 The lexer file (in Alex) consists mostly of standard rules
 for literals and identifiers, but has
-rules added for reserved words and symbols (i.e.\ terminals 
+rules added for reserved words and symbols (i.e.\ terminals
 occurring in the grammar) and for comments. Here is
 a fragment with the definitions characteristic of
 Javalette.
@@ -712,7 +712,7 @@ Javalette.
   "tokens_lx"/"tokens_acts":-
    <>       ::= ^/^/ [.]* ^n
    <>       ::= ^/ ^* ([^u # ^*] | ^* [^u # ^/])* (^*)+ ^/
- 
+
    <>       ::= ^w+
    <pTSpec> ::=  %s %{ pTSpec p = PT p . TS    %}
    <ident>  ::= ^l ^i*   %{ ident  p = PT p . eitherResIdent TV %}
@@ -739,7 +739,7 @@ Here is a fragment containing examples of both parts:
 % \end{doublespace}
 \small
 \begin{verbatim}
-  %token 
+  %token
    '('      { PT _ (TS "(") }
    ')'      { PT _ (TS ")") }
    'double' { PT _ (TS "double") }
@@ -755,19 +755,19 @@ Here is a fragment containing examples of both parts:
   Double  : L_doubl  { (read $1) :: Double }
 
   Stm :: { Stm }
-  Stm : Typ Ident ';'                     { SDecl $1 $2 } 
+  Stm : Typ Ident ';'                     { SDecl $1 $2 }
     | Ident '=' Exp ';'                   { SAss $1 $3 }
     | Ident '++' ';'                      { SIncr $1 }
     | 'while' '(' Exp ')' '{' ListStm '}' { SWhile $3 (reverse $6) }
     | Stm ';'                             { $1 }
 
   Exp0 :: { Exp }
-  Exp0 : Exp1 '<' Exp1 { ELt $1 $3 } 
+  Exp0 : Exp1 '<' Exp1 { ELt $1 $3 }
     | Exp1 { $1 }
 \end{verbatim} % $
 \normalsize
 % \begin{doublespace}
-The exported parsers have types of the following 
+The exported parsers have types of the following
 form, for any abstract syntax type {\tt T},
 \begin{verbatim}
   [Tok] -> Err T
@@ -864,9 +864,9 @@ The symbols used in JavaletteLight are the following: \\
 Single-line comments begin with {\symb{//}}. \\Multiple-line comments are  enclosed with {\symb{/*}} and {\symb{*/}}.
 
 \section*{The syntactic structure of JavaletteLight}
-Non-terminals are enclosed between $\langle$ and $\rangle$. 
-The symbols  {\arrow}  (production),  {\delimit}  (union) 
-and {\emptyP} (empty rule) belong to the BNF notation. 
+Non-terminals are enclosed between $\langle$ and $\rangle$.
+The symbols  {\arrow}  (production),  {\delimit}  (union)
+and {\emptyP} (empty rule) belong to the BNF notation.
 All other symbols are terminals.\\
 
 \begin{tabular}{lll}
@@ -952,18 +952,18 @@ such as JavaletteLight's
 \end{verbatim}
 not in the direct way,
 \begin{verbatim}
-  ListStm : {- empty -} { [] } 
+  ListStm : {- empty -} { [] }
     | Stm ListStm { (:) $1 $3 }
 \end{verbatim}
 but under a left-recursive transformation:
 \begin{verbatim}
-  ListStm : {- empty -} { [] } 
+  ListStm : {- empty -} { [] }
     | ListStm Stm { flip (:) $1 $2 }
 \end{verbatim}
 Then the smart programmer would also be careful to reverse the list
 when it is used:
 \begin{verbatim}
-  Prog : Typ Ident '(' ')' '{' ListStm '}' { Fun $1 $2 (reverse $6) } 
+  Prog : Typ Ident '(' ')' '{' ListStm '}' { Fun $1 $2 (reverse $6) }
 \end{verbatim}%$
 As reported in the Happy manual, this transformation is vital
 to avoid running out of stack space with long lists.
@@ -976,11 +976,11 @@ pairs of rules of the form
 where {\tt C} is any category and {\tt x} is any sequence of
 terminals (possibly empty).
 
-There is another important parsing technique, recursive descent, 
+There is another important parsing technique, recursive descent,
 which cannot live with left recursion at all, but loops infinitely
 with left-recursive grammars (cf.\ e.g.\ \cite{appel}).
-The question sometimes arises if, when designing a grammar, 
-one should take into account what method will be used for parsing it. 
+The question sometimes arises if, when designing a grammar,
+one should take into account what method will be used for parsing it.
 The view we are advocating is that the designer of the grammar
 should in the first place think of the abstract syntax, and let
 the parser generator perform automatic
@@ -995,18 +995,18 @@ grammar transformations that are needed by the parsing method.
 
 \label{results}
 
-LBNF and the BNF Converter\cite{bnfc} were introduced as a teaching tool at the 
+LBNF and the BNF Converter\cite{bnfc} were introduced as a teaching tool at the
 fourth-year compiler course in Spring 2003 at Chalmers.
 The goal was, on the one hand, to advocate the use of declarative
 and portable language definitions, and on the other hand, to
 leave more time for back-end construction in a compiler course.
 The students of the course had as a project to build a compiler in small
-groups, and grading was based on how much (faultless) functionality 
+groups, and grading was based on how much (faultless) functionality
 the compiler had, e.g.\ how many language features and how many back ends.
 The first results were
 encouraging: a majority (12/20) of the
 groups that finished their compiler used the BNF Converter. They all were
-able to produce faultless front ends and, in average, more advanced 
+able to produce faultless front ends and, in average, more advanced
 back ends than the participants of the previous year's edition of the
 course. In fact, the lexer+parser part of the compiler was estimated
 only to be 25 \% of the work at the lowest grade, and 10 \% at the
@@ -1015,26 +1015,26 @@ a student compiler.
 
 One worry about using the LBNF in teaching was that students would
 not really learn parsing, but just to write grammars. We found that this
-concern is not relevant when comparing LBNF with a parser tool like Happy and 
-YACC: students writing their parsers in YACC are equally isolated 
+concern is not relevant when comparing LBNF with a parser tool like Happy and
+YACC: students writing their parsers in YACC are equally isolated
 from the internals of LR parsing as those writing in LBNF. In fact, as learning
 the formalism takes less time in the case of LBNF, the teacher can allocate more
 time for explaining how the LR parser works. The lexer was a bigger concern, though:
 since all of the token types needed for the project were predefined types in LBNF,
-the students did not need to write a single regular expression to finish their 
+the students did not need to write a single regular expression to finish their
 compiler! An obvious solution to this is to add some more exotic token types to the
 project specification.
 
-The main conclusion drawn from the teaching experiment was that the tool should 
+The main conclusion drawn from the teaching experiment was that the tool should
 be ported to C and Java, so that the students who don't use Haskell
 would have the same facilities as those who do.
 
 Students in a compiler class usually implement toy languages.
 What about real-world languages?
 As an experiment, a complete LBNF definition of
-ANSI C, with \cite{Kern88} as reference, has been 
+ANSI C, with \cite{Kern88} as reference, has been
 written\footnote{Work by Ulf Persson at Chalmers}. The length of the
-LBNF source file is approximately the same as the length of the specification. 
+LBNF source file is approximately the same as the length of the specification.
 Here is a word count comparison between the source file and what is generated:
 % \end{doublespace}
 \begin{verbatim}
@@ -1053,10 +1053,10 @@ Here is a word count comparison between the source file and what is generated:
    2142   10418   73347 total
 \end{verbatim}
 % \begin{doublespace}
-Another real-world 
+Another real-world
 example is the
 object-oriented specification language OCL \cite{WarmerKleppe99}\footnote{
-Work by Kristofer Johannisson at Chalmers}. 
+Work by Kristofer Johannisson at Chalmers}.
 And of course, the BNF Converter has been
 implemented by using modules generated from
 an LBNF grammar of LBNF (see the Appendix).
@@ -1067,12 +1067,12 @@ an LBNF grammar of LBNF (see the Appendix).
 A language that can be defined in LBNF
 is one whose syntax is context-free.\footnote{
 Due to the parser tool used by the BNF converter, it
-moreover has to be LALR(1)-parsable; but this is 
+moreover has to be LALR(1)-parsable; but this is
 a limitation not concerning LBNF as such.}
 Its lexical structure can be described by
-a regular expression. 
+a regular expression.
 Modern languages, like Java and C, are close to this ideal;
-Haskell, with its layout syntax and infix declarations, is 
+Haskell, with its layout syntax and infix declarations, is
 a little farther.
 To rescue the maximum of existing Haskell or some other language
 would be a matter
@@ -1082,7 +1082,7 @@ for keeping the LBNF formalism simple, sacrificing completeness.
 We do not need to sacrifice {\em semantic completeness}, however:
 languages usually have a well-behaved subset that is enough for
 expressing everything that is expressible in the language.
-When designing new languages---and even when using old 
+When designing new languages---and even when using old
 ones---we find it a virtue to avoid exotic features.
 Such features are often included in the name of user-friendliness,
 but for {\em new} users, they are more often an obstacle than
@@ -1092,22 +1092,22 @@ other languages.
 
 \subsection{Related work}
 
-The BNF Converter belongs largely to the YACC \cite{johnson-yacc} 
+The BNF Converter belongs largely to the YACC \cite{johnson-yacc}
 tradition of compiler compilers,
 since it compiles a higher-level notation into the
 YACC-like notation of Happy, and since the parser
 is the most demanding part of a language front-end implementation.
-Another system on this 
+Another system on this
 level up from YACC is Cactus \cite{Cactus},
-which uses an EBNF-like notation to 
-generate a Happy parser, an Alex lexer, 
+which uses an EBNF-like notation to
+generate a Happy parser, an Alex lexer,
 and a datatype definition for abstract syntax.
 Cactus, unlike the BNF Converter, aims for completeness,
 and it is indeed possible to define Haskell 98 (without layout rules) in it
 \cite{haskell98-Cactus}. The price to pay is that the
 notation is less simple than LBNF. Moreover, because of Cactus's
 higher level of generality, it is no
-longer possible to extract a 
+longer possible to extract a
 pretty-printer from a grammar. Nor does Cactus
 generate documentation.
 
@@ -1120,7 +1120,7 @@ A survey of compiler tools on the web and in the literature tells that their
 authors almost invariably opt for expressivity rather than declarativity.
 The situation is different with grammar tools used in linguistic: there
 the declarativity and \textit{reversibility} (i.e.\ usability for both
-parsing and generation) of grammar formalisms is highly valued. A major 
+parsing and generation) of grammar formalisms is highly valued. A major
 example of this philosophy are Definite Clause Grammars (DCG) \cite{dcg}.
 In practice, DCGs are implemented as an embedded language in Prolog, and thereby
 some features of full Prolog are sometimes smuggled into grammars to improve
@@ -1135,10 +1135,10 @@ In addition to the obvious task of writing LBNF back ends to other
 languages than Haskell, there are many imaginable ways to extend
 the formalism itself. One direction is to connect LBNF with the Grammatical
 Framework GF \cite{GF-paper}. GF is a rich grammar formalism originally designed
-to describe natural languages. LBNF was originally a spin-off of GF, 
+to describe natural languages. LBNF was originally a spin-off of GF,
 customizing a subset of GF to combine with standard compiler tools.
 %NEW
-The connection between LBNF and and GF is close, with the difference 
+The connection between LBNF and and GF is close, with the difference
 that GF makes an explicit distinction between abstract and concrete syntax.
 Consider an LBNF rule describing multiplication:
 \begin{verbatim}
@@ -1153,12 +1153,12 @@ definition, and a concrete syntax linearization rule,
 Precedence is treated as a parameter that regulates the uses
 of parentheses. In GF, the user can define new parameter types, and thus
 the precedences {\tt P2} and {\tt P3}, as well as the function {\tt parIf},
-are defined in the source code instead of being built in into the system, 
+are defined in the source code instead of being built in into the system,
 as in LBNF.
 %new
 GF moreover includes higher-order abstract syntax and
 dependent types, and a GF grammar can therefore define the type system of
-a language. 
+a language.
 
 
 \section{Conclusion}
@@ -1168,7 +1168,7 @@ to a yet higher level in the development that led
 machine programmers to create assemblers,
 assembler programmers to create Fortran and C,
 and C programmers to create YACC and Lex.
-A high-level notation always hides 
+A high-level notation always hides
 details that can be considered well-understood and
 therefore uninteresting; this lets the users of
 the new notation to concentrate on new things.
@@ -1242,9 +1242,9 @@ The symbols used in LBNF are the following: \\
 Single-line comments begin with {\symb{{$-$}{$-$}}}. \\Multiple-line comments are  enclosed with {\symb{ \{ {$-$}}} and {\symb{{$-$} \} }}.
 
 \section*{The syntactic structure of LBNF}
-Non-terminals are enclosed between $\langle$ and $\rangle$. 
-The symbols  {\arrow}  (production),  {\delimit}  (union) 
-and {\emptyP} (empty rule) belong to the BNF notation. 
+Non-terminals are enclosed between $\langle$ and $\rangle$.
+The symbols  {\arrow}  (production),  {\delimit}  (union)
+and {\emptyP} (empty rule) belong to the BNF notation.
 All other symbols are terminals.\\
 
 \begin{tabular}{lll}

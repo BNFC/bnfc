@@ -12,11 +12,11 @@ Björn Bringert, Markus Forsberg, Michael Pellauer, Aarne Ranta,...
 
 The BNF Converter (BNFC) is a high-level compiler tool. The main idea
 is to use a single source file - a BNF grammar - to generate a complete
-compiler front end: lexer, parser, and pretty printer, as well as 
+compiler front end: lexer, parser, and pretty printer, as well as
 a language document. The single-source approach reduces the amount
 of manually written code (down to just 1% compared to traditional tools),
 and helps keep the modules in syncrony. Another dimension is the
-multi-platform idea: the compiler components are generated in 
+multi-platform idea: the compiler components are generated in
 many different programming languages and their accompanying compiler
 tools (C, C++, Java, Haskell, OCaml).
 
@@ -46,7 +46,7 @@ Example (show a grammar).
 
 ==Why semantic actions are harmful==
 
-They destroy 
+They destroy
 - complexity, since
 linear LALR parsing can become exponential or undecidable.
 - portability, if actions are written as arbitrary code
@@ -97,7 +97,7 @@ As in GF: the parser was an interpreter of the grammar.
 in an old lecture
 [WSCC http://www.cs.chalmers.se/Cs/Grundutb/Kurser/komp/2003/lectures/ccc05.html]
 
-First step: generate the code (parser in Happy, using Markus's GF-to-Happy 
+First step: generate the code (parser in Happy, using Markus's GF-to-Happy
 implementation, lexer in Alex, document in Latex, other modules in Haskell).
 
 Example: show the code from the grammar in previous section, give statistics
@@ -197,5 +197,3 @@ Overlapping ``token`` definitions
 Code maintenance is giving trouble
 
 The role of Haskell?
-
-

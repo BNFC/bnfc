@@ -46,15 +46,15 @@
 \section{Introduction}
 
 This document defines
-the grammar formalism \textit{Labelled BNF} (LBNF), 
+the grammar formalism \textit{Labelled BNF} (LBNF),
 which is used in the compiler construction tool
 \textit{BNF Converter}.
 Given a grammar written in LBNF,
-the BNF Converter produces a complete compiler 
-front end (up to, but excluding, type checking), 
-i.e.\ a lexer, a parser, and an abstract 
-syntax definition. Moreover, it produces a pretty-printer 
-and a language specification in \LaTeX, as well as 
+the BNF Converter produces a complete compiler
+front end (up to, but excluding, type checking),
+i.e.\ a lexer, a parser, and an abstract
+syntax definition. Moreover, it produces a pretty-printer
+and a language specification in \LaTeX, as well as
 a template file for the compiler back end.
 Since LBNF is purely declarative,
 these files can be generated in any programming language that supports
@@ -67,22 +67,22 @@ and is aimed to serve as a manual for grammar writers.
 
 \section{A first example of LBNF grammar}
 
-As the first example of LBNF, 
+As the first example of LBNF,
 consider a triple of rules defining addition expressions with ``1'':
 \begin{verbatim}
   EPlus. Exp ::= Exp "+" Num ;
   ENum.  Exp ::= Num ;
   NOne.  Num ::= "1" ;
 \end{verbatim}
-Apart from the \textit{labels}, {\tt EPlus}, {\tt ENum}, and {\tt NOne}, 
+Apart from the \textit{labels}, {\tt EPlus}, {\tt ENum}, and {\tt NOne},
 the rules are
 ordinary BNF rules, with terminal symbols enclosed in
 double quotes and nonterminals written without quotes.
 The labels serve as \textit{constructors} for
 syntax trees.
 
-From an LBNF grammar, the BNF Converter extracts 
-an \textit{abstract syntax}\ and  
+From an LBNF grammar, the BNF Converter extracts
+an \textit{abstract syntax}\ and
 a \textit{concrete syntax}.
 In Haskell, for instance,
 the abstract syntax is implemented as a system of
@@ -110,7 +110,7 @@ Briefly, an LBNF grammar is a BNF grammar where every rule is given a label.
 The label is used for constructing a syntax tree whose subtrees are
 given by the nonterminals of the rule, in the same order.
 
-More formally, an LBNF grammar consists of a collection of rules, 
+More formally, an LBNF grammar consists of a collection of rules,
 which have the following form (expressed by a regular expression;
 Appendix gives a complete BNF definition of the notation):
 \bequ
@@ -122,19 +122,19 @@ arrow ({\tt ::=}) is the list of production items. An item is either
 a quoted string (\textit{terminal}) or a category symbol (\textit{non-terminal}).
 A rule whose value category is $C$ is also called a \textit{production}\ for $C$.
 
-Identifiers, that is, rule names and category symbols, can be 
+Identifiers, that is, rule names and category symbols, can be
 chosen {\em ad libitum}, with the restrictions imposed by the target language. To
 satisfy Haskell, and C and Java as well, the following rule is imposed
 \bequ
-An identifier is a nonempty sequence of letters, starting with a 
-capital letter. 
+An identifier is a nonempty sequence of letters, starting with a
+capital letter.
 \enqu
 
 
 \subsection{Additional features}
 
-Basic LBNF as defined above 
-is clearly sufficient for defining any context-free language. However, 
+Basic LBNF as defined above
+is clearly sufficient for defining any context-free language. However,
 it is not always convenient to define a programming language purely with BNF rules.
 Therefore, some additional features are added to LBNF: abstract syntax conventions,
 lexer rules, pragmas, and macros. These features are treated in the
@@ -142,9 +142,9 @@ subsequent sections.
 
 Section~\ref{conventions} explains {\em abstract syntax conventions}.
 Creating an abstract syntax by adding a node type for every BNF rule
-may sometimes become too detailed, 
-or cluttered with extra structures. 
-To remedy this, we have identified the most common problem cases, 
+may sometimes become too detailed,
+or cluttered with extra structures.
+To remedy this, we have identified the most common problem cases,
 and added to LBNF
 some extra conventions to handle them.
 
@@ -152,7 +152,7 @@ Section~\ref{lexer} explains {\em lexer rules}.
 Some aspects of a language belong to its lexical
 structure rather than its grammar, and are more naturally described by
 regular expressions than by BNF rules. We have therefore
-added to LBNF two rule formats to define the lexical structure: 
+added to LBNF two rule formats to define the lexical structure:
 {\em tokens} and {\em comments}.
 
 Section~\ref{pragmas} explains {\em pragmas}.
@@ -161,8 +161,8 @@ some rules of the grammar in certain special ways: to reduce the number
 of {\em entrypoints} or to treat some syntactic forms as {\em internal} only.
 
 Section~\ref{macros} explains {\em macros}.
-Macros are syntactic sugar for potentially 
-large groups of rules and help to write grammars 
+Macros are syntactic sugar for potentially
+large groups of rules and help to write grammars
 concisely. This is both for the writer's and the reader's convenience;
 among other things, macros naturally force certain groups of rules to
 go together, which could otherwise be spread arbitrarily in the grammar.
@@ -182,9 +182,9 @@ translates layout syntax into explicit structure markers.
 
 The first convention are predefined basic types.
 Basic types, such as integer and character, can of course be
-defined in a labelled BNF, for example: 
+defined in a labelled BNF, for example:
 \begin{verbatim}
-  Char_a. Char ::= "a" ; 
+  Char_a. Char ::= "a" ;
   Char_b. Char ::= "b" ;
 \end{verbatim}
 This is, however, cumbersome and inefficient. Instead, we have decided to
@@ -198,10 +198,10 @@ the regular expression syntax):
 
 {\tt Double} of floating point numbers, defined
 \verb6digit+ '.' digit+ ('e' '-'? digit+)?6
- 
+
 {\tt Char} of characters (in single quotes), defined
 \verb6'\'' ((char - ["'\\"]) | ('\\' ["'\\nt"])) '\''6
- 
+
 {\tt String} of strings (in double quotes), defined
 \verb6'"' ((char - ["\"\\"]) | ('\\' ["\"\\nt"]))* '"'6
 
@@ -218,10 +218,10 @@ as {\tt String} in Java, and as a {\tt typedef} to
 {\tt char*} in C and C++.
 
 As the names of the types suggest,
-the lexer produces high-precision variants, 
+the lexer produces high-precision variants,
 for integers and floats.
 Authors of applications can
-truncate these numbers later if they want to have 
+truncate these numbers later if they want to have
 low precision instead.
 
 Predefined categories may not have explicit productions in the
@@ -239,16 +239,16 @@ a BNF rule making the parser accept extra semicolons after statements:
 \end{verbatim}
 As this rule is semantically dummy, we do not want to represent it by a
 constructors in the abstract syntax.
-Instead, we introduce the following convention: 
+Instead, we introduce the following convention:
 \bequ
-A rule label can be an underscore {\tt \_}, which 
+A rule label can be an underscore {\tt \_}, which
 does not add anything to the syntax tree.
 \enqu
 Thus we can write the following rule in LBNF:
 \begin{verbatim}
   _ . Stm ::= Stm ";" ;
 \end{verbatim}
-Underscores are of course only meaningful as replacements of 
+Underscores are of course only meaningful as replacements of
 one-argument constructors where the value type is the same as the
 argument type.
 Semantic dummies leave no trace in the pretty-printer.
@@ -279,8 +279,8 @@ and constructors (from the last three rules) with no semantic content.
 The BNF Converter solution is to distinguish among
 category symbols those that are just indexed variants of each other:
 \bequ
-A category symbol can end with an integer index 
-(i.e.\ a sequence of digits), and is then treated as a type 
+A category symbol can end with an integer index
+(i.e.\ a sequence of digits), and is then treated as a type
 synonym of the corresponding non-indexed symbol.
 \enqu
 Thus {\tt Exp2} and {\tt Exp3} are indexed variants of {\tt Exp}.
@@ -308,11 +308,11 @@ and the syntax tree for {\tt 2*(3+1)} is
   ETimes (EInt 2) (EPlus (EInt 3) (EInt 1))
 \end{verbatim}
 
-Indexed categories {\em can} be used for other purposes than 
+Indexed categories {\em can} be used for other purposes than
 precedence, since the only thing we can formally check is the
-type skeleton (see the section \ref{typecheck}). 
+type skeleton (see the section \ref{typecheck}).
 The parser does not need to know
-that the indices mean precedence, but only that indexed 
+that the indices mean precedence, but only that indexed
 variants have values of the same type.
 The pretty-printer, however, assumes that
 indexed categories are used for precedence, and may produce
@@ -331,8 +331,8 @@ It is easy to define monomorphic list types in LBNF:
   ConsDef. ListDef ::= Def ";" ListDef ;
 \end{verbatim}
 However, compiler writers in languages like
-Haskell may want to use predefined 
-polymorphic lists, because of the language support for these constructs. 
+Haskell may want to use predefined
+polymorphic lists, because of the language support for these constructs.
 LBNF permits the use of Haskell's list constructors
 as labels, and list brackets in category names:
 \begin{verbatim}
@@ -342,24 +342,24 @@ as labels, and list brackets in category names:
 As the general rule, we have
 \bequ
 {\tt[}$C${\tt ]}, the category of lists of type $C$,
- 
+
 {\tt []} and {\tt (:)}, the Nil and Cons rule labels,
 
-{\tt (:[])}, the rule label for one-element lists. 
+{\tt (:[])}, the rule label for one-element lists.
 \enqu
 The third rule label is used to place an at-least-one restriction,
 but also to permit special treatment of one-element lists
-in the concrete syntax. 
+in the concrete syntax.
 
-In the \LaTeX\ document (for stylistic reasons) and in the Happy file (for 
-syntactic reasons), the category name {\tt [X]} is replaced by {\tt ListX}. 
-In order for this not to cause clashes, {\tt ListX} 
+In the \LaTeX\ document (for stylistic reasons) and in the Happy file (for
+syntactic reasons), the category name {\tt [X]} is replaced by {\tt ListX}.
+In order for this not to cause clashes, {\tt ListX}
 may not be at the same time used explicitly in the grammar.
 
 The list category constructor can be iterated: {\tt [[X]]}, {\tt [[[X]]]}, etc
 behave in the expected way.
 
-The list notation can also be seen as a variant of the Kleene star and plus, and 
+The list notation can also be seen as a variant of the Kleene star and plus, and
 hence as an ingredient from Extended BNF.
 
 In other languages than Haskell, monomorphic variants of lists are generated
@@ -383,13 +383,13 @@ the easiest for the programmer to understand error messages
 related to the source, the BNF Converter performs some checks,
 which are mostly connected with the sanity of the abstract syntax.
 
-The type checker uses a notion of the 
-\textit{category skeleton} of a rule, which is a pair 
+The type checker uses a notion of the
+\textit{category skeleton} of a rule, which is a pair
 \[
   (C, A\ldots B)
 \]
 where $C$ is the unindexed left-hand-side non-terminal and $A\ldots B$
-is the sequence of unindexed right-hand-side non-terminals of the rule. 
+is the sequence of unindexed right-hand-side non-terminals of the rule.
 In other words, the category skeleton of a rule expresses the abstract-syntax
 type of the semantic action associated to that rule.
 
@@ -402,14 +402,14 @@ a regular category is none of
 {\tt[}$C${\tt]},{\tt Integer}, {\tt Double}, {\tt Char}, {\tt String}
 and {\tt Ident}, or the types defined by {\tt token} rules (Section~\ref{token}).
 A regular rule label is none of
-{\tt \_}, {\tt []}, {\tt (:)}, and {\tt (:[])}. 
+{\tt \_}, {\tt []}, {\tt (:)}, and {\tt (:[])}.
 
 The type checking rules are now the following:
 \bequ
 A rule labelled by {\tt \_} must have a category skeleton of form $(C,C)$.
 
 A rule labelled by {\tt []} must have a category skeleton of form $([C],)$.
- 
+
 A rule labelled by {\tt (:)} must have a category skeleton of form $([C],C[C])$.
 
 A rule labelled by {\tt (:[])} must have a category skeleton of form $([C],C)$.
@@ -423,9 +423,9 @@ All rules with the same regular rule label must have the same
 category skeleton.
 \enqu
 The second-last rule corresponds to the absence of empty data types in Haskell.
-The last rule could 
-be strengthened so as to require that all regular rule labels be unique: 
-this is needed to guarantee error-free pretty-printing. 
+The last rule could
+be strengthened so as to require that all regular rule labels be unique:
+this is needed to guarantee error-free pretty-printing.
 Violating this strengthened rule currently
 generates only a warning, not a type error.
 
@@ -499,7 +499,7 @@ the position component.
 \textit{Comments} are segments of source code that include free
 text and are not passed to the parser. The natural place
 to deal with them is in the lexer. The {\tt comment} rule instructs the
-lexer generator to treat certain pieces of text as comments. 
+lexer generator to treat certain pieces of text as comments.
 
 The comment rule takes one or two string arguments. The first
 string defines how a comment begins.
@@ -508,7 +508,7 @@ if it is not given then the comment is ended by a newline.
 For instance, the Java comment convention is defined as follows:
 \begin{verbatim}
   comment "//" ;
-  comment "/*" "*/" ; 
+  comment "/*" "*/" ;
 \end{verbatim}
 
 
@@ -517,10 +517,10 @@ For instance, the Java comment convention is defined as follows:
 
 \subsection{Internal pragmas}
 
-Sometimes we want to include in the abstract syntax 
-structures that are not part of the concrete syntax, 
-and hence not parsable. 
-They can be, for instance, syntax trees that are produced by a 
+Sometimes we want to include in the abstract syntax
+structures that are not part of the concrete syntax,
+and hence not parsable.
+They can be, for instance, syntax trees that are produced by a
 type-annotating type checker.
 Even though they are not parsable, we may want to
 pretty-print them, for instance, in the type checker's
@@ -539,10 +539,10 @@ introduces a type-annotated variant of a variable expression.
 
 \subsection{Entry point pragmas}
 
-The BNF Converter generates, by default, a parser for every category in 
+The BNF Converter generates, by default, a parser for every category in
 the grammar. This is unnecessarily rich in most cases, and makes the parser
 larger than needed. If the size of the parser becomes critical,
-the \textit{entry points pragma} enables the user 
+the \textit{entry points pragma} enables the user
 to define which of the parsers are actually exported:
 \begin{verbatim}
   entrypoints (Ident ",")* Ident ;
@@ -565,7 +565,7 @@ token terminates each element in the list. For instance,
 \begin{verbatim}
   terminator Stm ";" ;
 \end{verbatim}
-tells that each statement (\verb$Stm$) is terminated with a semicolon 
+tells that each statement (\verb$Stm$) is terminated with a semicolon
 (\verb$;$). It is a shorthand for the pair of rules
 \begin{verbatim}
   [].  [Stm] ::= ;
@@ -624,10 +624,10 @@ is no difference between \verb$terminator$ and \verb$separator$.
 The grammar generated from
 a \verb$separator$ without \verb$nonempty$
 will actually
-also accept a list terminating with a semicolon, whereas 
+also accept a list terminating with a semicolon, whereas
 the pretty-printer ``normalizes'' it away. This might be considered
-a bug, but a set of rules 
-forbidding the terminating semicolon would be much more 
+a bug, but a set of rules
+forbidding the terminating semicolon would be much more
 complicated. The \verb$nonempty$ case is strict.
 
 
@@ -664,12 +664,12 @@ labels are generated automatically. For instance,
 is shorthand for
 \begin{verbatim}
   Type_0.      Type ::= Type "[" Integer "]" ;
-  Type_float.  Type ::= "float" ; 
-  Type_double. Type ::= "double" ; 
+  Type_float.  Type ::= "float" ;
+  Type_double. Type ::= "double" ;
   Type_3.      Type ::= Type "*" ;
 \end{verbatim}
-The labels are created automatically. A label starts with 
-the value category name. If the 
+The labels are created automatically. A label starts with
+the value category name. If the
 production has just one item, which is moreover
 possible as a part of an identifier, that item is
 used as a suffix.
@@ -690,7 +690,7 @@ of labels, productions of the each category must be grouped together.
 Layout syntax is a means of using indentation to group
 program elements. It is used in some languages, e.g.\ Haskell.
 Those who do not know what layout syntax is or who do not like
-it can skip this section. 
+it can skip this section.
 
 The pragmas {\tt layout}, {\tt layout stop}, and {\tt layout toplevel}
 define a {\em layout syntax} for a language.
@@ -699,7 +699,7 @@ BNFC. The layout pragmas are only
 available for the files generated for Haskell-related tools;
 if Java, C, or C++ programmers want to handle layout, they can use
 the Haskell layout resolver as a preprocessor to their
-front end, before the lexer. In Haskell, the layout resolver 
+front end, before the lexer. In Haskell, the layout resolver
 appears, automatically, in its most natural place, which is between the
 lexer and the parser. The layout pragmas of BNFC are not
 powerful enough to handle the full layout rule of Haskell 98,
@@ -710,7 +710,7 @@ Here is an example, found in the the grammar of the logical framework Alfa.
   layout "of", "let", "where", "sig", "struct" ;
 \end{verbatim}
 The first line says that {\tt "of", "let", "where", "sig", "struct"}
-are {\em layout words}, i.e. start a 
+are {\em layout words}, i.e. start a
 {\em layout list}. A layout list is a list of expressions
 normally enclosed in curly brackets and separated by semicolons,
 as shown by the Alfa example
@@ -720,10 +720,10 @@ as shown by the Alfa example
   separator Branch ";" ;
 \end{verbatim}
 When the layout resolver finds the token {\tt of} in the code
-(i.e. in the sequence of its lexical tokens), it 
+(i.e. in the sequence of its lexical tokens), it
 checks if the next token is an opening curly bracket. If it
 is, nothing special is done until a layout word is encountered again.
-The parser will expect the semicolons and the closing bracket 
+The parser will expect the semicolons and the closing bracket
 to appear as usual.
 
 But, if the token $t$
@@ -742,7 +742,7 @@ popping from the stack corresponds to inserting a right bracket.
 
 Here is an example of an Alfa source file using layout:
 \begin{verbatim}
-  c :: Nat = case x of 
+  c :: Nat = case x of
     True -> b
     False -> case y of
       False -> b
@@ -759,7 +759,7 @@ Here is what it looks like after layout resolution:
     ;False -> case y of {
       False -> b
     };Neither -> d
-  
+
   };d = case x of {True -> case y of {False -> g
                                   ;x -> b
                 };y -> h} ;
@@ -804,7 +804,7 @@ This section explains a feature which is not intended to be used
 in LBNF grammars written by hand, but in ones generated from
 the grammar formalism GF (Grammatical Framework).
 GF supports grammars of natural-languages
-and also higher-order abstract syntax which is sometimes used for 
+and also higher-order abstract syntax which is sometimes used for
 formal languages to define their static semantics.
 The reader not familiar with these matters can skip this section.
 
@@ -830,7 +830,7 @@ expression, and in the same order. The syntax trees produced have the form
 \begin{verbatim}
   While Ext Stm Stm
 \end{verbatim}
-The first components in each list of pairs 
+The first components in each list of pairs
 are for variable bindings. An example is the
 variable declaration rule
 \begin{verbatim}
@@ -857,7 +857,7 @@ and would accept strings like \textit{a man is always a man},
 \label{leftrec}
 
 The BNF representation of lists is right-recursive, following the
-list conctructor in Haskell and most other languages. 
+list conctructor in Haskell and most other languages.
 Right-recursive lists, however, are an inefficient way of parsing
 lists in an LALR parser, because they can blow up the stack size.
 The smart programmer would implement a pair of rules
@@ -948,9 +948,9 @@ The symbols used in BNF are the following: \\
 Single-line comments begin with {\symb{{$-$}{$-$}}}. \\Multiple-line comments are  enclosed with {\symb{\{{$-$}}} and {\symb{{$-$}\}}}.
 
 \section*{The syntactic structure of BNF}
-Non-terminals are enclosed between $\langle$ and $\rangle$. 
-The symbols  {\arrow}  (production),  {\delimit}  (union) 
-and {\emptyP} (empty rule) belong to the BNF notation. 
+Non-terminals are enclosed between $\langle$ and $\rangle$.
+The symbols  {\arrow}  (production),  {\delimit}  (union)
+and {\emptyP} (empty rule) belong to the BNF notation.
 All other symbols are terminals.\\
 
 \begin{tabular}{lll}

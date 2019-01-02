@@ -12,8 +12,8 @@ BNF Converter, shown in Figure \ref{fig:haskell}A, is essentially what a Haskell
 \shortsection{The Lexer and Parser}
 
 The BNF Converter generates lexer and parser specifications for the Alex \cite{alex} and Happy \cite{happy} tools. The lexer file (omitted for space considerations) consists mostly of standard rules for literals and identifiers, but has
-rules added for reserved words and symbols (i.e.\ terminals 
-occurring in the grammar), regular expressions defined with the token pragma, and comments. 
+rules added for reserved words and symbols (i.e.\ terminals
+occurring in the grammar), regular expressions defined with the token pragma, and comments.
 
 The Happy specification (Figure \ref{fig:haskell}B) has a large number of token definitions,
 followed by parsing rules corresponding closely to the source BNF rules. Note the left-recursive list transformation, as defined in Section \ref{leftrec}.
@@ -73,20 +73,20 @@ data EXP =
 \scriptsize
 \begin{verbatim}
 PROGRAM :: { PROGRAM }
-PROGRAM : ListEXP { PROGRAM (reverse $1) } 
+PROGRAM : ListEXP { PROGRAM (reverse $1) }
 EXP :: { EXP }
-EXP : EXP '||' EXP1 { EOr $1 $3 } 
+EXP : EXP '||' EXP1 { EOr $1 $3 }
   | EXP1 { $1 }
 EXP1 :: { EXP }
-EXP1 : EXP1 '&&' EXP2 { EAnd $1 $3 } 
+EXP1 : EXP1 '&&' EXP2 { EAnd $1 $3 }
   | EXP2 { $1 }
 EXP2 :: { EXP }
-EXP2 : 'true' { ETrue } 
+EXP2 : 'true' { ETrue }
   | 'false' { EFalse }
   | Ident { EVar $1 }
   | '(' EXP ')' { $2 }
 ListEXP :: { [EXP] }
-ListEXP : {- empty -} { [] } 
+ListEXP : {- empty -} { [] }
   | ListEXP EXP ';' { flip (:) $1 $2 }
 \end{verbatim}
 \normalsize
@@ -100,20 +100,20 @@ ListEXP : {- empty -} { [] }
 \begin{verbatim}
 instance Print PROGRAM where
   prt i e = case e of
-   PROGRAM exp -> prPrec i 0 
-	           (concat [prt 0 exp])
+   PROGRAM exp -> prPrec i 0 (concat [prt 0 exp])
+
 instance Print EXP where
   prt i e = case e of
-   EOr exp0 exp -> prPrec i 0 
+   EOr exp0 exp -> prPrec i 0
     (concat [prt 0 exp0 , ["||"] , prt 1 exp])
-   EAnd exp0 exp -> prPrec i 1 
+   EAnd exp0 exp -> prPrec i 1
     (concat [prt 1 exp0 , ["&&"] , prt 2 exp])
    ETrue  -> prPrec i 2 (concat [["true"]])
    EFalse  -> prPrec i 2 (concat [["false"]])
    EVar id -> prPrec i 2 (concat [prt 0 id])
   prtList es = case es of
    [] -> (concat [])
-   x:xs -> 
+   x:xs ->
     (concat [prt 0 x , [";"] , prt 0 xs])
 \end{verbatim}
 \normalsize
@@ -139,4 +139,3 @@ transEXP x = case x of
 \caption{Haskell source code fragments generated from Figure \ref{fig:source}}
 \label{fig:haskell}
 \end{figure}
-
