@@ -28,7 +28,7 @@ module BNFC.CF (
             Literal,
             Symbol,
             KeyWord,
-            Cat(..), strToCat,
+            Cat(..), strToCat, catToStr,
             catString, catInteger, catDouble, catChar, catIdent,
             NonTerminal,
             Fun,
@@ -41,6 +41,7 @@ module BNFC.CF (
             -- Literal categories, constants,
             firstCat,       -- the first value category in the grammar.
             firstEntry,     -- the first entry or the first value category
+            baseTokenCatNames,  -- "Char", "Double", "Integer", "String"
             specialCats,    -- ident
             specialCatsP,   -- all literals
             specialData,    -- special data
@@ -249,7 +250,7 @@ data Cat
                       -- position in "internal" rules,
                       -- essentially ensuring that they are never parsed.
   | Cat String
-  | TokenCat String   -- ^ Token types (like @Ident@).
+  | TokenCat String   -- ^ Token types (like @Ident@, @Integer@, ...).
   | ListCat Cat
   | CoercCat String Integer
   deriving (Eq, Ord)
@@ -293,9 +294,13 @@ catDouble  = TokenCat "Double"
 catChar    = TokenCat "Char"
 catIdent   = TokenCat "Ident"
 
+-- | Token categories corresponding to base types.
+baseTokenCatNames :: [String]
+baseTokenCatNames = words "Integer String Char Double"
+
 -- the parser needs these
 specialCatsP :: [String]
-specialCatsP = words "Ident Integer String Char Double"
+specialCatsP = "Ident" : baseTokenCatNames
 
 -- | Does the category correspond to a data type?
 isDataCat :: Cat -> Bool

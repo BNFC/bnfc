@@ -36,27 +36,29 @@ import Text.PrettyPrint
 
 -- AR 15/2/2002
 
+type AbsMod = String
+
 -- | Derive pretty-printer from a BNF grammar.
 cf2Printer
   :: Bool    -- ^ Are identifiers @ByteString@s rather than @String@s?  (Option @--bytestrings@)
   -> Bool    -- ^ Option @--functor@?
   -> Bool    -- ^ @--haskell-gadt@?
   -> String  -- ^ Name of created Haskell module.
-  -> String  -- ^ Name of Haskell module for abstract syntax.
+  -> AbsMod  -- ^ Name of Haskell module for abstract syntax.
   -> CF      -- ^ Grammar.
   -> String
 cf2Printer byteStrings functor useGadt name absMod cf = unlines $ concat $
   -- Each of the following list entries is itself a list of lines
   [ prologue byteStrings useGadt name absMod
-  , integerRule cf
-  , doubleRule cf
-  , if hasIdent cf then identRule byteStrings cf else []
-  ] ++ [ ownPrintRule byteStrings cf own | (own,_) <- tokenPragmas cf ] ++
-  [ rules functor cf
+  , integerRule absMod cf
+  , doubleRule absMod cf
+  , if hasIdent cf then identRule absMod byteStrings cf else []
+  ] ++ [ ownPrintRule absMod byteStrings cf own | (own,_) <- tokenPragmas cf ] ++
+  [ rules absMod functor cf
   ]
 
 
-prologue :: Bool -> Bool -> String -> String -> [String]
+prologue :: Bool -> Bool -> String -> AbsMod -> [String]
 prologue byteStrings useGadt name absMod =
   [ "{-# LANGUAGE GADTs, TypeSynonymInstances #-}" | useGadt ] ++
   [ "{-# LANGUAGE FlexibleInstances, OverlappingInstances #-}"
@@ -67,7 +69,7 @@ prologue byteStrings useGadt name absMod =
   , ""
   , "module " ++ name +++ "where"
   , ""
-  , "import " ++ absMod
+  , "import qualified " ++ absMod
   , "import Data.Char"
   ] ++ [ "import qualified Data.ByteString.Char8 as BS" | byteStrings ] ++
   [ ""
@@ -143,44 +145,63 @@ prologue byteStrings useGadt name absMod =
   ]
 
 -- | Printing instance for @Integer@, and possibly @[Integer]@.
-integerRule :: CF -> [String]
-integerRule cf = showsPrintRule cf $ TokenCat "Integer"
+integerRule :: AbsMod -> CF -> [String]
+integerRule absMod cf = showsPrintRule absMod cf $ TokenCat "Integer"
 
 -- | Printing instance for @Double@, and possibly @[Double]@.
-doubleRule :: CF -> [String]
-doubleRule cf = showsPrintRule cf $ TokenCat "Double"
+doubleRule :: AbsMod -> CF -> [String]
+doubleRule absMod cf = showsPrintRule absMod cf $ TokenCat "Double"
 
-showsPrintRule :: CF -> Cat -> [String]
-showsPrintRule cf t =
-  [ "instance Print " ++ show t ++ " where"
+showsPrintRule :: AbsMod -> CF -> Cat -> [String]
+showsPrintRule absMod cf t =
+  [ "instance Print " ++ qualifiedCat absMod t ++ " where"
   , "  prt _ x = doc (shows x)"
   ] ++ ifList cf t ++
   [ ""
   ]
 
+-- | Print category (data type name) qualified if user-defined.
+qualifiedCat :: AbsMod -> Cat -> String
+qualifiedCat absMod t = case t of
+  TokenCat s
+    | s `elem` baseTokenCatNames -> unqualified
+    | otherwise                  -> qualified
+  Cat{}       -> qualified
+  ListCat c   -> concat [ "[", qualifiedCat absMod c, "]" ]
+  CoercCat{}  -> impossible
+  InternalCat -> impossible
+  where
+  unqualified = catToStr t
+  qualified   = qualify absMod unqualified
+  impossible  = error $ "impossible in Backend.Haskell.CFtoPrinter.qualifiedCat: " ++ show t
+
+qualify :: AbsMod -> String -> String
+qualify absMod s = concat [ absMod, "." , s ]
+
 -- | Printing instance for @Ident@, and possibly @[Ident]@.
-identRule :: Bool -> CF -> [String]
-identRule byteStrings cf = ownPrintRule byteStrings cf catIdent
+identRule :: AbsMod -> Bool -> CF -> [String]
+identRule absMod byteStrings cf = ownPrintRule absMod byteStrings cf catIdent
 
 -- | Printing identifiers and terminals.
-ownPrintRule :: Bool -> CF -> Cat -> [String]
-ownPrintRule byteStrings cf own =
-  [ "instance Print " ++ show own ++ " where"
-  , "  prt _ (" ++ show own ++ posn ++ ") = doc (showString " ++ stringUnpack ++ ")"
+ownPrintRule :: AbsMod -> Bool -> CF -> Cat -> [String]
+ownPrintRule absMod byteStrings cf own =
+  [ "instance Print " ++ q ++ " where"
+  , "  prt _ (" ++ q ++ posn ++ ") = doc (showString " ++ stringUnpack ++ ")"
   ] ++ ifList cf own ++
   [ ""
   ]
  where
+   q    = qualifiedCat absMod own
    posn = if isPositionCat cf own then " (_,i)" else " i"
 
    stringUnpack | byteStrings = "(BS.unpack i)"
                 | otherwise   = "i"
 
 -- | Printing rules for the AST nodes.
-rules :: Bool -> CF -> [String]
-rules functor cf = do
+rules :: AbsMod -> Bool -> CF -> [String]
+rules absMod functor cf = do
     (cat, xs :: [(Fun, [Cat])]) <- cf2dataLists cf
-    [ render (case_fun functor cat (map (toArgs cat) xs)) ] ++ ifList cf cat ++ [ "" ]
+    [ render (case_fun absMod functor cat (map (toArgs cat) xs)) ] ++ ifList cf cat ++ [ "" ]
   where
     toArgs :: Cat -> (Fun, [Cat]) -> Rule
     toArgs cat (cons, _) =
@@ -192,20 +213,21 @@ rules functor cf = do
         --   Foo. Bar ::= "bar" ;
         -- Of course, this will generate an arbitary printer for @Foo@.
         [] -> error $ "CFToPrinter.rules: no rhs found for: " ++ cons ++ ". " ++ show cat ++ " ::= ?"
+
 -- |
--- >>> case_fun False (Cat "A") [ (Rule "AA" (Cat "AB") [Right "xxx"]) ]
--- instance Print A where
+-- >>> case_fun "Abs" False (Cat "A") [ (Rule "AA" (Cat "AB") [Right "xxx"]) ]
+-- instance Print Abs.A where
 --   prt i e = case e of
---     AA -> prPrec i 0 (concatD [doc (showString "xxx")])
-case_fun :: Bool -> Cat -> [Rule] -> Doc
-case_fun functor cat xs =
+--     Abs.AA -> prPrec i 0 (concatD [doc (showString "xxx")])
+case_fun :: AbsMod -> Bool -> Cat -> [Rule] -> Doc
+case_fun absMod functor cat xs =
   -- trace ("case_fun: cat = " ++ show cat) $
   -- trace ("case_fun: xs  = " ++ show xs ) $
   vcat
     [ "instance Print" <+> type_ <+> "where"
     , nest 2 $ if isList cat then "prt = prtList" else vcat
         [ "prt i e = case e of"
-        , nest 2 $ vcat (map (mkPrintCase functor) xs)
+        , nest 2 $ vcat (map (mkPrintCase absMod functor) xs)
         ]
     ]
   where
@@ -213,38 +235,38 @@ case_fun functor cat xs =
      | functor   = case cat of
          ListCat{}  -> type' cat
          _ -> parens $ type' cat
-     | otherwise = text (show cat)
+     | otherwise = text (qualifiedCat absMod cat)
     type' = \case
       ListCat c    -> "[" <> type' c <> "]"
-      c@TokenCat{} -> text (show c)
-      c            -> text (show c) <+> "a"
+      c@TokenCat{} -> text (qualifiedCat absMod c)
+      c            -> text (qualifiedCat absMod c) <+> "a"
 
 -- | When writing the Print instance for a category (in case_fun), we have
 -- a different case for each constructor for this category.
 --
--- >>> mkPrintCase False (Rule "AA" (Cat "A") [Right "xxx"])
--- AA -> prPrec i 0 (concatD [doc (showString "xxx")])
+-- >>> mkPrintCase "Abs" False (Rule "AA" (Cat "A") [Right "xxx"])
+-- Abs.AA -> prPrec i 0 (concatD [doc (showString "xxx")])
 --
 -- Coercion levels are passed to @prPrec@.
 --
--- >>> mkPrintCase False (Rule "EInt" (CoercCat "Expr" 2) [Left (TokenCat "Integer")])
--- EInt n -> prPrec i 2 (concatD [prt 0 n])
+-- >>> mkPrintCase "Abs" False (Rule "EInt" (CoercCat "Expr" 2) [Left (TokenCat "Integer")])
+-- Abs.EInt n -> prPrec i 2 (concatD [prt 0 n])
 --
--- >>> mkPrintCase False (Rule "EPlus" (CoercCat "Expr" 1) [Left (Cat "Expr"), Right "+", Left (Cat "Expr")])
--- EPlus expr1 expr2 -> prPrec i 1 (concatD [prt 0 expr1, doc (showString "+"), prt 0 expr2])
+-- >>> mkPrintCase "Abs" False (Rule "EPlus" (CoercCat "Expr" 1) [Left (Cat "Expr"), Right "+", Left (Cat "Expr")])
+-- Abs.EPlus expr1 expr2 -> prPrec i 1 (concatD [prt 0 expr1, doc (showString "+"), prt 0 expr2])
 --
 -- If the AST is a functor, ignore first argument.
 --
--- >>> mkPrintCase True (Rule "EInt" (CoercCat "Expr" 2) [Left (TokenCat "Integer")])
--- EInt _ n -> prPrec i 2 (concatD [prt 0 n])
+-- >>> mkPrintCase "Abs" True (Rule "EInt" (CoercCat "Expr" 2) [Left (TokenCat "Integer")])
+-- Abs.EInt _ n -> prPrec i 2 (concatD [prt 0 n])
 --
 -- Skip internal categories.
 --
--- >>> mkPrintCase True (Rule "EInternal" (Cat "Expr") [Left InternalCat, Left (Cat "Expr")])
--- EInternal _ expr -> prPrec i 0 (concatD [prt 0 expr])
+-- >>> mkPrintCase "Abs" True (Rule "EInternal" (Cat "Expr") [Left InternalCat, Left (Cat "Expr")])
+-- Abs.EInternal _ expr -> prPrec i 0 (concatD [prt 0 expr])
 --
-mkPrintCase :: Bool -> Rule -> Doc
-mkPrintCase functor (Rule f cat rhs) =
+mkPrintCase :: AbsMod -> Bool -> Rule -> Doc
+mkPrintCase absMod functor (Rule f cat rhs) =
     pattern <+> "->"
     <+> "prPrec i" <+> integer (precCat cat) <+> parens (mkRhs (map render variables) rhs)
   where
@@ -252,7 +274,7 @@ mkPrintCase functor (Rule f cat rhs) =
     pattern
       | isOneFun  f = text "[" <+> head variables <+> "]"
       | isConsFun f = hsep $ intersperse (text ":") variables
-      | otherwise   = text f <+> (if functor then "_" else empty) <+> hsep variables
+      | otherwise   = text (qualify absMod f) <+> (if functor then "_" else empty) <+> hsep variables
     -- Creating variables names used in pattern matching. In addition to
     -- haskell's reserved words, `e` and `i` are used in the printing function
     -- and should be avoided

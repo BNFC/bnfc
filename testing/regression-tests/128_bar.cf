@@ -1,2 +1,11 @@
+-- Issue #128:
+-- Generated Haskell parser chokes on constructor name B
+-- which conflicts with module B (for ByteString, I suppose).
+
 B. Bar ::= "bar" ;
 
+-- Issue #228:
+-- Generated Haskell printer chokes on names like Doc or Int.
+
+D. Doc ::= "doc";
+Int. I ::= "int";
