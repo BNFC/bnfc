@@ -419,9 +419,9 @@ abbreviations with strings in brackets need a word of explanation:
     '``a``' '``b``' '``c``' '``7``' '``%``'
 
 The atomic expressions ``upper``, ``lower``, ``letter``, and ``digit`` denote the
-character classes suggested by their names (letters are isolatin1). The
-expression ``char`` matches any character in the 8-bit ASCII range, and the
-“epsilon” expression ``eps`` matches the empty string. [2]_ Thus ``eps`` is
+character classes suggested by their names (letters are isolatin1).
+The expression ``char`` matches any unicode character, and the
+“epsilon” expression ``eps`` matches the empty string.  Thus ``eps`` is
 equivalent to ``{""}``, whereas the empty language is expressed by ``[""]``.
 
 .. note::
@@ -1052,8 +1052,3 @@ belong to the BNF notation. All other symbols are terminals.
 
 .. [1]
    Cambridge University Press, 1998.
-
-.. [2]
-   If we want to describe full Java or Haskell, we must extend the
-   character set to Unicode. This is currently not supported by all
-   lexer tools, however.

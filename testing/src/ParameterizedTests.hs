@@ -36,12 +36,14 @@ all :: Test
 all = makeTestSuite "Parameterized tests" [allWithParams p | p <- parameters ]
 
 allWithParams :: TestParameters -> Test
-allWithParams params = makeTestSuite (tpName params) $
-    [ exitCodeTest params
+allWithParams params = makeTestSuite (tpName params) $ concat
+  [ testCases params
+  , [ exitCodeTest params
     , entrypointTest params
     , exampleTests params
     , distcleanTest params
-    ] ++ testCases params
+    ]
+  ]
 
 
 -- This tests checks that when given an invalid input, the generated example
@@ -105,10 +107,12 @@ exampleTests params =
 testCases :: TestParameters -> [Test]
 testCases params =
     map makeTestCase
-        [ "regression-tests/#100_coercion_lists"
+       [  "regression-tests/249_unicode"
+        , "regression-tests/#100_coercion_lists"
         , "regression-tests/#134_category_named_I"
         , "regression-tests/comments"
-        , "regression-tests/#149" ]
+        , "regression-tests/#149"
+        ]
   where
     mkTitle dir = encodeString (filename dir)
     makeTestCase dir =

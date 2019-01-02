@@ -1,0 +1,10 @@
+
+Parse Successful!
+
+[Abstract Syntax]
+
+ETimes (EAtom (APar (ETimes (EAtom (AInt 1)) (AInt 2)))) (AInt 3)
+
+[Linearized tree]
+
+⦅ 1 ⊗ 2 ⦆ ⊗ 3

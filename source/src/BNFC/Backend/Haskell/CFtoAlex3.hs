@@ -58,12 +58,12 @@ prelude name _ shareMod shareStrings byteStrings = [
 
 cMacros :: [String]
 cMacros = [
-  "$l = [a-zA-Z\\192 - \\255] # [\\215 \\247]    -- isolatin1 letter FIXME",
-  "$c = [A-Z\\192-\\221] # [\\215]    -- capital isolatin1 letter FIXME",
-  "$s = [a-z\\222-\\255] # [\\247]    -- small isolatin1 letter FIXME",
-  "$d = [0-9]                -- digit",
-  "$i = [$l $d _ ']          -- identifier character",
-  "$u = [\\0-\\255]          -- universal: any character"
+  "$c = [A-Z\\192-\\221] # [\\215]  -- capital isolatin1 letter (215 = \\times) FIXME",
+  "$s = [a-z\\222-\\255] # [\\247]  -- small   isolatin1 letter (247 = \\div  ) FIXME",
+  "$l = [$c $s]         -- letter",
+  "$d = [0-9]           -- digit",
+  "$i = [$l $d _ ']     -- identifier character",
+  "$u = [. \\n]          -- universal: any character"
   ]
 
 rMacros :: CF -> [String]
@@ -95,10 +95,10 @@ restOfAlex _ shareStrings byteStrings cf = [
   ident,
 
   ifC catString ("\\\" ([$u # [\\\" \\\\ \\n]] | (\\\\ (\\\" | \\\\ | \\' | n | t)))* \\\"" ++
-                  "{ tok (\\p s -> PT p (TL $ share $ unescapeInitTail s)) }"),
-  ifC catChar    "\\\' ($u # [\\\' \\\\] | \\\\ [\\\\ \\\' n t]) \\'  { tok (\\p s -> PT p (TC $ share s))  }",
-  ifC catInteger "$d+      { tok (\\p s -> PT p (TI $ share s))    }",
-  ifC catDouble  "$d+ \\. $d+ (e (\\-)? $d+)? { tok (\\p s -> PT p (TD $ share s)) }",
+                  "\n    { tok (\\p s -> PT p (TL $ share $ unescapeInitTail s)) }"),
+  ifC catChar    "\\\' ($u # [\\\' \\\\] | \\\\ [\\\\ \\\' n t]) \\'\n    { tok (\\p s -> PT p (TC $ share s))  }",
+  ifC catInteger "$d+\n    { tok (\\p s -> PT p (TI $ share s))    }",
+  ifC catDouble  "$d+ \\. $d+ (e (\\-)? $d+)?\n    { tok (\\p s -> PT p (TD $ share s)) }",
   "",
   "{",
   "",
@@ -272,11 +272,11 @@ restOfAlex _ shareStrings byteStrings cf = [
 
    -- tokens consisting of special symbols
    pTSpec [] = ""
-   pTSpec _ = "@rsyms { tok (\\p s -> PT p (eitherResIdent (TV . share) s)) }"
+   pTSpec _ = "@rsyms\n    { tok (\\p s -> PT p (eitherResIdent (TV . share) s)) }"
 
    userDefTokenTypes = unlines
      [printRegAlex exp ++
-      " { tok (\\p s -> PT p (eitherResIdent (T_"  ++ show name ++ " . share) s)) }"
+      "\n    { tok (\\p s -> PT p (eitherResIdent (T_"  ++ show name ++ " . share) s)) }"
       | (name,exp) <- tokenPragmas cf]
    userDefTokenConstrs = unlines
      [" | T_" ++ name ++ " !"++stringType | name <- tokenNames cf]
@@ -284,7 +284,7 @@ restOfAlex _ shareStrings byteStrings cf = [
      ["  PT _ (T_" ++ name ++ " s) -> s" | name <- tokenNames cf]
 
    ident =
-     "$l $i*   { tok (\\p s -> PT p (eitherResIdent (TV . share) s)) }"
+     "$l $i*\n    { tok (\\p s -> PT p (eitherResIdent (TV . share) s)) }"
      --ifC "Ident"  "<ident>   ::= ^l ^i*   { ident  p = PT p . eitherResIdent TV }"
 
 
@@ -314,22 +314,18 @@ sorted2tree xs = B x n (sorted2tree t1) (sorted2tree t2) where
 printRegAlex :: Reg -> String
 printRegAlex = render . prt 0
 
--- you may want to change render and parenth
-
 render :: [String] -> String
-render = rend 0
-    where rend :: Int -> [String] -> String
-          rend i ss = case ss of
-                        "["      :ts -> cons "["  $ rend i ts
-                        "("      :ts -> cons "("  $ rend i ts
-                        t  : "," :ts -> cons t    $ space "," $ rend i ts
-                        t  : ")" :ts -> cons t    $ cons ")"  $ rend i ts
-                        t  : "]" :ts -> cons t    $ cons "]"  $ rend i ts
-                        t        :ts -> space t   $ rend i ts
-                        _            -> ""
-
-          cons s t  = s ++ t
-          space t s = if null s then t else t ++ " " ++ s
+render = \case
+    "["      : ts -> cons "["  $ render ts
+    "("      : ts -> cons "("  $ render ts
+    t  : "," : ts -> cons t    $ space "," $ render ts
+    t  : ")" : ts -> cons t    $ cons ")"  $ render ts
+    t  : "]" : ts -> cons t    $ cons "]"  $ render ts
+    t        : ts -> space t   $ render ts
+    _             -> ""
+  where
+  cons s t  = s ++ t
+  space t s = if null s then t else t ++ " " ++ s
 
 parenth :: [String] -> [String]
 parenth ss = ["("] ++ ss ++ [")"]
@@ -344,12 +340,13 @@ instance Print a => Print [a] where
   prt _ = prtList
 
 instance Print Char where
-  prt _ c = case c of
-             '\n' -> ["\\n"]
-             '\t' -> ["\\t"]
-             c | isAlphaNum c -> [[c]]
-             c | isPrint c    -> ['\\':[c]]
-             c                -> ['\\':show (ord c)]
+  prt _ = \case
+    '\n'             -> ["\\n"]
+    '\t'             -> ["\\t"]
+    c | isAlphaNum c -> [[c]]
+    c | isPrint c    -> ['\\':[c]]
+    c                -> ['\\':show (ord c)]
+
   prtList = map (concat . prt 0)
 
 prPrec :: Int -> Int -> [String] -> [String]

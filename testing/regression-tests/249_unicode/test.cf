@@ -1,0 +1,7 @@
+-- Andreas, 2019-02-01, issue 249: unicode in tokens
+
+ETimes.  Exp ::= Exp "⊗" Atom ;
+EAtom.   Exp ::= Atom ;
+
+AInt.    Atom ::= Integer ;
+APar.    Atom ::= "⦅" Exp "⦆" ;
