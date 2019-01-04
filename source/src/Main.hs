@@ -40,6 +40,7 @@ import BNFC.Backend.Java
 import BNFC.Backend.Latex
 import BNFC.Backend.OCaml
 import BNFC.Backend.Pygments
+import BNFC.Backend.Javascript
 import BNFC.GetCF
 import BNFC.Options hiding (make)
 
@@ -84,3 +85,4 @@ maketarget t = case t of
     TargetOCaml        -> makeOCaml
     TargetProfile      -> error "Not implemented"
     TargetPygments     -> makePygments
+    TargetJavascript   -> makeJavascript

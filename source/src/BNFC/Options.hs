@@ -28,6 +28,7 @@ data Mode
 data Target = TargetC | TargetCpp | TargetCppNoStl | TargetCSharp
             | TargetHaskell | TargetHaskellGadt | TargetLatex
             | TargetJava | TargetOCaml | TargetProfile | TargetPygments
+            | TargetJavascript
   deriving (Eq,Bounded, Enum,Ord)
 
 -- Create a list of all target using the enum and bounded classes
@@ -46,6 +47,7 @@ instance Show Target where
   show TargetOCaml        = "OCaml"
   show TargetProfile      = "Haskell (with permutation profiles)"
   show TargetPygments     = "Pygments"
+  show TargetJavascript   = "Javascript"
 
 -- | Which version of Alex is targeted?
 data AlexVersion = Alex1 | Alex2 | Alex3
@@ -126,7 +128,7 @@ globalOptions = [
 -- | Options for the target languages
 -- targetOptions :: [ OptDescr Target ]
 targetOptions :: [ OptDescr (SharedOptions -> SharedOptions)]
-targetOptions = 
+targetOptions =
   [ Option "" ["java"]          (NoArg (\o -> o {target = TargetJava}))
     "Output Java code [default: for use with JLex and CUP]"
   , Option "" ["haskell"]       (NoArg (\o -> o {target = TargetHaskell}))
@@ -149,6 +151,8 @@ targetOptions =
     "Output Haskell code for rules with permutation profiles"
   , Option "" ["pygments"]      (NoArg (\o -> o {target = TargetPygments}))
     "Output a Python lexer for Pygments"
+  , Option "" ["js"]      (NoArg (\o -> o {target = TargetJavascript}))
+    "Output Javascript code for use with jison"
   ]
 
 -- | A list of the options and for each of them, the target language
