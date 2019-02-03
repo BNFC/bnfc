@@ -60,6 +60,11 @@ cf2Printer byteStrings functor useGadt name absMod cf = unlines $ concat $
 
 prologue :: Bool -> Bool -> String -> AbsMod -> [String]
 prologue byteStrings useGadt name absMod =
+  [ "{-# LANGUAGE CPP #-}"
+  , "#if __GLASGOW_HASKELL__ <= 708"
+  , "{-# LANGUAGE OverlappingInstances #-}"
+  , "#endif"
+  ] ++
   [ "{-# LANGUAGE GADTs, TypeSynonymInstances #-}" | useGadt ] ++
   [ "{-# LANGUAGE FlexibleInstances #-}"
   , "{-# OPTIONS_GHC -fno-warn-incomplete-patterns #-}"
