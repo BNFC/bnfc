@@ -37,13 +37,17 @@ Then proceed with the installation.
 Installation
 ------------
 
-To install bnfc from git:
+Some binaries are available at https://github.com/BNFC/bnfc/releases .
+
+To install bnfc from hackage.haskell.org:
+
+    cabal install BNFC
+
+To install the development version of bnfc:
 
     git clone https://github.com/BNFC/bnfc.git
     cd bnfc/source
     cabal install
-
-To download the latest release, see the bnfc website: http://bnfc.digitalgrammars.com/
 
 
 Documentation
