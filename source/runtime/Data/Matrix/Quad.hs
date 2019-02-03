@@ -63,19 +63,20 @@ mult :: RingP a => Bool -> Mat x y a -> Mat z x a -> Mat z y (Pair a)
 mult p a b = a & b where
   infixl 7  &
   (&) :: RingP a => Mat x y a -> Mat z x a -> Mat z y (Pair a)
-  Zero & x = Zero
-  x & Zero = Zero
-  One x & One x' = one (mul p x x')
-  One x & Row a b = row (One x & a) (One x & b)
-  Col a b & One x = col (a & One x) (b & One x)
-  Row a b & Col a' b' = a & a' + b & b'
-  Col a b & Row a' b' = quad (a & a') (a & b') (b & a') (b & b')
-  Row a b & Quad a' b' c' d' = row (a & a' + b & c') (a & b' + b & d')
-  Quad a b c d & Col a' c' = col (a & a' + b & c') (c & a' + d & c')
+  Zero         & x                = Zero
+  x            & Zero             = Zero
+  One x        & One x'           = one (mul p x x')
+  One x        & Row a b          = row (One x & a) (One x & b)
+  Col a b      & One x            = col (a & One x) (b & One x)
+  Row a b      & Col a' b'        = a & a' + b & b'
+  Col a b      & Row a' b'        = quad (a & a') (a & b') (b & a') (b & b')
+  Row a b      & Quad a' b' c' d' = row (a & a' + b & c') (a & b' + b & d')
+  Quad a b c d & Col a' c'        = col (a & a' + b & c') (c & a' + d & c')
   Quad a b c d & Quad a' b' c' d' =
      quad (a & a' + b & c') (a & b' + b & d')
           (c & a' + d & c') (c & b' + d & d')
 
+  -- REDUNANT CLAUSE:
   x & y = error $ "mult:" ++ intercalate "; " [showR x,showR y]
 
 -- a variant of traverse. The constraint prevents to just use traverse.
@@ -296,4 +297,3 @@ fingerprint (T s (m :/: m')) = zipWith (zipWith c) (lin s s m) (lin s s m')
                      (False , False) -> 'X'
 
 scatterplot (T s (m :/: m')) = concat [show x ++ " " ++ show y ++ "\n" | (x,y,_) <- sparse s s m ++ sparse s s m']
-
