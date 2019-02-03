@@ -1,4 +1,4 @@
-{-# LANGUAGE FlexibleInstances, OverlappingInstances #-}
+{-# LANGUAGE FlexibleInstances #-}
 {-# OPTIONS_GHC -fno-warn-incomplete-patterns #-}
 
 -- | Pretty-printer for PrintBNF.
@@ -60,7 +60,7 @@ class Print a where
   prtList :: Int -> [a] -> Doc
   prtList i = concatD . map (prt i)
 
-instance Print a => Print [a] where
+instance {-# OVERLAPPABLE #-} Print a => Print [a] where
   prt = prtList
 
 instance Print Char where

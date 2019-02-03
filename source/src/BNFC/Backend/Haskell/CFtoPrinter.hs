@@ -61,7 +61,7 @@ cf2Printer byteStrings functor useGadt name absMod cf = unlines $ concat $
 prologue :: Bool -> Bool -> String -> AbsMod -> [String]
 prologue byteStrings useGadt name absMod =
   [ "{-# LANGUAGE GADTs, TypeSynonymInstances #-}" | useGadt ] ++
-  [ "{-# LANGUAGE FlexibleInstances, OverlappingInstances #-}"
+  [ "{-# LANGUAGE FlexibleInstances #-}"
   , "{-# OPTIONS_GHC -fno-warn-incomplete-patterns #-}"
   , ""
   , "-- | Pretty-printer for " ++ takeWhile ('.' /=) name ++ "."
@@ -124,7 +124,7 @@ prologue byteStrings useGadt name absMod =
   , "  prtList :: Int -> [a] -> Doc"
   , "  prtList i = concatD . map (prt i)"
   , ""
-  , "instance Print a => Print [a] where"
+  , "instance {-# OVERLAPPABLE #-} Print a => Print [a] where"
   , "  prt = prtList"
   , ""
   , "instance Print Char where"
