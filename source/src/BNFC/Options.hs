@@ -126,7 +126,7 @@ globalOptions = [
 -- | Options for the target languages
 -- targetOptions :: [ OptDescr Target ]
 targetOptions :: [ OptDescr (SharedOptions -> SharedOptions)]
-targetOptions = 
+targetOptions =
   [ Option "" ["java"]          (NoArg (\o -> o {target = TargetJava}))
     "Output Java code [default: for use with JLex and CUP]"
   , Option "" ["haskell"]       (NoArg (\o -> o {target = TargetHaskell}))
@@ -215,23 +215,31 @@ specificOptions =
     , [TargetHaskell] )
   ]
 
+-- | The list of specific options for a target.
+specificOptions' :: Target -> [OptDescr (SharedOptions -> SharedOptions)]
+specificOptions' t = map fst $ filter (elem t . snd) specificOptions
 
-commonOption :: [OptDescr (SharedOptions -> SharedOptions)]
-commonOption =
+commonOptions :: [OptDescr (SharedOptions -> SharedOptions)]
+commonOptions =
   [ Option "m" ["makefile"] (OptArg (setMakefile . fromMaybe "Makefile") "MAKEFILE")
       "generate Makefile"
   , Option "o" ["outputdir"] (ReqArg (\n o -> o {outDir = n}) "DIR")
       "Redirects all generated files into DIR"
   ]
-  where setMakefile = \mf -> \o -> o { make = Just mf }
+  where setMakefile mf o = o { make = Just mf }
 
 allOptions :: [OptDescr (SharedOptions -> SharedOptions)]
-allOptions = targetOptions ++ commonOption ++ map fst specificOptions
+allOptions = targetOptions ++ commonOptions ++ map fst specificOptions
+
+-- | All target options and all specific options for a given target.
+allOptions' :: Target -> [OptDescr (SharedOptions -> SharedOptions)]
+allOptions' t = targetOptions ++ commonOptions ++ specificOptions' t
 
 -- ~~~ Help strings ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 title :: String
 title = unlines [
-  "The BNF Converter, "++showVersion version,
+  "The BNF Converter, " ++ showVersion version,
   "(c) Jonas Almström Duregård, Krasimir Angelov, Jean-Philippe Bernardy, Björn Bringert, Johan Broberg, Paul Callaghan, ",
   "    Grégoire Détrez, Markus Forsberg, Ola Frid, Peter Gammie, Thomas Hallgren, Patrik Jansson, ",
   "    Kristofer Johannisson, Antti-Juhani Kaijanaho, Ulf Norell, ",
@@ -247,31 +255,47 @@ help :: String
 help = unlines $
     usage:""
     :usageInfo "Global options"   globalOptions
-    :usageInfo "Common option"      commonOption
+    :usageInfo "Common options"   commonOptions
     :usageInfo "Target languages" targetOptions
     :map targetUsage helpTargets
   where helpTargets = [TargetHaskell, TargetJava, TargetCpp, TargetCSharp ]
         targetUsage t = usageInfo
                         (printf "Special options for the %s backend" (show t))
-                        (map fst $ filter(elem t . snd)specificOptions)
+                        (specificOptions' t)
 
 -- ~~~ Parsing machinery ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 -- | Main parsing function
 parseMode :: [String] -> Mode
+parseMode []   = Help
 parseMode args =
-  case args' of
-    [] -> Help
-    _ -> case getOpt' Permute globalOptions args' of
-      (mode:_,_,_,_) -> mode
-      _ -> case getOpt Permute allOptions args' of
-        (_,_,e:_) -> UsageError e
-        (_,[],_)   -> UsageError "Missing grammar file"
-        (optionsUpdates, [grammar], []) ->
-          let options = foldl (.) id optionsUpdates defaultOptions in
-          Target (options {lang = takeBaseName grammar}) grammar
-        (_,_,_)    -> UsageError "Too many arguments"
-  where args' = translateOldOptions args
+  -- First, check for global options like --help or --version
+  case getOpt' Permute globalOptions args' of
+    (mode:_,_,_,_) -> mode
+
+    -- Then, determine target language.
+    _ -> case getOpt' Permute targetOptions args' of
+      -- ([]     ,_,_,_) -> UsageError "No target selected"  -- --haskell is default target
+      (_:_:_,_,_,_) -> UsageError "At most one target is allowed"
+
+      -- Finally, parse options with known target.
+      (optionUpdates,_,_,_) -> let
+          -- Compute target and valid options for this target.
+          tgt  = target (options optionUpdates)
+          opts = allOptions' tgt
+        in
+        case getOpt' Permute opts args' of
+          (_,  _, _,      e:_) -> UsageError e
+          (_,  _, [u],      _) -> UsageError $ unwords [ "Unrecognized option:" , u ]
+          (_,  _, us@(_:_), _) -> UsageError $ unwords $ "Unrecognized options:" : us
+          (_, [], _,        _) -> UsageError "Missing grammar file"
+          (optionsUpdates, [grammarFile], [], []) ->
+            Target ((options optionsUpdates) {lang = takeBaseName grammarFile}) grammarFile
+          (_,  _, _,        _) -> UsageError "Too many arguments"
+  where
+  args' = translateOldOptions args
+  options optionsUpdates = foldl (.) id optionsUpdates defaultOptions
+
 
 isUsageError :: Mode -> Bool
 isUsageError (UsageError _) = True
@@ -305,4 +329,3 @@ translateOldOptions = map translateOne
         translateOne "-vs"            = "--vs"
         translateOne "-wcf"           = "--wcf"
         translateOne other            = other
-
