@@ -1,6 +1,5 @@
-{-# LANGUAGE NoImplicitPrelude #-}
+-- | Extends ''Text.PrettyPrint''.
 
--- Extends Text.PrettyPrint
 module BNFC.PrettyPrint
   ( module Text.PrettyPrint
   , (<.>)
@@ -9,15 +8,14 @@ module BNFC.PrettyPrint
   , (<=>)
   ) where
 
-import Prelude'
-
 import Text.PrettyPrint
 
 -- | Pretty print separator with a dot
 -- >>> "abc" <.> "py"
 -- abc.py
 (<.>) :: Doc -> Doc -> Doc
-a <.> b = a <> "." <> b
+a <.> b = hcat [ a , text "." , b ]
+  -- Andreas A, 2019-02-07: avoiding <> due to clash with Semigroup
 
 -- | Code block. A bloc of code, surrounded by {} and indented.
 -- >>> codeblock 4 ["abc", "def"]
@@ -39,4 +37,4 @@ vsep = foldl ($+$) empty
 -- >>> "a" <=> "123"
 -- a = 123
 (<=>) :: Doc -> Doc -> Doc
-a <=> b = a <+> "=" <+> b
+a <=> b = a <+> text "=" <+> b

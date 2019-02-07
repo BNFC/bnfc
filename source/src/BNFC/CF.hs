@@ -1,4 +1,6 @@
 {-# LANGUAGE PatternGuards, DeriveFunctor #-}
+{-# LANGUAGE RecordWildCards #-}
+
 {-
     BNF Converter: Abstract syntax
     Copyright (C) 2004  Author:  Markus Forsberg, Michael Pellauer, Aarne Ranta
