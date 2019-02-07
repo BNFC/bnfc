@@ -28,7 +28,7 @@
 
 module Main where
 
-import BNFC.Backend.Base hiding (Backend)
+import BNFC.Backend.Base
 import BNFC.Backend.C
 import BNFC.Backend.CPP.NoSTL
 import BNFC.Backend.CPP.STL
@@ -40,8 +40,9 @@ import BNFC.Backend.Java
 import BNFC.Backend.Latex
 import BNFC.Backend.OCaml
 import BNFC.Backend.Pygments
+import BNFC.CF (CF)
 import BNFC.GetCF
-import BNFC.Options hiding (make)
+import BNFC.Options hiding (make, Backend)
 
 import Paths_BNFC ( version )
 
@@ -61,17 +62,22 @@ main :: IO ()
 main = do
   args <- getArgs
   case parseMode args of
-    UsageError e -> printUsageErrors [e]
-    Help    -> putStrLn help >> exitSuccess
-    Version ->  putStrLn (showVersion version) >> exitSuccess
-    Target options file | target options == TargetProfile ->
-      readFile file >>= parseCFP options TargetProfile
-                    >>= writeFiles (outDir options) . makeHaskellProfile options
-    Target options file ->
-      readFile file >>= parseCF options (target options) >>= make (target options) options
-  where
-    make t opts cf = writeFiles (outDir opts) $ (maketarget t) opts cf
 
+    UsageError e -> printUsageErrors [e]
+    Help         -> putStrLn help >> exitSuccess
+    Version      -> putStrLn (showVersion version) >> exitSuccess
+
+    Target options file
+      | target options == TargetProfile ->
+          readFile file
+            >>= parseCFP options TargetProfile
+            >>= writeFiles (outDir options) . makeHaskellProfile options
+      | otherwise ->
+          readFile file
+            >>= parseCF options (target options)
+            >>= writeFiles (outDir options) . maketarget (target options) options
+
+maketarget :: Target -> SharedOptions -> CF -> Backend
 maketarget t = case t of
     TargetC            -> makeC
     TargetCpp          -> makeCppStl
