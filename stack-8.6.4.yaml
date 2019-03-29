@@ -1,0 +1,4 @@
+resolver: lts-13.14
+packages:
+- source
+- testing

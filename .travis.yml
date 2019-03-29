@@ -8,6 +8,7 @@ cache:
     - $HOME/.stack
 # Make sure to update tested-with in source/BNFC.cabal when updating these:
 ghc:
+  - 8.6.4
   - 8.4.4
   - 8.2.2
   - 8.0.2
