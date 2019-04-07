@@ -11,7 +11,7 @@ BDIST_TAG=bnfc-${BNFC_VERSION}-$(shell uname -s)-$(shell uname -m)
 all: build
 
 build:
-	cabal configure && cabal build
+	cabal configure --enable-tests && cabal build
 
 install:
 	cabal install
