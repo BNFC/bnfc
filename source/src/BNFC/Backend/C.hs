@@ -175,7 +175,7 @@ ctest cf =
     "  parse_tree = p" ++ def ++ "(input);",
     "  if (parse_tree)",
     "  {",
-    "    printf(\"\\nParse Succesful!\\n\");",
+    "    printf(\"\\nParse Successful!\\n\");",
     "    if (!quiet) {",
     "      printf(\"\\n[Abstract Syntax]\\n\");",
     "      printf(\"%s\\n\\n\", show" ++ def ++ "(parse_tree));",
