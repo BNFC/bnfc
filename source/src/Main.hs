@@ -78,7 +78,7 @@ main = do
             >>= writeFiles (outDir options) . maketarget (target options) options
 
 maketarget :: Target -> SharedOptions -> CF -> Backend
-maketarget t = case t of
+maketarget = \case
     TargetC            -> makeC
     TargetCpp          -> makeCppStl
     TargetCppNoStl     -> makeCppNoStl
@@ -88,5 +88,5 @@ maketarget t = case t of
     TargetLatex        -> makeLatex
     TargetJava         -> makeJava
     TargetOCaml        -> makeOCaml
-    TargetProfile      -> error "Not implemented"
+    TargetProfile      -> error "impossible"
     TargetPygments     -> makePygments

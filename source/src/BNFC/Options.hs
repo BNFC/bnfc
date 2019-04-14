@@ -47,6 +47,7 @@ instance Show Target where
   show TargetProfile      = "Haskell (with permutation profiles)"
   show TargetPygments     = "Pygments"
 
+
 -- | Which version of Alex is targeted?
 data AlexVersion = Alex1 | Alex2 | Alex3
   deriving (Show,Eq,Ord,Bounded,Enum)
@@ -304,32 +305,33 @@ parseMode args =
   options optionsUpdates = foldl (.) id optionsUpdates defaultOptions
 
 
+-- * Backward compatibility
 
--- ~~~ Backward compatibility ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
--- A translating function to maintain backward compatiblicy
--- with the old option syntay
+-- | A translation function to maintain backward compatibility
+--   with the old option syntax.
+
 translateOldOptions :: [String] -> [String]
-translateOldOptions = map translateOne
-  where translateOne "-java"          = "--java"
-        translateOne "-java1.5"       = "--java"
-        translateOne "-c"             = "--c"
-        translateOne "-cpp"           = "--cpp"
-        translateOne "-cpp_stl"       = "--cpp"
-        translateOne "-cpp_no_stl"    = "--cpp-nostl"
-        translateOne "-csharp"        = "--csharp"
-        translateOne "-ocaml"         = "--ocaml"
-        translateOne "-fsharp"        = "fsharp"
-        translateOne "-haskell"       = "--haskell"
-        translateOne "-prof"          = "--profile"
-        translateOne "-gadt"          = "--haskell-gadt"
-        translateOne "-alex1"         = "--alex1"
-        translateOne "-alex2"         = "--alex2"
-        translateOne "-alex3"         = "--alex3"
-        translateOne "-sharestrings"  = "--sharestring"
-        translateOne "-bytestrings"   = "--bytestring"
-        translateOne "-glr"           = "--glr"
-        translateOne "-xml"           = "--xml"
-        translateOne "-xmlt"          = "--xmlt"
-        translateOne "-vs"            = "--vs"
-        translateOne "-wcf"           = "--wcf"
-        translateOne other            = other
+translateOldOptions = map $ \case
+  "-java"          ->  "--java"
+  "-java1.5"       ->  "--java"
+  "-c"             ->  "--c"
+  "-cpp"           ->  "--cpp"
+  "-cpp_stl"       ->  "--cpp"
+  "-cpp_no_stl"    ->  "--cpp-nostl"
+  "-csharp"        ->  "--csharp"
+  "-ocaml"         ->  "--ocaml"
+  "-fsharp"        ->  "fsharp"
+  "-haskell"       ->  "--haskell"
+  "-prof"          ->  "--profile"
+  "-gadt"          ->  "--haskell-gadt"
+  "-alex1"         ->  "--alex1"
+  "-alex2"         ->  "--alex2"
+  "-alex3"         ->  "--alex3"
+  "-sharestrings"  ->  "--sharestring"
+  "-bytestrings"   ->  "--bytestring"
+  "-glr"           ->  "--glr"
+  "-xml"           ->  "--xml"
+  "-xmlt"          ->  "--xmlt"
+  "-vs"            ->  "--vs"
+  "-wcf"           ->  "--wcf"
+  other            ->  other
