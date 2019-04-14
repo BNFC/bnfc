@@ -23,6 +23,9 @@ test:
 doc:
 	cabal haddock --executables --internal
 
+TAGS :
+	hasktags --etags .
+
 # Binary package (tgz, for linux)
 bdist: dist/${BDIST_TAG}.tar.gz
 .PHONY: bdist
@@ -41,3 +44,5 @@ dist/%.tar.gz:
 # Print the bnfc version from the cabal file
 show-version:
 	@echo ${BNFC_VERSION}
+
+# EOF
