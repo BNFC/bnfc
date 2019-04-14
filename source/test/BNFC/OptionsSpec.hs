@@ -75,6 +75,11 @@ spec = do
           parseMode["--c", "-mMyMakefile", "foo.cf"]
             `shouldSet` (make, Just "MyMakefile")
 
+isUsageError :: Mode -> Bool
+isUsageError = \case
+  UsageError{} -> True
+  _ -> False
+
 -- ~~~ Arbitrary instances ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 randomOption :: Gen String

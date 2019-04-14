@@ -297,9 +297,6 @@ parseMode args =
   options optionsUpdates = foldl (.) id optionsUpdates defaultOptions
 
 
-isUsageError :: Mode -> Bool
-isUsageError (UsageError _) = True
-isUsageError _ = False
 
 -- ~~~ Backward compatibility ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 -- A translating function to maintain backward compatiblicy
