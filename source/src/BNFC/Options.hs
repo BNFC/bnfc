@@ -237,31 +237,38 @@ allOptions' t = targetOptions ++ commonOptions ++ specificOptions' t
 
 -- ~~~ Help strings ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-title :: String
-title = unlines [
-  "The BNF Converter, " ++ showVersion version,
-  "(c) Jonas Almström Duregård, Krasimir Angelov, Jean-Philippe Bernardy, Björn Bringert, Johan Broberg, Paul Callaghan, ",
-  "    Grégoire Détrez, Markus Forsberg, Ola Frid, Peter Gammie, Thomas Hallgren, Patrik Jansson, ",
-  "    Kristofer Johannisson, Antti-Juhani Kaijanaho, Ulf Norell, ",
-  "    Michael Pellauer and Aarne Ranta 2002 - 2013.",
-  "Free software under GNU General Public License (GPL).",
-  "Bug reports to bnfc-dev@googlegroups.com."
- ]
+title :: [String]
+title =
+  [ "The BNF Converter, " ++ showVersion version ++ " (c) 2002-today BNFC development team."
+  , "Free software under GNU General Public License (GPL)."
+  , "List of recent contributors at https://github.com/BNFC/bnfc/graphs/contributors."
+  , "Report bugs at https://github.com/BNFC/bnfc/issues."
+  , ""
+  ]
+
+oldContributors :: [String]
+oldContributors =
+  [ "(c) Jonas Almström Duregård, Krasimir Angelov, Jean-Philippe Bernardy, Björn Bringert, Johan Broberg, Paul Callaghan, "
+  , "    Grégoire Détrez, Markus Forsberg, Ola Frid, Peter Gammie, Thomas Hallgren, Patrik Jansson, "
+  , "    Kristofer Johannisson, Antti-Juhani Kaijanaho, Ulf Norell, "
+  , "    Michael Pellauer and Aarne Ranta 2002 - 2013."
+  ]
 
 usage :: String
 usage = "usage: bnfc [--version] [--help] <target language> [<args>] file.cf"
 
 help :: String
-help = unlines $
-    usage:""
-    :usageInfo "Global options"   globalOptions
-    :usageInfo "Common options"   commonOptions
-    :usageInfo "Target languages" targetOptions
-    :map targetUsage helpTargets
   where helpTargets = [TargetHaskell, TargetJava, TargetCpp, TargetCSharp ]
         targetUsage t = usageInfo
                         (printf "Special options for the %s backend" (show t))
                         (specificOptions' t)
+help = unlines $ title ++
+    [ usage
+    , ""
+    , usageInfo "Global options"   globalOptions
+    , usageInfo "Common options"   commonOptions
+    , usageInfo "Target languages" targetOptions
+    ] ++ map targetUsage helpTargets
 
 -- ~~~ Parsing machinery ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
