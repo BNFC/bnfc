@@ -19,9 +19,6 @@
 
 module BNFC.Backend.Haskell (makeHaskell, AlexVersion(..), makefile, testfile) where
 
-
-
--- import BNFC.Utils
 import BNFC.Options hiding (Backend)
 import BNFC.CF
 import BNFC.Backend.Base
@@ -29,17 +26,17 @@ import BNFC.Backend.Haskell.CFtoHappy
 import BNFC.Backend.Haskell.CFtoAlex
 import BNFC.Backend.Haskell.CFtoAlex2
 import BNFC.Backend.Haskell.CFtoAlex3
-import BNFC.Backend.Txt2Tag
 import BNFC.Backend.Haskell.CFtoAbstract
 import BNFC.Backend.Haskell.CFtoTemplate
 import BNFC.Backend.Haskell.CFtoPrinter
 import BNFC.Backend.Haskell.CFtoLayout
-import BNFC.Backend.XML
 import BNFC.Backend.Haskell.HsOpts
-import BNFC.Backend.Haskell.ToCNF as ToCNF
 import BNFC.Backend.Haskell.MkErrM
 import BNFC.Backend.Haskell.MkSharedString
+import BNFC.Backend.Haskell.ToCNF as ToCNF
 import BNFC.Backend.Haskell.Utils (parserName)
+import BNFC.Backend.Txt2Tag
+import BNFC.Backend.XML
 import qualified BNFC.Backend.Common.Makefile as Makefile
 
 import System.FilePath (pathSeparator)
@@ -47,10 +44,7 @@ import Control.Monad(when,unless)
 import Text.Printf (printf)
 import Text.PrettyPrint
 
--- naming conventions
-
-
-
+-- | Entrypoint for the Haskell backend.
 
 makeHaskell :: SharedOptions -> CF -> Backend
 makeHaskell opts cf = do
