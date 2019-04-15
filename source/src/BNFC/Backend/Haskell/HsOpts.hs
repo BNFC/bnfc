@@ -43,6 +43,8 @@ cnfTablesFile = mkFile withLang "CnfTables" "hs"
 cnfTablesFileM= mkMod  withLang "CnfTables"
 xmlFile       = mkFile withLang "XML" "hs"
 xmlFileM      = mkMod  withLang "XML"
+agdaFile      = mkFile withLang "AST" "agda"
+agdaFileM     = mkMod  withLang "AST"
 composOpFile  = mkFile noLang   "ComposOp" "hs"
 composOpFileM = mkMod noLang    "ComposOp"
 

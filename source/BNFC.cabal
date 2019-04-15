@@ -199,6 +199,9 @@ Executable bnfc
     -- Pygments backend
     BNFC.Backend.Pygments
 
+    -- Agda backend
+    BNFC.Backend.Agda
+
 -- --- Testing --------------------------------------------------------------
 Test-suite unit-tests
   Type: exitcode-stdio-1.0
@@ -364,6 +367,9 @@ Test-suite unit-tests
 
     -- Pygments backend
     BNFC.Backend.Pygments
+
+    -- Agda backend
+    BNFC.Backend.Agda
 
 
 Test-suite bnfc-doctests

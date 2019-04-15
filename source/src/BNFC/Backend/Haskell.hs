@@ -21,6 +21,7 @@ module BNFC.Backend.Haskell (makeHaskell, AlexVersion(..), makefile, testfile) w
 
 import BNFC.Options hiding (Backend)
 import BNFC.CF
+import BNFC.Backend.Agda
 import BNFC.Backend.Base
 import BNFC.Backend.Haskell.CFtoHappy
 import BNFC.Backend.Haskell.CFtoAlex
@@ -83,6 +84,7 @@ makeHaskell opts cf = do
       2 -> makeXML opts True cf
       1 -> makeXML opts False cf
       _ -> return ()
+    when (agda opts) $ makeAgda opts cf
     when (cnf opts) $ do
       mkfile (cnfTablesFile opts) $ ToCNF.generate opts cf
       mkfile "TestCNF.hs" $ ToCNF.genTestFile opts cf

@@ -81,6 +81,7 @@ data SharedOptions = Options
   , glr :: HappyMode
   , xml :: Int
   , ghcExtensions :: Bool
+  , agda :: Bool                   -- ^ Create bindings for Agda?
   -- C++ specific
   , linenumbers :: RecordPositions -- ^ Add and set line_number field for syntax classes
   -- C# specific
@@ -108,6 +109,7 @@ defaultOptions = Options
   , glr = Standard
   , xml = 0
   , ghcExtensions = False
+  , agda = False
   , lang = error "lang not set"
   , linenumbers = NoRecordPositions
   , visualStudio = False
@@ -199,12 +201,6 @@ specificOptions =
   , ( Option []    ["glr"] (NoArg (\o -> o {glr = GLR}))
           "Output Happy GLR parser"
     , [TargetHaskell, TargetHaskellGadt, TargetProfile] )
-  , ( Option []    ["xml"] (NoArg (\o -> o {xml = 1}))
-          "Also generate a DTD and an XML printer"
-    , [TargetHaskell, TargetHaskellGadt, TargetProfile] )
-  , ( Option []    ["xmlt"] (NoArg (\o -> o {xml = 2}))
-          "DTD and an XML printer, another encoding"
-    , [TargetHaskell, TargetHaskellGadt, TargetProfile] )
   , ( Option []    ["cnf"] (NoArg (\o -> o {cnf = True}))
           "Use the CNF parser instead of happy"
     , [TargetHaskell, TargetHaskellGadt, TargetProfile] )
@@ -214,6 +210,15 @@ specificOptions =
   , ( Option []    ["functor"] (NoArg (\o -> o {functor = True}))
           "Make the AST a functor and use it to store the position of the nodes"
     , [TargetHaskell] )
+  , ( Option []    ["xml"] (NoArg (\o -> o {xml = 1}))
+          "Also generate a DTD and an XML printer"
+    , [TargetHaskell, TargetHaskellGadt, TargetProfile] )
+  , ( Option []    ["xmlt"] (NoArg (\o -> o {xml = 2}))
+          "DTD and an XML printer, another encoding"
+    , [TargetHaskell, TargetHaskellGadt, TargetProfile] )
+  , ( Option []    ["agda"] (NoArg (\o -> o {agda = True}))
+          "Also generate Agda bindings for the abstract syntax"
+    , [TargetHaskell, TargetHaskellGadt, TargetProfile] )
   ]
 
 -- | The list of specific options for a target.
@@ -259,10 +264,6 @@ usage :: String
 usage = "usage: bnfc [--version] [--help] <target language> [<args>] file.cf"
 
 help :: String
-  where helpTargets = [TargetHaskell, TargetJava, TargetCpp, TargetCSharp ]
-        targetUsage t = usageInfo
-                        (printf "Special options for the %s backend" (show t))
-                        (specificOptions' t)
 help = unlines $ title ++
     [ usage
     , ""
@@ -270,6 +271,11 @@ help = unlines $ title ++
     , usageInfo "Common options"   commonOptions
     , usageInfo "Target languages" targetOptions
     ] ++ map targetUsage helpTargets
+  where
+  helpTargets = [TargetHaskell, TargetJava, TargetCpp, TargetCSharp ]
+  targetUsage t = usageInfo
+    (printf "Special options for the %s backend" (show t))
+    (specificOptions' t)
 
 -- ~~~ Parsing machinery ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -312,6 +318,7 @@ parseMode args =
 
 translateOldOptions :: [String] -> [String]
 translateOldOptions = map $ \case
+  "-agda"          ->  "--agda"
   "-java"          ->  "--java"
   "-java1.5"       ->  "--java"
   "-c"             ->  "--c"
