@@ -49,3 +49,9 @@ cabal.sandbox.config
 /examples/Java/Makefile
 /examples/GF/GF/
 /document/BNF_Report.pdf
+/document/retrospect2006.out
+/document/retrospect2006.pdf
+/document/retrospect2006.tex
+/source/TAGS
+/source/src/Paths_BNFC.hs
+/source/src/TAGS
