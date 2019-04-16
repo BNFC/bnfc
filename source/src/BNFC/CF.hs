@@ -525,7 +525,7 @@ prTree (Tree (fun,trees)) = fun +++ unwords (map pr2 trees) where
 -- All categories are normalized, so a rule like:
 --     EAdd . Exp2 ::= Exp2 "+" Exp3 ;
 -- Will give the following signature: EAdd : Exp -> Exp -> Exp
-getAbstractSyntax :: CF -> [(Cat, [(Fun, [Cat])])]
+getAbstractSyntax :: CF -> [Data]
 getAbstractSyntax cf = [ ( c, nub (constructors c) ) | c <- allCatsNorm cf ]
   where
     constructors cat = do

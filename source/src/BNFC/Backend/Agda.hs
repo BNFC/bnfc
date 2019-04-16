@@ -3,17 +3,17 @@ Generate bindings to Haskell data types for use in Agda.
 
 Example for abstract syntax generated in Haskell backend:
 @@
-  newtype Id = Id String deriving (Eq, Ord, Show, Read)
+  newtype Ident = Ident String deriving (Eq, Ord, Show, Read)
 
-  data Def = DFun Type Id [Arg] [Stm]
+  data Def = DFun Type Ident [Arg] [Stm]
     deriving (Eq, Ord, Show, Read)
 
-  data Arg = ADecl Type Id
+  data Arg = ADecl Type Ident
     deriving (Eq, Ord, Show, Read)
 
   data Stm
       = SExp Exp
-      | SInit Type Id Exp
+      | SInit Type Ident Exp
       | SBlock [Stm]
       | SIfElse Exp Stm Stm
     deriving (Eq, Ord, Show, Read)
@@ -29,26 +29,26 @@ This should be accompanied by the following Agda code:
   {-# FOREIGN GHC import CPP.Abs #-}
   {-# FOREIGN GHC import CPP.Print #-}
 
-  data Id : Set where
-    mkId : List Char → Id
+  data Ident : Set where
+    ident : List Char → Ident
 
-  {-# COMPILE GHC Id = data Id (Id) #-}
+  {-# COMPILE GHC Ident = data Ident (Ident) #-}
 
   data Def : Set where
-    dFun : (t : Type) (x : Id) (as : List Arg) (ss : List Stm) → Def
+    dFun : (t : Type) (x : Ident) (as : List Arg) (ss : List Stm) → Def
 
   {-# COMPILE GHC Def = data Def (DFun) #-}
 
   data Arg : Set where
-    aDecl : (t : Type) (x : Id) → Arg
+    aDecl : (t : Type) (x : Ident) → Arg
 
   {-# COMPILE GHC Arg = data Arg (ADecl) #-}
 
   data Stm : Set where
-    sExp    : (e : Exp)                     → Stm
-    sInit   : (t : Type) (x : Id) (e : Exp) → Stm
-    sBlock  : (ss : List Stm)               → Stm
-    sIfElse : (e : Exp) (s s' : Stm)        → Stm
+    sExp : (e : Exp) → Stm
+    sInit : (t : Type) (x : Ident) (e : Exp) → Stm
+    sBlock : (ss : List Stm) → Stm
+    sIfElse : (e : Exp) (s s' : Stm) → Stm
 
   {-# COMPILE GHC Stm = data Stm
     ( SExp
@@ -58,7 +58,7 @@ This should be accompanied by the following Agda code:
     ) #-}
 
   data Type : Set where
-    bool int double void : Type
+    typeBool typeInt typeDouble typeVoid : Type
 
   {-# COMPILE GHC Type = data Type
     ( Type_bool
@@ -69,8 +69,8 @@ This should be accompanied by the following Agda code:
 
   -- Binding the BNFC pretty printer.
 
-  printId  : Id → String
-  printId (mkId s) = String.fromList s
+  printIdent  : Ident → String
+  printIdent (ident s) = String.fromList s
 
   postulate
     printType    : Type    → String
@@ -105,7 +105,7 @@ import qualified Data.Map as Map
 import Text.PrettyPrint
 
 import BNFC.CF
--- import BNFC.Utils
+import BNFC.Utils                  (NameStyle(..), mkName, replace)
 import BNFC.Backend.Base           (Backend, mkfile)
 import BNFC.Options                (SharedOptions)
 import BNFC.Backend.Haskell.HsOpts (agdaFile, agdaFileM, absFileM, printerFileM)
@@ -141,23 +141,27 @@ cf2Agda time mod amod pmod cf = render . vsep $
   , hsep [ "module", text mod, "where" ]
   , imports
   , importPragmas amod pmod
-  , prIdent
+  , allTokenCats prToken tcats
   , absyn NamedArg dats
   , "-- Binding the BNFC pretty printer"
-  , printIdent
+  , allTokenCats printToken tcats
   , printer cats
   , empty -- Make sure we terminate the file with a new line.
   ]
   where
+  -- The grammar categories:
   dats = cf2data cf
+     -- getAbstractSyntax also includes list categories, which isn't what we need
   cats = map fst dats
+  -- The token categories:
+  tcats = specialCats cf
 
 -- We prefix the Agda types with "#" to not conflict with user-provided nonterminals.
 arrow, charT, intT, listT, stringT, stringFromListT :: Doc
 arrow = "→"
 charT           = "#Char"
-intT            = "Integer"  -- This is the BNFC name for it!
-doubleT         = "Double"   -- This is the BNFC name for it!
+intT            = "Integer"  -- This is the BNFC name for token type Integer!
+doubleT         = "Double"   -- This is the BNFC name for token type Double!
 listT           = "#List"
 stringT         = "#String"
 stringFromListT = "#stringFromList"
@@ -165,12 +169,16 @@ stringFromListT = "#stringFromList"
 -- | Hack to insert blank lines.
 
 ($++$) :: Doc -> Doc -> Doc
-d $++$ d' = d $+$ "" $+$ d'
+d $++$ d'
+  | isEmpty d  = d'
+  | isEmpty d' = d
+  | otherwise  = d $+$ "" $+$ d'
 
 -- | Separate vertically by blank lines.
 
 vsep :: [Doc] -> Doc
-vsep = foldr1 ($++$)
+vsep [] = empty
+vsep ds = foldr1 ($++$) ds
 
 -- | Preamble: introductory comments.
 
@@ -240,13 +248,13 @@ importPragmas amod pmod = vcat $ map imp [ "qualified Data.Text" , amod, pmod ]
 
 -- * Bindings for the AST.
 
--- | Pretty-print identifier type.
+-- | Pretty-print types for token types similar to @Ident@.
 
-prIdent :: Doc
-prIdent =
-  prettyData UnnamedArg "Id" [("mkId", [ListCat (Cat "#Char")])]
+prToken :: String -> Doc
+prToken t =
+  prettyData UnnamedArg t [(agdaLower t, [ListCat (Cat "#Char")])]
   $++$
-  pragmaData "Id" [("Id", [])]
+  pragmaData t [(t, [])]
 
 -- | Pretty-print abstract syntax definition in Agda syntax.
 --
@@ -319,16 +327,16 @@ pragmaData d cs = prettyList pre lparen (rparen <+> "#-}") "|" $
 -- >>> prettyConstructor undefined  "D" ("c", [])
 -- c : D
 -- >>> prettyConstructor NamedArg "Stm" ("SIf", map Cat ["Exp", "Stm", "Stm"])
--- SIf : (e : Exp) (s₁ s₂ : Stm) → Stm
+-- sIf : (e : Exp) (s₁ s₂ : Stm) → Stm
 --
 prettyConstructor :: ConstructorStyle -> String -> (Fun,[Cat]) -> Doc
 prettyConstructor _style d (c, []) = hsep $
-  [ prettyFun c
+  [ prettyCon c
   , colon
   , text d
   ]
 prettyConstructor style d (c, as) = hsep $
-  [ prettyFun c
+  [ prettyCon c
   , colon
   , prettyConstructorArgs style as
   , arrow
@@ -357,16 +365,22 @@ prettyConstructorArgs style as =
   aggregate = map (\ xts -> (map fst xts, snd (head xts))) . List.groupBy ((==) `on` snd)
 
 -- | Suggest the name of a bound variable of the given category.
+--
+-- >>> map nameSuggestion [ ListCat (Cat "Stm"), TokenCat "Var", Cat "Exp" ]
+-- ["ss","x","e"]
+--
 nameSuggestion :: Cat -> String
 nameSuggestion = \case
   ListCat c     -> nameSuggestion c ++ "s"
   CoercCat d _  -> nameFor d
-  Cat "Id"      -> "x"
   Cat d         -> nameFor d
-  TokenCat "Id" -> "x"
-  TokenCat d    -> nameFor d
+  TokenCat{}    -> "x"
 
 -- | Suggest the name of a bound variable of the given base category.
+--
+-- >>> map nameFor ["Stm","ABC","#Char"]
+-- ["s","a","c"]
+--
 nameFor :: String -> String
 nameFor d = [ toLower $ head $ dropWhile (== '#') d ]
 
@@ -374,6 +388,7 @@ nameFor d = [ toLower $ head $ dropWhile (== '#') d ]
 --
 -- >>> numberUniquely ["a", "b", "a", "a", "c", "b"]
 -- [(Just 1,"a"),(Just 1,"b"),(Just 2,"a"),(Just 3,"a"),(Nothing,"c"),(Just 2,"b")]
+--
 numberUniquely :: forall a. Ord a => [a] -> [(Maybe Int, a)]
 numberUniquely as = mapM step as `evalState` Map.empty
   where
@@ -404,17 +419,20 @@ incr = Map.alter $ maybe (Just 1) (Just . succ)
 
 -- * Generate bindings for the pretty printer
 
--- | Generate Agda code to print identifiers.
+-- | Generate Agda code to print tokens.
 --
--- >>> printIdent
--- printId : Id → #String
--- printId (mkId s) = #stringFromList s
+-- >>> printToken "Ident"
+-- printIdent : Ident → #String
+-- printIdent (ident s) = #stringFromList s
 --
-printIdent :: Doc
-printIdent = vcat
-  [ hsep [ "printId", colon, "Id", arrow, stringT ]
-  , hsep [ "printId", lparen <> "mkId" <+> "s" <> rparen, equals, stringFromListT, "s" ]
+printToken :: String -> Doc
+printToken t = vcat
+  [ hsep [ f, colon, text t, arrow, stringT ]
+  , hsep [ f, lparen <> c <+> "s" <> rparen, equals, stringFromListT, "s" ]
   ]
+  where
+  f = text $ "print" ++ t
+  c = text $ agdaLower t
 
 -- | Generate Agda bindings to printers for AST.
 --
@@ -432,9 +450,7 @@ printer cats =
   $++$
   vcat (map pragmaBind ts)
   where
-  catName :: Cat -> String
-  catName (Cat x) = x
-  ts = map catName cats
+  ts = map (\ (Cat x) -> x) cats
   prettyTySig x = hsep [ text ("print" ++ x), colon, text x, arrow, stringT ]
   pragmaBind  x = hsep
     [ "{-#", "COMPILE", "GHC", text ("print" ++ x), equals, "\\", y, "->"
@@ -445,9 +461,37 @@ printer cats =
 
 -- * Auxiliary functions
 
--- | Pretty-print a rule name.
+-- | Concatenate documents created from token categories,
+--   separated by blank lines.
+--
+-- >>> allTokenCats text $ map TokenCat ["T", "U"]
+-- T
+-- <BLANKLINE>
+-- U
+allTokenCats :: (String -> Doc) -> [Cat] -> Doc
+allTokenCats f = vsep . map (\ (TokenCat t) -> f t)
+
+-- | Pretty-print a rule name for Haskell.
 prettyFun :: Fun -> Doc
 prettyFun = text
+
+-- | Pretty-print a rule name for Agda.
+prettyCon :: Fun -> Doc
+prettyCon = text . agdaLower
+
+-- | Turn identifier to non-capital identifier.
+--   Needed, since in Agda a constructor cannot overload a data type
+--   with the same name.
+--
+-- >>> map agdaLower ["SFun","foo","ABC","HelloWorld","module","Type_int"]
+-- ["sFun","foo","aBC","helloWorld","module'","typeInt"]
+--
+agdaLower :: String -> String
+agdaLower = replace '_' '\'' . mkName agdaKeywords MixedCase
+
+-- | A list of Agda keywords that would clash with generated names.
+agdaKeywords :: [String]
+agdaKeywords = words "abstract codata coinductive constructor data do eta-equality field forall hiding import in inductive infix infixl infixr instance let macro module mutual no-eta-equality open overlap pattern postulate primitive private public quote quoteContext quoteGoal quoteTerm record renaming rewrite Set syntax tactic unquote unquoteDecl unquoteDef using where with"
 
 -- | Pretty-print a category as Agda type.
 prettyCat :: Cat -> Doc
