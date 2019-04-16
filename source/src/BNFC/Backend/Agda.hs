@@ -374,26 +374,13 @@ nameFor d = [ toLower $ head $ dropWhile (== '#') d ]
 --
 -- >>> numberUniquely ["a", "b", "a", "a", "c", "b"]
 -- [(Just 1,"a"),(Just 1,"b"),(Just 2,"a"),(Just 3,"a"),(Nothing,"c"),(Just 2,"b")]
-numberUniquely :: Ord a => [a] -> [(Maybe Int, a)]
-numberUniquely as = numberUniquelyWith (calculateFrequencies as) as
-
--- | A frequency map.
-type Frequency a = Map a Int
-
--- | Increase the frequency of the given key.
-incr :: Ord a => a -> Frequency a -> Frequency a
-incr = Map.alter $ maybe (Just 1) (Just . succ)
-
--- | Count how often each element appears in a list.
-calculateFrequencies :: Ord a => [a] -> Frequency a
-calculateFrequencies = foldl (flip incr) Map.empty
-
--- | Given a frequency map, number duplicate elements consecutively.
---
--- Precondition: domain of frequency map is the same as the list.
-numberUniquelyWith :: forall a. Ord a => Frequency a -> [a] -> [(Maybe Int, a)]
-numberUniquelyWith counts as = mapM step as `evalState` Map.empty
+numberUniquely :: forall a. Ord a => [a] -> [(Maybe Int, a)]
+numberUniquely as = mapM step as `evalState` Map.empty
   where
+  -- First pass: determine frequency of each element.
+  counts :: Frequency a
+  counts = foldl (flip incr) Map.empty as
+  -- Second pass: consecutively number elements with frequency > 1.
   step :: a -> State (Frequency a) (Maybe Int, a)
   step a = do
     -- If the element has a unique occurrence, we do not need to number it.
@@ -403,6 +390,17 @@ numberUniquelyWith counts as = mapM step as `evalState` Map.empty
       -- with the new value.
       modify $ incr a
       (,a) . Map.lookup a <$> get
+
+-- | A frequency map.
+--
+--   NB: this type synonym should be local to 'numberUniquely', but
+--   Haskell lacks local type synonyms.
+--   https://gitlab.haskell.org/ghc/ghc/issues/4020
+type Frequency a = Map a Int
+
+-- | Increase the frequency of the given key.
+incr :: Ord a => a -> Frequency a -> Frequency a
+incr = Map.alter $ maybe (Just 1) (Just . succ)
 
 -- * Generate bindings for the pretty printer
 
