@@ -123,18 +123,24 @@ cf2Agda
 cf2Agda mod amod pmod cf = render $
   preamble
   $++$
-  header mod
+  hsep [ "module", text mod, "where" ]
+  $++$
+  imports
   $++$
   importPragmas amod pmod
+  $++$
+  prIdent
   $++$
   absyn cf
 
 -- We prefix the Agda types with "#" to not conflict with user-provided nonterminals.
-arrow, listT, charT, stringT, stringFromListT :: Doc
+arrow, charT, intT, listT, stringT, stringFromListT :: Doc
 arrow = "→"
 setT            = "Set"
-listT           = "#List"
 charT           = "#Char"
+intT            = "Integer"  -- This is the BNFC name for it!
+doubleT         = "Double"   -- This is the BNFC name for it!
+listT           = "#List"
 stringT         = "#String"
 stringFromListT = "#stringFromList"
 
@@ -177,6 +183,30 @@ header mod = vcat . concat $
     , hsep [ stringFromListT, colon, listT, charT, arrow, stringT ]
     ]
 
+-- | Import statements.
+
+imports :: Doc
+imports = vcat . map prettyImport $
+  [ ("Agda.Builtin.Char",   [("Char", charT)])
+  , ("Agda.Builtin.Float",  [("Float", doubleT)])
+  , ("Agda.Builtin.Int",    [("Int", intT)])
+  , ("Agda.Builtin.List",   [("List", listT)])
+  , ("Agda.Builtin.String", [("String", stringT), ("primStringFromList", stringFromListT) ])
+  ]
+
+prettyImport :: (String, [(String, Doc)]) -> Doc
+prettyImport (m, ren) = vcat $
+  [ hsep [ "open", "import", text m, "using", "()", "renaming" ] ] ++
+  map (nest 2) (prettyRenamings ren)
+
+prettyRenamings ::  [(String, Doc)] -> [Doc]
+prettyRenamings [] = error "prettyRenamings: expected non-empty list"
+prettyRenamings ((x,d):ren) =
+  [ hsep [ "(", text x, "to", d ] ] ++
+  map (\ (x, d) -> hsep [ ";", text x, "to", d ]) ren ++
+  [ ")" ]
+
+
 -- | Import pragmas.
 --
 -- >>> importPragmas "Foo.Abs" "Foo.Print"
@@ -192,14 +222,31 @@ importPragmas amod pmod = vcat $ map imp [ "qualified Data.Text" , amod, pmod ]
   where
   imp s = hsep [ "{-#", "FOREIGN", "GHC", "import", text s, "#-}" ]
 
+-- | Pretty-print identifier type.
+
+prIdent :: Doc
+prIdent =
+  prettyData "Id" [("mkId", [ListCat (Cat "#Char")])]
+  $++$
+  pragmaData "Id" [("Id", [])]
+
+
 -- | Pretty-print abstract syntax definition in Agda syntax.
 --
+--   We print this as one big mutual block rather than doing a
+--   strongly-connected component analysis and topological
+--   sort by dependency order.
+--
 absyn :: CF -> Doc
-absyn = foldr ($++$) empty . map prData . cf2data
+absyn cf =
+  "mutual"
+  $++$
+  (foldr1 ($++$) . concatMap (map (nest 2) . prData) . cf2data $ cf)
+
 
 -- | Pretty-print Agda data types and pragmas for AST.
 --
--- >>> prData (Cat "Nat", [ ("zero", []), ("suc", [Cat "Nat"]) ])
+-- >>> foldr1 ($++$) $ prData (Cat "Nat", [ ("zero", []), ("suc", [Cat "Nat"]) ])
 -- data Nat : Set where
 --   zero : Nat
 --   suc : Nat → Nat
@@ -209,8 +256,14 @@ absyn = foldr ($++$) empty . map prData . cf2data
 --   | suc
 --   ) #-}
 --
-prData :: Data -> Doc
-prData (Cat d, cs) = prettyData d cs $++$ pragmaData d cs
+-- We return a list of 'Doc' rather than a single 'Doc' since want
+-- to intersperse empty lines and indent it later.
+-- If we intersperse the empty line(s) here to get a single 'Doc',
+-- we will produce whitespace lines after applying 'nest'.
+-- This is a bit of a design problem of the pretty print library:
+-- there is no native concept of a blank line; @text ""@ is a bad hack.
+prData :: Data -> [Doc]
+prData (Cat d, cs) = [ prettyData d cs , pragmaData d cs ]
 prData (c    , _ ) = error $ "prData: unexpected category " ++ show c
 
 -- | Pretty-print AST definition in Agda syntax.
