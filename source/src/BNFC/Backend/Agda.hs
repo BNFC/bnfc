@@ -1,13 +1,8 @@
-{-# LANGUAGE LambdaCase #-}
-{-# LANGUAGE OverloadedStrings #-}
-
--- | Agda backend.
-
-{-
+{- |  Agda backend.
 Generate bindings to Haskell data types for use in Agda.
 
 Example for abstract syntax generated in Haskell backend:
-
+@@
   newtype Id = Id String deriving (Eq, Ord, Show, Read)
 
   data Def = DFun Type Id [Arg] [Stm]
@@ -25,9 +20,9 @@ Example for abstract syntax generated in Haskell backend:
 
   data Type = Type_bool | Type_int | Type_double | Type_void
     deriving (Eq, Ord, Show, Read)
-
+@@
 This should be accompanied by the following Agda code:
-
+@@
   module <mod> where
 
   {-# FOREIGN GHC import qualified Data.Text #-}
@@ -92,11 +87,16 @@ This should be accompanied by the following Agda code:
   {-# COMPILE GHC printArg     = \ a -> Data.Text.pack (printTree (a :: Arg))  #-}
   {-# COMPILE GHC printDef     = \ d -> Data.Text.pack (printTree (d :: Def))  #-}
   {-# COMPILE GHC printProgram = \ p -> Data.Text.pack (printTree (p :: Program)) #-}
-
+@@
 -}
+
+{-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE NoImplicitPrelude #-}
 
 module BNFC.Backend.Agda (makeAgda) where
 
+import Prelude'
 import qualified Data.List as List
 import Text.PrettyPrint
 
@@ -193,18 +193,12 @@ imports = vcat . map prettyImport $
   , ("Agda.Builtin.List",   [("List", listT)])
   , ("Agda.Builtin.String", [("String", stringT), ("primStringFromList", stringFromListT) ])
   ]
-
-prettyImport :: (String, [(String, Doc)]) -> Doc
-prettyImport (m, ren) = vcat $
-  [ hsep [ "open", "import", text m, "using", "()", "renaming" ] ] ++
-  map (nest 2) (prettyRenamings ren)
-
-prettyRenamings ::  [(String, Doc)] -> [Doc]
-prettyRenamings [] = error "prettyRenamings: expected non-empty list"
-prettyRenamings ((x,d):ren) =
-  [ hsep [ "(", text x, "to", d ] ] ++
-  map (\ (x, d) -> hsep [ ";", text x, "to", d ]) ren ++
-  [ ")" ]
+  where
+  prettyImport :: (String, [(String, Doc)]) -> Doc
+  prettyImport (m, ren) = prettyList pre lparen rparen semi $
+    map (\ (x, d) -> hsep [text x, "to", d ]) ren
+    where
+    pre = hsep [ "open", "import", text m, "using", "()", "renaming" ]
 
 
 -- | Import pragmas.
@@ -293,14 +287,10 @@ prettyData d cs = vcat $
 --   | suc
 --   ) #-}
 pragmaData :: String -> [(Fun, [Cat])] -> Doc
-pragmaData d = \case
-  []         -> hsep $ docs ++ [ "()", "#-}" ]
-  ((c,_):cs) -> vcat $ [ hsep docs ] ++ (map (nest 2) $
-     [ "(" <+> prettyFun c ]
-     ++ map (\(c,_) -> "|" <+> prettyFun c) cs
-     ++ [ ")" <+> "#-}" ])
+pragmaData d cs = prettyList pre lparen (rparen <+> "#-}") "|" $
+  map (prettyFun . fst) cs
   where
-  docs = [ "{-#", "COMPILE", "GHC", text d, equals, "data", text d ]
+  pre = hsep [ "{-#", "COMPILE", "GHC", text d, equals, "data", text d ]
 
 
 -- | Pretty-print since rule as Agda constructor declaration.
@@ -338,3 +328,31 @@ parensIf :: Bool -> Doc -> Doc
 parensIf = \case
   True  -> parens
   False -> id
+
+-- | Print a list of 0-1 elements on the same line as some preamble
+--   and from 2 elements on the following lines, indented.
+--
+-- >>> prettyList ("foo" <+> equals) lbrack rbrack comma []
+-- foo = []
+-- >>> prettyList ("foo" <+> equals) lbrack rbrack comma [ "a" ]
+-- foo = [a]
+-- >>> prettyList ("foo" <+> equals) lbrack rbrack comma [ "a", "b" ]
+-- foo =
+--   [ a
+--   , b
+--   ]
+prettyList
+  :: Doc   -- ^ Preamble.
+  -> Doc   -- ^ Left parenthesis.
+  -> Doc   -- ^ Right parenthesis.
+  -> Doc   -- ^ Separator (usually not including spaces).
+  -> [Doc] -- ^ List item.
+  -> Doc
+prettyList pre lpar rpar sepa = \case
+  []     -> pre <+> lpar <> rpar
+  [d]    -> pre <+> lpar <> d <> rpar
+  (d:ds) -> vcat . (pre :) . map (nest 2) . concat $
+    [ [ lpar <+> d ]
+    , map (sepa <+>) ds
+    , [ rpar ]
+    ]
