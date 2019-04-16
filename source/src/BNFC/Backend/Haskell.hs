@@ -19,8 +19,6 @@
 
 module BNFC.Backend.Haskell (makeHaskell, AlexVersion(..), makefile, testfile) where
 
-import BNFC.Options hiding (Backend)
-import BNFC.CF
 import BNFC.Backend.Agda
 import BNFC.Backend.Base
 import BNFC.Backend.Haskell.CFtoHappy
@@ -40,15 +38,22 @@ import BNFC.Backend.Txt2Tag
 import BNFC.Backend.XML
 import qualified BNFC.Backend.Common.Makefile as Makefile
 
+import BNFC.CF
+import BNFC.Options hiding (Backend)
+import BNFC.Utils (getZonedTimeTruncatedToSeconds)
+
 import System.FilePath (pathSeparator)
-import Control.Monad(when,unless)
-import Text.Printf (printf)
+import Control.Monad   (when, unless)
+import Text.Printf     (printf)
 import Text.PrettyPrint
 
 -- | Entrypoint for the Haskell backend.
 
 makeHaskell :: SharedOptions -> CF -> Backend
 makeHaskell opts cf = do
+  -- Get current time in printable form.
+  time <- liftIO $ show <$> getZonedTimeTruncatedToSeconds
+
   let absMod = absFileM opts
       lexMod = alexFileM opts
       parMod = happyFileM opts
@@ -84,7 +89,7 @@ makeHaskell opts cf = do
       2 -> makeXML opts True cf
       1 -> makeXML opts False cf
       _ -> return ()
-    when (agda opts) $ makeAgda opts cf
+    when (agda opts) $ makeAgda time opts cf
     when (cnf opts) $ do
       mkfile (cnfTablesFile opts) $ ToCNF.generate opts cf
       mkfile "TestCNF.hs" $ ToCNF.genTestFile opts cf

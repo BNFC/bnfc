@@ -24,6 +24,7 @@ module BNFC.Utils
     , replace, prParenth
     , writeFileRep
     , cstring, cchar
+    , getZonedTimeTruncatedToSeconds
     ) where
 
 import Control.Arrow ((&&&))
@@ -31,6 +32,7 @@ import Control.DeepSeq (rnf)
 
 import Data.Char
 import Data.List (intercalate)
+import Data.Time
 
 import System.IO (IOMode(ReadMode),hClose,hGetContents,openFile)
 import System.IO.Error (tryIOError)
@@ -70,6 +72,18 @@ replace :: Eq a =>
         -> a -- ^ Value to replace it with
         -> [a] -> [a]
 replace x y xs = [ if z == x then y else z | z <- xs]
+
+-- * Time utilities
+
+-- | Cut away fractions of a second in time.
+
+truncateZonedTimeToSeconds :: ZonedTime -> ZonedTime
+truncateZonedTimeToSeconds (ZonedTime (LocalTime day (TimeOfDay h m s)) zone) =
+  ZonedTime (LocalTime day (TimeOfDay h m s')) zone
+  where s' = fromIntegral $ truncate s
+
+getZonedTimeTruncatedToSeconds :: IO ZonedTime
+getZonedTimeTruncatedToSeconds = truncateZonedTimeToSeconds <$> getZonedTime
 
 -- * File utilities
 

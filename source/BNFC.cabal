@@ -58,7 +58,8 @@ Executable bnfc
     containers,
     pretty >=1.1 && <1.2,
     filepath,
-    deepseq
+    deepseq,
+    time
   build-tools:         alex, happy
   Main-is: Main.hs
   HS-source-dirs: compat src
@@ -207,7 +208,7 @@ Test-suite unit-tests
   Type: exitcode-stdio-1.0
   Build-Depends: base>=4 && <5, mtl, directory, array, process, filepath, pretty,
                  hspec, QuickCheck >= 2.5, HUnit,
-                 temporary, containers, deepseq
+                 temporary, containers, deepseq, time
   Main-is: unit-tests.hs
   HS-source-dirs: compat src test
   extensions:
