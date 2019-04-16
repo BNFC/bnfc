@@ -96,7 +96,12 @@ This should be accompanied by the following Agda code:
 module BNFC.Backend.Agda (makeAgda) where
 
 import Prelude'
+import Control.Monad.State
+import Data.Char
+import Data.Function (on)
 import qualified Data.List as List
+import Data.Map (Map)
+import qualified Data.Map as Map
 import Text.PrettyPrint
 
 import BNFC.CF
@@ -104,6 +109,12 @@ import BNFC.CF
 import BNFC.Backend.Base           (Backend, mkfile)
 import BNFC.Options                (SharedOptions)
 import BNFC.Backend.Haskell.HsOpts (agdaFile, agdaFileM, absFileM, printerFileM)
+
+-- | How to print the types of constructors in Agda?
+
+data ConstructorStyle
+  = UnnamedArg  -- ^ Simply typed, like @E → S → S → S@.
+  | NamedArg    -- ^ Dependently typed, like @(e : E) (s₁ s₂ : S) → S@.
 
 -- | Entry-point for Agda backend.
 
@@ -131,7 +142,7 @@ cf2Agda time mod amod pmod cf = render . vsep $
   , imports
   , importPragmas amod pmod
   , prIdent
-  , absyn dats
+  , absyn NamedArg dats
   , "-- Binding the BNFC pretty printer"
   , printIdent
   , printer cats
@@ -233,7 +244,7 @@ importPragmas amod pmod = vcat $ map imp [ "qualified Data.Text" , amod, pmod ]
 
 prIdent :: Doc
 prIdent =
-  prettyData "Id" [("mkId", [ListCat (Cat "#Char")])]
+  prettyData UnnamedArg "Id" [("mkId", [ListCat (Cat "#Char")])]
   $++$
   pragmaData "Id" [("Id", [])]
 
@@ -243,12 +254,12 @@ prIdent =
 --   strongly-connected component analysis and topological
 --   sort by dependency order.
 --
-absyn :: [Data] -> Doc
-absyn = vsep . ("mutual" :) . concatMap (map (nest 2) . prData)
+absyn :: ConstructorStyle -> [Data] -> Doc
+absyn style = vsep . ("mutual" :) . concatMap (map (nest 2) . prData style)
 
 -- | Pretty-print Agda data types and pragmas for AST.
 --
--- >>> vsep $ prData (Cat "Nat", [ ("zero", []), ("suc", [Cat "Nat"]) ])
+-- >>> vsep $ prData UnnamedArg (Cat "Nat", [ ("zero", []), ("suc", [Cat "Nat"]) ])
 -- data Nat : Set where
 --   zero : Nat
 --   suc : Nat → Nat
@@ -265,25 +276,25 @@ absyn = vsep . ("mutual" :) . concatMap (map (nest 2) . prData)
 -- This is a bit of a design problem of the pretty print library:
 -- there is no native concept of a blank line; @text ""@ is a bad hack.
 --
-prData :: Data -> [Doc]
-prData (Cat d, cs) = [ prettyData d cs , pragmaData d cs ]
-prData (c    , _ ) = error $ "prData: unexpected category " ++ show c
+prData :: ConstructorStyle -> Data -> [Doc]
+prData style (Cat d, cs) = [ prettyData style d cs , pragmaData d cs ]
+prData _     (c    , _ ) = error $ "prData: unexpected category " ++ show c
 
 -- | Pretty-print AST definition in Agda syntax.
 --
--- >>> prettyData "Nat" [ ("zero", []), ("suc", [Cat "Nat"]) ]
+-- >>> prettyData UnnamedArg "Nat" [ ("zero", []), ("suc", [Cat "Nat"]) ]
 -- data Nat : Set where
 --   zero : Nat
 --   suc : Nat → Nat
--- >>> let stm = Cat "Stm" in prettyData "Stm" [ ("block", [ListCat stm]), ("while", [Cat "Exp", stm]) ]
+-- >>> let stm = Cat "Stm" in prettyData UnnamedArg "Stm" [ ("block", [ListCat stm]), ("while", [Cat "Exp", stm]) ]
 -- data Stm : Set where
 --   block : #List Stm → Stm
 --   while : Exp → Stm → Stm
 --
-prettyData :: String -> [(Fun, [Cat])] -> Doc
-prettyData d cs = vcat $
+prettyData :: ConstructorStyle -> String -> [(Fun, [Cat])] -> Doc
+prettyData style d cs = vcat $
   [ hsep [ "data", text d, colon, "Set", "where" ] ] ++
-  map (nest 2 . prettyConstructor d) cs
+  map (nest 2 . prettyConstructor style d) cs
 
 -- | Generate pragmas to bind Haskell AST to Agda.
 --
@@ -303,15 +314,95 @@ pragmaData d cs = prettyList pre lparen (rparen <+> "#-}") "|" $
 
 -- | Pretty-print since rule as Agda constructor declaration.
 --
--- >>> prettyConstructor "D" ("c", [Cat "A", Cat "B", Cat "C"])
+-- >>> prettyConstructor UnnamedArg "D" ("c", [Cat "A", Cat "B", Cat "C"])
 -- c : A → B → C → D
--- >>> prettyConstructor "D" ("c", [])
+-- >>> prettyConstructor undefined  "D" ("c", [])
 -- c : D
-prettyConstructor :: String -> (Fun,[Cat]) -> Doc
-prettyConstructor d (c, as) = hsep . concat $
-  [ [ prettyFun c, colon ]
-  , List.intersperse arrow $ map prettyCat $ as ++ [Cat d]
+-- >>> prettyConstructor NamedArg "Stm" ("SIf", map Cat ["Exp", "Stm", "Stm"])
+-- SIf : (e : Exp) (s₁ s₂ : Stm) → Stm
+--
+prettyConstructor :: ConstructorStyle -> String -> (Fun,[Cat]) -> Doc
+prettyConstructor _style d (c, []) = hsep $
+  [ prettyFun c
+  , colon
+  , text d
   ]
+prettyConstructor style d (c, as) = hsep $
+  [ prettyFun c
+  , colon
+  , prettyConstructorArgs style as
+  , arrow
+  , text d
+  ]
+
+-- | Print the constructor argument telescope.
+--
+-- >>> prettyConstructorArgs UnnamedArg [Cat "A", Cat "B", Cat "C"]
+-- A → B → C
+-- >>> prettyConstructorArgs NamedArg (map Cat ["Exp", "Stm", "Stm"])
+-- (e : Exp) (s₁ s₂ : Stm)
+--
+prettyConstructorArgs :: ConstructorStyle -> [Cat] -> Doc
+prettyConstructorArgs style as =
+  case style of
+    UnnamedArg -> hsep $ List.intersperse arrow ts
+    NamedArg   -> hsep $ map (\(xs,t) -> parens (hsep [hsep xs, colon, t])) tel
+  where
+  ts  = map prettyCat as
+  ns  = map (text . subscript) $ numberUniquely $ map nameSuggestion as
+  tel = aggregate $ zip ns ts
+  subscript (m, s) = maybe s (\ i -> s ++ [chr (ord '₀' + i)]) m
+  -- Aggregate consecutive arguments of the same type.
+  aggregate :: Eq b => [(a,b)] -> [([a],b)]
+  aggregate = map (\ xts -> (map fst xts, snd (head xts))) . List.groupBy ((==) `on` snd)
+
+-- | Suggest the name of a bound variable of the given category.
+nameSuggestion :: Cat -> String
+nameSuggestion = \case
+  ListCat c     -> nameSuggestion c ++ "s"
+  CoercCat d _  -> nameFor d
+  Cat "Id"      -> "x"
+  Cat d         -> nameFor d
+  TokenCat "Id" -> "x"
+  TokenCat d    -> nameFor d
+
+-- | Suggest the name of a bound variable of the given base category.
+nameFor :: String -> String
+nameFor d = [ toLower $ head $ dropWhile (== '#') d ]
+
+-- | Number duplicate elements in a list consecutively, starting with 1.
+--
+-- >>> numberUniquely ["a", "b", "a", "a", "c", "b"]
+-- [(Just 1,"a"),(Just 1,"b"),(Just 2,"a"),(Just 3,"a"),(Nothing,"c"),(Just 2,"b")]
+numberUniquely :: Ord a => [a] -> [(Maybe Int, a)]
+numberUniquely as = numberUniquelyWith (calculateFrequencies as) as
+
+-- | A frequency map.
+type Frequency a = Map a Int
+
+-- | Increase the frequency of the given key.
+incr :: Ord a => a -> Frequency a -> Frequency a
+incr = Map.alter $ maybe (Just 1) (Just . succ)
+
+-- | Count how often each element appears in a list.
+calculateFrequencies :: Ord a => [a] -> Frequency a
+calculateFrequencies = foldl (flip incr) Map.empty
+
+-- | Given a frequency map, number duplicate elements consecutively.
+--
+-- Precondition: domain of frequency map is the same as the list.
+numberUniquelyWith :: forall a. Ord a => Frequency a -> [a] -> [(Maybe Int, a)]
+numberUniquelyWith counts as = mapM step as `evalState` Map.empty
+  where
+  step :: a -> State (Frequency a) (Maybe Int, a)
+  step a = do
+    -- If the element has a unique occurrence, we do not need to number it.
+    let n = Map.findWithDefault (error "numberUniquelyWith") a counts
+    if n == 1 then return (Nothing, a) else do
+      -- Otherwise, increase the counter for that element and number it
+      -- with the new value.
+      modify $ incr a
+      (,a) . Map.lookup a <$> get
 
 -- * Generate bindings for the pretty printer
 
@@ -334,8 +425,8 @@ printIdent = vcat
 --   printExp : Exp → #String
 --   printStm : Stm → #String
 -- <BLANKLINE>
--- {-# COMPILE GHC printExp = \ x -> Data.Text.pack (printTree (x :: Exp)) #-}
--- {-# COMPILE GHC printStm = \ x -> Data.Text.pack (printTree (x :: Stm)) #-}
+-- {-# COMPILE GHC printExp = \ e -> Data.Text.pack (printTree (e :: Exp)) #-}
+-- {-# COMPILE GHC printStm = \ s -> Data.Text.pack (printTree (s :: Stm)) #-}
 --
 printer :: [Cat] -> Doc
 printer cats =
@@ -348,9 +439,11 @@ printer cats =
   ts = map catName cats
   prettyTySig x = hsep [ text ("print" ++ x), colon, text x, arrow, stringT ]
   pragmaBind  x = hsep
-    [ "{-#", "COMPILE", "GHC", text ("print" ++ x), equals, "\\", "x", "->"
-    , "Data.Text.pack", parens ("printTree" <+> parens ("x" <+> "::" <+> text x)), "#-}"
+    [ "{-#", "COMPILE", "GHC", text ("print" ++ x), equals, "\\", y, "->"
+    , "Data.Text.pack", parens ("printTree" <+> parens (y <+> "::" <+> text x)), "#-}"
     ]
+    where
+    y = text $ nameFor x
 
 -- * Auxiliary functions
 
