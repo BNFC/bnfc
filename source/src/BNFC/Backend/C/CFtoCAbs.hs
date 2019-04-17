@@ -186,7 +186,7 @@ mkCFile cf = unlines
     ]
 
 prDataC :: Data -> Doc
-prDataC (cat, rules) = vsep $ map (prRuleC cat) rules
+prDataC (cat, rules) = vcat' $ map (prRuleC cat) rules
 
 -- | Classes for rules vary based on the type of rule.
 --
@@ -230,15 +230,15 @@ prDataC (cat, rules) = vsep $ map (prRuleC cat) rules
 -- }
 prRuleC :: Cat -> (String, [Cat]) -> Doc
 prRuleC _ (fun, _) | isNilFun fun || isOneFun fun = empty
-prRuleC cat (fun, _) | isConsFun fun = vsep
+prRuleC cat (fun, _) | isConsFun fun = vcat'
     [ "/********************   " <> c <> "    ********************/"
     , c <+> "make_" <> c <> parens (text m <+> "p1" <> "," <+> c <+> "p2")
     , lbrace
-    , nest 4 $ vsep
+    , nest 4 $ vcat'
         [ c <+> "tmp = (" <> c <> ") malloc(sizeof(*tmp));"
         , "if (!tmp)"
         , lbrace
-        , nest 4 $ vsep
+        , nest 4 $ vcat'
             [ "fprintf(stderr, \"Error: out of memory when allocating " <> c <> "!\\n\");"
             , "exit(1);" ]
         , rbrace
@@ -254,7 +254,7 @@ prRuleC cat (fun, _) | isConsFun fun = vsep
                                 -- expect a list category
     m = identCat (normCat c')
     m' = map toLower m ++ "_"
-prRuleC c (fun, cats) = vsep
+prRuleC c (fun, cats) = vcat'
     [ text $ "/********************   " ++ fun ++ "    ********************/"
     , prConstructorC c fun vs cats ]
   where
@@ -277,14 +277,14 @@ prRuleC c (fun, cats) = vsep
 --     return tmp;
 -- }
 prConstructorC :: Cat -> String -> [IVar] -> [Cat] -> Doc
-prConstructorC cat c vs cats = vsep
+prConstructorC cat c vs cats = vcat'
     [ text (cat' ++ " make_" ++ c) <> parens args
     , lbrace
-    , nest 4 $ vsep
+    , nest 4 $ vcat'
         [ text $ cat' ++ " tmp = (" ++ cat' ++ ") malloc(sizeof(*tmp));"
         , text "if (!tmp)"
         , lbrace
-        , nest 4 $ vsep
+        , nest 4 $ vcat'
             [ text ("fprintf(stderr, \"Error: out of memory when allocating " ++ c ++ "!\\n\");")
             , text "exit(1);" ]
         , rbrace

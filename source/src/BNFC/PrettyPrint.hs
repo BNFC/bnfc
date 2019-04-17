@@ -4,7 +4,7 @@ module BNFC.PrettyPrint
   ( module Text.PrettyPrint
   , (<.>)
   , codeblock
-  , vsep
+  , vcat'
   , (<=>)
   ) where
 
@@ -27,11 +27,11 @@ codeblock :: Int -> [Doc] -> Doc
 codeblock indent code = lbrace $+$ nest indent (vcat code) $+$ rbrace
 
 -- | List version of prettyPrint $+$
--- >>> vsep [text "abc", nest 4 (text "def")]
+-- >>> vcat' [text "abc", nest 4 (text "def")]
 -- abc
 --     def
-vsep :: [Doc] -> Doc
-vsep = foldl ($+$) empty
+vcat' :: [Doc] -> Doc
+vcat' = foldl ($+$) empty
 
 -- | Pretty print separator with = (for assignments...)
 -- >>> "a" <=> "123"
