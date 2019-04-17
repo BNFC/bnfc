@@ -42,7 +42,7 @@ import BNFC.PrettyPrint
 
 infixr 5 +++, ++++, +-+, +.+
 
--- printing operations
+-- * String operations for printing.
 
 -- | Concatenate strings by a space.
 (+++) :: String -> String -> String
