@@ -99,6 +99,7 @@ import Prelude'
 import Control.Monad.State
 import Data.Char
 import Data.Function (on)
+import Data.Functor  ((<$>))
 import qualified Data.List as List
 import Data.Map (Map)
 import qualified Data.Map as Map
