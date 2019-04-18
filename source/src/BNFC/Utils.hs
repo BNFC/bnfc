@@ -31,6 +31,7 @@ import Control.Arrow ((&&&))
 import Control.DeepSeq (rnf)
 
 import Data.Char
+import Data.Functor
 import Data.List (intercalate)
 import Data.Time
 
