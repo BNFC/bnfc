@@ -103,6 +103,8 @@ import Data.Functor  ((<$>))
 import qualified Data.List as List
 import Data.Map (Map)
 import qualified Data.Map as Map
+import Data.List.NonEmpty (NonEmpty((:|)))
+import qualified Data.List.NonEmpty as NEList
 
 import BNFC.CF
 import BNFC.Backend.Base           (Backend, mkfile)
@@ -110,6 +112,8 @@ import BNFC.Backend.Haskell.HsOpts (agdaFile, agdaFileM, absFileM, printerFileM)
 import BNFC.Options                (SharedOptions)
 import BNFC.PrettyPrint
 import BNFC.Utils                  (NameStyle(..), mkName, replace)
+
+type NEList = NEList.NonEmpty
 
 -- | How to print the types of constructors in Agda?
 
@@ -317,15 +321,17 @@ prettyConstructorArgs :: ConstructorStyle -> [Cat] -> Doc
 prettyConstructorArgs style as =
   case style of
     UnnamedArg -> hsep $ List.intersperse arrow ts
-    NamedArg   -> hsep $ map (\(xs,t) -> parens (hsep [hsep xs, colon, t])) tel
+    NamedArg   -> hsep $ map (\ (x :| xs, t) -> parens (hsep [x, hsep xs, colon, t])) tel
   where
   ts  = map prettyCat as
   ns  = map (text . subscript) $ numberUniquely $ map nameSuggestion as
-  tel = aggregate $ zip ns ts
+  tel = aggregateOn (render . snd) $ zip ns ts
   subscript (m, s) = maybe s (\ i -> s ++ [chr (ord '₀' + i)]) m
   -- Aggregate consecutive arguments of the same type.
-  aggregate :: Eq b => [(a,b)] -> [([a],b)]
-  aggregate = map (\ xts -> (map fst xts, snd (head xts))) . List.groupBy ((==) `on` snd)
+  aggregateOn :: Eq c => ((a,b) -> c) -> [(a,b)] -> [(NEList a,b)]
+  aggregateOn f
+    = map (\ p -> (NEList.map fst p, snd (NEList.head p)))
+    . NEList.groupWith f
 
 -- | Suggest the name of a bound variable of the given category.
 --
