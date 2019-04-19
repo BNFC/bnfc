@@ -207,9 +207,22 @@ Executable bnfc
 -- --- Testing --------------------------------------------------------------
 Test-suite unit-tests
   Type: exitcode-stdio-1.0
-  Build-Depends: base>=4 && <5, mtl, directory, array, process, filepath, pretty,
-                 hspec, QuickCheck >= 2.5, HUnit,
-                 temporary, containers, deepseq, time
+  Build-Depends:
+    base>=4 && <5,
+    semigroups,
+    mtl,
+    directory,
+    array,
+    process,
+    filepath,
+    pretty,
+    hspec,
+    QuickCheck >= 2.5,
+    HUnit,
+    temporary,
+    containers,
+    deepseq,
+    time
   Main-is: unit-tests.hs
   HS-source-dirs: compat src test
   extensions:
