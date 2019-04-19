@@ -43,7 +43,8 @@ import BNFC.Options hiding (Backend)
 import BNFC.Utils (getZonedTimeTruncatedToSeconds)
 
 import System.FilePath (pathSeparator)
-import Control.Monad
+import Control.Monad   (when, unless)
+import Data.Functor    ((<$>))
 import Text.Printf     (printf)
 import Text.PrettyPrint
 
