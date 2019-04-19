@@ -51,6 +51,7 @@ Library
 Executable bnfc
   Build-Depends:
     base>=4.6 && <5,
+    semigroups,
     mtl,
     directory,
     array,
