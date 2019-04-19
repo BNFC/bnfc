@@ -331,7 +331,8 @@ prettyConstructorArgs style as =
   aggregateOn :: Eq c => ((a,b) -> c) -> [(a,b)] -> [(NEList a,b)]
   aggregateOn f
     = map (\ p -> (NEList.map fst p, snd (NEList.head p)))
-    . NEList.groupWith f
+    . NEList.groupBy ((==) `on` f)
+    -- . NEList.groupWith f -- Too recent, fails stack-7.8 install
 
 -- | Suggest the name of a bound variable of the given category.
 --
