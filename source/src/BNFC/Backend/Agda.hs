@@ -317,10 +317,10 @@ prettyConstructorArgs :: ConstructorStyle -> [Cat] -> Doc
 prettyConstructorArgs style as =
   case style of
     UnnamedArg -> hsep $ List.intersperse arrow ts
-    NamedArg   -> hsep $ map (\(xs,t) -> parens (hsep [hsep (map text xs), colon, t])) tel
+    NamedArg   -> hsep $ map (\(xs,t) -> parens (hsep [hsep xs, colon, t])) tel
   where
   ts  = map prettyCat as
-  ns  = map subscript $ numberUniquely $ map nameSuggestion as
+  ns  = map (text . subscript) $ numberUniquely $ map nameSuggestion as
   tel = aggregate $ zip ns ts
   subscript (m, s) = maybe s (\ i -> s ++ [chr (ord '₀' + i)]) m
   -- Aggregate consecutive arguments of the same type.
