@@ -18,7 +18,7 @@ CABAL_TEST           = $(CABAL) test      $(CABAL_TEST_OPTS)
 # Name for binary distribution (e.g. bnfc-2.4.5-linux32)
 BDIST_TAG=bnfc-${BNFC_VERSION}-$(shell uname -s)-$(shell uname -m)
 
-.PHONY: default build install doc test bdist show-version debug
+.PHONY: default build install doc test bdist show-version debug TAGS
 
 default: install test
 
