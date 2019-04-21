@@ -43,12 +43,28 @@ cnfTablesFile = mkFile withLang "CnfTables" "hs"
 cnfTablesFileM= mkMod  withLang "CnfTables"
 xmlFile       = mkFile withLang "XML" "hs"
 xmlFileM      = mkMod  withLang "XML"
-agdaASTFile   = mkFile withLang "AST" "agda"
-agdaASTFileM  = mkMod  withLang "AST"
+composOpFile  = mkFile noLang   "ComposOp" "hs"
+composOpFileM = mkMod  noLang   "ComposOp"
+
+-- Files created by the Agda backend
+
+agdaASTFile
+  , agdaASTFileM
+  , agdaParserFile
+  , agdaParserFileM
+  , agdaLibFile
+  , agdaLibFileM
+  , agdaMainFile
+  , agdaMainFileM
+ :: Options -> String
+agdaASTFile     = mkFile withLang "AST" "agda"
+agdaASTFileM    = mkMod  withLang "AST"
 agdaParserFile  = mkFile withLang "Parser" "agda"
 agdaParserFileM = mkMod  withLang "Parser"
-composOpFile  = mkFile noLang   "ComposOp" "hs"
-composOpFileM = mkMod noLang    "ComposOp"
+agdaLibFile     = mkFile noLang   "IOLib" "agda"
+agdaLibFileM    = mkMod  noLang   "IOLib"
+agdaMainFile    = mkFile noLang   "Main" "agda"
+agdaMainFileM   = mkMod  noLang   "Main"
 
 
 noLang :: Options -> String -> String
