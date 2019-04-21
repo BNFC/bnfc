@@ -42,7 +42,7 @@ import BNFC.CF
 import BNFC.Options hiding (Backend)
 import BNFC.Utils (getZonedTimeTruncatedToSeconds)
 
-import System.FilePath (pathSeparator)
+import System.FilePath ((<.>), pathSeparator)
 import Control.Monad   (when, unless)
 import Data.Functor    ((<$>))
 import Text.Printf     (printf)
@@ -97,8 +97,12 @@ makeHaskell opts cf = do
       mkfile "BenchCNF.hs" $ ToCNF.genBenchmark opts
 
 
-makefile :: Options -> String -> Doc
-makefile opts basename = makeA where
+-- | Generate the makefile.
+makefile
+  :: Options
+  -> String    -- ^ Filename of the makefile.
+  -> Doc       -- ^ Content of the makefile.
+makefile opts makeFile = makeA where
   glr_params = if glr opts == GLR then "--glr --decode " else ""
   dir = let d = codeDir opts in if null d then "" else d ++ [pathSeparator]
   makeA = vcat
@@ -111,25 +115,41 @@ makefile opts basename = makeA where
       , Makefile.mkRule "clean" []
           [ "-rm -f "  ++ unwords
                 (map (dir++) [ "*.log", "*.aux", "*.hi", "*.o", "*.dvi" ]) ]
-      ,  Makefile.mkRule "distclean" ["clean"]
-          [ "-rm -f " ++ unwords
-              [ mkFile withLang "Doc" "*" opts
-              , mkFile withLang "Lex" "*" opts
-              , mkFile withLang "Par" "*" opts
-              , mkFile withLang "Layout" "*" opts
-              , mkFile withLang "Skel" "*" opts
-              , mkFile withLang "Print" "*" opts
-              , mkFile withLang "Test" "*" opts
-              , mkFile withLang "Abs" "*" opts
-              , mkFile withLang "Test" "" opts
-              , mkFile noLang   "ErrM" "*" opts
-              , mkFile noLang   "SharedString" "*" opts
-              , mkFile noLang "ComposOp" "*" opts
-              , dir ++ lang opts ++ ".dtd"
-              , mkFile withLang "XML" "*" opts
-              , basename ]
-          , if null dir then "" else "-rmdir -p " ++ dir ]
+      , Makefile.mkRule "distclean" ["clean"] $
+          [ unwords . concat $
+            [ [ "-rm -f" ]
+              -- Generated files that have a .bak variant
+            , concatMap (\ f -> alsoBak (f opts))
+              [ absFile        -- Abs.hs
+              , composOpFile   -- ComposOp.hs
+              , txtFile        -- Doc.txt
+              , errFile        -- ErrM.hs
+              , layoutFile     -- Layout.hs
+              , alexFile       -- Lex.x
+              , happyFile      -- Par.y
+              , printerFile    -- Print.hs
+              , shareFile      -- SharedString.hs -- only if: shareStrings opt
+              , templateFile   -- Skel.hs
+              , tFile          -- Test.hs
+              , xmlFile        -- XML.hs
+              , agdaASTFile    -- AST.agda
+              , agdaParserFile -- Parser.agda
+              , (\ opts -> dir ++ lang opts ++ ".dtd")
+              ]
+              -- Files that have no .bak variant
+            , map (\ (file, ext) -> mkFile withLang file ext opts)
+              [ ("Test"    , "")
+              , ("Lex"     , "hs")
+              , ("Par"     , "hs")
+              , ("ParData" , "hs")  -- only if --glr
+              ]
+            , [ makeFile ]
+            ]
+          , if null dir then "" else "-rmdir -p " ++ dir
+          ]
       ]
+  alsoBak :: FilePath -> [FilePath]
+  alsoBak s = [ s, s <.> "bak" ]
 
 testfile :: Options -> CF -> String
 testfile opts cf
