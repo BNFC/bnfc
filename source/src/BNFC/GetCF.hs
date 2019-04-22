@@ -20,6 +20,21 @@
 
 module BNFC.GetCF where
 
+import Control.Arrow (left)
+import Control.Monad.State
+
+import Data.Char
+import Data.Either (partitionEithers)
+import Data.List   (nub, partition)
+import Data.Maybe  (mapMaybe)
+
+import qualified Data.Foldable as Fold
+
+import System.Exit (exitFailure)
+import System.IO   (hPutStrLn, stderr)
+
+-- Local imports:
+
 import qualified AbsBNF as Abs
 import ParBNF
 import BNFC.CF
@@ -27,15 +42,7 @@ import BNFC.Options
 import BNFC.TypeChecker
 import BNFC.Utils
 
-import Control.Arrow (left)
-import Control.Monad.State
-import Data.Char
-import Data.Either (partitionEithers)
-import Data.List(nub,partition)
-import Data.Maybe (mapMaybe)
 import ErrM
-import System.Exit (exitFailure)
-import System.IO (hPutStrLn, stderr)
 
 -- $setup
 -- >>> import PrintBNF
@@ -64,7 +71,7 @@ parseCFP opts target content = do
             putStrLn "This can be an error in other back ends."
 
   -- Print warnings if user defined nullable tokens.
-  mapM_ putStrLn $ checkTokens cf
+  Fold.mapM_ putStrLn $ checkTokens cf
 
   -- Print the number of rules
   let nRules = length (cfgRules cf)
