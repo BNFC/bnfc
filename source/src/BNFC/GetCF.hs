@@ -121,7 +121,8 @@ getCFP cnf (Abs.Grammar defs0) = do
                   (symbols,keywords) = partition notIdent reservedWords
                   notIdent s         = null s || not (isAlpha (head s)) || any (not . isIdentRest) s
                   isIdentRest c      = isAlphaNum c || c == '_' || c == '\''
-                  reservedWords      = nub [t | r <- rules, Right t <- rhsRule r]
+                  reservedWords      = nub [t | r <- rules, isParsable r, Right t <- rhsRule r]
+                     -- Issue #204: exclude keywords from internal rules
               in CFG pragma literals symbols keywords [] rules
     case mapMaybe (checkRule (cfp2cf cf0)) (cfgRules cf0) of
       [] -> return ()

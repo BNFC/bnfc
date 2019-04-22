@@ -120,7 +120,8 @@ exampleTests params =
 testCases :: TestParameters -> [Test]
 testCases params =
     map makeTestCase
-       [  "regression-tests/249_unicode"
+        [ "regression-tests/204_InternalToken"
+        , "regression-tests/249_unicode"
         , "regression-tests/#100_coercion_lists"
         , "regression-tests/#134_category_named_I"
         , "regression-tests/comments"

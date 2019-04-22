@@ -58,8 +58,7 @@ cf2HappyS = cf2Happy
 cf2Happy name absName lexName errName mode byteStrings functor cf = unlines
   [ header name absName lexName errName byteStrings
   , render $ declarations mode (allEntryPoints cf)
-  , tokens (cfTokens cf)
-  , specialToks cf
+  , render $ tokens cf
   , delimiter
   , specialRules byteStrings cf
   , render $ prRules functor (rulesForHappy absName functor cf)
@@ -104,17 +103,27 @@ declarations mode ns = vcat
 delimiter :: String
 delimiter = "\n%%\n"
 
--- Generate the list of tokens and their identifiers.
-tokens :: [(String,Int)] -> String
-tokens []   = "-- no tokens\n"
+-- | Generate the list of tokens and their identifiers.
+tokens :: CF -> Doc
+tokens cf
   -- Andreas, 2019-01-02: "%token" followed by nothing is a Happy parse error.
   -- Thus, if we have no tokens, do not output anything.
-tokens toks = "%token\n" ++ prTokens toks
- where prTokens []         = []
-       prTokens ((t,k):tk) = "  " ++ render (convert t) ++
-                             " { " ++ oneTok t k ++ " }\n" ++
-                             prTokens tk
-       oneTok _ k = "PT _ (TS _ " ++ show k ++ ")"
+  | null ts   = empty
+  | otherwise = "%token" $$ (nest 2 $ vcat ts)
+  where
+    ts            = map prToken (cfTokens cf) ++ map text (specialToks cf)
+    prToken (t,k) = convert t <+> braces (text $ "PT _ (TS _ " ++ show k ++ ")")
+
+-- tokens :: [(String,Int)] -> String
+-- tokens []   = "-- no tokens\n"
+--   -- Andreas, 2019-01-02: "%token" followed by nothing is a Happy parse error.
+--   -- Thus, if we have no tokens, do not output anything.
+-- tokens toks = "%token\n" ++ prTokens toks
+--  where prTokens []         = []
+--        prTokens ((t,k):tk) = render (convert t) ++
+--                              " { " ++ oneTok t k ++ " }\n" ++
+--                              prTokens tk
+--        oneTok _ k = "PT _ (TS _ " ++ show k ++ ")"
 
 -- Happy doesn't allow characters such as åäö to occur in the happy file. This
 -- is however not a restriction, just a naming paradigm in the happy source file.
@@ -265,12 +274,9 @@ definedRules cf = [ mkDef f xs e | FunDef f xs e <- cfgPragmas cf ]
             | otherwise         = App x $ map underscore es
         underscore e          = e
 
--- aarne's modifs 8/1/2002:
--- Markus's modifs 11/02/2002
-
--- GF literals
-specialToks :: CF -> String
-specialToks cf = unlines (map aux (literals cf))
+-- | GF literals
+specialToks :: CF -> [String]
+specialToks cf = map aux (literals cf)
  where aux cat =
         case show cat of
           "Ident"  -> "L_ident  { PT _ (TV $$) }"

@@ -1,0 +1,7 @@
+-- Andreas, 2019-04-22, issue #204.
+-- Tokens from internal rules ended up in lexer.
+
+internal Internal. Prg ::= "Internal";
+Main.              Prg ::= Ident;
+
+-- Should accept input "Internal".
