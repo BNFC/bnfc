@@ -51,7 +51,6 @@ parseCFP opts target content = do
                     >>= markTokenCategories
   let cf = cfp2cf cfp
   runErr $ checkDefinitions cf
-  let msgs3 = checkTokens cf
 
   let reserved = [lang opts | target == TargetJava ]
 
@@ -64,22 +63,27 @@ parseCFP opts target content = do
       -> do putStrLn $ "Warning: names not unique: " ++ unwords ns
             putStrLn "This can be an error in other back ends."
 
-  -- Print msgs3
-  putStrLn $ unlines msgs3
+  -- Print warnings if user defined nullable tokens.
+  mapM_ putStrLn $ checkTokens cf
 
   -- Print the number of rules
-  putStrLn $ show (length (cfgRules cf)) +++ "rules accepted\n"
+  let nRules = length (cfgRules cf)
+  when (nRules == 0) $ die $ "ERROR: the grammar contains no rules."
+  putStrLn $ show nRules +++ "rules accepted\n"
 
   -- Print a warning if comment delimiter are bigger than 2 characters
   let c3s = [(b,e) | (b,e) <- fst (comments cf), length b > 2 || length e > 2]
-  unless (null c3s) $do
+  unless (null c3s) $ do
       putStrLn "Warning: comment delimiters longer than 2 characters ignored in Haskell:"
       mapM_ putStrLn [b +++ "-" +++ e | (b,e) <- c3s]
   return cfp
 
   where
     runErr (Ok a) = return a
-    runErr (Bad msg) = hPutStrLn stderr msg >> exitFailure
+    runErr (Bad msg) = die msg
+
+die :: String -> IO a
+die msg = hPutStrLn stderr msg >> exitFailure
 
 {-
     case filter (not . isDefinedRule) $ notUniqueFuns cf of
@@ -343,16 +347,18 @@ transExp e = case e of
 
 --------------------------------------------------------------------------------
 
---checkTokens :: CFG f -> [String]
-checkTokens cf =
-    if null ns
-    then []
-    else ["Warning : ", -- change to error in a future version
-          "  The following tokens accept the empty string: ",
-          "    "++unwords ns,
-          "  This is error-prone and will not be supported in the future."]
+-- | Check if any of the user-defined terminal categories is nullable.
+checkTokens :: CFG f -> Maybe String
+checkTokens cf
+  | null ns   = Nothing
+  | otherwise = Just $ unlines
+      [ "Warning : "  -- TODO: change to error in a future version
+      , "  The following tokens accept the empty string: "
+      , "    " ++ unwords ns
+      , "  This is error-prone and will not be supported in the future."
+      ]
   where
-    ns = map (show.fst) . filter (nullable.snd) $ tokenPragmas cf
+    ns = map (show . fst) . filter (nullable . snd) $ tokenPragmas cf
 
 -- | Check if a regular expression is nullable (accepts the empty string)
 nullable :: Abs.Reg -> Bool

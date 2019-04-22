@@ -7,10 +7,11 @@
  - -}
 module ParameterizedTests where
 
-import Control.Monad (forM_)
+import Control.Monad (forM_, unless)
 import Data.Functor
 import Data.Monoid ((<>))
 import Data.Text (Text)
+import qualified Data.Text as Text
 import Filesystem.Path (filename, dropExtension, basename, replaceExtension)
 import Filesystem.Path.CurrentOS (encodeString)
 import Prelude hiding (FilePath)
@@ -19,7 +20,7 @@ import Shelly
   , absPath, appendfile
   , canonicalize, cd, cp, cmd
   , echo, errExit
-  , lastExitCode, ls
+  , lastExitCode, lastStderr, ls
   , readfile, run_
   , setStdin
   , test_f, toTextArg
@@ -36,18 +37,31 @@ all :: Test
 all = makeTestSuite "Parameterized tests" [allWithParams p | p <- parameters ]
 
 allWithParams :: TestParameters -> Test
-allWithParams params = makeTestSuite (tpName params) $ concat
+allWithParams params = makeTestSuite (tpName params) $ concat $
   [ testCases params
-  , [ exitCodeTest params
-    , entrypointTest params
-    , exampleTests params
-    , distcleanTest params
+  , map ($ params) $
+    [ noRulesTest
+    , exitCodeTest
+    , entrypointTest
+    , exampleTests
+    , distcleanTest
     ]
   ]
 
+-- | BNFC should not proceed if grammar does not define any rules.
+noRulesTest :: TestParameters -> Test
+noRulesTest params = do
+  makeShellyTest "#254: BNFC should raise error if grammar contains no rules" $
+    withTmpDir $ \ tmp -> do
+      cd tmp
+      writefile "Empty.cf" "-- This file contains no rules"
+      assertExitCode 1 $ tpBnfc params "Empty.cf"
+      err <- lastStderr
+      unless (Text.isInfixOf "ERROR" err) $
+        assertFailure "Expected BNFC to die with ERROR message."
 
--- This tests checks that when given an invalid input, the generated example
--- application exits with a non-zerro exit code.
+-- | This tests checks that when given an invalid input, the generated example
+-- application exits with a non-zero exit code.
 exitCodeTest :: TestParameters -> Test
 exitCodeTest params =
     makeShellyTest "Test program exits with code 1 on failure" $
@@ -61,10 +75,9 @@ exitCodeTest params =
             setStdin "abracadabra\n"
             tpRunTestProg params "Abra" []
             setStdin "bad"
-            errExit False $ tpRunTestProg params "Abra" []
-            lastExitCode >>= assertEqual 1
+            assertExitCode 1 $ tpRunTestProg params "Abra" []
 
--- This tests that the generated parser abide to the entrypoint directive
+-- | This tests that the generated parser abide to the entrypoint directive
 -- (see issue #127)
 entrypointTest :: TestParameters -> Test
 entrypointTest params =
@@ -83,7 +96,7 @@ entrypointTest params =
         errExit False $ tpRunTestProg params "foobar" []
         lastExitCode >>= assertEqual 1
 
--- Runs BNFC on the example grammars, build the generated code and, if
+-- | Runs BNFC on the example grammars, build the generated code and, if
 -- example in the grammar's language are available, tries to parse the
 -- examples with the generated test program.
 exampleTests :: TestParameters -> Test

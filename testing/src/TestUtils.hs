@@ -77,8 +77,10 @@ assertFailure :: String -> Sh ()
 assertFailure = liftIO . HUnit.assertFailure
 
 -- | Expect a particular exit code:
-assertExitCode :: Int -> Sh () -> Sh ()
-assertExitCode c sh = errExit False sh >> lastExitCode >>= assertEqual c
+assertExitCode :: Int -> Sh a -> Sh ()
+assertExitCode c sh = do
+  errExit False sh
+  assertEqual c =<< lastExitCode
 
 -- | A PrintfArg instance of FilePath to use filepaths in strings (e.g. names
 -- of tests). Allows you to do things like:
