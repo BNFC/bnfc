@@ -21,12 +21,13 @@
 module BNFC.GetCF where
 
 import Control.Arrow (left)
-import Control.Monad.State
+import Control.Monad.State (State, evalState, get, modify)
 
 import Data.Char
-import Data.Either (partitionEithers)
-import Data.List   (nub, partition)
-import Data.Maybe  (mapMaybe)
+import Data.Either  (partitionEithers)
+import Data.Functor ((<$>))
+import Data.List    (nub, partition)
+import Data.Maybe   (mapMaybe)
 
 import qualified Data.Foldable as Fold
 
@@ -37,18 +38,19 @@ import System.IO   (hPutStrLn, stderr)
 
 import qualified AbsBNF as Abs
 import ParBNF
+import ErrM
+
 import BNFC.CF
 import BNFC.Options
 import BNFC.TypeChecker
 import BNFC.Utils
 
-import ErrM
 
 -- $setup
 -- >>> import PrintBNF
 
 parseCF :: SharedOptions -> Target -> String -> IO CF
-parseCF opts t s = liftM cfp2cf (parseCFP opts t s)
+parseCF opts t s = cfp2cf <$> parseCFP opts t s
 
 parseCFP :: SharedOptions -> Target -> String -> IO CFP
 parseCFP opts target content = do
@@ -75,7 +77,8 @@ parseCFP opts target content = do
 
   -- Print the number of rules
   let nRules = length (cfgRules cf)
-  when (nRules == 0) $ die $ "ERROR: the grammar contains no rules."
+  -- Note: the match against () is necessary for type class instance resolution.
+  () <- when (nRules == 0) $ die $ "ERROR: the grammar contains no rules."
   putStrLn $ show nRules +++ "rules accepted\n"
 
   -- Print a warning if comment delimiter are bigger than 2 characters
@@ -478,7 +481,7 @@ expandRules (Abs.Grammar defs) =
     expand other = return [other]
     mkRule :: Abs.Ident -> Abs.RHS -> State [(String, Int)] Abs.Def
     mkRule ident (Abs.RHS rhs) = do
-      fun <- liftM (Abs.LabNoP . Abs.Id . Abs.Ident) (mkName ident rhs)
+      fun <- Abs.LabNoP . Abs.Id . Abs.Ident <$> mkName ident rhs
       return (Abs.Rule fun (Abs.IdCat ident) rhs)
     mkName :: Abs.Ident -> [Abs.Item] -> State [(String, Int)] String
     mkName (Abs.Ident cat) [Abs.Terminal s]
@@ -486,6 +489,6 @@ expandRules (Abs.Grammar defs) =
     mkName (Abs.Ident cat) [Abs.NTerminal (Abs.IdCat (Abs.Ident s))] =
         return (cat ++ s)
     mkName (Abs.Ident cat) _ = do
-        i <- liftM (maybe 1 (+1) . lookup cat) get
+        i <- maybe 1 (+1) . lookup cat <$> get
         modify ((cat, i):)
         return (cat ++ show i)

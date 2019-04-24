@@ -17,8 +17,11 @@
     Foundation, 51 Franklin Street, Fifth Floor, Boston, MA 02110-1335, USA
 -}
 
+{-# LANGUAGE FlexibleInstances #-}
+
 module BNFC.Utils
-    ( (+++), (++++), (+-+), (+.+)
+    ( when, unless, unlessNull
+    , (+++), (++++), (+-+), (+.+)
     , mkName, mkNames, NameStyle(..)
     , lowerCase, upperCase, mixedCase, camelCase, snakeCase
     , replace, prParenth
@@ -35,15 +38,45 @@ import Data.Functor ((<$>))
 import Data.List (intercalate)
 import Data.Time
 
+import Data.Semigroup (Semigroup(..))
+
 import System.IO (IOMode(ReadMode),hClose,hGetContents,openFile)
 import System.IO.Error (tryIOError)
 -- import System.Directory (renameFile, removeFile)
 
-import BNFC.PrettyPrint
+import BNFC.PrettyPrint hiding ((<>))
 
-infixr 5 +++, ++++, +-+, +.+
+-- * Control flow.
+
+-- -- The following Monoid instance conflicts with Monoid a => Monoid (IO a)
+--
+-- instance Monad m => Semigroup (m ()) where
+--   (<>) = (>>)
+--
+-- instance Monad m => Monoid (m ()) where
+--   mempty  = return ()
+--   mappend = (<>)
+--   mconcat = sequence_
+
+-- | Generalization of 'Control.Monad.when'.
+when :: Monoid m => Bool -> m -> m
+when True  m = m
+when False _ = mempty
+
+-- | Generalization of 'Control.Monad.unless'.
+unless :: Monoid m => Bool -> m -> m
+unless False m = m
+unless True  _ = mempty
+
+-- | Invoke continuation for non-empty list.
+unlessNull :: Monoid m => [a] -> (a -> [a] -> m) -> m
+unlessNull l k = case l of
+  []     -> mempty
+  (a:as) -> k a as
 
 -- * String operations for printing.
+
+infixr 5 +++, ++++, +-+, +.+
 
 -- | Concatenate strings by a space.
 (+++) :: String -> String -> String

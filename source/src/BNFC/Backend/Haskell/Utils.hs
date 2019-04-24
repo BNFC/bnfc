@@ -9,19 +9,23 @@ module BNFC.Backend.Haskell.Utils
 
 import Prelude'
 
-import Text.PrettyPrint
+import BNFC.PrettyPrint
 import BNFC.CF (Cat(..), identCat, normCat)
 import BNFC.Utils (mkNames, NameStyle(..))
 
--- | Create a valid parser function name for a given category
+-- | Create a valid parser function name for a given category.
+--
 -- >>> parserName (Cat "Abcd")
 -- pAbcd
+--
 -- >>> parserName (ListCat (Cat "Xyz"))
 -- pListXyz
+--
 parserName :: Cat -> Doc
 parserName = ("p" <>) . text . identCat
 
--- | Haskell's reserved words
+-- | Haskell's reserved words.
+--
 hsReservedWords :: [String]
 hsReservedWords =
     [ "as"
@@ -32,6 +36,7 @@ hsReservedWords =
     , "deriving"
     , "do"
     , "else"
+    , "foreign"
     , "hiding"
     , "if"
     , "import"
@@ -51,7 +56,8 @@ hsReservedWords =
     ]
 
 
--- | Render a category from the grammar to a Haskell type
+-- | Render a category from the grammar to a Haskell type.
+--
 -- >>> catToType Nothing (Cat "A")
 -- A
 -- >>> catToType Nothing (ListCat (Cat "A"))
@@ -59,8 +65,7 @@ hsReservedWords =
 -- >>> catToType Nothing (TokenCat "Ident")
 -- Ident
 --
--- Note that there is no haskell type for coerced categories: they should be
--- normalized
+-- Note that there is no haskell type for coerced categories: they should be normalized:
 -- >>> catToType Nothing (CoercCat "Expr" 2)
 -- Expr
 --
@@ -83,42 +88,48 @@ hsReservedWords =
 --
 -- >>> catToType (Just "()") (ListCat (CoercCat "Exp" 2))
 -- [Exp ()]
+--
 catToType :: Maybe Doc -> Cat -> Doc
-catToType param cat = maybeParens $ catToType' param cat
+catToType param cat = parensIf isApp $ catToType' param cat
   where
-    maybeParens = case (param,cat) of
-        (Just _, Cat _) -> parens
-        _ -> id
+    isApp = case (param, cat) of
+        (Just _, Cat _) -> True
+        _ -> False
     catToType' _ InternalCat = error "Can't create a haskell type for internal category"
-    catToType' Nothing c = text $ show $ normCat c
-    catToType' (Just p) (Cat c) = text c <+> p
+    catToType' Nothing  c              = text $ show $ normCat c
+    catToType' (Just p) (Cat c)        = text c <+> p
     catToType' (Just p) (CoercCat c _) = text c <+> p
-    catToType' (Just _) (TokenCat c) = text c
-    catToType' (Just p) (ListCat c) = lbrack <> catToType' (Just p) c <> rbrack
+    catToType' (Just _) (TokenCat c)   = text c
+    catToType' (Just p) (ListCat c)    = brackets $ catToType' (Just p) c
 
 
--- | gives you a list of variables usable for pattern matching.
--- Ex: if you have the rule Aba. S ::= A B A ; with the generated data type
+-- | Gives a list of variables usable for pattern matching.
+--
+-- Example: Given the rule @Aba. S ::= A B A ;@ with the generated data type
+-- @
 --   data S = Aba A B A
--- Given the lit of categories in the RHS of the rule (A B A), we generate the
+-- @
+-- from the list of categories on the RHS of the rule [A,B,A], we generate the
 -- list [a1,b,a2] to be used in a pattern matching like
--- case s of
+-- @
+--   case s of
 --     Aba a1 b a2 -> ...
 --     ...
+-- @
 --
 -- >>> catvars [Cat "A", Cat "B", Cat "A"]
 -- [a1,b,a2]
 --
--- It should avoid reserved words
+-- It should avoid reserved words:
 -- >>> catvars [Cat "IF", Cat "Case", Cat "Type", Cat "If"]
 -- [if_1,case_,type_,if_2]
 --
--- It uses an -s to mark lists:
+-- It uses a suffix -s to mark lists:
 -- >>> catvars [Cat "A", ListCat (Cat "A"), ListCat (ListCat (Cat "A"))]
 -- [a,as_,ass]
+--
 catvars :: [Cat] -> [Doc]
 catvars = map text . mkNames hsReservedWords LowerCase . map var
   where
     var (ListCat c) = var c ++ "s"
     var xs          = show xs
-
