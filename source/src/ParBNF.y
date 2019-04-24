@@ -85,13 +85,11 @@ import ErrM
   '{' { PT _ (TS _ 38) }
   '|' { PT _ (TS _ 39) }
   '}' { PT _ (TS _ 40) }
-
-L_ident  { PT _ (TV $$) }
-L_quoted { PT _ (TL $$) }
-L_integ  { PT _ (TI $$) }
-L_charac { PT _ (TC $$) }
-L_doubl  { PT _ (TD $$) }
-
+  L_ident  { PT _ (TV $$) }
+  L_quoted { PT _ (TL $$) }
+  L_integ  { PT _ (TI $$) }
+  L_charac { PT _ (TC $$) }
+  L_doubl  { PT _ (TD $$) }
 
 %%
 
