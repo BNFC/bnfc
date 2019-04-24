@@ -112,7 +112,7 @@ tokens cf
   | otherwise = "%token" $$ (nest 2 $ vcat ts)
   where
     ts            = map prToken (cfTokens cf) ++ map text (specialToks cf)
-    prToken (t,k) = convert t <+> braces (text $ "PT _ (TS _ " ++ show k ++ ")")
+    prToken (t,k) = hsep [ convert t, lbrace, text ("PT _ (TS _ " ++ show k ++ ")"), rbrace ]
 
 -- tokens :: [(String,Int)] -> String
 -- tokens []   = "-- no tokens\n"
