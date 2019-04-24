@@ -17,6 +17,7 @@
     Foundation, 51 Franklin Street, Fifth Floor, Boston, MA 02110-1335, USA
 -}
 
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE FlexibleInstances #-}
 
 module BNFC.Utils
@@ -30,33 +31,36 @@ module BNFC.Utils
     , getZonedTimeTruncatedToSeconds
     ) where
 
-import Control.Arrow ((&&&))
+import Control.Arrow   ((&&&))
 import Control.DeepSeq (rnf)
 
 import Data.Char
-import Data.Functor ((<$>))
-import Data.List (intercalate)
+import Data.Functor    ((<$>))
+import Data.List       (intercalate)
+import Data.Monoid     (Monoid(..))
 import Data.Time
 
-import Data.Semigroup (Semigroup(..))
+import Data.Semigroup  (Semigroup(..))
 
-import System.IO (IOMode(ReadMode),hClose,hGetContents,openFile)
+import System.IO       (IOMode(ReadMode),hClose,hGetContents,openFile)
 import System.IO.Error (tryIOError)
--- import System.Directory (renameFile, removeFile)
 
 import BNFC.PrettyPrint hiding ((<>))
 
 -- * Control flow.
 
--- -- The following Monoid instance conflicts with Monoid a => Monoid (IO a)
---
--- instance Monad m => Semigroup (m ()) where
---   (<>) = (>>)
---
--- instance Monad m => Monoid (m ()) where
---   mempty  = return ()
---   mappend = (<>)
---   mconcat = sequence_
+-- The following Monoid instance conflicts with Monoid a => Monoid (IO a)
+-- for ghc >= 8.0
+
+#if __GLASGOW_HASKELL__ <= 710
+instance Monad m => Semigroup (m ()) where
+  (<>) = (>>)
+
+instance Monad m => Monoid (m ()) where
+  mempty  = return ()
+  mappend = (<>)
+  mconcat = sequence_
+#endif
 
 -- | Generalization of 'Control.Monad.when'.
 when :: Monoid m => Bool -> m -> m
