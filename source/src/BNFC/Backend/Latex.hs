@@ -45,17 +45,18 @@ makeLatex opts cf = do
 -- | Create a makefile for the given tex file
 --
 -- >>> makefile "myFile.tex" "Makefile"
--- all: myFile.pdf
+-- all : myFile.pdf
 -- <BLANKLINE>
--- myFile.pdf: myFile.tex
+-- myFile.pdf : myFile.tex
 -- 	pdflatex myFile.tex
 -- <BLANKLINE>
--- clean:
+-- clean :
 -- 	-rm myFile.pdf myFile.aux myFile.log
 -- <BLANKLINE>
--- cleanall: clean
+-- cleanall : clean
 -- 	-rm Makefile myFile.tex
 -- <BLANKLINE>
+--
 makefile :: String -> String -> Doc
 makefile texfile basename = vcat
     [ Makefile.mkRule "all" [pdffile]
