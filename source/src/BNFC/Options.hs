@@ -1,12 +1,17 @@
+{-# LANGUAGE LambdaCase #-}
+
 module BNFC.Options where
 
-import BNFC.CF (CF)
-import Data.Maybe (fromMaybe)
-import Data.Version ( showVersion )
-import Paths_BNFC ( version )
+import Data.Maybe      (fromMaybe, maybeToList)
+import Data.Version    (showVersion )
+
 import System.Console.GetOpt
 import System.FilePath (takeBaseName)
-import Text.Printf (printf)
+
+import Text.Printf     (printf)
+
+import Paths_BNFC      (version)
+import BNFC.CF         (CF)
 
 -- ~~~ Option data structures ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 -- | To decouple the option parsing from the execution of the program,
@@ -28,11 +33,15 @@ data Mode
 data Target = TargetC | TargetCpp | TargetCppNoStl | TargetCSharp
             | TargetHaskell | TargetHaskellGadt | TargetLatex
             | TargetJava | TargetOCaml | TargetProfile | TargetPygments
-  deriving (Eq,Bounded, Enum,Ord)
+  deriving (Eq, Bounded, Enum, Ord)
 
--- Create a list of all target using the enum and bounded classes
+-- | List of all targets (using the enum and bounded classes).
 targets :: [Target]
 targets = [minBound..]
+
+-- | List of Haskell target.
+haskellTargets :: [Target]
+haskellTargets = [ TargetHaskell, TargetHaskellGadt, TargetProfile ]
 
 instance Show Target where
   show TargetC            = "C"
@@ -46,7 +55,6 @@ instance Show Target where
   show TargetOCaml        = "OCaml"
   show TargetProfile      = "Haskell (with permutation profiles)"
   show TargetPygments     = "Pygments"
-
 
 -- | Which version of Alex is targeted?
 data AlexVersion = Alex1 | Alex2 | Alex3
@@ -62,62 +70,130 @@ data JavaLexerParser = JLexCup | JFlexCup | Antlr4
 data RecordPositions = RecordPositions | NoRecordPositions
     deriving (Eq,Show,Ord)
 
--- | This is the option record that is passed to the different backends
+-- | This is the option record that is passed to the different backends.
 data SharedOptions = Options
-  -- Option shared by at least 2 backends
-  { target :: Target
-  , make :: Maybe String     -- ^ The name of the Makefile to generate
-  -- or Nothing for no Makefile.
-  , inPackage :: Maybe String -- ^ The hierarchical package to put
-                              --   the modules in, or Nothing.
-  , cnf :: Bool               -- ^ Generate CNF-like tables?
-  , lang :: String
-  -- Haskell specific:
-  , alexMode :: AlexVersion
-  , javaLexerParser :: JavaLexerParser
-  , inDir :: Bool
-  , shareStrings :: Bool
-  , byteStrings :: Bool
-  , glr :: HappyMode
-  , xml :: Int
-  , ghcExtensions :: Bool
-  , agda :: Bool                   -- ^ Create bindings for Agda?
-  -- C++ specific
+  --- Option shared by at least 2 backends
+  { lbnfFile    :: FilePath        -- ^ The input file BNFC processes.
+  , lang        :: String          -- ^ The language we generate: the basename of 'lbnfFile'.
+  , outDir      :: FilePath        -- ^ Target directory for generated files.
+  , target      :: Target          -- ^ E.g. @--haskell@.
+  , make        :: Maybe String    -- ^ The name of the Makefile to generate or Nothing for no Makefile.
+  , inPackage   :: Maybe String    -- ^ The hierarchical package to put the modules in, or Nothing.
   , linenumbers :: RecordPositions -- ^ Add and set line_number field for syntax classes
-  -- C# specific
-  , visualStudio :: Bool      -- ^ Generate Visual Studio solution/project files
-  , wcf :: Bool               -- ^ Windows Communication Foundation
-  , functor :: Bool
-  , outDir :: FilePath        -- ^ Target directory for generated files
-  } deriving (Eq,Show,Ord)
+  --- Haskell specific:
+  , inDir         :: Bool        -- ^ Option @-d@.
+  , ghcExtensions :: Bool        -- ^ Option @--ghc@.
+  , functor       :: Bool        -- ^ Option @--functor@.  Make AST functorial?
+  , alexMode      :: AlexVersion -- ^ Options @--alex@.
+  , shareStrings  :: Bool        -- ^ Option @--sharestrings@.
+  , byteStrings   :: Bool        -- ^ Option @--bytestrings@.
+  , glr           :: HappyMode   -- ^ Happy option @--glr@.
+  , xml           :: Int         -- ^ Options @--xml@, generate DTD and XML printers.
+  , cnf           :: Bool        -- ^ Option @--cnf@. Generate CNF-like tables?
+  , agda          :: Bool        -- ^ Option @--agda@. Create bindings for Agda?
+  --- Java specific
+  , javaLexerParser :: JavaLexerParser
+  --- C# specific
+  , visualStudio  :: Bool        -- ^ Generate Visual Studio solution/project files.
+  , wcf           :: Bool        -- ^ Windows Communication Foundation.
+  } deriving (Eq, Ord, Show)
 
--- | We take this oportunity to define the type of the backend functions
-type Backend = SharedOptions  -- ^ options
+-- | We take this oportunity to define the type of the backend functions.
+type Backend = SharedOptions  -- ^ Options
             -> CF             -- ^ Grammar
             -> IO ()
 
 defaultOptions :: SharedOptions
 defaultOptions = Options
-  { cnf = False
-  , target = TargetHaskell
-  , inPackage = Nothing
-  , make = Nothing
-  , alexMode = Alex3
-  , inDir = False
-  , shareStrings = False
-  , byteStrings = False
-  , glr = Standard
-  , xml = 0
-  , ghcExtensions = False
-  , agda = False
-  , lang = error "lang not set"
-  , linenumbers = NoRecordPositions
-  , visualStudio = False
-  , wcf = False
-  , functor = False
-  , outDir  = "."
+  { lbnfFile        = error "lbnfFile not set"
+  , lang            = error "lang not set"
+  , outDir          = "."
+  , target          = TargetHaskell
+  , make            = Nothing
+  , inPackage       = Nothing
+  , linenumbers     = NoRecordPositions
+  -- Haskell specific
+  , inDir           = False
+  , ghcExtensions   = False
+  , functor         = False
+  , alexMode        = Alex3
+  , shareStrings    = False
+  , byteStrings     = False
+  , glr             = Standard
+  , xml             = 0
+  , cnf             = False
+  , agda            = False
+  -- Java specific
   , javaLexerParser = JLexCup
+  -- C# specific
+  , visualStudio    = False
+  , wcf             = False
   }
+
+-- | Print options as input to BNFC.
+--
+-- @unwords [ "bnfc", printOptions opts ]@ should call bnfc with the same options
+-- as the current instance.
+--
+printOptions :: SharedOptions -> String
+printOptions opts = unwords . concat $
+  [ [ printTargetOption tgt ]
+  -- General and shared options:
+  , [ "--outputdir=" ++ o | let o = outDir opts, o /= "."       ]
+  , [ "--makefile=" ++ m  | m <- maybeToList $ make opts        ]
+  , [ "-p " ++ p          | p <- maybeToList $ inPackage opts   ]
+  , [ "-l"                | linenumbers opts == RecordPositions ]
+  -- Haskell options:
+  , [ "-d"                | inDir opts                          ]
+  , [ "--ghc"             | ghcExtensions opts                  ]
+  , [ "--functor"         | functor opts                        ]
+  , [ printAlexOption alx | haskell, let alx = alexMode opts    ]
+  , [ "--sharestrings"    | shareStrings opts                   ]
+  , [ "--bytestrings"     | byteStrings opts                    ]
+  , [ "--glr"             | glr opts == GLR                     ]
+  , [ "--xml"             | xml opts == 1                       ]
+  , [ "--xmlt"            | xml opts == 2                       ]
+  , [ "--cnf"             | cnf opts                            ]
+  , [ "--agda"            | agda opts                           ]
+  -- C# options:
+  , [ "--vs"              | visualStudio opts                   ]
+  , [ "--wfc"             | wcf opts                            ]
+  -- Java options:
+  , [ printJavaLexerParserOption (javaLexerParser opts)
+                          | tgt == TargetJava                   ]
+  -- Grammar file:
+  , [ lbnfFile opts ]
+  ]
+  where
+  tgt = target opts
+  haskell = tgt `elem` haskellTargets
+
+-- | Print target as an option to BNFC.
+printTargetOption :: Target -> String
+printTargetOption = ("--" ++) . \case
+  TargetC           -> "c"
+  TargetCpp         -> "cpp"
+  TargetCppNoStl    -> "cpp-nostl"
+  TargetCSharp      -> "csharp"
+  TargetHaskell     -> "haskell"
+  TargetHaskellGadt -> "haskell-gadt"
+  TargetLatex       -> "latex"
+  TargetJava        -> "java"
+  TargetOCaml       -> "ocaml"
+  TargetProfile     -> "profile"
+  TargetPygments    -> "pygments"
+
+printAlexOption :: AlexVersion -> String
+printAlexOption = ("--" ++) . \case
+  Alex1 -> "alex1"
+  Alex2 -> "alex2"
+  Alex3 -> "alex3"
+
+printJavaLexerParserOption :: JavaLexerParser -> String
+printJavaLexerParserOption = ("--" ++) . \case
+  JLexCup  -> "jlex"
+  JFlexCup -> "jflex"
+  Antlr4   -> "antlr4"
 
 -- ~~~ Option definition ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 -- This defines bnfc's "global" options, like --help
@@ -159,66 +235,69 @@ targetOptions =
 specificOptions :: [(OptDescr (SharedOptions -> SharedOptions), [Target])]
 specificOptions =
   [ ( Option ['l'] [] (NoArg (\o -> o {linenumbers = RecordPositions}))
-        "Add and set line_number field for all syntax classes\nJava requires cup 0.11b-2014-06-11 or greater"
+          "Add and set line_number field for all syntax classes\nJava requires cup 0.11b-2014-06-11 or greater"
     , [TargetCpp, TargetJava] )
   , ( Option ['p'] []
       (ReqArg (\n o -> o {inPackage = Just n}) "<namespace>")
-      "Prepend <namespace> to the package/module name"
-    , [TargetCpp, TargetCSharp, TargetHaskell, TargetHaskellGadt, TargetProfile, TargetJava] )
-  , ( Option [] ["jflex"] (NoArg (\o -> o {javaLexerParser = JFlexCup}))
+          "Prepend <namespace> to the package/module name"
+    , [TargetCpp, TargetCSharp, TargetJava] ++ haskellTargets)
+  -- Java backend:
+  , ( Option [] ["jlex"  ] (NoArg (\o -> o {javaLexerParser = JLexCup}))
+          "Lex with JLex, parse with CUP (default)"
+    , [TargetJava] )
+  , ( Option [] ["jflex" ] (NoArg (\o -> o {javaLexerParser = JFlexCup}))
           "Lex with JFlex, parse with CUP"
     , [TargetJava] )
-    , ( Option [] ["jlex"] (NoArg (\o -> o {javaLexerParser = Antlr4}))
-                  "Lex with Jlex, parse with CUP (default)"
-            , [TargetJava] )
-    , ( Option [] ["antlr4"] (NoArg (\o -> o {javaLexerParser = Antlr4}))
-              "Lex and parse with antlr4"
-        , [TargetJava] )
+  , ( Option [] ["antlr4"] (NoArg (\o -> o {javaLexerParser = Antlr4}))
+          "Lex and parse with antlr4"
+    , [TargetJava] )
+  -- C++ backend:
   , ( Option [] ["vs"] (NoArg (\o -> o {visualStudio = True}))
           "Generate Visual Studio solution/project files"
     , [TargetCSharp] )
   , ( Option [] ["wcf"] (NoArg (\o -> o {wcf = True}))
           "Add support for Windows Communication Foundation,\n by marking abstract syntax classes as DataContracts"
     , [TargetCSharp] )
+  -- Haskell backends:
   , ( Option ['d'] [] (NoArg (\o -> o {inDir = True}))
           "Put Haskell code in modules Lang.* instead of Lang*"
-    , [TargetHaskell, TargetHaskellGadt, TargetProfile] )
+    , haskellTargets )
   , ( Option []    ["alex1"] (NoArg (\o -> o {alexMode = Alex1}))
           "Use Alex 1.1 as Haskell lexer tool"
-    , [TargetHaskell, TargetHaskellGadt, TargetProfile] )
+    , haskellTargets )
   , ( Option []    ["alex2"] (NoArg (\o -> o {alexMode = Alex2}))
           "Use Alex 2 as Haskell lexer tool"
-    , [TargetHaskell, TargetHaskellGadt, TargetProfile] )
+    , haskellTargets )
   , ( Option []    ["alex3"] (NoArg (\o -> o {alexMode = Alex3}))
           "Use Alex 3 as Haskell lexer tool (default)"
-    , [TargetHaskell, TargetHaskellGadt, TargetProfile] )
+    , haskellTargets )
   , ( Option []    ["sharestrings"] (NoArg (\o -> o {shareStrings = True}))
           "Use string sharing in Alex 2 lexer"
-    , [TargetHaskell, TargetHaskellGadt, TargetProfile] )
+    , haskellTargets )
   , ( Option []    ["bytestrings"] (NoArg (\o -> o {byteStrings = True}))
           "Use byte string in Alex 2 lexer"
-    , [TargetHaskell, TargetHaskellGadt, TargetProfile] )
+    , haskellTargets )
   , ( Option []    ["glr"] (NoArg (\o -> o {glr = GLR}))
           "Output Happy GLR parser"
-    , [TargetHaskell, TargetHaskellGadt, TargetProfile] )
+    , haskellTargets )
   , ( Option []    ["cnf"] (NoArg (\o -> o {cnf = True}))
           "Use the CNF parser instead of happy"
-    , [TargetHaskell, TargetHaskellGadt, TargetProfile] )
+    , haskellTargets )
   , ( Option []    ["ghc"] (NoArg (\o -> o {ghcExtensions = True}))
           "Use ghc-specific language extensions"
-    , [TargetHaskell, TargetHaskellGadt, TargetProfile] )
+    , haskellTargets )
   , ( Option []    ["functor"] (NoArg (\o -> o {functor = True}))
           "Make the AST a functor and use it to store the position of the nodes"
     , [TargetHaskell] )
   , ( Option []    ["xml"] (NoArg (\o -> o {xml = 1}))
           "Also generate a DTD and an XML printer"
-    , [TargetHaskell, TargetHaskellGadt, TargetProfile] )
+    , haskellTargets )
   , ( Option []    ["xmlt"] (NoArg (\o -> o {xml = 2}))
           "DTD and an XML printer, another encoding"
-    , [TargetHaskell, TargetHaskellGadt, TargetProfile] )
+    , haskellTargets )
   , ( Option []    ["agda"] (NoArg (\o -> o {agda = True}))
           "Also generate Agda bindings for the abstract syntax"
-    , [TargetHaskell, TargetHaskellGadt, TargetProfile] )
+    , haskellTargets )
   ]
 
 -- | The list of specific options for a target.
@@ -304,7 +383,11 @@ parseMode args =
           (_,  _, us@(_:_), _) -> UsageError $ unwords $ "Unrecognized options:" : us
           (_, [], _,        _) -> UsageError "Missing grammar file"
           (optionsUpdates, [grammarFile], [], []) ->
-            Target ((options optionsUpdates) {lang = takeBaseName grammarFile}) grammarFile
+            let opts = (options optionsUpdates)
+                       { lbnfFile = grammarFile
+                       , lang = takeBaseName grammarFile
+                       }
+            in  Target opts grammarFile
           (_,  _, _,        _) -> UsageError "Too many arguments"
   where
   args' = translateOldOptions args

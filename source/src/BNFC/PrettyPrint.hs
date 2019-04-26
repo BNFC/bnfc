@@ -1,3 +1,6 @@
+{-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE OverloadedStrings #-}
+
 -- | Extends ''Text.PrettyPrint''.
 
 module BNFC.PrettyPrint

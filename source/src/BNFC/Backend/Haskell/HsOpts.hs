@@ -11,20 +11,22 @@ type Options = SharedOptions
 alex1 opts = alexMode opts == Alex1
 
 absFile, absFileM,
- alexFile, alexFileM,
+ alexFile, alexFileHs, alexFileM,
  composOpFile, composOpFileM,
  gfAbs,
- happyFile, happyFileM,
+ happyFile, happyFileHs, happyFileM,
  errFile, errFileM,
  templateFile, templateFileM,
  printerFile, printerFileM,
  layoutFile, layoutFileM,
- tFile :: Options -> String
+ tFile, tFileExe :: Options -> String
 absFile       = mkFile withLang "Abs" "hs"
 absFileM      = mkMod  withLang "Abs"
 alexFile      = mkFile withLang "Lex" "x"
+alexFileHs    = mkFile withLang "Lex" "hs"
 alexFileM     = mkMod  withLang "Lex"
 happyFile     = mkFile withLang "Par" "y"
+happyFileHs   = mkFile withLang "Par" "hs"
 happyFileM    = mkMod  withLang "Par"
 txtFile       = mkFile withLang "Doc" "txt"
 templateFile  = mkFile withLang "Skel" "hs"
@@ -33,6 +35,7 @@ printerFile   = mkFile withLang "Print" "hs"
 printerFileM  = mkMod  withLang "Print"
 gfAbs         = mkFile withLang "" "Abs.gf"
 tFile         = mkFile withLang "Test" "hs"
+tFileExe      = mkFile withLang "Test" ""
 errFile       = mkFile noLang   "ErrM" "hs"
 errFileM      = mkMod  noLang   "ErrM"
 shareFile     = mkFile noLang   "SharedString" "hs"
