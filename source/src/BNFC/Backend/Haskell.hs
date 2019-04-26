@@ -19,6 +19,12 @@
 
 module BNFC.Backend.Haskell (makeHaskell, AlexVersion(..), makefile, testfile) where
 
+import qualified Control.Monad as Ctrl
+import Data.Functor    ((<$>))
+import System.FilePath ((<.>), (</>), pathSeparator)
+import Text.Printf     (printf)
+import Text.PrettyPrint
+
 import BNFC.Backend.Agda
 import BNFC.Backend.Base
 import BNFC.Backend.Haskell.CFtoHappy
@@ -42,10 +48,6 @@ import BNFC.CF
 import BNFC.Options hiding (Backend)
 import BNFC.Utils (when, unless, getZonedTimeTruncatedToSeconds)
 
-import System.FilePath ((<.>), (</>), pathSeparator)
-import Data.Functor    ((<$>))
-import Text.Printf     (printf)
-import Text.PrettyPrint
 
 -- | Entrypoint for the Haskell backend.
 
@@ -73,7 +75,7 @@ makeHaskell opts cf = do
       Alex3 -> do
         mkfile (alexFile opts) $ cf2alex3 lexMod errMod shareMod (shareStrings opts) (byteStrings opts) cf
         liftIO $ printf "Use Alex 3.0 to compile %s.\n" (alexFile opts)
-    unless (cnf opts) $ do
+    Ctrl.unless (cnf opts) $ do
       mkfile (happyFile opts) $
         cf2HappyS parMod absMod lexMod errMod (glr opts) (byteStrings opts) (functor opts) cf
       liftIO $ printf "%s Tested with Happy 1.15\n" (happyFile opts)
@@ -81,16 +83,16 @@ makeHaskell opts cf = do
     mkfile (txtFile opts)      $ cfToTxt (lang opts) cf
     mkfile (templateFile opts) $ cf2Template (templateFileM opts) absMod errMod (functor opts) cf
     mkfile (printerFile opts)  $ cf2Printer (byteStrings opts) (functor opts) False prMod absMod cf
-    when (hasLayout cf) $ mkfile (layoutFile opts) $ cf2Layout (alex1 opts) (inDir opts) layMod lexMod cf
+    Ctrl.when (hasLayout cf) $ mkfile (layoutFile opts) $ cf2Layout (alex1 opts) (inDir opts) layMod lexMod cf
     mkfile (errFile opts) $ mkErrM errMod (ghcExtensions opts)
-    when (shareStrings opts) $ mkfile (shareFile opts)    $ sharedString shareMod (byteStrings opts) cf
+    Ctrl.when (shareStrings opts) $ mkfile (shareFile opts)    $ sharedString shareMod (byteStrings opts) cf
     Makefile.mkMakefile opts $ makefile opts
     case xml opts of
       2 -> makeXML opts True cf
       1 -> makeXML opts False cf
       _ -> return ()
-    when (agda opts) $ makeAgda time opts cf
-    when (cnf opts) $ do
+    Ctrl.when (agda opts) $ makeAgda time opts cf
+    Ctrl.when (cnf opts) $ do
       mkfile (cnfTablesFile opts) $ ToCNF.generate opts cf
       mkfile "TestCNF.hs" $ ToCNF.genTestFile opts cf
       mkfile "BenchCNF.hs" $ ToCNF.genBenchmark opts
