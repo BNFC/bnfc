@@ -12,6 +12,7 @@ import Text.Printf     (printf)
 
 import Paths_BNFC      (version)
 import BNFC.CF         (CF)
+import BNFC.Utils      (unless)
 
 -- ~~~ Option data structures ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 -- | To decouple the option parsing from the execution of the program,
@@ -130,6 +131,15 @@ defaultOptions = Options
   , wcf             = False
   }
 
+-- | Return something in case options differs from default.
+unlessDefault :: (Monoid m, Eq a)
+  => (SharedOptions -> a)  -- ^ Option field name.
+  -> SharedOptions         -- ^ Options.
+  -> (a -> m)              -- ^ Action in case option differs from standard.
+  -> m
+unlessDefault flag opts f = unless (o == flag defaultOptions) $ f o
+  where o = flag opts
+
 -- | Print options as input to BNFC.
 --
 -- @unwords [ "bnfc", printOptions opts ]@ should call bnfc with the same options
@@ -139,15 +149,15 @@ printOptions :: SharedOptions -> String
 printOptions opts = unwords . concat $
   [ [ printTargetOption tgt ]
   -- General and shared options:
-  , [ "--outputdir=" ++ o | let o = outDir opts, o /= "."       ]
+  , unlessDefault outDir opts $ \ o -> [ "--outputdir=" ++ o ]
   , [ "--makefile=" ++ m  | m <- maybeToList $ make opts        ]
   , [ "-p " ++ p          | p <- maybeToList $ inPackage opts   ]
-  , [ "-l"                | linenumbers opts == RecordPositions ]
+  , unlessDefault linenumbers opts $ const [ "-l" ]
   -- Haskell options:
   , [ "-d"                | inDir opts                          ]
   , [ "--ghc"             | ghcExtensions opts                  ]
   , [ "--functor"         | functor opts                        ]
-  , [ printAlexOption alx | haskell, let alx = alexMode opts    ]
+  , unlessDefault alexMode opts $ \ o -> [ printAlexOption o ]
   , [ "--sharestrings"    | shareStrings opts                   ]
   , [ "--bytestrings"     | byteStrings opts                    ]
   , [ "--glr"             | glr opts == GLR                     ]
@@ -159,8 +169,7 @@ printOptions opts = unwords . concat $
   , [ "--vs"              | visualStudio opts                   ]
   , [ "--wfc"             | wcf opts                            ]
   -- Java options:
-  , [ printJavaLexerParserOption (javaLexerParser opts)
-                          | tgt == TargetJava                   ]
+  , unlessDefault javaLexerParser opts $ \ o -> [ printJavaLexerParserOption o ]
   -- Grammar file:
   , [ lbnfFile opts ]
   ]

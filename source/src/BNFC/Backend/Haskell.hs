@@ -118,9 +118,16 @@ oldMakefile opts makeFile = vcat
 
 -- | Rule to clean GHC and Latex generated files.
 cleanRule :: Options -> Doc
-cleanRule opts = Makefile.mkRule "clean" [] $ concat [ [ rmHs ] , when (agda opts) rmAgda ]
+cleanRule opts = Makefile.mkRule "clean" [] $ concat $
+  [ [ rmGen ]
+  , when (agda opts) rmAgda
+  ]
   where
-  rmHs   = unwords $ [ "-rm", "-f" ] ++ map prefix [ "*.log", "*.aux", "*.hi", "*.o", "*.dvi" ]
+  rmGen  = unwords $ [ "-rm", "-f" ] ++ map prefix gen
+  gen    = concat [ genHs, genLtx, genAg ]
+  genHs  = [ "*.hi", "*.o" ]
+  genLtx = [ "*.log", "*.aux", "*.dvi" ]
+  genAg  = when (agda opts) $ [ "*.agdai" ]
   rmAgda = [ "-rm -rf MAlonzo" ]
   prefix = if null dir then id else (dir </>)
   dir    = codeDir opts
@@ -155,6 +162,7 @@ distCleanRule opts makeFile = Makefile.mkRule "distclean" ["clean"] $
       [ ("Test"    , "")
       , ("Lex"     , "hs")
       , ("Par"     , "hs")
+      , ("Par"     , "info")
       , ("ParData" , "hs")  -- only if --glr
       ]
     , [ "Main" | agda opts ]
