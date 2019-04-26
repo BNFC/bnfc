@@ -176,7 +176,7 @@ cf2AgdaAST time mod amod pmod cf = vsep $
   , importPragmas [amod, pmod]
   , allTokenCats prToken tcats
   , absyn NamedArg dats
-  , allTokenCats printToken tcats
+  -- , allTokenCats printToken tcats  -- seem to be included in printerCats
   , printers printerCats
   , empty -- Make sure we terminate the file with a new line.
   ]
