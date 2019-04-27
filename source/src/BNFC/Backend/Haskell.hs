@@ -94,8 +94,8 @@ makeHaskell opts cf = do
     Ctrl.when (agda opts) $ makeAgda time opts cf
     Ctrl.when (cnf opts) $ do
       mkfile (cnfTablesFile opts) $ ToCNF.generate opts cf
-      mkfile "TestCNF.hs" $ ToCNF.genTestFile opts cf
-      mkfile "BenchCNF.hs" $ ToCNF.genBenchmark opts
+      mkfile (cnfTestFile opts)   $ ToCNF.genTestFile opts cf
+      mkfile (cnfBenchFile opts)  $ ToCNF.genBenchmark opts
 
 
 -- | Generate the makefile (old version, with just one "all" target).
@@ -108,8 +108,9 @@ oldMakefile opts makeFile = vcat
       [ [ unwords $ [ "happy -gca" ] ++ glrParams ++ [ happyFile opts ] | not (cnf opts) ]
       , [ "alex -g " ++ alexFile opts ]
       , [ if cnf opts
-          then "ghc --make TestCNF.hs"
-          else "ghc --make " ++ tFile opts ++ " -o " ++ mkFile withLang "Test" "" opts]
+          then unwords [ "ghc --make", cnfTestFile opts, "-o", cnfTestFileExe opts ]
+          else unwords [ "ghc --make", tFile       opts, "-o", tFileExe       opts ]
+        ]
       ]
   , cleanRule opts
   , distCleanRule opts makeFile
@@ -224,7 +225,7 @@ makefile opts makeFile = vcat
      , Makefile.mkRule "all" tgts []
      ]
      where
-     tgts | cnf opts = [ "TestCNF" ]
+     tgts | cnf opts  = [ cnfTestFileExe opts ]
           | otherwise = concat $
               [ [ tFileExe opts ]
               , [ "Main" | agda opts ]
@@ -237,7 +238,7 @@ makefile opts makeFile = vcat
     where
     tgts   = unwords . concat $
       [ [ alexFile opts ]
-      , if cnf opts then [ "TestCNF.hs" ] else [ happyFile opts, tFile opts ]
+      , if cnf opts then [ cnfTestFile opts ] else [ happyFile opts, tFile opts ]
       , [ agdaMainFile opts | agda opts ]
       ]
     recipe = unwords [ "bnfc", printOptions opts{ make = Nothing } ]
@@ -265,8 +266,11 @@ makefile opts makeFile = vcat
     deps :: [String]
     deps = [ tFile opts {- must be first! -} , alexFileHs opts , happyFileHs opts ]
 
+  -- | Rule to build CNF test parser.
   testCNFRule :: Doc
-  testCNFRule = Makefile.mkRule "TestCNF" [ "TestCNF.hs", alexFileHs opts ] [ "ghc --make $< -o $@" ]
+  testCNFRule = Makefile.mkRule (cnfTestFileExe opts) deps [ "ghc --make $< -o $@" ]
+    where
+    deps = [ cnfTestFile opts {- must be first! -} , alexFileHs opts ]
 
   agdaRule :: Doc
   agdaRule = Makefile.mkRule "Main" [ agdaMainFile opts ] [ "agda --ghc --ghc-flag=-Wwarn $<" ]

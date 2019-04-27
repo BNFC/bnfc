@@ -42,12 +42,22 @@ shareFile     = mkFile noLang   "SharedString" "hs"
 shareFileM    = mkMod  noLang   "SharedString"
 layoutFileM   = mkMod  withLang "Layout"
 layoutFile    = mkFile withLang "Layout" "hs"
-cnfTablesFile = mkFile withLang "CnfTables" "hs"
-cnfTablesFileM= mkMod  withLang "CnfTables"
 xmlFile       = mkFile withLang "XML" "hs"
 xmlFileM      = mkMod  withLang "XML"
 composOpFile  = mkFile noLang   "ComposOp" "hs"
 composOpFileM = mkMod  noLang   "ComposOp"
+
+-- Files created by the CNF variant
+
+cnfTablesFile, cnfTablesFileM
+  , cnfTestFile, cnfTestFileExe
+  , cnfBenchFile
+  :: Options -> String
+cnfTablesFile  = mkFile withLang "CnfTables" "hs"
+cnfTablesFileM = mkMod  withLang "CnfTables"
+cnfTestFile    = mkFile withLang "Test" "hs"  -- WAS: TestCNF, but just naming it Test is easier for testsuite
+cnfTestFileExe = mkFile withLang "Test" ""
+cnfBenchFile   = mkFile withLang "BenchCNF" "hs"
 
 -- Files created by the Agda backend
 

@@ -1,6 +1,7 @@
 2.8.3
 	* Unicode support in lexer, excl. C, C++ and Ocaml [#249]
 	* Haskell: Use qualified import of AST in generated printer [#228]
+	* Haskell/CNF: generated test program now same name (Test) as w/o --cnf
 
 2.8.2 Andreas Abel <andreas.abel@gu.se>  November 2018
 	* GHC 8.4 compatibility [#227,#236]

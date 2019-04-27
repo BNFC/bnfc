@@ -179,6 +179,37 @@ data TestParameters = TP
     tpRunTestProg :: Text -> [FilePath] -> Sh Text
   }
 
+baseParameters :: TestParameters
+baseParameters =  TP
+  { tpName        = undefined
+  , tpBnfcOptions = undefined
+  , tpBuild       = tpMake
+  , tpRunTestProg = \ lang args -> do
+      bin <- canonicalize ("." </> ("Test" <> lang))
+      cmd bin args
+  }
+
+haskellParameters :: TestParameters
+haskellParameters = baseParameters
+  { tpBuild = do
+      cmd "hlint"
+        "-i" "Redundant bracket"
+        "-i" "Use camelCase"
+        "-i" "Use newtype instead of data"
+        "-i" "Use fmap"
+        "."
+      tpMake
+      cmd "ghc" =<< findFileRegex "Skel.*\\.hs$"
+
+  , tpRunTestProg = \ _lang args -> do
+      -- cmd "echo" "Looking for Test* binary"
+      -- -- can't print anything here because then the setStdin input is used up here
+      bin <- findFileRegex "Test[^.]*$"
+      -- cmd "echo" "Running" bin  -- ditto
+      -- print_stdout True $ print_stderr True $ do
+      cmd bin args
+  }
+
 parameters :: [TestParameters]
 parameters =
   -- Haskell
@@ -225,30 +256,12 @@ parameters =
                , tpBnfcOptions = ["--java", "--antlr"] }
   ]
   where
-    base = TP
-        { tpName = undefined
-        , tpBnfcOptions = undefined
-        , tpBuild = tpMake
-        , tpRunTestProg = \lang args -> do
-            bin <- canonicalize ("." </> ("Test" <> lang))
-            cmd bin args
-        }
+    base = baseParameters
+    hsParams = haskellParameters
     cBase = base
         { tpBuild = do
             tpMake
             tpMake "Skeleton.o"
-        }
-    hsParams = base
-        { tpBuild = do
-            cmd "hlint" "-i" "Redundant bracket" "-i" "Use camelCase" "-i" "Use newtype instead of data" "-i" "Use fmap" "."
-            tpMake
-            cmd "ghc" =<< findFileRegex "Skel.*\\.hs$"
-        , tpRunTestProg = \_ args -> do
-            -- cmd "echo" "Looking for Test* binary"  -- can't print anything here because then the setStdin input is used up here
-            bin <- findFileRegex "Test[^.]*$"
-            -- cmd "echo" "Running" bin  -- ditto
-            -- print_stdout True $ print_stderr True $ do
-            cmd bin args
         }
     javaParams = base
         { tpBuild = do
