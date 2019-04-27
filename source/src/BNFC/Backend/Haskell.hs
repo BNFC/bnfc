@@ -64,7 +64,11 @@ makeHaskell opts cf = do
       errMod = errFileM opts
       shareMod = shareFileM opts
   do
+    -- Generate abstract syntax and pretty printer.
     mkfile (absFile opts) $ cf2Abstract (byteStrings opts) (ghcExtensions opts) (functor opts) absMod cf
+    mkfile (printerFile opts) $ cf2Printer (byteStrings opts) (functor opts) False prMod absMod cf
+
+    -- Generate Alex lexer.  Layout is resolved after lexing.
     case alexMode opts of
       Alex1 -> do
         mkfile (alexFile opts) $ cf2alex lexMod errMod cf
@@ -75,27 +79,41 @@ makeHaskell opts cf = do
       Alex3 -> do
         mkfile (alexFile opts) $ cf2alex3 lexMod errMod shareMod (shareStrings opts) (byteStrings opts) cf
         liftIO $ printf "Use Alex 3.0 to compile %s.\n" (alexFile opts)
+
+    Ctrl.when (shareStrings opts) $ mkfile (shareFile opts) $ sharedString shareMod (byteStrings opts) cf
+    Ctrl.when (hasLayout cf) $ mkfile (layoutFile opts) $ cf2Layout (alex1 opts) (inDir opts) layMod lexMod cf
+
+    -- Generate Happy parser and matching test program unless --cnf.
     Ctrl.unless (cnf opts) $ do
       mkfile (happyFile opts) $
         cf2HappyS parMod absMod lexMod errMod (glr opts) (byteStrings opts) (functor opts) cf
-      liftIO $ printf "%s Tested with Happy 1.15\n" (happyFile opts)
-    mkfile (tFile opts)        $ testfile opts cf
-    mkfile (txtFile opts)      $ cfToTxt (lang opts) cf
-    mkfile (templateFile opts) $ cf2Template (templateFileM opts) absMod errMod (functor opts) cf
-    mkfile (printerFile opts)  $ cf2Printer (byteStrings opts) (functor opts) False prMod absMod cf
-    Ctrl.when (hasLayout cf) $ mkfile (layoutFile opts) $ cf2Layout (alex1 opts) (inDir opts) layMod lexMod cf
+      -- liftIO $ printf "%s Tested with Happy 1.15\n" (happyFile opts)
+      mkfile (tFile opts)        $ testfile opts cf
+
+    -- Both Happy parser and skeleton (template) rely on Err.
     mkfile (errFile opts) $ mkErrM errMod (ghcExtensions opts)
-    Ctrl.when (shareStrings opts) $ mkfile (shareFile opts)    $ sharedString shareMod (byteStrings opts) cf
-    Makefile.mkMakefile opts $ makefile opts
+    mkfile (templateFile opts) $ cf2Template (templateFileM opts) absMod errMod (functor opts) cf
+
+    -- Generate txt2tags documentation.
+    mkfile (txtFile opts)      $ cfToTxt (lang opts) cf
+
+    -- Generate XML and DTD printers.
     case xml opts of
       2 -> makeXML opts True cf
       1 -> makeXML opts False cf
       _ -> return ()
-    Ctrl.when (agda opts) $ makeAgda time opts cf
+
+    -- CNF backend.  Currently does not make use of layout.
     Ctrl.when (cnf opts) $ do
       mkfile (cnfTablesFile opts) $ ToCNF.generate opts cf
       mkfile (cnfTestFile opts)   $ ToCNF.genTestFile opts cf
       mkfile (cnfBenchFile opts)  $ ToCNF.genBenchmark opts
+
+    -- Generate Agda bindings for AST, Printer and Parser.
+    Ctrl.when (agda opts) $ makeAgda time opts cf
+
+    -- Generate Makefile.
+    Makefile.mkMakefile opts $ makefile opts
 
 
 -- | Generate the makefile (old version, with just one "all" target).
@@ -159,7 +177,7 @@ distCleanRule opts makeFile = Makefile.mkRule "distclean" ["clean"] $
       , agdaLibFile    -- IOLib.agda
       , agdaMainFile   -- Main.agda
       , (\ opts -> dir ++ lang opts ++ ".dtd")
-      ]
+      ]  -- TODO: clean up cnf files
       -- Files that have no .bak variant
     , map (\ (file, ext) -> mkFile withLang file ext opts)
       [ ("Test"    , "")
@@ -272,6 +290,7 @@ makefile opts makeFile = vcat
     where
     deps = [ cnfTestFile opts {- must be first! -} , alexFileHs opts ]
 
+  -- | Rule to build Agda parser.
   agdaRule :: Doc
   agdaRule = Makefile.mkRule "Main" [ agdaMainFile opts ] [ "agda --ghc --ghc-flag=-Wwarn $<" ]
 
