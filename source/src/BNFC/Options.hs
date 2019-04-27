@@ -3,6 +3,7 @@
 module BNFC.Options where
 
 import Data.Maybe      (fromMaybe, maybeToList)
+import Data.Monoid     (Monoid) -- ghc 7.8
 import Data.Version    (showVersion )
 
 import System.Console.GetOpt
