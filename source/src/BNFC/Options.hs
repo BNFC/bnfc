@@ -389,7 +389,12 @@ parseMode []   = Help
 parseMode args =
   -- First, check for global options like --help or --version
   case getOpt' Permute globalOptions args' of
-    (mode:_,_,_,_) -> mode
+   (mode:_,_,_,_) -> mode
+
+   -- Then, check for unrecognized options.
+   _ -> case getOpt' Permute allOptions args' of
+    (_,  _, [u],      _) -> UsageError $ unwords [ "Unrecognized option:" , u ]
+    (_,  _, us@(_:_), _) -> UsageError $ unwords $ "Unrecognized options:" : us
 
     -- Then, determine target language.
     _ -> case getOpt' Permute targetOptions args' of
@@ -404,8 +409,8 @@ parseMode args =
         in
         case getOpt' Permute opts args' of
           (_,  _, _,      e:_) -> UsageError e
-          (_,  _, [u],      _) -> UsageError $ unwords [ "Unrecognized option:" , u ]
-          (_,  _, us@(_:_), _) -> UsageError $ unwords $ "Unrecognized options:" : us
+          (_,  _, [u],      _) -> UsageError $ unwords $ [ "Backend", show tgt, "does not support option", u ]
+          (_,  _, us@(_:_), _) -> UsageError $ unwords $ [ "Backend", show tgt, "does not support options" ] ++ us
           (_, [], _,        _) -> UsageError "Missing grammar file"
           (optionsUpdates, [grammarFile], [], []) ->
             let opts = (options optionsUpdates)
