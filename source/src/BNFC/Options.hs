@@ -305,24 +305,25 @@ specificOptions =
   , ( Option []    ["glr"] (NoArg (\o -> o {glr = GLR}))
           "Output Happy GLR parser"
     , haskellTargets )
-  , ( Option []    ["cnf"] (NoArg (\o -> o {cnf = True}))
-          "Use the CNF parser instead of happy"
-    , haskellTargets )
   , ( Option []    ["ghc"] (NoArg (\o -> o {ghcExtensions = True}))
           "Use ghc-specific language extensions"
     , haskellTargets )
   , ( Option []    ["functor"] (NoArg (\o -> o {functor = True}))
           "Make the AST a functor and use it to store the position of the nodes"
-    , [TargetHaskell] )
+    , haskellTargets )  -- TODO: ok with --profile?
   , ( Option []    ["xml"] (NoArg (\o -> o {xml = 1}))
           "Also generate a DTD and an XML printer"
     , haskellTargets )
   , ( Option []    ["xmlt"] (NoArg (\o -> o {xml = 2}))
           "DTD and an XML printer, another encoding"
     , haskellTargets )
+  -- CNF and Agda do not support the GADT syntax
+  , ( Option []    ["cnf"] (NoArg (\o -> o {cnf = True}))
+          "Use the CNF parser instead of happy"
+    , [TargetHaskell] )
   , ( Option []    ["agda"] (NoArg (\o -> o {agda = True}))
           "Also generate Agda bindings for the abstract syntax"
-    , haskellTargets )
+    , [TargetHaskell] )
   ]
 
 -- | The list of specific options for a target.
