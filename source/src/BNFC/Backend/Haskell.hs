@@ -195,7 +195,10 @@ makefile opts makeFile = vcat
   , phonyRule
   , defaultRule
   , vcat [ "# Rules for building the parser." , "" ]
-  , bnfcRule
+  -- If option -o was given, we have no access to the grammar file
+  -- from the Makefile.  Thus, we have to drop the rule for
+  -- reinvokation of bnfc.
+  , when (isDefault outDir opts) $ bnfcRule
   , unless (cnf opts) $ happyRule
   , alexRule
   , if cnf opts then testCNFRule else testParserRule
@@ -263,7 +266,7 @@ makefile opts makeFile = vcat
     deps = [ tFile opts {- must be first! -} , alexFileHs opts , happyFileHs opts ]
 
   testCNFRule :: Doc
-  testCNFRule = Makefile.mkRule "TestCNF" [ "TestCNF.hs" ] [ "ghc --make $< -o $@" ]
+  testCNFRule = Makefile.mkRule "TestCNF" [ "TestCNF.hs", alexFileHs opts ] [ "ghc --make $< -o $@" ]
 
   agdaRule :: Doc
   agdaRule = Makefile.mkRule "Main" [ agdaMainFile opts ] [ "agda --ghc --ghc-flag=-Wwarn $<" ]

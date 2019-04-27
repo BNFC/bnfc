@@ -131,7 +131,14 @@ defaultOptions = Options
   , wcf             = False
   }
 
--- | Return something in case options differs from default.
+-- | Check whether an option is unchanged from the default.
+isDefault :: (Eq a)
+  => (SharedOptions -> a)  -- ^ Option field name.
+  -> SharedOptions         -- ^ Options.
+  -> Bool
+isDefault flag opts = flag opts == flag defaultOptions
+
+-- | Return something in case option differs from default.
 unlessDefault :: (Monoid m, Eq a)
   => (SharedOptions -> a)  -- ^ Option field name.
   -> SharedOptions         -- ^ Options.
@@ -139,6 +146,15 @@ unlessDefault :: (Monoid m, Eq a)
   -> m
 unlessDefault flag opts f = unless (o == flag defaultOptions) $ f o
   where o = flag opts
+
+-- -- | Return something in case option is unchanged from default.
+-- whenDefault :: (Monoid m, Eq a)
+--   => (SharedOptions -> a)  -- ^ Option field name.
+--   -> SharedOptions         -- ^ Options.
+--   -> m                     -- ^ Action in case option is unchanged from standard.
+--   -> m
+-- whenDefault flag opts m = when (o == flag defaultOptions) m
+--   where o = flag opts
 
 -- | Print options as input to BNFC.
 --
