@@ -13,6 +13,7 @@
 *.o
 
 # Cabal generated directories and files
+build
 dist
 cabal-dev
 /source/dist*
