@@ -64,9 +64,8 @@ module BNFC.CF (
             rulesForNormalizedCat,    -- rules for a given category
             ruleGroups,     -- Categories are grouped with their rules.
             ruleGroupsInternals, --As above, but includes internal cats.
-            notUniqueNames, -- list of not unique names (replaces the following 2)
---          notUniqueFuns,   -- Returns a list of function labels that are not unique.
---            badInheritence, -- Returns a list of all function labels that can cause problems in languages with inheritence.
+            allNames,        -- Checking for non-unique names, like @Name. Name ::= Ident;@.
+            filterNonUnique,
             isList,         -- Checks if a category is a list category.
             isTokenCat,
             sameCat,
@@ -414,11 +413,18 @@ firstEntry cf = case allEntryPoints cf of
 
 -- aggressively ban nonunique names (AR 31/5/2012)
 
-notUniqueNames :: [Name] -> CF -> [Fun]
-notUniqueNames reserved cf = [head xs | xs <- xss, length xs > 1] where
-  xss = group (sort names)
-  names = reserved ++ allCatsIdNorm cf ++ allFuns cf
-  allFuns g = [ f | f <- map funRule (cfgRules g), not (isNilCons f || isCoercion f)]
+-- | Categories and constructors.
+allNames :: CF -> [Fun]
+allNames cf = allCatsIdNorm cf ++
+  [ f | f <- map funRule $ cfgRules cf
+      , not $ isNilCons f
+      , not $ isCoercion f
+  ]
+
+-- | Get all elements with more than one occurrence.
+filterNonUnique :: (Ord a) => [a] -> [a]
+filterNonUnique xs = [ x | (x:_:_) <- group $ sort xs ]
+
 
 -- | Extract the comment pragmas.
 commentPragmas :: [Pragma] -> [Pragma]

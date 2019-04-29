@@ -61,16 +61,30 @@ parseCFP opts target content = do
   let cf = cfp2cf cfp
   runErr $ checkDefinitions cf
 
-  let reserved = [lang opts | target == TargetJava ]
+  -- Some backends do not allow the grammar name to coincide with
+  -- one of the category or constructor names.
+  let names    = allNames cf
+  () <- when (target == TargetJava && lang opts `elem` names) $
+      die $ unwords $
+        [ "ERROR of backend", show target ++ ":"
+        , "the language name"
+        , lang opts
+        , "conflicts with a name defined in the grammar."
+        ]
 
-  -- Warn of fail if the grammar use non unique names
-  case filter (not . isDefinedRule) $ notUniqueNames reserved cf of
+  -- Warn of fail if the grammar uses non unique names
+  case filter (not . isDefinedRule) $ filterNonUnique names of
     [] -> return ()
-    ns| target `notElem` [TargetHaskell,TargetHaskellGadt,TargetOCaml]
-      -> fail $ "ERROR: names not unique: " ++ unwords ns
-      | otherwise
-      -> do putStrLn $ "Warning: names not unique: " ++ unwords ns
-            putStrLn "This can be an error in other back ends."
+    ns | target `notElem` [TargetHaskell,TargetHaskellGadt,TargetOCaml]
+       -> die $ unlines $
+            [ "ERROR: names not unique: " ++ unwords ns
+            , "This is an error in the backend " ++ show target
+            ]
+       | otherwise
+       -> putStrLn $ unlines $
+            [ "Warning: names not unique: " ++ unwords ns
+            , "This can be an error in other back ends."
+            ]
 
   -- Print warnings if user defined nullable tokens.
   Fold.mapM_ putStrLn $ checkTokens cf
