@@ -243,61 +243,84 @@ type TestClass = String
     -- ^ the CF bundle
     -> String
 
+-- | Record to name arguments of 'javaTest'.
+data JavaTestParams = JavaTestParams
+  { jtpImports            :: [Doc]
+      -- ^ List of imported packages.
+  , jtpErr                :: String
+      -- ^ Name of the exception thrown in case of parsing failure.
+  , jtpErrHand            :: (String -> [Doc])
+      -- ^ Handler for the exception thrown.
+  , jtpLexerConstruction  :: (Doc -> Doc -> Doc)
+      -- ^ Function formulating the construction of the lexer object.
+  , jtpParserConstruction :: (Doc -> Doc -> Doc)
+      -- ^ As above, for parser object.
+  , jtpShowAlternatives   :: ([Cat] -> [Doc])
+      -- ^ Pretty-print the names of the methods corresponding to entry points to the user.
+  , jtpInvocation         :: (Doc -> Doc -> Doc -> Doc)
+      -- ^ Function formulating the invocation of the parser tool within Java.
+  , jtpErrMsg             :: String
+      -- ^ Error string output in consequence of a parsing failure.
+  }
+
 -- | Test class details for J(F)Lex + CUP
 cuptest :: TestClass
-cuptest =
-  javaTest
-    ["java_cup.runtime"]
-    "Throwable"
-    (const [])
-    (\x i -> x <> i <> ";")
-    (\x i -> x <> "(" <> i <> ", " <> i <> ".getSymbolFactory());")
-    showOpts
-    (\_ pabs enti ->
-        pabs <> "." <> enti <+> "ast = p."<> "p" <> enti
-             <> "();")
-    locs
-  where
-    locs = "At line \" + String.valueOf(t.l.line_num()) + \","
-            ++ " near \\\"\" + t.l.buff() + \"\\\" :"
-    showOpts _ = ["not available."]
-
-
+cuptest = javaTest $ JavaTestParams
+  { jtpImports            = ["java_cup.runtime"]
+  , jtpErr                = "Throwable"
+  , jtpErrHand            = const []
+  , jtpLexerConstruction  = \ x i -> x <> i <> ";"
+  , jtpParserConstruction = \ x i -> x <> "(" <> i <> ", " <> i <> ".getSymbolFactory());"
+  , jtpShowAlternatives   = const $ ["not available."]
+  , jtpInvocation         = \ _ pabs enti -> hcat [ pabs, ".", enti, " ast = p.p", enti, "();" ]
+  , jtpErrMsg             = unwords $
+      [ "At line \" + String.valueOf(t.l.line_num()) + \","
+      , "near \\\"\" + t.l.buff() + \"\\\" :"
+      ]
+  }
 
 -- | Test class details for ANTLR4
 antlrtest :: TestClass
-antlrtest =
-  javaTest
-    [ "org.antlr.v4.runtime","org.antlr.v4.runtime.atn"
-    , "org.antlr.v4.runtime.dfa","java.util"
-    ]
-    "TestError"
-    antlrErrorHandling
-    (\x i ->  vcat
-           [ x <> "(new ANTLRInputStream" <> i <>");"
-           , "l.addErrorListener(new BNFCErrorListener());"
-           ])
-    (\x i -> vcat
-           [x <> "(new CommonTokenStream(" <> i <>"));"
-           , "p.addErrorListener(new BNFCErrorListener());"
-           ])
-    showOpts
-    (\pbase pabs enti -> vcat
-           [
+antlrtest = javaTest $ JavaTestParams
+  { jtpImports =
+      [ "org.antlr.v4.runtime"
+      , "org.antlr.v4.runtime.atn"
+      , "org.antlr.v4.runtime.dfa"
+      , "java.util"
+      ]
+  , jtpErr =
+      "TestError"
+  , jtpErrHand =
+      antlrErrorHandling
+  , jtpLexerConstruction  =
+      \ x i -> vcat
+        [ x <> "(new ANTLRInputStream" <> i <>");"
+        , "l.addErrorListener(new BNFCErrorListener());"
+        ]
+  , jtpParserConstruction =
+      \ x i -> vcat
+        [ x <> "(new CommonTokenStream(" <> i <>"));"
+        , "p.addErrorListener(new BNFCErrorListener());"
+        ]
+  , jtpShowAlternatives   =
+      showOpts
+  , jtpInvocation         =
+      \ pbase pabs enti -> vcat
+         [
            let rulename = getRuleName (show enti)
                typename = text rulename
                methodname = text $ firstLowerCase rulename
            in
-               pbase <> "." <> typename <> "Context pc = p."
-                     <> methodname <> "();"
-               , "org.antlr.v4.runtime.Token _tkn = p.getInputStream()"
-                 <> ".getTokenSource().nextToken();"
-               , "if(_tkn.getType() != -1) throw new TestError"
+               pbase <> "." <> typename <> "Context pc = p." <> methodname <> "();"
+         , "org.antlr.v4.runtime.Token _tkn = p.getInputStream().getTokenSource().nextToken();"
+         , "if(_tkn.getType() != -1) throw new TestError"
                  <> "(\"Stream does not end with EOF\","
-                 <> "_tkn.getLine(),_tkn.getCharPositionInLine());",
-               pabs <> "." <> enti <+> "ast = pc.result;"
-           ])
-           "At line \" + e.line + \", column \" + e.column + \" :"
+                 <> "_tkn.getLine(),_tkn.getCharPositionInLine());"
+         , pabs <> "." <> enti <+> "ast = pc.result;"
+         ]
+  , jtpErrMsg             =
+      "At line \" + e.line + \", column \" + e.column + \" :"
+  }
   where
     showOpts [] = []
     showOpts (x:xs)
@@ -537,56 +560,50 @@ partialParserGoals dbas (x:rest) =
         : partialParserGoals dbas rest
 
 -- | Creates the Test.java class.
-javaTest :: [Doc]
-            -- ^ list of imported packages
-            -> String
-            -- ^ name of the exception thrown in case of parsing failure
-            -> (String -> [Doc])
-            -- ^ handler for the exception thrown
-            -> (Doc -> Doc -> Doc)
-            -- ^ function formulating the construction of the lexer object
-            -> (Doc -> Doc -> Doc)
-            -- ^ as above, for parser object
-            -> ([Cat] -> [Doc])
-            -- ^ Function processing the names of the methods corresponding
-            -- to entry points
-            -> (Doc -> Doc -> Doc -> Doc)
-            -- ^ function formulating the invocation of the parser tool within
-            -- Java
-            -> String
-            -- ^ error string output in consequence of a parsing failure
-            -> TestClass
-javaTest imports
+-- javaTest
+--   :: [Doc]                      -- ^ @imports@: list of imported packages
+--   -> String                     -- ^ @err@: name of the exception thrown in case of parsing failure
+--   -> (String -> [Doc])          -- ^ @errhand@: handler for the exception thrown
+--   -> (Doc -> Doc -> Doc)        -- ^ @lexerconstruction@: function formulating the construction of the lexer object
+--   -> (Doc -> Doc -> Doc)        -- ^ @parseconstruction@: as above, for parser object
+--   -> ([Cat] -> [Doc])           -- ^ @showOpts@: Function processing the names of the methods corresponding to entry points
+--   -> (Doc -> Doc -> Doc -> Doc) -- ^ @invocation@: function formulating the invocation of the parser tool within Java
+--   -> String                     -- ^ @errmsg@: error string output in consequence of a parsing failure
+--   -> TestClass
+javaTest :: JavaTestParams -> TestClass
+javaTest (JavaTestParams
+    imports
     err
     errhand
     lexerconstruction
     parserconstruction
     showOpts
     invocation
-    errmsg
+    errmsg)
     lexer
     parser
     packageBase
     packageAbsyn
     cf =
-    render $ vcat $
-        [ "package" <+> text packageBase <> ";"
+    render $ vcat $ concat $
+      [ [ "package" <+> text packageBase <> ";"
         , "import" <+> text packageBase <> ".*;"
         , "import" <+> text packageAbsyn <> ".*;"
         , "import java.io.*;"
         ]
-        ++ map importfun imports
-        ++ errhand err
-        ++[ ""
+      , map importfun imports
+      , errhand err
+      , [ ""
         , "public class Test"
         , codeblock 2
             [ lx <+> "l;"
             , px <+> "p;"
             , ""
             , "public Test(String[] args)"
-            , codeblock 2 [
-                "try"
-                , codeblock 2 [ "Reader input;"
+            , codeblock 2
+                [ "try"
+                , codeblock 2
+                    [ "Reader input;"
                     , "if (args.length == 0)"
                        <> "input = new InputStreamReader(System.in);"
                     , "else input = new FileReader(args[0]);"
@@ -628,6 +645,7 @@ javaTest imports
                 ]
             ]
         ]
+      ]
     where
       printOuts x    = vcat $ map javaPrintOut (messages x)
       messages x     = "" : intersperse "" x
