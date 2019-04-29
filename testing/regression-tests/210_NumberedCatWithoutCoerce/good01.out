@@ -1,0 +1,10 @@
+
+Parse Successful!
+
+[Abstract Syntax]
+
+EId (Ident "foo")
+
+[Linearized tree]
+
+foo

@@ -1,0 +1,8 @@
+-- Andreas, 2019-04-29, issue #210.
+-- Numbered categories need to be included in AST
+-- even without coercion pragma.
+
+EId.   Exp2 ::= Ident;
+EPair. Exp1 ::= Exp2 "," Exp2;
+
+-- Should generate a valid parser/printer for Exp2.

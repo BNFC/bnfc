@@ -48,6 +48,14 @@ allWithParams params = makeTestSuite (tpName params) $ concat $
     ]
   ]
 
+-- | This parameterized test is called first.
+--   Use it while working in connection with a certain test case. (For quicker response.)
+current :: Test
+current = makeTestSuite "Current parameterized test" $
+  map (`makeTestCase` ("regression-tests" </> cur)) parameters
+  where
+  cur = "210_NumberedCatWithoutCoerce"
+
 -- | BNFC should not proceed if grammar does not define any rules.
 noRulesTest :: TestParameters -> Test
 noRulesTest params = do
@@ -114,22 +122,23 @@ exampleTests params =
             forM_ examples $ \example ->
                 tpRunTestProg params (toTextArg lang) [filename example]
 
--- | To test certain grammatical constructions or interractions between rules,
+-- | To test certain grammatical constructions or interactions between rules,
 -- test grammar can be created under the regression-tests directory,
 -- together with valid and invalid inputs.
 testCases :: TestParameters -> [Test]
 testCases params =
-    map makeTestCase
-        [ "regression-tests/204_InternalToken"
+    map (makeTestCase params)
+        [ "regression-tests/210_NumberedCatWithoutCoerce"
+        , "regression-tests/204_InternalToken"
         , "regression-tests/249_unicode"
         , "regression-tests/#100_coercion_lists"
         , "regression-tests/#134_category_named_I"
         , "regression-tests/comments"
         , "regression-tests/#149"
         ]
-  where
-    mkTitle dir = encodeString (filename dir)
-    makeTestCase dir =
+
+makeTestCase :: TestParameters -> FilePath -> Test
+makeTestCase params dir =
         makeShellyTest (mkTitle dir) $ withTmpDir $ \tmp -> do
             dir <- absPath dir
             cd tmp
@@ -150,6 +159,8 @@ testCases params =
             forM_ bad $ \f -> do
                 errExit False $ tpRunTestProg params "test" [f]
                 lastExitCode >>= assertEqual 1
+  where
+    mkTitle dir = encodeString (filename dir)
 
 -- | To test that @distclean@ removes all generated files.
 distcleanTest :: TestParameters -> Test
