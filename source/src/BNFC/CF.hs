@@ -458,11 +458,11 @@ allCats = nub . map valCat . cfgRules
 
 -- | Gets all normalized identified Categories
 allCatsIdNorm :: CF -> [String]
-allCatsIdNorm = nub . map (identCat . normCat) . allCats
+allCatsIdNorm = nub . map (identCat . normCat . valCat) . cfgRules
 
 -- | Get all normalized Cat
 allCatsNorm :: CF -> [Cat]
-allCatsNorm = nub . map normCat . allCats
+allCatsNorm = nub . map (normCat . valCat) . cfgRules
 
 -- | Is the category is used on an rhs?
 isUsedCat :: CFG f -> Cat -> Bool
