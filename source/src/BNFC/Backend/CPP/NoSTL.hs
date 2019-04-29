@@ -19,6 +19,9 @@
 
 module BNFC.Backend.CPP.NoSTL (makeCppNoStl) where
 
+import Data.Char
+import Data.List (nub)
+
 import BNFC.Utils
 import BNFC.CF
 import BNFC.Options
@@ -29,7 +32,6 @@ import BNFC.Backend.CPP.NoSTL.CFtoFlex
 import BNFC.Backend.CPP.NoSTL.CFtoBison
 import BNFC.Backend.CPP.NoSTL.CFtoCVisitSkel
 import BNFC.Backend.CPP.PrettyPrinter
-import Data.Char
 import qualified BNFC.Backend.Common.Makefile as Makefile
 
 makeCppNoStl :: SharedOptions -> CF -> MkFiles ()
@@ -107,7 +109,7 @@ cpptest cf =
     "    }",
     "  } else input = stdin;",
     "  /* The default entry point is used. For other options see Parser.H */",
-    "  " ++ def ++ " *parse_tree = p" ++ def ++ "(input);",
+    "  " ++ dat ++ " *parse_tree = p" ++ def ++ "(input);",
     "  if (parse_tree)",
     "  {",
     "    printf(\"\\nParse Succesful!\\n\");",
@@ -126,14 +128,16 @@ cpptest cf =
     ""
    ]
   where
-   def = show (head (allEntryPoints cf))
+   cat = head (allEntryPoints cf)
+   dat = identCat $ normCat cat
+   def = identCat cat
 
 mkHeaderFile cf cats eps env = unlines
  [
   "#ifndef PARSER_HEADER_FILE",
   "#define PARSER_HEADER_FILE",
   "",
-  concatMap mkForwardDec cats,
+  concatMap mkForwardDec (nub $ map normCat cats),
   "typedef union",
   "{",
   "  int int_;",
@@ -150,8 +154,7 @@ mkHeaderFile cf cats eps env = unlines
   "#endif"
  ]
  where
-  mkForwardDec s | normCat s == s = "class " ++ identCat s ++ ";\n"
-  mkForwardDec _ = ""
+  mkForwardDec s = "class " ++ identCat s ++ ";\n"
   mkVar s | normCat s == s = "  " ++ identCat s ++"*" +++ map toLower (identCat s) ++ "_;\n"
   mkVar _ = ""
   mkDefines n [] = mkString n
@@ -171,5 +174,4 @@ mkHeaderFile cf cats eps env = unlines
   mkIdent n =  if isUsedCat cf catIdent
    then "#define _IDENT_ " ++ show n ++ "\n"
    else ""
-  mkFunc s | normCat s == s = identCat s ++ "*" +++ "p" ++ identCat s ++ "(FILE *inp);\n"
-  mkFunc _ = ""
+  mkFunc s = identCat (normCat s) ++ "*" +++ "p" ++ identCat s ++ "(FILE *inp);\n"

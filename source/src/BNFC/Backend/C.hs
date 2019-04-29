@@ -146,7 +146,7 @@ ctest cf =
     "int main(int argc, char ** argv)",
     "{",
     "  FILE *input;",
-    "  " ++ def ++ " parse_tree;",
+    "  " ++ dat ++ " parse_tree;",
     "  int quiet = 0;",
     "  char *filename = NULL;",
     "",
@@ -178,9 +178,9 @@ ctest cf =
     "    printf(\"\\nParse Successful!\\n\");",
     "    if (!quiet) {",
     "      printf(\"\\n[Abstract Syntax]\\n\");",
-    "      printf(\"%s\\n\\n\", show" ++ def ++ "(parse_tree));",
+    "      printf(\"%s\\n\\n\", show" ++ dat ++ "(parse_tree));",
     "      printf(\"[Linearized Tree]\\n\");",
-    "      printf(\"%s\\n\\n\", print" ++ def ++ "(parse_tree));",
+    "      printf(\"%s\\n\\n\", print" ++ dat ++ "(parse_tree));",
     "    }",
     "    return 0;",
     "  }",
@@ -189,7 +189,12 @@ ctest cf =
     ""
    ]
   where
-   def = show $ head (allEntryPoints cf)
+  cat :: Cat
+  cat = head $ allEntryPoints cf
+  def :: String
+  def = identCat cat
+  dat :: String
+  dat = identCat . normCat $ cat
 
 mkHeaderFile :: CF -> [Cat] -> [Cat] -> [(a, String)] -> String
 mkHeaderFile cf cats eps env = unlines
@@ -234,5 +239,5 @@ mkHeaderFile cf cats eps env = unlines
   mkIdent n =  if isUsedCat cf catIdent
    then ("#define _IDENT_ " ++ show n ++ "\n")
    else ""
-  mkFunc s | normCat s == s = identCat s ++ " p" ++ identCat s ++ "(FILE *inp);\n"
-  mkFunc _ = ""
+  -- Andreas, 2019-04-29, issue #210: generate parsers also for coercions
+  mkFunc c = identCat (normCat c) ++ " p" ++ identCat c ++ "(FILE *inp);\n"

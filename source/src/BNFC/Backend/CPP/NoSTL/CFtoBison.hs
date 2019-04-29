@@ -60,11 +60,12 @@
 
 module BNFC.Backend.CPP.NoSTL.CFtoBison (cf2Bison) where
 
+import Data.Char (toLower, isUpper)
+import Data.List (intersperse, nub)
+
 import BNFC.CF
-import Data.List (intersperse)
 import BNFC.Backend.Common.NamedVariables hiding (varName)
 import BNFC.Backend.CPP.STL.CFtoBisonSTL (union)
-import Data.Char (toLower,isUpper)
 import BNFC.Utils ((+++))
 import BNFC.TypeChecker
 import ErrM
@@ -120,10 +121,14 @@ header name cf = unlines
     , "}"
     , ""
     , definedRules cf
-    , unlines $ map (parseMethod name) (allCatsNorm cf)  -- (allEntryPoints cf), M.F. 2004-09-14 fix of [Ty2] bug.
-    , concatMap reverseList (filter isList (allCatsNorm cf))
+    , unlines $ map parseResult dats
+    , unlines $ map (parseMethod name) eps
+    , concatMap reverseList $ filter isList $ allCatsNorm cf
     , "%}"
     ]
+  where
+  eps  = allEntryPoints cf
+  dats = nub $ map normCat eps
 
 definedRules :: CF -> String
 definedRules cf = unlines [ rule f xs e | FunDef f xs e <- cfgPragmas cf]
@@ -172,16 +177,24 @@ definedRules cf = unlines [ rule f xs e | FunDef f xs e <- cfgPragmas cf]
         call x es = x ++ "(" ++ concat (intersperse ", " $ map cppExp es) ++ ")"
 
 
+-- | Generates declaration and initialization of the @YY_RESULT@ for a parser.
+--
+--   Different parsers (for different precedences of the same category)
+--   share such a declaration.
+--
+--   Expects a normalized category.
+parseResult :: Cat -> String
+parseResult cat =
+  "static " ++ cat' ++ "*" +++ resultName cat' +++ "= 0;"
+  where
+  cat' = identCat cat
+
+
 --This generates a parser method for each entry point.
 parseMethod :: String -> Cat -> String
-parseMethod _ cat =
-  -- if normCat cat /= cat     M.F. 2004-09-17 comment. No duplicates from allCatsIdNorm
-  -- then ""
-  -- else
-  unlines
+parseMethod _ cat = unlines
   [
-   cat' ++ "*" +++ (resultName cat') +++ "= 0;",
-   cat' ++"* p" ++ cat' ++ "(FILE *inp)",
+   cat' ++"* p" ++ par ++ "(FILE *inp)",
    "{",
    "  initialize_lexer(inp);",
    "  if (yyparse())",
@@ -196,6 +209,7 @@ parseMethod _ cat =
   ]
  where
   cat' = identCat (normCat cat)
+  par  = identCat cat
 
 --This method generates list reversal functions for each list type.
 reverseList :: Cat -> String

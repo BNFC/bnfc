@@ -555,15 +555,15 @@ cf2data' predicate cf =
                               let f = funRule r,
                               not (isDefinedRule f),
                               not (isCoercion f), sameCat cat (valCat r)]))
-      | cat <- filter predicate (allCats cf)]
+      | cat <- nub $ map normCat $ filter predicate $ allCats cf ]
  where
-  mkData (Rule f _ its) = (f,[normCat c | Left c <- its, c /= InternalCat])
+  mkData (Rule f _ its) = (f, [normCat c | Left c <- its, c /= InternalCat])
 
 cf2data :: CF -> [Data]
-cf2data = cf2data' isDataCat
+cf2data = cf2data' $ isDataCat . normCat
 
 cf2dataLists :: CF -> [Data]
-cf2dataLists = cf2data' isDataOrListCat
+cf2dataLists = cf2data' $ isDataOrListCat . normCat
 
 specialData :: CF -> [Data]
 specialData cf = [(c,[(show c,[TokenCat "String"])]) | c <- specialCats cf] where

@@ -164,18 +164,17 @@ prEntryPoint cf = unlines ["", "start with " ++ show (firstEntry cf) ++ ";", ""]
 
 --This generates a parser method for each entry point.
 parseMethod :: String -> Cat -> String
-parseMethod packageAbsyn cat =
-  if normCat cat /= cat
-    then ""
-    else unlines
-             [ "  public" +++ packageAbsyn ++ "." ++ cat' +++ "p" ++ cat' ++ "()"
+parseMethod packageAbsyn cat = unlines
+             [ "  public" +++ packageAbsyn ++ "." ++ dat +++ "p" ++ cat' ++ "()"
                  ++ " throws Exception"
              , "  {"
              , "    java_cup.runtime.Symbol res = parse();"
-             , "    return (" ++ packageAbsyn ++ "." ++ cat' ++ ") res.value;"
+             , "    return (" ++ packageAbsyn ++ "." ++ dat ++ ") res.value;"
              , "  }"
              ]
-    where cat' = identCat (normCat cat)
+    where
+    dat  = identCat (normCat cat)
+    cat' = identCat cat
 
 --non-terminal types
 declarations :: String -> [Cat] -> String

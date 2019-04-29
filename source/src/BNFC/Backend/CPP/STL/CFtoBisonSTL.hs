@@ -120,12 +120,15 @@ header inPackage name cf = unlines
     , ""
     , definedRules cf
     , nsStart inPackage
-    , unlines $ map (parseMethod inPackage name) (allCatsNorm cf ++ positionCats cf)  -- (allEntryPoints cf), M.F. 2004-09-14 fix of [Ty2] bug.
+    , unlines $ map parseResult dats
+    , unlines $ map (parseMethod inPackage name) eps
     , nsEnd inPackage
     , "%}"
     ]
   where
-   ns = nsString inPackage
+    ns   = nsString inPackage
+    eps  = allEntryPoints cf ++ positionCats cf
+    dats = nub $ map normCat eps
 
 definedRules :: CF -> String
 definedRules cf =
@@ -175,16 +178,23 @@ definedRules cf =
         call x es = x ++ "(" ++ intercalate ", " (map cppExp es) ++ ")"
 
 
+-- | Generates declaration and initialization of the @YY_RESULT@ for a parser.
+--
+--   Different parsers (for different precedences of the same category)
+--   share such a declaration.
+--
+--   Expects a normalized category.
+parseResult :: Cat -> String
+parseResult cat =
+  "static " ++ cat' ++ "*" +++ resultName cat' +++ "= 0;"
+  where
+  cat' = identCat cat
+
 --This generates a parser method for each entry point.
 parseMethod :: Maybe String -> String -> Cat -> String
-parseMethod inPackage _ cat =
-  -- if normCat cat /= cat     M.F. 2004-09-17 comment. No duplicates from allCatsIdNorm
-  -- then ""
-  -- else
-  unlines
+parseMethod inPackage _ cat = unlines
   [
-   "static " ++ cat' ++ "*" +++ resultName cat' +++ "= 0;",
-   cat' ++"* p" ++ cat' ++ "(FILE *inp)",
+   cat' ++ "* p" ++ par ++ "(FILE *inp)",
    "{",
    "  " ++ ns ++ "yy_mylinenumber = 1;",       -- O.F.
    "  " ++ ns ++ "initialize_lexer(inp);",
@@ -197,7 +207,7 @@ parseMethod inPackage _ cat =
    "    return" +++ resultName cat' ++ ";",
    "  }",
    "}",
-   cat' ++"* p" ++ cat' ++ "(const char *str)",
+   cat' ++ "* p" ++ par ++ "(const char *str)",
    "{",
    "  YY_BUFFER_STATE buf;",
    "  int result;",
@@ -218,6 +228,7 @@ parseMethod inPackage _ cat =
   ]
  where
   cat' = identCat (normCat cat)
+  par  = identCat cat
   ns = nsString inPackage
 
 

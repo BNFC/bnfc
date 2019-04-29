@@ -77,7 +77,7 @@ mkHFile cf groups = unlines
   footer
  ]
  where
-  eps = allEntryPoints cf
+  eps = nub . map normCat $ allEntryPoints cf
   prPrints s | normCat s == s = "char *print" ++ s' ++ "(" ++ s' ++ " p);\n"
     where
       s' = identCat s
@@ -165,7 +165,7 @@ mkCFile cf groups = concat
     footer
    ]
   where
-    eps = allEntryPoints cf
+    eps = nub . map normCat $ allEntryPoints cf
     header = unlines
      [
       "/*** BNFC-Generated Pretty Printer and Abstract Syntax Viewer ***/",

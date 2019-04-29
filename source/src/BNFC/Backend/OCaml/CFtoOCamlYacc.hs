@@ -125,9 +125,9 @@ entryPoints absName cf = unlines $
         concat (intersperse " " (map epName eps)))
     :
     (map typing eps)
-    where eps = (nub $ map normCat (allEntryPoints cf))
+    where eps = allEntryPoints cf
           typing :: Cat -> String
-          typing c = "%type" +++ "<" ++ qualify c ++ ">" +++ epName c
+          typing c = "%type" +++ "<" ++ qualify (normCat c) ++ ">" +++ epName c
           qualify c = if c `elem` [ TokenCat "Integer", TokenCat "Double", TokenCat "Char",
                                     TokenCat "String", ListCat (TokenCat "Integer"),
                                     ListCat (TokenCat "Double"),
@@ -143,7 +143,7 @@ epName c = "p" ++ capitalize (nonterminal c)
                     c:cs -> toUpper c : cs
 
 entryPointRules :: CF -> String
-entryPointRules cf = unlines $ map mkRule (nub $ map normCat (allEntryPoints cf))
+entryPointRules cf = unlines $ map mkRule $ allEntryPoints cf
     where
         mkRule :: Cat -> String
         mkRule s = unlines [

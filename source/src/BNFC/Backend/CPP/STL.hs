@@ -21,6 +21,9 @@
 
 module BNFC.Backend.CPP.STL (makeCppStl,) where
 
+import Data.Char
+import Data.List (nub)
+
 import BNFC.Utils
 import BNFC.CF
 import BNFC.Options
@@ -32,7 +35,6 @@ import BNFC.Backend.CPP.STL.CFtoBisonSTL
 import BNFC.Backend.CPP.STL.CFtoCVisitSkelSTL
 import BNFC.Backend.CPP.PrettyPrinter
 import BNFC.Backend.CPP.STL.STLUtils
-import Data.Char
 import qualified BNFC.Backend.Common.Makefile as Makefile
 
 makeCppStl :: SharedOptions -> CF -> MkFiles ()
@@ -110,7 +112,7 @@ cpptest inPackage cf =
     "    }",
     "  } else input = stdin;",
     "  /* The default entry point is used. For other options see Parser.H */",
-    "  " ++ scope ++ def ++ " *parse_tree = " ++ scope ++ "p" ++ def ++ "(input);",
+    "  " ++ scope ++ dat ++ " *parse_tree = " ++ scope ++ "p" ++ def ++ "(input);",
     "  if (parse_tree)",
     "  {",
     "    printf(\"\\nParse Succesful!\\n\");",
@@ -129,7 +131,9 @@ cpptest inPackage cf =
     ""
    ]
   where
-   def = show (head (allEntryPoints cf))
+   cat = head $ allEntryPoints cf
+   dat = identCat $ normCat cat
+   def = identCat cat
    scope = nsScope inPackage
 
 mkHeaderFile inPackage cf cats eps env = unlines
@@ -141,7 +145,7 @@ mkHeaderFile inPackage cf cats eps env = unlines
   "#include<string>",
   "",
   nsStart inPackage,
-  concatMap mkForwardDec cats,
+  concatMap mkForwardDec $ nub $ map normCat cats,
   "typedef union",
   "{",
   "  int int_;",
@@ -161,8 +165,7 @@ mkHeaderFile inPackage cf cats eps env = unlines
  ]
  where
   hdef = nsDefine inPackage "PARSER_HEADER_FILE"
-  mkForwardDec s | normCat s == s = "class " ++ identCat s ++ ";\n"
-  mkForwardDec _ = ""
+  mkForwardDec s = "class " ++ identCat s ++ ";\n"
   mkVar s | normCat s == s = "  " ++ identCat s ++"*" +++ map toLower (identCat s) ++ "_;\n"
   mkVar _ = ""
   mkDefines n [] = mkString n
@@ -182,6 +185,5 @@ mkHeaderFile inPackage cf cats eps env = unlines
   mkIdent n =  if isUsedCat cf catIdent
    then "#define " ++ nsDefine inPackage "_IDENT_ " ++ show n ++ "\n"
    else ""
-  mkFuncs s | normCat s == s = identCat s ++ "*" +++ "p" ++ identCat s ++ "(FILE *inp);\n" ++
-                               identCat s ++ "*" +++ "p" ++ identCat s ++ "(const char *str);\n"
-  mkFuncs _ = ""
+  mkFuncs s = identCat (normCat s) ++ "*" +++ "p" ++ identCat s ++ "(FILE *inp);\n" ++
+              identCat (normCat s) ++ "*" +++ "p" ++ identCat s ++ "(const char *str);\n"

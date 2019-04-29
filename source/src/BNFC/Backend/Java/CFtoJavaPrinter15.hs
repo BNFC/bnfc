@@ -190,11 +190,11 @@ prRender = unlines
 
 prEntryPoints :: String -> CF -> String
 prEntryPoints packageAbsyn cf =
-    msg ++ concatMap prEntryPoint (allCats cf) ++ msg2
+    msg ++ concatMap prEntryPoint (allCatsNorm cf) ++ msg2
  where
   msg = "  //  print and show methods are defined for each category.\n"
   msg2 = "  /***   You shouldn't need to change anything beyond this point.   ***/\n"
-  prEntryPoint cat | normCat cat == cat = unlines
+  prEntryPoint cat = unlines
    [
     "  public static String print(" ++ packageAbsyn ++ "." ++ cat' ++ " foo)",
     "  {",
@@ -214,7 +214,6 @@ prEntryPoints packageAbsyn cf =
    ]
    where
     cat' = identCat cat
-  prEntryPoint _ = ""
 
 prData :: String ->  [UserDef] -> (Cat, [Rule]) -> String
 prData packageAbsyn user (cat, rules) = unlines k

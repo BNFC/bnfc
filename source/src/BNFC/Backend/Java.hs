@@ -257,7 +257,7 @@ data JavaTestParams = JavaTestParams
       -- ^ As above, for parser object.
   , jtpShowAlternatives   :: ([Cat] -> [Doc])
       -- ^ Pretty-print the names of the methods corresponding to entry points to the user.
-  , jtpInvocation         :: (Doc -> Doc -> Doc -> Doc)
+  , jtpInvocation         :: (Doc -> Doc -> Doc -> Doc -> Doc)
       -- ^ Function formulating the invocation of the parser tool within Java.
   , jtpErrMsg             :: String
       -- ^ Error string output in consequence of a parsing failure.
@@ -272,7 +272,7 @@ cuptest = javaTest $ JavaTestParams
   , jtpLexerConstruction  = \ x i -> x <> i <> ";"
   , jtpParserConstruction = \ x i -> x <> "(" <> i <> ", " <> i <> ".getSymbolFactory());"
   , jtpShowAlternatives   = const $ ["not available."]
-  , jtpInvocation         = \ _ pabs enti -> hcat [ pabs, ".", enti, " ast = p.p", enti, "();" ]
+  , jtpInvocation         = \ _ pabs dat enti -> hcat [ pabs, ".", dat, " ast = p.p", enti, "();" ]
   , jtpErrMsg             = unwords $
       [ "At line \" + String.valueOf(t.l.line_num()) + \","
       , "near \\\"\" + t.l.buff() + \"\\\" :"
@@ -305,7 +305,7 @@ antlrtest = javaTest $ JavaTestParams
   , jtpShowAlternatives   =
       showOpts
   , jtpInvocation         =
-      \ pbase pabs enti -> vcat
+      \ pbase pabs dat enti -> vcat
          [
            let rulename = getRuleName (show enti)
                typename = text rulename
@@ -316,7 +316,7 @@ antlrtest = javaTest $ JavaTestParams
          , "if(_tkn.getType() != -1) throw new TestError"
                  <> "(\"Stream does not end with EOF\","
                  <> "_tkn.getLine(),_tkn.getCharPositionInLine());"
-         , pabs <> "." <> enti <+> "ast = pc.result;"
+         , pabs <> "." <> dat <+> "ast = pc.result;"
          ]
   , jtpErrMsg             =
       "At line \" + e.line + \", column \" + e.column + \" :"
@@ -560,16 +560,6 @@ partialParserGoals dbas (x:rest) =
         : partialParserGoals dbas rest
 
 -- | Creates the Test.java class.
--- javaTest
---   :: [Doc]                      -- ^ @imports@: list of imported packages
---   -> String                     -- ^ @err@: name of the exception thrown in case of parsing failure
---   -> (String -> [Doc])          -- ^ @errhand@: handler for the exception thrown
---   -> (Doc -> Doc -> Doc)        -- ^ @lexerconstruction@: function formulating the construction of the lexer object
---   -> (Doc -> Doc -> Doc)        -- ^ @parseconstruction@: as above, for parser object
---   -> ([Cat] -> [Doc])           -- ^ @showOpts@: Function processing the names of the methods corresponding to entry points
---   -> (Doc -> Doc -> Doc -> Doc) -- ^ @invocation@: function formulating the invocation of the parser tool within Java
---   -> String                     -- ^ @errmsg@: error string output in consequence of a parsing failure
---   -> TestClass
 javaTest :: JavaTestParams -> TestClass
 javaTest (JavaTestParams
     imports
@@ -617,13 +607,13 @@ javaTest (JavaTestParams
                 , "p = new "<> parserconstruction px "l"
                 ]
             , ""
-            , "public" <+> text packageAbsyn <> "." <> absentity
-                <+>"parse() throws Exception"
+            , "public" <+> text packageAbsyn <> "." <> dat
+                <+> "parse() throws Exception"
             , codeblock 2
                 [ "/* The default parser is the first-defined entry point. */"
                 , "/* Other options are: */"
                 , "/* " <> fsep (punctuate "," (showOpts (tail eps))) <> " */"
-                , invocation px (text packageAbsyn) absentity
+                , invocation px (text packageAbsyn) dat absentity
                 , printOuts [ "\"Parse Succesful!\""
                     , "\"[Abstract Syntax]\""
                     , "PrettyPrinter.show(ast)"
@@ -653,7 +643,8 @@ javaTest (JavaTestParams
       importfun x    = "import" <+> x <> ".*;"
       lx             = text lexer
       px             = text parser
-      absentity      = text $ show def
+      dat            = text $ identCat $ normCat def  -- Use for AST types.
+      absentity      = text $ identCat def            -- Use for parser/printer name.
       eps            = allEntryPoints cf
       def            = head eps
 
