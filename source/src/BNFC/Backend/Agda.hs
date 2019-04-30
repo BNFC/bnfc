@@ -27,7 +27,7 @@ This should be accompanied by the following Agda code:
 
   {-# FOREIGN GHC import qualified Data.Text #-}
   {-# FOREIGN GHC import CPP.Abs #-}
-  {-# FOREIGN GHC import CPP.Print #-}
+  {-# FOREIGN GHC import CPP.Print (printTree) #-}
 
   data Ident : Set where
     ident : List Char → Ident
@@ -173,8 +173,8 @@ cf2AgdaAST time mod amod pmod cf = vsep $
   [ preamble time "abstract syntax data types"
   , hsep [ "module", text mod, "where" ]
   , imports YesImportNumeric
-  , if usesString then hsep ["String", equals, listT, charT ] else empty
-  , importPragmas [amod, pmod]
+  , if usesString then hsep [ "String", equals, listT, charT ] else empty
+  , importPragmas [amod, unwords [ pmod, "(printTree)" ]]
   , allTokenCats prToken tcats
   , absyn NamedArg dats
   -- , allTokenCats printToken tcats  -- seem to be included in printerCats
@@ -288,10 +288,10 @@ importCats m cs = prettyList 2 pre lparen rparen semi $ map text cs
 
 -- | Import pragmas.
 --
--- >>> importPragmas ["Foo.Abs", "Foo.Print"]
+-- >>> importPragmas ["Foo.Abs", "Foo.Print (printTree)"]
 -- {-# FOREIGN GHC import qualified Data.Text #-}
 -- {-# FOREIGN GHC import Foo.Abs #-}
--- {-# FOREIGN GHC import Foo.Print #-}
+-- {-# FOREIGN GHC import Foo.Print (printTree) #-}
 --
 importPragmas
   :: [String]  -- ^ Haskell modules to import.
