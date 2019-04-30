@@ -617,7 +617,7 @@ agdaLower = replace '_' '\'' . mkName agdaKeywords MixedCase
 
 -- | A list of Agda keywords that would clash with generated names.
 agdaKeywords :: [String]
-agdaKeywords = words "abstract codata coinductive constructor data do eta-equality field forall hiding import in inductive infix infixl infixr instance let macro module mutual no-eta-equality open overlap pattern postulate primitive private public quote quoteContext quoteGoal quoteTerm record renaming rewrite Set syntax tactic unquote unquoteDecl unquoteDef using where with"
+agdaKeywords = words "abstract codata coinductive constructor data do eta-equality field forall hiding import in inductive infix infixl infixr instance let macro module mutual no-eta-equality open overlap pattern postulate primitive private public quote quoteContext quoteGoal quoteTerm record renaming rewrite Set syntax tactic unquote unquoteDecl unquoteDef using variable where with"
 
 -- | Name of Agda parser binding (mentions precedence).
 --
