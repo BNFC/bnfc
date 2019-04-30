@@ -332,6 +332,16 @@ absyn style  ds = vsep . ("mutual" :) . concatMap (map (nest 2) . prData style) 
 --   | Suc
 --   ) #-}
 --
+-- >>> vsep $ prData UnnamedArg (Cat "C", [ ("C1", []), ("C2", [Cat "C"]) ])
+-- data C : Set where
+--   c1 : C
+--   c2 : C → C
+-- <BLANKLINE>
+-- {-# COMPILE GHC C = data C
+--   ( C1
+--   | C2
+--   ) #-}
+--
 -- We return a list of 'Doc' rather than a single 'Doc' since want
 -- to intersperse empty lines and indent it later.
 -- If we intersperse the empty line(s) here to get a single 'Doc',
@@ -374,6 +384,11 @@ prErrM = vsep $ prData' UnnamedArg "Err A"
 -- data Nat : Set where
 --   zero : Nat
 --   suc : Nat → Nat
+--
+-- >>> prettyData UnnamedArg "C" [ ("C1", []), ("C2", [Cat "C"]) ]
+-- data C : Set where
+--   c1 : C
+--   c2 : C → C
 --
 -- >>> :{
 --   prettyData UnnamedArg "Stm"
@@ -421,8 +436,8 @@ pragmaData d cs = prettyList 2 pre lparen (rparen <+> "#-}") "|" $
 --
 -- >>> prettyConstructor UnnamedArg "D" ("c", [Cat "A", Cat "B", Cat "C"])
 -- c : A → B → C → D
--- >>> prettyConstructor undefined  "D" ("c", [])
--- c : D
+-- >>> prettyConstructor undefined  "D" ("c1", [])
+-- c1 : D
 -- >>> prettyConstructor NamedArg "Stm" ("SIf", map Cat ["Exp", "Stm", "Stm"])
 -- sIf : (e : Exp) (s₁ s₂ : Stm) → Stm
 --
@@ -609,11 +624,18 @@ prettyCon = text . agdaLower
 --   Needed, since in Agda a constructor cannot overload a data type
 --   with the same name.
 --
--- >>> map agdaLower ["SFun","foo","ABC","HelloWorld","module","Type_int"]
--- ["sFun","foo","aBC","helloWorld","module'","typeInt"]
+-- >>> map agdaLower ["SFun","foo","ABC","HelloWorld","module","Type_int","C1"]
+-- ["sFun","foo","aBC","helloWorld","module'","type-int","c1"]
 --
 agdaLower :: String -> String
-agdaLower = replace '_' '\'' . mkName agdaKeywords MixedCase
+agdaLower = avoidKeywords . updateHead toLower . replace '_' '-'
+  -- WAS: replace '_' '\'' . mkName agdaKeywords MixedCase
+  where
+  updateHead _f []    = []
+  updateHead f (x:xs) = f x : xs
+  avoidKeywords s
+    | s `elem` agdaKeywords = s ++ "\'"
+    | otherwise = s
 
 -- | A list of Agda keywords that would clash with generated names.
 agdaKeywords :: [String]
