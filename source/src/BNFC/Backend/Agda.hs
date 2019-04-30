@@ -173,6 +173,7 @@ cf2AgdaAST time mod amod pmod cf = vsep $
   [ preamble time "abstract syntax data types"
   , hsep [ "module", text mod, "where" ]
   , imports YesImportNumeric
+  , if usesString then hsep ["String", equals, listT, charT ] else empty
   , importPragmas [amod, pmod]
   , allTokenCats prToken tcats
   , absyn NamedArg dats
@@ -191,6 +192,8 @@ cf2AgdaAST time mod amod pmod cf = vsep $
   -- Bind printers for the following categories (involves lists and literals).
   printerCats :: [Cat]
   printerCats = map fst (getAbstractSyntax cf) ++ map TokenCat (cfgLiterals cf)
+  usesString = "String" `elem` cfgLiterals cf
+
 
 -- | Generate parser bindings for Agda.
 --
@@ -222,6 +225,7 @@ cf2AgdaParser time mod astmod amod emod pmod cats = vsep $
   baseCat = \case
     Cat s         -> Just s
     CoercCat s _  -> Just s
+    TokenCat "Char" -> Nothing
     TokenCat s    -> Just s
     ListCat c     -> baseCat c
     InternalCat{} -> Nothing
@@ -229,7 +233,7 @@ cf2AgdaParser time mod astmod amod emod pmod cats = vsep $
 -- We prefix the Agda types with "#" to not conflict with user-provided nonterminals.
 arrow, charT, intT, listT, stringT, stringFromListT :: Doc
 arrow = "→"
-charT           = "#Char"
+charT           = "Char"     -- This is the BNFC name for token type Char!
 intT            = "Integer"  -- This is the BNFC name for token type Integer!
 doubleT         = "Double"   -- This is the BNFC name for token type Double!
 listT           = "#List"
@@ -302,7 +306,7 @@ importPragmas mods = vcat $ map imp $ [ "qualified Data.Text" ] ++ mods
 
 prToken :: String -> Doc
 prToken t =
-  prettyData UnnamedArg t [(agdaLower t, [ListCat (Cat "#Char")])]
+  prettyData UnnamedArg t [(agdaLower t, [ListCat (Cat "Char")])]
   $++$
   pragmaData t [(t, [])]
 
@@ -341,10 +345,10 @@ prData _     (c    , _ ) = error $ "prData: unexpected category " ++ show c
 
 -- | Pretty-print Agda data types and pragmas.
 --
--- >>> vsep $ prData' UnnamedArg "Err A" [ ("Ok", [Cat "A"]), ("Bad", [ListCat $ Cat "#Char"]) ]
+-- >>> vsep $ prData' UnnamedArg "Err A" [ ("Ok", [Cat "A"]), ("Bad", [ListCat $ Cat "Char"]) ]
 -- data Err A : Set where
 --   ok : A → Err A
---   bad : #List #Char → Err A
+--   bad : #List Char → Err A
 -- <BLANKLINE>
 -- {-# COMPILE GHC Err = data Err
 --   ( Ok
@@ -361,7 +365,7 @@ prData' style d cs = [ prettyData style d cs , pragmaData (head $ words d) cs ]
 prErrM :: Doc
 prErrM = vsep $ prData' UnnamedArg "Err A"
   [ ("Ok" , [Cat "A"])
-  , ("Bad", [ListCat $ Cat "#Char"])
+  , ("Bad", [ListCat $ Cat "Char"])
   ]
 
 -- | Pretty-print AST definition in Agda syntax.
@@ -475,8 +479,8 @@ nameSuggestion = \case
 
 -- | Suggest the name of a bound variable of the given base category.
 --
--- >>> map nameFor ["Stm","ABC","#Char"]
--- ["s","a","c"]
+-- >>> map nameFor ["Stm","ABC","#String"]
+-- ["s","a","s"]
 --
 nameFor :: String -> String
 nameFor d = [ toLower $ head $ dropWhile (== '#') d ]
