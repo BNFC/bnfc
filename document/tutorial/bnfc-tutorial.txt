@@ -141,7 +141,7 @@ can try out in the following way:
 ```
   echo "23 + 4 * 70" | java Calc/Test
 
-  Parse Succesful!
+  Parse Successful!
   [Abstract Syntax]
   (EAdd (EInt 23) (EMul (EInt 4) (EInt 70)))
   [Linearized Tree]

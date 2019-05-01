@@ -28,7 +28,7 @@ public class Test
     {
       Calc.Absyn.Exp parse_tree = p.pExp();
       System.out.println();
-      System.out.println("Parse Succesful!");
+      System.out.println("Parse Successful!");
       System.out.println();
       System.out.println("[Abstract Syntax]");
       System.out.println();

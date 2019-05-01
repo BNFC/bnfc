@@ -115,7 +115,7 @@ cpptest inPackage cf =
     "  " ++ scope ++ dat ++ " *parse_tree = " ++ scope ++ "p" ++ def ++ "(input);",
     "  if (parse_tree)",
     "  {",
-    "    printf(\"\\nParse Succesful!\\n\");",
+    "    printf(\"\\nParse Successful!\\n\");",
     "    if (!quiet) {",
     "      printf(\"\\n[Abstract Syntax]\\n\");",
     "      " ++ scope ++ "ShowAbsyn *s = new " ++ scope ++ "ShowAbsyn();",
