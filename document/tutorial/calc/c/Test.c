@@ -30,7 +30,7 @@ int main(int argc, char ** argv)
   parse_tree = pExp(input);
   if (parse_tree)
   {
-    printf("\nParse Succesful!\n");
+    printf("\nParse Successful!\n");
     printf("\n[Abstract Syntax]\n");
     printf("%s\n\n", showExp(parse_tree));
     printf("[Linearized Tree]\n");

@@ -18,7 +18,7 @@ Bugs:
   - Need to munge Java keywords like "abstract" "private"
     - Alfa.cf, C.cf fail to compile for this reason.
   - I think I fixed this, but it should be verified (peteg)
-  - Add a message on how to run the test file (after a succesful compliation), 
+  - Add a message on how to run the test file (after a successful compliation), 
     e.g. :
     "to run the test, type : java JavaletteLight/Test <filename>"
 Compilers:
