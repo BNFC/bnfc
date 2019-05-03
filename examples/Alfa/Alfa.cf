@@ -6,7 +6,7 @@ layout toplevel ;
 
 -- top level
 
-Module.  Module ::= "{" [Decl] "}" ;
+-- Module.  Module ::= "{" [Decl] "}" ;
 
 separator  Decl ";" ;
 separator  Def ";" ;
@@ -72,7 +72,7 @@ AHide.  Arrow ::= "|->" ;
 TDecl. Typing  ::= VarDecl ;
 TExp.  Typing  ::= Exp2 ;
 
-terminator Typing "" ;  
+terminator Typing "" ;
 
 VDecl. VarDecl ::= "(" [Bound] "::" Exp ")" ;
 
@@ -127,13 +127,13 @@ Import  .  Import  ::= "import" String ";" ;
 
 separator  DefAttr     "" ;
 separator  AIdent      "" ;
-separator  OpenArg     "," ; 
+separator  OpenArg     "," ;
 
 -- two kinds of comments; preserve enclosed ones
 
 comment "--" ;
 
---- comment "{-" "-}" ;
+comment "{-" "-}" ;
 
 token Comment ('{' '-' ((char - '-') | '-' (char - '}'))* ('-')+ '}') ;
 
