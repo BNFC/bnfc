@@ -254,12 +254,14 @@ makefile opts makeFile = vcat
   bnfcRule :: Doc
   bnfcRule = Makefile.mkRule tgts [ lbnfFile opts ] [ recipe ]
     where
-    tgts   = unwords . concat $
-      [ [ alexFile opts ]
+    recipe    = unwords [ "bnfc", printOptions opts{ make = Nothing } ]
+    tgts      = unwords . concat $
+      [ alexEtc
       , if cnf opts then [ cnfTestFile opts ] else [ happyFile opts, tFile opts ]
-      , [ agdaMainFile opts | agda opts ]
+      , when (agda opts) agdaFiles
       ]
-    recipe = unwords [ "bnfc", printOptions opts{ make = Nothing } ]
+    alexEtc   = map ($ opts) [ errFile, alexFile, printerFile ]
+    agdaFiles = map ($ opts) [ agdaASTFile, agdaParserFile, agdaLibFile, agdaMainFile ]
 
   -- | Rule to invoke @happy@.
   happyRule :: Doc
@@ -282,7 +284,13 @@ makefile opts makeFile = vcat
     tgt :: String
     tgt = tFileExe opts
     deps :: [String]
-    deps = [ tFile opts {- must be first! -} , alexFileHs opts , happyFileHs opts ]
+    deps = map ($ opts)
+      [ tFile {- must be first! -}
+      , errFile
+      , alexFileHs
+      , happyFileHs
+      , printerFile
+      ]
 
   -- | Rule to build CNF test parser.
   testCNFRule :: Doc
@@ -292,7 +300,19 @@ makefile opts makeFile = vcat
 
   -- | Rule to build Agda parser.
   agdaRule :: Doc
-  agdaRule = Makefile.mkRule "Main" [ agdaMainFile opts ] [ "agda --ghc --ghc-flag=-Wwarn $<" ]
+  agdaRule = Makefile.mkRule "Main" deps [ "agda --ghc --ghc-flag=-Wwarn $<" ]
+    where
+    deps = map ($ opts)
+      [ agdaMainFile  -- must be first!
+      , agdaASTFile
+      , agdaParserFile
+      , agdaLibFile
+      -- Haskell modules bound by Agda modules:
+      , errFile
+      , alexFileHs
+      , happyFileHs
+      , printerFile
+      ]
 
 testfile :: Options -> CF -> String
 testfile opts cf
