@@ -30,9 +30,9 @@ singleton (A::Set)(x::A) :: List A
   = Cons@_ x Nil@_
 
 IsLeAll (x::Nat)(xs::List Nat) :: Prop
-  = case xs of {
-      (Nil) -> Triviality;
-      (Cons x' xs') -> And (LeNat x x') (IsLeAll x xs');}
+  = case xs of                           -- use layout!
+      (Nil) -> Triviality
+      (Cons x' xs') -> And (LeNat x x') (IsLeAll x xs')
 
 IsSorted (xs::List Nat) :: Prop
   = case xs of {
@@ -514,12 +514,12 @@ var "SortLemma" hide 2
   mkText (p.s!text++
           [". We can now use the theorem about prepending an element to permutations"]) #-}
 {-# GF Eng ThPermTrans xs ys zs xy yz = 
-  mkText (indent("·"++xy.s!text++"."++newParagraph++"·"++yz.s!text)++
+  mkText (indent("Â·"++xy.s!text++"."++newParagraph++"Â·"++yz.s!text)++
           [". By the transitivity of the permutation relation,"]++
           zs.s!pnv++"is a permutation of"++xs.s!pnv) #-}
 {-# GF Eng ThPermInsert x xs = mkThm ["the theorem that inserting yields a permutation of prepending"] #-}
-{-# GF Sve IsLeAll x xs = mkSent (x.s!pn++["är mindre än alla element i"]++xs.s!pn) #-}
-{-# GF Sve CCCons x xs = mkPN (["listan med"]++x.s!pn++["insatt först i"]++xs.s!pn) en #-}
+{-# GF Sve IsLeAll x xs = mkSent (x.s!pn++["Ã¤r mindre Ã¤n alla element i"]++xs.s!pn) #-}
+{-# GF Sve CCCons x xs = mkPN (["listan med"]++x.s!pn++["insatt fÃ¶rst i"]++xs.s!pn) en #-}
 {-# GF Sve singleton A x = mkPN (["enelementslistan med"]++x.s!pn) en #-}
 {-# GF Sve CCNil  = mkPN ["den tomma listan"] en #-}
 {-# GF Sve List A = {s = tbl {n => ("list"+nomReg1!n)++"av" ++ A.s ! (cn pl)} ; form = CN en} #-}
