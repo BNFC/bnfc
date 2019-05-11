@@ -126,9 +126,9 @@ prRule _ _ _ = ""
 -- p.a_.accept(new AVisitor<R,A>(), arg);
 -- >>> prCat [] (TokenCat "Integer", "integer_")
 -- //p.integer_;
--- >>> prCat [Cat "A"] (TokenCat "A", "a_")
+-- >>> prCat ["A"] (TokenCat "A", "a_")
 -- //p.a_;
--- >>> prCat [Cat "A"] (TokenCat "A", "a_2")
+-- >>> prCat ["A"] (TokenCat "A", "a_2")
 -- //p.a_2;
 -- >>> prCat [] (ListCat (Cat "A"), "lista_")
 -- for (A x: p.lista_)

@@ -111,33 +111,34 @@ prologue _ absMod = unlines [
 
 charRule cf = unlines [
     "let rec prtChar (_:int) (c:char) : doc = render (\"'\" ^ Char.escaped c ^ \"'\")",
-    ifList cf catChar,
+    ifList cf (TokenCat catChar),
     ""
     ]
 
 integerRule cf = unlines [
     "let rec prtInt (_:int) (i:int) : doc = render (string_of_int i)",
-    ifList cf catInteger,
+    ifList cf (TokenCat catInteger),
     ""
     ]
 
 doubleRule cf = unlines [
     "let rec prtFloat (_:int) (f:float) : doc = render (sprintf \"%f\" f)",
-    ifList cf catDouble,
+    ifList cf (TokenCat catDouble),
     ""
     ]
 
 stringRule cf = unlines [
     "let rec prtString (_:int) (s:string) : doc = render (\"\\\"\" ^ String.escaped s ^ \"\\\"\")",
-    ifList cf catString,
+    ifList cf (TokenCat catString),
     ""
     ]
 
 identRule cf = ownPrintRule cf catIdent
 
+ownPrintRule :: CF -> TokenCat -> String
 ownPrintRule cf own = unlines $ [
-  "let rec" +++ prtFun own +++ "_ (" ++ show own ++ posn ++ ") : doc = render i",
-  ifList cf own
+  "let rec" +++ prtFun (TokenCat own) +++ "_ (" ++ own ++ posn ++ ") : doc = render i",
+  ifList cf (TokenCat own)
   ]
  where
    posn = if isPositionCat cf own then " (_,i)" else " i"

@@ -26,7 +26,7 @@ mkLexer cf =
     [ (mkRegMultilineComment b e, LexComment) | (b,e) <- fst (comments cf) ]
     ++
     -- user tokens
-    [ (reg, LexToken name) | (Cat name, reg) <- tokenPragmas cf]
+    [ (reg, LexToken name) | (name, reg) <- tokenPragmas cf]
     ++
     -- predefined tokens
     [ ( regIdent, LexToken "Ident" ) ]

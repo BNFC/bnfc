@@ -193,7 +193,7 @@ declarations cf = concatMap (typeNT cf) (allCats cf)
 tokens :: [UserDef] -> SymEnv -> String
 tokens user = concatMap (declTok user)
  where
-  declTok u (s,r) = if s `elem` map show u
+  declTok u (s,r) = if s `elem` u
     then "%token<string_> " ++ r ++ "    /*   " ++ s ++ "   */\n"
     else "%token " ++ r ++ "    /*   " ++ s ++ "   */\n"
 
@@ -206,7 +206,7 @@ specialToks cf = concat [
   ifC catIdent "%token<string_> _IDENT_\n"
   ]
    where
-    ifC cat s = if isUsedCat cf cat then s else ""
+    ifC cat s = if isUsedCat cf (TokenCat cat) then s else ""
 
 startSymbol :: CF -> String
 startSymbol cf = "%start" +++ identCat (firstEntry cf)

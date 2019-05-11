@@ -175,7 +175,7 @@ cf2AgdaAST time mod amod pmod cf = vsep $
   , imports YesImportNumeric
   , if usesString then hsep [ "String", equals, listT, charT ] else empty
   , importPragmas [amod, unwords [ pmod, "(printTree)" ]]
-  , allTokenCats prToken tcats
+  , vsep $ map prToken tcats
   , absyn NamedArg dats
   -- , allTokenCats printToken tcats  -- seem to be included in printerCats
   , printers printerCats
@@ -187,7 +187,7 @@ cf2AgdaAST time mod amod pmod cf = vsep $
   dats = cf2data cf
          -- getAbstractSyntax also includes list categories, which isn't what we need
   -- The user-defined token categories (including Ident).
-  tcats :: [Cat]
+  tcats :: [TokenCat]
   tcats = specialCats cf
   -- Bind printers for the following categories (involves lists and literals).
   printerCats :: [Cat]
@@ -605,12 +605,12 @@ parsers cats =
 -- | Concatenate documents created from token categories,
 --   separated by blank lines.
 --
--- >>> allTokenCats text $ map TokenCat ["T", "U"]
+-- >>> allTokenCats text ["T", "U"]
 -- T
 -- <BLANKLINE>
 -- U
-allTokenCats :: (String -> Doc) -> [Cat] -> Doc
-allTokenCats f = vsep . map (\ (TokenCat t) -> f t)
+allTokenCats :: (TokenCat -> Doc) -> [TokenCat] -> Doc
+allTokenCats f = vsep . map f
 
 -- | Pretty-print a rule name for Haskell.
 prettyFun :: Fun -> Doc

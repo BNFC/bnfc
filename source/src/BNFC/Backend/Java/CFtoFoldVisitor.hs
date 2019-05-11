@@ -75,7 +75,7 @@ prRule packageAbsyn user _ (Rule fun _ cats)
 prRule  _ _ _ _ = ""
 
 -- | Traverses a class's instance variables.
--- >>> prCat [Cat "A"] (Cat "A", "a_")
+-- >>> prCat ["A"] (Cat "A", "a_")
 -- <BLANKLINE>
 -- >>> prCat [] (ListCat (Cat "Integer"), "listinteger_")
 -- <BLANKLINE>
@@ -102,4 +102,4 @@ prCat user (cat,nt)
 
 --Just checks if something is a basic or user-defined type.
 isBasicType :: [UserDef] -> String -> Bool
-isBasicType user v = v `elem` (map show user ++ ["Integer","Character","String","Double"])
+isBasicType user v = v `elem` (user ++ ["Integer","Character","String","Double"])

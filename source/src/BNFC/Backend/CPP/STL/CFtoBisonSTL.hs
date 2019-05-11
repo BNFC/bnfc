@@ -1,4 +1,6 @@
 {-# LANGUAGE NoImplicitPrelude #-}
+{-# LANGUAGE PatternGuards #-}
+{-# LANGUAGE TupleSections #-}
 
 {-
     BNF Converter: C++ Bison generator
@@ -59,7 +61,7 @@ import BNFC.CF
 import BNFC.Options (RecordPositions(..))
 import BNFC.PrettyPrint
 import BNFC.TypeChecker
-import BNFC.Utils ((+++))
+import BNFC.Utils ((+++), when)
 import ErrM
 
 --This follows the basic structure of CFtoHappy.
@@ -75,7 +77,7 @@ cf2Bison :: RecordPositions -> Maybe String -> String -> CF -> SymEnv -> String
 cf2Bison rp inPackage name cf env
  = unlines
     [header inPackage name cf,
-     render $ union inPackage (positionCats cf ++ allCats cf),
+     render $ union inPackage (map TokenCat (positionCats cf) ++ allCats cf),
      maybe "" (\ns -> "%define api.prefix {" ++ ns ++ "yy}") inPackage,
      "%token _ERROR_",
      tokens user env,
@@ -127,7 +129,7 @@ header inPackage name cf = unlines
     ]
   where
     ns   = nsString inPackage
-    eps  = allEntryPoints cf ++ positionCats cf
+    eps  = allEntryPoints cf ++ map TokenCat (positionCats cf)
     dats = nub $ map normCat eps
 
 definedRules :: CF -> String
@@ -278,19 +280,16 @@ union inPackage cats =
 
 --declares non-terminal types.
 declarations :: CF -> String
-declarations cf = concatMap (typeNT cf) (positionCats cf ++ allCats cf)
- where --don't define internal rules
-   typeNT cf nt | isPositionCat cf nt || rulesForCat cf nt /= [] =
-      "%type <" ++ varName nt ++ "> " ++ identCat nt ++ "\n"
-   typeNT _ _ = ""
+declarations cf = concatMap typeNT $
+  map TokenCat (positionCats cf) ++
+  filter (not . null . rulesForCat cf) (allCats cf) -- don't define internal rules
+  where
+  typeNT nt = "%type <" ++ varName nt ++ "> " ++ identCat nt ++ "\n"
 
 --declares terminal types.
 tokens :: [UserDef] -> SymEnv -> String
-tokens user = concatMap (declTok user)
- where
-  declTok u (s,r) = if s `elem` map show u
-    then "%token<string_> " ++ r ++ "    //   " ++ s ++ "\n"
-    else "%token " ++ r ++ "    //   " ++ s ++ "\n"
+tokens user = concatMap $ \ (s, r) ->
+  concat [ "%token", when (s `elem` user) "<string_>", " ", r, "    //   ", s, "\n" ]
 
 specialToks :: CF -> String
 specialToks cf = concat [
@@ -301,17 +300,17 @@ specialToks cf = concat [
   ifC catIdent "%token<string_> _IDENT_\n"
   ]
    where
-    ifC cat s = if isUsedCat cf cat then s else ""
+    ifC cat s = if isUsedCat cf (TokenCat cat) then s else ""
 
 --The following functions are a (relatively) straightforward translation
 --of the ones in CFtoHappy.hs
 rulesForBison :: RecordPositions -> Maybe String -> String -> CF -> SymEnv -> Rules
 rulesForBison rp inPackage _ cf env = map mkOne (ruleGroups cf) ++ posRules where
   mkOne (cat,rules) = constructRule rp inPackage cf env rules cat
-  posRules = map mkPos $ positionCats cf
-  mkPos cat = (cat, [(fromMaybe (show cat) (lookup (show cat) env),
-   "$$ = new " ++ show cat ++ "($1," ++ nsString inPackage ++ "yy_mylinenumber) ; YY_RESULT_" ++
-   show cat ++ "_= $$ ;")])
+  posRules = (`map` positionCats cf) $ \ n -> (TokenCat n,
+    [( fromMaybe n $ lookup n env
+     , concat [ "$$ = new " , n , "($1," , nsString inPackage , "yy_mylinenumber) ; YY_RESULT_" , n , "_= $$ ;" ]
+     )])
 
 -- For every non-terminal, we construct a set of rules.
 constructRule ::
@@ -368,11 +367,12 @@ generatePatterns cf env r _ = case rhsRule r of
   []  -> ("/* empty */",[])
   its -> (unwords (map mkIt its), metas its)
  where
-   mkIt i = case i of
-     Left c -> case lookup (show c) env of
-       Just x | not (isPositionCat cf c) -> x
-       _ -> typeName (identCat c)
-     Right s -> fromMaybe s (lookup s env)
+   mkIt = \case
+     Left c
+         | TokenCat tok <- c, isPositionCat cf tok -> fallback
+         | otherwise -> fromMaybe fallback $ lookup (show c) env
+       where fallback = typeName (identCat c)
+     Right s -> fromMaybe s $ lookup s env
    metas its = [('$': show i,revert c) | (i,Left c) <- zip [1 :: Int ..] its]
 
    -- notice: reversibility with push_back vectors is the opposite

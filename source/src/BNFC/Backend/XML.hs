@@ -193,11 +193,12 @@ showsPrintRule _ t = unlines [
   "  prt i x = elemTokS i" +++ "\"" ++ t ++ "\"" +++ "x"
   ]
 
-identRule cf = ownPrintRule cf (Cat "Ident")
+identRule cf = ownPrintRule cf catIdent
 
-ownPrintRule cf cat = unlines [
-  "instance XPrint " ++ show cat ++ " where",
-  "  prt i (" ++ show cat ++ posn ++ ") = elemTok i" +++ "\"" ++ show cat ++ "\"" +++ "x"
+ownPrintRule :: CF -> TokenCat -> String
+ownPrintRule cf cat = unlines $
+  [ "instance XPrint " ++ cat ++ " where"
+  , "  prt i (" ++ cat ++ posn ++ ") = elemTok i" +++ "\"" ++ cat ++ "\"" +++ "x"
   ]
  where
    posn = if isPositionCat cf cat then " (_,x)" else " x"
@@ -226,7 +227,7 @@ rules cf = unlines $
                           "newtype","of","then","type","where","as","qualified","hiding"]
    ruleOf s = fromJust $ lookupRule s (cfgRules cf)
 
---- case_fun :: Cat -> [(Constructor,Rule)] -> String
+-- case_fun :: Cat -> [(Constructor,Rule)] -> String
 case_fun cat xs = unlines [
   "instance XPrint" +++ show cat +++ "where",
   "  prt i" +++ "e = case e of",

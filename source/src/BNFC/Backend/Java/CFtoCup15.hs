@@ -198,7 +198,7 @@ specialToks cf = unlines
   , ifC catIdent   "terminal String _IDENT_;"
   ]
    where
-    ifC cat s = if isUsedCat cf cat then s else ""
+    ifC cat s = if isUsedCat cf (TokenCat cat) then s else ""
 
 specialRules:: CF -> String
 specialRules cf =

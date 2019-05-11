@@ -139,7 +139,7 @@ restOfLexerGrammar cf = vcat
     , ifChar charmodes
     ]
   where
-    ifC cat s     = if isUsedCat cf cat then vcat s else ""
+    ifC cat s     = if isUsedCat cf (TokenCat cat) then vcat s else ""
     ifString      = ifC catString
     ifChar        = ifC catChar
     strdec        = [ "// String token type"
@@ -147,7 +147,7 @@ restOfLexerGrammar cf = vcat
                     ]
     chardec       = ["CHAR : '\\''   -> more, mode(CHARMODE);"]
     userDefTokens = vcat
-        [ text (show name) <>" : " <> text (printRegJLex exp) <> ";"
+        [ text name <> " : " <> text (printRegJLex exp) <> ";"
         | (name, exp) <- tokenPragmas cf ]
     stringmodes   = [ "mode STRESCAPE;"
         , "STRESCAPED : Escapable  -> more, popMode ;"

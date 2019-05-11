@@ -250,7 +250,8 @@ restOfAlex _ shareStrings byteStrings cf = [
        | byteStrings = ("BS.ByteString", "BS.take", "BS.uncons", "BS.pack", "BS.unpack", "Nothing", "Just (c,s)")
        | otherwise   = ("String",        "take",    "",          "id",      "id",        "[]",      "(c:s)"     )
 
-   ifC cat s = if isUsedCat cf cat then s else ""
+   ifC :: TokenCat -> String -> String
+   ifC cat s = if isUsedCat cf (TokenCat cat) then s else ""
    lexComments ([],[])           = []
    lexComments (xs,s1:ys) = '\"' : s1 ++ "\"" ++ " [.]* ; -- Toss single line comments\n" ++ lexComments (xs, ys)
    lexComments (([l1,l2],[r1,r2]):xs,[]) = concat
@@ -273,7 +274,7 @@ restOfAlex _ shareStrings byteStrings cf = [
 
    userDefTokenTypes = unlines
      [printRegAlex exp ++
-      "\n    { tok (\\p s -> PT p (eitherResIdent (T_"  ++ show name ++ " . share) s)) }"
+      "\n    { tok (\\p s -> PT p (eitherResIdent (T_"  ++ name ++ " . share) s)) }"
       | (name,exp) <- tokenPragmas cf]
    userDefTokenConstrs = unlines
      [" | T_" ++ name ++ " !"++stringType | name <- tokenNames cf]

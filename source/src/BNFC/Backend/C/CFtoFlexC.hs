@@ -133,15 +133,13 @@ restOfFlex cf env = concat
    footer
   ]
   where
-   ifC cat s = if isUsedCat cf cat then s else ""
+   ifC cat s = if isUsedCat cf (TokenCat cat) then s else ""
    userDefTokens = unlines $
      ["<YYINITIAL>" ++ printRegFlex exp ++
       "     \t yylval.string_ = strdup(yytext); return " ++ sName name ++ ";"
        | (name, exp) <- tokenPragmas cf]
       where
-          sName n = case lookup (show n) env of
-              Just x -> x
-              Nothing -> show n
+        sName n = fromMaybe n $ lookup n env
    strStates = unlines --These handle escaped characters in Strings.
     [
      "<YYINITIAL>\"\\\"\"      \t BEGIN STRING;",

@@ -93,11 +93,20 @@ import ErrM
 
 %%
 
-Ident   :: { Ident }   : L_ident  { Ident $1 }
-String  :: { String }  : L_quoted {  $1 }
-Integer :: { Integer } : L_integ  { (read ( $1)) :: Integer }
-Char    :: { Char }    : L_charac { (read ( $1)) :: Char }
-Double  :: { Double }  : L_doubl  { (read ( $1)) :: Double }
+Ident   :: { Ident }
+Ident    : L_ident  { Ident $1 }
+
+String  :: { String }
+String   : L_quoted {  $1 }
+
+Integer :: { Integer }
+Integer  : L_integ  { (read ( $1)) :: Integer }
+
+Char    :: { Char }
+Char     : L_charac { (read ( $1)) :: Char }
+
+Double  :: { Double }
+Double   : L_doubl  { (read ( $1)) :: Double }
 
 LGrammar :: { LGrammar }
 LGrammar : ListLDef { AbsBNF.LGr $1 }
