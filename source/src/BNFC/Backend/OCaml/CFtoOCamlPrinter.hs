@@ -21,7 +21,7 @@
 
 -- based on BNFC Haskell backend
 
-module BNFC.Backend.OCaml.CFtoOCamlPrinter (cf2Printer) where
+module BNFC.Backend.OCaml.CFtoOCamlPrinter (cf2Printer, prtFun) where
 
 import Prelude'
 

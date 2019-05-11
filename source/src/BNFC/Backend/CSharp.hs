@@ -305,7 +305,7 @@ csharptest namespace cf = unlines [
   "}"
   ]
   where
-   def = show (head (allEntryPoints cf))
+   def = identCat (head (allEntryPoints cf))
 
 projectguid :: MkFiles String
 projectguid = do

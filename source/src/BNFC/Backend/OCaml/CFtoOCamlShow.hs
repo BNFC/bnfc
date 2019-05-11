@@ -21,7 +21,7 @@
 -- on camlp4. Here we generate our own "show module".
 
 
-module BNFC.Backend.OCaml.CFtoOCamlShow (cf2show) where
+module BNFC.Backend.OCaml.CFtoOCamlShow (cf2show, showsFunQual) where
 
 import Data.Char(toLower)
 import Data.List (intersperse)
@@ -142,6 +142,10 @@ mkRhs args its =
   mk _ _ = []
 
 showsFun :: Cat -> String
-showsFun c = case c of
-    ListCat t -> "showList" +++ showsFun t
-    _ -> "show" ++ (fixTypeUpper $ normCat c)
+showsFun = showsFunQual id
+
+showsFunQual :: (String -> String) -> Cat -> String
+showsFunQual qual = loop where
+  loop = \case
+    ListCat c -> qual "showList" +++ loop c
+    c         -> qual "show" ++ (fixTypeUpper $ normCat c)
