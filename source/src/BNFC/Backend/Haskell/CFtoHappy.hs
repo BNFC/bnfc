@@ -17,7 +17,7 @@
     Foundation, 51 Franklin Street, Fifth Floor, Boston, MA 02110-1335, USA
 -}
 
-module BNFC.Backend.Haskell.CFtoHappy (cf2HappyS, convert) where
+module BNFC.Backend.Haskell.CFtoHappy (cf2Happy, convert) where
 
 import Data.Char
 import Data.List (intersperse)
@@ -40,24 +40,18 @@ type MetaVar     = String
 
 tokenName   = "Token"
 
--- Happy mode
+-- | Generate a happy parser file from a grammar.
 
-
-
-cf2HappyS :: String     -- ^ This module's name
-          -> String     -- ^ Abstract syntax module name
-          -> String     -- ^ Lexer module name
-          -> String     -- ^ ErrM module name
-          -> HappyMode  -- ^ Happy mode
-          -> Bool       -- ^ Use bytestring?
-          -> Bool       -- ^ AST is a functor?
-          -> CF         -- ^ Grammar
-          -> String     -- ^ Generated code
-cf2HappyS = cf2Happy
-
--- | The main function, that given a CF and a CFCat to parse according to,
---   generates a happy module.
-
+cf2Happy
+  :: String     -- ^ This module's name.
+  -> String     -- ^ Abstract syntax module name.
+  -> String     -- ^ Lexer module name.
+  -> String     -- ^ ErrM module name.
+  -> HappyMode  -- ^ Happy mode.
+  -> Bool       -- ^ Use bytestring?
+  -> Bool       -- ^ AST is a functor?
+  -> CF         -- ^ Grammar.
+  -> String     -- ^ Generated code.
 cf2Happy name absName lexName errName mode byteStrings functor cf = unlines
   [ header name absName lexName errName byteStrings
   , render $ declarations mode (allEntryPoints cf)
@@ -129,34 +123,42 @@ rulesForHappy absM functor cf = map mkOne $ ruleGroups cf
     reversibles = cfgReversibleCats cf
 
 -- | For every non-terminal, we construct a set of rules. A rule is a sequence
--- of terminals and non-terminals, and an action to be performed
+-- of terminals and non-terminals, and an action to be performed.
+--
 -- >>> constructRule "Foo" False [] (Rule "EPlus" (Cat "Exp") [Left (Cat "Exp"), Right "+", Left (Cat "Exp")])
 -- ("Exp '+' Exp","Foo.EPlus $1 $3")
 --
--- If we're using functors, it adds an void value:
+-- If we're using functors, it adds void value:
+--
 -- >>> constructRule "Foo" True [] (Rule "EPlus" (Cat "Exp") [Left (Cat "Exp"), Right "+", Left (Cat "Exp")])
 -- ("Exp '+' Exp","Foo.EPlus () $1 $3")
 --
 -- List constructors should not be prefixed by the abstract module name:
+--
 -- >>> constructRule "Foo" False [] (Rule "(:)" (ListCat (Cat "A")) [Left (Cat "A"), Right",", Left (ListCat (Cat "A"))])
 -- ("A ',' ListA","(:) $1 $3")
+--
 -- >>> constructRule "Foo" False [] (Rule "(:[])" (ListCat (Cat "A")) [Left (Cat "A")])
 -- ("A","(:[]) $1")
 --
 -- Coercion are much simpler:
+--
 -- >>> constructRule "Foo" True [] (Rule "_" (Cat "Exp") [Right "(", Left (Cat "Exp"), Right ")"])
 -- ("'(' Exp ')'","$2")
 --
 -- As an optimization, a pair of list rules [C] ::= "" | C k [C] is
 -- left-recursivized into [C] ::= "" | [C] C k.
 -- This could be generalized to cover other forms of list rules.
+--
 -- >>> constructRule "Foo" False [ListCat (Cat "A")] (Rule "(:)" (ListCat (Cat "A")) [Left (Cat "A"), Right",", Left (ListCat (Cat "A"))])
 -- ("ListA A ','","flip (:) $1 $2")
 --
 -- Note that functors don't concern list constructors:
+--
 -- >>> constructRule "Abs" True [ListCat (Cat "A")] (Rule "(:)" (ListCat (Cat "A")) [Left (Cat "A"), Right",", Left (ListCat (Cat "A"))])
 -- ("ListA A ','","flip (:) $1 $2")
-constructRule :: String -> Bool -> [Cat] -> Rule -> (Pattern,Action)
+--
+constructRule :: String -> Bool -> [Cat] -> Rule -> (Pattern, Action)
 constructRule absName functor revs r0@(Rule fun cat _) = (pattern, action)
   where
     (pattern,metavars) = generatePatterns revs r
@@ -195,7 +197,7 @@ generatePatterns revs r = case rhsRule r of
 -- Expr :: { Expr }
 -- Expr : Integer { EInt $1 } | Expr '+' Expr { EPlus $1 $3 }
 --
--- if there's a lot of cases, print on several lignes:
+-- if there's a lot of cases, print on several lines:
 -- >>> prRules False [(Cat "Expr", [("Abcd", "Action"), ("P2", "A2"), ("P3", "A3"), ("P4", "A4"), ("P5","A5")])]
 -- Expr :: { Expr }
 -- Expr : Abcd { Action }
@@ -213,10 +215,12 @@ generatePatterns revs r = case rhsRule r of
 -- Expr : Integer { EInt () $1 } | Expr '+' Expr { EPlus () $1 $3 }
 --
 -- A list with coercion: in the type signature we need to get rid of the
--- coercion
+-- coercion.
+--
 -- >>> prRules True [(ListCat (CoercCat "Exp" 2), [("Exp2", "(:[]) $1"), ("Exp2 ',' ListExp2","(:) $1 $3")])]
 -- ListExp2 :: { [Exp ()] }
 -- ListExp2 : Exp2 { (:[]) $1 } | Exp2 ',' ListExp2 { (:) $1 $3 }
+--
 prRules :: Bool -> Rules -> Doc
 prRules functor = vcat . map prOne
   where
@@ -233,26 +237,30 @@ prRules functor = vcat . map prOne
 
 finalize :: Bool -> CF -> String
 finalize byteStrings cf = unlines $
-   [
-     "{",
-     "\nreturnM :: a -> Err a",
-     "returnM = return",
-     "\nthenM :: Err a -> (a -> Err b) -> Err b",
-     "thenM = (>>=)",
-     "\nhappyError :: [" ++ tokenName ++ "] -> Err a",
-     "happyError ts =",
-     "  Bad $ \"syntax error at \" ++ tokenPos ts ++ ",
-     "  case ts of",
-     "    [] -> []",
-     "    [Err _] -> \" due to lexer error\"",
-     "    t:_ -> \" before `\" ++ " ++ stringUnpack ++ "(prToken t) ++ \"'\"",
-     "",
-     "myLexer = tokens"
-   ] ++ definedRules cf ++ [ "}" ]
-   where
-     stringUnpack
-       | byteStrings = "BS.unpack"
-       | otherwise   = "id"
+  [ "{"
+  , ""
+  , "returnM :: a -> Err a"
+  , "returnM = return"
+  , ""
+  , "thenM :: Err a -> (a -> Err b) -> Err b"
+  , "thenM = (>>=)"
+  , ""
+  , "happyError :: [" ++ tokenName ++ "] -> Err a"
+  , "happyError ts ="
+  , "  Bad $ \"syntax error at \" ++ tokenPos ts ++ "
+  , "  case ts of"
+  , "    []      -> []"
+  , "    [Err _] -> \" due to lexer error\""
+  , "    t:_     -> \" before `\" ++ " ++ stringUnpack ++ "(prToken t) ++ \"'\""
+  , ""
+  , "myLexer = tokens"
+  ] ++ definedRules cf ++
+  [ "}"
+  ]
+  where
+    stringUnpack
+      | byteStrings = "BS.unpack"
+      | otherwise   = "id"
 
 
 definedRules cf = [ mkDef f xs e | FunDef f xs e <- cfgPragmas cf ]
