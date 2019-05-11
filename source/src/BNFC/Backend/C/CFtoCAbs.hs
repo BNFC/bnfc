@@ -151,7 +151,7 @@ prTypeDefs user = unlines
     , concatMap prUserDef user
     ]
   where
-    prUserDef s = "typedef char* " ++ show s ++ ";\n"
+    prUserDef s = "typedef char* " ++ s ++ ";\n"
 
 -- | A class's instance variables. Print the variables declaration by grouping
 -- together the variables of the same type.

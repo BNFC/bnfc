@@ -44,8 +44,9 @@ cf2CPPPrinter useStl inPackage cf =
 
 positionRules :: CF -> [(Cat,[Rule])]
 positionRules cf =
-      [(cat,[Rule (show cat) cat [Left catString, Left catInteger]]) |
-        cat <- filter (isPositionCat cf) $ fst (unzip (tokenPragmas cf))]
+  [ (TokenCat cat, [Rule cat (TokenCat cat) $ map (Left . TokenCat) [catString, catInteger]])
+  | cat <- filter (isPositionCat cf) $ map fst (tokenPragmas cf)
+  ]
 
 {- **** Header (.H) File Methods **** -}
 
@@ -384,19 +385,20 @@ prPrintData True {- use STL -} _ _ (cat@(ListCat _), rules) =
     render $ genPrintVisitorList (cat, rules)
 prPrintData False {- use STL -} _ _ (cat@(ListCat _), rules) =
     genPrintVisitorListNoStl (cat, rules)
+-- Not a list :
+prPrintData _ inPackage cf (TokenCat cat, rules) | isPositionCat cf cat = unlines $
+  -- a position token
+  [ "void PrintAbsyn::visit" ++ show cat ++ "(" ++ show cat ++ " *p)"
+  , "{"
+  , "  visitIdent(p->string_);"
+  , "}"
+  , ""
+  ]
 prPrintData _ inPackage cf (cat, rules) = -- Not a list
- -- a position token
- if isPositionCat cf cat then unlines [
-   "void PrintAbsyn::visit" ++ show cat ++ "(" ++ show cat ++ " *p)",
-   "{",
-   "  visitIdent(p->string_);",
-   "}",
-   ""
-   ]
- else abstract ++ concatMap (prPrintRule inPackage) rules
- where
-   cl = identCat (normCat cat)
-   abstract = case lookupRule (show cat) rules of
+    abstract ++ concatMap (prPrintRule inPackage) rules
+  where
+  cl = identCat (normCat cat)
+  abstract = case lookupRule (show cat) rules of
     Just _ -> ""
     Nothing ->  "void PrintAbsyn::visit" ++ cl ++ "(" ++ cl +++ "*p) {} //abstract class\n\n"
 

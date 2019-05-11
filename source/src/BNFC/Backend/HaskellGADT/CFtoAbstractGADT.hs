@@ -17,6 +17,8 @@
     Foundation, 51 Franklin Street, Fifth Floor, Boston, MA 02110-1335, USA
 -}
 
+{-# LANGUAGE PatternGuards #-}
+
 module BNFC.Backend.HaskellGADT.CFtoAbstractGADT (cf2Abstract) where
 
 import BNFC.CF
@@ -68,15 +70,19 @@ mkRealType :: String -> String
 mkRealType cat = cat ++ "_" -- FIXME: make sure that there is no such category already
 
 prTreeType :: Bool -> CF -> [String]
-prTreeType byteStrings cf = "data Tree :: Tag -> * where" : map (("    "++) . prTreeCons) (cf2cons cf)
- where
- prTreeCons c
-      | isPositionCat cf cat = fun +++ ":: ((Int,Int),"++stringType++") -> Tree" +++ mkRealType (show cat)
-      | otherwise = fun +++ "::" +++ concat [show c +++ "-> " | (c,_) <- consVars c] ++ "Tree" +++ mkRealType (show cat)
-  where (cat,fun) = (consCat c, consFun c)
-        stringType
-          | byteStrings = "BS.ByteString"
-          | otherwise   = "String"
+prTreeType byteStrings cf =
+  "data Tree :: Tag -> * where" : map (("    " ++) . prTreeCons) (cf2cons cf)
+  where
+  prTreeCons c
+      | TokenCat tok <- cat, isPositionCat cf tok =
+          fun +++ ":: ((Int,Int),"++stringType++") -> Tree" +++ mkRealType tok
+      | otherwise =
+          fun +++ "::" +++ concat [show c +++ "-> " | (c,_) <- consVars c] ++ "Tree" +++ mkRealType (show cat)
+    where
+    (cat,fun) = (consCat c, consFun c)
+    stringType
+      | byteStrings = "BS.ByteString"
+      | otherwise   = "String"
 
 prCompos :: CF -> [String]
 prCompos cf =

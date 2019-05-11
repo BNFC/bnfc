@@ -82,9 +82,8 @@ cf2cabs cf = CAbs {
   defineds   = defs
   }
  where
-  (pos,base) = partition (isPositionCat cf) $ fst (unzip (tokenPragmas cf))
+  (pos,  toks) = partition (isPositionCat cf) $ map fst $ tokenPragmas cf
   (lists,cats) = partition isList $ allCatsNorm cf
-  toks = map (show.normCat) base
   testRule (Rule f c _)
    | isList c  = Nothing
    | f == "_"  = Nothing
@@ -93,7 +92,7 @@ cf2cabs cf = CAbs {
     (identCat c,[(f, classVars (map (status . identCat) cs)) | (f,cs) <- fcs])
   posdata =
     [("Visitable",  -- to give superclass
-     [(show c,[("String",False,"string_"),("Integer",False,"integer_")])]) | c<-pos]
+     [(c,[("String",False,"string_"),("Integer",False,"integer_")])]) | c<-pos]
   status cat = (cat, notElem cat (map fst basetypes ++ toks))
   defs = [f | FunDef f _ _ <- cfgPragmas cf]
 

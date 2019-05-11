@@ -39,7 +39,7 @@ cf2cons cf =
         , consVars = zip cats (mkVars cats), consRhs = rhsFun cf fun
         } | (cat,rules) <- cf2data cf, (fun,cats) <- rules]
     ++ [ Constructor
-        { consCat = cat, consFun = show cat, consPrec = 0
+        { consCat = TokenCat cat, consFun = cat, consPrec = 0
         , consVars = [(Cat "String","str")], consRhs = [Left (Cat "String")]
         } | cat <- specialCats cf]
   where
@@ -57,7 +57,7 @@ catToVar = checkRes . var
         var (Cat "String")  = "str"
         var (Cat "Char")    = "c"
         var (Cat "Double")  = "d"
-        var xs        = map toLower $show xs
+        var xs        = map toLower $ show xs
         checkRes s |  s `elem` reservedHaskell = s ++ "'"
                    | otherwise              = s
         reservedHaskell =
@@ -78,5 +78,7 @@ rhsFun :: CF -> Fun -> [Either Cat String]
 rhsFun cf f = rhsRule $ ruleFun cf f
 
 isTreeType :: CF -> Cat -> Bool
-isTreeType cf c | isList c  = isTreeType cf (catOfList c)
-                | otherwise = c `elem` (allCats cf ++ specialCats cf)
+isTreeType cf (TokenCat c) = c `elem` specialCats cf
+isTreeType cf c
+  | isList c  = isTreeType cf (catOfList c)
+  | otherwise = c `elem` allCats cf

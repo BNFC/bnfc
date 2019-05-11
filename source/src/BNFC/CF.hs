@@ -1,4 +1,6 @@
-{-# LANGUAGE PatternGuards, DeriveFunctor #-}
+{-# LANGUAGE DeriveFunctor #-}
+{-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE PatternGuards #-}
 {-# LANGUAGE RecordWildCards #-}
 
 {-
@@ -31,6 +33,7 @@ module BNFC.CF (
             Symbol,
             KeyWord,
             Cat(..), strToCat, catToStr,
+            TokenCat,
             catString, catInteger, catDouble, catChar, catIdent,
             NonTerminal,
             Fun,
@@ -218,12 +221,12 @@ data Pragma = CommentS  String -- ^ for single line comments
               deriving (Show)
 
 -- | User-defined regular expression tokens
-tokenPragmas :: CFG f -> [(Cat,Reg)]
-tokenPragmas cf = [ (TokenCat name, e) | TokenReg name _ e <- cfgPragmas cf ]
+tokenPragmas :: CFG f -> [(TokenCat,Reg)]
+tokenPragmas cf = [ (name, e) | TokenReg name _ e <- cfgPragmas cf ]
 
 -- | The names of all user-defined tokens.
 tokenNames :: CFG f -> [String]
-tokenNames cf = map (show . fst) (tokenPragmas cf)
+tokenNames cf = map fst (tokenPragmas cf)
 
 layoutPragmas :: CF -> (Bool,[String],[String])
 layoutPragmas cf = let ps = cfgPragmas cf in (
@@ -236,7 +239,7 @@ hasLayout :: CF -> Bool
 hasLayout cf = case layoutPragmas cf of
   (t,ws,_) -> t || not (null ws)   -- (True,[],_) means: top-level layout only
 
--- | Literal: Char, String, Ident, Integer, Double
+-- | Literal: builtin-token types Char, String, Ident, Integer, Double.
 type Literal = String
 type Symbol  = String
 type KeyWord = String
@@ -245,26 +248,30 @@ type KeyWord = String
 -- Categories
 ------------------------------------------------------------------------------
 
--- | Categories are the Non-terminals of the grammar.
+-- | Categories are the non-terminals of the grammar.
 data Cat
   = InternalCat       -- ^ Internal category, inserted in 1st
-                      -- position in "internal" rules,
-                      -- essentially ensuring that they are never parsed.
-  | Cat String
-  | TokenCat String   -- ^ Token types (like @Ident@, @Integer@, ...).
-  | ListCat Cat
-  | CoercCat String Integer
+                      --   position in "internal" rules,
+                      --   essentially ensuring that they are never parsed.
+  | Cat String               -- ^ Ordinary non-terminal.
+  | TokenCat TokenCat        -- ^ Token types (like @Ident@, @Integer@, ..., user-defined).
+  | ListCat Cat              -- ^ List non-terminals, e.g., @[Ident]@, @[Exp]@, @[Exp1]@.
+  | CoercCat String Integer  -- ^ E.g. @Exp1@, @Exp2.
   deriving (Eq, Ord)
+
+type TokenCat = String
 
 -- An alias for Cat used in many backends:
 type NonTerminal = Cat
 
 -- | Render category symbols as strings
-catToStr InternalCat = "#"
-catToStr (Cat s) = s
-catToStr (TokenCat s) = s
-catToStr (ListCat c) = "[" ++ show c ++ "]"
-catToStr (CoercCat s i) = s ++ show i
+catToStr :: Cat -> String
+catToStr = \case
+  InternalCat  -> "#"
+  Cat s        -> s
+  TokenCat s   -> s
+  ListCat c    -> "[" ++ catToStr c ++ "]"
+  CoercCat s i -> s ++ show i
 
 instance Show Cat where
   show = catToStr
@@ -288,20 +295,20 @@ strToCat s =
         cat2cat (AbsBNF.ListCat c) = ListCat (cat2cat c)
 
 -- Build-in categories contants
-catString, catInteger, catDouble, catChar, catIdent :: Cat
-catString  = TokenCat "String"
-catInteger = TokenCat "Integer"
-catDouble  = TokenCat "Double"
-catChar    = TokenCat "Char"
-catIdent   = TokenCat "Ident"
+catString, catInteger, catDouble, catChar, catIdent :: TokenCat
+catString  = "String"
+catInteger = "Integer"
+catDouble  = "Double"
+catChar    = "Char"
+catIdent   = "Ident"
 
 -- | Token categories corresponding to base types.
-baseTokenCatNames :: [String]
-baseTokenCatNames = words "Integer String Char Double"
+baseTokenCatNames :: [TokenCat]
+baseTokenCatNames = [ catChar, catDouble, catInteger, catString ]
 
 -- the parser needs these
-specialCatsP :: [String]
-specialCatsP = "Ident" : baseTokenCatNames
+specialCatsP :: [TokenCat]
+specialCatsP = catIdent : baseTokenCatNames
 
 -- | Does the category correspond to a data type?
 isDataCat :: Cat -> Bool
@@ -477,11 +484,8 @@ ruleGroupsInternals :: CF -> [(Cat,[Rule])]
 ruleGroupsInternals cf = [(c, rulesForCat' cf c) | c <- allCats cf]
 
 -- | Get all literals of a grammar. (e.g. String, Double)
-literals :: CFG f -> [Cat]
-literals cf = [TokenCat l | l <- lits] ++ owns
- where
-   lits = cfgLiterals cf
-   owns = map fst (tokenPragmas cf)
+literals :: CFG f -> [TokenCat]
+literals cf = cfgLiterals cf ++ map fst (tokenPragmas cf)
 
 -- | Get the keywords of a grammar.
 reservedWords :: CFG f -> [String]
@@ -503,15 +507,15 @@ comments cf = case commentPragmas (cfgPragmas cf) of
 
 -- | Whether the grammar uses the predefined Ident type.
 hasIdent :: CFG f -> Bool
-hasIdent cf = isUsedCat cf catIdent
+hasIdent cf = isUsedCat cf $ TokenCat catIdent
 
 
 -- these need new datatypes
 
 -- | Categories corresponding to tokens. These end up in the
 -- AST. (unlike tokens returned by 'cfTokens')
-specialCats :: CF -> [Cat]
-specialCats cf = (if hasIdent cf then (TokenCat "Ident":) else id) (map fst (tokenPragmas cf))
+specialCats :: CF -> [TokenCat]
+specialCats cf = (if hasIdent cf then (catIdent:) else id) (map fst (tokenPragmas cf))
 
 -- to print parse trees
 prTree :: Tree -> String
@@ -566,7 +570,7 @@ cf2dataLists :: CF -> [Data]
 cf2dataLists = cf2data' $ isDataOrListCat . normCat
 
 specialData :: CF -> [Data]
-specialData cf = [(c,[(show c,[TokenCat "String"])]) | c <- specialCats cf] where
+specialData cf = [(TokenCat name, [(name, [TokenCat catString])]) | name <- specialCats cf]
 
 -- to deal with coercions
 
@@ -651,8 +655,8 @@ precCF cf = length (precLevels cf) > 1
 
 
 -- | Does the category have a position stored in AST?
-isPositionCat :: CFG f -> Cat -> Bool
-isPositionCat cf cat =  or [b | TokenReg name b _ <- cfgPragmas cf, TokenCat name == cat]
+isPositionCat :: CFG f -> TokenCat -> Bool
+isPositionCat cf cat = or [ b | TokenReg name b _ <- cfgPragmas cf, name == cat]
 
 -- | Grammar with permutation profile à la GF. AR 22/9/2004
 type CFP   = CFG FunP

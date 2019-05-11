@@ -283,10 +283,11 @@ varName c = map toLower c ++ "_"
 -- | This makes up for the fact that there's no typedef in Java.
 
 typename :: String -> [UserDef] -> String
-typename t user | t == "Ident"            = "String"
-                | t == "Char"             = "Character"
-                | t `elem` map show user  = "String"
-                | otherwise               = t
+typename t user
+  | t == "Ident"   = "String"
+  | t == "Char"    = "Character"
+  | t `elem` user  = "String"
+  | otherwise      = t
 
 -- | Print the Java type corresponding to a category.
 cat2JavaType :: [UserDef] -> Cat -> String

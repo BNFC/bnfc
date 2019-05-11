@@ -185,10 +185,11 @@ restOfJLex jflex rp cf = vcat
         else ". { throw new Error(\"Illegal Character <\"+yytext()+\">\"); }"
     ]
   where
-    ifC cat s = if isUsedCat cf cat then s else ""
+    ifC :: TokenCat -> Doc -> Doc
+    ifC cat s = if isUsedCat cf (TokenCat cat) then s else ""
     userDefTokens = vcat
         [ "<YYINITIAL>" <> text (printRegJLex exp)
-            <+> "{ return cf.newSymbol(\"\", sym." <> text (show name)
+            <+> "{ return cf.newSymbol(\"\", sym." <> text name
             <> ", left_loc(), right_loc(), yytext().intern()); }"
         | (name, exp) <- tokenPragmas cf ]
     strStates = vcat --These handle escaped characters in Strings.

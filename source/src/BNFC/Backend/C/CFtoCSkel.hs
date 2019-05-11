@@ -70,7 +70,7 @@ mkHFile cf groups = unlines
   footer
  ]
  where
-  user = fst (unzip (tokenPragmas cf))
+  user = map fst $ tokenPragmas cf
   header = unlines
    [
     "#ifndef SKELETON_HEADER",
@@ -80,9 +80,9 @@ mkHFile cf groups = unlines
     "#include \"Absyn.h\"",
     ""
    ]
-  prUserH user = "void visit" ++ u' ++ "(" ++ show user ++ " p);"
+  prUserH u = "void visit" ++ u' ++ "(" ++ u ++ " p);"
     where
-     u' = let u = show user in toUpper (head u) : map toLower (tail u) --this is a hack to fix a potential capitalization problem.
+    u' = toUpper (head u) : map toLower (tail u)  -- this is a hack to fix a potential capitalization problem.
   footer = unlines
    [
     "void visitIdent(Ident i);",
@@ -107,14 +107,13 @@ prDataH (cat, _rules) =
 -- | Makes the skeleton's .c File
 mkCFile :: CF -> [(Cat,[Rule])] -> String
 mkCFile cf groups = concat
-   [
-    header,
-    concatMap prData groups,
-    concatMap (prUser.show) user,
-    footer
-   ]
+  [ header
+  , concatMap prData groups
+  , concatMap prUser user
+  , footer
+  ]
   where
-    user = fst (unzip (tokenPragmas cf))
+    user = map fst $ tokenPragmas cf
     header = unlines [
       "/*** BNFC-Generated Visitor Traversal Skeleton. ***/",
       "/* This traverses the abstract syntax tree.",
@@ -243,4 +242,5 @@ prCat fnm (cat, vname) =
 
 --The visit-function name of a basic type
 basicFunName :: Cat -> Doc
-basicFunName c = text (toUpper (head (show c)): tail (show c))
+basicFunName c = text $ toUpper h : t
+  where (h:t) = show c

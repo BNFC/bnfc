@@ -151,21 +151,22 @@ prologue byteStrings useGadt name absMod =
 
 -- | Printing instance for @Integer@, and possibly @[Integer]@.
 integerRule :: AbsMod -> CF -> [String]
-integerRule absMod cf = showsPrintRule absMod cf $ TokenCat "Integer"
+integerRule absMod cf = showsPrintRule absMod cf $ TokenCat catInteger
 
 -- | Printing instance for @Double@, and possibly @[Double]@.
 doubleRule :: AbsMod -> CF -> [String]
-doubleRule absMod cf = showsPrintRule absMod cf $ TokenCat "Double"
+doubleRule absMod cf = showsPrintRule absMod cf $ TokenCat catDouble
 
 showsPrintRule :: AbsMod -> CF -> Cat -> [String]
 showsPrintRule absMod cf t =
-  [ "instance Print " ++ qualifiedCat absMod t ++ " where"
+  [ unwords [ "instance Print" , qualifiedCat absMod t , "where" ]
   , "  prt _ x = doc (shows x)"
   ] ++ ifList cf t ++
   [ ""
   ]
 
 -- | Print category (data type name) qualified if user-defined.
+--
 qualifiedCat :: AbsMod -> Cat -> String
 qualifiedCat absMod t = case t of
   TokenCat s
@@ -188,15 +189,15 @@ identRule :: AbsMod -> Bool -> CF -> [String]
 identRule absMod byteStrings cf = ownPrintRule absMod byteStrings cf catIdent
 
 -- | Printing identifiers and terminals.
-ownPrintRule :: AbsMod -> Bool -> CF -> Cat -> [String]
+ownPrintRule :: AbsMod -> Bool -> CF -> TokenCat -> [String]
 ownPrintRule absMod byteStrings cf own =
   [ "instance Print " ++ q ++ " where"
   , "  prt _ (" ++ q ++ posn ++ ") = doc (showString " ++ stringUnpack ++ ")"
-  ] ++ ifList cf own ++
+  ] ++ ifList cf (TokenCat own) ++
   [ ""
   ]
  where
-   q    = qualifiedCat absMod own
+   q    = qualifiedCat absMod $ TokenCat own
    posn = if isPositionCat cf own then " (_,i)" else " i"
 
    stringUnpack | byteStrings = "(BS.unpack i)"

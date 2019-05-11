@@ -206,10 +206,10 @@ prTypeDefs user = unlines
    concatMap prUserDef user
   ]
  where
-  prUserDef s = "typedef char* " ++ show s ++ ";\n"
+  prUserDef s = "typedef char* " ++ s ++ ";\n"
 
 -- | A class's instance variables.
--- >>> prInstVars [Cat "MyTokn"] [("MyTokn",1), ("A",1), ("A",2)]
+-- >>> prInstVars ["MyTokn"] [("MyTokn",1), ("A",1), ("A",2)]
 -- MyTokn mytokn_1;
 -- A *a_1, *a_2;
 prInstVars :: [UserDef] -> [IVar] -> Doc
@@ -336,7 +336,7 @@ prAcceptC ty =
 
 -- | The constructor just assigns the parameters to the corresponding instance
 -- variables.
--- >>> prConstructorC [Cat "Integer"] "bla" [("A",1), ("Integer",1), ("A",2)] [Cat "A", Cat "Integer", Cat "A"]
+-- >>> prConstructorC ["Integer"] "bla" [("A",1), ("Integer",1), ("A",2)] [Cat "A", Cat "Integer", Cat "A"]
 -- bla::bla(A *p1, Integer p2, A *p3) { a_1 = p1; integer_ = p2; a_2 = p3; }
 prConstructorC :: [UserDef] -> String -> [IVar] -> [Cat] -> Doc
 prConstructorC user c vs cats =
@@ -412,7 +412,6 @@ prAssigns ((t,n):vs) (p:ps) =
 
 {- **** Helper Functions **** -}
 
---Checks if something is a basic or user-defined type.
+-- | Checks if something is a basic or user-defined type.
 isBasic :: [UserDef] -> String -> Bool
-isBasic user x =
-    x `elem` (map show user ++ ["Integer", "Char", "String", "Double", "Ident"])
+isBasic user x = x `elem` user || x `elem` specialCatsP

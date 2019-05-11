@@ -172,7 +172,8 @@ restOfAlex cf = [
   "%}"
   ]
  where
-   ifC cat s = if isUsedCat cf cat then s else ""
+   ifC :: TokenCat -> String -> String
+   ifC cat s = if isUsedCat cf (TokenCat cat) then s else ""
    lexComments ([],[])           = []
    lexComments (xs,s1:ys) = "<>         ::= " ++ ('^':intersperse '^' s1) ++ " [.]* ^n\n" ++ lexComments (xs,ys)
    lexComments (([l1,l2],[r1,r2]):xs,[]) = concat
@@ -196,8 +197,8 @@ restOfAlex cf = [
    aux (_,_) = " %s | %r "
 
    userDefTokenTypes = unlines
-     ["<mk_" ++ show name ++ "> ::= " ++ printRegAlex exp ++
-      "%{ mk_" ++ show name ++ " p = PT p . eitherResIdent T_"  ++ show name ++ " %}"
+     ["<mk_" ++ name ++ "> ::= " ++ printRegAlex exp ++
+      "%{ mk_" ++ name ++ " p = PT p . eitherResIdent T_"  ++ name ++ " %}"
                                         | (name,exp) <- tokenPragmas cf]
    userDefTokenConstrs = unlines
      [" | T_" ++ name ++ " String" | name <- tokenNames cf]
