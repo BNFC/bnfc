@@ -158,7 +158,7 @@ definedRules packageAbsyn cf =
 
 -- peteg: FIXME JavaCUP can only cope with one entry point AFAIK.
 prEntryPoint :: CF -> String
-prEntryPoint cf = unlines ["", "start with " ++ show (firstEntry cf) ++ ";", ""]
+prEntryPoint cf = unlines ["", "start with " ++ identCat (firstEntry cf) ++ ";", ""]
 --                  [ep]  -> unlines ["", "start with " ++ ep ++ ";", ""]
 --                  eps   -> error $ "FIXME multiple entry points." ++ show eps
 

@@ -22,7 +22,7 @@
 
 module BNFC.Backend.OCaml.CFtoOCamlYacc
        (
-       cf2ocamlyacc, terminal
+       cf2ocamlyacc, terminal, epName
        )
         where
 

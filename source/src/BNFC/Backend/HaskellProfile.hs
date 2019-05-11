@@ -197,4 +197,4 @@ testfile inDir name _ cf = makeA where
                  "    _   -> do progName <- getProgName",
                  "              putStrLn $ progName ++ \": excess arguments.\""
                  ]
-                  where firstParser = 'p' : show (firstEntry cf)
+                  where firstParser = 'p' : identCat (firstEntry cf)
