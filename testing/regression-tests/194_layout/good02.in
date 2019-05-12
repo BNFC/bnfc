@@ -1,0 +1,27 @@
+module Top where
+  module A where
+  module B where
+    module B1 where
+  module C where
+    module CA where
+      module CA1 where
+      module CA2 where
+    module CB where
+  module D where {
+module DA where {}; module DB where
+  module DB1 where
+  module DB2 where
+    module DB2A where
+ ;
+ module DC where {}
+}
+  module E where
+    module EA where {}; module EB where
+      module EB1 where
+      module EB1 where
+    module EC where {
+module EC1 where {};
+module EC2 where
+  module EC2A where
+}
+  module F where
