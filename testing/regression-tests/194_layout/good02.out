@@ -1,0 +1,63 @@
+good02.in
+
+Parse Successful!
+
+[Abstract Syntax]
+
+Modl (Ident "Top") [Modl (Ident "A") [],Modl (Ident "B") [Modl (Ident "B1") []],Modl (Ident "C") [Modl (Ident "CA") [Modl (Ident "CA1") [],Modl (Ident "CA2") []],Modl (Ident "CB") []],Modl (Ident "D") [Modl (Ident "DA") [],Modl (Ident "DB") [Modl (Ident "DB1") [],Modl (Ident "DB2") [Modl (Ident "DB2A") []]],Modl (Ident "DC") []],Modl (Ident "E") [Modl (Ident "EA") [],Modl (Ident "EB") [Modl (Ident "EB1") [],Modl (Ident "EB1") []],Modl (Ident "EC") [Modl (Ident "EC1") [],Modl (Ident "EC2") [Modl (Ident "EC2A") []]]],Modl (Ident "F") []]
+
+[Linearized tree]
+
+module Top where {
+  module A where {
+    } ;
+  module B where {
+    module B1 where {
+      }
+    } ;
+  module C where {
+    module CA where {
+      module CA1 where {
+        } ;
+      module CA2 where {
+        }
+      } ;
+    module CB where {
+      }
+    } ;
+  module D where {
+    module DA where {
+      } ;
+    module DB where {
+      module DB1 where {
+        } ;
+      module DB2 where {
+        module DB2A where {
+          }
+        }
+      } ;
+    module DC where {
+      }
+    } ;
+  module E where {
+    module EA where {
+      } ;
+    module EB where {
+      module EB1 where {
+        } ;
+      module EB1 where {
+        }
+      } ;
+    module EC where {
+      module EC1 where {
+        } ;
+      module EC2 where {
+        module EC2A where {
+          }
+        }
+      }
+    } ;
+  module F where {
+    }
+  }
+

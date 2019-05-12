@@ -1,0 +1,6 @@
+-- Andreas, 2019-05-12, issue #194, layout parsing
+-- A language of nested modules like in Agda.
+
+Modl. Module ::= "module" Ident "where" "{" [Module] "}" ;
+separator Module ";"                                     ;
+layout "where"                                           ;

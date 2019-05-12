@@ -14,9 +14,10 @@ main = htfMain $
   -- with a later line).
 
   -- ParameterizedTests.current :  -- Uncomment for prioritized test case.
+  ParameterizedTests.layoutTest :
+  ParameterizedTests.all :
   OutputParser.tests     :
   RegressionTests.all    :
-  ParameterizedTests.all :
   HaskellCnfTests.all    :
   PygmentsTests.all      :
   []
