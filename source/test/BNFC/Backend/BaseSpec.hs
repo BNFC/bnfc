@@ -18,11 +18,11 @@ default(String)
 spec :: Spec
 spec = do
   describe "Backend monad" $ do
-    it "empty computation generates empty list op files" $
+    it "empty computation generates empty list of files" $
       execBackend (return ()) `shouldReturn` []
     it "returns the file created using mkfile" $
       execBackend (mkfile "test.txt" "abcd")
-        `shouldReturn` [("test.txt", "abcd")]
+        `shouldReturn` [("test.txt", "abcd\n")]
   describe "writeFiles" $ do
     it "creates the root directory if it doesn't exists" $
       withSystemTempDirectory "bnfc-test" $ \tmpdir -> do
@@ -40,7 +40,7 @@ spec = do
         setCurrentDirectory tmpdir
         writeFiles "." (mkfile "file.txt" "abcd")
         readFile "file.txt"
-      `shouldReturn` "abcd"
+      `shouldReturn` "abcd\n"
     it "creates subdirectories" $
       withSystemTempDirectory "bnfc-test" $ \tmpdir -> do
         setCurrentDirectory tmpdir
