@@ -164,14 +164,15 @@ constructRule absName functor revs r0@(Rule fun cat _) = (pattern, action)
     (pattern,metavars) = generatePatterns revs r
     action | isCoercion fun                 = unwords metavars
            | isConsFun fun && elem cat revs = unwords ("flip" : fun : metavars)
-           | isNilCons fun                  = unwords (underscore fun : metavars)
-           | functor                        = unwords (underscore fun : "()" : metavars)
-           | otherwise                      = unwords (underscore fun : metavars)
+           | isNilCons fun                  = unwords (qualify fun : metavars)
+           | functor                        = unwords (qualify fun : "()" : metavars)
+           | otherwise                      = unwords (qualify fun : metavars)
     r | isConsFun (funRule r0) && elem (valCat r0) revs = revSepListRule r0
       | otherwise                                       = r0
-    underscore f | isConsFun f || isNilCons f = f
-                 | isDefinedRule f = absName ++ "." ++ f ++ "_"
-                 | otherwise       = absName ++ "." ++ f
+    qualify f
+      | isConsFun f || isNilCons f = f
+      | isDefinedRule f = f ++ "_"  -- Definitions are local to Par.hs, not in Abs.hs
+      | otherwise       = absName ++ "." ++ f
 
 -- Generate patterns and a set of metavariables indicating
 -- where in the pattern the non-terminal
