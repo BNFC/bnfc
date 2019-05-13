@@ -96,14 +96,14 @@ This should be accompanied by the following Agda code:
 module BNFC.Backend.Agda (makeAgda) where
 
 import Prelude'
-import Control.Monad.State
+import Control.Monad.State hiding (when)
 import Data.Char
 import Data.Function (on)
 import Data.Functor  ((<$>))
 import qualified Data.List as List
 import Data.Map (Map)
 import qualified Data.Map as Map
-import Data.Maybe (mapMaybe)
+import Data.Maybe (mapMaybe, isJust, fromJust)
 import Data.List.NonEmpty (NonEmpty((:|)))
 import qualified Data.List.NonEmpty as NEList
 
@@ -113,7 +113,7 @@ import BNFC.Backend.Haskell.HsOpts
 import BNFC.Backend.Haskell.Utils  (parserName)
 import BNFC.Options                (SharedOptions)
 import BNFC.PrettyPrint
-import BNFC.Utils                  (NameStyle(..), mkName, replace)
+import BNFC.Utils                  (NameStyle(..), mkName, replace, when)
 
 type NEList = NEList.NonEmpty
 
@@ -128,6 +128,7 @@ data ConstructorStyle
 data ImportNumeric
   = YesImportNumeric  -- ^ Import the numeric types.
   | NoImportNumeric   -- ^ Don't import the numeric types.
+  deriving (Eq)
 
 -- | Entry-point for Agda backend.
 
@@ -142,13 +143,17 @@ makeAgda time opts cf = do
     cf2AgdaAST time (agdaASTFileM opts) (absFileM opts) (printerFileM opts) cf
   -- Generate parser bindings.
   mkfile (agdaParserFile opts) $
-    cf2AgdaParser time (agdaParserFileM opts) (agdaASTFileM opts) (absFileM opts) (errFileM opts) (happyFileM opts) parserCats
+    cf2AgdaParser time (agdaParserFileM opts) (agdaASTFileM opts) (absFileM opts) (errFileM opts) (happyFileM opts)
+      layoutMod
+      parserCats
   -- Generate an I/O library for the test parser.
   mkfile (agdaLibFile opts) $
     agdaLibContents (agdaLibFileM opts)
   -- Generate test parser.
   mkfile (agdaMainFile opts) $
-    agdaMainContents (agdaMainFileM opts) (agdaLibFileM opts) (agdaASTFileM opts) (agdaParserFileM opts) entryPoint
+    agdaMainContents (agdaMainFileM opts) (agdaLibFileM opts) (agdaASTFileM opts) (agdaParserFileM opts)
+      (hasLayout cf)
+      entryPoint
   where
   -- | Generate parsers for the following non-terminals.
   --   This includes parsers for 'CoercCat' and 'ListCat'.
@@ -159,6 +164,9 @@ makeAgda time opts cf = do
   entryPoint = case parserCats of
     (c:_) -> c
     -- cannot be empty
+  -- | In case the grammar makes use of layout, pass also the generated layout Haskell module.
+  layoutMod :: Maybe String
+  layoutMod = when (hasLayout cf) $ Just (layoutFileM opts)
 
 -- | Generate AST bindings for Agda.
 --
@@ -172,7 +180,7 @@ cf2AgdaAST
 cf2AgdaAST time mod amod pmod cf = vsep $
   [ preamble time "abstract syntax data types"
   , hsep [ "module", text mod, "where" ]
-  , imports YesImportNumeric
+  , imports YesImportNumeric False
   , if usesString then hsep [ "String", equals, listT, charT ] else empty
   , importPragmas [amod, unwords [ pmod, "(printTree)" ]]
   , vsep $ map prToken tcats
@@ -204,18 +212,20 @@ cf2AgdaParser
   -> String  -- ^ Haskell Abs module name.
   -> String  -- ^ Haskell ErrM module name.
   -> String  -- ^ Haskell Par module name.
+  -> Maybe String
+             -- ^ Does the grammar use layout?  If yes, Haskell Layout module name.
   -> [Cat]   -- ^ Bind parsers for these non-terminals.
   -> Doc
-cf2AgdaParser time mod astmod amod emod pmod cats = vsep $
+cf2AgdaParser time mod astmod amod emod pmod layoutMod cats = vsep $
   [ preamble time "parsers"
   , hsep [ "module", text mod, "where" ]
-  , imports NoImportNumeric
+  , imports NoImportNumeric (isJust layoutMod)
   , importCats astmod (List.nub cs)
-  , importPragmas [amod, emod, pmod]
+  , importPragmas $ [amod, emod, pmod] ++ maybe [] (\ m -> ["qualified " ++ m]) layoutMod
   , "-- Error monad of BNFC"
   , prErrM
   , "-- Happy parsers"
-  , parsers cats
+  , parsers layoutMod cats
   , empty -- Make sure we terminate the file with a new line.
   ]
   where
@@ -236,6 +246,7 @@ arrow = "→"
 charT           = "Char"     -- This is the BNFC name for token type Char!
 intT            = "Integer"  -- This is the BNFC name for token type Integer!
 doubleT         = "Double"   -- This is the BNFC name for token type Double!
+boolT           = "#Bool"
 listT           = "#List"
 stringT         = "#String"
 stringFromListT = "#stringFromList"
@@ -257,12 +268,16 @@ preamble _time what = vcat $
 
 imports
   :: ImportNumeric -- ^ Import also numeric types?
+  -> Bool          -- ^ If have layout, import booleans.
   -> Doc
-imports numeric = vcat . map prettyImport $
-  [ ("Agda.Builtin.Char",   [("Char", charT)])
-  ] ++ case numeric of { YesImportNumeric -> importNumeric; NoImportNumeric -> [] } ++
-  [ ("Agda.Builtin.List",   [("List", listT)])
-  , ("Agda.Builtin.String", [("String", stringT), ("primStringFromList", stringFromListT) ])
+imports numeric layout = vcat . map prettyImport . concat $
+  [ when layout
+    [ ("Agda.Builtin.Bool",   [("Bool", boolT)]) ]
+  , [ ("Agda.Builtin.Char",   [("Char", charT)]) ]
+  , when (numeric == YesImportNumeric) importNumeric
+  , [ ("Agda.Builtin.List",   [("List", listT)])
+    , ("Agda.Builtin.String", [("String", stringT), ("primStringFromList", stringFromListT) ])
+    ]
   ]
   where
   importNumeric :: [(String, [(String, Doc)])]
@@ -288,10 +303,11 @@ importCats m cs = prettyList 2 pre lparen rparen semi $ map text cs
 
 -- | Import pragmas.
 --
--- >>> importPragmas ["Foo.Abs", "Foo.Print (printTree)"]
+-- >>> importPragmas ["Foo.Abs", "Foo.Print (printTree)", "qualified Foo.Layout"]
 -- {-# FOREIGN GHC import qualified Data.Text #-}
 -- {-# FOREIGN GHC import Foo.Abs #-}
 -- {-# FOREIGN GHC import Foo.Print (printTree) #-}
+-- {-# FOREIGN GHC import qualified Foo.Layout #-}
 --
 importPragmas
   :: [String]  -- ^ Haskell modules to import.
@@ -582,23 +598,42 @@ printers cats =
 
 -- | Bind happy parsers.
 --
--- >>> parsers [ListCat (CoercCat "Exp" 2)]
+-- >>> parsers Nothing [ListCat (CoercCat "Exp" 2)]
 -- postulate
 --   parseListExp2 : #String → Err (#List Exp)
 -- <BLANKLINE>
 -- {-# COMPILE GHC parseListExp2 = pListExp2 . myLexer . Data.Text.unpack #-}
 --
-parsers :: [Cat] -> Doc
-parsers cats =
+parsers
+  :: Maybe String  -- ^ Grammar uses layout?  If yes, Haskell layout module name.
+  -> [Cat]         -- ^ Bind parsers for these non-terminals.
+  -> Doc
+parsers layoutMod cats =
   vcat ("postulate" : map (nest 2 . prettyTySig) cats)
   $++$
   vcat (map pragmaBind cats)
   where
-  prettyTySig c = hsep [ agdaParserName c, colon, stringT, arrow, "Err", prettyCatParens c  ]
-  pragmaBind  c = hsep
-    [ "{-#", "COMPILE", "GHC", agdaParserName c, equals
-    , parserName c, ".", "myLexer", ".", "Data.Text.unpack", "#-}"
+  -- When grammar uses layout, we parametrize the parser by a boolean @tl@
+  -- that indicates whether top layout should be used for this parser.
+  -- Also, we add @resolveLayout tl@ to the pipeline after lexing.
+  prettyTySig :: Cat -> Doc
+  prettyTySig c = hsep . concat $
+   [ [ agdaParserName c, colon ]
+   , when layout [ boolT, arrow ]
+   , [ stringT, arrow, "Err", prettyCatParens c ]
+   ]
+  pragmaBind :: Cat -> Doc
+  pragmaBind c = hsep . concat $
+    [ [ "{-#", "COMPILE", "GHC", agdaParserName c, equals ]
+    , when layout [ "\\", "tl", "->" ]
+    , [ parserName c, "." ]
+    , when layout [ hcat [ text lmod, ".", "resolveLayout" ], "tl", "." ]
+    , [ "myLexer", ".", "Data.Text.unpack", "#-}" ]
     ]
+  layout :: Bool
+  layout = isJust layoutMod
+  lmod :: String
+  lmod = fromJust layoutMod
 
 -- * Auxiliary functions
 
@@ -752,14 +787,15 @@ agdaMainContents
   -> String      -- ^ Name of Agda library module.
   -> String      -- ^ Name of Agda AST module.
   -> String      -- ^ Name of Agda parser module.
+  -> Bool        -- ^ Is the grammar using layout?
   -> Cat         -- ^ Category to parse.
   -> Doc         -- ^ Contents of Agda main module.
-agdaMainContents mod lmod amod pmod c = vcat
+agdaMainContents mod lmod amod pmod layout c = vcat
   [ "-- Test for Agda binding of parser.  Requires Agda >= 2.5.4."
   , "-- Generated by BNFC."
   , ""
   , "module" <+> text mod <+> "where"
-  , ""
+  , when layout "\nopen import Agda.Builtin.Bool using (true)"
   , "open import" <+> text lmod
   , "open import" <+> text amod <+> "using" <+> parens (printer)
   , "open import" <+> text pmod <+> "using" <+> parens ("Err;" <+> parser)
@@ -770,7 +806,7 @@ agdaMainContents mod lmod amod pmod c = vcat
   , "    _ → do"
   , "      putStrLn \"usage: Main <SourceFile>\""
   , "      exitFailure"
-  , "  Err.ok result ←" <+> parser <+> "<$> readFiniteFile file where"
+  , "  Err.ok result ←" <+> parseFun <+> "<$> readFiniteFile file where"
   , "    Err.bad msg → do"
   , "      putStrLn \"PARSE FAILED\\n\""
   , "      putStrLn (stringFromList msg)"
@@ -779,5 +815,7 @@ agdaMainContents mod lmod amod pmod c = vcat
   , "  putStrLn" <+> parens (printer <+> "result")
   ]
   where
-  printer = agdaPrinterName c
-  parser  = agdaParserName c
+  printer  = agdaPrinterName c
+  parser   = agdaParserName c
+  parseFun = hsep . concat $ [ [parser], when layout ["true"] ]
+    -- Permit use of top-level layout, if any.
