@@ -60,11 +60,11 @@ current = layoutTest
 --   cur = "194_layout"
 --   -- cur = "210_NumberedCatWithoutCoerce"
 
--- | Layout currently only works for Haskell and Haskell/GADT.
+-- | Layout currently only works for Haskell (even Agda) and Haskell/GADT.
 layoutTest :: Test
 layoutTest = makeTestSuite "Layout parsing test" $
   map (`makeTestCase` ("regression-tests" </> "194_layout")) $
-  [ haskellParameters
+  [ haskellAgdaParameters
   , haskellGADTParameters
   ]
 
@@ -239,6 +239,13 @@ haskellGADTParameters = baseParameters
   , tpRunTestProg = haskellRunTestProg
   }
 
+haskellAgdaParameters :: TestParameters
+haskellAgdaParameters = haskellParameters
+  { tpName = "Haskell & Agda"
+  , tpBnfcOptions = ["--haskell", "--agda"]
+  }
+
+
 -- | Haskell backend: default command for running the test executable with the given arguments.
 haskellRunTestProg :: Text -> [FilePath] -> Sh Text
 haskellRunTestProg _lang args = do
@@ -252,9 +259,9 @@ haskellRunTestProg _lang args = do
 parameters :: [TestParameters]
 parameters =
   -- Haskell
-  [ hsParams { tpName = "Haskell (with ghc and agda)"
-             , tpBnfcOptions = ["--haskell", "--ghc", "--agda"] }
-  , haskellParameters
+  [ haskellAgdaParameters
+  , hsParams { tpName = "Haskell (with ghc)"
+             , tpBnfcOptions = ["--haskell", "--ghc"] }
   , hsParams { tpName = "Haskell (with functor)"
              , tpBnfcOptions = ["--haskell", "--functor"] }
   , hsParams { tpName = "Haskell (with namespace)"
