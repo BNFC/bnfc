@@ -60,6 +60,8 @@ header parserMod cf = [
   "      '\\\\'::c::cs when List.mem c ['\\\"'; '\\\\'; '\\\''] -> c :: unesc cs",
   "    | '\\\\'::'n'::cs  -> '\\n' :: unesc cs",
   "    | '\\\\'::'t'::cs  -> '\\t' :: unesc cs",
+  "    | '\\\\'::'r'::cs  -> '\\r' :: unesc cs",
+  -- "    | '\\\\'::'f'::cs  -> '\\f' :: unesc cs",  -- \f not supported by ocaml
   "    | '\\\"'::[]    -> []",
   "    | c::cs      -> c :: unesc cs",
   "    | _         -> []",
@@ -208,10 +210,10 @@ rules cf = mkRule "token" $
     , ( "d+ '.' d+ ('e' ('-')? d+)?"
       , "let f = lexeme lexbuf in TOK_Double (float_of_string f)" )
     -- strings
-    , ( "'\\\"' ((u # ['\\\"' '\\\\' '\\n']) | ('\\\\' ('\\\"' | '\\\\' | '\\\'' | 'n' | 't')))* '\\\"'"
+    , ( "'\\\"' ((u # ['\\\"' '\\\\' '\\n']) | ('\\\\' ('\\\"' | '\\\\' | '\\\'' | 'n' | 't' | 'r')))* '\\\"'"
       , "let s = lexeme lexbuf in TOK_String (unescapeInitTail s)" )
     -- chars
-    , ( "'\\'' ((u # ['\\\'' '\\\\']) | ('\\\\' ('\\\\' | '\\\'' | 'n' | 't'))) '\\\''"
+    , ( "'\\'' ((u # ['\\\'' '\\\\']) | ('\\\\' ('\\\\' | '\\\'' | 'n' | 't' | 'r'))) '\\\''"
       , "let s = lexeme lexbuf in TOK_Char s.[1]")
     -- spaces
     , ( "[' ' '\\t']", "token lexbuf")

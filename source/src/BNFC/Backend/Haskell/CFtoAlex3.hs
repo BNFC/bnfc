@@ -91,9 +91,9 @@ restOfAlex _ shareStrings byteStrings cf = [
   userDefTokenTypes,
   ident,
 
-  ifC catString ("\\\" ([$u # [\\\" \\\\ \\n]] | (\\\\ (\\\" | \\\\ | \\' | n | t)))* \\\"" ++
+  ifC catString ("\\\" ([$u # [\\\" \\\\ \\n]] | (\\\\ (\\\" | \\\\ | \\' | n | t | r | f)))* \\\"" ++
                   "\n    { tok (\\p s -> PT p (TL $ share $ unescapeInitTail s)) }"),
-  ifC catChar    "\\\' ($u # [\\\' \\\\] | \\\\ [\\\\ \\\' n t]) \\'\n    { tok (\\p s -> PT p (TC $ share s))  }",
+  ifC catChar    "\\\' ($u # [\\\' \\\\] | \\\\ [\\\\ \\\' n t r f]) \\'\n    { tok (\\p s -> PT p (TC $ share s))  }",
   ifC catInteger "$d+\n    { tok (\\p s -> PT p (TI $ share s))    }",
   ifC catDouble  "$d+ \\. $d+ (e (\\-)? $d+)?\n    { tok (\\p s -> PT p (TD $ share s)) }",
   "",
@@ -172,6 +172,8 @@ restOfAlex _ shareStrings byteStrings cf = [
   "    '\\\\':c:cs | elem c ['\\\"', '\\\\', '\\\''] -> c : unesc cs",
   "    '\\\\':'n':cs  -> '\\n' : unesc cs",
   "    '\\\\':'t':cs  -> '\\t' : unesc cs",
+  "    '\\\\':'r':cs  -> '\\r' : unesc cs",
+  "    '\\\\':'f':cs  -> '\\f' : unesc cs",
   "    '\"':[]    -> []",
   "    c:cs      -> c : unesc cs",
   "    _         -> []",
@@ -341,6 +343,8 @@ instance Print Char where
   prt _ = \case
     '\n'             -> ["\\n"]
     '\t'             -> ["\\t"]
+    '\r'             -> ["\\r"]
+    '\f'             -> ["\\f"]
     c | isAlphaNum c -> [[c]]
     c | isPrint c    -> ['\\':[c]]
     c                -> ['\\':show (ord c)]

@@ -130,10 +130,10 @@ restOfLexerGrammar cf = vcat
         "IDENT : IDENTIFIER_FIRST (IDENTIFIER_FIRST | DIGIT)*;"
         ]
     , "// Whitespace"
-    , "WS : (' ' | '\\r' | '\\t' | '\\n')+ ->  skip;"
+    , "WS : (' ' | '\\r' | '\\t' | '\\n' | '\\f')+ ->  skip;"
     , "// Escapable sequences"
     , "fragment"
-    , "Escapable : ('\"' | '\\\\' | 'n' | 't' | 'r');"
+    , "Escapable : ('\"' | '\\\\' | 'n' | 't' | 'r' | 'f');"
     , "ErrorToken : . ;"
     , ifString stringmodes
     , ifChar charmodes
