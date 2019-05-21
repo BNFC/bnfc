@@ -32,10 +32,11 @@ import Data.Char
 import Text.PrettyPrint hiding (render)
 import qualified Text.PrettyPrint as PP
 
-import BNFC.CF
 import AbsBNF
+import BNFC.CF
 import BNFC.Backend.OCaml.CFtoOCamlYacc (terminal)
-import BNFC.Utils ((+++), cstring, cchar)
+import BNFC.Backend.OCaml.OCamlUtil (mkEsc)
+import BNFC.Utils ((+++), cstring, cchar, unless)
 
 cf2ocamllex :: String -> String -> CF -> String
 cf2ocamllex _ parserMod cf =
@@ -84,36 +85,35 @@ header parserMod cf = [
 
 -- | set up hashtables for reserved symbols and words
 hashtables :: CF -> String
-hashtables cf = ht "symbol_table" (cfgSymbols cf )  ++ "\n" ++
-                ht "resword_table" (reservedWords cf)
-    where ht _ syms | null syms = ""
-          ht table syms = unlines [
-                "let" +++ table +++ "= Hashtbl.create " ++ show (length syms),
-                "let _ = List.iter (fun (kwd, tok) -> Hashtbl.add" +++ table
-                         +++ "kwd tok)",
-                "                  [" ++ concat (intersperse ";" keyvals) ++ "]"
-            ]
-            where keyvals = map (\(x,y) -> "(" ++ x ++ ", " ++ y ++ ")")
-                          (zip (map show syms) (map (terminal cf) syms))
-
+hashtables cf = unlines . concat $
+  [ ht "symbol_table"  $ cfgSymbols cf
+  , ht "resword_table" $ reservedWords cf
+  ]
+  where
+  ht table syms = unless (null syms) $
+    [ unwords [ "let", table, "= Hashtbl.create", show (length syms)                  ]
+    , unwords [ "let _ = List.iter (fun (kwd, tok) -> Hashtbl.add", table, "kwd tok)" ]
+    , concat  [ "                  [", concat (intersperse ";" keyvals), "]"          ]
+    ]
+    where
+    keyvals = map (\ s -> concat [ "(", mkEsc s, ", ", terminal cf s, ")" ]) syms
 
 
 definitions :: CF -> [String]
-definitions cf = concat [
-        cMacros,
-        rMacros cf,
-        uMacros cf
-    ]
-
+definitions cf = concat $
+  [ cMacros
+  , rMacros cf
+  , uMacros cf
+  ]
 
 cMacros :: [String]
 cMacros = [
   "let l = ['a'-'z' 'A'-'Z' '\\192' - '\\255'] # ['\\215' '\\247']    (*  isolatin1 letter FIXME *)",
   "let c = ['A'-'Z' '\\192'-'\\221'] # ['\\215']    (*  capital isolatin1 letter FIXME *)",
   "let s = ['a'-'z' '\\222'-'\\255'] # ['\\247']    (*  small isolatin1 letter FIXME *)",
-  "let d = ['0'-'9']                (*  digit *)",
-  "let i = l | d | ['_' '\\'']          (*  identifier character *)",
-  "let u = ['\\000'-'\\255']           (* universal: any character *)"
+  "let d = ['0'-'9']                             (*  digit *)",
+  "let i = l | d | ['_' '\\'']                    (*  identifier character *)",
+  "let u = _                                     (* universal: any character *)"
   ]
 
 rMacros :: CF -> [String]
@@ -124,9 +124,6 @@ rMacros cf =
    "let rsyms =    (* reserved words consisting of special symbols *)",
    "            " ++ unwords (intersperse "|" (map mkEsc symbs))
    ])
- where
-  mkEsc s = "\"" ++ concat (map f s) ++ "\""
-  f x = if x `elem` ['"','\\'] then  "\\" ++ [x] else [x]
 
 -- user macros, derived from the user-defined tokens
 uMacros :: CF -> [String]

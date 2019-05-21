@@ -228,7 +228,7 @@ mkRhs args its =
  where
   mk args (Left InternalCat : items)      = mk args items
   mk (arg:args) (Left c : items)  = (prt c +++ arg)        : mk args items
-  mk args       (Right s : items) = ("render " ++ show s) : mk args items
+  mk args       (Right s : items) = ("render " ++ mkEsc s) : mk args items
   mk _ _ = []
   prt c = prtFun c +++ show (precCat c)
 
