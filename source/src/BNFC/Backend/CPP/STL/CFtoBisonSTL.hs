@@ -368,10 +368,10 @@ generatePatterns cf env r _ = case rhsRule r of
   its -> (unwords (map mkIt its), metas its)
  where
    mkIt = \case
-     Left c
-         | TokenCat tok <- c, isPositionCat cf tok -> fallback
-         | otherwise -> fromMaybe fallback $ lookup (show c) env
-       where fallback = typeName (identCat c)
+     Left (TokenCat s)
+       | isPositionCat cf s -> typeName s
+       | otherwise -> fromMaybe (typeName s) $ lookup s env
+     Left c  -> identCat c
      Right s -> fromMaybe s $ lookup s env
    metas its = [('$': show i,revert c) | (i,Left c) <- zip [1 :: Int ..] its]
 

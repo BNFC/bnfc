@@ -262,8 +262,9 @@ generatePatterns cf env r = case rhsRule r of
   its -> (unwords (map mkIt its), metas its)
  where
    mkIt i = case i of
-     Left c -> fromMaybe (typeName (identCat c)) (lookup (show c) env)
-     Right s -> fromMaybe s (lookup s env)
+     Left (TokenCat s) -> fromMaybe (typeName s) $ lookup s env
+     Left c  -> identCat c
+     Right s -> fromMaybe s $ lookup s env
    metas its = [revIf c ('$': show i) | (i,Left c) <- zip [1 :: Int ..] its]
    revIf c m = if not (isConsFun (funRule r)) && elem c revs
                  then "reverse" ++ identCat (normCat c) ++ "(" ++ m ++ ")"
