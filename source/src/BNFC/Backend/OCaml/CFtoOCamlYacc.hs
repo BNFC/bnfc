@@ -22,7 +22,7 @@
 
 module BNFC.Backend.OCaml.CFtoOCamlYacc
        (
-       cf2ocamlyacc, terminal
+       cf2ocamlyacc, terminal, epName
        )
         where
 
@@ -108,16 +108,16 @@ nonterminal c = map spaceToUnderscore (fixType c)
           spaceToUnderscore x = x
 
 specialTokens :: CF -> String
-specialTokens cf = unlines ("%token TOK_EOF" : map aux (nub $ ["Ident","String","Integer","Double","Char"] ++ map show (literals cf)))
-    where aux cat = "%token" +++ (case cat of
-            "Ident"   -> "<string>"
-            "String"  -> "<string>"
-            "Integer" -> "<int>"
-            "Double"  -> "<float>"
-            "Char"    -> "<char>"
-            _         -> "<string>"      )
-           +++ "TOK_" ++ cat
-
+specialTokens cf = unlines . ("%token TOK_EOF" :) $
+  map (\ n -> "%token" +++ aux n +++ "TOK_" ++ n) $ nub $ specialCatsP ++ literals cf
+  where
+  aux = \case
+    "Ident"   -> "<string>"
+    "String"  -> "<string>"
+    "Integer" -> "<int>"
+    "Double"  -> "<float>"
+    "Char"    -> "<char>"
+    _         -> "<string>"
 
 entryPoints :: String -> CF -> String
 entryPoints absName cf = unlines $
@@ -216,22 +216,14 @@ generatePatterns cf r = case rhsRule r of
    revs = cfgReversibleCats cf
 
 
-
-
-
 specialRules :: CF -> String
-specialRules cf = unlines $
-                  map aux (literals cf)
- where
-   aux cat =
-     case cat of
-         TokenCat "Ident"   -> "ident : TOK_Ident  { Ident $1 };"
-         TokenCat "String"  -> "string : TOK_String { $1 };"
-         TokenCat "Integer" -> "int :  TOK_Integer  { $1 };"
-         TokenCat "Double"  -> "float : TOK_Double  { $1 };"
-         TokenCat "Char"    -> "char : TOK_Char { $1 };"
-         own       -> (fixType own) ++ " : TOK_" ++ show own ++
-                      " { " ++ show own ++ " ("++ posn ++ "$1)};"
-                -- PCC: take "own" as type name? (manual says newtype)
-      where -- ignore position categories for now
-         posn = "" -- if isPositionCat cf cat then "mkPosToken " else ""
+specialRules cf = unlines $ (`map` literals cf) $ \case
+  "Ident"   -> "ident : TOK_Ident  { Ident $1 };"
+  "String"  -> "string : TOK_String { $1 };"
+  "Integer" -> "int :  TOK_Integer  { $1 };"
+  "Double"  -> "float : TOK_Double  { $1 };"
+  "Char"    -> "char : TOK_Char { $1 };"
+  own       -> concat $
+    [ fixType (TokenCat own), " : TOK_", own, " { ", own, " (",  posn, "$1)};" ]
+    where -- ignore position categories for now
+    posn = "" -- if isPositionCat cf own then "mkPosToken " else ""

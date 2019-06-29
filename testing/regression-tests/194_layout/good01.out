@@ -1,0 +1,27 @@
+good01.in
+
+Parse Successful!
+
+[Abstract Syntax]
+
+Modl (Ident "Top") [Modl (Ident "A") [],Modl (Ident "B") [Modl (Ident "B1") [Modl (Ident "B1A") []],Modl (Ident "B2") []],Modl (Ident "C") [Modl (Ident "C1") []]]
+
+[Linearized tree]
+
+module Top where {
+  module A where {
+    } ;
+  module B where {
+    module B1 where {
+      module B1A where {
+        }
+      } ;
+    module B2 where {
+      }
+    } ;
+  module C where {
+    module C1 where {
+      }
+    }
+  }
+

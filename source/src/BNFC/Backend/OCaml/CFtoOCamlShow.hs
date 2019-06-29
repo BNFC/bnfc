@@ -21,7 +21,7 @@
 -- on camlp4. Here we generate our own "show module".
 
 
-module BNFC.Backend.OCaml.CFtoOCamlShow (cf2show) where
+module BNFC.Backend.OCaml.CFtoOCamlShow (cf2show, showsFunQual) where
 
 import Data.Char(toLower)
 import Data.List (intersperse)
@@ -86,12 +86,12 @@ integerRule _ = "let showInt (i:int) : showable = s2s (string_of_int i)"
 doubleRule _ = "let showFloat (f:float) : showable = s2s (string_of_float f)"
 
 
-identRule cf = ownPrintRule cf (Cat "Ident")
+identRule cf = ownPrintRule cf catIdent
 
-ownPrintRule cf own = unlines $ [
-  "let rec" +++ showsFun own +++ "(" ++ show own ++ posn ++ ") : showable = s2s \""
-  ++ show own ++ " \" >> showString i"
-  ]
+ownPrintRule :: CF -> TokenCat -> String
+ownPrintRule cf own =
+  "let rec" +++ showsFun (TokenCat own) +++ "(" ++ own ++ posn ++ ") : showable = s2s \""
+  ++ own ++ " \" >> showString i"
  where
    posn = if isPositionCat cf own then " (_,i)" else " i"
 
@@ -119,9 +119,8 @@ rules cf = unlines $ mutualDefs $
         | otherwise              = s
    ruleOf s = fromJust $ lookupRule s (cfgRules cf)
 
---- case_fun :: Cat -> [(Constructor,Rule)] -> String
+-- case_fun :: Cat -> [(Constructor,Rule)] -> String
 case_fun cat xs = unlines [
---  "instance Print" +++ cat +++ "where",
   showsFun cat +++ "(e:" ++ fixType cat ++ ") : showable = match e with",
   unlines $ insertBar $ map (\ ((c,xx),r) ->
     "   " ++ c +++ mkTuple xx +++ "->" +++
@@ -143,6 +142,10 @@ mkRhs args its =
   mk _ _ = []
 
 showsFun :: Cat -> String
-showsFun c = case c of
-    ListCat t -> "showList" +++ showsFun t
-    _ -> "show" ++ (fixTypeUpper $ normCat c)
+showsFun = showsFunQual id
+
+showsFunQual :: (String -> String) -> Cat -> String
+showsFunQual qual = loop where
+  loop = \case
+    ListCat c -> qual "showList" +++ loop c
+    c         -> qual "show" ++ (fixTypeUpper $ normCat c)

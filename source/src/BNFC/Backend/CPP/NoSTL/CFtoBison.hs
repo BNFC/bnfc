@@ -62,15 +62,17 @@ module BNFC.Backend.CPP.NoSTL.CFtoBison (cf2Bison) where
 
 import Data.Char (toLower, isUpper)
 import Data.List (intersperse, nub)
+import Data.Maybe (fromMaybe)
 
 import BNFC.CF
 import BNFC.Backend.Common.NamedVariables hiding (varName)
-import BNFC.Backend.CPP.STL.CFtoBisonSTL (union)
-import BNFC.Utils ((+++))
-import BNFC.TypeChecker
-import ErrM
 import BNFC.Backend.C.CFtoBisonC (startSymbol)
+import BNFC.Backend.CPP.STL.CFtoBisonSTL (union)
 import BNFC.PrettyPrint
+import BNFC.TypeChecker
+import BNFC.Utils ((+++), when)
+
+import ErrM
 
 --This follows the basic structure of CFtoHappy.
 
@@ -242,11 +244,8 @@ declarations cf = concatMap (typeNT cf) (allCats cf)
 
 --declares terminal types.
 tokens :: [UserDef] -> SymEnv -> String
-tokens user ts = concatMap (declTok user) ts
- where
-  declTok u (s,r) = if elem s (map show u)
-    then "%token<string_> " ++ r ++ "    //   " ++ s ++ "\n"
-    else "%token " ++ r ++ "    //   " ++ s ++ "\n"
+tokens user = concatMap $ \ (s, r) ->
+  concat [ "%token", when (s `elem` user) "<string_>", " ", r, "    //   ", s, "\n" ]
 
 specialToks :: CF -> String
 specialToks cf = concat [
@@ -257,7 +256,7 @@ specialToks cf = concat [
   ifC catIdent "%token<string_> _IDENT_\n"
   ]
    where
-    ifC cat s = if isUsedCat cf cat then s else ""
+    ifC cat s = if isUsedCat cf (TokenCat cat) then s else ""
 
 --The following functions are a (relatively) straightforward translation
 --of the ones in CFtoHappy.hs
@@ -304,12 +303,9 @@ generatePatterns cf env r = case rhsRule r of
   its -> (unwords (map mkIt its), metas its)
  where
    mkIt i = case i of
-     Left c -> case lookup (show c) env of
-       Just x -> x
-       Nothing -> typeName (identCat c)
-     Right s -> case lookup s env of
-       Just x -> x
-       Nothing -> s
+     Left (TokenCat s) -> fromMaybe (typeName s) $ lookup s env
+     Left  c -> identCat c
+     Right s -> fromMaybe s $ lookup s env
    metas its = [revIf c ('$': show i) | (i,Left c) <- zip [1 :: Int ..] its]
    revIf c m = if (not (isConsFun (funRule r)) && elem c revs)
                  then ("reverse" ++ (identCat (normCat c)) ++ "(" ++ m ++ ")")

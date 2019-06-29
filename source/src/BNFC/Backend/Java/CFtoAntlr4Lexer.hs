@@ -130,16 +130,16 @@ restOfLexerGrammar cf = vcat
         "IDENT : IDENTIFIER_FIRST (IDENTIFIER_FIRST | DIGIT)*;"
         ]
     , "// Whitespace"
-    , "WS : (' ' | '\\r' | '\\t' | '\\n')+ ->  skip;"
+    , "WS : (' ' | '\\r' | '\\t' | '\\n' | '\\f')+ ->  skip;"
     , "// Escapable sequences"
     , "fragment"
-    , "Escapable : ('\"' | '\\\\' | 'n' | 't' | 'r');"
+    , "Escapable : ('\"' | '\\\\' | 'n' | 't' | 'r' | 'f');"
     , "ErrorToken : . ;"
     , ifString stringmodes
     , ifChar charmodes
     ]
   where
-    ifC cat s     = if isUsedCat cf cat then vcat s else ""
+    ifC cat s     = if isUsedCat cf (TokenCat cat) then vcat s else ""
     ifString      = ifC catString
     ifChar        = ifC catChar
     strdec        = [ "// String token type"
@@ -147,7 +147,7 @@ restOfLexerGrammar cf = vcat
                     ]
     chardec       = ["CHAR : '\\''   -> more, mode(CHARMODE);"]
     userDefTokens = vcat
-        [ text (show name) <>" : " <> text (printRegJLex exp) <> ";"
+        [ text name <> " : " <> text (printRegJLex exp) <> ";"
         | (name, exp) <- tokenPragmas cf ]
     stringmodes   = [ "mode STRESCAPE;"
         , "STRESCAPED : Escapable  -> more, popMode ;"

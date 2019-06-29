@@ -91,9 +91,9 @@ restOfAlex _ shareStrings byteStrings cf = [
   userDefTokenTypes,
   ident,
 
-  ifC catString ("\\\" ([$u # [\\\" \\\\ \\n]] | (\\\\ (\\\" | \\\\ | \\' | n | t)))* \\\"" ++
+  ifC catString ("\\\" ([$u # [\\\" \\\\ \\n]] | (\\\\ (\\\" | \\\\ | \\' | n | t | r | f)))* \\\"" ++
                   "\n    { tok (\\p s -> PT p (TL $ share $ unescapeInitTail s)) }"),
-  ifC catChar    "\\\' ($u # [\\\' \\\\] | \\\\ [\\\\ \\\' n t]) \\'\n    { tok (\\p s -> PT p (TC $ share s))  }",
+  ifC catChar    "\\\' ($u # [\\\' \\\\] | \\\\ [\\\\ \\\' n t r f]) \\'\n    { tok (\\p s -> PT p (TC $ share s))  }",
   ifC catInteger "$d+\n    { tok (\\p s -> PT p (TI $ share s))    }",
   ifC catDouble  "$d+ \\. $d+ (e (\\-)? $d+)?\n    { tok (\\p s -> PT p (TD $ share s)) }",
   "",
@@ -172,6 +172,8 @@ restOfAlex _ shareStrings byteStrings cf = [
   "    '\\\\':c:cs | elem c ['\\\"', '\\\\', '\\\''] -> c : unesc cs",
   "    '\\\\':'n':cs  -> '\\n' : unesc cs",
   "    '\\\\':'t':cs  -> '\\t' : unesc cs",
+  "    '\\\\':'r':cs  -> '\\r' : unesc cs",
+  "    '\\\\':'f':cs  -> '\\f' : unesc cs",
   "    '\"':[]    -> []",
   "    c:cs      -> c : unesc cs",
   "    _         -> []",
@@ -250,7 +252,8 @@ restOfAlex _ shareStrings byteStrings cf = [
        | byteStrings = ("BS.ByteString", "BS.take", "BS.uncons", "BS.pack", "BS.unpack", "Nothing", "Just (c,s)")
        | otherwise   = ("String",        "take",    "",          "id",      "id",        "[]",      "(c:s)"     )
 
-   ifC cat s = if isUsedCat cf cat then s else ""
+   ifC :: TokenCat -> String -> String
+   ifC cat s = if isUsedCat cf (TokenCat cat) then s else ""
    lexComments ([],[])           = []
    lexComments (xs,s1:ys) = '\"' : s1 ++ "\"" ++ " [.]* ; -- Toss single line comments\n" ++ lexComments (xs, ys)
    lexComments (([l1,l2],[r1,r2]):xs,[]) = concat
@@ -273,7 +276,7 @@ restOfAlex _ shareStrings byteStrings cf = [
 
    userDefTokenTypes = unlines
      [printRegAlex exp ++
-      "\n    { tok (\\p s -> PT p (eitherResIdent (T_"  ++ show name ++ " . share) s)) }"
+      "\n    { tok (\\p s -> PT p (eitherResIdent (T_"  ++ name ++ " . share) s)) }"
       | (name,exp) <- tokenPragmas cf]
    userDefTokenConstrs = unlines
      [" | T_" ++ name ++ " !"++stringType | name <- tokenNames cf]
@@ -340,6 +343,8 @@ instance Print Char where
   prt _ = \case
     '\n'             -> ["\\n"]
     '\t'             -> ["\\t"]
+    '\r'             -> ["\\r"]
+    '\f'             -> ["\\f"]
     c | isAlphaNum c -> [[c]]
     c | isPrint c    -> ['\\':[c]]
     c                -> ['\\':show (ord c)]

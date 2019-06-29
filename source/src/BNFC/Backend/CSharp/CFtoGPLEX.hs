@@ -38,10 +38,12 @@
 
 module BNFC.Backend.CSharp.CFtoGPLEX (cf2gplex) where
 
+import Data.List
+import Data.Maybe
+
 import BNFC.CF
 import BNFC.Backend.CSharp.RegToGPLEX
 import BNFC.Backend.Common.NamedVariables
-import Data.List
 import BNFC.Backend.CSharp.CSharpUtils
 
 --The environment must be returned for the parser to use.
@@ -163,14 +165,12 @@ gplex namespace cf env = concat [
   [("<YYINITIAL>."               , "return (int)Tokens.error;")]
   ]
   where
-   ifC cat s = if isUsedCat cf cat then s else []
+   ifC cat s = if isUsedCat cf (TokenCat cat) then s else []
    userDefTokens = map tokenline (tokenPragmas cf)
      where
        tokenline (name, exp) = ("<YYINITIAL>" ++ printRegGPLEX exp , action name)
-       action n = "if(Trace) System.Console.Error.WriteLine(yytext); yylval." ++ varName (show$normCat n) ++ " = new " ++ identifier namespace (show n) ++ "(yytext); return (int)Tokens." ++ sName n ++ ";"
-       sName n = case lookup (show n) env of
-         Just x -> x
-         Nothing -> show n
+       action n = "if(Trace) System.Console.Error.WriteLine(yytext); yylval." ++ varName n ++ " = new " ++ identifier namespace n ++ "(yytext); return (int)Tokens." ++ sName n ++ ";"
+       sName n = fromMaybe n $ lookup n env
    -- These handle escaped characters in Strings.
    strStates = [
      ("<YYINITIAL>\"\\\"\"" , "BEGIN(STRING);"),

@@ -36,43 +36,52 @@
    **************************************************************
 -}
 
+{-# LANGUAGE PatternGuards #-}
+
 module BNFC.Backend.CSharp.CFtoGPPG (cf2gppg) where
 
+import Data.Char  (toLower)
+import Data.List  (intersperse)
+import Data.Maybe (fromMaybe)
+
 import BNFC.CF
-import Data.List (intersperse)
 import BNFC.Backend.Common.NamedVariables hiding (varName)
-import Data.Char (toLower)
-import BNFC.Utils ((+++))
-import BNFC.TypeChecker
-import ErrM
 import BNFC.Backend.Common.OOAbstract hiding (basetypes)
 import BNFC.Backend.CSharp.CSharpUtils
+import BNFC.TypeChecker
+import BNFC.Utils ((+++))
+
+import ErrM
 
 --This follows the basic structure of CFtoHappy.
 
 -- Type declarations
-type Rules       = [(NonTerminal,[(Pattern,Action)])]
+type Rules       = [OneRule]
+type OneRule     = (NonTerminal, [(Pattern, Action)])
 type Pattern     = String
 type Action      = String
 type MetaVar     = String
 
 --The environment comes from the CFtoGPLEX
 cf2gppg :: Namespace -> CF -> SymEnv -> String
-cf2gppg namespace cf env = unlines [
-  header namespace cf,
-  union namespace (positionCats cf ++ allCats cf ++ map strToCat (tokentypes (cf2cabs cf))),
-  tokens user env,
-  declarations cf,
-  "",
-  specialToks cf,
-  "",
-  "%%",
-  prRules (rulesForGPPG namespace cf env)
+cf2gppg namespace cf env = unlines $
+  [ header namespace cf
+  , union namespace $ concat $
+    [ positionCats cf
+    , allCats cf
+    , map strToCat $ tokentypes $ cf2cabs cf
+    ]
+  , tokens (map fst $ tokenPragmas cf) env
+  , declarations cf
+  , ""
+  , specialToks cf
+  , ""
+  , "%%"
+  , prRules $ rulesForGPPG namespace cf env
   ]
-  where
-    user = fst (unzip (tokenPragmas cf))
 
-positionCats cf = filter (isPositionCat cf) $ fst (unzip (tokenPragmas cf))
+positionCats :: CF -> [Cat]
+positionCats cf = map TokenCat $ filter (isPositionCat cf) $ map fst $ tokenPragmas cf
 
 header :: Namespace -> CF -> String
 header namespace cf = unlines [
@@ -146,20 +155,22 @@ union namespace cats = unlines $ filter (\x -> x /= "\n") [
       "  public " ++ identifier namespace (identCat (normCat cat)) +++ (varName (show$normCat cat)) ++ ";"
     catline _ = ""
 
---declares non-terminal types.
+-- | Declares non-terminal types.
 declarations :: CF -> String
-declarations cf = unlinesInline $ map (typeNT cf) (positionCats cf ++ allCats cf)
- where --don't define internal rules
-   typeNT cf nt | (isPositionCat cf nt || rulesForCat cf nt /= []) = "%type <" ++ (varName (show$normCat nt)) ++ "> " ++ (show$normCat nt)
-   typeNT _ _ = ""
+declarations cf = unlinesInline $ map typeNT $
+  positionCats cf ++
+  filter (not . null . rulesForCat cf) (allCats cf)  -- don't define internal rules
+  where
+  typeNT nt = "%type <" ++ varName x ++ "> " ++ x
+    where x = show $ normCat nt
 
 --declares terminal types.
 tokens :: [UserDef] -> SymEnv -> String
-tokens user ts = concatMap (declTok user) ts
+tokens user ts = concatMap declTok ts
   where
-    declTok u (s,r) = if elem s (map show u)
-      then "%token<" ++ varName (show$normCat$strToCat s) ++ "> " ++ r ++ "   //   " ++ show s ++ "\n"
-      else "%token " ++ r ++ "    //   " ++ show s ++ "\n"
+    declTok (s, r) = if s `elem` user
+      then "%token<" ++ varName (show$normCat$strToCat s) ++ "> " ++ r ++ "   //   " ++ s ++ "\n"
+      else "%token " ++ r ++ "    //   " ++ s ++ "\n"
 
 specialToks :: CF -> String
 specialToks cf = unlinesInline [
@@ -170,7 +181,7 @@ specialToks cf = unlinesInline [
   ifC catIdent   "%token<string_> IDENT_"
   ]
   where
-    ifC cat s = if isUsedCat cf cat then s else ""
+    ifC cat s = if isUsedCat cf (TokenCat cat) then s else ""
 
 --The following functions are a (relatively) straightforward translation
 --of the ones in CFtoHappy.hs
@@ -178,10 +189,11 @@ rulesForGPPG :: Namespace -> CF -> SymEnv -> Rules
 rulesForGPPG namespace cf env = (map mkOne $ ruleGroups cf) ++ posRules where
   mkOne (cat,rules) = constructRule namespace cf env rules cat
   posRules = map mkPos $ positionCats cf
-  mkPos cat = (cat, [(maybe (show cat) id (lookup (show cat) env),
-    "$$ = new " ++ show cat ++ "($1);")])
+  mkPos :: Cat -> OneRule
+  mkPos cat = (cat, [(fromMaybe s $ lookup s env, "$$ = new " ++ s ++ "($1);")])
+    where s = show cat
 
--- For every non-terminal, we construct a set of rules.
+-- | For every non-terminal, we construct a set of rules.
 constructRule :: Namespace ->
   CF -> SymEnv -> [Rule] -> NonTerminal -> (NonTerminal,[(Pattern,Action)])
 constructRule namespace cf env rules nt =
@@ -227,15 +239,15 @@ generatePatterns :: CF -> SymEnv -> Rule -> Bool -> (Pattern,[(MetaVar,Bool)])
 generatePatterns cf env r _ = case rhsRule r of
   []  -> ("/* empty */",[])
   its -> (unwords (map mkIt its), metas its)
-  where
-    mkIt i = case i of
-      Left c -> case lookup (show c) env of
-        -- This used to be x, but that didn't work if we had a symbol "String" in env, and tried to use a normal String - it would use the symbol...
-        Just x | not (isPositionCat cf c) && (show c) `notElem` (map fst basetypes) -> x
-        _ -> typeName (identCat c)
-      Right s -> case lookup s env of
-        Just x -> x
-        Nothing -> s
+    where
+    mkIt = \case
+      Left c
+          | TokenCat tok <- c, isPositionCat cf tok -> fallback
+          | show c `elem` map fst basetypes         -> fallback
+          | otherwise                               -> fromMaybe fallback $ lookup (show c) env
+        -- This used to be x, but that didn't work if we had a symbol "String" in env, and tried to use a normal String - it would use the symbol...        _ -> fallback
+        where fallback = typeName (identCat c)
+      Right s -> fromMaybe s $ lookup s env
     metas its = [('$': show i,revert c) | (i,Left c) <- zip [1 :: Int ..] its]
 
     -- notice: reversibility with push_back vectors is the opposite

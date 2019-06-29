@@ -33,9 +33,9 @@ $white+ ;
 
 $l $i*
     { tok (\p s -> PT p (eitherResIdent (TV . share) s)) }
-\" ([$u # [\" \\ \n]] | (\\ (\" | \\ | \' | n | t)))* \"
+\" ([$u # [\" \\ \n]] | (\\ (\" | \\ | \' | n | t | r | f)))* \"
     { tok (\p s -> PT p (TL $ share $ unescapeInitTail s)) }
-\' ($u # [\' \\] | \\ [\\ \' n t]) \'
+\' ($u # [\' \\] | \\ [\\ \' n t r f]) \'
     { tok (\p s -> PT p (TC $ share s))  }
 $d+
     { tok (\p s -> PT p (TI $ share s))    }
@@ -117,6 +117,8 @@ unescapeInitTail = id . unesc . tail . id where
     '\\':c:cs | elem c ['\"', '\\', '\''] -> c : unesc cs
     '\\':'n':cs  -> '\n' : unesc cs
     '\\':'t':cs  -> '\t' : unesc cs
+    '\\':'r':cs  -> '\r' : unesc cs
+    '\\':'f':cs  -> '\f' : unesc cs
     '"':[]    -> []
     c:cs      -> c : unesc cs
     _         -> []

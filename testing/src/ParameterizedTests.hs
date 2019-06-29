@@ -51,10 +51,22 @@ allWithParams params = makeTestSuite (tpName params) $ concat $
 -- | This parameterized test is called first.
 --   Use it while working in connection with a certain test case. (For quicker response.)
 current :: Test
-current = makeTestSuite "Current parameterized test" $
-  map (`makeTestCase` ("regression-tests" </> cur)) parameters
-  where
-  cur = "210_NumberedCatWithoutCoerce"
+current = layoutTest
+-- current = makeTestSuite "Current parameterized test" $
+--   map (`exampleTest` (exampleGrammars !! 1)) parameters
+-- current = makeTestSuite "Current parameterized test" $
+--   map (`makeTestCase` ("regression-tests" </> cur)) parameters
+--   where
+--   cur = "194_layout"
+--   -- cur = "210_NumberedCatWithoutCoerce"
+
+-- | Layout currently only works for Haskell (even Agda) and Haskell/GADT.
+layoutTest :: Test
+layoutTest = makeTestSuite "Layout parsing test" $
+  map (`makeTestCase` ("regression-tests" </> "194_layout")) $
+  [ haskellAgdaParameters
+  , haskellGADTParameters
+  ]
 
 -- | BNFC should not proceed if grammar does not define any rules.
 noRulesTest :: TestParameters -> Test
@@ -109,9 +121,10 @@ entrypointTest params =
 -- examples with the generated test program.
 exampleTests :: TestParameters -> Test
 exampleTests params =
-    makeTestSuite "Examples" $ map exampleTest exampleGrammars
-  where
-    exampleTest (grammar, examples) =
+    makeTestSuite "Examples" $ map (exampleTest params) exampleGrammars
+
+exampleTest :: TestParameters -> Example -> Test
+exampleTest params (grammar, examples) =
         let lang = encodeString (basename grammar) in
         makeShellyTest lang $ withTmpDir $ \tmp -> do
             cp grammar tmp
@@ -146,6 +159,7 @@ makeTestCase params dir =
             tpBnfc params (dir </> "test.cf")
             echo "§ Build"
             tpBuild params
+            echo "§ Run"
             good <- filter (matchFilePath "good[0-9]*.in$") <$> ls dir
             forM_ good $ \f -> do
                 output <- tpRunTestProg params "test" [f]
@@ -202,7 +216,10 @@ baseParameters =  TP
 
 haskellParameters :: TestParameters
 haskellParameters = baseParameters
-  { tpBuild = do
+  { tpName = "Haskell"
+  , tpBnfcOptions = ["--haskell"]
+
+  , tpBuild = do
       cmd "hlint"
         "-i" "Redundant bracket"
         "-i" "Use camelCase"
@@ -212,31 +229,45 @@ haskellParameters = baseParameters
       tpMake
       cmd "ghc" =<< findFileRegex "Skel.*\\.hs$"
 
-  , tpRunTestProg = \ _lang args -> do
+  , tpRunTestProg = haskellRunTestProg
+  }
+
+haskellGADTParameters :: TestParameters
+haskellGADTParameters = baseParameters
+  { tpName = "Haskell/GADT"
+  , tpBnfcOptions = ["--haskell-gadt"]
+  , tpRunTestProg = haskellRunTestProg
+  }
+
+haskellAgdaParameters :: TestParameters
+haskellAgdaParameters = haskellParameters
+  { tpName = "Haskell & Agda"
+  , tpBnfcOptions = ["--haskell", "--agda"]
+  }
+
+
+-- | Haskell backend: default command for running the test executable with the given arguments.
+haskellRunTestProg :: Text -> [FilePath] -> Sh Text
+haskellRunTestProg _lang args = do
       -- cmd "echo" "Looking for Test* binary"
       -- -- can't print anything here because then the setStdin input is used up here
       bin <- findFileRegex "Test[^.]*$"
       -- cmd "echo" "Running" bin  -- ditto
       -- print_stdout True $ print_stderr True $ do
       cmd bin args
-  }
 
 parameters :: [TestParameters]
 parameters =
   -- Haskell
-  [ hsParams { tpName = "Haskell"
-             , tpBnfcOptions = ["--haskell"] }
+  [ haskellAgdaParameters
+  , hsParams { tpName = "Haskell (with ghc)"
+             , tpBnfcOptions = ["--haskell", "--ghc"] }
   , hsParams { tpName = "Haskell (with functor)"
              , tpBnfcOptions = ["--haskell", "--functor"] }
   , hsParams { tpName = "Haskell (with namespace)"
              , tpBnfcOptions = ["--haskell", "-p", "Language", "-d"] }
-  , hsParams { tpName = "Haskell (with ghc and agda)"
-             , tpBnfcOptions = ["--haskell", "--ghc", "--agda"] }
-  , base { tpName = "Haskell/GADT"
-         , tpBnfcOptions = ["--haskell-gadt"]
-         , tpRunTestProg = \_ args -> do bin <- findFileRegex "Test[^.]*$"
-                                         cmd bin args
-         }
+  -- Haskell/GADT
+  , haskellGADTParameters
   -- OCaml
   , base { tpName = "OCaml"
          , tpBuild = tpMake ["OCAMLCFLAGS=-safe-string"]

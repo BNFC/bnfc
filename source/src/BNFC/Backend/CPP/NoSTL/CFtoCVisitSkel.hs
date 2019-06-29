@@ -67,7 +67,7 @@ mkHFile cf groups = unlines
  [
   header,
   concatMap prDataH groups,
-  concatMap (prUserH.show) user,
+  concatMap prUserH user,
   footer
  ]
  where
@@ -129,7 +129,7 @@ mkCFile cf groups = concat
    [
     header,
     concatMap (prData user) groups,
-    concatMap (prUser.show) user,
+    concatMap prUser user,
     footer
    ]
   where
@@ -258,16 +258,8 @@ prCat fnm (cat, nt)
 --This is because you don't -> a basic non-pointer type.
 isBasic :: [UserDef] -> String -> Bool
 isBasic user v =
-  if elem (init v) user'
-    then True
-    else if "integer_" `isPrefixOf` v then True
-    else if "char_" `isPrefixOf` v then True
-    else if "string_" `isPrefixOf` v then True
-    else if "double_" `isPrefixOf` v then True
-    else if "ident_" `isPrefixOf` v then True
-    else False
-  where
-   user' = map (map toLower.show) user
+  init v `elem` map (map toLower) user
+  || any (`isPrefixOf` v) [ "integer_" , "char_" , "string_" , "double_" , "ident_" ]
 
 --The visit-function name of a basic type
 funName :: String -> String
@@ -277,4 +269,4 @@ funName v =
     else if "string_" `isPrefixOf` v then "String"
     else if "double_" `isPrefixOf` v then "Double"
     else if "ident_" `isPrefixOf` v then "Ident"
-    else (toUpper (head v)) : (init (tail v)) --User-defined type
+    else toUpper (head v) : init (tail v) -- User-defined type

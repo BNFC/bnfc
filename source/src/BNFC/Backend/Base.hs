@@ -11,6 +11,10 @@ module BNFC.Backend.Base
   ) where
 
 import Control.Monad.Writer
+
+import Data.Char (isSpace)
+import qualified Data.List as List
+
 import System.Directory (createDirectoryIfMissing)
 import System.FilePath (dropFileName, (</>))
 
@@ -42,16 +46,19 @@ mkfile :: (FileContent c) => FilePath -> c -> MkFiles ()
 mkfile path content = tell [(path, fileContentToString content)]
 
 -- | While we are moving to generating Text.PrettyPrint.Doc instead of String,
--- it is nice to be able to use both as argument to mkfile
--- So we do some typeclass magic
+-- it is nice to be able to use both as argument to 'mkfile'.
+-- So we do some typeclass magic.
 class FileContent a where
     fileContentToString :: a -> String
 
 instance FileContent [Char] where
-    fileContentToString = id
+    fileContentToString = deleteTrailingWhiteSpace
 
 instance FileContent Doc where
-    fileContentToString = render
+    fileContentToString = deleteTrailingWhiteSpace . render
+
+deleteTrailingWhiteSpace :: String -> String
+deleteTrailingWhiteSpace = unlines . map (List.dropWhileEnd isSpace) . lines
 
 -- | Write a set of files to disk. the first argument is the root directory
 -- inside which all the generated files will be written. This root directory

@@ -150,7 +150,8 @@ genCombTable units cf = vcat
 
 allSyms :: CFG Exp -> [Either Cat String]
 allSyms cf = concat $
-  [ map Left $ allCats cf  ++ literals cf
+  [ map Left $ allCats cf
+  , map (Left . TokenCat) $ literals cf
   , map (Right . fst) $ cfTokens cf
   ]
 
@@ -204,7 +205,7 @@ tokInfo cf = concat $
     , (catDouble , "TD", Con "readDouble")
     ]
   , [ (catIdent,"TV", Con "Ident") | hasIdent cf ]
-  , [ (t, "T_" <> text s, Con s)   | (t, _) <- tokenPragmas cf, let s = show t ]
+  , [ (t, "T_" <> text t, Con t)   | (t, _) <- tokenPragmas cf ]
   ]
 
 genTokCommon cf xs = prettyPair (gen <$> splitOptim fst cf xs)
@@ -214,7 +215,7 @@ genSpecEntry cf units (tokName, constrName, fun) =
     "tokenToCats p (PT (Pn _ l c) (" <> constrName <> " x)) = " <> genTokCommon cf xs
   where
   xs = map (second (prettyExp . (\ f -> unsafeCoerce' (f `app'` tokArgs)))) $
-         (Left tokName, fun) : [ (Left c, f `after` fun) | (f, c) <- lookupMulti (Left tokName) units ]
+         (Left $ TokenCat tokName, fun) : [ (Left c, f `after` fun) | (f, c) <- lookupMulti (Left $ TokenCat tokName) units ]
   tokArgs | isPositionCat cf tokName = Con "((l, c), x)"
           | otherwise                = Con "x"
 

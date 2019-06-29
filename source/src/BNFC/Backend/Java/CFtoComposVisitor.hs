@@ -73,7 +73,7 @@ prData packageAbsyn user (cat, rules) = unlines
 
 -- | Traverses a standard rule.
 --
--- >>> prRule "lang.absyn" [Cat "A"] (Cat "B") (Rule "F" (Cat "B") [Left (Cat "A"), Right "+", Left (ListCat (Cat "B"))])
+-- >>> prRule "lang.absyn" ["A"] (Cat "B") (Rule "F" (Cat "B") [Left (Cat "A"), Right "+", Left (ListCat (Cat "B"))])
 --     public B visit(lang.absyn.F p, A arg)
 --     {
 --       String a_ = p.a_;
@@ -100,7 +100,7 @@ prRule  _ _ _ _ = ""
 
 -- | Traverses a class's instance variables.
 --
--- >>> prCat [Cat "A"] (Cat "A", "a_")
+-- >>> prCat ["A"] (Cat "A", "a_")
 -- String a_ = p.a_;
 --
 -- >>> prCat [] (ListCat (Cat "Integer"), "listinteger_")
@@ -135,4 +135,4 @@ prCat user (cat, nt)
 
 isBasicType :: [UserDef] -> String -> Bool
 isBasicType user v =
-    v `elem` (map show user ++ ["Integer","Character","String","Double"])
+    v `elem` (user ++ ["Integer","Character","String","Double"])

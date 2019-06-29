@@ -17,15 +17,18 @@
     Foundation, 51 Franklin Street, Fifth Floor, Boston, MA 02110-1335, USA
 -}
 
-module BNFC.Backend.Haskell.CFtoHappy (cf2HappyS, convert) where
+module BNFC.Backend.Haskell.CFtoHappy (cf2Happy, convert) where
+
+import Data.Char
+import Data.List (intersperse)
 
 import BNFC.CF
 import BNFC.Backend.Common.StrUtils (escapeChars)
 import BNFC.Backend.Haskell.Utils (parserName, catToType)
---import Lexer
-import Data.Char
 import BNFC.Options (HappyMode(..))
 import BNFC.PrettyPrint
+import BNFC.Utils
+
 -- Type declarations
 
 type Rules       = [(NonTerminal,[(Pattern,Action)])]
@@ -37,24 +40,18 @@ type MetaVar     = String
 
 tokenName   = "Token"
 
--- Happy mode
+-- | Generate a happy parser file from a grammar.
 
-
-
-cf2HappyS :: String     -- ^ This module's name
-          -> String     -- ^ Abstract syntax module name
-          -> String     -- ^ Lexer module name
-          -> String     -- ^ ErrM module name
-          -> HappyMode  -- ^ Happy mode
-          -> Bool       -- ^ Use bytestring?
-          -> Bool       -- ^ AST is a functor?
-          -> CF         -- ^ Grammar
-          -> String     -- ^ Generated code
-cf2HappyS = cf2Happy
-
--- | The main function, that given a CF and a CFCat to parse according to,
---   generates a happy module.
-
+cf2Happy
+  :: String     -- ^ This module's name.
+  -> String     -- ^ Abstract syntax module name.
+  -> String     -- ^ Lexer module name.
+  -> String     -- ^ ErrM module name.
+  -> HappyMode  -- ^ Happy mode.
+  -> Bool       -- ^ Use bytestring?
+  -> Bool       -- ^ AST is a functor?
+  -> CF         -- ^ Grammar.
+  -> String     -- ^ Generated code.
 cf2Happy name absName lexName errName mode byteStrings functor cf = unlines
   [ header name absName lexName errName byteStrings
   , render $ declarations mode (allEntryPoints cf)
@@ -114,17 +111,6 @@ tokens cf
     ts            = map prToken (cfTokens cf) ++ map text (specialToks cf)
     prToken (t,k) = hsep [ convert t, lbrace, text ("PT _ (TS _ " ++ show k ++ ")"), rbrace ]
 
--- tokens :: [(String,Int)] -> String
--- tokens []   = "-- no tokens\n"
---   -- Andreas, 2019-01-02: "%token" followed by nothing is a Happy parse error.
---   -- Thus, if we have no tokens, do not output anything.
--- tokens toks = "%token\n" ++ prTokens toks
---  where prTokens []         = []
---        prTokens ((t,k):tk) = render (convert t) ++
---                              " { " ++ oneTok t k ++ " }\n" ++
---                              prTokens tk
---        oneTok _ k = "PT _ (TS _ " ++ show k ++ ")"
-
 -- Happy doesn't allow characters such as åäö to occur in the happy file. This
 -- is however not a restriction, just a naming paradigm in the happy source file.
 convert :: String -> Doc
@@ -137,47 +123,56 @@ rulesForHappy absM functor cf = map mkOne $ ruleGroups cf
     reversibles = cfgReversibleCats cf
 
 -- | For every non-terminal, we construct a set of rules. A rule is a sequence
--- of terminals and non-terminals, and an action to be performed
+-- of terminals and non-terminals, and an action to be performed.
+--
 -- >>> constructRule "Foo" False [] (Rule "EPlus" (Cat "Exp") [Left (Cat "Exp"), Right "+", Left (Cat "Exp")])
 -- ("Exp '+' Exp","Foo.EPlus $1 $3")
 --
--- If we're using functors, it adds an void value:
+-- If we're using functors, it adds void value:
+--
 -- >>> constructRule "Foo" True [] (Rule "EPlus" (Cat "Exp") [Left (Cat "Exp"), Right "+", Left (Cat "Exp")])
 -- ("Exp '+' Exp","Foo.EPlus () $1 $3")
 --
 -- List constructors should not be prefixed by the abstract module name:
+--
 -- >>> constructRule "Foo" False [] (Rule "(:)" (ListCat (Cat "A")) [Left (Cat "A"), Right",", Left (ListCat (Cat "A"))])
 -- ("A ',' ListA","(:) $1 $3")
+--
 -- >>> constructRule "Foo" False [] (Rule "(:[])" (ListCat (Cat "A")) [Left (Cat "A")])
 -- ("A","(:[]) $1")
 --
 -- Coercion are much simpler:
+--
 -- >>> constructRule "Foo" True [] (Rule "_" (Cat "Exp") [Right "(", Left (Cat "Exp"), Right ")"])
 -- ("'(' Exp ')'","$2")
 --
 -- As an optimization, a pair of list rules [C] ::= "" | C k [C] is
 -- left-recursivized into [C] ::= "" | [C] C k.
 -- This could be generalized to cover other forms of list rules.
+--
 -- >>> constructRule "Foo" False [ListCat (Cat "A")] (Rule "(:)" (ListCat (Cat "A")) [Left (Cat "A"), Right",", Left (ListCat (Cat "A"))])
 -- ("ListA A ','","flip (:) $1 $2")
 --
 -- Note that functors don't concern list constructors:
+--
 -- >>> constructRule "Abs" True [ListCat (Cat "A")] (Rule "(:)" (ListCat (Cat "A")) [Left (Cat "A"), Right",", Left (ListCat (Cat "A"))])
 -- ("ListA A ','","flip (:) $1 $2")
-constructRule :: String -> Bool -> [Cat] -> Rule -> (Pattern,Action)
+--
+constructRule :: String -> Bool -> [Cat] -> Rule -> (Pattern, Action)
 constructRule absName functor revs r0@(Rule fun cat _) = (pattern, action)
   where
     (pattern,metavars) = generatePatterns revs r
     action | isCoercion fun                 = unwords metavars
            | isConsFun fun && elem cat revs = unwords ("flip" : fun : metavars)
-           | isNilCons fun                  = unwords (underscore fun : metavars)
-           | functor                        = unwords (underscore fun : "()" : metavars)
-           | otherwise                      = unwords (underscore fun : metavars)
+           | isNilCons fun                  = unwords (qualify fun : metavars)
+           | functor                        = unwords (qualify fun : "()" : metavars)
+           | otherwise                      = unwords (qualify fun : metavars)
     r | isConsFun (funRule r0) && elem (valCat r0) revs = revSepListRule r0
       | otherwise                                       = r0
-    underscore f | isConsFun f || isNilCons f = f
-                 | isDefinedRule f = absName ++ "." ++ f ++ "_"
-                 | otherwise       = absName ++ "." ++ f
+    qualify f
+      | isConsFun f || isNilCons f = f
+      | isDefinedRule f = f ++ "_"  -- Definitions are local to Par.hs, not in Abs.hs
+      | otherwise       = absName ++ "." ++ f
 
 -- Generate patterns and a set of metavariables indicating
 -- where in the pattern the non-terminal
@@ -203,7 +198,7 @@ generatePatterns revs r = case rhsRule r of
 -- Expr :: { Expr }
 -- Expr : Integer { EInt $1 } | Expr '+' Expr { EPlus $1 $3 }
 --
--- if there's a lot of cases, print on several lignes:
+-- if there's a lot of cases, print on several lines:
 -- >>> prRules False [(Cat "Expr", [("Abcd", "Action"), ("P2", "A2"), ("P3", "A3"), ("P4", "A4"), ("P5","A5")])]
 -- Expr :: { Expr }
 -- Expr : Abcd { Action }
@@ -221,10 +216,12 @@ generatePatterns revs r = case rhsRule r of
 -- Expr : Integer { EInt () $1 } | Expr '+' Expr { EPlus () $1 $3 }
 --
 -- A list with coercion: in the type signature we need to get rid of the
--- coercion
+-- coercion.
+--
 -- >>> prRules True [(ListCat (CoercCat "Exp" 2), [("Exp2", "(:[]) $1"), ("Exp2 ',' ListExp2","(:) $1 $3")])]
 -- ListExp2 :: { [Exp ()] }
 -- ListExp2 : Exp2 { (:[]) $1 } | Exp2 ',' ListExp2 { (:) $1 $3 }
+--
 prRules :: Bool -> Rules -> Doc
 prRules functor = vcat . map prOne
   where
@@ -241,26 +238,30 @@ prRules functor = vcat . map prOne
 
 finalize :: Bool -> CF -> String
 finalize byteStrings cf = unlines $
-   [
-     "{",
-     "\nreturnM :: a -> Err a",
-     "returnM = return",
-     "\nthenM :: Err a -> (a -> Err b) -> Err b",
-     "thenM = (>>=)",
-     "\nhappyError :: [" ++ tokenName ++ "] -> Err a",
-     "happyError ts =",
-     "  Bad $ \"syntax error at \" ++ tokenPos ts ++ ",
-     "  case ts of",
-     "    [] -> []",
-     "    [Err _] -> \" due to lexer error\"",
-     "    t:_ -> \" before `\" ++ " ++ stringUnpack ++ "(prToken t) ++ \"'\"",
-     "",
-     "myLexer = tokens"
-   ] ++ definedRules cf ++ [ "}" ]
-   where
-     stringUnpack
-       | byteStrings = "BS.unpack"
-       | otherwise   = "id"
+  [ "{"
+  , ""
+  , "returnM :: a -> Err a"
+  , "returnM = return"
+  , ""
+  , "thenM :: Err a -> (a -> Err b) -> Err b"
+  , "thenM = (>>=)"
+  , ""
+  , "happyError :: [" ++ tokenName ++ "] -> Err a"
+  , "happyError ts ="
+  , "  Bad $ \"syntax error at \" ++ tokenPos ts ++ "
+  , "  case ts of"
+  , "    []      -> []"
+  , "    [Err _] -> \" due to lexer error\""
+  , "    t:_     -> \" before `\" ++ " ++ stringUnpack ++ "(prToken t) ++ \"'\""
+  , ""
+  , "myLexer = tokens"
+  ] ++ definedRules cf ++
+  [ "}"
+  ]
+  where
+    stringUnpack
+      | byteStrings = "BS.unpack"
+      | otherwise   = "id"
 
 
 definedRules cf = [ mkDef f xs e | FunDef f xs e <- cfgPragmas cf ]
@@ -274,36 +275,33 @@ definedRules cf = [ mkDef f xs e | FunDef f xs e <- cfgPragmas cf ]
             | otherwise         = App x $ map underscore es
         underscore e          = e
 
--- | GF literals
+-- | GF literals.
 specialToks :: CF -> [String]
-specialToks cf = map aux (literals cf)
- where aux cat =
-        case show cat of
-          "Ident"  -> "L_ident  { PT _ (TV $$) }"
-          "String" -> "L_quoted { PT _ (TL $$) }"
-          "Integer" -> "L_integ  { PT _ (TI $$) }"
-          "Double" -> "L_doubl  { PT _ (TD $$) }"
-          "Char"   -> "L_charac { PT _ (TC $$) }"
-          own      -> "L_" ++ own ++ " { PT _ (T_" ++ own ++ " " ++ posn ++ ") }"
-         where
-           posn = if isPositionCat cf cat then "_" else "$$"
+specialToks cf = (`map` literals cf) $ \case
+  "Ident"   -> "L_ident  { PT _ (TV $$) }"
+  "String"  -> "L_quoted { PT _ (TL $$) }"
+  "Integer" -> "L_integ  { PT _ (TI $$) }"
+  "Double"  -> "L_doubl  { PT _ (TD $$) }"
+  "Char"    -> "L_charac { PT _ (TC $$) }"
+  own       -> "L_" ++ own ++ " { PT _ (T_" ++ own ++ " " ++ posn ++ ") }"
+    where posn = if isPositionCat cf own then "_" else "$$"
 
 specialRules :: Bool -> CF -> String
-specialRules byteStrings cf = unlines $
-                  map aux (literals cf)
- where
-   aux cat =
-     case show cat of
-         "Ident"   -> "Ident   :: { Ident }   : L_ident  { Ident $1 }"
-         "String"  -> "String  :: { String }  : L_quoted { "++stringUnpack++" $1 }"
-         "Integer" -> "Integer :: { Integer } : L_integ  { (read ("++stringUnpack++" $1)) :: Integer }"
-         "Double"  -> "Double  :: { Double }  : L_doubl  { (read ("++stringUnpack++" $1)) :: Double }"
-         "Char"    -> "Char    :: { Char }    : L_charac { (read ("++stringUnpack++" $1)) :: Char }"
-         own       -> own ++ "    :: { " ++ own ++ "} : L_" ++ own ++ " { " ++ own ++ " ("++ posn ++ "$1)}"
-                -- PCC: take "own" as type name? (manual says newtype)
-      where
-         posn = if isPositionCat cf cat then "mkPosToken " else ""
-
-   stringUnpack
-     | byteStrings = "BS.unpack"
-     | otherwise   = ""
+specialRules byteStrings cf = unlines . intersperse "" . (`map` literals cf) $ \case
+    "Ident"   -> "Ident   :: { Ident }"
+            ++++ "Ident    : L_ident  { Ident $1 }"
+    "String"  -> "String  :: { String }"
+            ++++ "String   : L_quoted { "++stringUnpack++" $1 }"
+    "Integer" -> "Integer :: { Integer }"
+            ++++ "Integer  : L_integ  { (read ("++stringUnpack++" $1)) :: Integer }"
+    "Double"  -> "Double  :: { Double }"
+            ++++ "Double   : L_doubl  { (read ("++stringUnpack++" $1)) :: Double }"
+    "Char"    -> "Char    :: { Char }"
+            ++++ "Char     : L_charac { (read ("++stringUnpack++" $1)) :: Char }"
+    own       -> own ++ " :: { " ++ own ++ "}"
+            ++++ own ++ "  : L_" ++ own ++ " { " ++ own ++ " ("++ posn ++ "$1)}"
+      where posn = if isPositionCat cf own then "mkPosToken " else ""
+  where
+    stringUnpack
+      | byteStrings = "BS.unpack"
+      | otherwise   = ""

@@ -152,19 +152,19 @@ genFunctorInstance (cat, cons) =
 
 -- | Generate a newtype declaration for Ident types
 --
--- >>> prSpecialData False False ["Show"] (Cat "Ident")
+-- >>> prSpecialData False False ["Show"] catIdent
 -- newtype Ident = Ident String
 --   deriving (Show)
 --
--- >>> prSpecialData False True ["Show"] (Cat "Ident")
+-- >>> prSpecialData False True ["Show"] catIdent
 -- newtype Ident = Ident ((Int,Int),String)
 --   deriving (Show)
 --
--- >>> prSpecialData True False ["Show"] (Cat "Ident")
+-- >>> prSpecialData True False ["Show"] catIdent
 -- newtype Ident = Ident BS.ByteString
 --   deriving (Show)
 --
--- >>> prSpecialData True True ["Show"] (Cat "Ident")
+-- >>> prSpecialData True True ["Show"] catIdent
 -- newtype Ident = Ident ((Int,Int),BS.ByteString)
 --   deriving (Show)
 --
@@ -172,14 +172,14 @@ prSpecialData
   :: Bool     -- ^ If True, use ByteString instead of String
   -> Bool     -- ^ If True, store the token position
   -> [String] -- ^ Derived classes
-  -> Cat      -- ^ Category
+  -> TokenCat -- ^ Token category name
   -> Doc
 prSpecialData byteStrings position classes cat = vcat
     [ hsep [ "newtype", ppcat, "=", ppcat, contentSpec ]
     , nest 2 $ deriving_ classes
     ]
   where
-    ppcat    = text (show cat)
+    ppcat    = text cat
     contentSpec | position    = parens ( "(Int,Int)," <> stringType)
                 | otherwise   = stringType
     stringType  | byteStrings = "BS.ByteString"

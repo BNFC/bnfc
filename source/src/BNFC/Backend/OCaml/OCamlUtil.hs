@@ -67,3 +67,9 @@ mutualDefs defs = case defs of
      []   -> []
      [d]  -> ["let rec" +++ d]
      d:ds -> ("let rec" +++ d) : map ("and" +++) ds
+
+-- | Escape @"@ and @\@.  TODO: escape unprintable characters!?
+mkEsc :: String -> String
+mkEsc s = "\"" ++ concatMap f s ++ "\""
+  where
+  f x = if x `elem` ['"','\\'] then "\\" ++ [x] else [x]

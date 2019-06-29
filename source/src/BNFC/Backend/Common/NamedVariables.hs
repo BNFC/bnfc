@@ -81,7 +81,7 @@ type IVar = (String, Int)
 --The type of an instance variable
 --and a # unique to that type
 
-type UserDef = Cat --user-defined types
+type UserDef = TokenCat --user-defined types
 
 
 --A symbol-mapping environment.

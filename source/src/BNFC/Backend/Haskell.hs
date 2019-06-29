@@ -86,7 +86,7 @@ makeHaskell opts cf = do
     -- Generate Happy parser and matching test program unless --cnf.
     Ctrl.unless (cnf opts) $ do
       mkfile (happyFile opts) $
-        cf2HappyS parMod absMod lexMod errMod (glr opts) (byteStrings opts) (functor opts) cf
+        cf2Happy parMod absMod lexMod errMod (glr opts) (byteStrings opts) (functor opts) cf
       -- liftIO $ printf "%s Tested with Happy 1.15\n" (happyFile opts)
       mkfile (tFile opts)        $ testfile opts cf
 
@@ -300,7 +300,7 @@ makefile opts makeFile = vcat
 
   -- | Rule to build Agda parser.
   agdaRule :: Doc
-  agdaRule = Makefile.mkRule "Main" deps [ "agda --ghc --ghc-flag=-Wwarn $<" ]
+  agdaRule = Makefile.mkRule "Main" deps [ "agda --no-libraries --ghc --ghc-flag=-Wwarn $<" ]
     where
     deps = map ($ opts)
       [ agdaMainFile  -- must be first!
