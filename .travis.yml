@@ -8,17 +8,17 @@ cache:
     - $HOME/.stack
 # Make sure to update tested-with in source/BNFC.cabal when updating these:
 ghc:
+  - 7.6.3
+  - 7.8.4
   - 8.6.5
   - 8.4.4
   - 8.2.2
   - 8.0.2
   - 7.10.3
-  - 7.8.4
-  - 7.6.3
 env:
+  - STACK=yes
   - CABAL=yes PACKAGEDIR="source"
   - CABAL=yes PACKAGEDIR="testing"
-  - STACK=yes
 matrix:
   exclude:
     - ghc: 7.6.3
@@ -34,7 +34,7 @@ before_install:
   - if [ "$STACK" = yes ]; then
       mkdir -p $HOME/.local/bin &&
       export PATH=$HOME/.local/bin:$PATH &&
-      travis_retry curl -L https://get.haskellstack.org/stable/linux-x86_64.tar.gz | tar xz --wildcards --strip-components=1 -C $HOME/.local/bin '*/stack' &&
+      travis_retry curl -L https://github.com/commercialhaskell/stack/releases/download/v1.9.3/stack-1.9.3-linux-x86_64-static.tar.gz | tar xz --wildcards --strip-components=1 -C $HOME/.local/bin '*/stack' &&
       stack config set system-ghc --global true;
     fi
   - if [ "$CABAL" = yes -a "$PACKAGEDIR" = testing ]; then sudo apt-get install openjdk-9-jdk-headless jflex antlr4 ocaml texlive-latex-base hlint; fi
