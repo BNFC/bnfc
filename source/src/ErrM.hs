@@ -19,9 +19,15 @@ data Err a = Ok a | Bad String
 
 instance Monad Err where
   return      = Ok
-  fail        = Bad
   Ok a  >>= f = f a
   Bad s >>= _ = Bad s
+#if __GLASGOW_HASKELL__ < 808
+  fail        = Bad
+#else
+
+instance MonadFail Err where
+  fail = Bad
+#endif
 
 instance Applicative Err where
   pure = Ok

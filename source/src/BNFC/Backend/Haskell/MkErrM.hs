@@ -37,6 +37,8 @@ mkErrM errMod ghc = vcat
     , "-- the Error monad: like Maybe type with error msgs"
     , ""
     , "import Control.Monad (MonadPlus(..), liftM)"
+    -- From ghc-8.0 on, Applicative(..) is part of the Prelude,
+    -- thus, need not be imported:
     , if ghc then "#if __GLASGOW_HASKELL__ < 710" else empty
     , "import Control.Applicative (Applicative(..), Alternative(..))"
     , if ghc then "#else" else empty
@@ -48,9 +50,18 @@ mkErrM errMod ghc = vcat
     , ""
     , "instance Monad Err where"
     , "  return      = Ok"
-    , "  fail        = Bad"
     , "  Ok a  >>= f = f a"
     , "  Bad s >>= _ = Bad s"
+    -- From ghc-8.8 on, fail is no longer part of Monad.
+    -- Thus, by default, we do not add it.
+    -- Only if --ghc, we add it either to Monad or MonadFail.
+    , if ghc then "#if __GLASGOW_HASKELL__ < 808" else empty
+    , if ghc then "  fail        = Bad" else empty
+    , if ghc then "#else" else empty
+    , if ghc then "" else empty
+    , if ghc then "instance MonadFail Err where" else empty
+    , if ghc then "  fail = Bad" else empty
+    , if ghc then "#endif" else empty
     , ""
     , "instance Applicative Err where"
     , "  pure = Ok"
