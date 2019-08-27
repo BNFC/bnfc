@@ -3,7 +3,7 @@ Version: 2.8.3
 cabal-version: >= 1.8
 build-type: Simple
 category: Development
-Copyright: (c) Andreas Abel, Kyle Butt, Jonas Almström Duregård, Krasimir Angelov, Jean-Philippe Bernardy, Bjorn Bringert, Johan Broberg, Paul Callaghan, Grégoire Détrez, Markus Forsberg, Ola Frid, Peter Gammie, Thomas Hallgren, Pascal Hof, Patrik Jansson, Kristofer Johannisson, Antti-Juhani Kaijanaho, Andreas Lööw, Kent Mein, Ulf Norell, Gabrielle Paganelli, Michael Pellauer and Aarne Ranta 2002 - 2019. Free software under GNU General Public License (GPL).
+Copyright: (c) Andreas Abel, Jonas Almström Duregård, Krasimir Angelov, Jean-Philippe Bernardy, Bjorn Bringert, Johan Broberg, Kyle Butt, Paul Callaghan, Grégoire Détrez, Markus Forsberg, Ola Frid, Peter Gammie, Thomas Hallgren, Pascal Hof, Patrik Jansson, Kristofer Johannisson, Antti-Juhani Kaijanaho, Andreas Lööw, Kent Mein, Ulf Norell, Gabrielle Paganelli, Michael Pellauer, Fabian Ruch, and Aarne Ranta 2002 - 2019. Free software under GNU General Public License (GPL).
 License: GPL-2
 License-File: LICENSE
 Maintainer: bnfc-dev@googlegroups.com
@@ -12,17 +12,17 @@ bug-reports: https://github.com/BNFC/bnfc/issues
 Synopsis: A compiler front-end generator.
 Description:
   The BNF Converter is a compiler construction tool generating a compiler front-end
-  from a Labelled BNF grammar. It was originally written to generate Haskell,
-  but can also be used for generating Java, C, C++, C#, Ocaml and XML.
+  from a Labelled BNF grammar. It was originally written to generate Haskell code,
+  but can also be used for generating Agda, C, C++, C#, Java, Ocaml and XML code.
   .
   Given a Labelled BNF grammar the tool produces:
-  an abstract syntax as a Haskell, C, C++, C#, Ocaml module or Java directory,
+  an abstract syntax as a Haskell, Agda, C, C++, C#, Ocaml module or Java directory,
   a case skeleton for the abstract syntax in the same language,
   an Alex, JLex, or Flex lexer generator file,
   a Happy, CUP, Bison, or Antlr parser generator file,
-  a pretty-printer as a Haskell, Java, C, C++, C#, or Ocaml module,
+  a pretty-printer as a Haskell, Agda, C, C++, C#, Java, or Ocaml module,
   an XML representation,
-  a Latex file containing a readable specification of the language.
+  a LaTeX file containing a readable specification of the language.
 tested-with: GHC == 7.6.3
            , GHC == 7.8.4
            , GHC == 7.10.3
@@ -31,7 +31,7 @@ tested-with: GHC == 7.6.3
            , GHC == 8.4.4
            , GHC == 8.6.5
            , GHC == 8.8.1
-Extra-source-files: src/BNF.cf TODO changelog Makefile
+Extra-source-files: src/BNF.cf changelog Makefile
 
 Source-repository head
   type: git
