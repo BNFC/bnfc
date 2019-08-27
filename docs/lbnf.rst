@@ -716,15 +716,16 @@ semicolons, as shown by the Alfa example
 
       separator Branch ";" ;
 
-When the layout resolver finds the token of in the code (i.e. in the
+When the layout resolver finds the token ``of` in the code (i.e. in the
 sequence of its lexical tokens), it checks if the next token is an
 opening curly bracket. If it is, nothing special is done until a layout
 word is encountered again. The parser will expect the semicolons and the
 closing bracket to appear as usual.
 
-But, if the token :math:`t` following of is not an opening curly
-bracket, a bracket is inserted, and the start column of :math:`t` is
-remembered as the position at which the elements of the layout list must
+But, if the token :math:`t` following ``of`` is not an opening curly
+bracket, a bracket is inserted, and the start column of :math:`t`
+(or the column after the current layout column, whichever is bigger)
+is remembered as the position at which the elements of the layout list must
 begin. Semicolons are inserted at those positions. When a token is
 eventually encountered left of the position of :math:`t` (or an
 end-of-file), a closing bracket is inserted at that point.
