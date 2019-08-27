@@ -1,4 +1,4 @@
-2.8.3
+2.8.3 Andreas Abel <andreas.abel@gu.se>  August 2019
 	* GHC 8.8 compatibility
 	* Stack installation supported by provided .yaml files [#198]
 	* Unicode support in lexer, excl. C, C++ and Ocaml [#249]
