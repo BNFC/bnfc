@@ -726,7 +726,7 @@ semicolons, as shown by the Alfa example
 
       separator Branch ";" ;
 
-When the layout resolver finds the token ``of` in the code (i.e. in the
+When the layout resolver finds the token ``of`` in the code (i.e. in the
 sequence of its lexical tokens), it checks if the next token is an
 opening curly bracket. If it is, nothing special is done until a layout
 word is encountered again. The parser will expect the semicolons and the
