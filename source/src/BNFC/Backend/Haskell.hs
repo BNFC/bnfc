@@ -117,11 +117,11 @@ makeHaskell opts cf = do
 
 
 -- | Generate the makefile (old version, with just one "all" target).
-oldMakefile
+_oldMakefile
   :: Options
   -> String    -- ^ Filename of the makefile.
   -> Doc       -- ^ Content of the makefile.
-oldMakefile opts makeFile = vcat
+_oldMakefile opts makeFile = vcat
   [ Makefile.mkRule "all" [] $ concat $
       [ [ unwords $ [ "happy -gca" ] ++ glrParams ++ [ happyFile opts ] | not (cnf opts) ]
       , [ "alex -g " ++ alexFile opts ]

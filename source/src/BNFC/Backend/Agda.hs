@@ -89,9 +89,14 @@ This should be accompanied by the following Agda code:
 @@
 -}
 
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE NoImplicitPrelude #-}
+
+#if __GLASGOW_HASKELL__ >= 800
+{-# OPTIONS_GHC -fno-warn-unused-top-binds #-}
+#endif
 
 module BNFC.Backend.Agda (makeAgda) where
 
@@ -101,11 +106,13 @@ import Data.Char
 import Data.Function (on)
 import Data.Functor  ((<$>))
 import qualified Data.List as List
+import Data.List.NonEmpty (NonEmpty((:|)))
+import qualified Data.List.NonEmpty as NEList
 import Data.Map (Map)
 import qualified Data.Map as Map
 import Data.Maybe (mapMaybe, isJust, fromJust)
-import Data.List.NonEmpty (NonEmpty((:|)))
-import qualified Data.List.NonEmpty as NEList
+import Data.Set (Set)
+import qualified Data.Set as Set
 
 import BNFC.CF
 import BNFC.Backend.Base           (Backend, mkfile)
@@ -113,7 +120,7 @@ import BNFC.Backend.Haskell.HsOpts
 import BNFC.Backend.Haskell.Utils  (parserName)
 import BNFC.Options                (SharedOptions)
 import BNFC.PrettyPrint
-import BNFC.Utils                  (NameStyle(..), mkName, replace, when)
+import BNFC.Utils                  (replace, when)
 
 type NEList = NEList.NonEmpty
 
@@ -163,6 +170,7 @@ makeAgda time opts cf = do
   entryPoint :: Cat
   entryPoint = case parserCats of
     (c:_) -> c
+    _     -> error $ "impossible: makeAgda.entryPoint: allEntryPoints cannot be empty"
     -- cannot be empty
   -- | In case the grammar makes use of layout, pass also the generated layout Haskell module.
   layoutMod :: Maybe String
@@ -507,6 +515,7 @@ nameSuggestion = \case
   CoercCat d _  -> nameFor d
   Cat d         -> nameFor d
   TokenCat{}    -> "x"
+  InternalCat{} -> error "impossible: Backend.Agda.nameSuggestion: Cat cannot be InternalCat"
 
 -- | Suggest the name of a bound variable of the given base category.
 --
@@ -664,17 +673,17 @@ prettyCon = text . agdaLower
 --
 agdaLower :: String -> String
 agdaLower = avoidKeywords . updateHead toLower . replace '_' '-'
-  -- WAS: replace '_' '\'' . mkName agdaKeywords MixedCase
+  -- WAS: replace '_' '\'' . BNFC.Utils.mkName agdaKeywords BNFC.Utils.MixedCase
   where
   updateHead _f []    = []
   updateHead f (x:xs) = f x : xs
   avoidKeywords s
-    | s `elem` agdaKeywords = s ++ "\'"
+    | s `Set.member` agdaKeywords = s ++ "\'"
     | otherwise = s
 
 -- | A list of Agda keywords that would clash with generated names.
-agdaKeywords :: [String]
-agdaKeywords = words "abstract codata coinductive constructor data do eta-equality field forall hiding import in inductive infix infixl infixr instance let macro module mutual no-eta-equality open overlap pattern postulate primitive private public quote quoteContext quoteGoal quoteTerm record renaming rewrite Set syntax tactic unquote unquoteDecl unquoteDef using variable where with"
+agdaKeywords :: Set String
+agdaKeywords = Set.fromList $ words "abstract codata coinductive constructor data do eta-equality field forall hiding import in inductive infix infixl infixr instance let macro module mutual no-eta-equality open overlap pattern postulate primitive private public quote quoteContext quoteGoal quoteTerm record renaming rewrite Set syntax tactic unquote unquoteDecl unquoteDef using variable where with"
 
 -- | Name of Agda parser binding (mentions precedence).
 --

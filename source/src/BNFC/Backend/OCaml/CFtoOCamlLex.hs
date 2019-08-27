@@ -36,7 +36,7 @@ import AbsBNF
 import BNFC.CF
 import BNFC.Backend.OCaml.CFtoOCamlYacc (terminal)
 import BNFC.Backend.OCaml.OCamlUtil (mkEsc)
-import BNFC.Utils ((+++), cstring, cchar, unless)
+import BNFC.Utils (cstring, cchar, unless)
 
 cf2ocamllex :: String -> String -> CF -> String
 cf2ocamllex _ parserMod cf =

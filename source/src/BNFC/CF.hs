@@ -401,8 +401,6 @@ isConcatFun f = f == "(++)"
 
 ------------------------------------------------------------------------------
 
-type Name = String
-
 -- | Abstract syntax tree.
 newtype Tree = Tree (Fun,[Tree])
 

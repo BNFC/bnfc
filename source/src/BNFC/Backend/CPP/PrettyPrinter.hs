@@ -379,14 +379,14 @@ mkCFile useStl inPackage cf groups = concat
 
 {- **** Pretty Printer Methods **** -}
 
---Generates methods for the Pretty Printer
+-- | Generates methods for the Pretty Printer.
 prPrintData :: Bool -> Maybe String -> CF -> (Cat, [Rule]) -> String
 prPrintData True {- use STL -} _ _ (cat@(ListCat _), rules) =
     render $ genPrintVisitorList (cat, rules)
 prPrintData False {- use STL -} _ _ (cat@(ListCat _), rules) =
     genPrintVisitorListNoStl (cat, rules)
 -- Not a list :
-prPrintData _ inPackage cf (TokenCat cat, rules) | isPositionCat cf cat = unlines $
+prPrintData _ _inPackage cf (TokenCat cat, _rules) | isPositionCat cf cat = unlines $
   -- a position token
   [ "void PrintAbsyn::visit" ++ show cat ++ "(" ++ show cat ++ " *p)"
   , "{"
@@ -394,7 +394,7 @@ prPrintData _ inPackage cf (TokenCat cat, rules) | isPositionCat cf cat = unline
   , "}"
   , ""
   ]
-prPrintData _ inPackage cf (cat, rules) = -- Not a list
+prPrintData _ inPackage _cf (cat, rules) = -- Not a list
     abstract ++ concatMap (prPrintRule inPackage) rules
   where
   cl = identCat (normCat cat)
