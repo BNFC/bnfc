@@ -5,8 +5,11 @@
 	* LBNF: support \r (carriage return) and \f (form feed) in token declaration [#257]
 	* LBNF: allow numbered categories (like Foo2) independent of coercions [#210]
 	* Agda: new (experimental) backend, providing bindings to AST/parser/printer of Haskell backend
+	* C: supports now the -l option to give error locations [#238]
+	* C: correct function names in generated skeletons [#239]
+	* C, C++: handle regular expression difference (subtraction) correctly [#237]
 	* Haskell: generates now more fine-grained Makefile that invokes bnfc on changed .cf file
-	* Haskell: Use qualified import of AST in generated printer [#128,#228]
+	* Haskell: use qualified import of AST in generated printer [#128,#228]
 	* Haskell: printer code no longer produces deprecation warning concerning OverlappingInstances [#233]
 	* Haskell/CNF: fixed problem with Any type in generated code [#216]
 	* Haskell/CNF: generated test program now same name (Test) as w/o --cnf

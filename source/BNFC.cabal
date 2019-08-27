@@ -3,7 +3,7 @@ Version: 2.8.3
 cabal-version: >= 1.8
 build-type: Simple
 category: Development
-Copyright: (c) Andreas Abel, Jonas Almström Duregård, Krasimir Angelov, Jean-Philippe Bernardy, Bjorn Bringert, Johan Broberg, Kyle Butt, Paul Callaghan, Grégoire Détrez, Markus Forsberg, Ola Frid, Peter Gammie, Thomas Hallgren, Pascal Hof, Patrik Jansson, Kristofer Johannisson, Antti-Juhani Kaijanaho, Andreas Lööw, Kent Mein, Ulf Norell, Gabrielle Paganelli, Michael Pellauer, Fabian Ruch, and Aarne Ranta 2002 - 2019. Free software under GNU General Public License (GPL).
+Copyright: (c) Andreas Abel, Jonas Almström Duregård, Krasimir Angelov, Jean-Philippe Bernardy, Bjorn Bringert, Johan Broberg, Kyle Butt, Paul Callaghan, Grégoire Détrez, Markus Forsberg, Ola Frid, Peter Gammie, Thomas Hallgren, Pascal Hof, Patrik Jansson, Kristofer Johannisson, Antti-Juhani Kaijanaho, Andreas Lööw, Justin Meiners, Kent Mein, Ulf Norell, Gabrielle Paganelli, Michael Pellauer, Fabian Ruch, and Aarne Ranta 2002 - 2019. Free software under GNU General Public License (GPL).
 License: GPL-2
 License-File: LICENSE
 Maintainer: bnfc-dev@googlegroups.com
