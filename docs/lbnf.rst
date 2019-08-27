@@ -168,6 +168,11 @@ these numbers later if they want to have low precision instead.
 Predefined categories may not have explicit productions in the grammar,
 since this would violate their predefined meanings.
 
+.. note::
+   Terminals appearing in rules take precedence over ``Ident``.  E.g.,
+   if terminal ``"where"`` appears in any rule, the word ``where``
+   will never be parsed as an ``Ident``.
+
 Semantic dummies
 ----------------
 
@@ -423,6 +428,11 @@ character classes suggested by their names (letters are isolatin1).
 The expression ``char`` matches any unicode character, and the
 “epsilon” expression ``eps`` matches the empty string.  Thus ``eps`` is
 equivalent to ``{""}``, whereas the empty language is expressed by ``[""]``.
+
+.. note::
+   Terminals appearing in rules take precedence over any ``token``.
+   E.g., if terminal ``"Fun"`` appears in any rule, the word ``Fun``
+   will never be parsed as a ``UIdent``.
 
 .. note::
    The empty language is not available for the Java lexer tool JLex.
