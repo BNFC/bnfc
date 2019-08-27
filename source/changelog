@@ -1,8 +1,16 @@
 2.8.3
 	* GHC 8.8 compatibility
+	* Stack installation supported by provided .yaml files [#198]
 	* Unicode support in lexer, excl. C, C++ and Ocaml [#249]
-	* Haskell: Use qualified import of AST in generated printer [#228]
+	* LBNF: support \r (carriage return) and \f (form feed) in token declaration [#257]
+	* LBNF: allow numbered categories (like Foo2) independent of coercions [#210]
+	* Agda: new (experimental) backend, providing bindings to AST/parser/printer of Haskell backend
+	* Haskell: generates now more fine-grained Makefile that invokes bnfc on changed .cf file
+	* Haskell: Use qualified import of AST in generated printer [#128,#228]
+	* Haskell: printer code no longer produces deprecation warning concerning OverlappingInstances [#233]
+	* Haskell/CNF: fixed problem with Any type in generated code [#216]
 	* Haskell/CNF: generated test program now same name (Test) as w/o --cnf
+	* Haskell/GLR: correct module header in .y file [#252]
 
 2.8.2 Andreas Abel <andreas.abel@gu.se>  November 2018
 	* GHC 8.4 compatibility [#227,#236]
