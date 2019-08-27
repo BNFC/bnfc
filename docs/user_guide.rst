@@ -39,14 +39,18 @@ Java Backend
 Generates abstract syntax, parser and printer as Java code.
 Main option: ``--java``.
 
-Entrypoints
-...........
+CUP
+...
 
-Cup can only generate parsers with a single entry point. If multiple entry points
-are given using the ``entrypoint`` directive, only the first one will be used.
-Otherwise, the first category defined in the grammar file will be used as the
-entry point for the grammar.
-If you need multiple entrypoints, use ANTLRv4.
+By default ``--java`` generates input for the CUP parser generator,
+since 2.8.2 CUP version v11b.
+
+.. note::
+   CUP can only generate parsers with a single entry point. If multiple entry points
+   are given using the ``entrypoint`` directive, only the first one will be used.
+   Otherwise, the first category defined in the grammar file will be used as the
+   entry point for the grammar.
+   If you need multiple entrypoints, use ANTLRv4.
 
 ANTLRv4
 .......
