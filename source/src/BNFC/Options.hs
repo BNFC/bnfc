@@ -262,7 +262,7 @@ specificOptions :: [(OptDescr (SharedOptions -> SharedOptions), [Target])]
 specificOptions =
   [ ( Option ['l'] [] (NoArg (\o -> o {linenumbers = RecordPositions}))
           "Add and set line_number field for all syntax classes\nJava requires cup 0.11b-2014-06-11 or greater"
-    , [TargetCpp, TargetJava] )
+    , [TargetC, TargetCpp, TargetJava] )
   , ( Option ['p'] []
       (ReqArg (\n o -> o {inPackage = Just n}) "<namespace>")
           "Prepend <namespace> to the package/module name"
@@ -378,7 +378,7 @@ help = unlines $ title ++
     , usageInfo "Target languages" targetOptions
     ] ++ map targetUsage helpTargets
   where
-  helpTargets = [TargetHaskell, TargetJava, TargetCpp, TargetCSharp ]
+  helpTargets = [ TargetHaskell, TargetJava, TargetC, TargetCpp, TargetCSharp ]
   targetUsage t = usageInfo
     (printf "Special options for the %s backend" (show t))
     (specificOptions' t)

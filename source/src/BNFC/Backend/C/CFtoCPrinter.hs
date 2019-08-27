@@ -375,9 +375,9 @@ prPrintData (cat, rules) = unlines $
  ] --Not a list:
  else
  [
-   "void pp" ++ cl ++ "(" ++ cl ++ " _p_, int _i_)",
+   "void pp" ++ cl ++ "(" ++ cl ++ " p, int _i_)",
    "{",
-   "  switch(_p_->kind)",
+   "  switch(p->kind)",
    "  {",
    concatMap prPrintRule rules,
    "  default:",
@@ -433,9 +433,9 @@ prPrintRule _ = ""
 prPrintCat :: String -> Either (Cat, Doc) String -> String
 prPrintCat fnm (c) = case c of
   Right t -> "    " ++ render (renderX t) ++ ";\n"
-  Left (cat, nt) | isTokenCat cat -> "    pp" ++ basicFunName (render nt) ++ "(_p_->u." ++ v ++ "_." ++ render nt ++ ", " ++ show (precCat cat) ++ ");\n"
+  Left (cat, nt) | isTokenCat cat -> "    pp" ++ basicFunName (render nt) ++ "(p->u." ++ v ++ "_." ++ render nt ++ ", " ++ show (precCat cat) ++ ");\n"
   Left (InternalCat, _) -> "    /* Internal Category */\n"
-  Left (cat, nt) -> "    pp" ++ identCat (normCat cat) ++ "(_p_->u." ++ v ++ "_." ++ render nt ++ ", " ++ show (precCat cat) ++ ");\n"
+  Left (cat, nt) -> "    pp" ++ identCat (normCat cat) ++ "(p->u." ++ v ++ "_." ++ render nt ++ ", " ++ show (precCat cat) ++ ");\n"
  where
   v = map toLower (normFun fnm)
 
@@ -488,9 +488,9 @@ prShowData (cat, rules) = unlines $
  ] -- Not a list:
  else
  [
-   "void sh" ++ cl ++ "(" ++ cl ++ " _p_)",
+   "void sh" ++ cl ++ "(" ++ cl ++ " p)",
    "{",
-   "  switch(_p_->kind)",
+   "  switch(p->kind)",
    "  {",
    concatMap prShowRule rules,
    "  default:",
@@ -541,10 +541,10 @@ prShowRule _ = ""
 prShowCat :: Fun -> (Cat, Doc) -> String
 prShowCat fnm c = case c of
     (cat,nt) | isTokenCat cat ->
-        "    sh" ++ basicFunName (render nt) ++ "(_p_->u." ++ v ++ "_." ++ render nt ++ ");\n"
+        "    sh" ++ basicFunName (render nt) ++ "(p->u." ++ v ++ "_." ++ render nt ++ ");\n"
     (InternalCat, _) -> "    /* Internal Category */\n"
     (cat,nt) ->
-        "    sh" ++ identCat (normCat cat) ++ "(_p_->u." ++ v ++ "_." ++ render nt ++ ");\n"
+        "    sh" ++ identCat (normCat cat) ++ "(p->u." ++ v ++ "_." ++ render nt ++ ");\n"
   where v = map toLower (normFun fnm)
 
 {- **** Helper Functions Section **** -}

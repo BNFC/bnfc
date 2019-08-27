@@ -47,6 +47,7 @@ import Prelude'
 import BNFC.CF
 import BNFC.PrettyPrint
 import BNFC.Utils((+++))
+import BNFC.Options (RecordPositions(..))
 import BNFC.Backend.Common.NamedVariables
 import Data.Function (on)
 import Data.List
@@ -55,17 +56,18 @@ import Data.Char(toLower)
 
 -- | The result is two files (.H file, .C file)
 cf2CAbs
-  :: String -- ^ Ignored.
+  :: RecordPositions
+  -> String -- ^ Ignored.
   -> CF     -- ^ Grammar.
   -> (String, String) -- ^ @.H@ file, @.C@ file.
-cf2CAbs _ cf = (mkHFile cf, mkCFile cf)
+cf2CAbs rp _ cf = (mkHFile rp cf, mkCFile cf)
 
 {- **** Header (.H) File Functions **** -}
 
 -- | Makes the Header file.
 
-mkHFile :: CF -> String
-mkHFile cf = unlines
+mkHFile :: RecordPositions -> CF -> String
+mkHFile rp cf = unlines
     [ "#ifndef ABSYN_HEADER"
     , "#define ABSYN_HEADER"
     , ""
@@ -75,7 +77,7 @@ mkHFile cf = unlines
     , concatMap prForward classes
     , ""
     , "/********************   Abstract Syntax Classes    ********************/\n"
-    , concatMap prDataH (getAbstractSyntax cf)
+    , concatMap (prDataH rp) (getAbstractSyntax cf)
     , ""
     , "#endif"
     ]
@@ -97,8 +99,8 @@ mkHFile cf = unlines
     | otherwise = "_"
 
 -- | Prints struct definitions for all categories.
-prDataH :: Data -> String
-prDataH (cat, rules)
+prDataH :: RecordPositions -> Data -> String
+prDataH rp (cat, rules)
   | isList cat = unlines
       [ "struct " ++ c' ++ "_"
       , "{"
@@ -111,6 +113,7 @@ prDataH (cat, rules)
   | otherwise = unlines
       [ "struct " ++ show cat ++ "_"
       , "{"
+      , if rp == RecordPositions then "  int line_number, char_number;" else ""
       , "  enum { " ++ intercalate ", " (map prKind rules) ++ " } kind;"
       , "  union"
       , "  {"

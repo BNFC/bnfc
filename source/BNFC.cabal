@@ -149,17 +149,17 @@ Executable bnfc
     BNFC.Backend.C.CFtoBisonC
     BNFC.Backend.C.CFtoFlexC
     BNFC.Backend.C.CFtoCAbs
-    BNFC.Backend.CPP.NoSTL.CFtoCVisitSkel
+    BNFC.Backend.C.RegToFlex
 
     -- C++ backend
     BNFC.Backend.CPP.PrettyPrinter
     BNFC.Backend.CPP.Makefile
     BNFC.Backend.CPP.Naming
     BNFC.Backend.CPP.NoSTL
-    BNFC.Backend.CPP.NoSTL.RegToFlex
     BNFC.Backend.CPP.NoSTL.CFtoFlex
     BNFC.Backend.CPP.NoSTL.CFtoBison
     BNFC.Backend.CPP.NoSTL.CFtoCPPAbs
+    BNFC.Backend.CPP.NoSTL.CFtoCVisitSkel
 
     -- C++ STL backend
     BNFC.Backend.CPP.STL
@@ -331,17 +331,17 @@ Test-suite unit-tests
     BNFC.Backend.C.CFtoBisonC
     BNFC.Backend.C.CFtoFlexC
     BNFC.Backend.C.CFtoCAbs
-    BNFC.Backend.CPP.NoSTL.CFtoCVisitSkel
+    BNFC.Backend.C.RegToFlex
 
     -- C++ backend
     BNFC.Backend.CPP.PrettyPrinter
     BNFC.Backend.CPP.Makefile
     BNFC.Backend.CPP.Naming
     BNFC.Backend.CPP.NoSTL
-    BNFC.Backend.CPP.NoSTL.RegToFlex
     BNFC.Backend.CPP.NoSTL.CFtoFlex
     BNFC.Backend.CPP.NoSTL.CFtoBison
     BNFC.Backend.CPP.NoSTL.CFtoCPPAbs
+    BNFC.Backend.CPP.NoSTL.CFtoCVisitSkel
 
     -- C++ STL backend
     BNFC.Backend.CPP.STL

@@ -37,14 +37,14 @@ import qualified BNFC.Backend.Common.Makefile as Makefile
 
 makeC :: SharedOptions -> CF -> MkFiles ()
 makeC opts cf = do
-    let (hfile, cfile) = cf2CAbs prefix cf
+    let (hfile, cfile) = cf2CAbs (linenumbers opts) prefix cf
     mkfile "Absyn.h" hfile
     mkfile "Absyn.c" cfile
     let (flex, env) = cf2flex prefix cf
     mkfile (name ++ ".l") flex
-    let bison = cf2Bison prefix cf env
+    let bison = cf2Bison (linenumbers opts) prefix cf env
     mkfile (name ++ ".y") bison
-    let header = mkHeaderFile cf (allCats cf) (allEntryPoints cf) env
+    let header = mkHeaderFile (linenumbers opts) cf (allCats cf) (allEntryPoints cf) env
     mkfile "Parser.h" header
     let (skelH, skelC) = cf2CSkel cf
     mkfile "Skeleton.h" skelH
@@ -196,8 +196,8 @@ ctest cf =
   dat :: String
   dat = identCat . normCat $ cat
 
-mkHeaderFile :: CF -> [Cat] -> [Cat] -> [(a, String)] -> String
-mkHeaderFile cf cats eps env = unlines
+mkHeaderFile :: RecordPositions -> CF -> [Cat] -> [Cat] -> [(a, String)] -> String
+mkHeaderFile _ cf cats eps env = unlines
  [
   "#ifndef PARSER_HEADER_FILE",
   "#define PARSER_HEADER_FILE",
@@ -212,8 +212,17 @@ mkHeaderFile cf cats eps env = unlines
   "  char* string_;",
   concatMap mkVar cats ++ "} YYSTYPE;",
   "",
+  -- https://www.gnu.org/software/bison/manual/html_node/Location-Type.html#Location-Type
+  "typedef struct YYLTYPE",
+  "{",
+  "  int first_line;",
+  "  int first_column;",
+  "  int last_line;",
+  "  int last_column;",
+  "} YYLTYPE;",
   "#define _ERROR_ 258",
   mkDefines (259::Int) env,
+  "extern YYLTYPE yylloc;",
   "extern YYSTYPE yylval;",
   concatMap mkFunc eps,
   "",
@@ -240,4 +249,7 @@ mkHeaderFile cf cats eps env = unlines
    then ("#define _IDENT_ " ++ show n ++ "\n")
    else ""
   -- Andreas, 2019-04-29, issue #210: generate parsers also for coercions
-  mkFunc c = identCat (normCat c) ++ " p" ++ identCat c ++ "(FILE *inp);\n"
+  mkFunc c = concat
+    [ identCat (normCat c) ++ "  p" ++ identCat c ++ "(FILE *inp);\n"
+    , identCat (normCat c) ++ " ps" ++ identCat c ++ "(const char *str);\n"
+    ]
