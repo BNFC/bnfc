@@ -5,13 +5,52 @@ module BNFC.Backend.Haskell.Utils
   , hsReservedWords
   , catToType
   , catvars
+  , tokenTextImport, tokenTextType
+  , tokenTextPack, tokenTextPackParens, tokenTextUnpack
   ) where
 
 import Prelude'
 
 import BNFC.PrettyPrint
-import BNFC.CF (Cat(..), identCat, normCat)
-import BNFC.Utils (mkNames, NameStyle(..))
+import BNFC.CF      (Cat(..), identCat, normCat)
+import BNFC.Options (TokenText(..))
+import BNFC.Utils   (mkNames, NameStyle(..))
+
+-- * Parameterization by 'TokenText'.
+
+tokenTextImport :: TokenText -> [String]
+tokenTextImport = \case
+  StringToken     -> []
+  ByteStringToken -> [ "import qualified Data.ByteString.Char8 as BS" ]
+  TextToken       -> [ "import qualified Data.Text" ]
+
+tokenTextType :: TokenText -> String
+tokenTextType = \case
+  StringToken     -> "String"
+  ByteStringToken -> "BS.ByteString"
+  TextToken       -> "Data.Text.Text"
+
+tokenTextPack :: TokenText -> String -> String
+tokenTextPack = \case
+  StringToken     -> id
+  ByteStringToken -> ("BS.pack " ++)
+  TextToken       -> ("Data.Text.pack " ++)
+
+tokenTextPackParens :: TokenText -> String -> String
+tokenTextPackParens = \case
+  StringToken     -> id
+  ByteStringToken -> parens . ("BS.pack " ++)
+  TextToken       -> parens . ("Data.Text.pack " ++)
+  where
+  parens s = "(" ++ s ++ ")"
+
+tokenTextUnpack :: TokenText -> String -> String
+tokenTextUnpack = \case
+  StringToken     -> id
+  ByteStringToken -> ("BS.unpack " ++)
+  TextToken       -> ("Data.Text.unpack " ++)
+
+-- * Other Utililites
 
 -- | Create a valid parser function name for a given category.
 --

@@ -72,6 +72,14 @@ data JavaLexerParser = JLexCup | JFlexCup | Antlr4
 data RecordPositions = RecordPositions | NoRecordPositions
     deriving (Eq,Show,Ord)
 
+-- | How to represent token content in the Haskell backend?
+
+data TokenText
+  = StringToken      -- ^ Represent strings as @String@.
+  | ByteStringToken  -- ^ Represent strings as @ByteString@.
+  | TextToken        -- ^ Represent strings as @Data.Text@.
+  deriving (Eq, Ord, Show)
+
 -- | This is the option record that is passed to the different backends.
 data SharedOptions = Options
   --- Option shared by at least 2 backends
@@ -88,7 +96,7 @@ data SharedOptions = Options
   , functor       :: Bool        -- ^ Option @--functor@.  Make AST functorial?
   , alexMode      :: AlexVersion -- ^ Options @--alex@.
   , shareStrings  :: Bool        -- ^ Option @--sharestrings@.
-  , byteStrings   :: Bool        -- ^ Option @--bytestrings@.
+  , tokenText     :: TokenText   -- ^ Options @--bytestrings@, @--string-token@, and @--text-token@.
   , glr           :: HappyMode   -- ^ Happy option @--glr@.
   , xml           :: Int         -- ^ Options @--xml@, generate DTD and XML printers.
   , cnf           :: Bool        -- ^ Option @--cnf@. Generate CNF-like tables?
@@ -120,7 +128,7 @@ defaultOptions = Options
   , functor         = False
   , alexMode        = Alex3
   , shareStrings    = False
-  , byteStrings     = False
+  , tokenText       = StringToken
   , glr             = Standard
   , xml             = 0
   , cnf             = False
@@ -176,7 +184,8 @@ printOptions opts = unwords . concat $
   , [ "--functor"         | functor opts                        ]
   , unlessDefault alexMode opts $ \ o -> [ printAlexOption o ]
   , [ "--sharestrings"    | shareStrings opts                   ]
-  , [ "--bytestrings"     | byteStrings opts                    ]
+  , [ "--bytestrings"     | tokenText opts == ByteStringToken   ]
+  , [ "--text-token"      | tokenText opts == TextToken         ]
   , [ "--glr"             | glr opts == GLR                     ]
   , [ "--xml"             | xml opts == 1                       ]
   , [ "--xmlt"            | xml opts == 2                       ]
@@ -300,8 +309,15 @@ specificOptions =
   , ( Option []    ["sharestrings"] (NoArg (\o -> o {shareStrings = True}))
           "Use string sharing in Alex 2 lexer"
     , haskellTargets )
-  , ( Option []    ["bytestrings"] (NoArg (\o -> o {byteStrings = True}))
-          "Use byte string in Alex 2 lexer"
+  , ( Option []    ["bytestrings"] (NoArg (\o -> o { tokenText = ByteStringToken }))
+          "Use ByteString in Alex lexer"
+    , haskellTargets )
+  , ( Option []    ["text-token"] (NoArg (\o -> o { tokenText = TextToken }))
+          "Use Text in Alex lexer"
+          -- "Use Text in Alex lexer (default for --agda)"
+    , haskellTargets )
+  , ( Option []    ["string-token"] (NoArg (\o -> o { tokenText = StringToken }))
+          "Use String in Alex lexer (default)"
     , haskellTargets )
   , ( Option []    ["glr"] (NoArg (\o -> o {glr = GLR}))
           "Output Happy GLR parser"
@@ -322,7 +338,7 @@ specificOptions =
   , ( Option []    ["cnf"] (NoArg (\o -> o {cnf = True}))
           "Use the CNF parser instead of happy"
     , [TargetHaskell] )
-  , ( Option []    ["agda"] (NoArg (\o -> o {agda = True}))
+  , ( Option []    ["agda"] (NoArg (\o -> o { agda = True }))
           "Also generate Agda bindings for the abstract syntax"
     , [TargetHaskell] )
   ]

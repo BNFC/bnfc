@@ -54,27 +54,28 @@ makeHaskellGadt opts cf = do
       errMod = errFileM opts
       shareMod = shareFileM opts
   do
-    mkfile (absFile opts) $ cf2Abstract (byteStrings opts) absMod cf composOpMod
+    mkfile (absFile opts) $ cf2Abstract (tokenText opts) absMod cf composOpMod
     mkfile (composOpFile opts) $ composOp composOpMod
     case alexMode opts of
       Alex1 -> do
         mkfile (alexFile opts) $ cf2alex lexMod errMod cf
         liftIO $ putStrLn "   (Use Alex 1.1 to compile.)"
       Alex2 -> do
-        mkfile (alexFile opts) $ cf2alex2 lexMod errMod shareMod (shareStrings opts) (byteStrings opts) cf
+        mkfile (alexFile opts) $ cf2alex2 lexMod errMod shareMod (shareStrings opts) (tokenText opts) cf
         liftIO $ putStrLn "   (Use Alex 2.0 to compile.)"
       Alex3 -> do
-        mkfile (alexFile opts) $ cf2alex3 lexMod errMod shareMod (shareStrings opts) (byteStrings opts) cf
+        mkfile (alexFile opts) $ cf2alex3 lexMod errMod shareMod (shareStrings opts) (tokenText opts) cf
         liftIO $ putStrLn "   (Use Alex 3.0 to compile.)"
     mkfile (happyFile opts) $
-      cf2Happy parMod absMod lexMod errMod (glr opts) (byteStrings opts) False cf
+      cf2Happy parMod absMod lexMod errMod (glr opts) (tokenText opts) False cf
     liftIO $ putStrLn "   (Tested with Happy 1.15)"
     mkfile (templateFile opts) $ cf2Template (templateFileM opts) absMod errMod cf
-    mkfile (printerFile opts)  $ cf2Printer False False True prMod absMod cf
-    when (hasLayout cf) $ mkfile (layoutFile opts) $ cf2Layout (alexMode opts == Alex1) (inDir opts) layMod lexMod cf
+    mkfile (printerFile opts)  $ cf2Printer StringToken False True prMod absMod cf
+    when (hasLayout cf) $ mkfile (layoutFile opts) $
+      cf2Layout (tokenText opts) (alexMode opts == Alex1) layMod lexMod cf
     mkfile (tFile opts)        $ Haskell.testfile opts cf
     mkfile (errFile opts) $ mkErrM errMod (ghcExtensions opts)
-    when (shareStrings opts) $ mkfile (shareFile opts)    $ sharedString shareMod (byteStrings opts) cf
+    when (shareStrings opts) $ mkfile (shareFile opts)    $ sharedString shareMod (tokenText opts) cf
     Makefile.mkMakefile opts $ Haskell.makefile opts
     case xml opts of
       2 -> makeXML opts True cf

@@ -18,10 +18,12 @@
 -}
 module BNFC.Backend.Haskell.MkSharedString where
 
-sharedString :: String -> Bool -> b -> String
-sharedString shareMod byteString _ = unlines $
-  if byteString
-    then
+import BNFC.Options (TokenText(..))
+
+sharedString :: String -> TokenText -> b -> String
+sharedString shareMod tokenText _ = unlines $
+  case tokenText of
+    ByteStringToken ->
       [
        "module " ++ shareMod ++ " (shareString) where",
        "",
@@ -44,7 +46,7 @@ sharedString shareMod byteString _ = unlines $
        "                  writeIORef stringPoolRef $! M.insert s' s' stringPool",
        "                  return s'"
       ]
-    else
+    StringToken ->
       [
        "module " ++ shareMod ++ " (shareString) where",
        "",
@@ -57,6 +59,29 @@ sharedString shareMod byteString _ = unlines $
        "",
        "{-# NOINLINE shareString #-}",
        "shareString :: String -> String",
+       "shareString s = unsafePerformIO $ do",
+       "  mv <- H.lookup stringPool s",
+       "  case mv of",
+       "       Just s' -> return s'",
+       "       Nothing -> do",
+       "                  H.insert stringPool s s",
+       "                  return s"
+      ]
+    TextToken ->
+      [
+       "module " ++ shareMod ++ " (shareString) where",
+       "",
+       "import Data.Text (Text)",
+       "import qualified Data.Text",
+       "import Data.HashTable as H",
+       "import System.IO.Unsafe (unsafePerformIO)",
+       "",
+       "{-# NOINLINE stringPool #-}",
+       "stringPool :: HashTable Text Text",
+       "stringPool = unsafePerformIO $ new (==) (hashString . Data.Text.unpack)",
+       "",
+       "{-# NOINLINE shareString #-}",
+       "shareString :: Text -> Text",
        "shareString s = unsafePerformIO $ do",
        "  mv <- H.lookup stringPool s",
        "  case mv of",

@@ -69,7 +69,7 @@ makeHaskellProfile opts cfp = do
                     mkfile (alexFile (inDir opts) name) $ cf2alex lexMod errMod cf
                     liftIO $ putStrLn "   (Use Alex 1.1 to compile.)"
                else do
-                    mkfile (alexFile (inDir opts) name) $ cf2alex2 lexMod errMod "" False False cf
+                    mkfile (alexFile (inDir opts) name) $ cf2alex2 lexMod errMod "" False StringToken cf
                     liftIO $ putStrLn "   (Use Alex 2.0 to compile.)"
     mkfile (happyFile (inDir opts) name) $
                  cf2HappyProfileS parMod absMod lexMod errMod cfp
