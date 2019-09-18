@@ -118,7 +118,7 @@ import BNFC.CF
 import BNFC.Backend.Base           (Backend, mkfile)
 import BNFC.Backend.Haskell.HsOpts
 import BNFC.Backend.Haskell.Utils  (parserName)
-import BNFC.Options                (SharedOptions)
+import BNFC.Options                (SharedOptions, TokenText(..), tokenText)
 import BNFC.PrettyPrint
 import BNFC.Utils                  (replace, when)
 
@@ -147,10 +147,10 @@ makeAgda
 makeAgda time opts cf = do
   -- Generate AST bindings.
   mkfile (agdaASTFile opts) $
-    cf2AgdaAST time (agdaASTFileM opts) (absFileM opts) (printerFileM opts) cf
+    cf2AgdaAST time (tokenText opts) (agdaASTFileM opts) (absFileM opts) (printerFileM opts) cf
   -- Generate parser bindings.
   mkfile (agdaParserFile opts) $
-    cf2AgdaParser time (agdaParserFileM opts) (agdaASTFileM opts) (absFileM opts) (errFileM opts) (happyFileM opts)
+    cf2AgdaParser time (tokenText opts) (agdaParserFileM opts) (agdaASTFileM opts) (absFileM opts) (errFileM opts) (happyFileM opts)
       layoutMod
       parserCats
   -- Generate an I/O library for the test parser.
@@ -180,18 +180,19 @@ makeAgda time opts cf = do
 --
 cf2AgdaAST
   :: String  -- ^ Current time.
+  -> TokenText
   -> String  -- ^ Module name.
   -> String  -- ^ Haskell Abs module name.
   -> String  -- ^ Haskell Print module name.
   -> CF      -- ^ Grammar.
   -> Doc
-cf2AgdaAST time mod amod pmod cf = vsep $
+cf2AgdaAST time tokenText mod amod pmod cf = vsep $
   [ preamble time "abstract syntax data types"
   , hsep [ "module", text mod, "where" ]
   , imports YesImportNumeric False
   , if usesString then hsep [ "String", equals, listT, charT ] else empty
-  , importPragmas [amod, unwords [ pmod, "(printTree)" ]]
-  , vsep $ map prToken tcats
+  , importPragmas tokenText [amod, unwords [ pmod, "(printTree)" ]]
+  , vsep $ map (prToken tokenText) tcats
   , absyn NamedArg dats
   -- , allTokenCats printToken tcats  -- seem to be included in printerCats
   , printers printerCats
@@ -215,6 +216,7 @@ cf2AgdaAST time mod amod pmod cf = vsep $
 --
 cf2AgdaParser
   :: String  -- ^ Current time.
+  -> TokenText
   -> String  -- ^ Module name.
   -> String  -- ^ Agda AST module name.
   -> String  -- ^ Haskell Abs module name.
@@ -224,16 +226,16 @@ cf2AgdaParser
              -- ^ Does the grammar use layout?  If yes, Haskell Layout module name.
   -> [Cat]   -- ^ Bind parsers for these non-terminals.
   -> Doc
-cf2AgdaParser time mod astmod amod emod pmod layoutMod cats = vsep $
+cf2AgdaParser time tokenText mod astmod amod emod pmod layoutMod cats = vsep $
   [ preamble time "parsers"
   , hsep [ "module", text mod, "where" ]
   , imports NoImportNumeric (isJust layoutMod)
   , importCats astmod (List.nub cs)
-  , importPragmas $ [amod, emod, pmod] ++ maybe [] (\ m -> ["qualified " ++ m]) layoutMod
+  , importPragmas tokenText $ [amod, emod, pmod] ++ maybe [] (\ m -> ["qualified " ++ m]) layoutMod
   , "-- Error monad of BNFC"
   , prErrM
   , "-- Happy parsers"
-  , parsers layoutMod cats
+  , parsers tokenText layoutMod cats
   , empty -- Make sure we terminate the file with a new line.
   ]
   where
@@ -311,28 +313,39 @@ importCats m cs = prettyList 2 pre lparen rparen semi $ map text cs
 
 -- | Import pragmas.
 --
--- >>> importPragmas ["Foo.Abs", "Foo.Print (printTree)", "qualified Foo.Layout"]
+-- >>> importPragmas ByteStringToken ["Foo.Abs", "Foo.Print (printTree)", "qualified Foo.Layout"]
+-- {-# FOREIGN GHC import qualified Data.ByteString.Char8 as BS #-}
 -- {-# FOREIGN GHC import qualified Data.Text #-}
 -- {-# FOREIGN GHC import Foo.Abs #-}
 -- {-# FOREIGN GHC import Foo.Print (printTree) #-}
 -- {-# FOREIGN GHC import qualified Foo.Layout #-}
 --
 importPragmas
-  :: [String]  -- ^ Haskell modules to import.
+  :: TokenText
+  -> [String]  -- ^ Haskell modules to import.
   -> Doc
-importPragmas mods = vcat $ map imp $ [ "qualified Data.Text" ] ++ mods
+importPragmas tokenText mods = vcat $ map imp $ extra ++ [ "qualified Data.Text" ] ++ mods
   where
   imp s = hsep [ "{-#", "FOREIGN", "GHC", "import", text s, "#-}" ]
+  extra = case tokenText of
+    TextToken       -> []
+    StringToken     -> []
+    ByteStringToken -> [ "qualified Data.ByteString.Char8 as BS" ]
 
 -- * Bindings for the AST.
 
 -- | Pretty-print types for token types similar to @Ident@.
 
-prToken :: String -> Doc
-prToken t =
-  prettyData UnnamedArg t [(agdaLower t, [ListCat (Cat "Char")])]
+prToken :: TokenText -> String -> Doc
+prToken tokenText t =
+  prettyData UnnamedArg t [(agdaLower t, typ)]
   $++$
   pragmaData t [(t, [])]
+  where
+  typ = case tokenText of
+    TextToken       -> [Cat "#String" ]
+    ByteStringToken -> [Cat "#String" ]
+    StringToken     -> [ListCat (Cat "Char")]
 
 -- | Pretty-print abstract syntax definition in Agda syntax.
 --
@@ -607,17 +620,24 @@ printers cats =
 
 -- | Bind happy parsers.
 --
--- >>> parsers Nothing [ListCat (CoercCat "Exp" 2)]
+-- >>> parsers StringToken Nothing [ListCat (CoercCat "Exp" 2)]
 -- postulate
 --   parseListExp2 : #String → Err (#List Exp)
 -- <BLANKLINE>
 -- {-# COMPILE GHC parseListExp2 = pListExp2 . myLexer . Data.Text.unpack #-}
 --
+-- >>> parsers TextToken Nothing [ListCat (CoercCat "Exp" 2)]
+-- postulate
+--   parseListExp2 : #String → Err (#List Exp)
+-- <BLANKLINE>
+-- {-# COMPILE GHC parseListExp2 = pListExp2 . myLexer #-}
+--
 parsers
-  :: Maybe String  -- ^ Grammar uses layout?  If yes, Haskell layout module name.
+  :: TokenText
+  -> Maybe String  -- ^ Grammar uses layout?  If yes, Haskell layout module name.
   -> [Cat]         -- ^ Bind parsers for these non-terminals.
   -> Doc
-parsers layoutMod cats =
+parsers tokenText layoutMod cats =
   vcat ("postulate" : map (nest 2 . prettyTySig) cats)
   $++$
   vcat (map pragmaBind cats)
@@ -637,7 +657,13 @@ parsers layoutMod cats =
     , when layout [ "\\", "tl", "->" ]
     , [ parserName c, "." ]
     , when layout [ hcat [ text lmod, ".", "resolveLayout" ], "tl", "." ]
-    , [ "myLexer", ".", "Data.Text.unpack", "#-}" ]
+    , [ "myLexer" ]
+    , case tokenText of
+        -- Agda's String is Haskell's Data.Text
+        TextToken       -> []
+        StringToken     -> [ ".", "Data.Text.unpack" ]
+        ByteStringToken -> [ ".", "BS.pack", ".", "Data.Text.unpack" ]
+    , [ "#-}" ]
     ]
   layout :: Bool
   layout = isJust layoutMod
