@@ -185,7 +185,8 @@ printOptions opts = unwords . concat $
   , unlessDefault alexMode opts $ \ o -> [ printAlexOption o ]
   , [ "--sharestrings"    | shareStrings opts                   ]
   , [ "--bytestrings"     | tokenText opts == ByteStringToken   ]
-  , [ "--text-token"      | tokenText opts == TextToken         ]
+  , [ "--text-token"      | tokenText opts == TextToken, not (agda opts) ]  -- default for --agda
+  , [ "--string-token"    | tokenText opts == StringToken, agda opts ]      -- default unless --agda
   , [ "--glr"             | glr opts == GLR                     ]
   , [ "--xml"             | xml opts == 1                       ]
   , [ "--xmlt"            | xml opts == 2                       ]
@@ -338,7 +339,7 @@ specificOptions =
   , ( Option []    ["cnf"] (NoArg (\o -> o {cnf = True}))
           "Use the CNF parser instead of happy"
     , [TargetHaskell] )
-  , ( Option []    ["agda"] (NoArg (\o -> o { agda = True }))
+  , ( Option []    ["agda"] (NoArg (\o -> o { agda = True, tokenText = TextToken }))
           "Also generate Agda bindings for the abstract syntax"
     , [TargetHaskell] )
   ]
