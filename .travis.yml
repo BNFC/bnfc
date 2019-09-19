@@ -47,5 +47,5 @@ before_install:
     fi
   - if [ "$CABAL" = yes -a "$PACKAGEDIR" = testing ]; then sudo apt-get install openjdk-9-jdk-headless jflex antlr4 ocaml texlive-latex-base hlint; fi
 install:
-  - if [ "$CABAL" = yes ]; then cd $PACKAGEDIR && cabal install --enable-tests --dependencies-only; fi
+  - if [ "$CABAL" = yes ]; then cd $PACKAGEDIR && cabal update && cabal install --enable-tests --dependencies-only; fi
   - if [ "$STACK" = yes ]; then stack --no-terminal --stack-yaml stack-$GHCVER.yaml build --test --dependencies-only; fi
