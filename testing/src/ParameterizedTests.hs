@@ -7,14 +7,16 @@
  - -}
 module ParameterizedTests where
 
+import Prelude hiding (FilePath)
+
 import Control.Monad (forM_, unless)
-import Data.Functor
+-- import Data.Functor
 import Data.Monoid ((<>))
 import Data.Text (Text)
 import qualified Data.Text as Text
-import Filesystem.Path (filename, dropExtension, basename, replaceExtension)
-import Filesystem.Path.CurrentOS (encodeString)
-import Prelude hiding (FilePath)
+
+import System.FilePath (takeBaseName, takeFileName, dropExtension, replaceExtension)
+
 import Shelly
   ( FilePath, Sh, ShellCmd, (</>)
   , absPath, appendfile
@@ -125,15 +127,15 @@ exampleTests params =
 
 exampleTest :: TestParameters -> Example -> Test
 exampleTest params (grammar, examples) =
-        let lang = encodeString (basename grammar) in
+        let lang = takeBaseName grammar in
         makeShellyTest lang $ withTmpDir $ \tmp -> do
             cp grammar tmp
             forM_ examples $ flip cp tmp
             cd tmp
-            tpBnfc params (filename grammar)
+            tpBnfc params (takeFileName grammar)
             tpBuild params
             forM_ examples $ \example ->
-                tpRunTestProg params (toTextArg lang) [filename example]
+                tpRunTestProg params (toTextArg lang) [takeFileName example]
 
 -- | To test certain grammatical constructions or interactions between rules,
 -- test grammar can be created under the regression-tests directory,
@@ -174,7 +176,7 @@ makeTestCase params dir =
                 errExit False $ tpRunTestProg params "test" [f]
                 lastExitCode >>= assertEqual 1
   where
-    mkTitle dir = encodeString (filename dir)
+    mkTitle dir = takeFileName dir
 
 -- | To test that @distclean@ removes all generated files.
 distcleanTest :: TestParameters -> Test
@@ -187,7 +189,7 @@ distcleanTest params =
     tpBuild params
     tpDistclean
     dContents <- ls "."
-    assertEqual [cfFile] (map filename dContents)
+    assertEqual [cfFile] (map takeFileName dContents)
 
 -- ~~~ Parameters ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 -- Test parameters are the combination of bnfc options (that define the
@@ -222,12 +224,13 @@ haskellParameters = baseParameters
   , tpBuild = do
       cmd "hlint"
         "-i" "Redundant bracket"
+        "-i" "Redundant $"
         "-i" "Use camelCase"
         "-i" "Use newtype instead of data"
         "-i" "Use fmap"
         "."
       tpMake
-      cmd "ghc" =<< findFileRegex "Skel.*\\.hs$"
+      cmd "ghc" . (:[]) =<< findFileRegex "Skel.*\\.hs$"
 
   , tpRunTestProg = haskellRunTestProg
   }
@@ -308,10 +311,10 @@ parameters =
     javaParams = base
         { tpBuild = do
             tpMake
-            cmd "javac" =<< findFile "VisitSkel.java"
+            cmd "javac" . (:[]) =<< findFile "VisitSkel.java"
         , tpRunTestProg = \_ args -> do
             class_ <- dropExtension <$> findFile "Test.class"
-            cmd "java" class_ args
+            cmd "java" $ class_ : args
         }
 
 -- | Helper function that runs bnfc with the context's options and an
@@ -329,7 +332,7 @@ tpMakefile = "MyMakefile"
 
 -- | Helper function that runs @make@ using 'tpMakefile' as makefile.
 tpMake :: ShellCmd result => result
-tpMake = cmd "make" "-f" tpMakefile
+tpMake = cmd "make" [ "-f" , tpMakefile ]
 
 -- | Helper function that runs the command for removing generated files.
 tpDistclean :: Sh ()

@@ -10,19 +10,13 @@ module TestUtils
     , Test(..)
     , matchFilePath ) where
 
--- base
+-- base, text, filepath
 import Control.Exception (handle, throwIO, SomeException)
 import Control.Monad
 import Data.Maybe (listToMaybe)
-import Prelude hiding (FilePath)
-import Text.Regex.Posix
-
--- text
 import qualified Data.Text as T
-
--- system-filepath
-import Filesystem.Path (filename, stripPrefix)
-import Filesystem.Path.CurrentOS (encodeString, toText)
+import System.FilePath (normalise, takeFileName)
+import Text.Regex.Posix
 
 -- shelly
 import Shelly
@@ -70,7 +64,7 @@ makeShellyTest label = HTF.makeBlackBoxTest label
 -- A (Shelly) assertion to check the existense of a file
 assertFileExists :: FilePath -> Sh ()
 assertFileExists p = test_f p >>= liftIO . HUnit.assertBool errorMessage
-  where errorMessage = "Can't find file " ++ encodeString p
+  where errorMessage = "Can't find file " ++ p
 
 -- | Lift HUnit's assertFailure
 assertFailure :: String -> Sh ()
@@ -91,7 +85,8 @@ assertExitCode c sh = do
 --   formatArg = formatArg . either T.unpack T.unpack . Filesystem.Path.CurrentOS.toText
 
 -- | Convert a FilePath to a string
-pathToString = either T.unpack T.unpack . toText
+pathToString :: FilePath -> String
+pathToString = id
 
 -- | Find a file given a regular expression.
 -- Will fail if there is not exactly one file matching
@@ -105,10 +100,10 @@ findFileRegex r = do
 
 -- Find a file given its exact name
 findFile n = do
-    f <- findWhen (return . (n==) . filename) "."
-    case listToMaybe f >>= stripPrefix "." of
-        Just f -> return f
+    f <- findWhen (return . (n==) . takeFileName) "."
+    case listToMaybe f of
+        Just f -> return $ normalise f
         Nothing -> assertFailure "File not found" >> undefined
 
 matchFilePath :: String -> FilePath -> Bool
-matchFilePath regex name = encodeString name =~ regex
+matchFilePath regex name = name =~ regex

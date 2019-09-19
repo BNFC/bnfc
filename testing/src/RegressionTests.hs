@@ -37,7 +37,7 @@ haskellRegressionTest title base mod =
     withTmpDir $ \ tmp -> do
       cp (dir </> cfF) tmp
       cd tmp
-      cmd "bnfc" "--haskell" "-m" cfF
+      cmd "bnfc" [ "--haskell", "-m", cfF ]
       cmd "make"
       setStdin input
       output <- cmd =<< canonicalize ("." </> ("Test" ++ mod))

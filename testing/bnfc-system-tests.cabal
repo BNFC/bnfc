@@ -10,7 +10,7 @@ name:                bnfc-system-tests
 -- PVP summary:      +-+------- breaking API changes
 --                   | | +----- non-breaking API additions
 --                   | | | +--- code changes with no API change
-version:             0.1.0.0
+version:             0.1.1.0
 
 -- A short (one-line) description of the package.
 synopsis:            System tests for BNFC
@@ -66,8 +66,8 @@ executable bnfc-system-tests
   build-depends:       base >=4.5 && <5,
                        regex-posix,
                        HUnit >= 1.2,
-                       shelly >= 1.6,
-                       system-filepath,
+                       shelly >= 1.9,
+                       filepath,
                        text,
                        HTF
 
