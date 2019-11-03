@@ -1,4 +1,4 @@
 resolver: lts-6.35
 packages:
 - source
-- testing
+# - testing

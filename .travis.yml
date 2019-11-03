@@ -23,14 +23,26 @@ env:
 matrix:
   exclude:
     # ghc 8.8.1 not yet supported by stack lts
+    # nightly does not include HTF
     - ghc: 8.8.1
       env: STACK=yes
+
     # testing binary has dependencies not yet compatible with ghc 8.8.1
     - ghc: 8.8.1
       env: CABAL=yes PACKAGEDIR="testing"
+
     # stack lts does not support ghc 7.6
     - ghc: 7.6.3
       env: STACK=yes
+
+    # shelly-1.9 not available for ghc 7
+    - ghc: 7.6.3
+      env: CABAL=yes PACKAGEDIR="testing"
+    - ghc: 7.8.4
+      env: CABAL=yes PACKAGEDIR="testing"
+    - ghc: 7.10.3
+      env: CABAL=yes PACKAGEDIR="testing"
+
 script:
   - if [ "$CABAL" = yes -a "$PACKAGEDIR" = source  ]; then cabal configure --enable-tests && cabal build && cabal test; fi
   - if [ "$CABAL" = yes -a "$PACKAGEDIR" = testing ]; then source scripts/env && ./scripts/bootstrap; fi # && ./scripts/runtests; fi
