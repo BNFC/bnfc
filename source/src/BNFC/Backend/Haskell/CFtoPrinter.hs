@@ -98,6 +98,7 @@ prologue tokenText useGadt name absMod = concat
     , "    \"{\"      :ts -> showChar '{' . new (i+1) . rend (i+1) ts"
     , "    \"}\" : \";\":ts -> new (i-1) . space \"}\" . showChar ';' . new (i-1) . rend (i-1) ts"
     , "    \"}\"      :ts -> new (i-1) . showChar '}' . new (i-1) . rend (i-1) ts"
+    , "    \";\"      :[] -> showChar ';'"
     , "    \";\"      :ts -> showChar ';' . new i . rend i ts"
     , "    t  : ts@(p:_) | closingOrPunctuation p -> showString t . rend i ts"
     , "    t        :ts -> space t . rend i ts"
