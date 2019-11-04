@@ -1,5 +1,13 @@
+-- | Type checker for defined syntax constructors.
 
-module BNFC.TypeChecker where
+module BNFC.TypeChecker
+  ( -- * Type checker entry point
+    checkDefinitions
+  , Base(..)
+  , -- * Backdoor for rechecking defined syntax constructors for list types
+    checkDefinition'
+  , buildContext, isToken, ListConstructors(LC)
+  ) where
 
 import Control.Monad
 
