@@ -92,7 +92,7 @@ prData packageAbsyn user (cat, rules)
         ]
 
 -- | traverses a standard rule.
--- >>> prRule "ABSYN" [] (Rule "EInt" undefined [Left (TokenCat "Integer"), Left (Cat "NT")])
+-- >>> prRule "ABSYN" [] $ Rule "EInt" undefined [Left (TokenCat "Integer"), Left (Cat "NT")] Parsable
 -- public R visit(ABSYN.EInt p, A arg)
 -- { /* Code For EInt Goes Here */
 --   //p.integer_;
@@ -101,14 +101,14 @@ prData packageAbsyn user (cat, rules)
 -- }
 --
 -- It skips the internal category (indicating that a rule is not parsable)
--- >>> prRule "ABSYN" [] (Rule "EInt" undefined [Left (InternalCat), Left (TokenCat "Integer")])
+-- >>> prRule "ABSYN" [] $ Rule "EInt" undefined [Left (TokenCat "Integer")] Internal
 -- public R visit(ABSYN.EInt p, A arg)
 -- { /* Code For EInt Goes Here */
 --   //p.integer_;
 --   return null;
 -- }
 prRule :: String -> [UserDef] -> Rule -> Doc
-prRule packageAbsyn user (Rule fun _ cats)
+prRule packageAbsyn user (Rule fun _ cats _)
   | not (isCoercion fun || isDefinedRule fun) = vcat
     [ "public R visit(" <> text packageAbsyn <> "." <> fname <> " p, A arg)"
     , "{"
@@ -118,7 +118,7 @@ prRule packageAbsyn user (Rule fun _ cats)
     , "}" ]
   where
     fname = text fun                            -- function name
-    cats' = filter ((/= InternalCat).fst) (lefts (numVars cats))  -- non-terminals in the rhs
+    cats' = lefts $ numVars cats  -- non-terminals in the rhs
 prRule _ _ _ = ""
 
 -- | Traverses a class's instance variables.

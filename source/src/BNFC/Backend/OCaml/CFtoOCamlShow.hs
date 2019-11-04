@@ -136,7 +136,6 @@ mkRhs args its =
     [] -> ""
     str -> "c2s '(' >> " ++ str ++ " >> c2s ')'"
  where
-  mk args (Left InternalCat : items)      = mk args items
   mk (arg:args) (Left c : items)  = (showsFun c +++ arg)        : mk args items
   mk args       (Right _ : items) = mk args items
   mk _ _ = []

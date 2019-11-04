@@ -114,7 +114,7 @@ prDataH (cat, rules) =
 
 --Visit functions for a rule.
 prRuleH :: Rule -> String
-prRuleH (Rule fun _ _) | not (isCoercion fun) = concat
+prRuleH (Rule fun _ _ _) | not (isCoercion fun) = concat
   ["  void visit", fun, "(", fun, " *", fnm, ");\n"]
    where
     fnm = mkVariable fun
@@ -215,7 +215,7 @@ prData user (cat, rules) =
     Nothing ->  "void Skeleton::visit" ++ cl ++ "(" ++ cl +++ "*" ++ vname ++ ") {} //abstract class\n\n"
 
 -- | Visits all the instance variables of a category.
--- >>> prRule (Rule "F" (Cat "S") [Right "X", Left (TokenCat "A"), Left (Cat "B")])
+-- >>> prRule (Rule "F" (Cat "S") [Right "X", Left (TokenCat "A"), Left (Cat "B")] Parsable)
 -- void Skeleton::visitF(F *f)
 -- {
 --   /* Code For F Goes Here */
@@ -225,7 +225,7 @@ prData user (cat, rules) =
 -- }
 -- <BLANKLINE>
 prRule :: Rule -> Doc
-prRule (Rule fun _ cats) | not (isCoercion fun) = vcat
+prRule (Rule fun _ cats _) | not (isCoercion fun) = vcat
   [ text ("void Skeleton::visit" ++ fun ++ "(" ++ fun +++ "*" ++ fnm ++ ")")
   , codeblock 2
       [ text ("/* Code For " ++ fun ++ " Goes Here */")

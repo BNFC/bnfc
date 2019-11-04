@@ -59,7 +59,7 @@ cf2Happy name absName lexName errName mode tokenText functor cf = unlines
   , delimiter
   , specialRules tokenText cf
   , render $ prRules functor (rulesForHappy absName functor cf)
-  , finalize tokenText cf
+  , finalize cf
   ]
 
 -- | Construct the header.
@@ -127,41 +127,41 @@ rulesForHappy absM functor cf = map mkOne $ ruleGroups cf
 -- | For every non-terminal, we construct a set of rules. A rule is a sequence
 -- of terminals and non-terminals, and an action to be performed.
 --
--- >>> constructRule "Foo" False [] (Rule "EPlus" (Cat "Exp") [Left (Cat "Exp"), Right "+", Left (Cat "Exp")])
+-- >>> constructRule "Foo" False [] (Rule "EPlus" (Cat "Exp") [Left (Cat "Exp"), Right "+", Left (Cat "Exp")] Parsable)
 -- ("Exp '+' Exp","Foo.EPlus $1 $3")
 --
 -- If we're using functors, it adds void value:
 --
--- >>> constructRule "Foo" True [] (Rule "EPlus" (Cat "Exp") [Left (Cat "Exp"), Right "+", Left (Cat "Exp")])
+-- >>> constructRule "Foo" True [] (Rule "EPlus" (Cat "Exp") [Left (Cat "Exp"), Right "+", Left (Cat "Exp")] Parsable)
 -- ("Exp '+' Exp","Foo.EPlus () $1 $3")
 --
 -- List constructors should not be prefixed by the abstract module name:
 --
--- >>> constructRule "Foo" False [] (Rule "(:)" (ListCat (Cat "A")) [Left (Cat "A"), Right",", Left (ListCat (Cat "A"))])
+-- >>> constructRule "Foo" False [] (Rule "(:)" (ListCat (Cat "A")) [Left (Cat "A"), Right",", Left (ListCat (Cat "A"))] Parsable)
 -- ("A ',' ListA","(:) $1 $3")
 --
--- >>> constructRule "Foo" False [] (Rule "(:[])" (ListCat (Cat "A")) [Left (Cat "A")])
+-- >>> constructRule "Foo" False [] (Rule "(:[])" (ListCat (Cat "A")) [Left (Cat "A")] Parsable)
 -- ("A","(:[]) $1")
 --
 -- Coercion are much simpler:
 --
--- >>> constructRule "Foo" True [] (Rule "_" (Cat "Exp") [Right "(", Left (Cat "Exp"), Right ")"])
+-- >>> constructRule "Foo" True [] (Rule "_" (Cat "Exp") [Right "(", Left (Cat "Exp"), Right ")"] Parsable)
 -- ("'(' Exp ')'","$2")
 --
 -- As an optimization, a pair of list rules [C] ::= "" | C k [C] is
 -- left-recursivized into [C] ::= "" | [C] C k.
 -- This could be generalized to cover other forms of list rules.
 --
--- >>> constructRule "Foo" False [ListCat (Cat "A")] (Rule "(:)" (ListCat (Cat "A")) [Left (Cat "A"), Right",", Left (ListCat (Cat "A"))])
+-- >>> constructRule "Foo" False [ListCat (Cat "A")] (Rule "(:)" (ListCat (Cat "A")) [Left (Cat "A"), Right",", Left (ListCat (Cat "A"))] Parsable)
 -- ("ListA A ','","flip (:) $1 $2")
 --
 -- Note that functors don't concern list constructors:
 --
--- >>> constructRule "Abs" True [ListCat (Cat "A")] (Rule "(:)" (ListCat (Cat "A")) [Left (Cat "A"), Right",", Left (ListCat (Cat "A"))])
+-- >>> constructRule "Abs" True [ListCat (Cat "A")] (Rule "(:)" (ListCat (Cat "A")) [Left (Cat "A"), Right",", Left (ListCat (Cat "A"))] Parsable)
 -- ("ListA A ','","flip (:) $1 $2")
 --
 constructRule :: String -> Bool -> [Cat] -> Rule -> (Pattern, Action)
-constructRule absName functor revs r0@(Rule fun cat _) = (pattern, action)
+constructRule absName functor revs r0@(Rule fun cat _ _) = (pattern, action)
   where
     (pattern,metavars) = generatePatterns revs r
     action | isCoercion fun                 = unwords metavars
@@ -238,8 +238,8 @@ prRules functor = vcat . map prOne
 
 -- Finally, some haskell code.
 
-finalize :: TokenText -> CF -> String
-finalize tokenText cf = unlines $ concat $
+finalize :: CF -> String
+finalize cf = unlines $ concat $
   [ [ "{"
     , ""
     , "returnM :: a -> Err a"

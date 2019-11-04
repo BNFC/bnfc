@@ -194,26 +194,26 @@ ifList cf cat = case cases of
 
 -- | Pattern match on the list constructor and the coercion level
 --
--- >>> mkPrtListCase (Rule "[]" (ListCat (Cat "Foo")) [])
+-- >>> mkPrtListCase (Rule "[]" (ListCat (Cat "Foo")) [] Parsable)
 -- (_,[]) -> (concatD [])
 --
--- >>> mkPrtListCase (Rule "(:[])" (ListCat (Cat "Foo")) [Left (Cat "Foo")])
+-- >>> mkPrtListCase (Rule "(:[])" (ListCat (Cat "Foo")) [Left (Cat "Foo")] Parsable)
 -- (_,[x]) -> (concatD [prtFoo 0 x])
 --
--- >>> mkPrtListCase (Rule "(:)" (ListCat (Cat "Foo")) [Left (Cat "Foo"), Left (ListCat (Cat "Foo"))])
+-- >>> mkPrtListCase (Rule "(:)" (ListCat (Cat "Foo")) [Left (Cat "Foo"), Left (ListCat (Cat "Foo"))] Parsable)
 -- (_,x::xs) -> (concatD [prtFoo 0 x ; prtFooListBNFC 0 xs])
 --
--- >>> mkPrtListCase (Rule "[]" (ListCat (CoercCat "Foo" 2)) [])
+-- >>> mkPrtListCase (Rule "[]" (ListCat (CoercCat "Foo" 2)) [] Parsable)
 -- (2,[]) -> (concatD [])
 --
--- >>> mkPrtListCase (Rule "(:[])" (ListCat (CoercCat "Foo" 2)) [Left (CoercCat "Foo" 2)])
+-- >>> mkPrtListCase (Rule "(:[])" (ListCat (CoercCat "Foo" 2)) [Left (CoercCat "Foo" 2)] Parsable)
 -- (2,[x]) -> (concatD [prtFoo 2 x])
 --
--- >>> mkPrtListCase (Rule "(:)" (ListCat (CoercCat "Foo" 2)) [Left (CoercCat "Foo" 2), Left (ListCat (CoercCat "Foo" 2))])
+-- >>> mkPrtListCase (Rule "(:)" (ListCat (CoercCat "Foo" 2)) [Left (CoercCat "Foo" 2), Left (ListCat (CoercCat "Foo" 2))] Parsable)
 -- (2,x::xs) -> (concatD [prtFoo 2 x ; prtFooListBNFC 2 xs])
 --
 mkPrtListCase :: Rule -> Doc
-mkPrtListCase (Rule f (ListCat c) rhs)
+mkPrtListCase (Rule f (ListCat c) rhs _)
   | isNilFun f  = parens (precPattern <> "," <> "[]") <+> "->" <+> body
   | isOneFun f  = parens (precPattern <> "," <> "[x]") <+> "->" <+> body
   | isConsFun f = parens (precPattern <> "," <>"x::xs") <+> "->" <+> body
@@ -226,7 +226,6 @@ mkPrtListCase _ = error "mkPrtListCase undefined for non-list categories"
 mkRhs args its =
   "(concatD [" ++ unwords (intersperse ";" (mk args its)) ++ "])"
  where
-  mk args (Left InternalCat : items)      = mk args items
   mk (arg:args) (Left c : items)  = (prt c +++ arg)        : mk args items
   mk args       (Right s : items) = ("render " ++ mkEsc s) : mk args items
   mk _ _ = []

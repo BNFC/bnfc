@@ -44,7 +44,7 @@ cf2CPPPrinter useStl inPackage cf =
 
 positionRules :: CF -> [(Cat,[Rule])]
 positionRules cf =
-  [ (TokenCat cat, [Rule cat (TokenCat cat) $ map (Left . TokenCat) [catString, catInteger]])
+  [ (TokenCat cat, [ Rule cat (TokenCat cat) (map (Left . TokenCat) [catString, catInteger]) Parsable ])
   | cat <- filter (isPositionCat cf) $ map fst (tokenPragmas cf)
   ]
 
@@ -207,7 +207,7 @@ prDataH (cat, rules) =
 
 --Prints all the methods to visit a rule.
 prRuleH :: Rule -> String
-prRuleH (Rule fun _ _) | isProperLabel fun = concat
+prRuleH (Rule fun _ _ _) | isProperLabel fun = concat
   ["  void visit", fun, "(", fun, " *p);\n"]
 prRuleH _ = ""
 
@@ -405,7 +405,7 @@ prPrintData _ inPackage _cf (cat, rules) = -- Not a list
 -- | Generate pretty printer visitor for a list category:
 --
 -- >>> let c = Cat "C" ; lc = ListCat c
--- >>> let rules = [Rule "[]" lc [], Rule "(:)" lc [Left c, Right "-", Left lc]]
+-- >>> let rules = [Rule "[]" lc [] Parsable, Rule "(:)" lc [Left c, Right "-", Left lc] Parsable]
 -- >>> genPrintVisitorList (lc, rules)
 -- void PrintAbsyn::visitListC(ListC *listc)
 -- {
@@ -417,7 +417,7 @@ prPrintData _ inPackage _cf (cat, rules) = -- Not a list
 -- }
 --
 -- >>> let c2 = CoercCat "C" 2 ; lc2 = ListCat c2
--- >>> let rules2 = rules ++ [Rule "[]" lc2 [], Rule "(:)" lc2 [Left c2, Right "+", Left lc2]]
+-- >>> let rules2 = rules ++ [Rule "[]" lc2 [] Parsable, Rule "(:)" lc2 [Left c2, Right "+", Left lc2] Parsable]
 -- >>> genPrintVisitorList (lc, rules2)
 -- void PrintAbsyn::visitListC(ListC *listc)
 -- {
@@ -494,7 +494,7 @@ genPrintVisitorListNoStl _ = error "genPrintVisitorListNoStl expects a ListCat"
 
 --Pretty Printer methods for a rule.
 prPrintRule :: Maybe String -> Rule -> String
-prPrintRule inPackage r@(Rule fun _ cats) | isProperLabel fun = unlines
+prPrintRule inPackage r@(Rule fun _ cats _) | isProperLabel fun = unlines
   [
    "void PrintAbsyn::visit" ++ fun ++ "(" ++ fun +++ "*" ++ fnm ++ ")",
    "{",
@@ -524,9 +524,7 @@ prPrintCat fnm (Left (c, nt))
   | isList c            = "  if(" ++ fnm ++ "->" ++ render nt ++ ") {" ++ accept ++ "}\n"
   | otherwise           = "  " ++ accept ++ "\n"
   where
-    accept
-      | c == InternalCat =  "/* Internal Category */\n"
-      | otherwise        = setI (precCat c) ++ fnm ++ "->" ++ render nt ++ "->accept(this);"
+    accept = setI (precCat c) ++ fnm ++ "->" ++ render nt ++ "->accept(this);"
 
 {- **** Abstract Syntax Tree Printer **** -}
 
@@ -590,7 +588,7 @@ prShowData _ (cat, rules) =  --Not a list:
 
 --This prints all the methods for Abstract Syntax tree rules.
 prShowRule :: Rule -> String
-prShowRule (Rule fun _ cats) | isProperLabel fun = concat
+prShowRule (Rule fun _ cats _) | isProperLabel fun = concat
   [
    "void ShowAbsyn::visit" ++ fun ++ "(" ++ fun +++ "*" ++ fnm ++ ")\n",
    "{\n",
@@ -625,7 +623,6 @@ prShowCat _ (Right _)               = ""
 prShowCat fnm (Left (cat,nt))
   | isTokenCat cat              =
     "  visit" ++ funName cat ++ "(" ++ fnm ++ "->" ++ render nt ++ ");\n"
-  | cat == InternalCat                = "/* Internal Category */\n"
   | show (normCat $ strToCat $ render nt) /= render nt = accept
   | otherwise                         =
     concat [

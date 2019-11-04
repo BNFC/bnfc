@@ -94,7 +94,7 @@ mkHFile rp cf = unlines
   prForward _ = ""
   getRules cf = map testRule (cfgRules cf)
   getClasses = map show . filter isDataCat
-  testRule (Rule f c _)
+  testRule (Rule f c _ _)
     | isList c && isConsFun f = identCat (normCat c)
     | otherwise = "_"
 

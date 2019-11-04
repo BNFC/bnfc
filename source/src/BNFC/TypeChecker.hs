@@ -45,7 +45,7 @@ buildContext :: CF -> Context
 buildContext cf@CFG{..} = Ctx
   { ctxLabels =
       [ (f, mkType cat args)
-        | Rule f cat args <- cfgRules
+        | Rule f cat args _ <- cfgRules
         , not (isCoercion f)
         , not (isNilCons f)
       ]
@@ -53,7 +53,7 @@ buildContext cf@CFG{..} = Ctx
       ("Ident" : tokenNames cf)
   }
   where
-    mkType cat args = FunT [ mkBase t | Left t <- args, t /= InternalCat ]
+    mkType cat args = FunT [ mkBase t | Left t <- args ]
                            (mkBase cat)
     mkBase t
         | isList t  = ListT $ mkBase $ normCatOfList t

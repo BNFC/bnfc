@@ -237,7 +237,7 @@ prData packageAbsyn user (cat, rules) = unlines k
 
 
 prRule :: String -> Rule -> String
-prRule packageAbsyn r@(Rule fun _c cats) | not (isCoercion fun || isDefinedRule fun) = concat
+prRule packageAbsyn r@(Rule fun _c cats _) | not (isCoercion fun || isDefinedRule fun) = concat
     [ "    if (foo instanceof" +++ packageAbsyn ++ "." ++ fun ++ ")\n"
     , "    {\n"
     , "       " ++ packageAbsyn ++ "." ++ fun +++ fnm +++ "= ("
@@ -262,7 +262,7 @@ prRule _nm _ = ""
 -- |
 --
 -- >>> let lfoo = ListCat (Cat "Foo")
--- >>> prList [] lfoo [Rule "[]" lfoo [], Rule "(:)" lfoo [Left (Cat "Foo"), Right ".", Left lfoo]]
+-- >>> prList [] lfoo [Rule "[]" lfoo [] Parsable, Rule "(:)" lfoo [Left (Cat "Foo"), Right ".", Left lfoo] Parsable]
 -- for (java.util.Iterator<Foo> it = foo.iterator(); it.hasNext();)
 -- {
 --   pp(it.next(), _i_);
@@ -298,8 +298,6 @@ prList user c rules =
 -- >>> prCat "F" (Left (TokenCat "String", "string_"))
 --        printQuoted(F.string_);
 -- <BLANKLINE>
--- >>> prCat "F" (Left (InternalCat, "#_"))
--- <BLANKLINE>
 -- >>> prCat "F" (Left (Cat "Abc", "abc_"))
 --        pp(F.abc_, 0);
 -- <BLANKLINE>
@@ -307,7 +305,6 @@ prCat :: Doc -> Either (Cat, Doc) String -> Doc
 prCat _ (Right t) = nest 7 ("render(\"" <> text(escapeChars t) <> "\");\n")
 prCat fnm (Left (TokenCat "String", nt))
     = nest 7 ("printQuoted(" <> fnm <> "." <> nt <> ");\n")
-prCat _ (Left (InternalCat, _)) = empty
 prCat fnm (Left (cat, nt))
     = nest 7 ("pp(" <> fnm <> "." <> nt <> ", " <> integer (precCat cat) <> ");\n")
 
@@ -332,7 +329,7 @@ shData packageAbsyn user (cat, rules) = unlines k
 
 
 shRule :: String -> Rule -> String
-shRule packageAbsyn (Rule fun _c cats) | not (isCoercion fun || isDefinedRule fun) = unlines
+shRule packageAbsyn (Rule fun _c cats _) | not (isCoercion fun || isDefinedRule fun) = unlines
     [ "    if (foo instanceof" +++ packageAbsyn ++ "." ++ fun ++ ")"
     , "    {"
     , "       " ++ packageAbsyn ++ "." ++ fun +++ fnm +++ "= ("
@@ -376,8 +373,6 @@ shList user c _rules = unlines
 --        sh(F.lista_);
 --        render("]");
 -- <BLANKLINE>
--- >>> shCat "F" (InternalCat, "#_")
--- <BLANKLINE>
 -- >>> shCat "F" (Cat "A", "a_")
 --        sh(F.a_);
 -- <BLANKLINE>
@@ -386,7 +381,6 @@ shCat fnm (ListCat _, vname) = vcat
     [ "       render(\"[\");"
     , "       sh(" <> fnm <> "." <> vname <> ");"
     , "       render(\"]\");\n" ]
-shCat _ (InternalCat, _)     = empty
 shCat fname (_, vname)       = "       sh(" <> fname <> "." <> vname <> ");\n"
 
 --Helper function that escapes characters in strings

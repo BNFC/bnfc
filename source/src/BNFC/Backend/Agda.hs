@@ -248,7 +248,6 @@ cf2AgdaParser time tokenText mod astmod amod emod pmod layoutMod cats = vsep $
     TokenCat "Char" -> Nothing
     TokenCat s    -> Just s
     ListCat c     -> baseCat c
-    InternalCat{} -> Nothing
 
 -- We prefix the Agda types with "#" to not conflict with user-provided nonterminals.
 arrow, charT, intT, listT, stringT, stringFromListT :: Doc
@@ -528,7 +527,6 @@ nameSuggestion = \case
   CoercCat d _  -> nameFor d
   Cat d         -> nameFor d
   TokenCat{}    -> "x"
-  InternalCat{} -> error "impossible: Backend.Agda.nameSuggestion: Cat cannot be InternalCat"
 
 -- | Suggest the name of a bound variable of the given base category.
 --
@@ -739,7 +737,6 @@ prettyCat = \case
   TokenCat s   -> text s
   CoercCat s _ -> text s
   ListCat c    -> listT <+> prettyCatParens c
-  InternalCat  -> error "prettyCat: unexpected case InternalCat"
 
 -- | Pretty-print category in parentheses, if 'compositeCat'.
 prettyCatParens :: Cat -> Doc

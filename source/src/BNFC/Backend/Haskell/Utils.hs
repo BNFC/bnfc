@@ -134,7 +134,6 @@ catToType param cat = parensIf isApp $ catToType' param cat
     isApp = case (param, cat) of
         (Just _, Cat _) -> True
         _ -> False
-    catToType' _ InternalCat = error "Can't create a haskell type for internal category"
     catToType' Nothing  c              = text $ show $ normCat c
     catToType' (Just p) (Cat c)        = text c <+> p
     catToType' (Just p) (CoercCat c _) = text c <+> p

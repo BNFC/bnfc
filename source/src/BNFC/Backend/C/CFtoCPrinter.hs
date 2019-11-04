@@ -412,7 +412,7 @@ renderX sep' = "render" <> char sc <> parens (text sep)
 -- | Pretty Printer methods for a rule.
 
 prPrintRule :: Rule -> String
-prPrintRule r@(Rule fun _ cats) | not (isCoercion fun) = unlines
+prPrintRule r@(Rule fun _ cats _) | not (isCoercion fun) = unlines
   [
    "  case is_" ++ fun ++ ":",
    lparen,
@@ -434,7 +434,6 @@ prPrintCat :: String -> Either (Cat, Doc) String -> String
 prPrintCat fnm (c) = case c of
   Right t -> "    " ++ render (renderX t) ++ ";\n"
   Left (cat, nt) | isTokenCat cat -> "    pp" ++ basicFunName (render nt) ++ "(p->u." ++ v ++ "_." ++ render nt ++ ", " ++ show (precCat cat) ++ ");\n"
-  Left (InternalCat, _) -> "    /* Internal Category */\n"
   Left (cat, nt) -> "    pp" ++ identCat (normCat cat) ++ "(p->u." ++ v ++ "_." ++ render nt ++ ", " ++ show (precCat cat) ++ ");\n"
  where
   v = map toLower (normFun fnm)
@@ -509,7 +508,7 @@ prShowData (cat, rules) = unlines $
 -- | Pretty Printer methods for a rule.
 
 prShowRule :: Rule -> String
-prShowRule (Rule fun _ cats) | not (isCoercion fun) = unlines
+prShowRule (Rule fun _ cats _) | not (isCoercion fun) = unlines
   [
    "  case is_" ++ fun ++ ":",
    "  " ++ lparen,
@@ -542,7 +541,6 @@ prShowCat :: Fun -> (Cat, Doc) -> String
 prShowCat fnm c = case c of
     (cat,nt) | isTokenCat cat ->
         "    sh" ++ basicFunName (render nt) ++ "(p->u." ++ v ++ "_." ++ render nt ++ ");\n"
-    (InternalCat, _) -> "    /* Internal Category */\n"
     (cat,nt) ->
         "    sh" ++ identCat (normCat cat) ++ "(p->u." ++ v ++ "_." ++ render nt ++ ");\n"
   where v = map toLower (normFun fnm)

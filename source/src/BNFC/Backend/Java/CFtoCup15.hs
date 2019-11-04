@@ -273,10 +273,10 @@ generateAction packageAbsyn nt f ms rev rp
 -- | Generate patterns and a set of metavariables indicating
 -- where in the pattern the non-terminal.
 --
--- >>> generatePatterns [] (Rule "myfun" (Cat "A") [])
+-- >>> generatePatterns [] (Rule "myfun" (Cat "A") [] Parsable)
 -- (" /* empty */ ",[])
 --
--- >>> generatePatterns [("def", "_SYMB_1")] (Rule "myfun" (Cat "A") [Right "def", Left (Cat "B")])
+-- >>> generatePatterns [("def", "_SYMB_1")] (Rule "myfun" (Cat "A") [Right "def", Left (Cat "B")] Parsable)
 -- ("_SYMB_1:p_1 B:p_2 ",["p_2"])
 
 generatePatterns :: SymEnv -> Rule -> (Pattern,[MetaVar])

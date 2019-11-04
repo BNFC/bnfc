@@ -193,7 +193,7 @@ prData (cat, rules)
 
 -- | Visits all the instance variables of a category.
 -- >>> let ab = Cat "ab"
--- >>> prPrintRule (Rule "abc" undefined [Left ab, Left ab])
+-- >>> prPrintRule (Rule "abc" undefined [Left ab, Left ab] Parsable)
 --   case is_abc:
 --     /* Code for abc Goes Here */
 --     visitab(p->u.abc_.ab_1);
@@ -201,13 +201,13 @@ prData (cat, rules)
 --     break;
 -- <BLANKLINE>
 -- >>> let ab = TokenCat "ab"
--- >>> prPrintRule (Rule "abc" undefined [Left ab])
+-- >>> prPrintRule (Rule "abc" undefined [Left ab] Parsable)
 --   case is_abc:
 --     /* Code for abc Goes Here */
 --     visitAb(p->u.abc_.ab_);
 --     break;
 -- <BLANKLINE>
--- >>> prPrintRule (Rule "abc" undefined [Left ab, Left ab])
+-- >>> prPrintRule (Rule "abc" undefined [Left ab, Left ab] Parsable)
 --   case is_abc:
 --     /* Code for abc Goes Here */
 --     visitAb(p->u.abc_.ab_1);
@@ -215,7 +215,9 @@ prData (cat, rules)
 --     break;
 -- <BLANKLINE>
 prPrintRule :: Rule -> Doc
-prPrintRule (Rule fun _c cats) | not (isCoercion fun) = nest 2 $ vcat
+prPrintRule (Rule fun _c cats _)
+  | isCoercion fun = ""
+  | otherwise      = nest 2 $ vcat
     [ text $ "case is_" ++ fun ++ ":"
     , nest 2 (vcat
         [ "/* Code for " <> text fun <> " Goes Here */"
@@ -225,7 +227,6 @@ prPrintRule (Rule fun _c cats) | not (isCoercion fun) = nest 2 $ vcat
     ]
   where
     cats' = vcat $ map (prCat fun) (lefts (numVars cats))
-prPrintRule (Rule _fun _ _) = ""
 
 -- Prints the actual instance-variable visiting.
 prCat :: Fun -> (Cat, Doc) -> Doc

@@ -339,7 +339,7 @@ prData namespace user (cat, rules)
       otherRules = tail rules'
 
 prRule :: Namespace -> Maybe String -> Rule -> String
-prRule namespace maybeElse r@(Rule fun _c cats)
+prRule namespace maybeElse r@(Rule fun _c cats _)
   | not (isCoercion fun || isDefinedRule fun) = unlinesInline [
     "      " ++ fromMaybe "" maybeElse ++ "if(p is " ++ identifier namespace fun ++ ")",
     "      {",
@@ -384,7 +384,6 @@ prCat fnm (c, p) =
     Right t -> "        Render(\"" ++ escapeChars t ++ "\");"
     Left nt
       | "string" `isPrefixOf` nt -> "        PrintQuoted(" ++ fnm ++ "." ++ nt ++ ");"
-      | isInternalVar nt         -> ""
       | otherwise                -> "        PrintInternal(" ++ fnm ++ "." ++ nt ++ ", " ++ show p ++ ");"
 
 
@@ -406,7 +405,7 @@ shData namespace user (cat, rules)
     ]
 
 shRule :: Namespace -> Rule -> String
-shRule namespace (Rule fun _c cats)
+shRule namespace (Rule fun _c cats _)
   | not (isCoercion fun || isDefinedRule fun) = unlinesInline [
     "      if(p is " ++ identifier namespace fun ++ ")",
     "      {",
@@ -449,7 +448,4 @@ shCat fnm c =
           "        ShowInternal(" ++ fnm ++ "." ++ nt ++ ");",
           "        Render(\"]\");"
           ]
-      | isInternalVar nt       -> ""
       | otherwise              -> "        ShowInternal(" ++ fnm ++ "." ++ nt ++ ");"
-
-isInternalVar x = x == show InternalCat ++ "_"

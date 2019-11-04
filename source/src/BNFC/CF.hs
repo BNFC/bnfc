@@ -26,7 +26,7 @@ module BNFC.CF (
             -- Types.
             CF,
             CFG(..),
-            Rule, Rul(..), lookupRule,
+            Rule, Rul(..), lookupRule, InternalRule(..),
             Pragma(..),
             Exp(..),
             Literal,
@@ -143,14 +143,26 @@ data Rul function = Rule
       --   (or an identity function).
   , valCat  :: Cat
       -- ^ The value category, i.e., the defined non-terminal.
-  , rhsRule :: [Either Cat String]
+  , rhsRule :: SentForm
       -- ^ The sentential form, i.e.,
       --   the list of (non)terminals in the right-hand-side of a rule.
+  , internal :: InternalRule
+      -- ^ Is this an "internal" rule only for the AST and printing,
+      --   not for parsing?
   } deriving (Eq, Functor)
 
+data InternalRule
+  = Internal  -- ^ @internal@ rule (only for AST & printer)
+  | Parsable  -- ^ ordinary rule (also for parser)
+  deriving (Eq)
+
 instance (Show function) => Show (Rul function) where
-  show (Rule f cat rhs) =
-      unwords (show f : "." : show cat : "::=" : map (either show id) rhs)
+  show (Rule f cat rhs internal) = unwords $
+    (if internal == Internal then ("internal" :) else id) $
+    show f : "." : show cat : "::=" : map (either show id) rhs
+
+-- | A sentential form is a sequence of non-terminals or terminals.
+type SentForm = [Either Cat String]
 
 -- | Polymorphic CFG type for common type signatures for CF and CFP.
 
@@ -250,10 +262,7 @@ type KeyWord = String
 
 -- | Categories are the non-terminals of the grammar.
 data Cat
-  = InternalCat       -- ^ Internal category, inserted in 1st
-                      --   position in "internal" rules,
-                      --   essentially ensuring that they are never parsed.
-  | Cat String               -- ^ Ordinary non-terminal.
+  = Cat String               -- ^ Ordinary non-terminal.
   | TokenCat TokenCat        -- ^ Token types (like @Ident@, @Integer@, ..., user-defined).
   | ListCat Cat              -- ^ List non-terminals, e.g., @[Ident]@, @[Exp]@, @[Exp1]@.
   | CoercCat String Integer  -- ^ E.g. @Exp1@, @Exp2.
@@ -267,7 +276,6 @@ type NonTerminal = Cat
 -- | Render category symbols as strings
 catToStr :: Cat -> String
 catToStr = \case
-  InternalCat  -> "#"
   Cat s        -> s
   TokenCat s   -> s
   ListCat c    -> "[" ++ catToStr c ++ "]"
@@ -281,7 +289,6 @@ instance Show Cat where
 -- categories are parsed in the grammar already. To be on the safe side here,
 -- we still call the parser function that parses categries.
 strToCat :: String -> Cat
-strToCat "#" = InternalCat
 strToCat s =
     case pCat (tokens s) of
         Ok c -> cat2cat c
@@ -394,10 +401,10 @@ normFun f = case f of
 
 isNilFun, isOneFun, isConsFun, isNilCons,isConcatFun :: Fun -> Bool
 isNilCons f = isNilFun f || isOneFun f || isConsFun f || isConcatFun f
-isNilFun f  = f == "[]"
-isOneFun f  = f == "(:[])"
-isConsFun f = f == "(:)"
-isConcatFun f = f == "(++)"
+isNilFun    = (== "[]")
+isOneFun    = (== "(:[])")
+isConsFun   = (== "(:)")
+isConcatFun = (== "(++)")
 
 ------------------------------------------------------------------------------
 
@@ -438,11 +445,11 @@ commentPragmas = filter isComment
        isComment (CommentM _) = True
        isComment _            = False
 
-lookupRule :: Eq f => f -> [Rul f] -> Maybe (Cat, [Either Cat String])
+lookupRule :: Eq f => f -> [Rul f] -> Maybe (Cat, SentForm)
 lookupRule f = lookup f . map unRule
-  where unRule (Rule f' c rhs) = (f',(c,rhs))
+  where unRule (Rule f' c rhs _internal) = (f',(c,rhs))
 
--- | Returns all normal rules that constructs the given Cat.
+-- | Returns all normal rules that construct the given Cat.
 rulesForCat :: CF -> Cat -> [Rule]
 rulesForCat cf cat = [r | r <- cfgRules cf, isParsable r, valCat r == cat]
 
@@ -542,7 +549,7 @@ getAbstractSyntax cf = [ ( c, nub (constructors c) ) | c <- allCatsNorm cf ]
         guard $ not (isDefinedRule f)
         guard $ not (isCoercion f)
         guard $ normCat (valCat rule) == cat
-        let cs = [normCat c | Left c <- rhsRule rule, c /= InternalCat]
+        let cs = [normCat c | Left c <- rhsRule rule ]
         return (f, cs)
 
 
@@ -559,7 +566,7 @@ cf2data' predicate cf =
                               not (isCoercion f), sameCat cat (valCat r)]))
       | cat <- nub $ map normCat $ filter predicate $ allCats cf ]
  where
-  mkData (Rule f _ its) = (f, [normCat c | Left c <- its, c /= InternalCat])
+  mkData (Rule f _ its _) = (f, [normCat c | Left c <- its ])
 
 cf2data :: CF -> [Data]
 cf2data = cf2data' $ isDataCat . normCat
@@ -578,9 +585,7 @@ specialData cf = [(TokenCat name, [(name, [TokenCat catString])]) | name <- spec
 
 -- | Checks if the rule is parsable.
 isParsable :: Rul f -> Bool
-isParsable (Rule _ _ (Left c:_)) = c /= InternalCat
-isParsable _ = True
-
+isParsable = (Parsable ==) . internal
 
 
 -- | Checks if the list has a non-empty rule.
@@ -590,7 +595,7 @@ hasOneFunc = any (isOneFun . funRule)
 -- | Gets the separator for a list.
 getCons :: [Rule] -> String
 getCons rs = case find (isConsFun . funRule) rs of
-    Just (Rule _ _ cats) -> seper cats
+    Just (Rule _ _ cats _) -> seper cats
     Nothing              -> error $ "getCons: no construction function found in "
                                   ++ intercalate ", " (map (show . funRule) rs)
   where
@@ -615,7 +620,7 @@ isNonterm (Right _) = False
 -- used in Happy to parse lists of form 'C t [C]' in reverse order
 -- applies only if the [] rule has no terminals
 revSepListRule :: Rul f -> Rul f
-revSepListRule (Rule f c ts) = Rule f c (xs : x : sep) where
+revSepListRule (Rule f c ts internal) = Rule f c (xs : x : sep) internal where
   (x,sep,xs) = (head ts, init (tail ts), last ts)
 -- invariant: test in findAllReversibleCats have been performed
 
@@ -626,12 +631,12 @@ findAllReversibleCats cf = [c | (c,r) <- ruleGroups cf, isRev c r] where
                              then tryRev r2 r1
                            else isConsFun (funRule r1) && tryRev r1 r2
      _ -> False
-  tryRev (Rule f _ ts@(x:_:_)) r = isEmptyNilRule r &&
+  tryRev (Rule f _ ts@(x:_:_) _) r = isEmptyNilRule r &&
                                         isConsFun f && isNonterm x && isNonterm (last ts)
   tryRev _ _ = False
 
 isEmptyNilRule :: Rul Fun -> Bool
-isEmptyNilRule (Rule f _ ts) = isNilFun f && null ts
+isEmptyNilRule (Rule f _ ts _) = isNilFun f && null ts
 
 -- | Returns the precedence of a category symbol.
 -- E.g.
@@ -668,12 +673,12 @@ cf2cfp :: CF -> CFP
 cf2cfp cfg@CFG{..} = cfg { cfgRules = map cf2cfpRule cfgRules }
 
 cf2cfpRule :: Rule -> RuleP
-cf2cfpRule (Rule f c its)  = Rule (f, (f, trivialProf its)) c its
+cf2cfpRule (Rule f c its internal)  = Rule (f, (f, trivialProf its)) c its internal
 
 cfp2cf :: CFP -> CF
 cfp2cf = fmap fst
 
-trivialProf :: [Either Cat String] -> [([[Int]],[Int])]
+trivialProf :: SentForm -> [([[Int]],[Int])]
 trivialProf its = [([],[i]) | (i,_) <- zip [0..] [c | Left c <- its]]
 
 {-# DEPRECATED allCatsP, allEntryPointsP  "Use the version without P postfix instead" #-}

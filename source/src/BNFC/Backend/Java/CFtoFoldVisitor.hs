@@ -61,7 +61,7 @@ prData packageAbsyn user (cat, rules) = unlines
 
 --traverses a standard rule.
 prRule :: String -> [UserDef] -> Cat -> Rule -> String
-prRule packageAbsyn user _ (Rule fun _ cats)
+prRule packageAbsyn user _ (Rule fun _ cats _)
     | not (isCoercion fun || isDefinedRule fun) = unlines $
   ["    public R visit(" ++ cls ++ " p, A arg) {",
    "      R r = leaf(arg);"]
@@ -69,7 +69,7 @@ prRule packageAbsyn user _ (Rule fun _ cats)
   ++ ["      return r;",
       "    }"]
    where
-    cats' = filter ((/= InternalCat) . fst) (lefts (numVars cats))
+    cats' = lefts $ numVars cats
     cls = packageAbsyn ++ "." ++ fun
     visitVars = lines $ render $ vcat $ map (prCat user) cats'
 prRule  _ _ _ _ = ""
