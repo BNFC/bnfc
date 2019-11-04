@@ -1,4 +1,6 @@
--- | Type checker for defined syntax constructors.
+{-# LANGUAGE RecordWildCards #-}
+
+-- | Type checker for defined syntax constructors @define f xs = e@.
 
 module BNFC.TypeChecker
   ( -- * Type checker entry point
@@ -73,6 +75,7 @@ lookupCtx x ctx
         Nothing -> fail $ "Undefined symbol '" ++ x ++ "'."
         Just t  -> return t
 
+-- | Entry point.
 checkDefinitions :: CF -> Err ()
 checkDefinitions cf =
     do  checkContext ctx

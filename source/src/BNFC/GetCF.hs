@@ -17,8 +17,15 @@
     Foundation, 51 Franklin Street, Fifth Floor, Boston, MA 02110-1335, USA
 -}
 
+{-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE RecordWildCards #-}
 
-module BNFC.GetCF where
+-- | Check LBNF input file and turn it into the 'CF' internal representation.
+
+module BNFC.GetCF
+  ( parseCF, parseCFP
+  , checkRule, transItem
+  ) where
 
 import Control.Arrow (left)
 import Control.Monad.State (State, evalState, get, modify)
@@ -49,8 +56,12 @@ import BNFC.Utils
 -- $setup
 -- >>> import PrintBNF
 
+-- | Entrypoint.
+
 parseCF :: SharedOptions -> Target -> String -> IO CF
 parseCF opts t s = cfp2cf <$> parseCFP opts t s
+
+-- | Entrypoint (profiles).
 
 parseCFP :: SharedOptions -> Target -> String -> IO CFP
 parseCFP opts target content = do
@@ -64,6 +75,7 @@ parseCFP opts target content = do
   -- Some backends do not allow the grammar name to coincide with
   -- one of the category or constructor names.
   let names    = allNames cf
+  -- Note: the following @() <-@ works around an @Ambiguous type variable@
   () <- when (target == TargetJava && lang opts `elem` names) $
       die $ unwords $
         [ "ERROR of backend", show target ++ ":"
