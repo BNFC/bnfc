@@ -450,7 +450,8 @@ genPrintVisitorList (cat@(ListCat c), rules) =
    separators = getSeparatorByPrecedence rules
    cl = identCat (normCat cat)
    vname = text $ map toLower cl
-   renderSep s = "render(" <> text (snd (renderCharOrString s)) <> ")"
+   renderSep s = "render(" <> text (snd (renderCharOrString s')) <> ")"
+     where s' = if null s then " " else s
 genPrintVisitorList _ = error "genPrintVisitorList expects a ListCat"
 
 -- | This is the only part of the pretty printer that differs significantly
@@ -704,6 +705,7 @@ prRender useStl = unlines
       "     bufAppend('\\n');",
       "     indent();",
       "  }",
+      "  else if (c == ' ') bufAppend(c);",
       "  else if (c == 0) return;",
       "  else",
       "  {",

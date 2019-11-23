@@ -365,7 +365,7 @@ prPrintData (cat, rules) = unlines $
   "    else",
   "    {",
   visitMember,
-  render (nest 6 (renderListSepByPrecedence "i" renderX
+  render (nest 6 (renderListSepByPrecedence "i" renderSep
       (getSeparatorByPrecedence rules))),
   "      " ++ vname +++ "=" +++ vname ++ "->" ++ vname ++ "_;",
   "    }",
@@ -393,7 +393,8 @@ prPrintData (cat, rules) = unlines $
    member = map toLower ecl
    visitMember = "      pp" ++ ecl ++ "(" ++ vname ++ "->" ++ member ++ "_, i);"
    sep' = getCons rules
-   optsep = if hasOneFunc rules then "" else "      " ++ render (renderX sep') ++ ";"
+   optsep = if hasOneFunc rules then "" else "      " ++ render (renderSep sep') ++ ";"
+   renderSep s = renderX $ if null s then " " else s
 
 -- | Helper function that call the right c function (renderC or renderS) to
 -- render a literal string.
@@ -606,6 +607,7 @@ prRender = unlines
       "     bufAppendC('\\n');",
       "     indent();",
       "  }",
+      "  else if (c == ' ') bufAppendC(c);",
       "  else if (c == 0) return;",
       "  else",
       "  {",
