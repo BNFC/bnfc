@@ -158,7 +158,7 @@ rules cf = unlines [
     specialRules cf
     ]
     where
-        mkOne (cat,rules) = constructRule cf rules cat
+        mkOne (cat,rules) = (cat, constructRule cf rules cat)
         prOne (_,[]) = [] -- nt has only internal use
         prOne (nt,((p,a):ls)) =
           unwords [nt', ":" , p, "{", a, "}", "\n" ++ pr ls] ++ ";\n"
@@ -172,21 +172,12 @@ rules cf = unlines [
 
 -- For every non-terminal, we construct a set of rules. A rule is a sequence of
 -- terminals and non-terminals, and an action to be performed
--- As an optimization, a pair of list rules [C] ::= "" | C k [C]
--- is left-recursivized into [C] ::= "" | [C] C k.
--- This could be generalized to cover other forms of list rules.
-constructRule :: CF -> [Rule] -> NonTerminal -> (NonTerminal,[(Pattern,Action)])
-constructRule cf rules nt = (nt,[(p,generateAction nt (funRule r) (mkFlip b m)) |
-     r0 <- rules,
-     let (b,r) = if isConsFun (funRule r0) && elem (valCat r0) revs
-                   then (True,revSepListRule r0)
-                 else (False,r0),
-     let (p,m) = generatePatterns cf r])
- where
-   revs = cfgReversibleCats cf
-   mkFlip doit xs = case xs of
-       a:b:rest | doit -> b:a:rest
-       _ -> xs
+constructRule :: CF -> [Rule] -> NonTerminal -> [(Pattern,Action)]
+constructRule cf rules nt =
+  [ (p, generateAction nt (funRule r) m)
+  | r <- rules
+  , let (p, m) = generatePatterns cf r
+  ]
 
 
 
@@ -209,12 +200,7 @@ generatePatterns cf r = case rhsRule r of
    mkIt i = case i of
      Left c -> nonterminal c
      Right s -> terminal cf s
-   metas its = [revIf c ('$': show i) | (i,Left c) <- zip [1 ::Int ..] its]
-   revIf c m = if (not (isConsFun (funRule r)) && elem c revs)
-                 then ("(List.rev " ++ m ++ ")")
-               else m  -- no reversal in the left-recursive Cons rule itself
-   revs = cfgReversibleCats cf
-
+   metas its = [ ('$': show i) | (i,Left c) <- zip [1 ::Int ..] its ]
 
 specialRules :: CF -> String
 specialRules cf = unlines $ (`map` literals cf) $ \case
