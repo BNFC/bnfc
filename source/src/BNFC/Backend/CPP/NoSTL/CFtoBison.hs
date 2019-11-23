@@ -107,6 +107,9 @@ header name cf = unlines
     , "#include <stdio.h>"
     , "#include <string.h>"
     , "#include \"Absyn.H\""
+    , ""
+    , "#define YYMAXDEPTH 10000000"  -- default maximum stack size is 10000, but right-recursion needs O(n) stack
+    , ""
     , "int yyparse(void);"
     , "int yylex(void);"
     , "int yy_mylinenumber;"  --- hack to get line number. AR 2006

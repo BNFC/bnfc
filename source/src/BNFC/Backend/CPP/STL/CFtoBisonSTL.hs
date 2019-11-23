@@ -102,6 +102,9 @@ header inPackage name cf = unlines
     , "#include <string.h>"
     , "#include <algorithm>"
     , "#include \"Absyn.H\""
+    , ""
+    , "#define YYMAXDEPTH 10000000"  -- default maximum stack size is 10000, but right-recursion needs O(n) stack
+    , ""
     , "typedef struct yy_buffer_state *YY_BUFFER_STATE;"
     , "int yyparse(void);"
     , "int yylex(void);"
