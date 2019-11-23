@@ -268,13 +268,15 @@ prAssigns ((t,n,nm):vs) (p:ps) =
 
 getVars :: [Cat] -> [UserDef] -> [IVar]
 getVars cs user = reverse $ singleToZero $ foldl addVar [] (map identCat cs)
- where
+  where
   addVar is c = (c', n, c):is
     where c' = typename c user
           n = maximum (1:[n'+1 | (_,n',c'') <- is, c'' == c])
-  singleToZero is = [(t,n',nm) | (t,n,nm) <- is,
-                     let n' = if length [n | (_,_,n) <- is, n == nm] == 1
-                               then 0 else n]
+  singleToZero is =
+    [ (t,n',nm)
+    | (t,n,nm) <- is
+    , let n' = if length [n | (_,_,n) <- is, n == nm] == 1 then 0 else n
+    ]
 
 varName :: String -- ^ category name
         -> String -- ^ Variable name

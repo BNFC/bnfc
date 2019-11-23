@@ -68,12 +68,14 @@ header modName _ lexName errName = unlines
 -- The declarations of a happy file.
 declarations :: [Cat] -> String
 declarations ns = unlines
-                 [generateP ns,
-                  "%monad { Err } { thenM } { returnM }",
-                  "%tokentype { " ++ tokenName ++ " }"]
-   where generateP []     = []
-         generateP (n:ns) = concat ["%name p",n'," ",n',"\n",generateP ns]
-             where n' = identCat n
+    [ generateP ns
+    , "%monad { Err } { thenM } { returnM }"
+    , "%tokentype { " ++ tokenName ++ " }"
+    ]
+  where
+    generateP []     = []
+    generateP (n:ns) = concat [ "%name p", n', " ", n', "\n", generateP ns ]
+      where n' = identCat n
 
 -- The useless delimiter symbol.
 delimiter :: String
