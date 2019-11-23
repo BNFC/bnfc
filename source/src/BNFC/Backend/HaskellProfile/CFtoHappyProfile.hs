@@ -19,9 +19,10 @@
 
 module BNFC.Backend.HaskellProfile.CFtoHappyProfile (cf2HappyProfileS) where
 
-import BNFC.CF
---import Lexer
 import Data.List (intersperse)
+
+import BNFC.CF
+import BNFC.Utils (for)
 
 -- Type declarations
 
@@ -97,26 +98,17 @@ convert xs   = "'" ++ escape xs ++ "'"
         escape (x:xs) = x:escape xs
 
 rulesForHappy :: CFP -> Rules
-rulesForHappy cf = map mkOne $ ruleGroupsP cf where
-  mkOne (cat,rules) = constructRule cf rules cat
+rulesForHappy cf = for (ruleGroupsP cf) $ \ (cat,rules) ->
+  (cat, constructRule cf rules cat)
 
 -- For every non-terminal, we construct a set of rules. A rule is a sequence of
--- terminals and non-terminals, and an action to be performed
--- As an optimization, a pair of list rules [C] ::= "" | C k [C]
--- is left-recursivized into [C] ::= "" | [C] C k.
--- This could be generalized to cover other forms of list rules.
-constructRule :: CFP -> [RuleP] -> NonTerminal -> (NonTerminal,[(Pattern,Action)])
-constructRule cf rules nt = (nt,[(p,generateAction nt (revF b r) m) |
-     r0 <- rules,
-     let (b,r) = if isConsFun (funRuleP r0) && elem (valCat r0) revs
-                   then (True,revSepListRule r0)
-                 else (False,r0),
-     let (p,m) = generatePatterns cf r])
- where
-   ---- left rec optimization does not work yet
-   revF _ = ---- if b then ("flip " ++ funRuleP r) else (funRuleP r)
-       funRule
-   revs = cfgReversibleCats cf
+-- terminals and non-terminals, and an action to be performed.
+constructRule :: CFP -> [RuleP] -> NonTerminal -> [(Pattern,Action)]
+constructRule cf rules nt =
+  [ (p, generateAction nt (funRule r) m)
+  | r <- rules
+  , let (p, m) = generatePatterns cf r
+  ]
 
 -- Generates a string containing the semantic action.
 -- An action can for example be: Sum $1 $2, that is, construct an AST
@@ -139,11 +131,7 @@ generatePatterns cf r = case rhsRule r of
    mkIt i = case i of
      Left c -> identCat c
      Right s -> convert s
-   metas its = [revIf c ('$': show i) | (i,Left c) <- zip [1 ::Int ..] its]
-   revIf c m = if not (isConsFun (funRuleP r)) && elem c revs
-                   then "(reverse " ++ m ++ ")"
-                   else m  -- no reversal in the left-recursive Cons rule itself
-   revs = cfgReversibleCats cf
+   metas its = [ ('$': show i) | (i,Left c) <- zip [1 ::Int ..] its ]
 
 -- We have now constructed the patterns and actions,
 -- so the only thing left is to merge them into one string.
