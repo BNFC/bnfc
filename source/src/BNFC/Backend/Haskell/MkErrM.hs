@@ -24,6 +24,7 @@ module BNFC.Backend.Haskell.MkErrM where
 import Prelude'
 
 import BNFC.PrettyPrint
+import BNFC.Utils (when)
 
 mkErrM :: String -> Bool -> Doc
 mkErrM errMod ghc = vcat
@@ -39,11 +40,11 @@ mkErrM errMod ghc = vcat
     , "import Control.Monad (MonadPlus(..), liftM)"
     -- From ghc-8.0 on, Applicative(..) is part of the Prelude,
     -- thus, need not be imported:
-    , if ghc then "#if __GLASGOW_HASKELL__ < 710" else empty
+    , when ghc "#if __GLASGOW_HASKELL__ < 710"
     , "import Control.Applicative (Applicative(..), Alternative(..))"
-    , if ghc then "#else" else empty
-    , if ghc then "import Control.Applicative (Alternative(..))" else empty
-    , if ghc then "#endif" else empty
+    , when ghc "#else"
+    , when ghc "import Control.Applicative (Alternative(..))"
+    , when ghc "#endif"
     , ""
     , "data Err a = Ok a | Bad String"
     , "  deriving (Read, Show, Eq, Ord)"
@@ -55,13 +56,13 @@ mkErrM errMod ghc = vcat
     -- From ghc-8.8 on, fail is no longer part of Monad.
     -- Thus, by default, we do not add it.
     -- Only if --ghc, we add it either to Monad or MonadFail.
-    , if ghc then "#if __GLASGOW_HASKELL__ < 808" else empty
-    , if ghc then "  fail        = Bad" else empty
-    , if ghc then "#else" else empty
-    , if ghc then "" else empty
-    , if ghc then "instance MonadFail Err where" else empty
-    , if ghc then "  fail = Bad" else empty
-    , if ghc then "#endif" else empty
+    , when ghc "#if __GLASGOW_HASKELL__ < 808"
+    , when ghc "  fail        = Bad"
+    , when ghc "#else"
+    , when ghc ""
+    , when ghc "instance MonadFail Err where"
+    , when ghc "  fail = Bad"
+    , when ghc "#endif"
     , ""
     , "instance Applicative Err where"
     , "  pure = Ok"
