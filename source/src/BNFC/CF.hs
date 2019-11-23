@@ -35,7 +35,7 @@ module BNFC.CF (
             Cat(..), strToCat, catToStr,
             TokenCat,
             catString, catInteger, catDouble, catChar, catIdent,
-            NonTerminal,
+            NonTerminal, SentForm,
             Fun,
             Tree(..),
             prTree,         -- print an abstract syntax tree

@@ -22,6 +22,7 @@
 
 module BNFC.Utils
     ( when, unless, unlessNull
+    , for
     , (+++), (++++), (+-+), (+.+)
     , mkName, mkNames, NameStyle(..)
     , lowerCase, upperCase, mixedCase, camelCase, snakeCase
@@ -77,6 +78,10 @@ unlessNull :: Monoid m => [a] -> (a -> [a] -> m) -> m
 unlessNull l k = case l of
   []     -> mempty
   (a:as) -> k a as
+
+-- | Non-monadic 'forM'.
+for :: [a] -> (a -> b) -> [b]
+for = flip map
 
 -- * String operations for printing.
 
