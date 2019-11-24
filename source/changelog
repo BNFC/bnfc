@@ -1,5 +1,6 @@
 2.8.4 Andreas Abel <andreas.abel@gu.se>
-	* Haskell: new option --text-token to use Data.Text instead of String in the lexer
+	* Haskell: new option --text-token to use Data.Text instead of String in the lexer [#167]
+	* Haskell: allow block comment deliminters of any length [#202,#169]
 	* C++: fixed quadratic behavior in C++-generated printer (regression in 2.8.2)
 
 2.8.3 Andreas Abel <andreas.abel@gu.se>  August 2019
