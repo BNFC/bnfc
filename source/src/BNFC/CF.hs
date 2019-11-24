@@ -114,8 +114,9 @@ module BNFC.CF (
            ) where
 
 import Control.Monad (guard)
-import Data.List (nub, intersperse, sort, group, intercalate, find, sortBy)
 import Data.Char
+import Data.List (nub, intersperse, sort, group, intercalate, find)
+import Data.Maybe
 import qualified Data.Set as Set
 
 import AbsBNF (Reg())
@@ -454,9 +455,19 @@ lookupRule :: Eq f => f -> [Rul f] -> Maybe (Cat, SentForm)
 lookupRule f = lookup f . map unRule
   where unRule (Rule f' c rhs _internal) = (f',(c,rhs))
 
--- | Returns all normal rules that construct the given Cat.
+-- | Returns all parseable rules that construct the given Cat.
+--   Whitespace separators have been removed.
 rulesForCat :: CF -> Cat -> [Rule]
-rulesForCat cf cat = [r | r <- cfgRules cf, isParsable r, valCat r == cat]
+rulesForCat cf cat =
+  [ removeWhiteSpaceSeparators r | r <- cfgRules cf, isParsable r, valCat r == cat]
+
+removeWhiteSpaceSeparators :: Rul f -> Rul f
+removeWhiteSpaceSeparators = mapRhs $ mapMaybe $ either (Just . Left) $ \ sep ->
+  if all isSpace sep then Nothing else Just (Right sep)
+
+-- | Modify the 'rhsRule' part of a 'Rule'.
+mapRhs :: (SentForm -> SentForm) -> Rul f -> Rul f
+mapRhs f r = r { rhsRule = f $ rhsRule r }
 
 -- | Like rulesForCat but for normalized value categories.
 -- I.e., `rulesForCat (Cat "Exp")` will return rules for category Exp but also
@@ -495,6 +506,7 @@ isUsedCat :: CFG f -> Cat -> Bool
 isUsedCat cf cat = cat `elem` [c | r <- cfgRules cf, Left c <- rhsRule r]
 
 -- | Group all parsable categories with their rules.
+--   Deletes whitespace separators, as they will not become part of the parsing rules.
 ruleGroups :: CF -> [(Cat,[Rule])]
 ruleGroups cf = [(c, rulesForCat cf c) | c <- allParserCats cf]
 

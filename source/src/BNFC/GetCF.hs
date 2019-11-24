@@ -157,8 +157,9 @@ getCFP cnf (Abs.Grammar defs0) = do
                   (symbols,keywords) = partition notIdent reservedWords
                   notIdent s         = null s || not (isAlpha (head s)) || any (not . isIdentRest) s
                   isIdentRest c      = isAlphaNum c || c == '_' || c == '\''
-                  reservedWords      = nub [t | r <- rules, isParsable r, Right t <- rhsRule r]
+                  reservedWords      = nub [t | r <- rules, isParsable r, Right t <- rhsRule r, not $ all isSpace t]
                      -- Issue #204: exclude keywords from internal rules
+                     -- Issue #70: whitespace separators should be treated like "", at least in the parser
               in CFG pragma literals symbols keywords [] rules
     case mapMaybe (checkRule (cfp2cf cf0)) (cfgRules cf0) of
       [] -> return ()
@@ -285,9 +286,10 @@ delimiterRules a0 l r sep size =
          Abs.SepSepar _ -> size == Abs.MEmpty
          _ -> False
 
-
+-- If the user-provided separator consists of white space only,
+-- we turn it into a terminator rule to prevent reduce/reduce conflicts.
 separatorRules :: Abs.MinimumSize -> Abs.Cat -> String -> [Rule]
-separatorRules size c s = if null s then terminatorRules size c s else ifEmpty [
+separatorRules size c s = if all isSpace s then terminatorRules size c s else ifEmpty [
   Rule "(:[])" cs [Left c'] Parsable,
   Rule "(:)"   cs [Left c', Right s, Left cs] Parsable
   ]

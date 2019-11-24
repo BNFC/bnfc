@@ -103,8 +103,16 @@ prologue tokenText useGadt name absMod = concat
     , "    t  : ts@(p:_) | closingOrPunctuation p -> showString t . rend i ts"
     , "    t        :ts -> space t . rend i ts"
     , "    _            -> id"
-    , "  new i   = showChar '\\n' . replicateS (2*i) (showChar ' ') . dropWhile isSpace"
-    , "  space t = showString t . (\\s -> if null s then \"\" else ' ':s)"
+    , "  new i     = showChar '\\n' . replicateS (2*i) (showChar ' ') . dropWhile isSpace"
+    , "  space t s ="
+    , "    case (all isSpace t', null spc, null rest) of"
+    , "      (True , _   , True ) -> []              -- remove trailing space"
+    , "      (False, _   , True ) -> t'              -- remove trailing space"
+    , "      (False, True, False) -> t' ++ ' ' : s   -- add space if none"
+    , "      _                    -> t' ++ s"
+    , "    where"
+    , "      t'          = showString t []"
+    , "      (spc, rest) = span isSpace s"
     , ""
     , "  closingOrPunctuation :: String -> Bool"
     , "  closingOrPunctuation [c] = c `elem` closerOrPunct"
@@ -302,7 +310,7 @@ ifList cf cat =
     -- trace ("ifList cf    = " ++ show cf   ) $
     -- trace ("ifList cat   = " ++ show cat  ) $
     -- trace ("ifList rules = " ++ show rules) $
-    -- trace ("ifList rulesForCat cf (ListCat cat) = " ++ show (rulesForCat cf (ListCat cat))) $
+    -- trace ("ifList rulesForCat' cf (ListCat cat) = " ++ show (rulesForCat' cf (ListCat cat))) $
     -- trace "" $
     map (render . nest 2) cases
   where
