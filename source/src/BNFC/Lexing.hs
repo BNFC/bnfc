@@ -5,10 +5,11 @@ module BNFC.Lexing
 
 import Prelude'
 
-import Control.Arrow ((&&&))
-import Data.List (inits)
-import AbsBNF (Reg(..))
+import Control.Arrow ( (&&&) )
+import Data.List     ( inits )
+import AbsBNF        ( Reg(..) )
 import BNFC.CF
+import BNFC.Utils    ( unless )
 
 -- $setup
 -- >>> import PrintBNF
@@ -19,26 +20,23 @@ import BNFC.CF
 data LexType = LexComment | LexToken String | LexSymbols
 
 mkLexer :: CF -> [(Reg, LexType)]
-mkLexer cf =
+mkLexer cf = concat
     -- comments
-    [ (mkRegSingleLineComment s, LexComment) | s <- snd (comments cf) ]
-    ++
-    [ (mkRegMultilineComment b e, LexComment) | (b,e) <- fst (comments cf) ]
-    ++
+  [ [ (mkRegSingleLineComment s, LexComment) | s <- snd (comments cf) ]
+  , [ (mkRegMultilineComment b e, LexComment) | (b,e) <- fst (comments cf) ]
     -- user tokens
-    [ (reg, LexToken name) | (name, reg) <- tokenPragmas cf]
-    ++
+  , [ (reg, LexToken name) | (name, reg) <- tokenPragmas cf]
     -- predefined tokens
-    [ ( regIdent, LexToken "Ident" ) ]
-    ++
+  , [ ( regIdent, LexToken "Ident" ) ]
     -- Symbols
-    [ (foldl1 RAlt (map RSeqs (cfgSymbols cf)), LexSymbols ) ]
-    ++
+  , unless (null $ cfgSymbols cf) [ (foldl1 RAlt (map RSeqs (cfgSymbols cf)), LexSymbols ) ]
     -- Built-ins
-    [ ( regInteger, LexToken "Integer")
-    , ( regDouble, LexToken "Double" )
-    , ( regString, LexToken "String" )
-    , ( regChar, LexToken "Char" ) ]
+  , [ ( regInteger, LexToken "Integer")
+    , ( regDouble , LexToken "Double" )
+    , ( regString , LexToken "String" )
+    , ( regChar   , LexToken "Char"   )
+    ]
+  ]
 
 
 (<>) = RSeq
@@ -96,16 +94,19 @@ mkRegSingleLineComment s = RSeq (RSeqs s) (RSeq (RStar RAny) (RChar '\n'))
 -- {"<!--"}((char|'\n')-'-'|'-'((char|'\n')-'-')|{"--"}((char|'\n')-'>'))*'-'*{"-->"}
 mkRegMultilineComment :: String -> String -> Reg
 mkRegMultilineComment b e =
-    rseq $ concat [
-      lit b
-      , [RStar (foldl1 RAlt subregex)]
-      , [ RStar (RChar (head e)) | length e > 1 ]
-      , lit e]
+    foldl1 RSeq $ concat
+      [ lit b
+      , [ RStar (foldl1 RAlt subregex) | not $ null subregex ]
+      , [ RStar (RChar (head e))       | length e >= 2       ]
+      , lit e
+      ]
   where
-    rseq = foldl1 RSeq
     lit :: String -> [Reg]
     lit "" = []
     lit [c] = [RChar c]
     lit s = [RSeqs s]
     prefixes = map (init &&& last) (drop 1 (inits e))
-    subregex = [rseq (lit ss ++ [RMinus (RAlt RAny (RChar '\n')) (RChar s)]) | (ss,s) <- prefixes]
+    subregex =
+      [ foldr RSeq (RMinus (RAlt RAny (RChar '\n')) (RChar s)) $ lit ss
+      | (ss,s) <- prefixes
+      ]
