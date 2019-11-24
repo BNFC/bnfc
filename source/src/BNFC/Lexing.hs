@@ -1,7 +1,7 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module BNFC.Lexing
-    ( mkLexer, LexType(..) ) where
+    ( mkLexer, LexType(..), mkRegMultilineComment ) where
 
 import Prelude'
 
@@ -62,7 +62,7 @@ regInteger = RPlus RDigit
 -- '"'(char-["\"\\"]|'\\'["\"\\nt"])*'"'
 regString :: Reg
 regString = RChar '"'
-            <> RStar ( RMinus RAny (RAlts "\"\\")
+            <> RStar ((RAny `RMinus` RAlts "\"\\")
                        <|> (RChar '\\' <> RAlts "\"\\nt"))
             <> RChar '"'
 
@@ -83,15 +83,15 @@ regDouble = RPlus RDigit <> RChar '.' <> RPlus RDigit
 
 -- | Create regex for single line comments
 -- >>> p $ mkRegSingleLineComment "--"
--- {"--"}(char*'\n')
+-- {"--"}char*'\n'
 mkRegSingleLineComment :: String -> Reg
-mkRegSingleLineComment s = RSeq (RSeqs s) (RSeq (RStar RAny) (RChar '\n'))
+mkRegSingleLineComment s = RSeqs s <> RStar RAny <> RChar '\n'
 
 -- | Create regex for multiline comments
 -- >>> p $ mkRegMultilineComment "<" ">"
--- '<'((char|'\n')-'>')*'>'
+-- '<'(char-'>'|'\n')*'>'
 -- >>> p $ mkRegMultilineComment "<!--" "-->"
--- {"<!--"}((char|'\n')-'-'|'-'((char|'\n')-'-')|{"--"}((char|'\n')-'>'))*'-'*{"-->"}
+-- {"<!--"}(char-'-'|'\n'|'-'(char-'-'|'\n')|{"--"}(char-'>'|'\n'))*'-'*{"-->"}
 mkRegMultilineComment :: String -> String -> Reg
 mkRegMultilineComment b e =
     foldl1 RSeq $ concat
@@ -107,6 +107,6 @@ mkRegMultilineComment b e =
     lit s = [RSeqs s]
     prefixes = map (init &&& last) (drop 1 (inits e))
     subregex =
-      [ foldr RSeq (RMinus (RAlt RAny (RChar '\n')) (RChar s)) $ lit ss
+      [ foldr RSeq ((RAny `RMinus` RChar s) `RAlt` RChar '\n') $ lit ss
       | (ss,s) <- prefixes
       ]

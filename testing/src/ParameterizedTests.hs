@@ -61,7 +61,8 @@ current :: Test
 current = makeTestSuite "Current parameterized test" $
   map (`makeTestCase` ("regression-tests" </> cur)) parameters
   where
-  cur = "204_InternalToken"
+  cur = "202_comments"
+  -- cur = "204_InternalToken"
   -- cur = "222_IntegerList"
   -- cur = "194_layout"
   -- cur = "210_NumberedCatWithoutCoerce"
@@ -148,7 +149,8 @@ testCases :: TestParameters -> [Test]
 testCases params =
     map (makeTestCase params) $
       map ("regression-tests/" ++) $
-        [ "222_IntegerList"
+        [ "202_comments"
+        , "222_IntegerList"
         , "210_NumberedCatWithoutCoerce"
         , "204_InternalToken"
         , "249_unicode"

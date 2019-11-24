@@ -26,7 +26,10 @@ import Data.List (intercalate, intersperse)
 
 import AbsBNF
 import BNFC.CF
+import BNFC.Lexing  (mkRegMultilineComment)
 import BNFC.Options (TokenText(..))
+import BNFC.Utils   (unless)
+
 import BNFC.Backend.Haskell.Utils
 
 cf2alex3 :: String -> String -> String -> Bool -> TokenText -> CF -> String
@@ -87,6 +90,7 @@ rMacros cf = if null symbs then [] else
 restOfAlex :: String -> Bool -> TokenText -> CF -> [String]
 restOfAlex _ shareStrings tokenText cf = [
   ":-",
+  "",
   lexComments (comments cf),
   "$white+ ;",
   pTSpec (cfgSymbols cf),
@@ -258,21 +262,29 @@ restOfAlex _ shareStrings tokenText cf = [
 
    ifC :: TokenCat -> String -> String
    ifC cat s = if isUsedCat cf (TokenCat cat) then s else ""
-   lexComments ([],[])           = []
-   lexComments (xs,s1:ys) = '\"' : s1 ++ "\"" ++ " [.]* ; -- Toss single line comments\n" ++ lexComments (xs, ys)
-   lexComments (([l1,l2],[r1,r2]):xs,[]) = concat
-                                        [
-                                        '\"':l1:l2:"\" ([$u # \\", -- FIXME quotes or escape?
-                                        r1:"] | \\",
-                                        r1:"+ [$u # [\\",
-                                        r1:" \\",
-                                        r2:"]])* (\"",
-                                        r1:"\")+ \"",
-                                        r2:"\" ;\n",
-                                        lexComments (xs, [])
-                                        ]
-   lexComments (_ : xs, []) = lexComments (xs,[])
----   lexComments (xs,(_:ys)) = lexComments (xs,ys)
+
+   lexComments
+     :: ( [(String, String)]  -- block comment delimiters
+        , [String]            -- line  comment initiators
+        ) -> String           -- Alex declarations
+   lexComments (block, line) = unlines $ concat $
+     [ unless (null line) [ "-- Line comments" ]
+     , map lexLineComment line
+     , unless (null line || null block) [ "" ]
+     , unless (null block) [ "-- Block comments" ]
+     , map (uncurry lexBlockComment) block
+     ]
+
+   lexLineComment
+     :: String   -- ^ Line comment start.
+     -> String   -- ^ Alex declaration.
+   lexLineComment s = concat [ "\"", s, "\" [.]* ;" ]
+
+   lexBlockComment
+     :: String   -- ^ Start of block comment.
+     -> String   -- ^ End of block comment.
+     -> String   -- ^ Alex declaration.
+   lexBlockComment start end = printRegAlex (mkRegMultilineComment start end) ++ " ;"
 
    -- tokens consisting of special symbols
    pTSpec [] = ""
@@ -350,7 +362,7 @@ instance Print Char where
     '\r'             -> ["\\r"]
     '\f'             -> ["\\f"]
     c | isAlphaNum c -> [[c]]
-    c | isPrint c    -> ['\\':[c]]
+    c | isPrint c    -> ['\\':[c]]  -- ['\'':c:'\'':[]] -- Does not work for )
     c                -> ['\\':show (ord c)]
 
   prtList = map (concat . prt 0)
@@ -363,18 +375,19 @@ instance Print Ident where
 
 instance Print Reg where
   prt i e = case e of
-   RSeq reg0 reg    -> prPrec i 2 (prt 2 reg0 ++ prt 3 reg)
-   RAlt reg0 reg    -> prPrec i 1 (concat [prt 1 reg0 , ["|"] , prt 2 reg])
-   RMinus reg0 reg  -> prPrec i 1 (concat [prt 2 reg0 , ["#"] , prt 2 reg])
-   RStar reg        -> prPrec i 3 (prt 3 reg ++ ["*"])
-   RPlus reg        -> prPrec i 3 (prt 3 reg ++ ["+"])
-   ROpt reg         -> prPrec i 3 (prt 3 reg ++ ["?"])
-   REps             -> prPrec i 3 ["()"]
-   RChar c          -> prPrec i 3 (prt 0 c)
-   RAlts str        -> prPrec i 3 (concat [["["],prt 0 str,["]"]])
-   RSeqs str        -> prPrec i 2 (concatMap (prt 0) str)
-   RDigit           -> prPrec i 3 ["$d"]
-   RLetter          -> prPrec i 3 ["$l"]
-   RUpper           -> prPrec i 3 ["$c"]
-   RLower           -> prPrec i 3 ["$s"]
-   RAny             -> prPrec i 3 ["$u"]
+   RSeq reg0 reg    -> prPrec i 2 $ prt 2 reg0 ++ prt 3 reg
+   RAlt reg0 reg    -> prPrec i 1 $ concat [prt 1 reg0 , ["|"] , prt 2 reg]
+   RStar reg        -> prPrec i 3 $ prt 3 reg ++ ["*"]
+   RPlus reg        -> prPrec i 3 $ prt 3 reg ++ ["+"]
+   ROpt reg         -> prPrec i 3 $ prt 3 reg ++ ["?"]
+   -- Atomic/parenthesized expressions
+   RMinus reg0 reg  -> concat [ ["["], prt 2 reg0 , ["#"] , prt 2 reg, ["]"] ]
+   REps             -> ["()"]
+   RChar c          -> prt 0 c
+   RAlts str        -> concat [["["],prt 0 str,["]"]]
+   RSeqs str        -> [show str]
+   RDigit           -> ["$d"]
+   RLetter          -> ["$l"]
+   RUpper           -> ["$c"]
+   RLower           -> ["$s"]
+   RAny             -> ["$u"]

@@ -1,0 +1,16 @@
+--( that is a comment, so main does not count here --)
+begin this comment and go until its end
+
+###
+ Let's do several lines
+ Yep!
+ end main
+ ### 
+
+[ and another ignored block comment
+  begin
+  ]
+
+main
+
+% EOF

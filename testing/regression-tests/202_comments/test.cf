@@ -1,0 +1,7 @@
+Prg. Program ::= "main";
+
+comment "--(" "--)";
+comment "begin" "end";
+comment "###" "###";
+comment "[" "]";
+comment "%";
