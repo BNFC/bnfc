@@ -97,9 +97,9 @@ header name cf = unlines
       -- this must be deferred until yylloc is defined
     , "extern void yyerror(const char *str);"
     , ""
-    , unlines $ map parseResult $ nub $ map normCat eps
-    , unlines $ map (parseMethod name) eps
     , concatMap reverseList $ filter isList $ allCatsNorm cf
+    , unlines $ map parseResult $ nub $ map normCat eps
+    , unlines $ map (parseMethod cf name) eps
     , "%}"
     ]
   where
@@ -133,8 +133,8 @@ errorHandler name = unlines
   ]
 
 --This generates a parser method for each entry point.
-parseMethod :: String -> Cat -> String
-parseMethod name cat = unlines $
+parseMethod :: CF -> String -> Cat -> String
+parseMethod cf name cat = unlines $
   [ dat ++ " p" ++ parser ++ "(FILE *inp)"
   , "{"
   , "  " ++ name ++ "_init_lexer(inp);"
@@ -168,7 +168,9 @@ parseMethod name cat = unlines $
   where
   dat    = identCat (normCat cat)
   parser = identCat cat
-  res    = resultName dat
+  res0   = resultName dat
+  revRes = "reverse" ++ dat ++ "(" ++ res0 ++ ")"
+  res    = if cat `elem` cfgReversibleCats cf then revRes else res0
 
 --This method generates list reversal functions for each list type.
 reverseList :: Cat -> String

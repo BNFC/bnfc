@@ -126,9 +126,9 @@ header name cf = unlines
     , "}"
     , ""
     , definedRules cf
-    , unlines $ map parseResult dats
-    , unlines $ map (parseMethod name) eps
     , concatMap reverseList $ filter isList $ allCatsNorm cf
+    , unlines $ map parseResult dats
+    , unlines $ map (parseMethod cf name) eps
     , "%}"
     ]
   where
@@ -196,10 +196,10 @@ parseResult cat =
 
 
 --This generates a parser method for each entry point.
-parseMethod :: String -> Cat -> String
-parseMethod _ cat = unlines
+parseMethod :: CF -> String -> Cat -> String
+parseMethod cf _ cat = unlines
   [
-   cat' ++"* p" ++ par ++ "(FILE *inp)",
+   dat ++"* p" ++ par ++ "(FILE *inp)",
    "{",
    "  initialize_lexer(inp);",
    "  if (yyparse())",
@@ -208,13 +208,16 @@ parseMethod _ cat = unlines
    "  }",
    "  else",
    "  { /* Success */",
-   "    return" +++ (resultName cat') ++ ";",
+   "    return" +++ res ++ ";",
    "  }",
    "}"
   ]
  where
-  cat' = identCat (normCat cat)
+  dat  = identCat (normCat cat)
   par  = identCat cat
+  res0   = resultName dat
+  revRes = "reverse" ++ dat ++ "(" ++ res0 ++ ")"
+  res    = if cat `elem` cfgReversibleCats cf then revRes else res0
 
 --This method generates list reversal functions for each list type.
 reverseList :: Cat -> String

@@ -126,7 +126,7 @@ header inPackage name cf = unlines
     , definedRules cf
     , nsStart inPackage
     , unlines $ map parseResult dats
-    , unlines $ map (parseMethod inPackage name) eps
+    , unlines $ map (parseMethod cf inPackage name) eps
     , nsEnd inPackage
     , "%}"
     ]
@@ -196,46 +196,53 @@ parseResult cat =
   cat' = identCat cat
 
 --This generates a parser method for each entry point.
-parseMethod :: Maybe String -> String -> Cat -> String
-parseMethod inPackage _ cat = unlines
-  [
-   cat' ++ "* p" ++ par ++ "(FILE *inp)",
-   "{",
-   "  " ++ ns ++ "yy_mylinenumber = 1;",       -- O.F.
-   "  " ++ ns ++ "initialize_lexer(inp);",
-   "  if (yyparse())",
-   "  { /* Failure */",
-   "    return 0;",
-   "  }",
-   "  else",
-   "  { /* Success */",
-   "    return" +++ resultName cat' ++ ";",
-   "  }",
-   "}",
-   cat' ++ "* p" ++ par ++ "(const char *str)",
-   "{",
-   "  YY_BUFFER_STATE buf;",
-   "  int result;",
-   "  " ++ ns ++ "yy_mylinenumber = 1;",
-   "  " ++ ns ++ "initialize_lexer(0);",
-   "  buf = " ++ ns ++ "yy_scan_string(str);",
-   "  result = yyparse();",
-   "  " ++ ns ++ "yy_delete_buffer(buf);",
-   "  if (result)",
-   "  { /* Failure */",
-   "    return 0;",
-   "  }",
-   "  else",
-   "  { /* Success */",
-   "    return" +++ resultName cat' ++ ";",
-   "  }",
-   "}"
+parseMethod :: CF -> Maybe String -> String -> Cat -> String
+parseMethod cf inPackage _ cat = unlines $ concat
+  [ [ cat' ++ "* p" ++ par ++ "(FILE *inp)"
+    , "{"
+    , "  " ++ ns ++ "yy_mylinenumber = 1;"
+    , "  " ++ ns ++ "initialize_lexer(inp);"
+    , "  if (yyparse())"
+    , "  { /* Failure */"
+    , "    return 0;"
+    , "  }"
+    , "  else"
+    , "  { /* Success */"
+    ]
+  , revOpt
+  , [ "    return" +++ res ++ ";"
+    , "  }"
+    , "}"
+    , cat' ++ "* p" ++ par ++ "(const char *str)"
+    , "{"
+    , "  YY_BUFFER_STATE buf;"
+    , "  int result;"
+    , "  " ++ ns ++ "yy_mylinenumber = 1;"
+    , "  " ++ ns ++ "initialize_lexer(0);"
+    , "  buf = " ++ ns ++ "yy_scan_string(str);"
+    , "  result = yyparse();"
+    , "  " ++ ns ++ "yy_delete_buffer(buf);"
+    , "  if (result)"
+    , "  { /* Failure */"
+    , "    return 0;"
+    , "  }"
+    , "  else"
+    , "  { /* Success */"
+    ]
+  , revOpt
+  , [ "    return" +++ res ++ ";"
+    , "  }"
+    , "}"
+    ]
   ]
- where
+  where
   cat' = identCat (normCat cat)
   par  = identCat cat
-  ns = nsString inPackage
-
+  ns   = nsString inPackage
+  res  = resultName cat'
+  -- Vectors are snoc lists
+  revOpt = when (isList cat && cat `notElem` cfgReversibleCats cf)
+             [ "std::reverse(" ++ res ++ "->begin(), " ++ res ++"->end());" ]
 
 -- | The union declaration is special to Bison/Yacc and gives the type of
 -- yylval.  For efficiency, we may want to only include used categories here.
