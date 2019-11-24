@@ -4,7 +4,8 @@
  -
  - Tests specific to some reported issues
  - -}
-module RegressionTests (all) where
+
+module RegressionTests (all, current) where
 
 import qualified Data.Text as T
 import Test.HUnit (assertBool)
@@ -21,6 +22,9 @@ all = makeTestSuite "Regression tests" $
     , issue151, issue159
     , issue170a, issue170b, issue172
     ]
+
+current = makeTestSuite "Regression tests" $
+    [ issue222 ]
 
 -- | A full regression test for the Haskell backend
 haskellRegressionTest
@@ -43,6 +47,8 @@ haskellRegressionTest title base mod =
       output <- cmd =<< canonicalize ("." </> ("Test" ++ mod))
       -- Compare output with the expected one
       assertEqual expected output
+      -- when (expected /= output) $ assertEqual "expected" "output"
+      -- expected `seq` output `seq` return ()
   where
     dir = "regression-tests"
     cfF  = base <.> "cf"

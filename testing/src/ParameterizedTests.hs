@@ -53,14 +53,17 @@ allWithParams params = makeTestSuite (tpName params) $ concat $
 -- | This parameterized test is called first.
 --   Use it while working in connection with a certain test case. (For quicker response.)
 current :: Test
-current = layoutTest
+-- current = layoutTest
+--
 -- current = makeTestSuite "Current parameterized test" $
 --   map (`exampleTest` (exampleGrammars !! 1)) parameters
--- current = makeTestSuite "Current parameterized test" $
---   map (`makeTestCase` ("regression-tests" </> cur)) parameters
---   where
---   cur = "194_layout"
---   -- cur = "210_NumberedCatWithoutCoerce"
+--
+current = makeTestSuite "Current parameterized test" $
+  map (`makeTestCase` ("regression-tests" </> cur)) parameters
+  where
+  cur = "222_IntegerList"
+  -- cur = "194_layout"
+  -- cur = "210_NumberedCatWithoutCoerce"
 
 -- | Layout currently only works for Haskell (even Agda) and Haskell/GADT.
 layoutTest :: Test
@@ -142,14 +145,16 @@ exampleTest params (grammar, examples) =
 -- together with valid and invalid inputs.
 testCases :: TestParameters -> [Test]
 testCases params =
-    map (makeTestCase params)
-        [ "regression-tests/210_NumberedCatWithoutCoerce"
-        , "regression-tests/204_InternalToken"
-        , "regression-tests/249_unicode"
-        , "regression-tests/#100_coercion_lists"
-        , "regression-tests/#134_category_named_I"
-        , "regression-tests/comments"
-        , "regression-tests/#149"
+    map (makeTestCase params) $
+      map ("regression-tests/" ++) $
+        [ "222_IntegerList"
+        , "210_NumberedCatWithoutCoerce"
+        , "204_InternalToken"
+        , "249_unicode"
+        , "#100_coercion_lists"
+        , "#134_category_named_I"
+        , "comments"
+        , "#149"
         ]
 
 makeTestCase :: TestParameters -> FilePath -> Test
@@ -176,7 +181,7 @@ makeTestCase params dir =
                 errExit False $ tpRunTestProg params "test" [f]
                 lastExitCode >>= assertEqual 1
   where
-    mkTitle dir = takeFileName dir
+    mkTitle dir = tpName params ++ ":" ++ takeFileName dir
 
 -- | To test that @distclean@ removes all generated files.
 distcleanTest :: TestParameters -> Test
@@ -228,6 +233,7 @@ haskellParameters = baseParameters
         "-i" "Use camelCase"
         "-i" "Use newtype instead of data"
         "-i" "Use fmap"
+        "-i" "Unused LANGUAGE pragma"
         "."
       tpMake
       cmd "ghc" . (:[]) =<< findFileRegex "Skel.*\\.hs$"
@@ -260,45 +266,54 @@ haskellRunTestProg _lang args = do
       cmd bin args
 
 parameters :: [TestParameters]
-parameters =
-  -- Haskell
-  [ haskellAgdaParameters
-  , hsParams { tpName = "Haskell (with ghc)"
-             , tpBnfcOptions = ["--haskell", "--ghc"] }
-  , hsParams { tpName = "Haskell (with functor)"
-             , tpBnfcOptions = ["--haskell", "--functor"] }
-  , hsParams { tpName = "Haskell (with namespace)"
-             , tpBnfcOptions = ["--haskell", "-p", "Language", "-d"] }
-  -- Haskell/GADT
-  , haskellGADTParameters
-  -- OCaml
-  , base { tpName = "OCaml"
-         , tpBuild = tpMake ["OCAMLCFLAGS=-safe-string"]
-         , tpBnfcOptions = ["--ocaml"] }
-  -- C
-  , cBase { tpName = "C"
-          , tpBuild = tpMake ["CCFLAGS=-Wstrict-prototypes -Werror"]
-          , tpBnfcOptions = ["--c"] }
-  -- C++
-  , cBase { tpName = "C++"
-          , tpBnfcOptions = ["--cpp"] }
-  , cBase { tpName = "C++ (with namespace)"
-          , tpBnfcOptions = ["--cpp", "-p foobar"] }
-  , cBase { tpName = "C++ (no STL)"
-          , tpBnfcOptions = ["--cpp-nostl"] }
-  -- Java
-  , javaParams { tpName = "Java"
-               , tpBnfcOptions = ["--java"] }
-  , javaParams { tpName = "Java (with line numbers)"
-               , tpBnfcOptions = ["--java", "-l"] }
-  , javaParams { tpName = "Java (with namespace)"
-               , tpBnfcOptions = ["--java", "-p", "my.stuff"] }
-  , javaParams { tpName = "Java (with jflex)"
-               , tpBnfcOptions = ["--java", "--jflex"] }
-  , javaParams { tpName = "Java (with jflex and line numbers)"
-               , tpBnfcOptions = ["--java", "--jflex", "-l"] }
-  , javaParams { tpName = "Java (with antlr)"
-               , tpBnfcOptions = ["--java", "--antlr"] }
+parameters = concat
+  [ []
+    -- C++
+  , [ cBase { tpName = "C++"
+            , tpBnfcOptions = ["--cpp"] }
+    , cBase { tpName = "C++ (with namespace)"
+            , tpBnfcOptions = ["--cpp", "-p foobar"] }
+    , cBase { tpName = "C++ (no STL)"
+            , tpBnfcOptions = ["--cpp-nostl"] }
+    ]
+    -- C
+  , [ cBase { tpName = "C"
+            , tpBuild = tpMake ["CCFLAGS=-Wstrict-prototypes -Werror"]
+            , tpBnfcOptions = ["--c"] }
+    ]
+    -- Agda
+  , [ haskellAgdaParameters ]
+    -- Haskell/GADT
+  , [ haskellGADTParameters ]
+    -- OCaml
+  , [ base { tpName = "OCaml"
+           , tpBuild = tpMake ["OCAMLCFLAGS=-safe-string"]
+           , tpBnfcOptions = ["--ocaml"] }
+    ]
+    -- Haskell
+  , [ hsParams { tpName = "Haskell (with ghc)"
+               , tpBnfcOptions = ["--haskell", "--ghc"] }
+    , hsParams { tpName = "Haskell (with functor)"
+               , tpBnfcOptions = ["--haskell", "--functor"] }
+    , hsParams { tpName = "Haskell (with namespace)"
+               , tpBnfcOptions = ["--haskell", "-p", "Language", "-d"] }
+    ]
+    -- Java
+  , [ javaParams { tpName = "Java"
+                 , tpBnfcOptions = ["--java"] }
+    , javaParams { tpName = "Java (with line numbers)"
+                 , tpBnfcOptions = ["--java", "-l"] }
+    , javaParams { tpName = "Java (with namespace)"
+                 , tpBnfcOptions = ["--java", "-p", "my.stuff"] }
+    , javaParams { tpName = "Java (with jflex)"
+                 , tpBnfcOptions = ["--java", "--jflex"] }
+    , javaParams { tpName = "Java (with jflex and line numbers)"
+                 , tpBnfcOptions = ["--java", "--jflex", "-l"] }
+    ]
+    -- Java/ANTLR
+  , [ javaParams { tpName = "Java (with antlr)"
+                 , tpBnfcOptions = ["--java", "--antlr"] }
+    ]
   ]
   where
     base = baseParameters
@@ -314,7 +329,7 @@ parameters =
             cmd "javac" . (:[]) =<< findFile "VisitSkel.java"
         , tpRunTestProg = \_ args -> do
             class_ <- dropExtension <$> findFile "Test.class"
-            cmd "java" $ class_ : args
+            cmd "java" $ "-Xss16M" : class_ : args
         }
 
 -- | Helper function that runs bnfc with the context's options and an

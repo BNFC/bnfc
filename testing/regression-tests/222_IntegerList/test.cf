@@ -1,0 +1,5 @@
+separator Integer "+";
+
+-- Useless rule to work around ANTLR issue 2689
+-- https://github.com/antlr/antlr4/issues/2689
+Bar. Foo ::= [Integer];
