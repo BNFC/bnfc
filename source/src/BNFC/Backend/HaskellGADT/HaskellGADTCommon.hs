@@ -81,4 +81,4 @@ isTreeType :: CF -> Cat -> Bool
 isTreeType cf (TokenCat c) = c `elem` specialCats cf
 isTreeType cf c
   | isList c  = isTreeType cf (catOfList c)
-  | otherwise = c `elem` allCats cf
+  | otherwise = c `elem` reallyAllCats cf

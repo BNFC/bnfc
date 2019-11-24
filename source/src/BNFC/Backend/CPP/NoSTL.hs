@@ -43,7 +43,7 @@ makeCppNoStl opts cf = do
     mkfile (name ++ ".l") flex
     let bison = cf2Bison name cf env
     mkfile (name ++ ".y") bison
-    let header = mkHeaderFile cf (allCats cf) (allEntryPoints cf) env
+    let header = mkHeaderFile cf (allParserCats cf) (allEntryPoints cf) env
     mkfile "Parser.H" header
     let (skelH, skelC) = cf2CVisitSkel cf
     mkfile "Skeleton.H" skelH

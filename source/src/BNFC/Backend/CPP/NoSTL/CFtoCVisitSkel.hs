@@ -55,8 +55,8 @@ import BNFC.PrettyPrint
 --Produces (.H file, .C file)
 cf2CVisitSkel :: CF -> (String, String)
 cf2CVisitSkel cf = (mkHFile cf groups, mkCFile cf groups)
- where
-    groups = fixCoercions (ruleGroups cf)
+  where
+    groups = fixCoercions (ruleGroupsInternals cf)
 
 
 {- **** Header (.H) File Functions **** -}

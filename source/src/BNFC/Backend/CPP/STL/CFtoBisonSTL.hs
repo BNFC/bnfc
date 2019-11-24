@@ -77,7 +77,7 @@ cf2Bison :: RecordPositions -> Maybe String -> String -> CF -> SymEnv -> String
 cf2Bison rp inPackage name cf env
  = unlines
     [header inPackage name cf,
-     render $ union inPackage (map TokenCat (positionCats cf) ++ allCats cf),
+     render $ union inPackage (map TokenCat (positionCats cf) ++ allParserCats cf),
      maybe "" (\ns -> "%define api.prefix {" ++ ns ++ "yy}") inPackage,
      "%token _ERROR_",
      tokens user env,
@@ -292,7 +292,7 @@ union inPackage cats =
 declarations :: CF -> String
 declarations cf = concatMap typeNT $
   map TokenCat (positionCats cf) ++
-  filter (not . null . rulesForCat cf) (allCats cf) -- don't define internal rules
+  filter (not . null . rulesForCat cf) (allParserCats cf) -- don't define internal rules
   where
   typeNT nt = "%type <" ++ varName nt ++ "> " ++ identCat nt ++ "\n"
 

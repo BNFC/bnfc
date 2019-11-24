@@ -46,7 +46,7 @@ makeCppStl opts cf = do
     mkfile (name ++ ".l") flex
     let bison = cf2Bison (linenumbers opts) (inPackage opts) name cf env
     mkfile (name ++ ".y") bison
-    let header = mkHeaderFile (inPackage opts) cf (allCats cf) (allEntryPoints cf) env
+    let header = mkHeaderFile (inPackage opts) cf (allParserCats cf) (allEntryPoints cf) env
     mkfile "Parser.H" header
     let (skelH, skelC) = cf2CVisitSkel (inPackage opts) cf
     mkfile "Skeleton.H" skelH

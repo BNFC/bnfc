@@ -59,7 +59,7 @@ type MetaVar = String
 cf2Cup :: String -> String -> CF -> RecordPositions -> SymEnv -> String
 cf2Cup packageBase packageAbsyn cf rp env = unlines
     [ header
-    , declarations packageAbsyn (allCats cf)
+    , declarations packageAbsyn (allParserCats cf)
     , tokens env
     , specialToks cf
     , specialRules cf

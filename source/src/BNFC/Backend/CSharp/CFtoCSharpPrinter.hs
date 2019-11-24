@@ -288,11 +288,11 @@ shToken namespace token = unlinesInline [
 entrypoints :: Namespace -> CF -> String
 entrypoints namespace cf = unlinesInline [
   "    #region Print Entry Points",
-  unlinesInlineMap prEntryPoint (allCats cf),
+  unlinesInlineMap prEntryPoint (reallyAllCats cf),
   "    #endregion",
   "    ",
   "    #region Show Entry Points",
-  unlinesInlineMap shEntryPoint (allCats cf),
+  unlinesInlineMap shEntryPoint (reallyAllCats cf),
   "    #endregion"
   ]
   where

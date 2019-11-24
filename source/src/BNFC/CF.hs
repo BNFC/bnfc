@@ -54,6 +54,8 @@ module BNFC.CF (
             isDefinedRule,  -- defined rules (allows syntactic sugar)
             isProperLabel,  -- not coercion or defined rule
             allCats,        -- all categories of a grammar
+            allParserCats,
+            reallyAllCats,
             allCatsNorm,
             allCatsIdNorm,
             allEntryPoints,
@@ -111,15 +113,18 @@ module BNFC.CF (
             funRuleP, ruleGroupsP, allCatsP, allEntryPointsP
            ) where
 
-import BNFC.Utils (prParenth,(+++))
 import Control.Monad (guard)
 import Data.List (nub, intersperse, sort, group, intercalate, find, sortBy)
 import Data.Char
+import qualified Data.Set as Set
+
 import AbsBNF (Reg())
 import ParBNF (pCat)
 import LexBNF (tokens)
 import qualified AbsBNF
 import ErrM
+
+import BNFC.Utils (prParenth,(+++))
 
 -- | A context free grammar consists of a set of rules and some extended
 -- information (e.g. pragmas, literals, symbols, keywords).
@@ -464,9 +469,18 @@ rulesForNormalizedCat cf cat =
 rulesForCat' :: CF -> Cat -> [Rule]
 rulesForCat' cf cat = [r | r <- cfgRules cf, valCat r == cat]
 
--- | Get all categories of a grammar. (No Cat w/o production returned; No duplicates)
-allCats :: CFG f -> [Cat]
-allCats = nub . map valCat . cfgRules
+-- | Get all categories of a grammar matching the filter.
+--   (No Cat w/o production returned; no duplicates.)
+allCats :: (InternalRule -> Bool) -> CFG f -> [Cat]
+allCats pred = nub . map valCat . filter (pred . internal) . cfgRules
+
+-- | Get all categories of a grammar.
+--   (No Cat w/o production returned; no duplicates.)
+reallyAllCats :: CFG f -> [Cat]
+reallyAllCats = allCats $ const True
+
+allParserCats :: CFG f -> [Cat]
+allParserCats = allCats (== Parsable)
 
 -- | Gets all normalized identified Categories
 allCatsIdNorm :: CF -> [String]
@@ -480,13 +494,13 @@ allCatsNorm = nub . map (normCat . valCat) . cfgRules
 isUsedCat :: CFG f -> Cat -> Bool
 isUsedCat cf cat = cat `elem` [c | r <- cfgRules cf, Left c <- rhsRule r]
 
--- | Group all categories with their rules.
+-- | Group all parsable categories with their rules.
 ruleGroups :: CF -> [(Cat,[Rule])]
-ruleGroups cf = [(c, rulesForCat cf c) | c <- allCats cf]
+ruleGroups cf = [(c, rulesForCat cf c) | c <- allParserCats cf]
 
 -- | Group all categories with their rules including internal rules.
 ruleGroupsInternals :: CF -> [(Cat,[Rule])]
-ruleGroupsInternals cf = [(c, rulesForCat' cf c) | c <- allCats cf]
+ruleGroupsInternals cf = [(c, rulesForCat' cf c) | c <- reallyAllCats cf]
 
 -- | Get all literals of a grammar. (e.g. String, Double)
 literals :: CFG f -> [TokenCat]
@@ -564,7 +578,7 @@ cf2data' predicate cf =
                               let f = funRule r,
                               not (isDefinedRule f),
                               not (isCoercion f), sameCat cat (valCat r)]))
-      | cat <- nub $ map normCat $ filter predicate $ allCats cf ]
+      | cat <- nub $ map normCat $ filter predicate $ reallyAllCats cf ]
  where
   mkData (Rule f _ its _) = (f, [normCat c | Left c <- its ])
 
@@ -607,7 +621,7 @@ getCons rs = case find (isConsFun . funRule) rs of
 getSeparatorByPrecedence :: [Rule] -> [(Integer,String)]
 getSeparatorByPrecedence rules = [ (p, getCons (getRulesFor p)) | p <- precedences ]
   where
-    precedences = sortBy (flip compare) $ nub $ map precRule rules
+    precedences = Set.toDescList . Set.fromList $ map precRule rules
     getRulesFor p = [ r | r <- rules, precRule r == p ]
 
 isEmptyListCat :: CF -> Cat -> Bool
@@ -651,7 +665,7 @@ precRule :: Rule -> Integer
 precRule = precCat . valCat
 
 precLevels :: CF -> [Integer]
-precLevels cf = sort $ nub [ precCat c | c <- allCats cf]
+precLevels cf = Set.toAscList $ Set.fromList [ precCat c | c <- reallyAllCats cf]
 
 precCF :: CF -> Bool
 precCF cf = length (precLevels cf) > 1
@@ -693,13 +707,13 @@ rulesForCatP :: CFP -> Cat -> [RuleP]
 rulesForCatP cf cat = [r | r <- cfgRules cf, isParsable r, valCat r == cat]
 
 allCatsP :: CFP -> [Cat]
-allCatsP = allCats
+allCatsP = reallyAllCats
 
 
 -- | Categories that are entry points to the parser
 allEntryPoints :: CFG f -> [Cat]
 allEntryPoints cf = case concat [cats | EntryPoints cats <- cfgPragmas cf] of
-  [] -> allCats cf
+  [] -> allParserCats cf
   cs -> cs
 
 allEntryPointsP :: CFP -> [Cat]

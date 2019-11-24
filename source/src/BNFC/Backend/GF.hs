@@ -50,7 +50,7 @@ cf2ConcGF name cf = unlines
 prCats :: CF -> String
 prCats cf = "cat \n" ++
 	     unlines ["  " ++ cat ++ ";"
-	              | cat <- nub $ map pr (allCats cf ++ literals cf),
+	              | cat <- nub $ map pr (reallyAllCats cf ++ literals cf),
 	                not (cat =="String")] ++ "\n"
 
 pr :: Cat -> String
@@ -65,7 +65,7 @@ prFuns cf = "fun \n" ++
 		  					 (f,ys) <- xs]
 
 prListFuns :: CF -> String
-prListFuns cf = unlines $ map listfun $ nub [ pr cat | cat <- allCats cf, isList cat]
+prListFuns cf = unlines $ map listfun $ nub [ pr cat | cat <- reallyAllCats cf, isList cat]
  where listfun c = concat [" ", c , "E: " ,c ,";\n" , " ",
 	                   c ,"Cons: ", (drop 4 c) , " -> ", c, " -> " , c, ";"]
 
@@ -94,7 +94,7 @@ prLin cf = "lin\n" ++ unlines
 	fixLambda    x = x
 
 prListLins :: CF -> String
-prListLins cf = unlines $ map listlin $ nub [ pr cat | cat <- allCats cf, isList cat]
+prListLins cf = unlines $ map listlin $ nub [ pr cat | cat <- reallyAllCats cf, isList cat]
  where listlin cat = concat [" ",cat, "E = { s = \"\" };\n", " ",  -- empty list
 	                     cat ,"Cons x y = { s = x.s ++ y.s };"] -- cons
 
@@ -147,6 +147,6 @@ prPrec cf = unlines [
        mkP p = concat $ intersperse ";\n"
 	       ["   " ++ p' ++ " => " ++ if (p < p') then "mkParenth str" else "str" | p' <- precs]
        lintypes = unlines ["lincat " ++ c ++ " = {s : Prec => Str};" |
-			    c <- nub $ map pr $ filter (not . isList) $ allCats cf ++ literals cf,
+			    c <- nub $ map pr $ filter (not . isList) $ reallyAllCats cf ++ literals cf,
 			    c /= "String"
 			  ]

@@ -44,7 +44,7 @@ makeC opts cf = do
     mkfile (name ++ ".l") flex
     let bison = cf2Bison (linenumbers opts) prefix cf env
     mkfile (name ++ ".y") bison
-    let header = mkHeaderFile (linenumbers opts) cf (allCats cf) (allEntryPoints cf) env
+    let header = mkHeaderFile (linenumbers opts) cf (allParserCats cf) (allEntryPoints cf) env
     mkfile "Parser.h" header
     let (skelH, skelC) = cf2CSkel cf
     mkfile "Skeleton.h" skelH

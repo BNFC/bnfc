@@ -55,7 +55,7 @@ import Text.PrettyPrint
 cf2CSkel :: CF -> (String, String)
 cf2CSkel cf = (mkHFile cf groups, mkCFile cf groups)
  where
-    groups = fixCoercions (ruleGroups cf)
+    groups = fixCoercions (ruleGroupsInternals cf)
 
 
 {- **** Header (.H) File Functions **** -}

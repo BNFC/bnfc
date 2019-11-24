@@ -217,7 +217,7 @@ union cats = unlines
 
 --declares non-terminal types.
 declarations :: CF -> String
-declarations cf = concatMap (typeNT cf) (allCats cf)
+declarations cf = concatMap (typeNT cf) (allParserCats cf)
  where --don't define internal rules
    typeNT cf nt | rulesForCat cf nt /= [] = "%type <" ++ varName (normCat nt) ++ "> " ++ identCat nt ++ "\n"
    typeNT _ _ = ""

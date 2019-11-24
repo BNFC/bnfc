@@ -87,7 +87,7 @@ cf2Bison :: String -> CF -> SymEnv -> String
 cf2Bison name cf env
  = unlines
     [header name cf,
-     render $ union Nothing (allCats cf),
+     render $ union Nothing (allParserCats cf),
      "%token _ERROR_",
      tokens user env,
      declarations cf,
@@ -243,7 +243,7 @@ reverseList c = unlines
 
 --declares non-terminal types.
 declarations :: CF -> String
-declarations cf = concatMap (typeNT cf) (allCats cf)
+declarations cf = concatMap (typeNT cf) (allParserCats cf)
  where --don't define internal rules
    typeNT cf nt | rulesForCat cf nt /= [] = "%type <" ++ varName nt ++ "> " ++ identCat nt ++ "\n"
    typeNT _ _ = ""

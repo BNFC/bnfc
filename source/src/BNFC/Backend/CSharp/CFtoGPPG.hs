@@ -68,7 +68,7 @@ cf2gppg namespace cf env = unlines $
   [ header namespace cf
   , union namespace $ concat $
     [ positionCats cf
-    , allCats cf
+    , allParserCats cf
     , map strToCat $ tokentypes $ cf2cabs cf
     ]
   , tokens (map fst $ tokenPragmas cf) env
@@ -159,7 +159,7 @@ union namespace cats = unlines $ filter (\x -> x /= "\n") [
 declarations :: CF -> String
 declarations cf = unlinesInline $ map typeNT $
   positionCats cf ++
-  filter (not . null . rulesForCat cf) (allCats cf)  -- don't define internal rules
+  filter (not . null . rulesForCat cf) (allParserCats cf)  -- don't define internal rules
   where
   typeNT nt = "%type <" ++ varName x ++ "> " ++ x
     where x = show $ normCat nt

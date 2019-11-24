@@ -120,7 +120,7 @@ genShowFunction cf =
   hang "showAst (cat, ast) = case cat of " 6 $ vcat $
     [ vcat
       [ hsep [ catTag (Left cat), "->", "printTree", parens ("(unsafeCoerce# ast) ::" <+> text (show cat)) ]
-      | cat <- filter isDataOrListCat $ allCats cf
+      | cat <- filter isDataOrListCat $ reallyAllCats cf
       ]
     , "_ -> \"Unprintable category\""
     ]
@@ -150,7 +150,7 @@ genCombTable units cf = vcat
 
 allSyms :: CFG Exp -> [Either Cat String]
 allSyms cf = concat $
-  [ map Left $ allCats cf
+  [ map Left $ reallyAllCats cf
   , map (Left . TokenCat) $ literals cf
   , map (Right . fst) $ cfTokens cf
   ]

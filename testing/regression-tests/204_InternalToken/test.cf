@@ -1,7 +1,9 @@
 -- Andreas, 2019-04-22, issue #204.
 -- Tokens from internal rules ended up in lexer.
+-- Andreas, 2019-11-24, issue #264.
+-- Internal non-terminals ended up as entrypoints.
 
-internal Internal. Prg ::= "Internal";
+internal Internal. Foo ::= "Internal";
 Main.              Prg ::= Ident;
 
 -- Should accept input "Internal".
