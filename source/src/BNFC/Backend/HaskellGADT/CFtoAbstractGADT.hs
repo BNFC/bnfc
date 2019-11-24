@@ -27,12 +27,14 @@ import BNFC.CF
 import BNFC.Backend.HaskellGADT.HaskellGADTCommon
 import BNFC.Backend.Haskell.Utils
 import BNFC.Options
-import BNFC.Utils((+++))
+import BNFC.Utils ((+++), when)
 
 
 cf2Abstract :: TokenText -> String -> CF -> String -> String
 cf2Abstract tokenText name cf composOpMod = unlines $ concat $
   [ [ "{-# LANGUAGE GADTs, KindSignatures, DataKinds #-}"
+    , "{-# LANGUAGE EmptyCase #-}"
+    , ""
     , "module" +++ name +++ "(" ++ intercalate ", " exports ++ ")" +++ "where"
     , ""
     , "import " ++ composOpMod
@@ -72,7 +74,9 @@ prDummyTypes :: CF -> [String]
 prDummyTypes cf = prDummyData : map prDummyType cats
   where
   cats = getTreeCats cf
-  prDummyData = "data Tag =" +++ intercalate " | " (map mkRealType cats)
+  prDummyData
+    | null cats = "data Tag"
+    | otherwise = "data Tag =" +++ intercalate " | " (map mkRealType cats)
   prDummyType cat = "type" +++ cat +++ "= Tree" +++ mkRealType cat
 
 mkRealType :: String -> String
@@ -137,13 +141,17 @@ prEq cf = ["instance Eq (Tree c) where (==) = johnMajorEq",
                 vars' = map (++"_") vars
 
 prOrd :: CF -> [String]
-prOrd cf = ["instance Ord (Tree c) where",
-            "  compare x y = compare (index x) (index y) `mappend` compareSame x y"] ++
-           ["index :: Tree c -> Int"] ++
-           zipWith mkIndex cs [0..] ++
-           ["compareSame :: Tree c -> Tree c -> Ordering"] ++
-           map mkCompareSame cs ++
-           ["compareSame x y = error \"BNFC error:\" compareSame"]
+prOrd cf = concat
+  [ [ "instance Ord (Tree c) where"
+    , "  compare x y = compare (index x) (index y) `mappend` compareSame x y"
+    ]
+  , [ "", "index :: Tree c -> Int" ]
+  , zipWith mkIndex cs [0..]
+  , when (null cs) [ "index = undefined" ]
+  , [ "", "compareSame :: Tree c -> Tree c -> Ordering" ]
+  , map mkCompareSame cs
+  , [ "compareSame x y = error \"BNFC error:\" compareSame" ]
+  ]
   where cs = cf2cons cf
         mkCompareSame c
             | null vars = "compareSame" +++ fun +++ fun +++ "=" +++ "EQ"
