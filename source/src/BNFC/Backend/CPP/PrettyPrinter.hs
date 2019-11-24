@@ -53,16 +53,15 @@ positionRules cf =
 --An extremely large function to make the Header File
 mkHFile :: Bool -> Maybe String -> CF -> [(Cat,[Rule])] -> String
 mkHFile useStl inPackage cf groups = unlines
- [
-  printHeader,
-  concatMap prDataH groups,
-  classFooter,
-  showHeader,
-  concatMap prDataH groups,
-  classFooter,
-  footer
- ]
- where
+  [ printHeader
+  , content
+  , classFooter
+  , showHeader
+  , content
+  , classFooter
+  , footer
+  ]
+  where
   printHeader = unlines
    [
     "#ifndef " ++ hdef,
@@ -97,6 +96,7 @@ mkHFile useStl inPackage cf groups = unlines
     "  char *print(Visitable *v);"
    ]
   hdef = nsDefine inPackage "PRINTER_HEADER"
+  content = concatMap prDataH groups
   classFooter = unlines $
    [
     "  void visitInteger(Integer i);",
@@ -170,7 +170,8 @@ mkHFile useStl inPackage cf groups = unlines
       "void inline bufAppend(String str)"
       $$ codeblock 2
           [ "const char *s = str.c_str();"
-          , "bufAppend(s);"]
+          , "bufAppend(s);"
+          ]
   showHeader = unlines
    [
     "",
