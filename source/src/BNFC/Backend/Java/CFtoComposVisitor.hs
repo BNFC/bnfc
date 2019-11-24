@@ -52,7 +52,7 @@ cf2ComposVisitor packageBase packageAbsyn cf =
       , "/** BNFC-Generated Composition Visitor"
       , "*/"
       , ""
-      , "public class ComposVisitor<A> implements"
+      , "public class ComposVisitor<A>" ++ if null is then "" else " implements"
       , intercalate ",\n" $ map ("  "++) is
       , "{"
       ]

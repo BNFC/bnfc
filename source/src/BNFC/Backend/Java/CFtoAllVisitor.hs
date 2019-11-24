@@ -34,7 +34,7 @@ cf2AllVisitor packageBase packageAbsyn cf =
            "import" +++ packageAbsyn ++ ".*;",
            "",
            "/** BNFC-Generated All Visitor */",
-           "public interface AllVisitor<R,A> extends",
+           "public interface AllVisitor<R,A>" ++ if null is then "" else " extends",
            intercalate ",\n" $ map ("  "++) is,
            "{}"]
   where
