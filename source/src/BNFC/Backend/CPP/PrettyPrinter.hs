@@ -482,10 +482,10 @@ genPrintVisitorListNoStl (cat@(ListCat c), rules) = unlines
     ecl = identCat (normCatOfList cat)
     vname = map toLower cl
     member = map toLower ecl ++ "_"
-    optsep = if hasOneFunc rules then "" else "      render(" ++ sep ++ ");"
-    sep = snd (renderCharOrString sep')
-    sep' = getCons rules
-    renderSep s = "render(" <> text (snd (renderCharOrString s)) <> ")"
+    optsep = if hasOneFunc rules then "" else "      render(" ++ sep' ++ ");"
+    sepFix sep  = if null sep then " " else sep
+    sep' = snd $ renderCharOrString $ sepFix $ getCons rules
+    renderSep s = "render(" <> text (snd $ renderCharOrString $ sepFix s) <> ")"
     separators = getSeparatorByPrecedence rules
 genPrintVisitorListNoStl _ = error "genPrintVisitorListNoStl expects a ListCat"
 
