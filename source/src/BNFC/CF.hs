@@ -83,7 +83,7 @@ module BNFC.CF (
             isEmptyListCat, -- checks if the list permits []
             revSepListRule, -- reverse a rule, if it is of form C t [C].
             normCat,
-            isDataCat,
+            isDataCat, isDataOrListCat,
             normCatOfList,  -- Removes precendence information and enclosed List. C1 => C, C2 => C
             catOfList,
             comments,       -- translates the pragmas into two list containing the s./m. comments
@@ -354,7 +354,7 @@ normCatOfList = normCat . catOfList
 -- Latex)
 identCat :: Cat -> String
 identCat (ListCat c) = "List" ++ identCat c
-identCat c = show c
+identCat c = catToStr c
 
 isList :: Cat -> Bool
 isList (ListCat _) = True

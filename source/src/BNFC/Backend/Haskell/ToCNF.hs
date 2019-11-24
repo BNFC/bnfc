@@ -120,7 +120,7 @@ genShowFunction cf =
   hang "showAst (cat, ast) = case cat of " 6 $ vcat $
     [ vcat
       [ hsep [ catTag (Left cat), "->", "printTree", parens ("(unsafeCoerce# ast) ::" <+> text (show cat)) ]
-      | cat <- filter isDataCat $ allCats cf
+      | cat <- filter isDataOrListCat $ allCats cf
       ]
     , "_ -> \"Unprintable category\""
     ]
