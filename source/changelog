@@ -3,6 +3,7 @@
 	* Haskell: new option --text-token to use Data.Text instead of String in the lexer [#167]
 	* Haskell: allow block comment deliminters of any length [#202,#169]
 	* C++: fixed quadratic behavior in C++-generated printer (regression in 2.8.2)
+	* Java/ANTLR: emit start rules to work around ANTLR issue #2689 [#272]
 
 2.8.3 Andreas Abel <andreas.abel@gu.se>  August 2019
 	* GHC 8.8 compatibility
