@@ -22,6 +22,7 @@
 
 module BNFC.Utils
     ( when, unless, unlessNull
+    , applyWhen, applyUnless
     , for
     , (+++), (++++), (+-+), (+.+)
     , mkName, mkNames, NameStyle(..)
@@ -72,6 +73,16 @@ when False _ = mempty
 unless :: Monoid m => Bool -> m -> m
 unless False m = m
 unless True  _ = mempty
+
+-- | 'when' for the monoid of endofunctions 'a -> a'.
+applyWhen :: Bool -> (a -> a) -> a -> a
+applyWhen True  f = f
+applyWhen False _ = id
+
+-- | 'unless' for the monoid of endofunctions 'a -> a'.
+applyUnless :: Bool -> (a -> a) -> a -> a
+applyUnless False f = f
+applyUnless True  _ = id
 
 -- | Invoke continuation for non-empty list.
 unlessNull :: Monoid m => [a] -> (a -> [a] -> m) -> m

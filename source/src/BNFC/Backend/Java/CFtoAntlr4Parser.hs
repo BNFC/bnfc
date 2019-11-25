@@ -39,15 +39,28 @@
 -}
 module BNFC.Backend.Java.CFtoAntlr4Parser ( cf2AntlrParse ) where
 
-import Data.List
+import Data.List     ( intercalate )
+import Data.Maybe
+
 import BNFC.CF
 import BNFC.Backend.Java.Utils
 import BNFC.Backend.Common.NamedVariables
-import BNFC.Options (RecordPositions(..))
-import BNFC.Utils ( (+++), (+.+))
+import BNFC.Options ( RecordPositions(..) )
+import BNFC.Utils   ( (+++), (+.+), for, applyWhen )
 
 -- Type declarations
-type Rules       = [(NonTerminal,[(Pattern, Fun, Action)])]
+
+-- | A definition of a non-terminal by all its rhss,
+--   together with parse actions.
+data PDef = PDef
+  { pdNT   :: Maybe String
+      -- ^ If given, the name of the lhss.  Usually computed from 'pdCat'.
+  , pdCat  :: Cat
+      -- ^ The category to parse.
+  , pdAlts :: [(Pattern, Fun, Action)]
+      -- ^ The possible rhss with actions.  If 'null', skip this 'PDef'.
+  }
+type Rules       = [PDef]
 type Pattern     = String
 type Action      = String
 type MetaVar     = (String, Cat)
@@ -84,18 +97,19 @@ rulesForAntlr4 packageAbsyn cf env = map mkOne getrules
 
 -- | For every non-terminal, we construct a set of rules. A rule is a sequence of
 -- terminals and non-terminals, and an action to be performed.
-constructRule :: String -> CF -> SymEnv -> [Rule] -> NonTerminal -> (NonTerminal,[(Pattern, Fun, Action)])
+constructRule :: String -> CF -> SymEnv -> [Rule] -> NonTerminal -> PDef
 constructRule packageAbsyn cf env rules nt =
-    (nt, [ (p , funRule r , generateAction packageAbsyn nt (funRule r) (revM b m) b)
-          | (index ,r0) <- zip [1..(length rules)] rules,
-          let (b,r) = if isConsFun (funRule r0) && elem (valCat r0) revs
-                          then (True, revSepListRule r0)
-                          else (False, r0)
-              (p,m) = generatePatterns index env r])
- where
-   revM False = id
-   revM True  = reverse
-   revs       = cfgReversibleCats cf
+  PDef Nothing nt $
+    [ ( p
+      , funRule r
+      , generateAction packageAbsyn nt (funRule r) m b
+      )
+    | (index, r0) <- zip [1..] rules
+    , let b      = isConsFun (funRule r0) && elem (valCat r0) (cfgReversibleCats cf)
+    , let r      = applyWhen b revSepListRule r0
+    , let (p,m0) = generatePatterns index env r
+    , let m      = applyWhen b reverse m0
+    ]
 
 -- Generates a string containing the semantic action.
 generateAction :: String -> NonTerminal -> Fun -> [MetaVar]
@@ -169,34 +183,35 @@ generatePatterns ind env r = case rhsRule r of
 -- | Puts together the pattern and actions and returns a string containing all
 -- the rules.
 prRules :: String -> Rules -> String
-prRules _ [] = []
-prRules packabs ((_, []):rs) = prRules packabs rs
-prRules packabs ((nt,(p, fun, a):ls):rs) =
-    preamble ++ ";\n" ++ prRules packabs rs
-  where
-    preamble          = unwords [ nt'
-                        , "returns"
-                        , "["
-                        , packabs+.+normcat
-                        , "result"
-                        , "]"
-                        , ":"
-                        , p
-                        , "{"
-                        , a
-                        , "}"
-                        , "#"
-                        , antlrRuleLabel fun
-                        , '\n' : pr ls
-                        ]
-    alternative (p',fun',a')
-                      = unwords ["  |", p', "{", a' , "}", "#"
-                        , antlrRuleLabel fun']
-    catid             = identCat nt
-    normcat           = identCat (normCat nt)
-    nt'               = getRuleName $ firstLowerCase catid
-    pr []             = []
-    pr (k:ls) = unlines [alternative k] ++ pr ls
+prRules packabs = concatMap $ \case
+
+  -- No rules: skip.
+  PDef _mlhs _nt []         -> ""
+
+  -- At least one rule: print!
+  PDef mlhs nt (rhs : rhss) -> unlines $ concat
+
+    -- The definition header: lhs and type.
+    [ [ unwords [ fromMaybe nt' mlhs
+                , "returns" , "[" , packabs+.+normcat , "result" , "]"
+                ]
+      ]
+    -- The first rhs.
+    , alternative "  :" rhs
+    -- The other rhss.
+    , concatMap (alternative "  |") rhss
+    -- The definition footer.
+    , [ ";" ]
+    ]
+    where
+    alternative sep (p, fun, a) =
+      [ unwords [ sep , p ]
+      , unwords [ "    {" , a , "}" ]
+      , unwords [ "    #" , antlrRuleLabel fun ]
+      ]
+    catid              = identCat nt
+    normcat            = identCat (normCat nt)
+    nt'                = getRuleName $ firstLowerCase catid
     antlrRuleLabel fnc
       | isNilFun fnc   = catid ++ "_Empty"
       | isOneFun fnc   = catid ++ "_AppendLast"

@@ -52,6 +52,7 @@ cabal.sandbox.config
 /examples/C/Makefile
 /examples/cpp/csharp/
 /examples/GF/GF/
+/examples/GF/ANTLR/
 /examples/Java/Java/
 /examples/Java/Makefile
 /examples/Javalette/JavaletteLight/

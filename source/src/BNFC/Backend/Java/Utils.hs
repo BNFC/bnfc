@@ -15,8 +15,14 @@ javaReserved = [
     ,"const"   ,"float"   ,"native"   ,"super"   ,"while"
     ]
 
-getRuleName z = if x `elem` ("grammar" : javaReserved) then z ++ "_" else z
-                where x = firstLowerCase z
+-- | Append an underscore if there is a clash with a java or ANTLR keyword.
+--   E.g. "Grammar" clashes with ANTLR keyword "grammar" since
+--   we sometimes need the upper and sometimes the lower case version
+--   of "Grammar" in the generated parser.
+getRuleName :: String -> String
+getRuleName z
+  | firstLowerCase z `elem` ("grammar" : javaReserved) = z ++ "_"
+  | otherwise = z
 
 getLabelName = mkName ["Rule"] CamelCase
 
