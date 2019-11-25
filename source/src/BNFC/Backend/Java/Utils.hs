@@ -1,6 +1,8 @@
 module BNFC.Backend.Java.Utils where
-import BNFC.Backend.Common.NamedVariables
+
+import BNFC.CF
 import BNFC.Utils ( mkName, NameStyle(..))
+import BNFC.Backend.Common.NamedVariables
 
 javaReserved = [
     "abstract"   ,"continue"   ,"for"   ,"new"   ,"switch"
@@ -24,8 +26,14 @@ getRuleName z
   | firstLowerCase z `elem` ("grammar" : javaReserved) = z ++ "_"
   | otherwise = z
 
+getLabelName :: Fun -> String
 getLabelName = mkName ["Rule"] CamelCase
 
 getLastInPackage :: String -> String
 getLastInPackage =
     last . words . map (\c -> if c == '.' then ' ' else c)
+
+-- | Make a new entrypoint NT for an existing NT.
+
+startSymbol :: String -> String
+startSymbol = ("Start_" ++)

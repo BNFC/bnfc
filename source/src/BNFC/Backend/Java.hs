@@ -307,15 +307,11 @@ antlrtest = javaTest $ JavaTestParams
   , jtpInvocation         =
       \ pbase pabs dat enti -> vcat
          [
-           let rulename = getRuleName (show enti)
+           let rulename = getRuleName $ startSymbol $ render enti
                typename = text rulename
                methodname = text $ firstLowerCase rulename
            in
                pbase <> "." <> typename <> "Context pc = p." <> methodname <> "();"
-         , "org.antlr.v4.runtime.Token _tkn = p.getInputStream().getTokenSource().nextToken();"
-         , "if(_tkn.getType() != -1) throw new TestError"
-                 <> "(\"Stream does not end with EOF\","
-                 <> "_tkn.getLine(),_tkn.getCharPositionInLine());"
          , pabs <> "." <> dat <+> "ast = pc.result;"
          ]
   , jtpErrMsg             =

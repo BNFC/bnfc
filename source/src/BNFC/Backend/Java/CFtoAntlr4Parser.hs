@@ -53,12 +53,13 @@ import BNFC.Utils   ( (+++), (+.+), for, applyWhen )
 -- | A definition of a non-terminal by all its rhss,
 --   together with parse actions.
 data PDef = PDef
-  { pdNT   :: Maybe String
+  { _pdNT   :: Maybe String
       -- ^ If given, the name of the lhss.  Usually computed from 'pdCat'.
-  , pdCat  :: Cat
+  , _pdCat  :: Cat
       -- ^ The category to parse.
-  , pdAlts :: [(Pattern, Fun, Action)]
+  , _pdAlts :: [(Pattern, Action, Maybe Fun)]
       -- ^ The possible rhss with actions.  If 'null', skip this 'PDef'.
+      --   Where 'Nothing', skip ANTLR rule label.
   }
 type Rules       = [PDef]
 type Pattern     = String
@@ -71,6 +72,10 @@ cf2AntlrParse :: String -> String -> CF -> RecordPositions -> SymEnv -> String
 cf2AntlrParse packageBase packageAbsyn cf _ env = unlines
     [ header
     , tokens
+    -- Generate start rules [#272]
+    -- _X returns [ dX result ] : x=X EOF { $result = $x.result; }
+    , prRules packageAbsyn $ map (entrypoint cf env) $ allEntryPoints cf
+    -- Generate regular rules
     , prRules packageAbsyn (rulesForAntlr4 packageAbsyn cf env)
     ]
   where
@@ -87,6 +92,17 @@ cf2AntlrParse packageBase packageAbsyn cf _ env = unlines
         ]
     identifier = getLastInPackage packageBase
 
+-- Generate rule:
+-- start_X returns [ X result ] : x=X EOF { $result = $x.result; } # Start_X
+entrypoint :: CF -> SymEnv -> Cat -> PDef
+entrypoint cf env cat =
+  PDef (Just nt) cat [(pat, act, fun)]
+  where
+  nt  = firstLowerCase $ startSymbol $ identCat cat
+  pat = "x=" ++ catToNT cat +++ "EOF"
+  act = "$result = $x.result;"
+  fun = Nothing -- No ANTLR Rule label, ("Start_" ++ identCat cat) conflicts with lhs.
+
 --The following functions are a (relatively) straightforward translation
 --of the ones in CFtoHappy.hs
 rulesForAntlr4 :: String -> CF -> SymEnv -> Rules
@@ -101,8 +117,8 @@ constructRule :: String -> CF -> SymEnv -> [Rule] -> NonTerminal -> PDef
 constructRule packageAbsyn cf env rules nt =
   PDef Nothing nt $
     [ ( p
-      , funRule r
       , generateAction packageAbsyn nt (funRule r) m b
+      , Just $ funRule r
       )
     | (index, r0) <- zip [1..] rules
     , let b      = isConsFun (funRule r0) && elem (valCat r0) (cfgReversibleCats cf)
@@ -161,24 +177,23 @@ generatePatterns ind env r = case rhsRule r of
  where
     mkIt _ [] = []
     mkIt n (i:is) = case i of
-        Left c -> "p_" ++show ind++"_"++ show (n :: Int) ++ "="++ c'
+        Left c -> "p_" ++ show ind ++"_" ++ show (n :: Int) ++ "=" ++ catToNT c
             +++ mkIt (n+1) is
-          where
-              c' = case c of
-                  TokenCat "Ident"   -> "IDENT"
-                  TokenCat "Integer" -> "INTEGER"
-                  TokenCat "Char"    -> "CHAR"
-                  TokenCat "Double"  -> "DOUBLE"
-                  TokenCat "String"  -> "STRING"
-                  _                  -> if isTokenCat c
-                                          then identCat c
-                                          else firstLowerCase
-                                                (getRuleName (identCat c))
         Right s -> case lookup s env of
-            (Just x) -> x +++ mkIt (n+1) is
-            (Nothing) -> mkIt n is
+            Just x  -> x +++ mkIt (n+1) is
+            Nothing -> mkIt n is
     metas its = [("p_" ++ show ind ++"_"++ show i, category)
                     | (i,Left category) <- zip [1 :: Int ..] its]
+
+catToNT :: Cat -> String
+catToNT = \case
+  TokenCat "Ident"   -> "IDENT"
+  TokenCat "Integer" -> "INTEGER"
+  TokenCat "Char"    -> "CHAR"
+  TokenCat "Double"  -> "DOUBLE"
+  TokenCat "String"  -> "STRING"
+  c | isTokenCat c   -> identCat c
+    | otherwise      -> firstLowerCase $ getRuleName $ identCat c
 
 -- | Puts together the pattern and actions and returns a string containing all
 -- the rules.
@@ -201,17 +216,18 @@ prRules packabs = concatMap $ \case
     -- The other rhss.
     , concatMap (alternative "  |") rhss
     -- The definition footer.
-    , [ ";" ]
+    , [ "  ;" ]
     ]
     where
-    alternative sep (p, fun, a) =
-      [ unwords [ sep , p ]
-      , unwords [ "    {" , a , "}" ]
-      , unwords [ "    #" , antlrRuleLabel fun ]
+    alternative sep (p, a, label) = concat
+      [ [ unwords [ sep , p ] ]
+      , [ unwords [ "    {" , a , "}" ] ]
+      , [ unwords [ "    #" , antlrRuleLabel l ] | Just l <- [label] ]
       ]
     catid              = identCat nt
     normcat            = identCat (normCat nt)
     nt'                = getRuleName $ firstLowerCase catid
+    antlrRuleLabel :: Fun -> String
     antlrRuleLabel fnc
       | isNilFun fnc   = catid ++ "_Empty"
       | isOneFun fnc   = catid ++ "_AppendLast"
