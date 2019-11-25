@@ -169,21 +169,20 @@ generateAction packageAbsyn nt f ms rev
 -- >>> generatePatterns 2 [] $ Rule "myfun" (Cat "A") [] Parsable
 -- (" /* empty */ ",[])
 -- >>> generatePatterns 3 [("def", "_SYMB_1")] $ Rule "myfun" (Cat "A") [Right "def", Left (Cat "B")] Parsable
--- ("_SYMB_1 p_3_2=b ",[("p_3_2",B)])
+-- ("_SYMB_1 p_3_2=b",[("p_3_2",B)])
 generatePatterns :: Int -> SymEnv -> Rule -> (Pattern,[MetaVar])
-generatePatterns ind env r = case rhsRule r of
-    []  -> (" /* empty */ ",[])
-    its -> (mkIt 1 its, metas its)
- where
-    mkIt _ [] = []
-    mkIt n (i:is) = case i of
-        Left c -> "p_" ++ show ind ++"_" ++ show (n :: Int) ++ "=" ++ catToNT c
-            +++ mkIt (n+1) is
-        Right s -> case lookup s env of
-            Just x  -> x +++ mkIt (n+1) is
-            Nothing -> mkIt n is
-    metas its = [("p_" ++ show ind ++"_"++ show i, category)
-                    | (i,Left category) <- zip [1 :: Int ..] its]
+generatePatterns ind env r =
+  case rhsRule r of
+    []  -> (" /* empty */ ", [])
+    its -> ( unwords $ mapMaybe (uncurry mkIt) nits
+           , [ (var i, cat) | (i, Left cat) <- nits ]
+           )
+      where
+      nits   = zip [1 :: Int ..] its
+      var i  = "p_" ++ show ind ++"_"++ show i   -- TODO: is ind needed for ANTLR?
+      mkIt i = \case
+        Left  c -> Just $ var i ++ "=" ++ catToNT c
+        Right s -> lookup s env
 
 catToNT :: Cat -> String
 catToNT = \case
