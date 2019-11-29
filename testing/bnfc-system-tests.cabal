@@ -64,12 +64,13 @@ executable bnfc-system-tests
 
   -- Other library packages from which modules are imported.
   build-depends:       base >=4.5 && <5,
-                       regex-posix,
+                       regex-posix >= 0.95.2,
                        HUnit >= 1.2,
                        shelly >= 1.9,
                        filepath,
+   -- filepath >= 1.4.2.1,
                        text,
-                       HTF
+                       HTF >= 0.14.0.1
 
   -- Directories containing source files.
   hs-source-dirs: . src
