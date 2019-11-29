@@ -2,14 +2,18 @@
 module BNFC.OptionsSpec where
 
 import Control.Monad (liftM, liftM2)
+import Control.Monad.Writer (WriterT(..))
+
 import Data.List (intercalate)
 import Data.Maybe (fromJust)
+
 import System.Console.GetOpt
 import System.FilePath ((<.>), takeBaseName)
+
 import Test.Hspec
 import Test.QuickCheck
 
-import BNFC.Options -- SUT
+import BNFC.Options
 import BNFC.WarningM
 
 
@@ -23,57 +27,61 @@ spec = do
   describe "parseMode" $ do
 
     it "returns Help on an empty list of arguments" $
-      parseMode [] `shouldBe` Help
+      parseMode_ [] `shouldBe` Help
 
     it "returns Help if given --help" $
-      parseMode ["--help"] `shouldBe` Help
+      parseMode_ ["--help"] `shouldBe` Help
 
     it "returns Version if given --version" $
-      parseMode ["--version"] `shouldBe` Version
+      parseMode_ ["--version"] `shouldBe` Version
 
     it "returns an error if help is given an argument" $
-      isUsageError (parseMode ["--help=2"]) `shouldBe` True
+      isUsageError (parseMode_ ["--help=2"]) `shouldBe` True
 
     it "If no language is specified, it should default to haskell" $
-      parseMode["file.cf"] `shouldSet` (target, TargetHaskell)
+      parseMode_ ["file.cf"] `shouldSet` (target, TargetHaskell)
 
     it "returns an error if the grammar file is missing" $
-      parseMode["--haskell"] `shouldBe` UsageError "Missing grammar file"
+      parseMode_ ["--haskell"] `shouldBe` UsageError "Missing grammar file"
 
     it "returns an error if multiple grammar files are given" $
-      parseMode["--haskell", "file1.cf", "file2.cf"]
+      parseMode_ ["--haskell", "file1.cf", "file2.cf"]
         `shouldBe` UsageError "Too many arguments"
 
     it "sets the language name to the basename of the grammar file" $
-      parseMode["foo.cf"] `shouldSet` (lang, "foo")
+      parseMode_ ["foo.cf"] `shouldSet` (lang, "foo")
 
     it "accept 'old style' options" $ do
-      parseMode["-haskell", "-m", "-glr", "file.cf"]
+      parseMode_ ["-haskell", "-m", "-glr", "file.cf"]
         `shouldSet` (target, TargetHaskell)
-      parseMode["-haskell", "-m", "-glr", "file.cf"]
+      parseMode_ ["-haskell", "-m", "-glr", "file.cf"]
         `shouldSet` (make, Just "Makefile")
-      parseMode["-haskell", "-m", "-glr", "file.cf"]
+      parseMode_ ["-haskell", "-m", "-glr", "file.cf"]
         `shouldSet` (glr, GLR)
 
   it "accept latex as a target language" $
-    parseMode["--latex", "file.cf"] `shouldSet` (target, TargetLatex)
+    parseMode_ ["--latex", "file.cf"] `shouldSet` (target, TargetLatex)
 
   describe "Old option translation" $ do
     it "translate -haskell to --haskell" $
-      translateOldOptions ["-haskell"] `shouldBe` ["--haskell"]
+      translateOldOptions ["-haskell"] `shouldBe`
+        (WriterT $ Right (["--haskell"]
+                         ,["Warning: unrecognized option -haskell treated as if --haskell was provided."]))
 
     describe "--makefile" $ do
 
       it "is off by default" $
-        parseMode["--c", "foo.cf"] `shouldSet` (make, Nothing)
+        parseMode_ ["--c", "foo.cf"] `shouldSet` (make, Nothing)
 
       it "uses the file name 'Makefile' by default" $
-        parseMode["--c", "-m", "foo.cf"] `shouldSet` (make, Just "Makefile")
+        parseMode_ ["--c", "-m", "foo.cf"] `shouldSet` (make, Just "Makefile")
 
       context "when using the option with an argument" $
         it "uses the argument as Makefile name" $
-          parseMode["--c", "-mMyMakefile", "foo.cf"]
+          parseMode_ ["--c", "-mMyMakefile", "foo.cf"]
             `shouldSet` (make, Just "MyMakefile")
+  where
+  parseMode_ = fst . parseMode
 
 isUsageError :: Mode -> Bool
 isUsageError = \case

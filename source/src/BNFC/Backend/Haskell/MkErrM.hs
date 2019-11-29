@@ -1,5 +1,3 @@
-{-# LANGUAGE NoImplicitPrelude #-}
-
 {-
     BNF Converter: Haskell error monad
     Copyright (C) 2004-2007  Author:  Markus Forberg, Peter Gammie,
@@ -21,30 +19,27 @@
 -}
 module BNFC.Backend.Haskell.MkErrM where
 
-import Prelude'
-
 import BNFC.PrettyPrint
-import BNFC.Utils (when)
 
-mkErrM :: String -> Bool -> Doc
-mkErrM errMod ghc = vcat
-    [ if ghc then "{-# LANGUAGE CPP #-}" else empty
+mkErrM :: String -> Doc
+mkErrM errMod = vcat
+    [ "{-# LANGUAGE CPP #-}"
     , "-- BNF Converter: Error Monad"
     , "-- Copyright (C) 2004  Author:  Aarne Ranta"
     , ""
     , "-- This file comes with NO WARRANTY and may be used FOR ANY PURPOSE."
-    , "module " <> text errMod <> " where"
+    , "module" <+> text errMod <+> "where"
     , ""
     , "-- the Error monad: like Maybe type with error msgs"
     , ""
     , "import Control.Monad (MonadPlus(..), liftM)"
     -- From ghc-8.0 on, Applicative(..) is part of the Prelude,
     -- thus, need not be imported:
-    , when ghc "#if __GLASGOW_HASKELL__ < 710"
+    , "#if __GLASGOW_HASKELL__ < 710"
     , "import Control.Applicative (Applicative(..), Alternative(..))"
-    , when ghc "#else"
-    , when ghc "import Control.Applicative (Alternative(..))"
-    , when ghc "#endif"
+    , "#else"
+    , "import Control.Applicative (Alternative(..))"
+    , "#endif"
     , ""
     , "data Err a = Ok a | Bad String"
     , "  deriving (Read, Show, Eq, Ord)"
@@ -56,13 +51,13 @@ mkErrM errMod ghc = vcat
     -- From ghc-8.8 on, fail is no longer part of Monad.
     -- Thus, by default, we do not add it.
     -- Only if --ghc, we add it either to Monad or MonadFail.
-    , when ghc "#if __GLASGOW_HASKELL__ < 808"
-    , when ghc "  fail        = Bad"
-    , when ghc "#else"
-    , when ghc ""
-    , when ghc "instance MonadFail Err where"
-    , when ghc "  fail = Bad"
-    , when ghc "#endif"
+    , "#if __GLASGOW_HASKELL__ < 808"
+    , "  fail        = Bad"
+    , "#else"
+    , ""
+    , "instance MonadFail Err where"
+    , "  fail = Bad"
+    , "#endif"
     , ""
     , "instance Applicative Err where"
     , "  pure = Ok"

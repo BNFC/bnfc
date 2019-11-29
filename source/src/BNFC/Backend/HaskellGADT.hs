@@ -74,7 +74,7 @@ makeHaskellGadt opts cf = do
     when (hasLayout cf) $ mkfile (layoutFile opts) $
       cf2Layout (tokenText opts) (alexMode opts == Alex1) layMod lexMod cf
     mkfile (tFile opts)        $ Haskell.testfile opts cf
-    mkfile (errFile opts) $ mkErrM errMod (ghcExtensions opts)
+    mkfile (errFile opts) $ mkErrM errMod
     when (shareStrings opts) $ mkfile (shareFile opts)    $ sharedString shareMod (tokenText opts) cf
     Makefile.mkMakefile opts $ Haskell.makefile opts
     case xml opts of

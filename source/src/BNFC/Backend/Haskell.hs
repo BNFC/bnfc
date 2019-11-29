@@ -65,7 +65,7 @@ makeHaskell opts cf = do
       shareMod = shareFileM opts
   do
     -- Generate abstract syntax and pretty printer.
-    mkfile (absFile opts) $ cf2Abstract (tokenText opts) (ghcExtensions opts) (functor opts) absMod cf
+    mkfile (absFile opts) $ cf2Abstract (tokenText opts) (generic opts) (functor opts) absMod cf
     mkfile (printerFile opts) $ cf2Printer (tokenText opts) (functor opts) False prMod absMod cf
 
     -- Generate Alex lexer.  Layout is resolved after lexing.
@@ -92,7 +92,7 @@ makeHaskell opts cf = do
       mkfile (tFile opts)        $ testfile opts cf
 
     -- Both Happy parser and skeleton (template) rely on Err.
-    mkfile (errFile opts) $ mkErrM errMod (ghcExtensions opts)
+    mkfile (errFile opts) $ mkErrM errMod
     mkfile (templateFile opts) $ cf2Template (templateFileM opts) absMod errMod (functor opts) cf
 
     -- Generate txt2tags documentation.

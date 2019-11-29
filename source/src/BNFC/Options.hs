@@ -2,6 +2,11 @@
 
 module BNFC.Options where
 
+import Control.Monad.Writer (WriterT, runWriterT, tell)
+import Control.Monad.Except (throwError)
+
+import qualified Data.Map  as Map
+import qualified Data.List as List
 import Data.Maybe      (fromMaybe, maybeToList)
 import Data.Monoid     (Monoid) -- ghc 7.8
 import Data.Version    (showVersion )
@@ -92,8 +97,8 @@ data SharedOptions = Options
   , linenumbers :: RecordPositions -- ^ Add and set line_number field for syntax classes
   --- Haskell specific:
   , inDir         :: Bool        -- ^ Option @-d@.
-  , ghcExtensions :: Bool        -- ^ Option @--ghc@.
   , functor       :: Bool        -- ^ Option @--functor@.  Make AST functorial?
+  , generic       :: Bool        -- ^ Option @--generic@.  Derive Data, Generic, Typeable?
   , alexMode      :: AlexVersion -- ^ Options @--alex@.
   , shareStrings  :: Bool        -- ^ Option @--sharestrings@.
   , tokenText     :: TokenText   -- ^ Options @--bytestrings@, @--string-token@, and @--text-token@.
@@ -124,8 +129,8 @@ defaultOptions = Options
   , linenumbers     = NoRecordPositions
   -- Haskell specific
   , inDir           = False
-  , ghcExtensions   = False
   , functor         = False
+  , generic         = False
   , alexMode        = Alex3
   , shareStrings    = False
   , tokenText       = StringToken
@@ -180,8 +185,8 @@ printOptions opts = unwords . concat $
   , unlessDefault linenumbers opts $ const [ "-l" ]
   -- Haskell options:
   , [ "-d"                | inDir opts                          ]
-  , [ "--ghc"             | ghcExtensions opts                  ]
   , [ "--functor"         | functor opts                        ]
+  , [ "--generic"         | generic opts                        ]
   , unlessDefault alexMode opts $ \ o -> [ printAlexOption o ]
   , [ "--sharestrings"    | shareStrings opts                   ]
   , [ "--bytestrings"     | tokenText opts == ByteStringToken   ]
@@ -270,8 +275,10 @@ targetOptions =
 -- they apply to.
 specificOptions :: [(OptDescr (SharedOptions -> SharedOptions), [Target])]
 specificOptions =
-  [ ( Option ['l'] [] (NoArg (\o -> o {linenumbers = RecordPositions}))
-          "Add and set line_number field for all syntax classes\nJava requires cup 0.11b-2014-06-11 or greater"
+  [ ( Option ['l'] [] (NoArg (\o -> o {linenumbers = RecordPositions})) $ unlines
+        [ "Add and set line_number field for all syntax classes"
+        , "(Note: Java requires cup version 0.11b-2014-06-11 or greater.)"
+        ]
     , [TargetC, TargetCpp, TargetJava] )
   , ( Option ['p'] []
       (ReqArg (\n o -> o {inPackage = Just n}) "<namespace>")
@@ -323,11 +330,11 @@ specificOptions =
   , ( Option []    ["glr"] (NoArg (\o -> o {glr = GLR}))
           "Output Happy GLR parser"
     , haskellTargets )
-  , ( Option []    ["ghc"] (NoArg (\o -> o {ghcExtensions = True}))
-          "Use ghc-specific language extensions"
-    , haskellTargets )
   , ( Option []    ["functor"] (NoArg (\o -> o {functor = True}))
           "Make the AST a functor and use it to store the position of the nodes"
+    , haskellTargets )  -- TODO: ok with --profile?
+  , ( Option []    ["generic"] (NoArg (\o -> o {generic = True}))
+          "Derive Data, Generic, and Typeable instances for AST types"
     , haskellTargets )  -- TODO: ok with --profile?
   , ( Option []    ["xml"] (NoArg (\o -> o {xml = 1}))
           "Also generate a DTD and an XML printer"
@@ -403,74 +410,107 @@ help = unlines $ title ++
 -- ~~~ Parsing machinery ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 -- | Main parsing function
-parseMode :: [String] -> Mode
-parseMode []   = Help
+parseMode :: [String] -> (Mode, UsageWarnings)
 parseMode args =
+  case runWriterT $ parseMode' =<< translateOldOptions args of
+    Left err  -> (UsageError err, [])
+    Right res -> res
+
+type ParseOpt = WriterT UsageWarnings (Either String)
+type UsageWarnings = [String]
+
+parseMode' :: [String] -> ParseOpt Mode
+parseMode' []   = return Help
+parseMode' args =
   -- First, check for global options like --help or --version
-  case getOpt' Permute globalOptions args' of
-   (mode:_,_,_,_) -> mode
+  case getOpt' Permute globalOptions args of
+   (mode:_,_,_,_) -> return mode
 
    -- Then, check for unrecognized options.
-   _ -> case getOpt' Permute allOptions args' of
-    (_,  _, [u],      _) -> UsageError $ unwords [ "Unrecognized option:" , u ]
-    (_,  _, us@(_:_), _) -> UsageError $ unwords $ "Unrecognized options:" : us
+   _ -> do
+    let (_, _, unknown, _) = getOpt' Permute allOptions args
+    processUnknownOptions unknown
 
     -- Then, determine target language.
-    _ -> case getOpt' Permute targetOptions args' of
-      -- ([]     ,_,_,_) -> UsageError "No target selected"  -- --haskell is default target
-      (_:_:_,_,_,_) -> UsageError "At most one target is allowed"
+    case getOpt' Permute targetOptions args of
+      -- ([]     ,_,_,_) -> usageError "No target selected"  -- --haskell is default target
+      (_:_:_,_,_,_) -> usageError "At most one target is allowed"
 
       -- Finally, parse options with known target.
-      (optionUpdates,_,_,_) -> let
-          -- Compute target and valid options for this target.
-          tgt  = target (options optionUpdates)
-          opts = allOptions' tgt
-        in
-        case getOpt' Permute opts args' of
-          (_,  _, _,      e:_) -> UsageError e
-          (_,  _, [u],      _) -> UsageError $ unwords $ [ "Backend", show tgt, "does not support option", u ]
-          (_,  _, us@(_:_), _) -> UsageError $ unwords $ [ "Backend", show tgt, "does not support options" ] ++ us
-          (_, [], _,        _) -> UsageError "Missing grammar file"
-          (optionsUpdates, [grammarFile], [], []) ->
+      (optionUpdates,_,_,_) -> do
+        let tgt = target (options optionUpdates)
+        case getOpt' Permute (allOptions' tgt) args of
+          (_,  _, _,      e:_) -> usageError e
+          (_,  _, [u],      _) -> usageError $ unwords $ [ "Backend", show tgt, "does not support option", u ]
+          (_,  _, us@(_:_), _) -> usageError $ unwords $ [ "Backend", show tgt, "does not support options" ] ++ us
+          (_, [], _,        _) -> usageError "Missing grammar file"
+          (optionsUpdates, [grammarFile], [], []) -> do
             let opts = (options optionsUpdates)
                        { lbnfFile = grammarFile
                        , lang = takeBaseName grammarFile
                        }
-            in  Target opts grammarFile
-          (_,  _, _,        _) -> UsageError "Too many arguments"
+            return $ Target opts grammarFile
+          (_,  _, _,        _) -> usageError "Too many arguments"
   where
-  args' = translateOldOptions args
   options optionsUpdates = foldl (.) id optionsUpdates defaultOptions
+  usageError = return . UsageError
 
 
 -- * Backward compatibility
 
+-- | Produce a warning for former options that are now obsolete.
+--   Throw an error for properly unknown options.
+--
+--   Note: this only works properly for former options that had no arguments.
+processUnknownOptions :: [String] -> ParseOpt ()
+processUnknownOptions os = do
+  case List.partition (`elem` obsoleteOptions) os of
+    -- Throw an error for properly unknown options.
+    (_, us@[_]  ) -> throwError $ unwords $ "Unrecognized option:"  : us
+    (_, us@(_:_)) -> throwError $ unwords $ "Unrecognized options:" : us
+    -- Generate warning for former options that are now obsolete.
+    (os@[_]  , _) -> tell [ unwords $ "Warning: ignoring obsolete options:" : os ]
+    (os@(_:_), _) -> tell [ unwords $ "Warning: ignoring obsolete options:" : os ]
+    ([], []) -> return ()
+  where
+  obsoleteOptions = []
+
 -- | A translation function to maintain backward compatibility
 --   with the old option syntax.
 
-translateOldOptions :: [String] -> [String]
-translateOldOptions = map $ \case
-  "-agda"          ->  "--agda"
-  "-java"          ->  "--java"
-  "-java1.5"       ->  "--java"
-  "-c"             ->  "--c"
-  "-cpp"           ->  "--cpp"
-  "-cpp_stl"       ->  "--cpp"
-  "-cpp_no_stl"    ->  "--cpp-nostl"
-  "-csharp"        ->  "--csharp"
-  "-ocaml"         ->  "--ocaml"
-  "-fsharp"        ->  "fsharp"
-  "-haskell"       ->  "--haskell"
-  "-prof"          ->  "--profile"
-  "-gadt"          ->  "--haskell-gadt"
-  "-alex1"         ->  "--alex1"
-  "-alex2"         ->  "--alex2"
-  "-alex3"         ->  "--alex3"
-  "-sharestrings"  ->  "--sharestring"
-  "-bytestrings"   ->  "--bytestring"
-  "-glr"           ->  "--glr"
-  "-xml"           ->  "--xml"
-  "-xmlt"          ->  "--xmlt"
-  "-vs"            ->  "--vs"
-  "-wcf"           ->  "--wcf"
-  other            ->  other
+translateOldOptions :: [String] -> ParseOpt [String]
+translateOldOptions = mapM $ \ o -> do
+   case Map.lookup o translation of
+     Nothing -> return o
+     Just o' -> do
+       tell [ unwords [ "Warning: unrecognized option", o, "treated as if", o', "was provided." ] ]
+       return o'
+  where
+  translation = Map.fromList $
+    [ ("-agda"         , "--agda")
+    , ("-java"         , "--java")
+    , ("-java1.5"      , "--java")
+    , ("-c"            , "--c")
+    , ("-cpp"          , "--cpp")
+    , ("-cpp_stl"      , "--cpp")
+    , ("-cpp_no_stl"   , "--cpp-nostl")
+    , ("-csharp"       , "--csharp")
+    , ("-ocaml"        , "--ocaml")
+    , ("-haskell"      , "--haskell")
+    , ("-prof"         , "--profile")
+    , ("-gadt"         , "--haskell-gadt")
+    , ("-alex1"        , "--alex1")
+    , ("-alex2"        , "--alex2")
+    , ("-alex3"        , "--alex3")
+    , ("-sharestrings" , "--sharestring")
+    , ("-bytestrings"  , "--bytestring")
+    , ("-glr"          , "--glr")
+    , ("-xml"          , "--xml")
+    , ("-xmlt"         , "--xmlt")
+    , ("-vs"           , "--vs")
+    , ("-wcf"          , "--wcf")
+    , ("-generic"             , "--generic")
+    , ("--ghc"                , "--generic")
+    , ("--deriveGeneric"      , "--generic")
+    , ("--deriveDataTypeable" , "--generic")
+    ]

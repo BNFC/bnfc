@@ -61,7 +61,12 @@ printUsageErrors msg = do
 main :: IO ()
 main = do
   args <- getArgs
-  case parseMode args of
+  let (mode, warnings) = parseMode args
+
+  -- Print command-line argument warnings (if any).
+  mapM_ (hPutStrLn stderr) warnings
+
+  case mode of
 
     UsageError e -> printUsageErrors [e]
     Help         -> putStrLn help >> exitSuccess
