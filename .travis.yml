@@ -42,6 +42,9 @@ matrix:
       env: CABAL=yes PACKAGEDIR="testing"
     - ghc: 7.10.3
       env: CABAL=yes PACKAGEDIR="testing"
+    # HTF-0.14 does not build under 8.0 because of cabal version
+    - ghc: 8.0.2
+      env: CABAL=yes PACKAGEDIR="testing"
 
 script:
   - if [ "$CABAL" = yes -a "$PACKAGEDIR" = source  ]; then cabal configure --enable-tests && cabal build && cabal test; fi
