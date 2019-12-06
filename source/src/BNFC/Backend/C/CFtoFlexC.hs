@@ -98,7 +98,8 @@ prelude name = unlines
    "{",
    "  loc->first_line = loc->last_line;",
    "  loc->first_column = loc->last_column;",
-   "  for (int i = 0; text[i] != '\\0'; ++i) {",
+   "  int i = 0;",  -- put this here as @for (int i...)@ is only allowed in C99
+   "  for (; text[i] != '\\0'; ++i) {",
    "      if (text[i] == '\\n') {",
    "          ++loc->last_line;",
    "          loc->last_column = 0; ",
