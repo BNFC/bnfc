@@ -1,3 +1,5 @@
+{-# LANGUAGE CPP #-}
+
 {- ----------------------------------------------------------------------------
  - PARAMETERIZED TESTS
  -
@@ -5,13 +7,16 @@
  - backend. They take a parameter that defines the backend under test and how
  - it should behave (how to build the code or run the test program.)
  - -}
+
 module ParameterizedTests where
 
 import Prelude hiding (FilePath)
 
 import Control.Monad (forM_, unless)
 -- import Data.Functor
-import Data.Monoid ((<>))
+#if __GLASGOW_HASKELL__ < 808
+import Data.Semigroup ((<>))
+#endif
 import Data.Text (Text)
 import qualified Data.Text as Text
 

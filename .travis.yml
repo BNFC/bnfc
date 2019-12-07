@@ -27,10 +27,6 @@ matrix:
     - ghc: 8.8.1
       env: STACK=yes
 
-    # testing binary has dependencies not yet compatible with ghc 8.8.1
-    - ghc: 8.8.1
-      env: CABAL=yes PACKAGEDIR="testing"
-
     # stack lts does not support ghc 7.6
     - ghc: 7.6.3
       env: STACK=yes
