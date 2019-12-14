@@ -28,6 +28,7 @@ module BNFC.GetCF
   ) where
 
 import Control.Arrow (left)
+import Control.Monad.Except (MonadError(..))
 import Control.Monad.State (State, evalState, get, modify)
 
 import Data.Char
@@ -45,13 +46,13 @@ import System.IO   (hPutStrLn, stderr)
 
 import qualified AbsBNF as Abs
 import ParBNF
-import ErrM
 
 import BNFC.CF
 import BNFC.Options
 import BNFC.TypeChecker
 import BNFC.Utils
 
+type Err = Either String
 
 -- $setup
 -- >>> import PrintBNF
@@ -109,8 +110,7 @@ parseCFP opts target content = do
   return cfp
 
   where
-    runErr (Ok a) = return a
-    runErr (Bad msg) = die msg
+    runErr = either die return
 
 die :: String -> IO a
 die msg = hPutStrLn stderr msg >> exitFailure
@@ -157,7 +157,7 @@ getCFP cnf (Abs.Grammar defs0) = do
               in CFG pragma literals symbols keywords [] rules
     case mapMaybe (checkRule (cfp2cf cf0)) (cfgRules cf0) of
       [] -> return ()
-      msgs -> fail (unlines msgs)
+      msgs -> throwError $ unlines msgs
     return cf0
   where
     (pragma,rules0) = partitionEithers $ concatMap transDef defs
@@ -474,7 +474,7 @@ checkRule cf (Rule (f,_) cat rhs _)
 --         , Abs.RHS [Abs.Terminal "++"]
 --         ]
 -- in
--- let Ok tree = expandRules (Abs.Grammar [rules1])
+-- let Right tree = expandRules (Abs.Grammar [rules1])
 -- in putStrLn (printTree tree)
 -- :}
 -- Foo_abc . Foo ::= "abc";
@@ -491,7 +491,7 @@ checkRule cf (Rule (f,_) cat rhs _)
 -- let rules2 = Abs.Rules (Abs.Ident "Foo")
 --         [ Abs.RHS [Abs.Terminal "foo", Abs.Terminal "foo"] ]
 -- in
--- let Ok tree = expandRules (Abs.Grammar [rules1, rules2])
+-- let Right tree = expandRules (Abs.Grammar [rules1, rules2])
 -- in putStrLn (printTree tree)
 -- :}
 -- Foo1 . Foo ::= "foo" "bar";

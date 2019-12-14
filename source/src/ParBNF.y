@@ -4,7 +4,6 @@
 module ParBNF where
 import AbsBNF
 import LexBNF
-import ErrM
 }
 
 %name pLGrammar LGrammar
@@ -41,7 +40,7 @@ import ErrM
 %name pReg3 Reg3
 %name pReg Reg
 -- no lexer declaration
-%monad { Err } { thenM } { returnM }
+%monad { Either String } { (>>=) } { return }
 %tokentype {Token}
 %token
   '(' { PT _ (TS _ 1) }
@@ -236,15 +235,9 @@ Reg :: { Reg }
 Reg : Reg1 { $1 }
 {
 
-returnM :: a -> Err a
-returnM = return
-
-thenM :: Err a -> (a -> Err b) -> Err b
-thenM = (>>=)
-
-happyError :: [Token] -> Err a
-happyError ts =
-  Bad $ "syntax error at " ++ tokenPos ts ++
+happyError :: [Token] -> Either String a
+happyError ts = Left $
+  "syntax error at " ++ tokenPos ts ++
   case ts of
     []      -> []
     [Err _] -> " due to lexer error"

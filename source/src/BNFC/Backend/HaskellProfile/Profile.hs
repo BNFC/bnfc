@@ -1,11 +1,10 @@
 module Profile (postParse) where
 
 import Trees
-import ErrM
-
 import Monad
 import List (nub)
 
+type Err = Either String
 
 -- restoring parse trees for discontinuous constituents, bindings, etc. AR 25/1/2001
 -- revised 8/4/2002 for the new profile structure
@@ -43,7 +42,7 @@ tree2term (CFTree (cff@(CFFun (fun,pro)), trees)) = case fun of
        unif xs2
 
    checkArity xs = if length (nub [length xx | ITerm _ xx <- xs']) > 1
-                   then Bad "arity error"
+                   then Left "arity error"
                    else return xs'
            where xs' = [t | t@(ITerm _ _) <- xs]
    unif xs = case [t | t@(ITerm _ _) <- xs] of
@@ -83,8 +82,7 @@ term2trm (ITerm (fun, binds) terms) =
 
 -- !! with the error monad
 (!?) :: [a] -> Int -> Err a
-xs !? i = foldr (const . return) (Bad "too few elements in list") $ drop i xs
+xs !? i = foldr (const . return) (Left "too few elements in list") $ drop i xs
 
 testErr :: Bool -> String -> Err ()
-testErr cond msg = if cond then return () else Bad msg
-
+testErr cond msg = if cond then return () else Left msg

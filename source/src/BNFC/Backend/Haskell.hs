@@ -71,13 +71,13 @@ makeHaskell opts cf = do
     -- Generate Alex lexer.  Layout is resolved after lexing.
     case alexMode opts of
       Alex1 -> do
-        mkfile (alexFile opts) $ cf2alex lexMod errMod cf
+        mkfile (alexFile opts) $ cf2alex lexMod cf
         liftIO $ printf "Use Alex 1.1 to compile %s.\n" (alexFile opts)
       Alex2 -> do
-        mkfile (alexFile opts) $ cf2alex2 lexMod errMod shareMod (shareStrings opts) (tokenText opts) cf
+        mkfile (alexFile opts) $ cf2alex2 lexMod shareMod (shareStrings opts) (tokenText opts) cf
         liftIO $ printf "Use Alex 2.0 to compile %s.\n" (alexFile opts)
       Alex3 -> do
-        mkfile (alexFile opts) $ cf2alex3 lexMod errMod shareMod (shareStrings opts) (tokenText opts) cf
+        mkfile (alexFile opts) $ cf2alex3 lexMod shareMod (shareStrings opts) (tokenText opts) cf
         liftIO $ printf "Use Alex 3.0 to compile %s.\n" (alexFile opts)
 
     Ctrl.when (shareStrings opts) $ mkfile (shareFile opts) $ sharedString shareMod (tokenText opts) cf
@@ -87,13 +87,13 @@ makeHaskell opts cf = do
     -- Generate Happy parser and matching test program unless --cnf.
     Ctrl.unless (cnf opts) $ do
       mkfile (happyFile opts) $
-        cf2Happy parMod absMod lexMod errMod (glr opts) (tokenText opts) (functor opts) cf
+        cf2Happy parMod absMod lexMod (glr opts) (tokenText opts) (functor opts) cf
       -- liftIO $ printf "%s Tested with Happy 1.15\n" (happyFile opts)
       mkfile (tFile opts)        $ testfile opts cf
 
     -- Both Happy parser and skeleton (template) rely on Err.
     mkfile (errFile opts) $ mkErrM errMod
-    mkfile (templateFile opts) $ cf2Template (templateFileM opts) absMod errMod (functor opts) cf
+    mkfile (templateFile opts) $ cf2Template (templateFileM opts) absMod (functor opts) cf
 
     -- Generate txt2tags documentation.
     mkfile (txtFile opts)      $ cfToTxt (lang opts) cf
@@ -339,7 +339,7 @@ testfile opts cf = unlines $ concat $
     , ""
     , "import " ++ alexFileM     opts
     , "import " ++ happyFileM    opts
-    , "import " ++ templateFileM opts
+    , "import " ++ templateFileM opts ++ " ()"
     , "import " ++ printerFileM  opts
     , "import " ++ absFileM      opts
     ]
@@ -347,8 +347,8 @@ testfile opts cf = unlines $ concat $
   , [ "import " ++ xmlFileM opts    | use_xml ]
   , [ "import qualified Data.Map (Map, lookup, toList)" | use_glr ]
   , [ "import Data.Maybe (fromJust)"                    | use_glr ]
-  , [ "import " ++ errFileM      opts
-    , ""
+  , [ ""
+    , "type Err = Either String"
     , if use_glr
       then "type ParseFun a = [[Token]] -> (GLRResult, GLR_Output (Err a))"
       else "type ParseFun a = [Token] -> Err a"
@@ -414,18 +414,22 @@ testfile opts cf = unlines $ concat $
 
 runStd xml
  = unlines
-   [ "run v p s = let ts = myLLexer s in case p ts of"
-   , "           Bad s    -> do putStrLn \"\\nParse              Failed...\\n\""
-   , "                          putStrV v \"Tokens:\""
-   , "                          putStrV v $ show ts"
-   , "                          putStrLn s"
-   , "                          exitFailure"
-   , "           Ok  tree -> do putStrLn \"\\nParse Successful!\""
-   , "                          showTree v tree"
+   [ "run v p s = case p ts of"
+   , "    Left s -> do"
+   , "      putStrLn \"\\nParse              Failed...\\n\""
+   , "      putStrV v \"Tokens:\""
+   , "      putStrV v $ show ts"
+   , "      putStrLn s"
+   , "      exitFailure"
+   , "    Right tree -> do"
+   , "      putStrLn \"\\nParse Successful!\""
+   , "      showTree v tree"
    , if xml then
-     "                          putStrV v $ \"\\n[XML]\\n\\n\" ++ printXML tree"
+     "      putStrV v $ \"\\n[XML]\\n\\n\" ++ printXML tree"
      else ""
-   , "                          exitSuccess"
+   , "      exitSuccess"
+   , "  where"
+   , "  ts = myLLexer s"
    ]
 
 runGlr
@@ -440,9 +444,9 @@ runGlr
    , "     GLR_Result df trees  -> do"
    , "                               putStrLn \"\\nParse Successful!\""
    , "                               case trees of"
-   , "                                 []       -> error \"No results but parse succeeded?\""
-   , "                                 [Ok x]   -> showTree v x"
-   , "                                 xs@(_:_) -> showSeveralTrees v xs"
+   , "                                 []        -> error \"No results but parse succeeded?\""
+   , "                                 [Right x] -> showTree v x"
+   , "                                 xs@(_:_)  -> showSeveralTrees v xs"
    , "   where"
    , "  showSeveralTrees :: (Print b, Show b) => Int -> [Err b] -> IO ()"
    , "  showSeveralTrees v trees"
@@ -450,7 +454,7 @@ runGlr
    , "     [ do putStrV v (replicate 40 '-')"
    , "          putStrV v $ \"Parse number: \" ++ show n"
    , "          showTree v t"
-   , "     | (Ok t,n) <- zip trees [1..]"
+   , "     | (Right t,n) <- zip trees [1..]"
    , "     ]"
    ]
 

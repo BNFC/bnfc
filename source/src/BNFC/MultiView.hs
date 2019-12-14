@@ -25,14 +25,13 @@ import Data.Maybe
 import ParBNF
 import PrintBNF
 import AbsBNF
-import ErrM
 
 preprocessMCF :: FilePath -> IO ([FilePath],String)
 preprocessMCF f = do
   s  <- readFile f
   gr <- case pLGrammar $ myLexer s of
-    Ok g  -> return g
-    Bad s -> error s
+    Right g  -> return g
+    Left s -> error s
   let name = takeWhile (/='.') f
   let grs = extract name gr
   let entryp = entrypoint gr
@@ -99,7 +98,6 @@ testfile cat _ abs cncs = unlines $
   ["import qualified Par" ++ cnc | cnc <- cncs] ++
   ["import qualified Print" ++ cnc | cnc <- cncs] ++
   ["import Abs" ++ abs,
-   "import ErrM",
    "import System.Environment (getArgs)",
    "",
    "main :: IO ()",
@@ -107,8 +105,8 @@ testfile cat _ abs cncs = unlines $
    "  i:o:f:_ <- getArgs",
    "  s <- readFile f",
    "  case parse i s of",
-   "    Ok t -> putStrLn $ prin o t",
-   "    Bad s -> error s",
+   "    Right t -> putStrLn $ prin o t",
+   "    Left  s -> error s",
    "",
    "parse i = case i of"
   ] ++

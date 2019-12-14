@@ -58,18 +58,18 @@ makeHaskellGadt opts cf = do
     mkfile (composOpFile opts) $ composOp composOpMod
     case alexMode opts of
       Alex1 -> do
-        mkfile (alexFile opts) $ cf2alex lexMod errMod cf
+        mkfile (alexFile opts) $ cf2alex lexMod cf
         liftIO $ putStrLn "   (Use Alex 1.1 to compile.)"
       Alex2 -> do
-        mkfile (alexFile opts) $ cf2alex2 lexMod errMod shareMod (shareStrings opts) (tokenText opts) cf
+        mkfile (alexFile opts) $ cf2alex2 lexMod shareMod (shareStrings opts) (tokenText opts) cf
         liftIO $ putStrLn "   (Use Alex 2.0 to compile.)"
       Alex3 -> do
-        mkfile (alexFile opts) $ cf2alex3 lexMod errMod shareMod (shareStrings opts) (tokenText opts) cf
+        mkfile (alexFile opts) $ cf2alex3 lexMod shareMod (shareStrings opts) (tokenText opts) cf
         liftIO $ putStrLn "   (Use Alex 3.0 to compile.)"
     mkfile (happyFile opts) $
-      cf2Happy parMod absMod lexMod errMod (glr opts) (tokenText opts) False cf
+      cf2Happy parMod absMod lexMod (glr opts) (tokenText opts) False cf
     liftIO $ putStrLn "   (Tested with Happy 1.15)"
-    mkfile (templateFile opts) $ cf2Template (templateFileM opts) absMod errMod cf
+    mkfile (templateFile opts) $ cf2Template (templateFileM opts) absMod cf
     mkfile (printerFile opts)  $ cf2Printer StringToken False True prMod absMod cf
     when (hasLayout cf) $ mkfile (layoutFile opts) $
       cf2Layout (tokenText opts) (alexMode opts == Alex1) layMod lexMod cf

@@ -51,8 +51,6 @@ import BNFC.Backend.CSharp.CSharpUtils
 import BNFC.TypeChecker
 import BNFC.Utils ((+++))
 
-import ErrM
-
 --This follows the basic structure of CFtoHappy.
 
 -- Type declarations
@@ -110,8 +108,8 @@ definedRules _ cf = unlinesInline [
 
     rule f xs e =
       case checkDefinition' list ctx f xs e of
-        Bad err -> error $ "Panic! This should have been caught already:\n" ++ err
-        Ok (_,(_,_)) -> unlinesInline [
+        Left err -> error $ "Panic! This should have been caught already:\n" ++ err
+        Right (_,(_,_)) -> unlinesInline [
           "Defined Rule goes here"
           ]
 

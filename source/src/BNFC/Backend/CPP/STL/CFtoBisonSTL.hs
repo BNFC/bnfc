@@ -62,7 +62,6 @@ import BNFC.Options (RecordPositions(..))
 import BNFC.PrettyPrint
 import BNFC.TypeChecker
 import BNFC.Utils ((+++), when)
-import ErrM
 
 --This follows the basic structure of CFtoHappy.
 
@@ -148,8 +147,8 @@ definedRules cf =
 
     rule f xs e =
         case checkDefinition' list ctx f xs e of
-        Bad err -> error $ "Panic! This should have been caught already:\n" ++ err
-        Ok (args,(e',t)) -> unlines
+        Left err -> error $ "Panic! This should have been caught already:\n" ++ err
+        Right (args,(e',t)) -> unlines
             [ cppType t ++ " " ++ f ++ "_ (" ++
                 intercalate ", " (map cppArg args) ++ ") {"
             , "  return " ++ cppExp e' ++ ";"

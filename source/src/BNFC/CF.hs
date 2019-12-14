@@ -123,7 +123,6 @@ import AbsBNF (Reg())
 import ParBNF (pCat)
 import LexBNF (tokens)
 import qualified AbsBNF
-import ErrM
 
 import BNFC.Utils (prParenth,(+++))
 
@@ -297,8 +296,8 @@ instance Show Cat where
 strToCat :: String -> Cat
 strToCat s =
     case pCat (tokens s) of
-        Ok c -> cat2cat c
-        Bad _ -> Cat s -- error $ "Error parsing cat " ++ s ++ " (" ++ e ++ ")"
+        Right c -> cat2cat c
+        Left _ -> Cat s -- error $ "Error parsing cat " ++ s ++ " (" ++ e ++ ")"
                        -- Might be one of the "Internal cat" which are not
                        -- really parsable...
   where cat2cat (AbsBNF.IdCat (AbsBNF.Ident i)) =

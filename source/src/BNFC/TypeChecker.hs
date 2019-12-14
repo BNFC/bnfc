@@ -12,13 +12,15 @@ module BNFC.TypeChecker
   ) where
 
 import Control.Monad
+import Control.Monad.Except
 
 import Data.Char
 import Data.Function (on)
 import Data.List
 
 import BNFC.CF
-import ErrM
+
+type Err = Either String
 
 data Base = BaseT String
           | ListT Base
@@ -38,10 +40,6 @@ data Context = Ctx
   { ctxLabels :: [(String, Type)]
   , ctxTokens :: [String]
   }
-
-catchErr :: Err a -> (String -> Err a) -> Err a
-catchErr (Bad s) f = f s
-catchErr (Ok x) _  = Ok x
 
 buildContext :: CF -> Context
 buildContext cf@CFG{..} = Ctx
@@ -72,7 +70,7 @@ lookupCtx x ctx
     | isToken x ctx = return $ FunT [BaseT "String"] (BaseT x)
     | otherwise     =
     case lookup x $ ctxLabels ctx of
-        Nothing -> fail $ "Undefined symbol '" ++ x ++ "'."
+        Nothing -> throwError $ "Undefined symbol '" ++ x ++ "'."
         Just t  -> return t
 
 -- | Entry point.
@@ -100,7 +98,7 @@ checkContext ctx =
             case nub ts of
                 [_] -> return ()
                 ts' ->
-                    fail $ "The symbol '" ++ f ++ "' is used at conflicting types:\n" ++
+                    throwError $ "The symbol '" ++ f ++ "' is used at conflicting types:\n" ++
                             unlines (map (("  " ++) . show) ts')
 
 checkDefinition :: Context -> String -> [String] -> Exp -> Err ()
@@ -117,35 +115,35 @@ dummyConstructors = LC (const "[]") (const "(:)")
 
 checkDefinition' :: ListConstructors -> Context -> String -> [String] -> Exp -> Err ([(String,Base)],(Exp,Base))
 checkDefinition' list ctx f xs e =
-    do  unless (isLower $ head f) $ fail "Defined functions must start with a lowercase letter."
-        t@(FunT ts t') <- lookupCtx f ctx `catchErr` \_ ->
-                                fail $ "'" ++ f ++ "' must be used in a rule."
+    do  unless (isLower $ head f) $ throwError "Defined functions must start with a lowercase letter."
+        t@(FunT ts t') <- lookupCtx f ctx `catchError` \_ ->
+                                throwError $ "'" ++ f ++ "' must be used in a rule."
         let expect = length ts
             given  = length xs
-        unless (expect == given) $ fail $ "'" ++ f ++ "' is used with type " ++ show t ++ " but defined with " ++ show given ++ " argument" ++ plural given ++ "."
+        unless (expect == given) $ throwError $ "'" ++ f ++ "' is used with type " ++ show t ++ " but defined with " ++ show given ++ " argument" ++ plural given ++ "."
         e' <- checkExp list (extendContext ctx $ zip xs (map (FunT []) ts)) e t'
         return (zip xs ts, (e', t'))
-    `catchErr` \err -> fail $ "In the definition " ++ unwords (f : xs ++ ["=",show e,";"]) ++ "\n  " ++ err
+    `catchError` \err -> throwError $ "In the definition " ++ unwords (f : xs ++ ["=",show e,";"]) ++ "\n  " ++ err
     where
         plural 1 = ""
         plural _ = "s"
 
 checkExp :: ListConstructors -> Context -> Exp -> Base -> Err Exp
 checkExp list _   (App "[]" []) (ListT t) = return (App (nil list t) [])
-checkExp _ _      (App "[]" _) _  = fail "[] is applied to too many arguments."
+checkExp _ _      (App "[]" _) _  = throwError "[] is applied to too many arguments."
 checkExp list ctx (App "(:)" [e,es]) (ListT t) =
     do  e'  <- checkExp list ctx e t
         es' <- checkExp list ctx es (ListT t)
         return $ App (cons list t) [e',es']
-checkExp _ _ (App "(:)" es) _   = fail $ "(:) takes 2 arguments, but has been given " ++ show (length es) ++ "."
+checkExp _ _ (App "(:)" es) _   = throwError $ "(:) takes 2 arguments, but has been given " ++ show (length es) ++ "."
 checkExp list ctx e@(App x es) t =
     do  FunT ts t' <- lookupCtx x ctx
         es' <- matchArgs ts
-        unless (t == t') $ fail $ show e ++ " has type " ++ show t' ++ ", but something of type " ++ show t ++ " was expected."
+        unless (t == t') $ throwError $ show e ++ " has type " ++ show t' ++ ", but something of type " ++ show t ++ " was expected."
         return $ App x es'
     where
         matchArgs ts
-            | expect /= given   = fail $ "'" ++ x ++ "' takes " ++ show expect ++ " arguments, but has been given " ++ show given ++ "."
+            | expect /= given   = throwError $ "'" ++ x ++ "' takes " ++ show expect ++ " arguments, but has been given " ++ show given ++ "."
             | otherwise         = zipWithM (checkExp list ctx) es ts
             where
                 expect = length ts
@@ -154,4 +152,4 @@ checkExp _ _ e@(LitInt _) (BaseT "Integer")     = return e
 checkExp _ _ e@(LitDouble _) (BaseT "Double")   = return e
 checkExp _ _ e@(LitChar _) (BaseT "Char")       = return e
 checkExp _ _ e@(LitString _) (BaseT "String")   = return e
-checkExp _ _ e t = fail $ show e ++ " does not have type " ++ show t ++ "."
+checkExp _ _ e t = throwError $ show e ++ " does not have type " ++ show t ++ "."

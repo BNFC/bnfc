@@ -46,8 +46,6 @@ import BNFC.Options (RecordPositions(..))
 import BNFC.Utils ( (+++) )
 import BNFC.TypeChecker  -- We need to (re-)typecheck to figure out list instances in
                     -- defined rules.
-import ErrM
-
 import Data.Char
 
 type Rules   = [(NonTerminal,[(Pattern,Action)])]
@@ -116,10 +114,10 @@ definedRules packageAbsyn cf =
 
     rule f xs e =
         case checkDefinition' list ctx f xs e of
-            Bad err          ->
+            Left err          ->
                 error $ "Panic! This should have been caught already:\n"
                     ++ err
-            Ok (args,(e',t)) -> unlines
+            Right (args,(e',t)) -> unlines
                 [ "public " ++ javaType t ++ " " ++ f ++ "_ (" ++
                     intercalate ", " (map javaArg args) ++ ") {"
                 , "  return " ++ javaExp e' ++ ";"
