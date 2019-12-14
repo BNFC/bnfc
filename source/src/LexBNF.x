@@ -5,8 +5,6 @@
 {-# OPTIONS_GHC -w #-}
 module LexBNF where
 
-
-
 import qualified Data.Bits
 import Data.Word (Word8)
 import Data.Char (ord)
@@ -24,8 +22,12 @@ $u = [. \n]          -- universal: any character
    \: | \; | \, | \. | \: \: \= | \[ | \] | \_ | \( | \) | \= | \| | \- | \* | \+ | \? | \{ | \}
 
 :-
-"--" [.]* ; -- Toss single line comments
-"{-" ([$u # \-] | \-+ [$u # [\- \}]])* ("-")+ "}" ;
+
+-- Line comments
+"--" [.]* ;
+
+-- Block comments
+"{-" ([$u # \-]| \n | \- ([$u # \}]| \n)) * \- * "-}" ;
 
 $white+ ;
 @rsyms
@@ -108,11 +110,12 @@ eitherResIdent tv s = treeFind resWords
 
 resWords :: BTree
 resWords = b "digit" 21 (b "=" 11 (b "-" 6 (b "*" 3 (b ")" 2 (b "(" 1 N N) N) (b "," 5 (b "+" 4 N N) N)) (b "::=" 9 (b ":" 8 (b "." 7 N N) N) (b ";" 10 N N))) (b "char" 16 (b "]" 14 (b "[" 13 (b "?" 12 N N) N) (b "_" 15 N N)) (b "define" 19 (b "comment" 18 (b "coercions" 17 N N) N) (b "delimiters" 20 N N)))) (b "separator" 31 (b "letter" 26 (b "internal" 24 (b "eps" 23 (b "entrypoints" 22 N N) N) (b "layout" 25 N N)) (b "position" 29 (b "nonempty" 28 (b "lower" 27 N N) N) (b "rules" 30 N N))) (b "upper" 36 (b "token" 34 (b "terminator" 33 (b "stop" 32 N N) N) (b "toplevel" 35 N N)) (b "|" 39 (b "{" 38 (b "views" 37 N N) N) (b "}" 40 N N))))
-   where b s n = let bs = id s
-                  in B bs (TS bs n)
+   where b s n = let bs = s
+                 in  B bs (TS bs n)
 
 unescapeInitTail :: String -> String
-unescapeInitTail = id . unesc . tail . id where
+unescapeInitTail = id . unesc . tail . id
+  where
   unesc s = case s of
     '\\':c:cs | elem c ['\"', '\\', '\''] -> c : unesc cs
     '\\':'n':cs  -> '\n' : unesc cs
@@ -160,7 +163,7 @@ tokens str = go (alexStartPos, '\n', [], str)
 alexGetByte :: AlexInput -> Maybe (Byte,AlexInput)
 alexGetByte (p, c, (b:bs), s) = Just (b, (p, c, bs, s))
 alexGetByte (p, _, [], s) =
-  case  s of
+  case s of
     []  -> Nothing
     (c:s) ->
              let p'     = alexMove p c

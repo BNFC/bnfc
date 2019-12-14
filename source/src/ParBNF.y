@@ -5,7 +5,6 @@ module ParBNF where
 import AbsBNF
 import LexBNF
 import ErrM
-
 }
 
 %name pLGrammar LGrammar
@@ -97,16 +96,16 @@ Ident   :: { Ident }
 Ident    : L_ident  { Ident $1 }
 
 String  :: { String }
-String   : L_quoted {  $1 }
+String   : L_quoted { $1 }
 
 Integer :: { Integer }
-Integer  : L_integ  { (read ( $1)) :: Integer }
+Integer  : L_integ  { (read ($1)) :: Integer }
 
 Char    :: { Char }
-Char     : L_charac { (read ( $1)) :: Char }
+Char     : L_charac { (read ($1)) :: Char }
 
 Double  :: { Double }
-Double   : L_doubl  { (read ( $1)) :: Double }
+Double   : L_doubl  { (read ($1)) :: Double }
 
 LGrammar :: { LGrammar }
 LGrammar : ListLDef { AbsBNF.LGr $1 }
@@ -129,10 +128,10 @@ ListDef : {- empty -} { [] }
         | Def ';' ListDef { (:) $1 $3 }
         | ';' ListDef { $2 }
 Def :: { Def }
-Def : Label '.' Cat '::=' ListItem { AbsBNF.Rule $1 $3 (reverse $5) }
+Def : Label '.' Cat '::=' ListItem { AbsBNF.Rule $1 $3 $5 }
     | 'comment' String { AbsBNF.Comment $2 }
     | 'comment' String String { AbsBNF.Comments $2 $3 }
-    | 'internal' Label '.' Cat '::=' ListItem { AbsBNF.Internal $2 $4 (reverse $6) }
+    | 'internal' Label '.' Cat '::=' ListItem { AbsBNF.Internal $2 $4 $6 }
     | 'token' Ident Reg { AbsBNF.Token $2 $3 }
     | 'position' 'token' Ident Reg { AbsBNF.PosToken $3 $4 }
     | 'entrypoints' ListIdent { AbsBNF.Entryp $2 }
@@ -141,14 +140,14 @@ Def : Label '.' Cat '::=' ListItem { AbsBNF.Rule $1 $3 (reverse $5) }
     | 'delimiters' Cat String String Separation MinimumSize { AbsBNF.Delimiters $2 $3 $4 $5 $6 }
     | 'coercions' Ident Integer { AbsBNF.Coercions $2 $3 }
     | 'rules' Ident '::=' ListRHS { AbsBNF.Rules $2 $4 }
-    | 'define' Ident ListArg '=' Exp { AbsBNF.Function $2 (reverse $3) $5 }
+    | 'define' Ident ListArg '=' Exp { AbsBNF.Function $2 $3 $5 }
     | 'layout' ListString { AbsBNF.Layout $2 }
     | 'layout' 'stop' ListString { AbsBNF.LayoutStop $3 }
     | 'layout' 'toplevel' { AbsBNF.LayoutTop }
 Item :: { Item }
 Item : String { AbsBNF.Terminal $1 } | Cat { AbsBNF.NTerminal $1 }
 ListItem :: { [Item] }
-ListItem : {- empty -} { [] } | ListItem Item { flip (:) $1 $2 }
+ListItem : {- empty -} { [] } | Item ListItem { (:) $1 $2 }
 Cat :: { Cat }
 Cat : '[' Cat ']' { AbsBNF.ListCat $2 } | Ident { AbsBNF.IdCat $1 }
 Label :: { Label }
@@ -180,7 +179,7 @@ ListProfItem : ProfItem { (:[]) $1 }
 Arg :: { Arg }
 Arg : Ident { AbsBNF.Arg $1 }
 ListArg :: { [Arg] }
-ListArg : {- empty -} { [] } | ListArg Arg { flip (:) $1 $2 }
+ListArg : {- empty -} { [] } | Arg ListArg { (:) $1 $2 }
 Separation :: { Separation }
 Separation : {- empty -} { AbsBNF.SepNone }
            | 'terminator' String { AbsBNF.SepTerm $2 }
@@ -207,7 +206,7 @@ ListExp : {- empty -} { [] }
 ListExp2 :: { [Exp] }
 ListExp2 : Exp2 { (:[]) $1 } | Exp2 ListExp2 { (:) $1 $2 }
 RHS :: { RHS }
-RHS : ListItem { AbsBNF.RHS (reverse $1) }
+RHS : ListItem { AbsBNF.RHS $1 }
 ListRHS :: { [RHS] }
 ListRHS : RHS { (:[]) $1 } | RHS '|' ListRHS { (:) $1 $3 }
 MinimumSize :: { MinimumSize }
@@ -249,7 +248,7 @@ happyError ts =
   case ts of
     []      -> []
     [Err _] -> " due to lexer error"
-    t:_     -> " before `" ++ id(prToken t) ++ "'"
+    t:_     -> " before `" ++ (prToken t) ++ "'"
 
 myLexer = tokens
 }
