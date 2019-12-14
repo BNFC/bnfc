@@ -268,10 +268,10 @@ restOfAlex _ shareStrings tokenText cf = [
         , [String]            -- line  comment initiators
         ) -> String           -- Alex declarations
    lexComments (block, line) = unlines $ concat $
-     [ unless (null line) [ "-- Line comments" ]
+     [ [ "-- Line comments"  | not (null line)               ]
      , map lexLineComment line
-     , unless (null line || null block) [ "" ]
-     , unless (null block) [ "-- Block comments" ]
+     , [ ""                  | not (null line || null block) ]
+     , [ "-- Block comments" | not (null block)              ]
      , map (uncurry lexBlockComment) block
      ]
 
@@ -291,13 +291,20 @@ restOfAlex _ shareStrings tokenText cf = [
    pTSpec _ = "@rsyms\n    { tok (\\p s -> PT p (eitherResIdent (TV . share) s)) }"
 
    userDefTokenTypes = unlines
-     [printRegAlex exp ++
-      "\n    { tok (\\p s -> PT p (eitherResIdent (T_"  ++ name ++ " . share) s)) }"
-      | (name,exp) <- tokenPragmas cf]
+     [ printRegAlex exp ++
+       "\n    { tok (\\p s -> PT p (eitherResIdent (T_"  ++ name ++ " . share) s)) }"
+     | (name,exp) <- tokenPragmas cf
+     ]
+
    userDefTokenConstrs = unlines
-     [" | T_" ++ name ++ " !"++stringType | name <- tokenNames cf]
+     [ " | T_" ++ name ++ " !"++stringType
+     | name <- tokenNames cf
+     ]
+
    userDefTokenPrint = unlines
-     ["  PT _ (T_" ++ name ++ " s) -> " ++ tokenTextUnpack tokenText "s" | name <- tokenNames cf]
+     [ "  PT _ (T_" ++ name ++ " s) -> " ++ tokenTextUnpack tokenText "s"
+     | name <- tokenNames cf
+     ]
 
    ident =
      "$l $i*\n    { tok (\\p s -> PT p (eitherResIdent (TV . share) s)) }"
@@ -307,15 +314,19 @@ restOfAlex _ shareStrings tokenText cf = [
 data BTree = N | B String Int BTree BTree
 
 instance Show BTree where
-    showsPrec _ N = showString "N"
-    showsPrec n (B s k l r) = wrap (showString "b " . shows s  . showChar ' '. shows k  . showChar ' '
-                                    . showsPrec 1 l . showChar ' '
-                                    . showsPrec 1 r)
-        where wrap f = if n > 0 then showChar '(' . f . showChar ')' else f
+  showsPrec _  N          = showString "N"
+  showsPrec n (B s k l r) = mparens
+      $ showString "b " . shows s
+      . showChar ' ' . shows k
+      . showChar ' ' . showsPrec 1 l
+      . showChar ' ' . showsPrec 1 r
+    where
+    mparens f = if n > 0 then showChar '(' . f . showChar ')' else f
 
 sorted2tree :: [(String,Int)] -> BTree
 sorted2tree [] = N
-sorted2tree xs = B x n (sorted2tree t1) (sorted2tree t2) where
+sorted2tree xs = B x n (sorted2tree t1) (sorted2tree t2)
+  where
   (t1, (x,n) : t2) = splitAt (length xs `div` 2) xs
 
 
