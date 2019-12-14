@@ -53,7 +53,7 @@ Executable bnfc
   Build-Depends:
     base>=4.6 && <5,
     semigroups,
-    mtl,
+    mtl >= 2.2.1,
     directory,
     array,
     process,
