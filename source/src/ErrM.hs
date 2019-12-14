@@ -38,7 +38,8 @@ instance Alternative Err where
   (<|>) x@Right{} = const x
 
 instance MonadPlus Err where
-  -- inherit from Alternative
+  mzero = empty
+  mplus = (<|>)
 
 #else
 ---------------------------------------------------------------------------
