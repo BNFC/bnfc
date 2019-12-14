@@ -28,7 +28,7 @@ import AbsBNF
 import BNFC.CF
 import BNFC.Lexing  (mkRegMultilineComment)
 import BNFC.Options (TokenText(..))
-import BNFC.Utils   (unless)
+-- import BNFC.Utils   (unless)
 
 import BNFC.Backend.Haskell.Utils
 
@@ -149,12 +149,12 @@ restOfAlex _ shareStrings tokenText cf = [
   "",
   "prToken :: Token -> String",
   "prToken t = case t of",
-  "  PT _ (TS s _) -> " ++ stringUnpack ++ " s",
+  "  PT _ (TS s _) -> " ++ apply stringUnpack "s",
   "  PT _ (TL s)   -> show s",
-  "  PT _ (TI s)   -> " ++ stringUnpack ++ " s",
-  "  PT _ (TV s)   -> " ++ stringUnpack ++ " s",
-  "  PT _ (TD s)   -> " ++ stringUnpack ++ " s",
-  "  PT _ (TC s)   -> " ++ stringUnpack ++ " s",
+  "  PT _ (TI s)   -> " ++ apply stringUnpack "s",
+  "  PT _ (TV s)   -> " ++ apply stringUnpack "s",
+  "  PT _ (TD s)   -> " ++ apply stringUnpack "s",
+  "  PT _ (TC s)   -> " ++ apply stringUnpack "s",
   "  Err _         -> \"#error\"",
   userDefTokenPrint,
   "",
@@ -170,11 +170,12 @@ restOfAlex _ shareStrings tokenText cf = [
   "",
   "resWords :: BTree",
   "resWords = " ++ show (sorted2tree $ cfTokens cf),
-  "   where b s n = let bs = "++stringPack++" s",
-  "                  in B bs (TS bs n)",
+  "   where b s n = let bs = "++ apply stringPack "s",
+  "                 in  B bs (TS bs n)",
   "",
   "unescapeInitTail :: "++stringType++" -> "++stringType++"",
-  "unescapeInitTail = "++stringPack++" . unesc . tail . "++stringUnpack++" where",
+  "unescapeInitTail = "++stringPack++" . unesc . tail . "++stringUnpack,
+  "  where",
   "  unesc s = case s of",
   "    '\\\\':c:cs | elem c ['\\\"', '\\\\', '\\\''] -> c : unesc cs",
   "    '\\\\':'n':cs  -> '\\n' : unesc cs",
@@ -222,7 +223,7 @@ restOfAlex _ shareStrings tokenText cf = [
   "alexGetByte :: AlexInput -> Maybe (Byte,AlexInput)",
   "alexGetByte (p, c, (b:bs), s) = Just (b, (p, c, bs, s))",
   "alexGetByte (p, _, [], s) =",
-  "  case "++stringUncons++" s of",
+  "  case " ++ apply stringUncons "s" ++ " of",
   "    "++stringNilP++"  -> Nothing",
   "    "++stringConsP++" ->",
   "             let p'     = alexMove p c",
@@ -259,6 +260,11 @@ restOfAlex _ shareStrings tokenText cf = [
      StringToken     -> ("String",        "take",    "",          "id",      "id",        "[]",      "(c:s)"     )
      ByteStringToken -> ("BS.ByteString", "BS.take", "BS.uncons", "BS.pack", "BS.unpack", "Nothing", "Just (c,s)")
      TextToken       -> ("Data.Text.Text", "Data.Text.take", "Data.Text.uncons", "Data.Text.pack", "Data.Text.unpack", "Nothing", "Just (c,s)")
+
+   apply :: String -> String -> String
+   apply ""   s = s
+   apply "id" s = s
+   apply f    s = f ++ " " ++ s
 
    ifC :: TokenCat -> String -> String
    ifC cat s = if isUsedCat cf (TokenCat cat) then s else ""
