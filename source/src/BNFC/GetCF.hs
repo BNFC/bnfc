@@ -106,12 +106,6 @@ parseCFP opts target content = do
   -- Note: the match against () is necessary for type class instance resolution.
   () <- when (nRules == 0) $ die $ "ERROR: the grammar contains no rules."
   putStrLn $ show nRules +++ "rules accepted\n"
-
-  -- Print a warning if comment delimiter are bigger than 2 characters
-  let c3s = [(b,e) | (b,e) <- fst (comments cf), length b > 2 || length e > 2]
-  unless (null c3s) $ do
-      putStrLn "Warning: comment delimiters longer than 2 characters ignored in Haskell:"
-      mapM_ putStrLn [b +++ "-" +++ e | (b,e) <- c3s]
   return cfp
 
   where
