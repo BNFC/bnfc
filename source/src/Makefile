@@ -9,7 +9,7 @@ gen = AbsBNF.hs DocBNF.txt ErrM.hs LexBNF.x ParBNF.y PrintBNF.hs SkelBNF.hs Test
 all : AbsBNF.hs LexBNF.hs ParBNF.hs
 
 Abs%.hs Doc%.txt Lex%.x Par%.y Print%.hs Skel%.hs Test%.hs : %.cf
-	bnfc --haskell --ghc $<
+	bnfc --haskell $<
 
 %.hs : %.x
 	alex $<
