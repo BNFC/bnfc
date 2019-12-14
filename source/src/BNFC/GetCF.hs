@@ -17,6 +17,7 @@
     Foundation, 51 Franklin Street, Fifth Floor, Boston, MA 02110-1335, USA
 -}
 
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE RecordWildCards #-}
 
@@ -28,8 +29,14 @@ module BNFC.GetCF
   ) where
 
 import Control.Arrow (left)
-import Control.Monad.Except (MonadError(..))
 import Control.Monad.State (State, evalState, get, modify)
+
+-- Support ghc <= 7.8 which ships with mtl-2.1
+#if MIN_VERSION_mtl(2,2,1)
+import Control.Monad.Except (MonadError(..))
+#else
+import Control.Monad.Error  (MonadError(..))
+#endif
 
 import Data.Char
 import Data.Either  (partitionEithers)

@@ -53,7 +53,7 @@ Executable bnfc
   Build-Depends:
     base>=4.6 && <5,
     semigroups,
-    mtl >= 2.2.1,
+    mtl,
     directory,
     array,
     process,
@@ -81,7 +81,6 @@ Executable bnfc
     ParBNF
     AbsBNF
     PrintBNF
-    ErrM
     -- BNFC core
     Prelude'
     BNFC.Utils
@@ -263,7 +262,6 @@ Test-suite unit-tests
     ParBNF
     AbsBNF
     PrintBNF
-    ErrM
     -- BNFC core
     Prelude'
     BNFC.Utils
