@@ -46,7 +46,7 @@ import BNFC.CF
 import BNFC.Backend.Java.Utils
 import BNFC.Backend.Common.NamedVariables
 import BNFC.Options ( RecordPositions(..) )
-import BNFC.Utils   ( (+++), (+.+), for, applyWhen )
+import BNFC.Utils   ( (+++), (+.+), applyWhen )
 
 -- Type declarations
 
@@ -74,7 +74,7 @@ cf2AntlrParse packageBase packageAbsyn cf _ env = unlines
     , tokens
     -- Generate start rules [#272]
     -- _X returns [ dX result ] : x=X EOF { $result = $x.result; }
-    , prRules packageAbsyn $ map (entrypoint cf env) $ allEntryPoints cf
+    , prRules packageAbsyn $ map entrypoint $ allEntryPoints cf
     -- Generate regular rules
     , prRules packageAbsyn (rulesForAntlr4 packageAbsyn cf env)
     ]
@@ -92,10 +92,12 @@ cf2AntlrParse packageBase packageAbsyn cf _ env = unlines
         ]
     identifier = getLastInPackage packageBase
 
--- Generate rule:
--- start_X returns [ X result ] : x=X EOF { $result = $x.result; } # Start_X
-entrypoint :: CF -> SymEnv -> Cat -> PDef
-entrypoint cf env cat =
+-- | Generate start rule to help ANTLR.
+--
+--   @start_X returns [ X result ] : x=X EOF { $result = $x.result; } # Start_X@
+--
+entrypoint :: Cat -> PDef
+entrypoint cat =
   PDef (Just nt) cat [(pat, act, fun)]
   where
   nt  = firstLowerCase $ startSymbol $ identCat cat

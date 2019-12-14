@@ -207,7 +207,7 @@ printOptions opts = unwords . concat $
   ]
   where
   tgt = target opts
-  haskell = tgt `elem` haskellTargets
+  -- haskell = tgt `elem` haskellTargets
 
 -- | Print target as an option to BNFC.
 printTargetOption :: Target -> String
