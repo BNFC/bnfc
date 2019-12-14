@@ -2,6 +2,7 @@
     BNF Converter: Haskell error monad
     Copyright (C) 2004-2007  Author:  Markus Forberg, Peter Gammie,
                                       Aarne Ranta, Björn Bringert
+    Copyright (C) 2019 Author: Andreas Abel
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -17,6 +18,7 @@
     along with this program; if not, write to the Free Software
     Foundation, 51 Franklin Street, Fifth Floor, Boston, MA 02110-1335, USA
 -}
+
 module BNFC.Backend.Haskell.MkErrM where
 
 import BNFC.PrettyPrint
@@ -24,22 +26,62 @@ import BNFC.PrettyPrint
 mkErrM :: String -> Doc
 mkErrM errMod = vcat
     [ "{-# LANGUAGE CPP #-}"
-    , "-- BNF Converter: Error Monad"
-    , "-- Copyright (C) 2004  Author:  Aarne Ranta"
     , ""
+    , "#if __GLASGOW_HASKELL__ >= 708"
+    , "---------------------------------------------------------------------------"
+    , "-- Pattern synonyms exist since ghc 7.8."
+    , ""
+    , "-- | BNF Converter: Error Monad."
+    , "--"
+    , "-- Module for backwards compatibility."
+    , "--"
+    , "-- The generated parser now uses @'Either' String@ as error monad."
+    , "-- This module defines a type synonym 'Err' and pattern synonyms"
+    , "-- 'Bad' and 'Ok' for 'Left' and 'Right'."
+    , ""
+    , "{-# LANGUAGE PatternSynonyms #-}"
+    , "{-# LANGUAGE FlexibleInstances #-}"
+    , "{-# LANGUAGE TypeSynonymInstances #-}"
+    , ""
+    , "module" <+> text errMod <+> "where"
+    , ""
+    , "import Control.Monad       (MonadPlus(..))"
+    , "import Control.Applicative (Alternative(..))"
+    , ""
+    , "-- | Error monad with 'String' error messages."
+    , "type Err = Either String"
+    , ""
+    , "pattern Bad msg = Left msg"
+    , "pattern Ok  a   = Right a"
+    , ""
+    , "#if __GLASGOW_HASKELL__ >= 808"
+    , "instance MonadFail Err where"
+    , "  fail = Bad"
+    , "#endif"
+    , ""
+    , "instance Alternative Err where"
+    , "  empty           = Left \"Err.empty\""
+    , "  (<|>) Left{}    = id"
+    , "  (<|>) x@Right{} = const x"
+    , ""
+    , "instance MonadPlus Err where"
+    , "  -- inherit from Alternative"
+    , ""
+    , "#else"
+    , "---------------------------------------------------------------------------"
+    , "-- ghc 7.6 and before: use old definition as data type."
+    , ""
+    , "-- | BNF Converter: Error Monad"
+    , ""
+    , "-- Copyright (C) 2004  Author:  Aarne Ranta"
     , "-- This file comes with NO WARRANTY and may be used FOR ANY PURPOSE."
+    , ""
     , "module" <+> text errMod <+> "where"
     , ""
     , "-- the Error monad: like Maybe type with error msgs"
     , ""
-    , "import Control.Monad (MonadPlus(..), liftM)"
-    -- From ghc-8.0 on, Applicative(..) is part of the Prelude,
-    -- thus, need not be imported:
-    , "#if __GLASGOW_HASKELL__ < 710"
     , "import Control.Applicative (Applicative(..), Alternative(..))"
-    , "#else"
-    , "import Control.Applicative (Alternative(..))"
-    , "#endif"
+    , "import Control.Monad       (MonadPlus(..), liftM)"
     , ""
     , "data Err a = Ok a | Bad String"
     , "  deriving (Read, Show, Eq, Ord)"
@@ -48,16 +90,6 @@ mkErrM errMod = vcat
     , "  return      = Ok"
     , "  Ok a  >>= f = f a"
     , "  Bad s >>= _ = Bad s"
-    -- From ghc-8.8 on, fail is no longer part of Monad.
-    -- Thus, by default, we do not add it.
-    -- Only if --ghc, we add it either to Monad or MonadFail.
-    , "#if __GLASGOW_HASKELL__ < 808"
-    , "  fail        = Bad"
-    , "#else"
-    , ""
-    , "instance MonadFail Err where"
-    , "  fail = Bad"
-    , "#endif"
     , ""
     , "instance Applicative Err where"
     , "  pure = Ok"
@@ -75,4 +107,6 @@ mkErrM errMod = vcat
     , "instance Alternative Err where"
     , "  empty = mzero"
     , "  (<|>) = mplus"
+    , ""
+    , "#endif"
     ]
