@@ -1,4 +1,5 @@
 {-# LANGUAGE NoImplicitPrelude #-}
+{-# LANGUAGE TupleSections #-}
 
 {-
     BNF Converter: C flex generator
@@ -37,7 +38,7 @@
 
    **************************************************************
 -}
-module BNFC.Backend.C.CFtoFlexC (cf2flex, lexComments, cMacros) where
+module BNFC.Backend.C.CFtoFlexC (cf2flex, lexComments, cMacros, commentStates) where
 
 import Prelude'
 import Data.Maybe (fromMaybe)
@@ -48,20 +49,18 @@ import BNFC.Backend.Common.NamedVariables
 import BNFC.PrettyPrint
 import BNFC.Utils (cstring)
 
---The environment must be returned for the parser to use.
-cf2flex :: String -> CF -> (String, SymEnv)
-cf2flex name cf = (unlines
- [
-  prelude name,
-  cMacros,
-  lexSymbols env,
-  restOfFlex cf env'
- ], env')
+-- | Entrypoint.
+cf2flex :: String -> CF -> (String, SymEnv) -- The environment is reused by the parser.
+cf2flex name cf = (, env') $ unlines
+    [ prelude name
+    , cMacros cf
+    , lexSymbols env
+    , restOfFlex cf env'
+    ]
   where
-   env = makeSymEnv (cfgSymbols cf ++ reservedWords cf) (0 :: Int)
-   env' = env ++ (makeSymEnv (tokenNames cf) (length env))
-   makeSymEnv [] _ = []
-   makeSymEnv (s:symbs) n = (s, "_SYMB_" ++ (show n)) : (makeSymEnv symbs (n+1))
+    env  = makeSymEnv (cfgSymbols cf ++ reservedWords cf) [0 :: Int ..]
+    env' = env ++ makeSymEnv (tokenNames cf) [length env ..]
+    makeSymEnv = zipWith $ \ s n -> (s, "_SYMB_" ++ show n)
 
 prelude :: String -> String
 prelude name = unlines
@@ -115,16 +114,18 @@ prelude name = unlines
 
 -- For now all categories are included.
 -- Optimally only the ones that are used should be generated.
-cMacros :: String
-cMacros = unlines
-  [
-  "LETTER [a-zA-Z]",
-  "CAPITAL [A-Z]",
-  "SMALL [a-z]",
-  "DIGIT [0-9]",
-  "IDENT [a-zA-Z0-9'_]",
-  "%START YYINITIAL COMMENT CHAR CHARESC CHAREND STRING ESCAPED",
-  "%%"
+cMacros :: CF ->  String
+cMacros cf = unlines
+  [ "LETTER [a-zA-Z]"
+  , "CAPITAL [A-Z]"
+  , "SMALL [a-z]"
+  , "DIGIT [0-9]"
+  , "IDENT [a-zA-Z0-9'_]"
+  , unwords $ concat
+      [ [ "%START YYINITIAL CHAR CHARESC CHAREND STRING ESCAPED" ]
+      , take (numberOfBlockCommentForms cf) commentStates
+      ]
+  , "%%"
   ]
 
 lexSymbols :: SymEnv -> String
@@ -206,14 +207,20 @@ restOfFlex cf env = concat
 -- delimiters.
 --
 -- >>> lexComments (Just "myns.") ([("{-","-}")],["--"])
--- <YYINITIAL>"--"[^\n]*\n /* skip */; // BNFC: comment "--";
--- <YYINITIAL>"{-" BEGIN COMMENT; // BNFC: comment "{-" "-}";
+-- <YYINITIAL>"--"[^\n]* /* skip */; // BNFC: comment "--";
+-- <YYINITIAL>"{-" BEGIN COMMENT; // BNFC: block comment "{-" "-}";
 -- <COMMENT>"-}" BEGIN YYINITIAL;
--- <COMMENT>. /* skip */;
+-- <COMMENT>.    /* skip */;
 -- <COMMENT>[\n] /* skip */;
 lexComments :: Maybe String -> ([(String, String)], [String]) -> Doc
-lexComments _ (m,s) =
-    vcat (map lexSingleComment s ++ map lexMultiComment m)
+lexComments _ (m,s) = vcat $ concat
+  [ map    lexSingleComment s
+  , zipWith lexMultiComment m commentStates
+  ]
+
+-- | If we have several block comments, we need different COMMENT lexing states.
+commentStates :: [String]
+commentStates = map ("COMMENT" ++) $ "" : map show [1..]
 
 -- | Create a lexer rule for single-line comments.
 -- The first argument is -- an optional c++ namespace
@@ -221,13 +228,13 @@ lexComments _ (m,s) =
 -- comment.
 --
 -- >>> lexSingleComment "--"
--- <YYINITIAL>"--"[^\n]*\n /* skip */; // BNFC: comment "--";
+-- <YYINITIAL>"--"[^\n]* /* skip */; // BNFC: comment "--";
 --
 -- >>> lexSingleComment "\""
--- <YYINITIAL>"\""[^\n]*\n /* skip */; // BNFC: comment "\"";
+-- <YYINITIAL>"\""[^\n]* /* skip */; // BNFC: comment "\"";
 lexSingleComment :: String -> Doc
 lexSingleComment c =
-    "<YYINITIAL>" <> cstring c <> "[^\\n]*\\n"
+    "<YYINITIAL>" <> cstring c <> "[^\\n]*"
     <+> "/* skip */;"
     <+> "// BNFC: comment" <+> cstring c <> ";"
 
@@ -239,39 +246,29 @@ lexSingleComment c =
 -- comments. They could possibly start a comment with one character and end it
 -- with another.  However this seems rare.
 --
--- >>> lexMultiComment ("{-", "-}")
--- <YYINITIAL>"{-" BEGIN COMMENT; // BNFC: comment "{-" "-}";
+-- >>> lexMultiComment ("{-", "-}") "COMMENT"
+-- <YYINITIAL>"{-" BEGIN COMMENT; // BNFC: block comment "{-" "-}";
 -- <COMMENT>"-}" BEGIN YYINITIAL;
--- <COMMENT>. /* skip */;
+-- <COMMENT>.    /* skip */;
 -- <COMMENT>[\n] /* skip */;
 --
--- >>> lexMultiComment ("\"'", "'\"")
--- <YYINITIAL>"\"'" BEGIN COMMENT; // BNFC: comment "\"'" "'\"";
+-- >>> lexMultiComment ("\"'", "'\"") "COMMENT"
+-- <YYINITIAL>"\"'" BEGIN COMMENT; // BNFC: block comment "\"'" "'\"";
 -- <COMMENT>"'\"" BEGIN YYINITIAL;
--- <COMMENT>. /* skip */;
+-- <COMMENT>.    /* skip */;
 -- <COMMENT>[\n] /* skip */;
-lexMultiComment :: (String, String) -> Doc
-lexMultiComment (b,e) = vcat
-    [ "<YYINITIAL>" <> cstring b <+> "BEGIN COMMENT;"
-        <+> "// BNFC: comment" <+> cstring b <+> cstring e <> ";"
-    , "<COMMENT>" <> cstring e <+> "BEGIN YYINITIAL;"
-    , "<COMMENT>. /* skip */;"
-    , "<COMMENT>[\\n] /* skip */;"
+lexMultiComment :: (String, String) -> String -> Doc
+lexMultiComment (b,e) comment = vcat
+    [ "<YYINITIAL>" <> cstring b <+> "BEGIN" <+> text comment <> ";"
+        <+> "// BNFC: block comment" <+> cstring b <+> cstring e <> ";"
+    , commentTag <> cstring e <+> "BEGIN YYINITIAL;"
+    , commentTag <> ".    /* skip */;"
+    , commentTag <> "[\\n] /* skip */;"
     ]
+  where
+  commentTag = text $ "<" ++ comment ++ ">"
 
--- --There might be a possible bug here if a language includes 2 multi-line comments.
--- --They could possibly start a comment with one character and end it with another.
--- --However this seems rare.
--- --
--- lexMultiComment :: Maybe String -> (String, String) -> String
--- lexMultiComment inPackage (b,e) = unlines [
---   "<YYINITIAL>\"" ++ b ++ "\"      \t BEGIN COMMENT;",
---   "<COMMENT>\"" ++ e ++ "\"      \t BEGIN YYINITIAL;",
---   "<COMMENT>.      \t /* BNFC multi-line comment */;",
---   "<COMMENT>[\\n]   ++" ++ nsString inPackage ++ "yy_mylinenumber ; \t /* BNFC multi-line comment */;"
---  ---- "\\n  ++yy_mylinenumber ;"
---   ]
---Helper function that escapes characters in strings
+-- | Helper function that escapes characters in strings.
 escapeChars :: String -> String
 escapeChars [] = []
 escapeChars ('\\':xs) = '\\' : ('\\' : (escapeChars xs))

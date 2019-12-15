@@ -89,6 +89,7 @@ module BNFC.CF (
             normCatOfList,  -- Removes precendence information and enclosed List. C1 => C, C2 => C
             catOfList,
             comments,       -- translates the pragmas into two list containing the s./m. comments
+            numberOfBlockCommentForms,
             tokenPragmas,   -- get the user-defined regular expression tokens
             tokenNames,     -- get the names of all user-defined tokens
             precCat,        -- get the precendence level of a Cat C1 => 1, C => 0
@@ -529,9 +530,14 @@ cfTokens cf = zip (sort (cfgSymbols cf ++ reservedWords cf)) [1..]
 
 -- | Comments can be defined by the 'comment' pragma
 comments :: CF -> ([(String,String)],[String])
-comments cf = case commentPragmas (cfgPragmas cf) of
-               xs -> ([p | CommentM p <- xs],
-                      [s | CommentS s <- xs])
+comments cf = ([p | CommentM p <- xs], [s | CommentS s <- xs])
+  where
+  xs = commentPragmas (cfgPragmas cf)
+
+-- | Number of block comment forms defined in the grammar file.
+numberOfBlockCommentForms :: CF -> Int
+numberOfBlockCommentForms = length . fst . comments
+
 
 -- built-in categories (corresponds to lexer)
 

@@ -1,5 +1,7 @@
-Prg. Program ::= "main";
+Prg. Program ::= [Integer];
+terminator Integer "";
 
+comment "/*" "*/";
 comment "--(" "--)";
 comment "begin" "end";
 comment "###" "###";

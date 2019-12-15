@@ -66,9 +66,9 @@ current :: Test
 current = makeTestSuite "Current parameterized test" $
   map (`makeTestCase` ("regression-tests" </> cur)) parameters
   where
-  cur = "256_Regex"
+  cur = "202_comments"
+  -- cur = "256_Regex"
   -- cur = "70_WhiteSpaceSeparator"
-  -- cur = "202_comments"
   -- cur = "204_InternalToken"
   -- cur = "222_IntegerList"
   -- cur = "194_layout"

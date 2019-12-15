@@ -45,16 +45,18 @@ import Prelude'
 
 import BNFC.CF
 import BNFC.Backend.Common.NamedVariables
+import BNFC.Backend.C.CFtoFlexC           ( commentStates )
 import BNFC.Backend.Java.RegToJLex
-import BNFC.Options (JavaLexerParser(..), RecordPositions(..))
-import BNFC.Utils (cstring)
+import BNFC.Options                       ( JavaLexerParser(..), RecordPositions(..) )
+import BNFC.Utils                         ( cstring )
+
 import Text.PrettyPrint
 
 -- | The environment is returned for further use in the parser.
 cf2jlex :: JavaLexerParser -> RecordPositions -> String -> CF -> (Doc, SymEnv)
 cf2jlex jflex rp packageBase cf = (, env) . vcat $
   [ prelude jflex rp packageBase
-  , cMacros
+  , cMacros cf
   , lexSymbols jflex env
   , restOfJLex jflex rp cf
   ]
@@ -123,33 +125,40 @@ prelude jflex rp packageBase = vcat
 
 --For now all categories are included.
 --Optimally only the ones that are used should be generated.
-cMacros :: Doc
-cMacros = vcat [
-  "LETTER = ({CAPITAL}|{SMALL})",
-  "CAPITAL = [A-Z\\xC0-\\xD6\\xD8-\\xDE]",
-  "SMALL = [a-z\\xDF-\\xF6\\xF8-\\xFF]",
-  "DIGIT = [0-9]",
-  "IDENT = ({LETTER}|{DIGIT}|['_])",
-  "%state COMMENT",
-  "%state CHAR",
-  "%state CHARESC",
-  "%state CHAREND",
-  "%state STRING",
-  "%state ESCAPED",
-  "%%"
+cMacros :: CF -> Doc
+cMacros cf = vcat $ concat
+  [ [ "LETTER = ({CAPITAL}|{SMALL})"
+    , "CAPITAL = [A-Z\\xC0-\\xD6\\xD8-\\xDE]"
+    , "SMALL = [a-z\\xDF-\\xF6\\xF8-\\xFF]"
+    , "DIGIT = [0-9]"
+    , "IDENT = ({LETTER}|{DIGIT}|['_])"
+    ]
+  , map (text . ("%state " ++)) $ take (numberOfBlockCommentForms cf) commentStates
+  , [ "%state CHAR"
+    , "%state CHARESC"
+    , "%state CHAREND"
+    , "%state STRING"
+    , "%state ESCAPED"
+    , "%%"
+    ]
   ]
 
 -- |
 -- >>> lexSymbols JLexCup [("foo","bar")]
 -- <YYINITIAL>foo { return cf.newSymbol("", sym.bar, left_loc(), right_loc()); }
+--
 -- >>> lexSymbols JLexCup [("\\","bar")]
 -- <YYINITIAL>\\ { return cf.newSymbol("", sym.bar, left_loc(), right_loc()); }
+--
 -- >>> lexSymbols JLexCup [("/","bar")]
 -- <YYINITIAL>/ { return cf.newSymbol("", sym.bar, left_loc(), right_loc()); }
+--
 -- >>> lexSymbols JFlexCup [("/","bar")]
 -- <YYINITIAL>\/ { return cf.newSymbol("", sym.bar, left_loc(), right_loc()); }
+--
 -- >>> lexSymbols JFlexCup [("~","bar")]
 -- <YYINITIAL>\~ { return cf.newSymbol("", sym.bar, left_loc(), right_loc()); }
+--
 lexSymbols :: JavaLexerParser -> SymEnv -> Doc
 lexSymbols jflex ss = vcat $  map transSym ss
   where
@@ -241,19 +250,21 @@ restOfJLex jflex rp cf = vcat
         ]
 
 lexComments :: ([(String, String)], [String]) -> Doc
-lexComments (m,s) =
-    vcat (map lexSingleComment s ++ map lexMultiComment m)
+lexComments (m,s) = vcat $ concat
+  [ map lexSingleComment s
+  , zipWith lexMultiComment m commentStates
+  ]
 
 -- | Create lexer rule for single-line comments.
 --
 -- >>> lexSingleComment "--"
--- <YYINITIAL>"--"[^\n]*\n { /* skip */ }
+-- <YYINITIAL>"--"[^\n]* { /* skip */ }
 --
 -- >>> lexSingleComment "\""
--- <YYINITIAL>"\""[^\n]*\n { /* skip */ }
+-- <YYINITIAL>"\""[^\n]* { /* skip */ }
 lexSingleComment :: String -> Doc
 lexSingleComment c =
-  "<YYINITIAL>" <> cstring c <>  "[^\\n]*\\n { /* skip */ }"
+  "<YYINITIAL>" <> cstring c <>  "[^\\n]* { /* skip */ }"
 
 -- | Create lexer rule for multi-lines comments.
 --
@@ -261,21 +272,24 @@ lexSingleComment c =
 -- comments. They could possibly start a comment with one character and end it
 -- with another. However this seems rare.
 --
--- >>> lexMultiComment ("{-", "-}")
+-- >>> lexMultiComment ("{-", "-}") "COMMENT"
 -- <YYINITIAL>"{-" { yybegin(COMMENT); }
 -- <COMMENT>"-}" { yybegin(YYINITIAL); }
 -- <COMMENT>. { /* skip */ }
 -- <COMMENT>[\n] { /* skip */ }
 --
--- >>> lexMultiComment ("\"'", "'\"")
+-- >>> lexMultiComment ("\"'", "'\"") "COMMENT"
 -- <YYINITIAL>"\"'" { yybegin(COMMENT); }
 -- <COMMENT>"'\"" { yybegin(YYINITIAL); }
 -- <COMMENT>. { /* skip */ }
 -- <COMMENT>[\n] { /* skip */ }
-lexMultiComment :: (String, String) -> Doc
-lexMultiComment (b,e) = vcat
-    [ "<YYINITIAL>" <> cstring b <+> "{ yybegin(COMMENT); }"
-    , "<COMMENT>" <> cstring e <+> "{ yybegin(YYINITIAL); }"
-    , "<COMMENT>. { /* skip */ }"
-    , "<COMMENT>[\\n] { /* skip */ }"
+--
+lexMultiComment :: (String, String) -> String -> Doc
+lexMultiComment (b,e) comment = vcat
+    [ "<YYINITIAL>" <> cstring b <+> "{ yybegin(" <> text comment <> "); }"
+    , commentTag <> cstring e <+> "{ yybegin(YYINITIAL); }"
+    , commentTag <> ". { /* skip */ }"
+    , commentTag <> "[\\n] { /* skip */ }"
     ]
+  where
+  commentTag = text $ "<" ++ comment ++ ">"

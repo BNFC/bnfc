@@ -4,6 +4,7 @@
 	* Haskell: new option --text-token to use Data.Text instead of String in the lexer [#167]
 	* Haskell: allow block comment delimiters of any length [#202,#169]
 	* Haskell: define Err monad as Either String [#273]
+	* C/C++/Java: support multiple block comment forms per grammar [#202]
 	* C++: fixed quadratic behavior in C++-generated printer (regression in 2.8.2)
 	* Java/ANTLR: emit start rules to work around ANTLR issue #2689 [#272]
 

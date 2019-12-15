@@ -3,8 +3,8 @@ Parse Successful!
 
 [Abstract Syntax]
 
-Prg
+(Prg [0, 1, 2, 3, 4, 5, 6, 7])
 
 [Linearized tree]
 
-main
+0 1 2 3 4 5 6 7
