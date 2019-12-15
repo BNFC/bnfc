@@ -1,0 +1,8 @@
+-- Issue #110: backslash in keyword
+
+Start. S ::= Name "/\\" Name;
+
+-- Issue #256: iterated difference
+-- Issue #276: whitespace characters in character class
+
+token Name (char - [ "(){};.@\"" ] - [ " \n\t" ]) + ;

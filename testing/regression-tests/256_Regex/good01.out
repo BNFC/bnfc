@@ -1,0 +1,10 @@
+
+Parse Successful!
+
+[Abstract Syntax]
+
+Start (Name "[x:4]") (Name "'funky+identifier-umlaute:\228\246\252\223//\\%#FOO")
+
+[Linearized tree]
+
+[x:4] /\ 'funky+identifier-umlaute:äöüß//\%#FOO
