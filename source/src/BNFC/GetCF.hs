@@ -34,6 +34,7 @@ import Control.Monad.Except (MonadError(..))
 
 import Data.Char
 import Data.Either  (partitionEithers)
+import Data.Functor ((<&>))
 import Data.List    (nub, partition)
 import Data.Maybe   (mapMaybe)
 
@@ -67,7 +68,7 @@ parseCF opts t s = cfp2cf <$> parseCFP opts t s
 parseCFP :: SharedOptions -> Target -> String -> IO CFP
 parseCFP opts target content = do
   cfp <- runErr $ pGrammar (myLexer content)
-                    >>= expandRules
+                    <&> expandRules
                     >>= getCFP (cnf opts)
                     >>= markTokenCategories
   let cf = cfp2cf cfp
@@ -474,7 +475,7 @@ checkRule cf (Rule (f,_) cat rhs _)
 --         , Abs.RHS [Abs.Terminal "++"]
 --         ]
 -- in
--- let Right tree = expandRules (Abs.Grammar [rules1])
+-- let tree = expandRules (Abs.Grammar [rules1])
 -- in putStrLn (printTree tree)
 -- :}
 -- Foo_abc . Foo ::= "abc";
@@ -491,26 +492,30 @@ checkRule cf (Rule (f,_) cat rhs _)
 -- let rules2 = Abs.Rules (Abs.Ident "Foo")
 --         [ Abs.RHS [Abs.Terminal "foo", Abs.Terminal "foo"] ]
 -- in
--- let Right tree = expandRules (Abs.Grammar [rules1, rules2])
+-- let tree = expandRules (Abs.Grammar [rules1, rules2])
 -- in putStrLn (printTree tree)
 -- :}
 -- Foo1 . Foo ::= "foo" "bar";
 -- Foo2 . Foo ::= "foo" "foo"
 --
 -- This is using a State monad to remember the last used index for a category.
-expandRules :: Abs.Grammar -> Err Abs.Grammar
+expandRules :: Abs.Grammar -> Abs.Grammar
 expandRules (Abs.Grammar defs) =
-    return $ Abs.Grammar (concat (evalState (mapM expand defs) []))
+    Abs.Grammar (concat (evalState (mapM expand defs) []))
   where
+    expand :: Abs.Def -> State [(String, Int)] [Abs.Def]
     expand (Abs.Rules ident rhss) = mapM (mkRule ident) rhss
     expand other = return [other]
+
     mkRule :: Abs.Ident -> Abs.RHS -> State [(String, Int)] Abs.Def
     mkRule ident (Abs.RHS rhs) = do
       fun <- Abs.LabNoP . Abs.Id . Abs.Ident <$> mkName ident rhs
       return (Abs.Rule fun (Abs.IdCat ident) rhs)
+
     mkName :: Abs.Ident -> [Abs.Item] -> State [(String, Int)] String
     mkName (Abs.Ident cat) [Abs.Terminal s]
-      | all (\c -> isAlphaNum c || elem c ("_'" :: String)) s = return (cat ++ "_" ++ s)
+      | all (\c -> isAlphaNum c || elem c ("_'" :: String)) s =
+        return (cat ++ "_" ++ s)
     mkName (Abs.Ident cat) [Abs.NTerminal (Abs.IdCat (Abs.Ident s))] =
         return (cat ++ s)
     mkName (Abs.Ident cat) _ = do
