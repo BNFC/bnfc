@@ -4,18 +4,11 @@
 module BNFC.Options where
 
 import Control.Monad.Writer (WriterT, runWriterT, tell)
-
--- Support ghc <= 7.8 which ships with mtl-2.1
-#if MIN_VERSION_mtl(2,2,1)
 import Control.Monad.Except (MonadError(..))
-#else
-import Control.Monad.Error  (MonadError(..))
-#endif
 
 import qualified Data.Map  as Map
 import qualified Data.List as List
 import Data.Maybe      (fromMaybe, maybeToList)
-import Data.Monoid     (Monoid) -- ghc 7.8
 import Data.Version    (showVersion )
 
 import System.Console.GetOpt

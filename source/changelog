@@ -1,4 +1,5 @@
 2.8.4 Andreas Abel <andreas.abel@gu.se>
+	* dropped support for GHC 7.6 and 7.8
 	* LBNF: whitespace list separators are now accepted; treated like "" [#70]
 	* Haskell: new option --text-token to use Data.Text instead of String in the lexer [#167]
 	* Haskell: allow block comment delimiters of any length [#202,#169]

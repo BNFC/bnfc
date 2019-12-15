@@ -1,7 +1,7 @@
 # https://fedoraproject.org/wiki/Packaging:Haskell
 
 Name:           BNFC
-Version:        2.8.3
+Version:        2.8.4
 Release:        1%{?dist}
 Summary:        A compiler front-end generator
 

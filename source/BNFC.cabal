@@ -23,9 +23,7 @@ Description:
   a pretty-printer as a Haskell, Agda, C, C++, C#, Java, or Ocaml module,
   an XML representation,
   a LaTeX file containing a readable specification of the language.
-tested-with: GHC == 7.6.3
-           , GHC == 7.8.4
-           , GHC == 7.10.3
+tested-with: GHC == 7.10.3
            , GHC == 8.0.2
            , GHC == 8.2.2
            , GHC == 8.4.4
@@ -53,7 +51,7 @@ Executable bnfc
   Build-Depends:
     base>=4.6 && <5,
     semigroups,
-    mtl,
+    mtl >= 2.2.1,
     directory,
     array,
     process,
@@ -67,6 +65,7 @@ Executable bnfc
   HS-source-dirs: compat src
   ghc-options:     -W
   extensions:
+    CPP
     FlexibleContexts
     LambdaCase
     OverloadedStrings
@@ -208,9 +207,10 @@ Executable bnfc
 Test-suite unit-tests
   Type: exitcode-stdio-1.0
   Build-Depends:
-    base>=4 && <5,
+    -- base-4.9 would be needed for Show1 needed for Show WriterT
+    base>=4.6 && <5,
     semigroups,
-    mtl,
+    mtl >= 2.2.1,
     directory,
     array,
     process,
@@ -226,6 +226,7 @@ Test-suite unit-tests
   Main-is: unit-tests.hs
   HS-source-dirs: compat src test
   extensions:
+    CPP
     FlexibleContexts
     LambdaCase
     OverloadedStrings
@@ -389,6 +390,7 @@ Test-suite unit-tests
 Test-suite bnfc-doctests
   type:           exitcode-stdio-1.0
   ghc-options:    -threaded
+  extensions:     CPP
   main-is:        doctests.hs
   build-depends:  base, doctest >= 0.8
   HS-source-dirs: test

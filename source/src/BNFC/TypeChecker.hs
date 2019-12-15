@@ -13,13 +13,7 @@ module BNFC.TypeChecker
   ) where
 
 import Control.Monad
-
--- Support ghc <= 7.8 which ships with mtl-2.1
-#if MIN_VERSION_mtl(2,2,1)
 import Control.Monad.Except (MonadError(..))
-#else
-import Control.Monad.Error  (MonadError(..))
-#endif
 
 import Data.Char
 import Data.Function (on)
