@@ -34,7 +34,7 @@ import Control.Monad.Except (MonadError(..))
 
 import Data.Char
 import Data.Either  (partitionEithers)
-import Data.Functor ((<&>))
+-- import Data.Functor ((<&>)) -- only from ghc 8.4
 import Data.List    (nub, partition)
 import Data.Maybe   (mapMaybe)
 
@@ -69,7 +69,8 @@ parseCF opts t s = cfp2cf <$> parseCFP opts t s
 parseCFP :: SharedOptions -> Target -> String -> IO CFP
 parseCFP opts target content = do
   cfp <- runErr $ pGrammar (myLexer content)
-                    <&> expandRules
+                    -- <&> expandRules -- <&> from ghc 8.4
+                    >>= return . expandRules
                     >>= getCFP (cnf opts)
                     >>= markTokenCategories
   let cf = cfp2cf cfp
