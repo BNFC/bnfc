@@ -49,6 +49,7 @@ cabal.sandbox.config
 
 # bnfc generated files
 /examples/C/C/
+/examples/C/CWithDelimiters/
 /examples/C/Makefile
 /examples/cpp/csharp/
 /examples/GF/GF/
