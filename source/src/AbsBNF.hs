@@ -80,9 +80,9 @@ data MinimumSize = MNonempty | MEmpty
   deriving (Eq, Ord, Show, Read)
 
 data Reg
-    = RSeq Reg Reg
-    | RAlt Reg Reg
+    = RAlt Reg Reg
     | RMinus Reg Reg
+    | RSeq Reg Reg
     | RStar Reg
     | RPlus Reg
     | ROpt Reg

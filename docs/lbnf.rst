@@ -980,86 +980,134 @@ Comments
 The syntactic structure of BNF
 ==============================
 
-Non-terminals are enclosed between ``<`` and
-``>``. The symbols ``::=`` (production), ``::=`` (union) and ``ε`` (empty rule)
-belong to the BNF notation. All other symbols are terminals.
+Non-terminals are enclosed between ``<`` and ``>``.
+The symbols ``::=`` (production), ``|`` (union) and ``ε`` (empty rule)
+belong to the BNF notation.
+All other symbols are terminals
+(as well as sometimes even ``::=`` and ``|``).
 
 
 ::
 
     <Grammar> ::= <ListDef>
 
-    <ListDef> ::= ε
-              |   <Def> ; <ListDef>
-    <ListItem> ::= ε
-               |   <Item> <ListItem>
-    <Def> ::= <Label> . <Cat> ::= <ListItem>
-          |   comment <String>
-          | comment <String> <String>
-          | internal <Label> . <Cat> ::= <ListItem>
-          | token <Ident> <Reg>
-          | position token <Ident> <Reg>
-          | entrypoints <ListIdent>
-          | separator <MinimumSize> <Cat> <String>
-          | terminator <MinimumSize> <Cat> <String>
-          | coercions <Ident> <Integer>
-          | rules <Ident> ::= <ListRHS>
-          | layout <ListString>
-          | layout stop <ListString>
-          | layout toplevel
-    <Item> ::= <String>
-           | <Cat>
-    <Cat> ::= [ <Cat> ]
-          | <Ident>
-    <Label> ::= <LabelId>
-            | <LabelId> <ListProfItem>
-            | <LabelId> <LabelId> <ListProfItem>
-    <LabelId> ::= <Ident>
-              | -
-              | [ ]
-              | ( : )
-              | ( : [ ] )
-    <ProfItem> ::= ( [ <ListIntList> ] , [ <ListInteger> ] )
-    <IntList> ::= [ <ListInteger> ]
+    <ListDef>
+      ::= ε
+        | <Def>
+        | <Def> ; <ListDef>
+        | ; <ListDef>
 
-    <ListInteger> ::= ε
-                  | <Integer>
-                  | <Integer> , <ListInteger>
-    <ListIntList> ::= ε
-                  | <IntList>
-                  | <IntList> , <ListIntList>
-    <ListProfItem> ::= <ProfItem>
-                   | <ProfItem> <ListProfItem>
-    <ListString> ::= <String>
-                 | <String> , <ListString>
-    <ListRHS> ::= <RHS>
-              | <RHS> | <ListRHS>
+    <Def>
+      ::= entrypoints <ListIdent>
+
+        |          <Label> . <Cat> ::= <ListItem>
+        | internal <Label> . <Cat> ::= <ListItem>
+
+        | separator  <MinimumSize> <Cat> <String>
+        | terminator <MinimumSize> <Cat> <String>
+
+        | coercions <Ident> <Integer>
+
+        | rules <Ident> ::= <ListRHS>
+
+        | comment <String>
+        | comment <String> <String>
+
+        |          token <Ident> <Reg>
+        | position token <Ident> <Reg>
+
+        | layout <ListString>
+        | layout stop <ListString>
+        | layout toplevel
+
+    <ListIdent>
+      ::= <Ident>
+        | <Ident> , <ListIdent>
+
+    <ListItem>
+      ::= ε
+        | <Item> <ListItem>
+
+    <Item>
+      ::= <String>
+        | <Cat>
+
+    <Cat>
+      ::= [ <Cat> ]
+        | <Ident>
+
+    <Label>
+      ::= <LabelId>
+        | <LabelId> <ListProfItem>
+        | <LabelId> <LabelId> <ListProfItem>
+
+    <LabelId>
+      ::= <Ident>
+        | -
+        | [ ]
+        | ( : )
+        | ( : [ ] )
+
+    <ProfItem>
+      ::= ( [ <ListIntList> ] , [ <ListInteger> ] )
+
+    <IntList>
+      ::= [ <ListInteger> ]
+
+    <ListInteger>
+      ::= ε
+        | <Integer>
+        | <Integer> , <ListInteger>
+
+    <ListIntList>
+      ::= ε
+        | <IntList>
+        | <IntList> , <ListIntList>
+
+    <ListProfItem>
+      ::= <ProfItem>
+        | <ProfItem> <ListProfItem>
+
+    <ListString>
+      ::= <String>
+        | <String> , <ListString>
+
+    <ListRHS>
+      ::= <RHS>
+        | <RHS> | <ListRHS>
+
     <RHS> ::= <ListItem>
-    <MinimumSize> ::= nonempty
-                  | ε
-    <Reg2> ::= <Reg2> <Reg3>
-           | <Reg3>
 
-    <Reg1> ::= <Reg1> | <Reg2>
-           | <Reg2> − <Reg2>
-           | <Reg2>
-    <Reg3> ::= <Reg3> *
-           | <Reg3> +
-           | <Reg3> ?
-           | eps
-           | <Char>
-           | [ <String> ]
-           | { <String> }
-           | digit
-           | letter
-           | upper
-           | lower
-           | char
-           | ( <Reg> )
-    <Reg> ::= <Reg1>
-    <ListIdent> ::= <Ident>
-                | <Ident> , <ListIdent>
+    <MinimumSize>
+      ::= ε
+        | nonempty
 
+    <Reg>
+      ::= <Reg> | <Reg1>
+        | <Reg1>
+
+    <Reg1>
+      ::= <Reg1> − <Reg2>
+        | <Reg2>
+
+    <Reg2>
+      ::= <Reg2> <Reg3>
+        | <Reg3>
+
+    <Reg3>
+      ::= <Reg3> *
+        | <Reg3> +
+        | <Reg3> ?
+        | eps
+        | <Char>
+        | [ <String> ]
+        | { <String> }
+        | digit
+        | letter
+        | upper
+        | lower
+        | char
+        | ( <Reg> )
 
 .. [1]
    Cambridge University Press, 1998.

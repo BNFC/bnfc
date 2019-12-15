@@ -260,9 +260,9 @@ instance Print AbsBNF.MinimumSize where
 
 instance Print AbsBNF.Reg where
   prt i e = case e of
+    AbsBNF.RAlt reg1 reg2 -> prPrec i 0 (concatD [prt 0 reg1, doc (showString "|"), prt 1 reg2])
+    AbsBNF.RMinus reg1 reg2 -> prPrec i 1 (concatD [prt 1 reg1, doc (showString "-"), prt 2 reg2])
     AbsBNF.RSeq reg1 reg2 -> prPrec i 2 (concatD [prt 2 reg1, prt 3 reg2])
-    AbsBNF.RAlt reg1 reg2 -> prPrec i 1 (concatD [prt 1 reg1, doc (showString "|"), prt 2 reg2])
-    AbsBNF.RMinus reg1 reg2 -> prPrec i 1 (concatD [prt 2 reg1, doc (showString "-"), prt 2 reg2])
     AbsBNF.RStar reg -> prPrec i 3 (concatD [prt 3 reg, doc (showString "*")])
     AbsBNF.RPlus reg -> prPrec i 3 (concatD [prt 3 reg, doc (showString "+")])
     AbsBNF.ROpt reg -> prPrec i 3 (concatD [prt 3 reg, doc (showString "?")])

@@ -86,6 +86,7 @@ Executable bnfc
     BNFC.CF
     BNFC.ToCNFCore
     BNFC.MultiView
+    BNFC.Regex
     BNFC.TypeChecker
     BNFC.GetCF
     BNFC.Lexing
@@ -269,6 +270,7 @@ Test-suite unit-tests
     BNFC.CF
     BNFC.ToCNFCore
     BNFC.MultiView
+    BNFC.Regex
     BNFC.TypeChecker
     BNFC.GetCF
     BNFC.Lexing

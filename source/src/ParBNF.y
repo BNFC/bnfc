@@ -35,10 +35,10 @@ import LexBNF
 %name pRHS RHS
 %name pListRHS ListRHS
 %name pMinimumSize MinimumSize
-%name pReg2 Reg2
-%name pReg1 Reg1
-%name pReg3 Reg3
 %name pReg Reg
+%name pReg1 Reg1
+%name pReg2 Reg2
+%name pReg3 Reg3
 -- no lexer declaration
 %monad { Either String } { (>>=) } { return }
 %tokentype {Token}
@@ -211,12 +211,12 @@ ListRHS : RHS { (:[]) $1 } | RHS '|' ListRHS { (:) $1 $3 }
 MinimumSize :: { MinimumSize }
 MinimumSize : 'nonempty' { AbsBNF.MNonempty }
             | {- empty -} { AbsBNF.MEmpty }
+Reg :: { Reg }
+Reg : Reg '|' Reg1 { AbsBNF.RAlt $1 $3 } | Reg1 { $1 }
+Reg1 :: { Reg }
+Reg1 : Reg1 '-' Reg2 { AbsBNF.RMinus $1 $3 } | Reg2 { $1 }
 Reg2 :: { Reg }
 Reg2 : Reg2 Reg3 { AbsBNF.RSeq $1 $2 } | Reg3 { $1 }
-Reg1 :: { Reg }
-Reg1 : Reg1 '|' Reg2 { AbsBNF.RAlt $1 $3 }
-     | Reg2 '-' Reg2 { AbsBNF.RMinus $1 $3 }
-     | Reg2 { $1 }
 Reg3 :: { Reg }
 Reg3 : Reg3 '*' { AbsBNF.RStar $1 }
      | Reg3 '+' { AbsBNF.RPlus $1 }
@@ -231,8 +231,6 @@ Reg3 : Reg3 '*' { AbsBNF.RStar $1 }
      | 'lower' { AbsBNF.RLower }
      | 'char' { AbsBNF.RAny }
      | '(' Reg ')' { $2 }
-Reg :: { Reg }
-Reg : Reg1 { $1 }
 {
 
 happyError :: [Token] -> Either String a

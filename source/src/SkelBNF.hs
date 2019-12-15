@@ -96,9 +96,9 @@ transMinimumSize x = case x of
   MEmpty -> failure x
 transReg :: Reg -> Result
 transReg x = case x of
-  RSeq reg1 reg2 -> failure x
   RAlt reg1 reg2 -> failure x
   RMinus reg1 reg2 -> failure x
+  RSeq reg1 reg2 -> failure x
   RStar reg -> failure x
   RPlus reg -> failure x
   ROpt reg -> failure x

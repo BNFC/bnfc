@@ -134,25 +134,28 @@ MNonempty.  MinimumSize ::= "nonempty" ;
 MEmpty.     MinimumSize ::=  ;
 
 -- Regular expressions
-RSeq.    Reg2 ::= Reg2 Reg3     ;  -- left-associative
-RAlt.    Reg1 ::= Reg1 "|" Reg2 ;  -- left-associative
-RMinus.  Reg1 ::= Reg2 "-" Reg2 ;  -- non-associative
 
-RStar.   Reg3 ::= Reg3 "*" ;
-RPlus.   Reg3 ::= Reg3 "+" ;
-ROpt.    Reg3 ::= Reg3 "?" ;
+RAlt.     Reg  ::= Reg  "|" Reg1  ;  -- left-associative
 
-REps.    Reg3 ::= "eps" ;
+RMinus.   Reg1 ::= Reg1 "-" Reg2  ;  -- left-associative
 
-RChar.   Reg3 ::= Char ;           -- single character
-RAlts.   Reg3 ::= "[" String "]" ; -- list of alternative characters
-RSeqs.   Reg3 ::= "{" String "}" ; -- character sequence
+RSeq.     Reg2 ::= Reg2 Reg3      ;  -- left-associative
 
-RDigit.  Reg3 ::= "digit"  ;
-RLetter. Reg3 ::= "letter" ;
-RUpper.  Reg3 ::= "upper"  ;
-RLower.  Reg3 ::= "lower"  ;
-RAny.    Reg3 ::= "char"   ;
+RStar.    Reg3 ::= Reg3 "*"       ;
+RPlus.    Reg3 ::= Reg3 "+"       ;
+ROpt.     Reg3 ::= Reg3 "?"       ;
+
+REps.     Reg3 ::= "eps"          ;  -- empty string, same as {""}
+
+RChar.    Reg3 ::= Char           ;  -- single character
+RAlts.    Reg3 ::= "[" String "]" ;  -- list of alternative characters
+RSeqs.    Reg3 ::= "{" String "}" ;  -- character sequence
+
+RDigit.   Reg3 ::= "digit"        ;
+RLetter.  Reg3 ::= "letter"       ;
+RUpper.   Reg3 ::= "upper"        ;
+RLower.   Reg3 ::= "lower"        ;
+RAny.     Reg3 ::= "char"         ;
 
 coercions Reg 3;
 
