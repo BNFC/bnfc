@@ -58,9 +58,10 @@ reservedOCaml = [
     "functor","if","in","include","inherit","initializer",
     "land","lazy","let","list","lor","lsl","lsr",
     "lxor","match","method","mod","module","mutable",
-    "new","object","of","open","or","private",
-    "rec","sig","struct","then","to","true",
-    "try","type","val","virtual","when","while","with"]
+    "new","nonrec","object","of","open","or",
+    "private","rec","sig","struct","then","to",
+    "true","try","type","val","virtual","when",
+    "while","with"]
 
 mkTuple :: [String] -> String
 mkTuple [] = ""
