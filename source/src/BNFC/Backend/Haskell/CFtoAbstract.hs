@@ -52,30 +52,46 @@ cf2Abstract tokenText generic functor name cf = vsep . concat $
       | generic
       ]
     , [ hsep [ "module", text name, "where" ] ]
+    , [ vcat
+        [ text $ "import Prelude (Char, Double, Integer, String" ++ functorImportsUnqual ++ ")"
+        , text $ "import qualified Prelude as C (Eq, Ord, Show, Read" ++ functorImportsQual ++ ")"
+        ]
+      ]
     , [ vcat . concat $
         [ map text $ tokenTextImport tokenText
-        , [ "import Data.Data    (Data, Typeable)" | generic ]
-        , [ "import GHC.Generics (Generic)"        | generic ]
+        , [ "import qualified Data.Data    as C (Data, Typeable)" | generic ]
+        , [ "import qualified GHC.Generics as C (Generic)"        | generic ]
         ]
       ]
     , map (\ c -> prSpecialData tokenText (isPositionCat cf c) derivingClasses c) $ specialCats cf
-    , concatMap (prData functor derivingClasses) $ cf2data cf
+    , concatMap (prData functorName derivingClasses) $ cf2data cf
     , [ "" ] -- ensure final newline
     ]
   where
-    derivingClasses = concat
+    derivingClasses = map ("C." ++) $ concat
       [ [ "Eq", "Ord", "Show", "Read" ]
       , when generic ["Data","Typeable","Generic"]
       ]
+    functorImportsUnqual
+      | functor   = ", map, fmap"
+      | otherwise = ""
+    functorImportsQual
+      | functor   = ", Functor"
+      | otherwise = ""
+    functorName
+      | functor   = "C.Functor"
+      | otherwise = ""
+
+type FunctorName = String
 
 -- |
 --
--- >>> vsep $ prData False ["Eq", "Ord", "Show", "Read"] (Cat "C", [("C1", [Cat "C"]), ("CIdent", [Cat "Ident"])])
+-- >>> vsep $ prData "" ["Eq", "Ord", "Show", "Read"] (Cat "C", [("C1", [Cat "C"]), ("CIdent", [Cat "Ident"])])
 -- data C = C1 C | CIdent Ident
 --   deriving (Eq, Ord, Show, Read)
 --
 -- Note that the layout adapts if it does not fit in one line:
--- >>> vsep $ prData False ["Show"] (Cat "C", [("CAbracadabra",[]),("CEbrecedebre",[]),("CIbricidibri",[]),("CObrocodobro",[]),("CUbrucudubru",[])])
+-- >>> vsep $ prData "" ["Show"] (Cat "C", [("CAbracadabra",[]),("CEbrecedebre",[]),("CIbricidibri",[]),("CObrocodobro",[]),("CUbrucudubru",[])])
 -- data C
 --     = CAbracadabra
 --     | CEbrecedebre
@@ -84,8 +100,8 @@ cf2Abstract tokenText generic functor name cf = vsep . concat $
 --     | CUbrucudubru
 --   deriving (Show)
 --
--- If the first argument is True, generate a functor:
--- >>> vsep $ prData True ["Show"] (Cat "C", [("C1", [Cat "C"]), ("CIdent", [TokenCat "Ident"])])
+-- If the first argument is not null, generate a functor:
+-- >>> vsep $ prData "Functor" ["Show"] (Cat "C", [("C1", [Cat "C"]), ("CIdent", [TokenCat "Ident"])])
 -- data C a = C1 a (C a) | CIdent a Ident
 --   deriving (Show)
 -- <BLANKLINE>
@@ -95,7 +111,7 @@ cf2Abstract tokenText generic functor name cf = vsep . concat $
 --         CIdent a ident -> CIdent (f a) ident
 --
 -- The case for lists:
--- >>> vsep $ prData True ["Show"] (Cat "ExpList", [("Exps", [ListCat (Cat "Exp")])])
+-- >>> vsep $ prData "Functor" ["Show"] (Cat "ExpList", [("Exps", [ListCat (Cat "Exp")])])
 -- data ExpList a = Exps a [Exp a]
 --   deriving (Show)
 -- <BLANKLINE>
@@ -103,37 +119,38 @@ cf2Abstract tokenText generic functor name cf = vsep . concat $
 --     fmap f x = case x of
 --         Exps a exps -> Exps (f a) (map (fmap f) exps)
 --
-prData :: Bool -> [String] -> Data -> [Doc]
-prData functor derivingClasses (cat,rules) = concat
+prData :: FunctorName -> [String] -> Data -> [Doc]
+prData functorName derivingClasses (cat,rules) = concat
     [ [ hang ("data" <+> dataType) 4 (constructors rules)
         $+$ nest 2 (deriving_ derivingClasses)
       ]
-    , [ genFunctorInstance (cat, rules) | functor ]
+    , [ genFunctorInstance functorName (cat, rules) | functor ]
     ]
   where
+    functor            = not $ null functorName
     prRule (fun, cats) = hsep $ concat [ [text fun], ["a" | functor], map prArg cats ]
     dataType           = hsep $ concat [ [text (show cat)], ["a" | functor] ]
-    prArg              = catToType $ if functor then Just "a" else Nothing
+    prArg              = catToType id $ if functor then "a" else empty
     constructors []    = empty
     constructors (h:t) = sep $ ["=" <+> prRule h] ++ map (("|" <+>) . prRule) t
 
 -- | Generate a functor instance declaration:
 --
--- >>> genFunctorInstance (Cat "C", [("C1", [Cat "C", Cat "C"]), ("CIdent", [TokenCat "Ident"])])
+-- >>> genFunctorInstance "Functor" (Cat "C", [("C1", [Cat "C", Cat "C"]), ("CIdent", [TokenCat "Ident"])])
 -- instance Functor C where
 --     fmap f x = case x of
 --         C1 a c1 c2 -> C1 (f a) (fmap f c1) (fmap f c2)
 --         CIdent a ident -> CIdent (f a) ident
 --
--- >>> genFunctorInstance (Cat "SomeLists", [("Ints", [ListCat (TokenCat "Integer")]), ("Exps", [ListCat (Cat "Exp")])])
+-- >>> genFunctorInstance "Functor" (Cat "SomeLists", [("Ints", [ListCat (TokenCat "Integer")]), ("Exps", [ListCat (Cat "Exp")])])
 -- instance Functor SomeLists where
 --     fmap f x = case x of
 --         Ints a integers -> Ints (f a) integers
 --         Exps a exps -> Exps (f a) (map (fmap f) exps)
 --
-genFunctorInstance :: Data -> Doc
-genFunctorInstance (cat, cons) =
-    "instance Functor" <+> text (show cat) <+> "where"
+genFunctorInstance :: FunctorName -> Data -> Doc
+genFunctorInstance functorName (cat, cons) =
+    "instance" <+> text functorName <+> text (show cat) <+> "where"
     $+$ nest 4 ("fmap f x = case x of" $+$ nest 4 (vcat (map mkCase cons)))
   where
     mkCase (f, args) = hsep . concat $

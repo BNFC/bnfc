@@ -1,7 +1,8 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module BNFC.Backend.Haskell.Utils
-  ( parserName
+  ( ModuleName
+  , parserName
   , hsReservedWords
   , catToType
   , catvars
@@ -12,9 +13,12 @@ module BNFC.Backend.Haskell.Utils
 import Prelude'
 
 import BNFC.PrettyPrint
-import BNFC.CF      (Cat(..), identCat, normCat)
+import BNFC.CF      (Cat(..), identCat, baseTokenCatNames)
 import BNFC.Options (TokenText(..))
 import BNFC.Utils   (mkNames, NameStyle(..))
+
+-- | The name of a module, e.g. "Foo.Abs", "Foo.Print" etc.
+type ModuleName = String
 
 -- * Parameterization by 'TokenText'.
 
@@ -103,48 +107,51 @@ hsReservedWords =
 
 -- | Render a category from the grammar to a Haskell type.
 --
--- >>> catToType Nothing (Cat "A")
+-- >>> catToType id empty (Cat "A")
 -- A
--- >>> catToType Nothing (ListCat (Cat "A"))
+-- >>> catToType id empty (ListCat (Cat "A"))
 -- [A]
--- >>> catToType Nothing (TokenCat "Ident")
--- Ident
+-- >>> catToType ("Foo." <>) empty (TokenCat "Ident")
+-- Foo.Ident
 --
 -- Note that there is no haskell type for coerced categories: they should be normalized:
--- >>> catToType Nothing (CoercCat "Expr" 2)
+-- >>> catToType id empty (CoercCat "Expr" 2)
 -- Expr
 --
 -- If a type parameter is given it is added to the type name:
--- >>> catToType (Just "a") (Cat "A")
+-- >>> catToType id (text "a") (Cat "A")
 -- (A a)
 --
--- >>> catToType (Just "a") (ListCat (Cat "A"))
+-- >>> catToType id (text "a") (ListCat (Cat "A"))
 -- [A a]
 --
 -- but not added to Token categories:
--- >>> catToType (Just "a") (TokenCat "Integer")
+-- >>> catToType ("Foo." <>) (text "a") (TokenCat "Integer")
 -- Integer
 --
--- >>> catToType (Just "a") (ListCat (TokenCat "Integer"))
+-- >>> catToType id (text "a") (ListCat (TokenCat "Integer"))
 -- [Integer]
 --
--- >>> catToType Nothing (ListCat (CoercCat "Exp" 2))
+-- >>> catToType id empty (ListCat (CoercCat "Exp" 2))
 -- [Exp]
 --
--- >>> catToType (Just "()") (ListCat (CoercCat "Exp" 2))
--- [Exp ()]
+-- >>> catToType ("Foo." <>) (text "()") (ListCat (CoercCat "Exp" 2))
+-- [Foo.Exp ()]
 --
-catToType :: Maybe Doc -> Cat -> Doc
-catToType param cat = parensIf isApp $ catToType' param cat
+catToType :: (Doc -> Doc) -> Doc -> Cat -> Doc
+catToType qualify param cat = parensIf isApp $ loop cat
   where
-    isApp = case (param, cat) of
-        (Just _, Cat _) -> True
+    isApp = case cat of
+        Cat _ -> not $ isEmpty param
         _ -> False
-    catToType' Nothing  c              = text $ show $ normCat c
-    catToType' (Just p) (Cat c)        = text c <+> p
-    catToType' (Just p) (CoercCat c _) = text c <+> p
-    catToType' (Just _) (TokenCat c)   = text c
-    catToType' (Just p) (ListCat c)    = brackets $ catToType' (Just p) c
+    loop = \case
+      ListCat c     -> brackets $ loop c
+      Cat c         -> qualify (text c) <+> param  -- note: <+> goes away if param==empty
+      CoercCat c _  -> qualify (text c) <+> param
+      TokenCat c
+        | c `elem` baseTokenCatNames
+                    -> text c
+        | otherwise -> qualify (text c)
 
 
 -- | Gives a list of variables usable for pattern matching.

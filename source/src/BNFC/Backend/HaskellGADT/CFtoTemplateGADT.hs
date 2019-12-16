@@ -20,13 +20,13 @@
 
 module BNFC.Backend.HaskellGADT.CFtoTemplateGADT (cf2Template) where
 
+import Data.List  ( groupBy )
+
 import BNFC.CF
-import BNFC.Utils((+++))
-import Data.List (groupBy)
+import BNFC.Utils ( (+++) )
 
+import BNFC.Backend.Haskell.Utils                 ( ModuleName )
 import BNFC.Backend.HaskellGADT.HaskellGADTCommon
-
-type ModuleName = String
 
 cf2Template :: ModuleName -> ModuleName -> CF -> String
 cf2Template skelName absName cf = unlines $ concat

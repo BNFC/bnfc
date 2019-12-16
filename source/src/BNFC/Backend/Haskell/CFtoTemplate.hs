@@ -24,11 +24,9 @@ module BNFC.Backend.Haskell.CFtoTemplate (cf2Template) where
 
 import Prelude'
 
-import BNFC.Backend.Haskell.Utils (catvars)
+import BNFC.Backend.Haskell.Utils (ModuleName, catvars)
 import BNFC.CF
 import BNFC.PrettyPrint
-
-type ModuleName = String
 
 cf2Template :: ModuleName -> ModuleName -> Bool -> CF -> String
 cf2Template skelName absName functor cf = unlines
@@ -36,36 +34,36 @@ cf2Template skelName absName functor cf = unlines
     , ""
     , "module "++ skelName ++ " where"
     , ""
-    , "import " ++ absName
+    , "import qualified " ++ absName
     , ""
     , "type Err = Either String"
     , "type Result = Err String"
     , ""
     , "failure :: Show a => a -> Result"
     , "failure x = Left $ \"Undefined case: \" ++ show x\n"
-    , unlines $ map (render . \(s,xs) -> case_fun functor s xs) $ specialData cf ++ cf2data cf
+    , unlines $ map (render . \(s,xs) -> case_fun absName functor s xs) $ specialData cf ++ cf2data cf
     ]
 
 -- |
--- >>> case_fun False (Cat "Expr") [("EInt", [TokenCat "Integer"]), ("EAdd", [Cat "Expr", Cat "Expr"])]
--- transExpr :: Expr -> Result
+-- >>> case_fun "M" False (Cat "Expr") [("EInt", [TokenCat "Integer"]), ("EAdd", [Cat "Expr", Cat "Expr"])]
+-- transExpr :: M.Expr -> Result
 -- transExpr x = case x of
---   EInt integer -> failure x
---   EAdd expr1 expr2 -> failure x
+--   M.EInt integer -> failure x
+--   M.EAdd expr1 expr2 -> failure x
 --
--- >>> case_fun True (Cat "Expr") [("EInt", [TokenCat "Integer"]), ("EAdd", [Cat "Expr", Cat "Expr"])]
+-- >>> case_fun "" True (Cat "Expr") [("EInt", [TokenCat "Integer"]), ("EAdd", [Cat "Expr", Cat "Expr"])]
 -- transExpr :: Show a => Expr a -> Result
 -- transExpr x = case x of
 --   EInt _ integer -> failure x
 --   EAdd _ expr1 expr2 -> failure x
 --
 -- TokenCat are not generated as functors:
--- >>> case_fun True (TokenCat "MyIdent") [("MyIdent", [TokenCat "String"])]
+-- >>> case_fun "" True (TokenCat "MyIdent") [("MyIdent", [TokenCat "String"])]
 -- transMyIdent :: MyIdent -> Result
 -- transMyIdent x = case x of
 --   MyIdent string -> failure x
-case_fun :: Bool -> Cat -> [(Fun,[Cat])] -> Doc
-case_fun functor' cat xs = vcat
+case_fun :: ModuleName -> Bool -> Cat -> [(Fun,[Cat])] -> Doc
+case_fun absName functor' cat xs = vcat
     [ fname <+> "::" <+> iffunctor "Show a =>" <+> type_ <+> "-> Result"
     , fname <+> "x = case x of"
     , nest 2 $ vcat (map mkOne xs)
@@ -75,9 +73,13 @@ case_fun functor' cat xs = vcat
     -- then the type is a functor.
     iffunctor doc | functor' && not (isTokenCat cat) = doc
                   | otherwise = empty
-    type_ = cat' <+> iffunctor "a"
+    type_ = qualify $ cat' <+> iffunctor "a"
     fname = "trans" <> cat'
     cat' =  text (show cat)
     mkOne (cons, args) =
         let ns = catvars args -- names False (map (checkRes .var) args) 1
-        in  text cons <+> iffunctor "_" <+> hsep ns <+> "-> failure x"
+        in  qualify (text cons) <+> iffunctor "_" <+> hsep ns <+> "-> failure x"
+    qualify :: Doc -> Doc
+    qualify
+      | null absName = id
+      | otherwise    = (text absName <> "." <>)

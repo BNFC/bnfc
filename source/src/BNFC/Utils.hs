@@ -25,6 +25,7 @@ module BNFC.Utils
     , applyWhen, applyUnless
     , for
     , (+++), (++++), (+-+), (+.+)
+    , pad, table
     , mkName, mkNames, NameStyle(..)
     , lowerCase, upperCase, mixedCase, camelCase, snakeCase
     , replace, prParenth
@@ -117,6 +118,27 @@ a +.+ b   = a ++ "."    ++ b
 -- | Parenthesize a string unless it is empty.
 prParenth :: String -> String
 prParenth s = if s == "" then "" else "(" ++ s ++ ")"
+
+-- | Pad a string on the right by spaces to reach the desired length.
+pad :: Int -> String -> String
+pad n s = s ++ drop (length s) (replicate n ' ')
+
+-- | Make a list of rows with left-aligned columns from a matrix.
+table :: String -> [[String]] -> [String]
+table sep m = map (intercalate sep . zipWith pad widths) m
+  where
+  -- Column widths.
+  widths :: [Int]
+  widths = columns maximum $ map (map length) m
+  -- Aggregate columns (works even for a ragged matrix with rows of different length).
+  columns :: ([a] -> b) -> [[a]] -> [b]
+  columns f rows =
+    -- Take the values of the first column
+    case concat (map (take 1) rows) of
+      -- Matrix was empty:
+      [] -> []
+      -- Matrix was non-empty:
+      col -> f col : columns f (map (drop 1) rows)
 
 -- * List utilities
 
