@@ -296,7 +296,7 @@ mkPrintCase absMod functor (Rule f cat rhs _internal) =
     -- and should be avoided
     names = map var (lefts rhs)
     variables :: [Doc]
-    variables = map text $ mkNames ("e":"i":hsReservedWords) LowerCase names
+    variables = map text $ mkNames ("e" : "i" : hsReservedWords) LowerCase names
     var (ListCat c)  = var c ++ "s"
     var (TokenCat "Ident")   = "id"
     var (TokenCat "Integer") = "n"
