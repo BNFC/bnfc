@@ -1,0 +1,1061 @@
+-- Andreas, 2019-12-16
+-- A grammar of keywords of the C, C++, Haskell, Java, Ocaml backends
+
+Prg. Program ::=
+    Abstract
+    And
+    AndEq
+    And_Eq
+    And_eq
+    As
+    Asm
+    Asr
+    Assert
+    Auto
+    Begin
+    Bitand
+    Bitor
+    Bool
+    Boolean
+    Break
+    Byte
+    Case
+    Catch
+    Char_
+    Class
+    Compl
+    Const
+    ConstCast
+    Const_Cast
+    Const_cast
+    Constraint
+    Continue
+    Data
+    Default
+    Delete
+    Deriving
+    Do
+    Done
+    Double_
+    Downto
+    DynamicCast
+    Dynamic_Cast
+    Dynamic_cast
+    Else
+    End
+    Enum
+    Exception
+    Explicit
+    Extends
+    Extern
+    External
+    False
+    Family
+    Final
+    Finally
+    Float
+    For
+    Forall
+    Foreign
+    Friend
+    Fun
+    Function
+    Functor
+    Goto
+    Hiding
+    If
+    Implements
+    Import
+    In
+    Include
+    Infix
+    Infixl
+    Infixr
+    Inherit
+    Initializer
+    Inline
+    Instance
+    Instanceof
+    Int
+    Interface
+    Land
+    Lazy
+    Let
+    List
+    Long
+    Lor
+    Lsl
+    Lsr
+    Lxor
+    Match
+    Mdo
+    Method
+    Mod
+    Module
+    Mutable
+    Namespace
+    Native
+    New
+    Newtype
+    Nonrec
+    Not
+    NotEq
+    Not_Eq
+    Not_eq
+    Object
+    Of
+    Open
+    Operator
+    Or
+    OrEq
+    Or_Eq
+    Or_eq
+    Package
+    Pattern
+    Private
+    Proc
+    Protected
+    Public
+    Qualified
+    Rec
+    Register
+    ReinterpretCast
+    Reinterpret_Cast
+    Reinterpret_cast
+    Return
+    Short
+    Sig
+    Signed
+    Sizeof
+    StaticCast
+    Static_Cast
+    Static_cast
+    Strictfp
+    String_
+    Struct
+    Super
+    Switch
+    Synchronized
+    Template
+    Then
+    This
+    Throw
+    Throws
+    To
+    Transient
+    True
+    Try
+    Type
+    Typedef
+    Typeid
+    Typename
+    Union
+    Unsigned
+    Using
+    Val
+    Virtual
+    Void
+    Volatile
+    WcharT
+    Wchar_T
+    Wchar_t
+    When
+    Where
+    While
+    With
+    Xor
+    XorEq
+    Xor_Eq
+    Xor_eq ;
+
+Abstract_         .  Abstract             ::= "abstract"         ;
+And_              .  And                  ::= "and"              ;
+AndEq_            .  AndEq                ::= "and_eq"           ;
+And_Eq_           .  And_Eq               ::= "and_eq"           ;
+And_eq_           .  And_eq               ::= "and_eq"           ;
+As_               .  As                   ::= "as"               ;
+Asm_              .  Asm                  ::= "asm"              ;
+Asr_              .  Asr                  ::= "asr"              ;
+Assert_           .  Assert               ::= "assert"           ;
+Auto_             .  Auto                 ::= "auto"             ;
+Begin_            .  Begin                ::= "begin"            ;
+Bitand_           .  Bitand               ::= "bitand"           ;
+Bitor_            .  Bitor                ::= "bitor"            ;
+Bool_             .  Bool                 ::= "bool"             ;
+Boolean_          .  Boolean              ::= "boolean"          ;
+Break_            .  Break                ::= "break"            ;
+Byte_             .  Byte                 ::= "byte"             ;
+Case_             .  Case                 ::= "case"             ;
+Catch_            .  Catch                ::= "catch"            ;
+Char__            .  Char_                ::= "char"             ;
+Class_            .  Class                ::= "class"            ;
+Compl_            .  Compl                ::= "compl"            ;
+Const_            .  Const                ::= "const"            ;
+ConstCast_        .  ConstCast            ::= "const_cast"       ;
+Const_Cast_       .  Const_Cast           ::= "const_cast"       ;
+Const_cast_       .  Const_cast           ::= "const_cast"       ;
+Constraint_       .  Constraint           ::= "constraint"       ;
+Continue_         .  Continue             ::= "continue"         ;
+Data_             .  Data                 ::= "data"             ;
+Default_          .  Default              ::= "default"          ;
+Delete_           .  Delete               ::= "delete"           ;
+Deriving_         .  Deriving             ::= "deriving"         ;
+Do_               .  Do                   ::= "do"               ;
+Done_             .  Done                 ::= "done"             ;
+Double__          .  Double_              ::= "double"           ;
+Downto_           .  Downto               ::= "downto"           ;
+DynamicCast_      .  DynamicCast          ::= "dynamic_cast"     ;
+Dynamic_Cast_     .  Dynamic_Cast         ::= "dynamic_cast"     ;
+Dynamic_cast_     .  Dynamic_cast         ::= "dynamic_cast"     ;
+Else_             .  Else                 ::= "else"             ;
+End_              .  End                  ::= "end"              ;
+Enum_             .  Enum                 ::= "enum"             ;
+Exception_        .  Exception            ::= "exception"        ;
+Explicit_         .  Explicit             ::= "explicit"         ;
+Extends_          .  Extends              ::= "extends"          ;
+Extern_           .  Extern               ::= "extern"           ;
+External_         .  External             ::= "external"         ;
+False_            .  False                ::= "false"            ;
+Family_           .  Family               ::= "family"           ;
+Final_            .  Final                ::= "final"            ;
+Finally_          .  Finally              ::= "finally"          ;
+Float_            .  Float                ::= "float"            ;
+For_              .  For                  ::= "for"              ;
+Forall_           .  Forall               ::= "forall"           ;
+Foreign_          .  Foreign              ::= "foreign"          ;
+Friend_           .  Friend               ::= "friend"           ;
+Fun_              .  Fun                  ::= "fun"              ;
+Function_         .  Function             ::= "function"         ;
+Functor_          .  Functor              ::= "functor"          ;
+Goto_             .  Goto                 ::= "goto"             ;
+Hiding_           .  Hiding               ::= "hiding"           ;
+If_               .  If                   ::= "if"               ;
+Implements_       .  Implements           ::= "implements"       ;
+Import_           .  Import               ::= "import"           ;
+In_               .  In                   ::= "in"               ;
+Include_          .  Include              ::= "include"          ;
+Infix_            .  Infix                ::= "infix"            ;
+Infixl_           .  Infixl               ::= "infixl"           ;
+Infixr_           .  Infixr               ::= "infixr"           ;
+Inherit_          .  Inherit              ::= "inherit"          ;
+Initializer_      .  Initializer          ::= "initializer"      ;
+Inline_           .  Inline               ::= "inline"           ;
+Instance_         .  Instance             ::= "instance"         ;
+Instanceof_       .  Instanceof           ::= "instanceof"       ;
+Int_              .  Int                  ::= "int"              ;
+Interface_        .  Interface            ::= "interface"        ;
+Land_             .  Land                 ::= "land"             ;
+Lazy_             .  Lazy                 ::= "lazy"             ;
+Let_              .  Let                  ::= "let"              ;
+List_             .  List                 ::= "list"             ;
+Long_             .  Long                 ::= "long"             ;
+Lor_              .  Lor                  ::= "lor"              ;
+Lsl_              .  Lsl                  ::= "lsl"              ;
+Lsr_              .  Lsr                  ::= "lsr"              ;
+Lxor_             .  Lxor                 ::= "lxor"             ;
+Match_            .  Match                ::= "match"            ;
+Mdo_              .  Mdo                  ::= "mdo"              ;
+Method_           .  Method               ::= "method"           ;
+Mod_              .  Mod                  ::= "mod"              ;
+Module_           .  Module               ::= "module"           ;
+Mutable_          .  Mutable              ::= "mutable"          ;
+Namespace_        .  Namespace            ::= "namespace"        ;
+Native_           .  Native               ::= "native"           ;
+New_              .  New                  ::= "new"              ;
+Newtype_          .  Newtype              ::= "newtype"          ;
+Nonrec_           .  Nonrec               ::= "nonrec"           ;
+Not_              .  Not                  ::= "not"              ;
+NotEq_            .  NotEq                ::= "not_eq"           ;
+Not_Eq_           .  Not_Eq               ::= "not_eq"           ;
+Not_eq_           .  Not_eq               ::= "not_eq"           ;
+Object_           .  Object               ::= "object"           ;
+Of_               .  Of                   ::= "of"               ;
+Open_             .  Open                 ::= "open"             ;
+Operator_         .  Operator             ::= "operator"         ;
+Or_               .  Or                   ::= "or"               ;
+OrEq_             .  OrEq                 ::= "or_eq"            ;
+Or_Eq_            .  Or_Eq                ::= "or_eq"            ;
+Or_eq_            .  Or_eq                ::= "or_eq"            ;
+Package_          .  Package              ::= "package"          ;
+Pattern_          .  Pattern              ::= "pattern"          ;
+Private_          .  Private              ::= "private"          ;
+Proc_             .  Proc                 ::= "proc"             ;
+Protected_        .  Protected            ::= "protected"        ;
+Public_           .  Public               ::= "public"           ;
+Qualified_        .  Qualified            ::= "qualified"        ;
+Rec_              .  Rec                  ::= "rec"              ;
+Register_         .  Register             ::= "register"         ;
+ReinterpretCast_  .  ReinterpretCast      ::= "reinterpret_cast" ;
+Reinterpret_Cast_ .  Reinterpret_Cast     ::= "reinterpret_cast" ;
+Reinterpret_cast_ .  Reinterpret_cast     ::= "reinterpret_cast" ;
+Return_           .  Return               ::= "return"           ;
+Short_            .  Short                ::= "short"            ;
+Sig_              .  Sig                  ::= "sig"              ;
+Signed_           .  Signed               ::= "signed"           ;
+Sizeof_           .  Sizeof               ::= "sizeof"           ;
+StaticCast_       .  StaticCast           ::= "static_cast"      ;
+Static_Cast_      .  Static_Cast          ::= "static_cast"      ;
+Static_cast_      .  Static_cast          ::= "static_cast"      ;
+Strictfp_         .  Strictfp             ::= "strictfp"         ;
+String__          .  String_              ::= "string"           ;
+Struct_           .  Struct               ::= "struct"           ;
+Super_            .  Super                ::= "super"            ;
+Switch_           .  Switch               ::= "switch"           ;
+Synchronized_     .  Synchronized         ::= "synchronized"     ;
+Template_         .  Template             ::= "template"         ;
+Then_             .  Then                 ::= "then"             ;
+This_             .  This                 ::= "this"             ;
+Throw_            .  Throw                ::= "throw"            ;
+Throws_           .  Throws               ::= "throws"           ;
+To_               .  To                   ::= "to"               ;
+Transient_        .  Transient            ::= "transient"        ;
+True_             .  True                 ::= "true"             ;
+Try_              .  Try                  ::= "try"              ;
+Type_             .  Type                 ::= "type"             ;
+Typedef_          .  Typedef              ::= "typedef"          ;
+Typeid_           .  Typeid               ::= "typeid"           ;
+Typename_         .  Typename             ::= "typename"         ;
+Union_            .  Union                ::= "union"            ;
+Unsigned_         .  Unsigned             ::= "unsigned"         ;
+Using_            .  Using                ::= "using"            ;
+Val_              .  Val                  ::= "val"              ;
+Virtual_          .  Virtual              ::= "virtual"          ;
+Void_             .  Void                 ::= "void"             ;
+Volatile_         .  Volatile             ::= "volatile"         ;
+WcharT_           .  WcharT               ::= "wchar_t"          ;
+Wchar_T_          .  Wchar_T              ::= "wchar_t"          ;
+Wchar_t_          .  Wchar_t              ::= "wchar_t"          ;
+When_             .  When                 ::= "when"             ;
+Where_            .  Where                ::= "where"            ;
+While_            .  While                ::= "while"            ;
+With_             .  With                 ::= "with"             ;
+Xor_              .  Xor                  ::= "xor"              ;
+XorEq_            .  XorEq                ::= "xor_eq"           ;
+Xor_Eq_           .  Xor_Eq               ::= "xor_eq"           ;
+Xor_eq_           .  Xor_eq               ::= "xor_eq"           ;
+
+{-
+
+-- The list of reserved words is the union of the reserved words of
+-- the target languages (see below)
+
+abstract
+and
+and_eq
+as
+asm
+asr
+assert
+auto
+begin
+bitand
+bitor
+bool
+boolean
+break
+byte
+case
+catch
+char
+class
+compl
+const
+const_cast
+constraint
+continue
+data
+default
+delete
+deriving
+do
+done
+double
+downto
+dynamic_cast
+else
+end
+enum
+exception
+explicit
+extends
+extern
+external
+false
+family
+final
+finally
+float
+for
+forall
+foreign
+friend
+fun
+function
+functor
+goto
+hiding
+if
+implements
+import
+in
+include
+infix
+infixl
+infixr
+inherit
+initializer
+inline
+instance
+instanceof
+int
+interface
+land
+lazy
+let
+list
+long
+lor
+lsl
+lsr
+lxor
+match
+mdo
+method
+mod
+module
+mutable
+namespace
+native
+new
+newtype
+nonrec
+not
+not_eq
+object
+of
+open
+operator
+or
+or_eq
+package
+pattern
+private
+proc
+protected
+public
+qualified
+rec
+register
+reinterpret_cast
+return
+short
+sig
+signed
+sizeof
+static_cast
+strictfp
+string
+struct
+super
+switch
+synchronized
+template
+then
+this
+throw
+throws
+to
+transient
+true
+try
+type
+typedef
+typeid
+typename
+union
+unsigned
+using
+val
+virtual
+void
+volatile
+wchar_t
+when
+where
+while
+with
+xor
+xor_eq
+
+-- C reserved works
+
+auto
+break
+case
+char
+const
+continue
+default
+do
+double
+else
+enum
+extern
+float
+for
+goto
+if
+int
+long
+register
+return
+short
+signed
+sizeof
+static
+struct
+switch
+typedef
+union
+unsigned
+void
+volatile
+while
+
+-- CPP reserved words (in addition to C's)
+
+and
+and_eq
+asm
+bitand
+bitor
+bool
+catch
+class
+compl
+const_cast
+delete
+dynamic_cast
+explicit
+false
+friend
+inline
+mutable
+namespace
+new
+not
+not_eq
+operator
+or
+or_eq
+private
+protected
+public
+reinterpret_cast
+static_cast
+template
+this
+throw
+true
+try
+typeid
+typename
+using
+virtual
+wchar_t
+xor
+xor_eq
+
+-- C#
+
+string
+
+-- Haskell reserved words
+
+as
+case
+class
+data
+default
+deriving
+do
+else
+family
+forall
+foreign
+hiding
+if
+import
+in
+infix
+infixl
+infixr
+instance
+let
+mdo
+module
+newtype
+of
+pattern
+proc
+qualified
+rec
+then
+type
+where
+
+-- Java reserved words
+
+abstract
+assert
+boolean
+break
+byte
+case
+catch
+char
+class
+const
+continue
+default
+do
+double
+else
+enum
+extends
+final
+finally
+float
+for
+goto
+if
+implements
+import
+instanceof
+int
+interface
+long
+native
+new
+package
+private
+protected
+public
+return
+short
+static
+strictfp
+super
+switch
+synchronized
+this
+throw
+throws
+transient
+try
+void
+volatile
+while
+
+-- Ocaml reserved words
+
+and
+as
+assert
+asr
+begin
+class
+constraint
+do
+done
+downto
+else
+end
+exception
+external
+false
+for
+fun
+function
+functor
+if
+in
+include
+inherit
+initializer
+land
+lazy
+let
+list
+lor
+lsl
+lsr
+lxor
+match
+method
+mod
+module
+mutable
+new
+nonrec
+object
+of
+open
+or
+private
+rec
+sig
+struct
+then
+to
+true
+try
+type
+val
+virtual
+when
+while
+with
+-}
+
+
+
+
+{-
+
+-- Working material:
+
+Abstract
+And
+AndEq
+And_Eq
+And_eq
+As
+Asm
+Asr
+Assert
+Auto
+Begin
+Bitand
+Bitor
+Bool
+Boolean
+Break
+Byte
+Case
+Catch
+Char
+Class
+Compl
+Const
+ConstCast
+Const_Cast
+Const_cast
+Constraint
+Continue
+Data
+Default
+Delete
+Deriving
+Do
+Done
+Double
+Downto
+DynamicCast
+Dynamic_Cast
+Dynamic_cast
+Else
+End
+Enum
+Exception
+Explicit
+Extends
+Extern
+External
+False
+Family
+Final
+Finally
+Float
+For
+Forall
+Foreign
+Friend
+Fun
+Function
+Functor
+Goto
+Hiding
+If
+Implements
+Import
+In
+Include
+Infix
+Infixl
+Infixr
+Inherit
+Initializer
+Inline
+Instance
+Instanceof
+Int
+Interface
+Land
+Lazy
+Let
+List
+Long
+Lor
+Lsl
+Lsr
+Lxor
+Match
+Mdo
+Method
+Mod
+Module
+Mutable
+Namespace
+Native
+New
+Newtype
+Nonrec
+Not
+NotEq
+Not_Eq
+Not_eq
+Object
+Of
+Open
+Operator
+Or
+OrEq
+Or_Eq
+Or_eq
+Package
+Pattern
+Private
+Proc
+Protected
+Public
+Qualified
+Rec
+Register
+ReinterpretCast
+Reinterpret_Cast
+Reinterpret_cast
+Return
+Short
+Sig
+Signed
+Sizeof
+StaticCast
+Static_Cast
+Static_cast
+Strictfp
+String
+Struct
+Super
+Switch
+Synchronized
+Template
+Then
+This
+Throw
+Throws
+To
+Transient
+True
+Try
+Type
+Typedef
+Typeid
+Typename
+Union
+Unsigned
+Using
+Val
+Virtual
+Void
+Volatile
+WcharT
+Wchar_T
+Wchar_t
+When
+Where
+While
+With
+Xor
+XorEq
+Xor_Eq
+Xor_eq
+
+
+::= "abstract"         ;
+::= "and"              ;
+::= "and_eq"           ;
+::= "and_eq"           ;
+::= "and_eq"           ;
+::= "as"               ;
+::= "asm"              ;
+::= "asr"              ;
+::= "assert"           ;
+::= "auto"             ;
+::= "begin"            ;
+::= "bitand"           ;
+::= "bitor"            ;
+::= "bool"             ;
+::= "boolean"          ;
+::= "break"            ;
+::= "byte"             ;
+::= "case"             ;
+::= "catch"            ;
+::= "char"             ;
+::= "class"            ;
+::= "compl"            ;
+::= "const"            ;
+::= "const_cast"       ;
+::= "const_cast"       ;
+::= "const_cast"       ;
+::= "constraint"       ;
+::= "continue"         ;
+::= "data"             ;
+::= "default"          ;
+::= "delete"           ;
+::= "deriving"         ;
+::= "do"               ;
+::= "done"             ;
+::= "double"           ;
+::= "downto"           ;
+::= "dynamic_cast"     ;
+::= "dynamic_cast"     ;
+::= "dynamic_cast"     ;
+::= "else"             ;
+::= "end"              ;
+::= "enum"             ;
+::= "exception"        ;
+::= "explicit"         ;
+::= "extends"          ;
+::= "extern"           ;
+::= "external"         ;
+::= "false"            ;
+::= "family"           ;
+::= "final"            ;
+::= "finally"          ;
+::= "float"            ;
+::= "for"              ;
+::= "forall"           ;
+::= "foreign"          ;
+::= "friend"           ;
+::= "fun"              ;
+::= "function"         ;
+::= "functor"          ;
+::= "goto"             ;
+::= "hiding"           ;
+::= "if"               ;
+::= "implements"       ;
+::= "import"           ;
+::= "in"               ;
+::= "include"          ;
+::= "infix"            ;
+::= "infixl"           ;
+::= "infixr"           ;
+::= "inherit"          ;
+::= "initializer"      ;
+::= "inline"           ;
+::= "instance"         ;
+::= "instanceof"       ;
+::= "int"              ;
+::= "interface"        ;
+::= "land"             ;
+::= "lazy"             ;
+::= "let"              ;
+::= "list"             ;
+::= "long"             ;
+::= "lor"              ;
+::= "lsl"              ;
+::= "lsr"              ;
+::= "lxor"             ;
+::= "match"            ;
+::= "mdo"              ;
+::= "method"           ;
+::= "mod"              ;
+::= "module"           ;
+::= "mutable"          ;
+::= "namespace"        ;
+::= "native"           ;
+::= "new"              ;
+::= "newtype"          ;
+::= "nonrec"           ;
+::= "not"              ;
+::= "not_eq"           ;
+::= "not_eq"           ;
+::= "not_eq"           ;
+::= "object"           ;
+::= "of"               ;
+::= "open"             ;
+::= "operator"         ;
+::= "or"               ;
+::= "or_eq"            ;
+::= "or_eq"            ;
+::= "or_eq"            ;
+::= "package"          ;
+::= "pattern"          ;
+::= "private"          ;
+::= "proc"             ;
+::= "protected"        ;
+::= "public"           ;
+::= "qualified"        ;
+::= "rec"              ;
+::= "register"         ;
+::= "reinterpret_cast" ;
+::= "reinterpret_cast" ;
+::= "reinterpret_cast" ;
+::= "return"           ;
+::= "short"            ;
+::= "sig"              ;
+::= "signed"           ;
+::= "sizeof"           ;
+::= "static_cast"      ;
+::= "static_cast"      ;
+::= "static_cast"      ;
+::= "strictfp"         ;
+::= "string"           ;
+::= "struct"           ;
+::= "super"            ;
+::= "switch"           ;
+::= "synchronized"     ;
+::= "template"         ;
+::= "then"             ;
+::= "this"             ;
+::= "throw"            ;
+::= "throws"           ;
+::= "to"               ;
+::= "transient"        ;
+::= "true"             ;
+::= "try"              ;
+::= "type"             ;
+::= "typedef"          ;
+::= "typeid"           ;
+::= "typename"         ;
+::= "union"            ;
+::= "unsigned"         ;
+::= "using"            ;
+::= "val"              ;
+::= "virtual"          ;
+::= "void"             ;
+::= "volatile"         ;
+::= "wchar_t"          ;
+::= "wchar_t"          ;
+::= "wchar_t"          ;
+::= "when"             ;
+::= "where"            ;
+::= "while"            ;
+::= "with"             ;
+::= "xor"              ;
+::= "xor_eq"           ;
+::= "xor_eq"           ;
+::= "xor_eq"           ;
+
+-}

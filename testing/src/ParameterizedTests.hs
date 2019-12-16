@@ -66,7 +66,8 @@ current :: Test
 current = makeTestSuite "Current parameterized test" $
   map (`makeTestCase` ("regression-tests" </> cur)) parameters
   where
-  cur = "202_comments"
+  cur = "278_Keywords"
+  -- cur = "202_comments"
   -- cur = "256_Regex"
   -- cur = "70_WhiteSpaceSeparator"
   -- cur = "204_InternalToken"
@@ -156,7 +157,8 @@ testCases :: TestParameters -> [Test]
 testCases params =
     map (makeTestCase params) $
       map ("regression-tests/" ++) $
-        [ "256_Regex"
+        [ "278_Keywords"
+        , "256_Regex"
         , "222_IntegerList"
         , "70_WhiteSpaceSeparator"
         , "202_comments"
@@ -280,6 +282,19 @@ haskellRunTestProg _lang args = do
 parameters :: [TestParameters]
 parameters = concat
   [ []
+    -- Haskell
+  , [ hsParams { tpName = "Haskell (with ghc)"
+               , tpBnfcOptions = ["--haskell", "--ghc"] }
+    , hsParams { tpName = "Haskell (with functor)"
+               , tpBnfcOptions = ["--haskell", "--functor"] }
+    , hsParams { tpName = "Haskell (with namespace)"
+               , tpBnfcOptions = ["--haskell", "-p", "Language", "-d"] }
+    ]
+    -- C
+  , [ cBase { tpName = "C"
+            , tpBuild = tpMake ["CCFLAGS=-Wstrict-prototypes -Werror"]
+            , tpBnfcOptions = ["--c"] }
+    ]
     -- C++
   , [ cBase { tpName = "C++"
             , tpBnfcOptions = ["--cpp"] }
@@ -287,11 +302,6 @@ parameters = concat
             , tpBnfcOptions = ["--cpp", "-p foobar"] }
     , cBase { tpName = "C++ (no STL)"
             , tpBnfcOptions = ["--cpp-nostl"] }
-    ]
-    -- C
-  , [ cBase { tpName = "C"
-            , tpBuild = tpMake ["CCFLAGS=-Wstrict-prototypes -Werror"]
-            , tpBnfcOptions = ["--c"] }
     ]
     -- Agda
   , [ haskellAgdaParameters ]
@@ -301,14 +311,6 @@ parameters = concat
   , [ base { tpName = "OCaml"
            , tpBuild = tpMake ["OCAMLCFLAGS=-safe-string"]
            , tpBnfcOptions = ["--ocaml"] }
-    ]
-    -- Haskell
-  , [ hsParams { tpName = "Haskell (with ghc)"
-               , tpBnfcOptions = ["--haskell", "--ghc"] }
-    , hsParams { tpName = "Haskell (with functor)"
-               , tpBnfcOptions = ["--haskell", "--functor"] }
-    , hsParams { tpName = "Haskell (with namespace)"
-               , tpBnfcOptions = ["--haskell", "-p", "Language", "-d"] }
     ]
     -- Java
   , [ javaParams { tpName = "Java"
