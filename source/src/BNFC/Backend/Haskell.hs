@@ -347,7 +347,7 @@ testfile opts cf = unlines $ concat $
       , [ "import " , absFileM      opts , " ()"                                 ]
       ]
     , [ [ "import " , layoutFileM   opts , " ( resolveLayout )" ] | lay     ]
-    , [ [ "import " , xmlFileM      opts , " ( printXML )"      ] | use_xml ]
+    , [ [ "import " , xmlFileM      opts , " ( XPrint, printXML )"      ] | use_xml ]
     ]
   , [ "import qualified Data.Map ( Map, lookup, toList )" | use_glr ]
   , [ "import Data.Maybe ( fromJust )"                    | use_glr ]
