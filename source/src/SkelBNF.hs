@@ -2,7 +2,7 @@
 
 module SkelBNF where
 
-import AbsBNF
+import qualified AbsBNF
 
 type Err = Either String
 type Result = Err String
@@ -10,105 +10,105 @@ type Result = Err String
 failure :: Show a => a -> Result
 failure x = Left $ "Undefined case: " ++ show x
 
-transIdent :: Ident -> Result
+transIdent :: AbsBNF.Ident -> Result
 transIdent x = case x of
-  Ident string -> failure x
-transLGrammar :: LGrammar -> Result
+  AbsBNF.Ident string -> failure x
+transLGrammar :: AbsBNF.LGrammar -> Result
 transLGrammar x = case x of
-  LGr ldefs -> failure x
-transLDef :: LDef -> Result
+  AbsBNF.LGr ldefs -> failure x
+transLDef :: AbsBNF.LDef -> Result
 transLDef x = case x of
-  DefAll def -> failure x
-  DefSome idents def -> failure x
-  LDefView idents -> failure x
-transGrammar :: Grammar -> Result
+  AbsBNF.DefAll def -> failure x
+  AbsBNF.DefSome idents def -> failure x
+  AbsBNF.LDefView idents -> failure x
+transGrammar :: AbsBNF.Grammar -> Result
 transGrammar x = case x of
-  Grammar defs -> failure x
-transDef :: Def -> Result
+  AbsBNF.Grammar defs -> failure x
+transDef :: AbsBNF.Def -> Result
 transDef x = case x of
-  Rule label cat items -> failure x
-  Comment string -> failure x
-  Comments string1 string2 -> failure x
-  Internal label cat items -> failure x
-  Token ident reg -> failure x
-  PosToken ident reg -> failure x
-  Entryp idents -> failure x
-  Separator minimumsize cat string -> failure x
-  Terminator minimumsize cat string -> failure x
-  Delimiters cat string1 string2 separation minimumsize -> failure x
-  Coercions ident integer -> failure x
-  Rules ident rhss -> failure x
-  Function ident args exp -> failure x
-  Layout strings -> failure x
-  LayoutStop strings -> failure x
-  LayoutTop -> failure x
-transItem :: Item -> Result
+  AbsBNF.Rule label cat items -> failure x
+  AbsBNF.Comment string -> failure x
+  AbsBNF.Comments string1 string2 -> failure x
+  AbsBNF.Internal label cat items -> failure x
+  AbsBNF.Token ident reg -> failure x
+  AbsBNF.PosToken ident reg -> failure x
+  AbsBNF.Entryp idents -> failure x
+  AbsBNF.Separator minimumsize cat string -> failure x
+  AbsBNF.Terminator minimumsize cat string -> failure x
+  AbsBNF.Delimiters cat string1 string2 separation minimumsize -> failure x
+  AbsBNF.Coercions ident integer -> failure x
+  AbsBNF.Rules ident rhss -> failure x
+  AbsBNF.Function ident args exp -> failure x
+  AbsBNF.Layout strings -> failure x
+  AbsBNF.LayoutStop strings -> failure x
+  AbsBNF.LayoutTop -> failure x
+transItem :: AbsBNF.Item -> Result
 transItem x = case x of
-  Terminal string -> failure x
-  NTerminal cat -> failure x
-transCat :: Cat -> Result
+  AbsBNF.Terminal string -> failure x
+  AbsBNF.NTerminal cat -> failure x
+transCat :: AbsBNF.Cat -> Result
 transCat x = case x of
-  ListCat cat -> failure x
-  IdCat ident -> failure x
-transLabel :: Label -> Result
+  AbsBNF.ListCat cat -> failure x
+  AbsBNF.IdCat ident -> failure x
+transLabel :: AbsBNF.Label -> Result
 transLabel x = case x of
-  LabNoP labelid -> failure x
-  LabP labelid profitems -> failure x
-  LabPF labelid1 labelid2 profitems -> failure x
-  LabF labelid1 labelid2 -> failure x
-transLabelId :: LabelId -> Result
+  AbsBNF.LabNoP labelid -> failure x
+  AbsBNF.LabP labelid profitems -> failure x
+  AbsBNF.LabPF labelid1 labelid2 profitems -> failure x
+  AbsBNF.LabF labelid1 labelid2 -> failure x
+transLabelId :: AbsBNF.LabelId -> Result
 transLabelId x = case x of
-  Id ident -> failure x
-  Wild -> failure x
-  ListE -> failure x
-  ListCons -> failure x
-  ListOne -> failure x
-transProfItem :: ProfItem -> Result
+  AbsBNF.Id ident -> failure x
+  AbsBNF.Wild -> failure x
+  AbsBNF.ListE -> failure x
+  AbsBNF.ListCons -> failure x
+  AbsBNF.ListOne -> failure x
+transProfItem :: AbsBNF.ProfItem -> Result
 transProfItem x = case x of
-  ProfIt intlists integers -> failure x
-transIntList :: IntList -> Result
+  AbsBNF.ProfIt intlists integers -> failure x
+transIntList :: AbsBNF.IntList -> Result
 transIntList x = case x of
-  Ints integers -> failure x
-transArg :: Arg -> Result
+  AbsBNF.Ints integers -> failure x
+transArg :: AbsBNF.Arg -> Result
 transArg x = case x of
-  Arg ident -> failure x
-transSeparation :: Separation -> Result
+  AbsBNF.Arg ident -> failure x
+transSeparation :: AbsBNF.Separation -> Result
 transSeparation x = case x of
-  SepNone -> failure x
-  SepTerm string -> failure x
-  SepSepar string -> failure x
-transExp :: Exp -> Result
+  AbsBNF.SepNone -> failure x
+  AbsBNF.SepTerm string -> failure x
+  AbsBNF.SepSepar string -> failure x
+transExp :: AbsBNF.Exp -> Result
 transExp x = case x of
-  Cons exp1 exp2 -> failure x
-  App ident exps -> failure x
-  Var ident -> failure x
-  LitInt integer -> failure x
-  LitChar char -> failure x
-  LitString string -> failure x
-  LitDouble double -> failure x
-  List exps -> failure x
-transRHS :: RHS -> Result
+  AbsBNF.Cons exp1 exp2 -> failure x
+  AbsBNF.App ident exps -> failure x
+  AbsBNF.Var ident -> failure x
+  AbsBNF.LitInt integer -> failure x
+  AbsBNF.LitChar char -> failure x
+  AbsBNF.LitString string -> failure x
+  AbsBNF.LitDouble double -> failure x
+  AbsBNF.List exps -> failure x
+transRHS :: AbsBNF.RHS -> Result
 transRHS x = case x of
-  RHS items -> failure x
-transMinimumSize :: MinimumSize -> Result
+  AbsBNF.RHS items -> failure x
+transMinimumSize :: AbsBNF.MinimumSize -> Result
 transMinimumSize x = case x of
-  MNonempty -> failure x
-  MEmpty -> failure x
-transReg :: Reg -> Result
+  AbsBNF.MNonempty -> failure x
+  AbsBNF.MEmpty -> failure x
+transReg :: AbsBNF.Reg -> Result
 transReg x = case x of
-  RAlt reg1 reg2 -> failure x
-  RMinus reg1 reg2 -> failure x
-  RSeq reg1 reg2 -> failure x
-  RStar reg -> failure x
-  RPlus reg -> failure x
-  ROpt reg -> failure x
-  REps -> failure x
-  RChar char -> failure x
-  RAlts string -> failure x
-  RSeqs string -> failure x
-  RDigit -> failure x
-  RLetter -> failure x
-  RUpper -> failure x
-  RLower -> failure x
-  RAny -> failure x
+  AbsBNF.RAlt reg1 reg2 -> failure x
+  AbsBNF.RMinus reg1 reg2 -> failure x
+  AbsBNF.RSeq reg1 reg2 -> failure x
+  AbsBNF.RStar reg -> failure x
+  AbsBNF.RPlus reg -> failure x
+  AbsBNF.ROpt reg -> failure x
+  AbsBNF.REps -> failure x
+  AbsBNF.RChar char -> failure x
+  AbsBNF.RAlts string -> failure x
+  AbsBNF.RSeqs string -> failure x
+  AbsBNF.RDigit -> failure x
+  AbsBNF.RLetter -> failure x
+  AbsBNF.RUpper -> failure x
+  AbsBNF.RLower -> failure x
+  AbsBNF.RAny -> failure x
 
