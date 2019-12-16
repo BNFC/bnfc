@@ -508,7 +508,8 @@ prettyConstructorArgs style as =
   ts  = map prettyCat as
   ns  = map (text . subscript) $ numberUniquely $ map nameSuggestion as
   tel = aggregateOn (render . snd) $ zip ns ts
-  subscript (m, s) = maybe s (\ i -> s ++ [chr (ord '₀' + i)]) m
+  deltaSubscript = ord '₀' - ord '0' -- exploiting that '0' comes before '₀' in character table
+  subscript (m, s) = maybe s (\ n -> s ++ map (chr . (deltaSubscript +) . ord) (show n)) m
   -- Aggregate consecutive arguments of the same type.
   aggregateOn :: Eq c => ((a,b) -> c) -> [(a,b)] -> [(NEList a,b)]
   aggregateOn f
