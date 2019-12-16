@@ -23,12 +23,13 @@ module BNFC.Backend.XML ---- (cf2DTD, cf2XML)
 import BNFC.CF
 import BNFC.Utils
 import BNFC.Backend.Base
-import BNFC.Options hiding (Backend)
+import BNFC.Options hiding ( Backend )
 import BNFC.Backend.Haskell.CFtoTemplate ()
-import BNFC.Backend.Haskell.HsOpts (xmlFile, xmlFileM, absFileM)
-import Data.List (intersperse, intercalate)
-import Data.Char(toLower)
-import Data.Maybe (fromJust)
+import BNFC.Backend.Haskell.HsOpts ( xmlFile, xmlFileM, absFileM )
+import BNFC.Backend.Haskell.Utils  ( hsReservedWords )
+import Data.List  ( intersperse, intercalate )
+import Data.Char  ( toLower )
+import Data.Maybe ( fromJust )
 
 type Coding = Bool ---- change to at least three values
 
@@ -220,11 +221,8 @@ rules cf = unlines $
    var (Cat "Double")  = "d"
    var cat            = map toLower (show cat)
    checkRes s
-        | s `elem` reservedHaskell = s ++ "'"
-        | otherwise              = s
-   reservedHaskell = ["case","class","data","default","deriving","do","else","if",
-                          "import","in","infix","infixl","infixr","instance","let","module",
-                          "newtype","of","then","type","where","as","qualified","hiding"]
+        | s `elem` hsReservedWords = s ++ "'"
+        | otherwise                = s
    ruleOf s = fromJust $ lookupRule s (cfgRules cf)
 
 -- case_fun :: Cat -> [(Constructor,Rule)] -> String

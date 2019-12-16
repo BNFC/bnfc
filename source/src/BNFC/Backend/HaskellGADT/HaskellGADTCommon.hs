@@ -20,6 +20,7 @@
 module BNFC.Backend.HaskellGADT.HaskellGADTCommon (Constructor(..), cf2cons, isTreeType) where
 
 import BNFC.CF
+import BNFC.Backend.Haskell.Utils ( hsReservedWords )
 
 import Data.Char
 
@@ -58,12 +59,8 @@ catToVar = checkRes . var
         var (Cat "Char")    = "c"
         var (Cat "Double")  = "d"
         var xs        = map toLower $ show xs
-        checkRes s |  s `elem` reservedHaskell = s ++ "'"
-                   | otherwise              = s
-        reservedHaskell =
-            ["case","class","data","default","deriving","do","else","if"
-            , "import","in","infix","infixl","infixr","instance","let","module"
-            , "newtype","of","then","type","where","as","qualified","hiding"]
+        checkRes s |  s `elem` hsReservedWords = s ++ "'"
+                   | otherwise                 = s
 
 -- | Get the rule for a function.
 ruleFun :: CF -> Fun -> Rule
