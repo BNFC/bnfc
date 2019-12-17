@@ -2,14 +2,32 @@
 
 /* Testing different kinds of block comments.
  * This is the good old C one from probably 1970.
- */
+ * Caution: the following ** might trip you up!
+ **/
 
 0
 
---( that is a comment, so 1 2 3 does not count here --)
+/* If you implemented the regex for block comments wrongly,
+ * then these two block comments got fused, gobbling the 0!
+ */
+
+--( that is a comment, so 1 2 3 does not count here ----)
 begin this comment and go until 2099 or its end
 
-1 2 3
+1
+
+--( hurz! ---)
+
+2
+
+--( der Wolf -------------------------------)
+--( das Lamm -) HUUURZ!! --)
+
+3
+
+--( mayhem also possible with these kinds of comments --)
+
+4
 
 ###
  Let's do several lines
@@ -20,7 +38,7 @@ begin this comment and go until 2099 or its end
  end main
  ###
 
-4 5 6
+5 6
 
 [ and another ignored block comment
   7 8 9

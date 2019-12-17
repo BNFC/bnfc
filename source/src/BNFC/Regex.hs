@@ -9,6 +9,7 @@ import Data.Monoid    (Monoid(..))
 import Data.Semigroup (Semigroup(..))
 import Data.Set (Set)
 import qualified Data.Set as Set
+import qualified Data.List as List
 
 import AbsBNF
 
@@ -94,15 +95,63 @@ data RC
 
 rSeq :: Reg -> Reg -> Reg
 rSeq = curry $ \case
+  -- 0r = 0
+  (RAlts "", _       ) -> RAlts ""
+  (_       , RAlts "") -> RAlts ""
+  -- 1r = r
   (REps    , r       ) -> r
   (RSeqs "", r       ) -> r
   (r       , REps    ) -> r
   (r       , RSeqs "") -> r
+  -- r*r* = r*
+  (RStar r1, RStar r2) | r1 == r2 -> rStar r1
+  -- r+r* = r*r+ = r+
+  (RPlus r1, RStar r2) | r1 == r2 -> rPlus r1
+  (RStar r1, RPlus r2) | r1 == r2 -> rPlus r1
+  -- rr* = r*r = r+
+  (r1      , RStar r2) | r1 == r2 -> rPlus r1
+  (RStar r1, r2      ) | r1 == r2 -> rPlus r1
+  -- character sequences
   (RSeqs s1, RSeqs s2) -> RSeqs $ s1 ++ s2
   (RChar c1, RSeqs s2) -> RSeqs $ c1 : s2
   (RSeqs s1, RChar c2) -> RSeqs $ s1 ++ [c2]
   (RChar c1, RChar c2) -> RSeqs [ c1, c2 ]
+  -- Associate to the left
+  (r1    , RSeq r2 r3) -> (r1 `rSeq` r2) `rSeq` r3
+  -- general sequences
   (r1      , r2      ) -> r1 `RSeq` r2
+
+rAlt :: Reg -> Reg -> Reg
+rAlt = curry $ \case
+  -- 0 + r = r
+  (RAlts "", r       ) -> r
+  -- r + 0 = r
+  (r       , RAlts "") -> r
+  -- join character alternatives
+  (RAlts s1, RAlts s2) -> RAlts $ s1 ++ s2
+  (RChar c1, RAlts s2) -> RAlts $ c1 : s2
+  (RAlts s1, RChar c2) -> RAlts $ s1 ++ [c2]
+  (RChar c1, RChar c2) -> RAlts [ c1, c2 ]
+  -- Associate to the left
+  (r1    , RAlt r2 r3) -> (r1 `rAlt` r2) `rAlt` r3
+  -- general alternatives
+  (r1, r2)
+     | r1 == r2  -> r1  -- idempotency, but not the general case
+     | otherwise -> r1 `RAlt` r2
+
+rMinus :: Reg -> Reg -> Reg
+rMinus = curry $ \case
+  -- 0 - r = 0
+  (RAlts "", _       ) -> RAlts ""
+  -- r - 0 = r
+  (r       , RAlts "") -> r
+  -- join character alternatives
+  (RAlts s1, RAlts s2) -> case s1 List.\\ s2 of
+    [c] -> RChar c
+    s   -> RAlts s
+  (r1, r2)
+     | r1 == r2  -> RAlts ""
+     | otherwise -> r1 `RMinus` r2
 
 rStar :: Reg -> Reg
 rStar = \case
@@ -144,13 +193,19 @@ rcSeq = curry $ \case
 
 rcAlt :: RC -> RC -> RC
 rcAlt = curry $ \case
+  -- 0 + r = r + 0 = r
+  (Rx (RAlts ""), r) -> r
+  (r, Rx (RAlts "")) -> r
+  -- other cases
   (CC c1, CC c2) -> c1 `cAlt` c2
-  (c1   , c2   ) -> Rx $ rx c1 `RAlt` rx c2
+  (c1   , c2   ) -> Rx $ rx c1 `rAlt` rx c2
 
 rcMinus :: RC -> RC -> RC
 rcMinus = curry $ \case
-  (CC c1, CC c2) -> c1 `cMinus` c2
-  (c1   , c2   ) -> Rx $ rx c1 `RMinus` rx c2
+  -- r - 0 = r
+  (r    , Rx (RAlts "")) -> r
+  (CC c1, CC c2        ) -> c1 `cMinus` c2
+  (c1   , c2           ) -> Rx $ rx c1 `rMinus` rx c2
 
 class ToReg a where
   rx :: a -> Reg
@@ -181,7 +236,8 @@ instance ToReg CharClassUnion where
       CUpper  -> st { stUpper = True }
     (St digit upper lower alts) = foldl step start $ Set.toDescList cs
     rs = concat
-      [ [ RAlts alts | not $ null alts    ]
+      [ [ RChar c    | [c] <- [alts]      ]
+      , [ RAlts alts | (_:_:_) <- [alts]  ]
       , [ RDigit     | digit              ]
       , [ RLetter    | upper && lower     ]
       , [ RUpper     | upper && not lower ]

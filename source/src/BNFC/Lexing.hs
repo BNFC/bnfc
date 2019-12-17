@@ -1,15 +1,15 @@
-{-# LANGUAGE NoImplicitPrelude #-}
-
 module BNFC.Lexing
     ( mkLexer, LexType(..), mkRegMultilineComment ) where
 
-import Prelude'
+import Prelude hiding ((<>))
 
-import Control.Arrow ( (&&&) )
-import Data.List     ( inits )
+-- import Control.Arrow ( (&&&) )
+-- import Data.List     ( inits )
+
 import AbsBNF        ( Reg(..) )
 import BNFC.CF
-import BNFC.Utils    ( unless )
+import BNFC.Regex    ( simpReg )
+import BNFC.Utils    ( unless  )
 
 -- $setup
 -- >>> import PrintBNF
@@ -87,26 +87,54 @@ regDouble = RPlus RDigit <> RChar '.' <> RPlus RDigit
 mkRegSingleLineComment :: String -> Reg
 mkRegSingleLineComment s = RSeqs s <> RStar RAny <> RChar '\n'
 
--- | Create regex for multiline comments
+-- WRONG, trips on <!-- ----> (for second example, see also regression test 108):
+--
+-- -- | Create regex for multiline comments
+-- -- >>> p $ mkRegMultilineComment "<" ">"
+-- -- '<'(char-'>'|'\n')*'>'
+-- -- >>> p $ mkRegMultilineComment "<!--" "-->"
+-- -- {"<!--"}(char-'-'|'\n'|'-'(char-'-'|'\n')|{"--"}(char-'>'|'\n'))*'-'*{"-->"}
+-- mkRegMultilineComment :: String -> String -> Reg
+-- mkRegMultilineComment b e =
+--     foldl1 RSeq $ concat
+--       [ lit b
+--       , [ RStar (foldl1 RAlt subregex) | not $ null subregex ]
+--       , [ RStar (RChar (head e))       | length e >= 2       ]
+--       , lit e
+--       ]
+--   where
+--     lit :: String -> [Reg]
+--     lit "" = []
+--     lit [c] = [RChar c]
+--     lit s = [RSeqs s]
+--     prefixes = map (init &&& last) (drop 1 (inits e))
+--     subregex =
+--       [ foldr RSeq ((RAny `RMinus` RChar s) `RAlt` RChar '\n') $ lit ss
+--       | (ss,s) <- prefixes
+--       ]
+
+-- | Create regex for multiline comments.
+--
 -- >>> p $ mkRegMultilineComment "<" ">"
--- '<'(char-'>'|'\n')*'>'
+-- '<'(char-'>')*'>'
+--
 -- >>> p $ mkRegMultilineComment "<!--" "-->"
--- {"<!--"}(char-'-'|'\n'|'-'(char-'-'|'\n')|{"--"}(char-'>'|'\n'))*'-'*{"-->"}
+-- {"<!--"}(char-'-')*'-'((char-'-')+'-')*'-'('-'|(char-["->"])(char-'-')*'-'((char-'-')+'-')*'-')*'>'
+--
 mkRegMultilineComment :: String -> String -> Reg
-mkRegMultilineComment b e =
-    foldl1 RSeq $ concat
-      [ lit b
-      , [ RStar (foldl1 RAlt subregex) | not $ null subregex ]
-      , [ RStar (RChar (head e))       | length e >= 2       ]
-      , lit e
-      ]
+mkRegMultilineComment b []       = RSeqs b
+mkRegMultilineComment b (a:rest) = simpReg $ RSeqs b `RSeq` fromStart
   where
-    lit :: String -> [Reg]
-    lit "" = []
-    lit [c] = [RChar c]
-    lit s = [RSeqs s]
-    prefixes = map (init &&& last) (drop 1 (inits e))
-    subregex =
-      [ foldr RSeq ((RAny `RMinus` RChar s) `RAlt` RChar '\n') $ lit ss
-      | (ss,s) <- prefixes
+  notA                       = RAny `RMinus` RChar a
+  goA                        = RStar notA `RSeq` RChar a
+  (fromStart, _, _)          = foldl f (goA, REps, []) rest
+  -- Build up automaton states Start, A, ...ys..., x, ...
+  f (fromStart, fromA, ys) x = (advance fromStart, advance fromA, x:ys)
+    where
+    advance from = (from `RSeq` RStar idle) `RSeq` RChar x
+    idle         = foldl1 RAlt $ concat
+      -- cannot advance, ...
+      [ [ RChar a              | a /= x, all (a ==) ys            ] -- but can stay
+      , [ RChar a `RSeq` fromA | a /= x, null ys || any (a /=) ys ] -- but can fall back to A
+      , [ (RAny `RMinus` RAlts [x,a]) `RSeq` fromStart            ] -- neither, need to restart
       ]

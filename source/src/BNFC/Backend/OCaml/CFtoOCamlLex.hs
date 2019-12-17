@@ -26,7 +26,6 @@ module BNFC.Backend.OCaml.CFtoOCamlLex (cf2ocamllex) where
 
 import Prelude'
 
-import Control.Arrow ((&&&))
 import Data.List
 import Data.Char
 import Text.PrettyPrint hiding (render)
@@ -36,7 +35,8 @@ import AbsBNF
 import BNFC.CF
 import BNFC.Backend.OCaml.CFtoOCamlYacc (terminal)
 import BNFC.Backend.OCaml.OCamlUtil (mkEsc)
-import BNFC.Utils (cstring, cchar, unless)
+import BNFC.Lexing (mkRegMultilineComment)
+import BNFC.Utils (cstring, unless)
 
 cf2ocamllex :: String -> String -> CF -> String
 cf2ocamllex _ parserMod cf =
@@ -165,25 +165,14 @@ mkRule entrypoint (r1:rn) = vcat
 mkRegexSingleLineComment :: String -> Doc
 mkRegexSingleLineComment s = cstring s <+> "(_ # '\\n')*"
 
--- | Create regex for multiline comments
+-- | Create regex for multiline comments.
 -- >>> mkRegexMultilineComment "<!--" "-->"
--- "<!--" ((u # ['-']) | '-' (u # ['-']) | "--" (u # ['>']))* '-'* "-->"
+-- "<!--" (u # '-')* '-' ((u # '-')+ '-')* '-' ('-' | (u # ['-''>']) (u # '-')* '-' ((u # '-')+ '-')* '-')* '>'
 --
 -- >>> mkRegexMultilineComment "\"'" "'\""
--- "\"'" ((u # ['\'']) | '\'' (u # ['"']))* '\''* "'\""
+-- '"' '\'' (u # '\'')* '\'' ('\'' | (u # ['"''\'']) (u # '\'')* '\'')* '"'
 mkRegexMultilineComment :: String -> String -> Doc
-mkRegexMultilineComment b e =
-  lit b
-  <+> parens ( hsep $ intersperse "|" subregexs ) <> "*"
-  <+> lit [head e] <> "*"
-  <+> lit e
-  where
-    lit :: String -> Doc
-    lit "" = empty
-    lit [c] = cchar c
-    lit s = cstring s
-    prefix = map (init &&& last) (drop 1 (inits e))
-    subregexs = [ lit ss <+> parens ("u #" <+> brackets (lit [s])) | (ss,s) <- prefix]
+mkRegexMultilineComment b e = text $ printRegOCaml $ mkRegMultilineComment b e
 
 -- | Uses the function from above to make a lexer rule from the CF grammar
 rules :: CF -> Doc
@@ -288,7 +277,8 @@ instance Print Reg where
    REps            -> prPrec i 3 (["\"\""])  -- special construct for eps in ocamllex?
    RChar c         -> prPrec i 3 (concat [prt 0 c])
    RAlts str       -> prPrec i 3 (concat [["["], [concatMap show str], ["]"]])
-   RSeqs str       -> prPrec i 2 (concat (map (prt 0) str))
+   RSeqs str       -> [ show str ]
+   -- RSeqs str       -> prPrec i 2 (concat (map (prt 0) str))
    RDigit          -> prPrec i 3 (concat [["d"]])
    RLetter         -> prPrec i 3 (concat [["l"]])
    RUpper          -> prPrec i 3 (concat [["c"]])
