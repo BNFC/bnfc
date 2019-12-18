@@ -69,3 +69,4 @@ cabal.sandbox.config
 /testing/regression-tests/204_InternalToken/Makefile
 /testing/regression-tests/202_comments/C/
 /testing/regression-tests/202_comments/haskell/
+/source/windows-dist/bnfc.exe
