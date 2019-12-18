@@ -6,4 +6,7 @@ comment "--(" "--)";
 comment "begin" "end";
 comment "###" "###";
 comment "[" "]";
+comment "banana" "ananas";
+  -- Being mean!  Needs sophisticated regex.
+  -- Ocamllex gets busted: "transition table overflow, automaton is too big"
 comment "%";

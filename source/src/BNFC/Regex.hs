@@ -275,7 +275,7 @@ cAlt c1@(CMinus p1 m1) c2@(CMinus p2 m2)
 cMinus :: CharClass -> CharClass -> RC
 cMinus c1@(CMinus p1 m1) c2@(CMinus p2 m2)
   | p2 == mempty                 = CC c1
-  | p1 `ccuMinus` m2 == Right p1 = CC $ p1 `CMinus` (m1 <> p2)
+  | p1 `ccuMinus` m2 == Right p1 = CC $ either id ccu $ p1 `ccuMinus` (m1 <> p2)
   | otherwise                    = Rx $ rx c1 `RMinus` rx c2
 
 cChar :: Char -> CharClass
@@ -307,7 +307,8 @@ ccuMinus = curry $ \case
     | c2 == mempty  -> Right $ c1
     | otherwise     -> Left  $ c1 `CMinus` c2
   (CAlt cs1, CAlt cs2)
-    | Set.null cs2' -> Right $ CAlt cs1'
+    | Set.null cs1' ||
+      Set.null cs2' -> Right $ CAlt cs1'
     | otherwise     -> Left  $ CAlt cs1' `CMinus` CAlt cs2'
     where
     cs1' = cs1 Set.\\ cs2

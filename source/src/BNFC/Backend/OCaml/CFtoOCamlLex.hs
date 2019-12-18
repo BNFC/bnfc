@@ -167,10 +167,10 @@ mkRegexSingleLineComment s = cstring s <+> "(_ # '\\n')*"
 
 -- | Create regex for multiline comments.
 -- >>> mkRegexMultilineComment "<!--" "-->"
--- "<!--" (u # '-')* '-' ((u # '-')+ '-')* '-' ('-' | (u # ['-''>']) (u # '-')* '-' ((u # '-')+ '-')* '-')* '>'
+-- "<!--" (u # '-')* '-' ((u # '-')+ '-')* '-' ((u # ['-''>']) (u # '-')* '-' ((u # '-')+ '-')* '-' | '-')* '>'
 --
 -- >>> mkRegexMultilineComment "\"'" "'\""
--- "\"'" (u # '\'')* '\'' ('\'' | (u # ['"''\'']) (u # '\'')* '\'')* '"'
+-- "\"'" (u # '\'')* '\'' ((u # ['"''\'']) (u # '\'')* '\'' | '\'')* '"'
 mkRegexMultilineComment :: String -> String -> Doc
 mkRegexMultilineComment b e = text $ printRegOCaml $ mkRegMultilineComment b e
 
