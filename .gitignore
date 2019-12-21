@@ -47,6 +47,9 @@ cabal.sandbox.config
 /source/src/ParBNF.info
 /source/src/TestBNF
 
+# binary
+/source/windows-dist/bnfc.exe
+
 # bnfc generated files
 /examples/C/C/
 /examples/C/CWithDelimiters/
@@ -69,4 +72,4 @@ cabal.sandbox.config
 /testing/regression-tests/204_InternalToken/Makefile
 /testing/regression-tests/202_comments/C/
 /testing/regression-tests/202_comments/haskell/
-/source/windows-dist/bnfc.exe
+/testing/regression-tests/278_Keywords/agda/

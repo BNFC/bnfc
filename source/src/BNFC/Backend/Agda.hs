@@ -3,46 +3,67 @@ Generate bindings to Haskell data types for use in Agda.
 
 Example for abstract syntax generated in Haskell backend:
 @@
-  newtype Ident = Ident String deriving (Eq, Ord, Show, Read)
+
+  module CPP.Abs where
+
+  import Prelude (Char, Double, Integer, String)
+  import qualified Prelude as C (Eq, Ord, Show, Read)
+
+  import qualified Data.Text
+
+  newtype Ident = Ident Data.Text.Text
+    deriving (C.Eq, C.Ord, C.Show, C.Read)
 
   data Def = DFun Type Ident [Arg] [Stm]
-    deriving (Eq, Ord, Show, Read)
+    deriving (C.Eq, C.Ord, C.Show, C.Read)
 
   data Arg = ADecl Type Ident
-    deriving (Eq, Ord, Show, Read)
+    deriving (C.Eq, C.Ord, C.Show, C.Read)
 
   data Stm
       = SExp Exp
       | SInit Type Ident Exp
       | SBlock [Stm]
       | SIfElse Exp Stm Stm
-    deriving (Eq, Ord, Show, Read)
+    deriving (C.Eq, C.Ord, C.Show, C.Read)
+
+  data Exp
 
   data Type = Type_bool | Type_int | Type_double | Type_void
-    deriving (Eq, Ord, Show, Read)
+    deriving (C.Eq, C.Ord, C.Show, C.Read)
 @@
 This should be accompanied by the following Agda code:
 @@
-  module <mod> where
+  module CPP.AST where
 
+  open import Agda.Builtin.Char using () renaming (Char to Char)
+  open import Agda.Builtin.Float public using () renaming (Float to Double)
+  open import Agda.Builtin.Int   public using () renaming (Int to Integer)
+  open import Agda.Builtin.List using () renaming (List to #List)
+  open import Agda.Builtin.String using () renaming
+    ( String to #String
+    ; primStringFromList to #stringFromList
+    )
+
+  {-# FOREIGN GHC import Prelude (Char, Double, Integer, String) #-}
   {-# FOREIGN GHC import qualified Data.Text #-}
-  {-# FOREIGN GHC import CPP.Abs #-}
+  {-# FOREIGN GHC import qualified CPP.Abs #-}
   {-# FOREIGN GHC import CPP.Print (printTree) #-}
 
   data Ident : Set where
-    ident : List Char → Ident
+    ident : #String → Ident
 
-  {-# COMPILE GHC Ident = data Ident (Ident) #-}
+  {-# COMPILE GHC Ident = data CPP.Abs.Ident (CPP.Abs.Ident) #-}
 
   data Def : Set where
     dFun : (t : Type) (x : Ident) (as : List Arg) (ss : List Stm) → Def
 
-  {-# COMPILE GHC Def = data Def (DFun) #-}
+  {-# COMPILE GHC Def = data CPP.Abs.Def (CPP.Abs.DFun) #-}
 
   data Arg : Set where
     aDecl : (t : Type) (x : Ident) → Arg
 
-  {-# COMPILE GHC Arg = data Arg (ADecl) #-}
+  {-# COMPILE GHC Arg = data CPP.Abs.Arg (CPP.Abs.ADecl) #-}
 
   data Stm : Set where
     sExp : (e : Exp) → Stm
@@ -50,21 +71,21 @@ This should be accompanied by the following Agda code:
     sBlock : (ss : List Stm) → Stm
     sIfElse : (e : Exp) (s s' : Stm) → Stm
 
-  {-# COMPILE GHC Stm = data Stm
-    ( SExp
-    | SInit
-    | SBlock
-    | SIfElse
+  {-# COMPILE GHC Stm = data CPP.Abs.Stm
+    ( CPP.Abs.SExp
+    | CPP.Abs.SInit
+    | CPP.Abs.SBlock
+    | CPP.Abs.SIfElse
     ) #-}
 
   data Type : Set where
     typeBool typeInt typeDouble typeVoid : Type
 
-  {-# COMPILE GHC Type = data Type
-    ( Type_bool
-    | Type_int
-    | Type_double
-    | Type_void
+  {-# COMPILE GHC Type = data CPP.Abs.Type
+    ( CPP.Abs.Type_bool
+    | CPP.Abs.Type_int
+    | CPP.Abs.Type_double
+    | CPP.Abs.Type_void
     ) #-}
 
   -- Binding the BNFC pretty printers.
@@ -80,12 +101,12 @@ This should be accompanied by the following Agda code:
     printDef     : Def     → String
     printProgram : Program → String
 
-  {-# COMPILE GHC printType    = \ t -> Data.Text.pack (printTree (t :: Type)) #-}
-  {-# COMPILE GHC printExp     = \ e -> Data.Text.pack (printTree (e :: Exp))  #-}
-  {-# COMPILE GHC printStm     = \ s -> Data.Text.pack (printTree (s :: Stm))  #-}
-  {-# COMPILE GHC printArg     = \ a -> Data.Text.pack (printTree (a :: Arg))  #-}
-  {-# COMPILE GHC printDef     = \ d -> Data.Text.pack (printTree (d :: Def))  #-}
-  {-# COMPILE GHC printProgram = \ p -> Data.Text.pack (printTree (p :: Program)) #-}
+  {-# COMPILE GHC printType    = \ t -> Data.Text.pack (printTree (t :: CPP.Abs.Type)) #-}
+  {-# COMPILE GHC printExp     = \ e -> Data.Text.pack (printTree (e :: CPP.Abs.Exp))  #-}
+  {-# COMPILE GHC printStm     = \ s -> Data.Text.pack (printTree (s :: CPP.Abs.Stm))  #-}
+  {-# COMPILE GHC printArg     = \ a -> Data.Text.pack (printTree (a :: CPP.Abs.Arg))  #-}
+  {-# COMPILE GHC printDef     = \ d -> Data.Text.pack (printTree (d :: CPP.Abs.Def))  #-}
+  {-# COMPILE GHC printProgram = \ p -> Data.Text.pack (printTree (p :: CPP.Abs.Program)) #-}
 @@
 -}
 
@@ -110,14 +131,14 @@ import Data.List.NonEmpty (NonEmpty((:|)))
 import qualified Data.List.NonEmpty as NEList
 import Data.Map (Map)
 import qualified Data.Map as Map
-import Data.Maybe (mapMaybe, isJust, fromJust)
+import Data.Maybe
 import Data.Set (Set)
 import qualified Data.Set as Set
 
 import BNFC.CF
 import BNFC.Backend.Base           (Backend, mkfile)
 import BNFC.Backend.Haskell.HsOpts
-import BNFC.Backend.Haskell.Utils  (parserName)
+import BNFC.Backend.Haskell.Utils  (ModuleName, parserName, catToType)
 import BNFC.Options                (SharedOptions, TokenText(..), tokenText)
 import BNFC.PrettyPrint
 import BNFC.Utils                  (replace, when)
@@ -150,7 +171,7 @@ makeAgda time opts cf = do
     cf2AgdaAST time (tokenText opts) (agdaASTFileM opts) (absFileM opts) (printerFileM opts) cf
   -- Generate parser bindings.
   mkfile (agdaParserFile opts) $
-    cf2AgdaParser time (tokenText opts) (agdaParserFileM opts) (agdaASTFileM opts) (absFileM opts) (errFileM opts) (happyFileM opts)
+    cf2AgdaParser time (tokenText opts) (agdaParserFileM opts) (agdaASTFileM opts) (errFileM opts) (happyFileM opts)
       layoutMod
       parserCats
   -- Generate an I/O library for the test parser.
@@ -191,11 +212,14 @@ cf2AgdaAST time tokenText mod amod pmod cf = vsep $
   , hsep [ "module", text mod, "where" ]
   , imports YesImportNumeric False
   , if usesString then hsep [ "String", equals, listT, charT ] else empty
-  , importPragmas tokenText [amod, unwords [ pmod, "(printTree)" ]]
-  , vsep $ map (prToken tokenText) tcats
-  , absyn NamedArg dats
+  , importPragmas tokenText
+      [ unwords [ "qualified", amod ]
+      , unwords [ pmod, "(printTree)" ]
+      ]
+  , vsep $ map (prToken amod tokenText) tcats
+  , absyn amod NamedArg dats
   -- , allTokenCats printToken tcats  -- seem to be included in printerCats
-  , printers printerCats
+  , printers amod printerCats
   , empty -- Make sure we terminate the file with a new line.
   ]
   where
@@ -219,21 +243,20 @@ cf2AgdaParser
   -> TokenText
   -> String  -- ^ Module name.
   -> String  -- ^ Agda AST module name.
-  -> String  -- ^ Haskell Abs module name.
   -> String  -- ^ Haskell ErrM module name.
   -> String  -- ^ Haskell Par module name.
   -> Maybe String
              -- ^ Does the grammar use layout?  If yes, Haskell Layout module name.
   -> [Cat]   -- ^ Bind parsers for these non-terminals.
   -> Doc
-cf2AgdaParser time tokenText mod astmod amod emod pmod layoutMod cats = vsep $
+cf2AgdaParser time tokenText mod astmod emod pmod layoutMod cats = vsep $
   [ preamble time "parsers"
   , hsep [ "module", text mod, "where" ]
   , imports NoImportNumeric (isJust layoutMod)
   , importCats astmod (List.nub cs)
-  , importPragmas tokenText $ [amod, emod, pmod] ++ maybe [] (\ m -> ["qualified " ++ m]) layoutMod
+  , importPragmas tokenText $ [ qual emod, pmod] ++ maybeToList (qual <$> layoutMod)
   , "-- Error monad of BNFC"
-  , prErrM
+  , prErrM emod
   , "-- Happy parsers"
   , parsers tokenText layoutMod cats
   , empty -- Make sure we terminate the file with a new line.
@@ -248,6 +271,7 @@ cf2AgdaParser time tokenText mod astmod amod emod pmod layoutMod cats = vsep $
     TokenCat "Char" -> Nothing
     TokenCat s    -> Just s
     ListCat c     -> baseCat c
+  qual m = "qualified " ++ m
 
 -- We prefix the Agda types with "#" to not conflict with user-provided nonterminals.
 arrow, charT, intT, listT, stringT, stringFromListT :: Doc
@@ -312,10 +336,11 @@ importCats m cs = prettyList 2 pre lparen rparen semi $ map text cs
 
 -- | Import pragmas.
 --
--- >>> importPragmas ByteStringToken ["Foo.Abs", "Foo.Print (printTree)", "qualified Foo.Layout"]
--- {-# FOREIGN GHC import qualified Data.ByteString.Char8 as BS #-}
+-- >>> importPragmas ByteStringToken ["qualified Foo.Abs", "Foo.Print (printTree)", "qualified Foo.Layout"]
+-- {-# FOREIGN GHC import Prelude (Char, Double, Integer, String, (.)) #-}
 -- {-# FOREIGN GHC import qualified Data.Text #-}
--- {-# FOREIGN GHC import Foo.Abs #-}
+-- {-# FOREIGN GHC import qualified Data.ByteString.Char8 as BS #-}
+-- {-# FOREIGN GHC import qualified Foo.Abs #-}
 -- {-# FOREIGN GHC import Foo.Print (printTree) #-}
 -- {-# FOREIGN GHC import qualified Foo.Layout #-}
 --
@@ -323,23 +348,27 @@ importPragmas
   :: TokenText
   -> [String]  -- ^ Haskell modules to import.
   -> Doc
-importPragmas tokenText mods = vcat $ map imp $ extra ++ [ "qualified Data.Text" ] ++ mods
+importPragmas tokenText mods = vcat $ map imp $ prelude ++ extra ++ mods
   where
   imp s = hsep [ "{-#", "FOREIGN", "GHC", "import", text s, "#-}" ]
   extra = case tokenText of
     TextToken       -> []
     StringToken     -> []
     ByteStringToken -> [ "qualified Data.ByteString.Char8 as BS" ]
+  prelude =
+    [ "Prelude (Char, Double, Integer, String, (.))"
+    , "qualified Data.Text"
+    ]
 
 -- * Bindings for the AST.
 
 -- | Pretty-print types for token types similar to @Ident@.
 
-prToken :: TokenText -> String -> Doc
-prToken tokenText t =
+prToken :: ModuleName -> TokenText -> String -> Doc
+prToken amod tokenText t =
   prettyData UnnamedArg t [(agdaLower t, typ)]
   $++$
-  pragmaData t [(t, [])]
+  pragmaData amod t [(t, [])]
   where
   typ = case tokenText of
     TextToken       -> [Cat "#String" ]
@@ -352,30 +381,30 @@ prToken tokenText t =
 --   strongly-connected component analysis and topological
 --   sort by dependency order.
 --
-absyn :: ConstructorStyle -> [Data] -> Doc
-absyn _style [] = empty
-absyn style  ds = vsep . ("mutual" :) . concatMap (map (nest 2) . prData style) $ ds
+absyn :: ModuleName -> ConstructorStyle -> [Data] -> Doc
+absyn _amod _style [] = empty
+absyn  amod  style ds = vsep . ("mutual" :) . concatMap (map (nest 2) . prData amod style) $ ds
 
 -- | Pretty-print Agda data types and pragmas for AST.
 --
--- >>> vsep $ prData UnnamedArg (Cat "Nat", [ ("Zero", []), ("Suc", [Cat "Nat"]) ])
+-- >>> vsep $ prData "Foo" UnnamedArg (Cat "Nat", [ ("Zero", []), ("Suc", [Cat "Nat"]) ])
 -- data Nat : Set where
 --   zero : Nat
 --   suc : Nat → Nat
 -- <BLANKLINE>
--- {-# COMPILE GHC Nat = data Nat
---   ( Zero
---   | Suc
+-- {-# COMPILE GHC Nat = data Foo.Nat
+--   ( Foo.Zero
+--   | Foo.Suc
 --   ) #-}
 --
--- >>> vsep $ prData UnnamedArg (Cat "C", [ ("C1", []), ("C2", [Cat "C"]) ])
+-- >>> vsep $ prData "Bar" UnnamedArg (Cat "C", [ ("C1", []), ("C2", [Cat "C"]) ])
 -- data C : Set where
 --   c1 : C
 --   c2 : C → C
 -- <BLANKLINE>
--- {-# COMPILE GHC C = data C
---   ( C1
---   | C2
+-- {-# COMPILE GHC C = data Bar.C
+--   ( Bar.C1
+--   | Bar.C2
 --   ) #-}
 --
 -- We return a list of 'Doc' rather than a single 'Doc' since want
@@ -385,31 +414,31 @@ absyn style  ds = vsep . ("mutual" :) . concatMap (map (nest 2) . prData style) 
 -- This is a bit of a design problem of the pretty print library:
 -- there is no native concept of a blank line; @text ""@ is a bad hack.
 --
-prData :: ConstructorStyle -> Data -> [Doc]
-prData style (Cat d, cs) = prData' style d cs
-prData _     (c    , _ ) = error $ "prData: unexpected category " ++ show c
+prData :: ModuleName -> ConstructorStyle -> Data -> [Doc]
+prData amod style (Cat d, cs) = prData' amod style d cs
+prData _    _     (c    , _ ) = error $ "prData: unexpected category " ++ show c
 
 -- | Pretty-print Agda data types and pragmas.
 --
--- >>> vsep $ prData' UnnamedArg "Err A" [ ("Ok", [Cat "A"]), ("Bad", [ListCat $ Cat "Char"]) ]
+-- >>> vsep $ prData' "ErrM" UnnamedArg "Err A" [ ("Ok", [Cat "A"]), ("Bad", [ListCat $ Cat "Char"]) ]
 -- data Err A : Set where
 --   ok : A → Err A
 --   bad : #List Char → Err A
 -- <BLANKLINE>
--- {-# COMPILE GHC Err = data Err
---   ( Ok
---   | Bad
+-- {-# COMPILE GHC Err = data ErrM.Err
+--   ( ErrM.Ok
+--   | ErrM.Bad
 --   ) #-}
 --
-prData' :: ConstructorStyle -> String -> [(Fun, [Cat])] -> [Doc]
-prData' style d cs = [ prettyData style d cs , pragmaData (head $ words d) cs ]
+prData' :: ModuleName -> ConstructorStyle -> String -> [(Fun, [Cat])] -> [Doc]
+prData' amod style d cs = [ prettyData style d cs , pragmaData amod (head $ words d) cs ]
 
 -- | Pretty-print Agda binding for the BNFC Err monad.
 --
 -- Note: we use "Err" here since a category "Err" would also conflict
 -- with BNFC's error monad in the Haskell backend.
-prErrM :: Doc
-prErrM = vsep $ prData' UnnamedArg "Err A"
+prErrM :: ModuleName -> Doc
+prErrM emod = vsep $ prData' emod UnnamedArg "Err A"
   [ ("Ok" , [Cat "A"])
   , ("Bad", [ListCat $ Cat "Char"])
   ]
@@ -453,20 +482,20 @@ prettyData style d cs = vcat $
 
 -- | Generate pragmas to bind Haskell AST to Agda.
 --
--- >>> pragmaData "Empty" []
--- {-# COMPILE GHC Empty = data Empty () #-}
+-- >>> pragmaData "Foo" "Empty" []
+-- {-# COMPILE GHC Empty = data Foo.Empty () #-}
 --
--- >>> pragmaData "Nat" [ ("zero", []), ("suc", [Cat "Nat"]) ]
--- {-# COMPILE GHC Nat = data Nat
---   ( zero
---   | suc
+-- >>> pragmaData "Foo" "Nat" [ ("zero", []), ("suc", [Cat "Nat"]) ]
+-- {-# COMPILE GHC Nat = data Foo.Nat
+--   ( Foo.zero
+--   | Foo.suc
 --   ) #-}
 --
-pragmaData :: String -> [(Fun, [Cat])] -> Doc
-pragmaData d cs = prettyList 2 pre lparen (rparen <+> "#-}") "|" $
-  map (prettyFun . fst) cs
+pragmaData :: ModuleName -> String -> [(Fun, [Cat])] -> Doc
+pragmaData amod d cs = prettyList 2 pre lparen (rparen <+> "#-}") "|" $
+  map (prettyFun amod . fst) cs
   where
-  pre = hsep [ "{-#", "COMPILE", "GHC", text d, equals, "data", text d ]
+  pre = hsep [ "{-#", "COMPILE", "GHC", text d, equals, "data", text $ concat [ amod, ".", d ] ]
 
 -- | Pretty-print since rule as Agda constructor declaration.
 --
@@ -589,19 +618,19 @@ printToken t = vcat
 
 -- | Generate Agda bindings to printers for AST.
 --
--- >>> printers $ map Cat [ "Exp", "Stm" ]
+-- >>> printers "Foo" $ map Cat [ "Exp", "Stm" ]
 -- -- Binding the pretty printers.
 -- <BLANKLINE>
 -- postulate
 --   printExp : Exp → #String
 --   printStm : Stm → #String
 -- <BLANKLINE>
--- {-# COMPILE GHC printExp = \ e -> Data.Text.pack (printTree (e :: Exp)) #-}
--- {-# COMPILE GHC printStm = \ s -> Data.Text.pack (printTree (s :: Stm)) #-}
+-- {-# COMPILE GHC printExp = \ e -> Data.Text.pack (printTree (e :: Foo.Exp)) #-}
+-- {-# COMPILE GHC printStm = \ s -> Data.Text.pack (printTree (s :: Foo.Stm)) #-}
 --
-printers :: [Cat] -> Doc
-printers []   = empty
-printers cats =
+printers :: ModuleName -> [Cat] -> Doc
+printers _amod []   = empty
+printers  amod cats =
   "-- Binding the pretty printers."
   $++$
   vcat ("postulate" : map (nest 2 . prettyTySig) cats)
@@ -615,7 +644,7 @@ printers cats =
     ]
     where
     y = text $ nameSuggestion c
-    t = text $ show $ normCat c  -- Removes CoercCat.
+    t = catToType ((text amod <> text ".") <>) empty c  -- Removes CoercCat.
 
 -- | Bind happy parsers.
 --
@@ -682,8 +711,8 @@ allTokenCats :: (TokenCat -> Doc) -> [TokenCat] -> Doc
 allTokenCats f = vsep . map f
 
 -- | Pretty-print a rule name for Haskell.
-prettyFun :: Fun -> Doc
-prettyFun = text
+prettyFun :: ModuleName -> Fun -> Doc
+prettyFun amod c = text $ concat [ amod, ".", c ]
 
 -- | Pretty-print a rule name for Agda.
 prettyCon :: Fun -> Doc
