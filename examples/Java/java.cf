@@ -2,6 +2,8 @@
 	Copyright (C) 2004 Mike Rainey, All rights reserved.
 	mrainey@uchicago.edu
 
+	Copyright (C) 2019 Andreas Abel.
+
 	This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
     the Free Software Foundation; either version 2 of the License, or
@@ -26,7 +28,7 @@
 	http://java.sun.com/docs/books/jls/second_edition/html/syntax.doc.html
 
 	To use this file, download BNF Converter at:
-	http://www.cs.chalmers.se/~markus/BNFC/
+	https://hackage.haskell.org/BNFC/
 
 	Please send bug reports/fixes to mrainey@uchicago.edu.  Both are greatly
 	encouraged!  If you're enterprising, maybe update this definition to
@@ -36,15 +38,15 @@
 
 entrypoints ProgramFile;
 
-Prpkg.		ProgramFile ::= "package" [Ident] [Semi] [Import] [TypeDecl];
-ProgF.		ProgramFile ::= [Import] [TypeDecl];
+Prpkg.		ProgramFile ::= "package" [Ident] [Semi] [Import] [TypeDeclaration];
+ProgF.		ProgramFile ::= [Import] [TypeDeclaration];
 
 ImportN. 	Import ::= "import" [Ident] [Semi];
 ImportA.	Import ::= "import" [Ident] ".*" [Semi];
 separator Import "";
 
-TypeDecl.	TypeDecl ::= ClassHeader "{" [FieldDeclaration] "}";
-separator TypeDecl "";
+TypeDecl.	TypeDeclaration ::= ClassHeader "{" [FieldDeclaration] "}";
+separator TypeDeclaration "";
 
 -- class and interface declaration
 ClassDec.	ClassHeader ::= [Modifier] "class" Ident;
@@ -64,7 +66,7 @@ Dmthth.			FieldDeclaration ::= [Modifier] TypeSpec MethodDecl "throws" [TypeName
 Dconst.			FieldDeclaration ::= [Modifier] Ident "(" [Parameter] ")" Body;
 Dconstt.		FieldDeclaration ::= [Modifier] Ident "(" [Parameter] ")" "throws" [TypeName] Body;
 Dblk.			FieldDeclaration ::= Body;
-Dinnerclass.		FieldDeclaration ::= TypeDecl;
+Dinnerclass.		FieldDeclaration ::= TypeDeclaration;
 --Dstk.			FieldDeclaration ::= "static" Body;
 terminator  	FieldDeclaration "";
 
@@ -77,7 +79,7 @@ LVarf.		LVarStatement ::= "final" TypeSpec [VarDecl] ";";
 Statem.		LVarStatement ::= Stm;
 separator 	LVarStatement "";
 
-Body.	Body ::= "{" [LVarStatement] "}";
+BodyImpl.	Body ::= "{" [LVarStatement] "}";
 
 -- Statement
 Sem.	Stm ::= ";";
@@ -113,12 +115,12 @@ Param.	Parameter ::= TypeSpec DeclaratorName;
 Pfinal.	Parameter ::= "final" TypeSpec DeclaratorName;
 separator Parameter ",";
 
-Ifone.		SelectionStm ::= "if" "(" Exp ")" Stm [Elseif];
-If.		SelectionStm ::= "if" "(" Exp ")" Stm [Elseif] "else" Stm;
+Ifone.		SelectionStm ::= "if" "(" Exp ")" Stm [ElseIfStm];
+If.		SelectionStm ::= "if" "(" Exp ")" Stm [ElseIfStm] "else" Stm;
 Switch.		SelectionStm ::= "switch" "(" Exp ")" Body;
 
-Elseif.		Elseif ::= "else if" "(" Exp ")" Stm;
-terminator Elseif "";
+Elseif.		ElseIfStm ::= "else if" "(" Exp ")" Stm;
+terminator ElseIfStm "";
 
 Break.			JumpStm ::= "break" ";";
 Brlabel.		JumpStm ::= "break" Ident ";";
@@ -141,8 +143,8 @@ Do.		IterStm ::= "do" Stm "while" "(" Exp ")";
 For.		IterStm ::= "for" "(" ForInit [Exp] ";" [Exp] ")" Stm;
 
 Exprs1.		ForInit ::= [Exp] ";";
-DVar.		ForInit ::= TypeSpec [VarDecl] ";";
-DVarf.		ForInit ::= "final" TypeSpec [VarDecl] ";";
+DeclVar.		ForInit ::= TypeSpec [VarDecl] ";";
+DeclVarFinal.		ForInit ::= "final" TypeSpec [VarDecl] ";";
 
 
 -- modifiers
@@ -169,14 +171,14 @@ Tbyte.        BasicType ::= "byte";
 Tboolean.     BasicType ::= "boolean";
 
 ArrayType. 	  TypeSpec ::= TypeName [BracketsOpt];
-TypeName. 	  TypeSpec ::= TypeName;
+NamedType. 	  TypeSpec ::= TypeName;
 
 BuiltIn.	  TypeName ::= BasicType;
 ClassType.        TypeName ::= [Ident];
 
 separator nonempty TypeName ",";
 
-BracketsOpt.   BracketsOpt ::= "[]";
+BracketsEmpty.   BracketsOpt ::= "[]";
 
 separator nonempty BracketsOpt "";
 
@@ -254,9 +256,9 @@ Ffthis.		 FieldAcc ::= [Ident] ".this";
 Fclass.	 	 FieldAcc ::= [Ident] ".class";
 Ffclass2.	 FieldAcc ::= BasicType ".class";
 
-Args.	Args ::= "(" [Exp] ")";
+ArgList.	Args ::= "(" [Exp] ")";
 
-DimExpr. DimExpr ::= "[" Exp "]";
+Dim. DimExpr ::= "[" Exp "]";
 
 terminator nonempty DimExpr "";
 
@@ -344,15 +346,5 @@ AssignOr.     Assignment_op ::= "|=" ;
 Sem1.	Semi ::=  ";";
 terminator Semi "";
 
-{-
-	there is a problem with comments...
-	the first 2 commented out directives fail to work.
-	some alex hacking is probably in order to get a full
-	java parser; i've noticed the unbalanced /*'s appear
-	enough to be annoying
--}
---comment "/**" "*/" ;
---comment "/*" "**/" ;
-comment "/**" "**/" ;
 comment "/*" "*/" ;
 comment "//";
