@@ -1,4 +1,8 @@
-default : install internal-tests test
+default :
+	make -C source
+	make -C testing
+
+legacy : install internal-tests test
 
 install :
 	cd source && cabal install && cd ..

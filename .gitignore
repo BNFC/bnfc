@@ -57,7 +57,7 @@ cabal.sandbox.config
 /examples/cpp/csharp/
 /examples/GF/GF/
 /examples/GF/ANTLR/
-/examples/Java/Java/
+/examples/Java/java/
 /examples/Java/Makefile
 /examples/Javalette/JavaletteLight/
 /examples/Javalette/Makefile
@@ -73,3 +73,5 @@ cabal.sandbox.config
 /testing/regression-tests/202_comments/C/
 /testing/regression-tests/202_comments/haskell/
 /testing/regression-tests/278_Keywords/agda/
+/testing/regression-tests/278_Keywords/java/
+/testing/regression-tests/278_Keywords/ocaml/
