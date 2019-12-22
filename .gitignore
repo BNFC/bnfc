@@ -68,12 +68,8 @@ cabal.sandbox.config
 /examples/prolog/Makefile
 /examples/prolog/Prolog/
 
-/testing/Language/Test/
-/testing/regression-tests/#100_coercion_lists/Makefile
-/testing/regression-tests/#100_coercion_lists/Test/
+/testing/regression-tests/#100_coercion_lists/java/
 /testing/regression-tests/194_layout/haskell/
-/testing/regression-tests/204_InternalToken/Language/Test/
-/testing/regression-tests/204_InternalToken/Makefile
 /testing/regression-tests/202_comments/C/
 /testing/regression-tests/202_comments/haskell/
 
