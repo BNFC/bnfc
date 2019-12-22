@@ -88,18 +88,32 @@ parseCFP opts target content = do
         , "conflicts with a name defined in the grammar."
         ]
 
-  -- Warn of fail if the grammar uses non unique names
+  -- Warn or fail if the grammar uses non unique names.
   case filter (not . isDefinedRule) $ filterNonUnique names of
     [] -> return ()
     ns | target `notElem` [TargetHaskell,TargetHaskellGadt,TargetOCaml]
        -> die $ unlines $
             [ "ERROR: names not unique: " ++ unwords ns
-            , "This is an error in the backend " ++ show target
+            , "This is an error in the backend " ++ show target ++ "."
             ]
        | otherwise
        -> putStrLn $ unlines $
             [ "Warning: names not unique: " ++ unwords ns
-            , "This can be an error in other back ends."
+            , "This can be an error in other backends."
+            ]
+
+  -- Warn or fail if the grammar uses names not unique modulo upper/lowercase.
+  case filter (not . isDefinedRule) $ duplicatesOn (map toLower) names of
+    [] -> return ()
+    ns | target `elem` [ TargetC , TargetCpp , TargetCppNoStl , TargetCSharp , TargetJava ]
+       -> die $ unlines $
+            [ "ERROR: names not unique ignoring case: " ++ unwords ns
+            , "This is an error in the backend " ++ show target ++ "."
+            ]
+       | otherwise
+       -> putStrLn $ unlines $
+            [ "Warning: names not unique ignoring case: " ++ unwords ns
+            , "This can be an error in other backends."
             ]
 
   -- Print warnings if user defined nullable tokens.

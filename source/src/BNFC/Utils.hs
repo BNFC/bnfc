@@ -24,6 +24,7 @@ module BNFC.Utils
     ( when, unless, unlessNull
     , applyWhen, applyUnless
     , for
+    , duplicatesOn
     , (+++), (++++), (+-+), (+.+)
     , pad, table
     , mkName, mkNames, NameStyle(..)
@@ -38,12 +39,16 @@ import Control.Arrow   ((&&&))
 import Control.DeepSeq (rnf)
 
 import Data.Char
+import Data.Foldable   (Foldable)
 import Data.Functor    ((<$>))
 import Data.List       (intercalate)
 import Data.Monoid     (Monoid(..))
+import Data.Semigroup  (Semigroup(..))
 import Data.Time
 
-import Data.Semigroup  (Semigroup(..))
+import qualified Data.Foldable as Fold
+import qualified Data.Map      as Map
+import qualified Data.Set      as Set
 
 import System.IO       (IOMode(ReadMode),hClose,hGetContents,openFile)
 import System.IO.Error (tryIOError)
@@ -148,6 +153,21 @@ replace :: Eq a =>
         -> a -- ^ Value to replace it with
         -> [a] -> [a]
 replace x y xs = [ if z == x then y else z | z <- xs]
+
+-- | Returns all elements whose normal form appears more than once.
+--
+--   E.g. @duplicatesOn abs [5,-5,1] = [-5,5]@.
+duplicatesOn :: (Foldable t, Ord a, Ord b) => (a -> b) -> t a -> [a]
+duplicatesOn nf
+    -- Flatten.
+  = concat
+    -- Keep groups of size >= 2.
+  . filter ((2 <=) . length)
+    -- Turn into a list of lists: elements grouped by their normal form.
+  . map Set.toList
+  . Map.elems
+    -- Partition elements by their normal form.
+  . Fold.foldl (\ m a -> Map.insertWith Set.union (nf a) (Set.singleton a) m) Map.empty
 
 -- * Time utilities
 

@@ -76,6 +76,8 @@ cabal.sandbox.config
 /testing/regression-tests/204_InternalToken/Makefile
 /testing/regression-tests/202_comments/C/
 /testing/regression-tests/202_comments/haskell/
+
 /testing/regression-tests/278_Keywords/agda/
+/testing/regression-tests/278_Keywords/haskell/
 /testing/regression-tests/278_Keywords/java/
 /testing/regression-tests/278_Keywords/ocaml/

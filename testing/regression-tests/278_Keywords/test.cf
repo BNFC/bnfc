@@ -6,7 +6,6 @@ Prg. Program ::=
     And
     AndEq
     And_Eq
-    And_eq
     As
     Asm
     Asr
@@ -27,7 +26,6 @@ Prg. Program ::=
     Const
     ConstCast
     Const_Cast
-    Const_cast
     Constraint
     Continue
     Data
@@ -40,7 +38,6 @@ Prg. Program ::=
     Downto
     DynamicCast
     Dynamic_Cast
-    Dynamic_cast
     Else
     End
     Enum
@@ -101,7 +98,6 @@ Prg. Program ::=
     Not
     NotEq
     Not_Eq
-    Not_eq
     Object
     Of
     Open
@@ -109,7 +105,6 @@ Prg. Program ::=
     Or
     OrEq
     Or_Eq
-    Or_eq
     Package
     Pattern
     Private
@@ -121,7 +116,6 @@ Prg. Program ::=
     Register
     ReinterpretCast
     Reinterpret_Cast
-    Reinterpret_cast
     Return
     Short
     Sig
@@ -129,7 +123,6 @@ Prg. Program ::=
     Sizeof
     StaticCast
     Static_Cast
-    Static_cast
     Strictfp
     String_
     Struct
@@ -158,7 +151,6 @@ Prg. Program ::=
     Volatile
     WcharT
     Wchar_T
-    Wchar_t
     When
     Where
     While
@@ -166,13 +158,12 @@ Prg. Program ::=
     Xor
     XorEq
     Xor_Eq
-    Xor_eq ;
+    ;
 
 Abstract_         .  Abstract             ::= "abstract"         ;
 And_              .  And                  ::= "and"              ;
 AndEq_            .  AndEq                ::= "and_eq"           ;
 And_Eq_           .  And_Eq               ::= "and_eq"           ;
-And_eq_           .  And_eq               ::= "and_eq"           ;
 As_               .  As                   ::= "as"               ;
 Asm_              .  Asm                  ::= "asm"              ;
 Asr_              .  Asr                  ::= "asr"              ;
@@ -193,7 +184,6 @@ Compl_            .  Compl                ::= "compl"            ;
 Const_            .  Const                ::= "const"            ;
 ConstCast_        .  ConstCast            ::= "const_cast"       ;
 Const_Cast_       .  Const_Cast           ::= "const_cast"       ;
-Const_cast_       .  Const_cast           ::= "const_cast"       ;
 Constraint_       .  Constraint           ::= "constraint"       ;
 Continue_         .  Continue             ::= "continue"         ;
 Data_             .  Data                 ::= "data"             ;
@@ -206,7 +196,6 @@ Double__          .  Double_              ::= "double"           ;
 Downto_           .  Downto               ::= "downto"           ;
 DynamicCast_      .  DynamicCast          ::= "dynamic_cast"     ;
 Dynamic_Cast_     .  Dynamic_Cast         ::= "dynamic_cast"     ;
-Dynamic_cast_     .  Dynamic_cast         ::= "dynamic_cast"     ;
 Else_             .  Else                 ::= "else"             ;
 End_              .  End                  ::= "end"              ;
 Enum_             .  Enum                 ::= "enum"             ;
@@ -267,7 +256,6 @@ Nonrec_           .  Nonrec               ::= "nonrec"           ;
 Not_              .  Not                  ::= "not"              ;
 NotEq_            .  NotEq                ::= "not_eq"           ;
 Not_Eq_           .  Not_Eq               ::= "not_eq"           ;
-Not_eq_           .  Not_eq               ::= "not_eq"           ;
 Object_           .  Object               ::= "object"           ;
 Of_               .  Of                   ::= "of"               ;
 Open_             .  Open                 ::= "open"             ;
@@ -275,7 +263,6 @@ Operator_         .  Operator             ::= "operator"         ;
 Or_               .  Or                   ::= "or"               ;
 OrEq_             .  OrEq                 ::= "or_eq"            ;
 Or_Eq_            .  Or_Eq                ::= "or_eq"            ;
-Or_eq_            .  Or_eq                ::= "or_eq"            ;
 Package_          .  Package              ::= "package"          ;
 Pattern_          .  Pattern              ::= "pattern"          ;
 Private_          .  Private              ::= "private"          ;
@@ -287,7 +274,6 @@ Rec_              .  Rec                  ::= "rec"              ;
 Register_         .  Register             ::= "register"         ;
 ReinterpretCast_  .  ReinterpretCast      ::= "reinterpret_cast" ;
 Reinterpret_Cast_ .  Reinterpret_Cast     ::= "reinterpret_cast" ;
-Reinterpret_cast_ .  Reinterpret_cast     ::= "reinterpret_cast" ;
 Return_           .  Return               ::= "return"           ;
 Short_            .  Short                ::= "short"            ;
 Sig_              .  Sig                  ::= "sig"              ;
@@ -295,7 +281,6 @@ Signed_           .  Signed               ::= "signed"           ;
 Sizeof_           .  Sizeof               ::= "sizeof"           ;
 StaticCast_       .  StaticCast           ::= "static_cast"      ;
 Static_Cast_      .  Static_Cast          ::= "static_cast"      ;
-Static_cast_      .  Static_cast          ::= "static_cast"      ;
 Strictfp_         .  Strictfp             ::= "strictfp"         ;
 String__          .  String_              ::= "string"           ;
 Struct_           .  Struct               ::= "struct"           ;
@@ -324,7 +309,6 @@ Void_             .  Void                 ::= "void"             ;
 Volatile_         .  Volatile             ::= "volatile"         ;
 WcharT_           .  WcharT               ::= "wchar_t"          ;
 Wchar_T_          .  Wchar_T              ::= "wchar_t"          ;
-Wchar_t_          .  Wchar_t              ::= "wchar_t"          ;
 When_             .  When                 ::= "when"             ;
 Where_            .  Where                ::= "where"            ;
 While_            .  While                ::= "while"            ;
@@ -332,7 +316,6 @@ With_             .  With                 ::= "with"             ;
 Xor_              .  Xor                  ::= "xor"              ;
 XorEq_            .  XorEq                ::= "xor_eq"           ;
 Xor_Eq_           .  Xor_Eq               ::= "xor_eq"           ;
-Xor_eq_           .  Xor_eq               ::= "xor_eq"           ;
 
 {-
 

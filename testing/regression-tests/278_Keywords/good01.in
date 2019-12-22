@@ -2,7 +2,6 @@ abstract
 and
 and_eq
 and_eq
-and_eq
 as
 asm
 asr
@@ -23,7 +22,6 @@ compl
 const
 const_cast
 const_cast
-const_cast
 constraint
 continue
 data
@@ -34,7 +32,6 @@ do
 done
 double
 downto
-dynamic_cast
 dynamic_cast
 dynamic_cast
 else
@@ -97,13 +94,11 @@ nonrec
 not
 not_eq
 not_eq
-not_eq
 object
 of
 open
 operator
 or
-or_eq
 or_eq
 or_eq
 package
@@ -117,13 +112,11 @@ rec
 register
 reinterpret_cast
 reinterpret_cast
-reinterpret_cast
 return
 short
 sig
 signed
 sizeof
-static_cast
 static_cast
 static_cast
 strictfp
@@ -154,12 +147,10 @@ void
 volatile
 wchar_t
 wchar_t
-wchar_t
 when
 where
 while
 with
 xor
-xor_eq
 xor_eq
 xor_eq

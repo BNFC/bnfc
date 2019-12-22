@@ -1,3 +1,5 @@
+{-# LANGUAGE PatternGuards #-}
+
 module BNFC.Lexing
     ( mkLexer, LexType(..), mkRegMultilineComment ) where
 
