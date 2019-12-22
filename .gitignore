@@ -55,10 +55,14 @@ cabal.sandbox.config
 /examples/C/CWithDelimiters/
 /examples/C/Makefile
 /examples/cpp/csharp/
+/examples/cpp/pygments/
 /examples/GF/GF/
 /examples/GF/ANTLR/
+/examples/Java/agda
+/examples/Java/cpp
+/examples/Java/cpp-nostl
 /examples/Java/java/
-/examples/Java/Makefile
+/examples/Java/ocaml/
 /examples/Javalette/JavaletteLight/
 /examples/Javalette/Makefile
 /examples/prolog/Makefile
