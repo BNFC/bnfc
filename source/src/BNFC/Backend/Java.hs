@@ -574,7 +574,6 @@ javaTest (JavaTestParams
     render $ vcat $ concat $
       [ [ "package" <+> text packageBase <> ";"
         , "import" <+> text packageBase <> ".*;"
-        , "import" <+> text packageAbsyn <> ".*;"
         , "import java.io.*;"
         ]
       , map importfun imports
