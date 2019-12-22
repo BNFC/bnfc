@@ -82,7 +82,6 @@ cf2JavaPrinter packageBase packageAbsyn cf =
     groups = fixCoercions (ruleGroupsInternals cf)
     header = unlines [
       "package" +++ packageBase ++ ";",
-      "import" +++ packageAbsyn ++ ".*;",
       "",
       "public class PrettyPrinter",
       "{",
@@ -223,7 +222,7 @@ prData packageAbsyn user (cat, rules) = unlines k
            ["  private static void pp(" ++ packageAbsyn ++ "."
                 ++ identCat (normCat cat) +++ "foo, int _i_)"
             , "  {"
-            , render $ nest 5 $ prList user cat rules <> "  }"
+            , render $ nest 5 $ prList packageAbsyn user cat rules <> "  }"
            ]
            else --not a list
            [
@@ -262,8 +261,8 @@ prRule _nm _ = ""
 -- |
 --
 -- >>> let lfoo = ListCat (Cat "Foo")
--- >>> prList [] lfoo [Rule "[]" lfoo [] Parsable, Rule "(:)" lfoo [Left (Cat "Foo"), Right ".", Left lfoo] Parsable]
--- for (java.util.Iterator<Foo> it = foo.iterator(); it.hasNext();)
+-- >>> prList "absyn" [] lfoo [Rule "[]" lfoo [] Parsable, Rule "(:)" lfoo [Left (Cat "Foo"), Right ".", Left lfoo] Parsable]
+-- for (java.util.Iterator<absyn.Foo> it = foo.iterator(); it.hasNext();)
 -- {
 --   pp(it.next(), _i_);
 --   if (it.hasNext()) {
@@ -273,8 +272,8 @@ prRule _nm _ = ""
 --   }
 -- }
 
-prList :: [UserDef] -> Cat -> [Rule] -> Doc
-prList user c rules =
+prList :: String -> [UserDef] -> Cat -> [Rule] -> Doc
+prList packageAbsyn user c rules =
     "for (java.util.Iterator<" <> et <> "> it = foo.iterator(); it.hasNext();)"
     $$ codeblock 2
         [ "pp(it.next(), _i_);"
@@ -286,7 +285,7 @@ prList user c rules =
         , "}"
         ]
    where
-    et = text $ cat2JavaType user $ normCatOfList c
+    et = text $ typename packageAbsyn user $ identCat $ normCatOfList c
     sep = escapeChars $ getCons rules
     optsep = if hasOneFunc rules then "" else sep
     renderSep x = "render(\"" <> text x <>"\")"
@@ -318,7 +317,7 @@ shData packageAbsyn user (cat, rules) = unlines k
           [ "  private static void sh(" ++ packageAbsyn ++ "."
                 ++ identCat (normCat cat) +++ "foo)"
           , "  {"
-          , shList user cat rules ++ "  }"
+          , shList packageAbsyn user cat rules ++ "  }"
           ]
           else
           [ "  private static void sh(" ++ packageAbsyn ++ "."
@@ -353,8 +352,8 @@ shRule packageAbsyn (Rule fun _c cats _) | not (isCoercion fun || isDefinedRule 
     fnm = '_' : map toLower fun
 shRule _nm _ = ""
 
-shList :: [UserDef] -> Cat -> [Rule] -> String
-shList user c _rules = unlines
+shList :: String -> [UserDef] -> Cat -> [Rule] -> String
+shList packageAbsyn user c _rules = unlines
   [
    "     for (java.util.Iterator<" ++ et
           ++ "> it = foo.iterator(); it.hasNext();)",
@@ -365,7 +364,7 @@ shList user c _rules = unlines
    "     }"
   ]
     where
-    et = cat2JavaType user $ normCatOfList c
+    et = typename packageAbsyn user $ identCat $ normCatOfList c
 
 -- |
 -- >>> shCat "F" (ListCat (Cat "A"), "lista_")

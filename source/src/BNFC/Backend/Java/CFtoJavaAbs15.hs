@@ -152,7 +152,7 @@ prAccept pack cat _ = "\n  public <R,A> R accept(" ++ pack ++ "." ++ show cat
 
 prEquals :: String -> String -> [IVar] -> String
 prEquals pack fun vs =
-    unlines $ map ("  "++) $ ["public boolean equals(Object o) {",
+    unlines $ map ("  "++) $ ["public boolean equals(java.lang.Object o) {",
                               "  if (this == o) return true;",
                               "  if (o instanceof " ++ fqn ++ ") {"]
                               ++ (if null vs
@@ -168,7 +168,7 @@ prEquals pack fun vs =
   checkKid iv = "this." ++ v ++ ".equals(x." ++ v ++ ")"
       where v = render (iVarName iv)
 
--- | Creates the equals() method.
+-- | Creates the hashCode() method.
 
 prHashCode :: String -> String -> [IVar] -> String
 prHashCode _ _ vs =
@@ -247,9 +247,8 @@ prConstructor c u vs cats =
 -- | Prints the parameters to the constructors.
 
 prParams :: [Cat] -> [UserDef] -> Int -> Int -> [(String,String)]
-prParams [] _ _ _ = []
-prParams (c:cs) u n m = (typename (identCat c) u, 'p' : show (m-n))
-                        : prParams cs u (n-1) m
+prParams cs user n m = zipWith pr cs [m-n, m-n+1 ..]
+  where pr c k = (typename "" user (identCat c), 'p' : show k)
 
 -- | This algorithm peeks ahead in the list so we don't use @map@ or @fold@.
 
@@ -270,7 +269,7 @@ getVars :: [Cat] -> [UserDef] -> [IVar]
 getVars cs user = reverse $ singleToZero $ foldl addVar [] (map identCat cs)
   where
   addVar is c = (c', n, c):is
-    where c' = typename c user
+    where c' = typename "" user c
           n = maximum (1:[n'+1 | (_,n',c'') <- is, c'' == c])
   singleToZero is =
     [ (t,n',nm)
@@ -284,12 +283,20 @@ varName c = map toLower c ++ "_"
 
 -- | This makes up for the fact that there's no typedef in Java.
 
-typename :: String -> [UserDef] -> String
-typename t user
+typename
+  :: String     -- ^ Qualification (can be empty).
+  -> [UserDef]  -- ^ User-defined token names.
+  -> String     -- ^ Category name.
+  -> String
+typename q user t
   | t == "Ident"   = "String"
   | t == "Char"    = "Character"
+  | t == "Double"  = "Double"
+  | t == "Integer" = "Integer"
+  | t == "String"  = "String"
   | t `elem` user  = "String"
-  | otherwise      = t
+  | null q         = t
+  | otherwise      = q ++ "." ++ t
 
 -- | Print the Java type corresponding to a category.
 cat2JavaType :: [UserDef] -> Cat -> String
@@ -298,7 +305,7 @@ cat2JavaType user = loop
   loop = \case
     ListCat c -> "List" ++ loop c
     -- ListCat c -> "java.util.LinkedList<" ++ loop c ++ ">"
-    c -> typename (show $ normCat c) user
+    c -> typename "" user $ identCat $ normCat c
 
 -- | Print the Java type corresponding to a category.
 --   The top list is printed as @java.util.LinkedList<...>@.

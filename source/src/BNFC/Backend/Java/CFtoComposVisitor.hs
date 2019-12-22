@@ -48,7 +48,6 @@ cf2ComposVisitor packageBase packageAbsyn cf =
     is     = map (prInterface packageAbsyn) groups
     header = unlines
       [ "package" +++ packageBase ++ ";"
-      , "import" +++ packageAbsyn ++ ".*;"
       , "/** BNFC-Generated Composition Visitor"
       , "*/"
       , ""
@@ -74,11 +73,11 @@ prData packageAbsyn user (cat, rules) = unlines
 -- | Traverses a standard rule.
 --
 -- >>> prRule "lang.absyn" ["A"] (Cat "B") $ Rule "F" (Cat "B") [Left (Cat "A"), Right "+", Left (ListCat (Cat "B"))] Parsable
---     public B visit(lang.absyn.F p, A arg)
+--     public lang.absyn.B visit(lang.absyn.F p, A arg)
 --     {
 --       String a_ = p.a_;
---       ListB listb_ = new ListB();
---       for (B x : p.listb_)
+--       lang.absyn.ListB listb_ = new lang.absyn.ListB();
+--       for (lang.absyn.B x : p.listb_)
 --       {
 --         listb_.add(x.accept(this,arg));
 --       }
@@ -88,48 +87,55 @@ prData packageAbsyn user (cat, rules) = unlines
 prRule :: String -> [UserDef] -> Cat -> Rule -> Doc
 prRule packageAbsyn user cat (Rule fun _ cats _)
   | not (isCoercion fun || isDefinedRule fun) = nest 4 $ vcat
-    [ "public " <> text(identCat cat) <> " visit(" <> cls <> " p, A arg)"
+    [ "public " <> qual (identCat cat) <> " visit(" <> cls <> " p, A arg)"
     , codeblock 2
-        [ vcat (map (prCat user) cats')
-        , "return new" <+> cls <> parens (hsep (punctuate "," vnames)) <> ";" ] ]
+        [ vcat (map (prCat packageAbsyn user) cats')
+        , "return new" <+> cls <> parens (hsep (punctuate "," vnames)) <> ";"
+        ]
+    ]
   where
-    cats' = lefts $ numVars cats
-    cls = text (packageAbsyn ++ "." ++ fun)
+    cats'  = lefts $ numVars cats
+    cls    = qual fun
+    qual s = text (packageAbsyn ++ "." ++ s)
     vnames = map snd cats'
 prRule  _ _ _ _ = ""
 
 -- | Traverses a class's instance variables.
 --
--- >>> prCat ["A"] (Cat "A", "a_")
+-- >>> prCat "lang.absyn" ["A"] (Cat "A", "a_")
 -- String a_ = p.a_;
 --
--- >>> prCat [] (ListCat (Cat "Integer"), "listinteger_")
--- ListInteger listinteger_ = p.listinteger_;
+-- >>> prCat "lang.absyn" [] (ListCat (Cat "Integer"), "listinteger_")
+-- lang.absyn.ListInteger listinteger_ = p.listinteger_;
 --
--- >>> prCat [] (ListCat (Cat "N"), "listn_")
--- ListN listn_ = new ListN();
--- for (N x : p.listn_)
+-- >>> prCat "lang.absyn" [] (ListCat (Cat "N"), "listn_")
+-- lang.absyn.ListN listn_ = new lang.absyn.ListN();
+-- for (lang.absyn.N x : p.listn_)
 -- {
 --   listn_.add(x.accept(this,arg));
 -- }
 --
--- >>> prCat [] (Cat "N", "n_")
--- N n_ = p.n_.accept(this, arg);
+-- >>> prCat "lang.absyn" [] (Cat "N", "n_")
+-- lang.absyn.N n_ = p.n_.accept(this, arg);
 
-prCat :: [UserDef]  -- ^ User defined token categories
-      -> (Cat, Doc) -- ^ Variable category and names
-      -> Doc        -- ^ Code for visiting the variable
-prCat user (cat, nt)
+prCat :: String     -- ^ Name of package for abstract syntax.
+      -> [UserDef]  -- ^ User defined token categories.
+      -> (Cat, Doc) -- ^ Variable category and names.
+      -> Doc        -- ^ Code for visiting the variable.
+prCat packageAbsyn user (cat, nt)
   | isBasicType user varType || (isList cat && isBasicType user et) = decl var
-  | isList cat = decl ("new" <+> text varType <> "()")
-              $$ "for (" <> text et <> " x : " <> var <> ")"
-              $$ codeblock 2 [ nt <> ".add(x.accept(this,arg));" ]
+  | isList cat = vcat
+      [ decl ("new" <+> text varType <> "()")
+      , "for (" <> text et <> " x : " <> var <> ")"
+      , codeblock 2 [ nt <> ".add(x.accept(this,arg));" ]
+      ]
   | otherwise = decl (var <> ".accept(this, arg)")
   where
     var     = "p." <> nt
-    varType = typename (identCat (normCat cat)) user
-    et      = typename (identCat (normCatOfList cat)) user
+    varType = typename packageAbsyn user $ identCat $ normCat cat
+    et      = typename packageAbsyn user $ identCat $ normCatOfList cat
     decl v  = text varType <+> nt <+> "=" <+> v <> ";"
+    -- qual s  = text (packageAbsyn ++ "." ++ s)
 
 -- | Just checks if something is a basic or user-defined type.
 
