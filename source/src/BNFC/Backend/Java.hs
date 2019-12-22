@@ -227,6 +227,7 @@ makefile  dirBase dirAbsyn absynFileNames jlexpar basename = vcat $
       absynJavaClass    = unwords (dotClass absynFileNames)
       classes = prependPath dirBase lst
       lst = dotClass (results lexmake) ++ [ "PrettyPrinter.class", "Test.class"
+          , "VisitSkel.class"
           , "ComposVisitor.class", "AbstractVisitor.class"
           , "FoldVisitor.class", "AllVisitor.class"]++
            dotClass (results parmake) ++ ["Test.class"]
