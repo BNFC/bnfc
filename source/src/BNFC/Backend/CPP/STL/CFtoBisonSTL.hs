@@ -46,15 +46,19 @@
 -}
 
 
-module BNFC.Backend.CPP.STL.CFtoBisonSTL (cf2Bison, union) where
+module BNFC.Backend.CPP.STL.CFtoBisonSTL
+  ( cf2Bison
+  , tokens, union
+  ) where
 
 import Prelude'
 
-import Data.Char (toLower,isUpper)
-import Data.List (nub, intercalate)
-import Data.Maybe (fromMaybe)
+import Data.Char  ( isUpper )
+import Data.List  ( nub, intercalate )
+import Data.Maybe ( fromMaybe )
 
-import BNFC.Backend.C.CFtoBisonC (startSymbol)
+import BNFC.Backend.C.CFtoBisonC
+  ( resultName, specialToks, startSymbol, typeName, unionBuiltinTokens, varName )
 import BNFC.Backend.CPP.STL.STLUtils
 import BNFC.Backend.Common.NamedVariables hiding (varName)
 import BNFC.CF
@@ -250,10 +254,10 @@ parseMethod cf inPackage _ cat = unlines $ concat
 -- >>> union Nothing [foo, ListCat foo]
 -- %union
 -- {
---   int int_;
---   char char_;
---   double double_;
---   char* string_;
+--   int    _int;
+--   char   _char;
+--   double _double;
+--   char*  _string;
 --   Foo* foo_;
 --   ListFoo* listfoo_;
 -- }
@@ -267,21 +271,18 @@ parseMethod cf inPackage _ cat = unlines $ concat
 -- >>> union Nothing [foo, ListCat foo, foo2, ListCat foo2]
 -- %union
 -- {
---   int int_;
---   char char_;
---   double double_;
---   char* string_;
+--   int    _int;
+--   char   _char;
+--   double _double;
+--   char*  _string;
 --   Foo* foo_;
 --   ListFoo* listfoo_;
 -- }
 union :: Maybe String -> [Cat] -> Doc
-union inPackage cats =
-    "%union" $$ codeblock 2 (
-        [ "int int_;"
-        , "char char_;"
-        , "double double_;"
-        , "char* string_;" ]
-        ++ map mkPointer normCats )
+union inPackage cats = vcat
+    [ "%union"
+    , codeblock 2 $ map text unionBuiltinTokens ++ map mkPointer normCats
+    ]
   where
     normCats = nub (map normCat cats)
     mkPointer s = scope <> text (identCat s) <> "*" <+> text (varName s) <> ";"
@@ -298,18 +299,7 @@ declarations cf = concatMap typeNT $
 --declares terminal types.
 tokens :: [UserDef] -> SymEnv -> String
 tokens user = concatMap $ \ (s, r) ->
-  concat [ "%token", when (s `elem` user) "<string_>", " ", r, "    //   ", s, "\n" ]
-
-specialToks :: CF -> String
-specialToks cf = concat [
-  ifC catString "%token<string_> _STRING_\n",
-  ifC catChar "%token<char_> _CHAR_\n",
-  ifC catInteger "%token<int_> _INTEGER_\n",
-  ifC catDouble "%token<double_> _DOUBLE_\n",
-  ifC catIdent "%token<string_> _IDENT_\n"
-  ]
-   where
-    ifC cat s = if isUsedCat cf (TokenCat cat) then s else ""
+  concat [ "%token", when (s `elem` user) "<_string>", " ", r, "    //   ", s, "\n" ]
 
 --The following functions are a (relatively) straightforward translation
 --of the ones in CFtoHappy.hs
@@ -401,19 +391,3 @@ prRules ((nt, (p, a) : ls):rs) =
   nt' = identCat nt
   pr []           = []
   pr ((p,a):ls)   = unlines [unwords ["  |", p, "{ ", a , "}"]] ++ pr ls
-
---Some helper functions.
-resultName :: String -> String
-resultName s = "YY_RESULT_" ++ s ++ "_"
-
---slightly stronger than the NamedVariable version.
-varName :: Cat -> String
-varName = (++ "_") . map toLower . identCat . normCat
-
-typeName :: String -> String
-typeName "Ident" = "_IDENT_"
-typeName "String" = "_STRING_"
-typeName "Char" = "_CHAR_"
-typeName "Integer" = "_INTEGER_"
-typeName "Double" = "_DOUBLE_"
-typeName x = x

@@ -26,6 +26,7 @@ import BNFC.Utils
 import BNFC.CF
 import BNFC.Options
 import BNFC.Backend.Base
+import BNFC.Backend.C.CFtoBisonC (unionBuiltinTokens)
 import BNFC.Backend.CPP.Makefile
 import BNFC.Backend.CPP.NoSTL.CFtoCPPAbs
 import BNFC.Backend.CPP.NoSTL.CFtoFlex
@@ -132,31 +133,33 @@ cpptest cf =
    dat = identCat $ normCat cat
    def = identCat cat
 
-mkHeaderFile cf cats eps env = unlines
- [
-  "#ifndef PARSER_HEADER_FILE",
-  "#define PARSER_HEADER_FILE",
-  "",
-  concatMap mkForwardDec (nub $ map normCat cats),
-  "typedef union",
-  "{",
-  "  int int_;",
-  "  char char_;",
-  "  double double_;",
-  "  char* string_;",
-  concatMap mkVar cats ++ "} YYSTYPE;",
-  "",
-  "#define _ERROR_ 258",
-  mkDefines (259 :: Int) env,
-  "extern YYSTYPE yylval;",
-  concatMap mkFunc eps,
-  "",
-  "#endif"
- ]
- where
-  mkForwardDec s = "class " ++ identCat s ++ ";\n"
-  mkVar s | normCat s == s = "  " ++ identCat s ++"*" +++ map toLower (identCat s) ++ "_;\n"
-  mkVar _ = ""
+mkHeaderFile cf cats eps env = unlines $ concat
+  [ [ "#ifndef PARSER_HEADER_FILE"
+    , "#define PARSER_HEADER_FILE"
+    , ""
+    ]
+  , map mkForwardDec $ nub $ map normCat cats
+  , [ "typedef union"
+    , "{"
+    ]
+  , map ("  " ++) unionBuiltinTokens
+  , concatMap mkVar cats
+  , [ "} YYSTYPE;"
+    , ""
+    , "#define _ERROR_ 258"
+    , mkDefines (259 :: Int) env
+    , "extern YYSTYPE yylval;"
+    , ""
+    ]
+  , map mkFunc eps
+  , [ ""
+    , "#endif"
+    ]
+  ]
+  where
+  mkForwardDec s = "class " ++ identCat s ++ ";"
+  mkVar s | normCat s == s = [ "  " ++ identCat s ++"*" +++ map toLower (identCat s) ++ "_;" ]
+  mkVar _ = []
   mkDefines n [] = mkString n
   mkDefines n ((_,s):ss) = "#define " ++ s +++ show n ++ "\n" ++ mkDefines (n+1) ss
   mkString n =  if isUsedCat cf (TokenCat catString)
@@ -174,4 +177,4 @@ mkHeaderFile cf cats eps env = unlines
   mkIdent n =  if isUsedCat cf (TokenCat catIdent)
    then "#define _IDENT_ " ++ show n ++ "\n"
    else ""
-  mkFunc s = identCat (normCat s) ++ "*" +++ "p" ++ identCat s ++ "(FILE *inp);\n"
+  mkFunc s = identCat (normCat s) ++ "*" +++ "p" ++ identCat s ++ "(FILE *inp);"

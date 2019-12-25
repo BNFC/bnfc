@@ -60,17 +60,18 @@
 
 module BNFC.Backend.CPP.NoSTL.CFtoBison (cf2Bison) where
 
-import Data.Char (toLower, isUpper)
-import Data.List (intersperse, nub)
-import Data.Maybe (fromMaybe)
+import Data.Char  ( toLower, isUpper )
+import Data.List  ( intersperse, nub )
+import Data.Maybe ( fromMaybe )
 
 import BNFC.CF
 import BNFC.Backend.Common.NamedVariables hiding (varName)
-import BNFC.Backend.C.CFtoBisonC (startSymbol)
-import BNFC.Backend.CPP.STL.CFtoBisonSTL (union)
+import BNFC.Backend.C.CFtoBisonC
+  ( resultName, specialToks, startSymbol, typeName, varName )
+import BNFC.Backend.CPP.STL.CFtoBisonSTL ( tokens, union )
 import BNFC.PrettyPrint
 import BNFC.TypeChecker
-import BNFC.Utils ((+++), when)
+import BNFC.Utils ( (+++) )
 
 --This follows the basic structure of CFtoHappy.
 
@@ -246,22 +247,6 @@ declarations cf = concatMap (typeNT cf) (allParserCats cf)
    typeNT cf nt | rulesForCat cf nt /= [] = "%type <" ++ varName nt ++ "> " ++ identCat nt ++ "\n"
    typeNT _ _ = ""
 
---declares terminal types.
-tokens :: [UserDef] -> SymEnv -> String
-tokens user = concatMap $ \ (s, r) ->
-  concat [ "%token", when (s `elem` user) "<string_>", " ", r, "    //   ", s, "\n" ]
-
-specialToks :: CF -> String
-specialToks cf = concat [
-  ifC catString "%token<string_> _STRING_\n",
-  ifC catChar "%token<char_> _CHAR_\n",
-  ifC catInteger "%token<int_> _INTEGER_\n",
-  ifC catDouble "%token<double_> _DOUBLE_\n",
-  ifC catIdent "%token<string_> _IDENT_\n"
-  ]
-   where
-    ifC cat s = if isUsedCat cf (TokenCat cat) then s else ""
-
 --The following functions are a (relatively) straightforward translation
 --of the ones in CFtoHappy.hs
 rulesForBison :: String -> CF -> SymEnv -> Rules
@@ -328,19 +313,3 @@ prRules ((nt,((p,a):ls)):rs) =
   nt' = identCat nt
   pr []           = []
   pr ((p,a):ls)   = (unlines [(concat $ intersperse " " ["  |", p, "{ $$ =", a , "}"])]) ++ pr ls
-
---Some helper functions.
-resultName :: String -> String
-resultName s = "YY_RESULT_" ++ s ++ "_"
-
---slightly stronger than the NamedVariable version.
-varName :: Cat -> String
-varName = (++ "_") . map toLower . identCat . normCat
-
-typeName :: String -> String
-typeName "Ident" = "_IDENT_"
-typeName "String" = "_STRING_"
-typeName "Char" = "_CHAR_"
-typeName "Integer" = "_INTEGER_"
-typeName "Double" = "_DOUBLE_"
-typeName x = x

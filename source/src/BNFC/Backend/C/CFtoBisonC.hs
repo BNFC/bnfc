@@ -40,7 +40,14 @@
 
 {-# LANGUAGE PatternGuards #-}
 
-module BNFC.Backend.C.CFtoBisonC (cf2Bison, startSymbol, unionBuiltinTokens, mkPointer) where
+module BNFC.Backend.C.CFtoBisonC
+  ( cf2Bison
+  , mkPointer
+  , resultName, typeName, varName
+  , specialToks, startSymbol
+  , unionBuiltinTokens
+  )
+  where
 
 import Data.Char (toLower)
 import Data.List (intercalate, nub)
@@ -202,7 +209,7 @@ union cats = unlines $ concat
   [ [ "%union"
     , "{"
     ]
-  , unionBuiltinTokens
+  , map ("  " ++) unionBuiltinTokens
   , concatMap mkPointer cats
   , [ "}"
     ]
@@ -217,10 +224,10 @@ mkPointer c
 
 unionBuiltinTokens :: [String]
 unionBuiltinTokens =
-  [ "  int    _int;"
-  , "  char   _char;"
-  , "  double _double;"
-  , "  char*  _string;"
+  [ "int    _int;"
+  , "char   _char;"
+  , "double _double;"
+  , "char*  _string;"
   ]
 
 --declares non-terminal types.

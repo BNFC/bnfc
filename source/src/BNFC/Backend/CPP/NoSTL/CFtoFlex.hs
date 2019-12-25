@@ -97,58 +97,56 @@ lexSymbols ss = concatMap transSym ss
          s' = escapeChars s
 
 restOfFlex :: Maybe String -> CF -> SymEnv -> String
-restOfFlex inPackage cf env = concat
-  [
-   render $ lexComments inPackage (comments cf),
-   "\n\n",
-   userDefTokens,
-   ifC catString strStates,
-   ifC catChar chStates,
-   ifC catDouble ("<YYINITIAL>{DIGIT}+\".\"{DIGIT}+(\"e\"(\\-)?{DIGIT}+)?      \t " ++ ns ++ "yylval.double_ = atof(yytext); return " ++ nsDefine inPackage "_DOUBLE_" ++ ";\n"),
-   ifC catInteger ("<YYINITIAL>{DIGIT}+      \t " ++ ns ++ "yylval.int_ = atoi(yytext); return " ++ nsDefine inPackage "_INTEGER_" ++ ";\n"),
-   ifC catIdent ("<YYINITIAL>{LETTER}{IDENT}*      \t " ++ ns ++ "yylval.string_ = strdup(yytext); return " ++ nsDefine inPackage "_IDENT_" ++ ";\n"),
-   "\\n  ++" ++ ns ++ "yy_mylinenumber ;\n",
-   "<YYINITIAL>[ \\t\\r\\n\\f]      \t /* ignore white space. */;\n",
-   "<YYINITIAL>.      \t return " ++ nsDefine inPackage "_ERROR_" ++ ";\n",
-   "%%\n",
-   footer
+restOfFlex inPackage cf env = unlines $ concat
+  [ [ render $ lexComments inPackage (comments cf)
+    , ""
+    ]
+  , userDefTokens
+  , ifC catString  strStates
+  , ifC catChar    chStates
+  , ifC catDouble  [ "<YYINITIAL>{DIGIT}+\".\"{DIGIT}+(\"e\"(\\-)?{DIGIT}+)?      \t " ++ ns ++ "yylval._double = atof(yytext); return " ++ nsDefine inPackage "_DOUBLE_" ++ ";" ]
+  , ifC catInteger [ "<YYINITIAL>{DIGIT}+      \t " ++ ns ++ "yylval._int = atoi(yytext); return " ++ nsDefine inPackage "_INTEGER_" ++ ";" ]
+  , ifC catIdent   [ "<YYINITIAL>{LETTER}{IDENT}*      \t " ++ ns ++ "yylval._string = strdup(yytext); return " ++ nsDefine inPackage "_IDENT_" ++ ";" ]
+  , [ "\\n  ++" ++ ns ++ "yy_mylinenumber ;"
+    , "<YYINITIAL>[ \\t\\r\\n\\f]      \t /* ignore white space. */;"
+    , "<YYINITIAL>.      \t return " ++ nsDefine inPackage "_ERROR_" ++ ";"
+    , "%%"
+    ]
+  , footer
   ]
   where
-   ifC cat s = if isUsedCat cf (TokenCat cat) then s else ""
+   ifC cat s = if isUsedCat cf (TokenCat cat) then s else []
    ns = nsString inPackage
-   userDefTokens = unlines $
-     ["<YYINITIAL>" ++ printRegFlex exp ++
-      "     \t " ++ ns ++ "yylval.string_ = strdup(yytext); return " ++ sName name ++ ";"
-       | (name, exp) <- tokenPragmas cf]
-      where
-          sName n = fromMaybe n $ lookup n env
-   strStates = unlines --These handle escaped characters in Strings.
-    [
-     "<YYINITIAL>\"\\\"\"      \t BEGIN STRING;",
-     "<STRING>\\\\      \t BEGIN ESCAPED;",
-     "<STRING>\\\"      \t " ++ ns ++ "yylval.string_ = strdup(YY_PARSED_STRING); YY_BUFFER_RESET(); BEGIN YYINITIAL; return " ++ nsDefine inPackage "_STRING_" ++ ";",
-     "<STRING>.      \t YY_BUFFER_APPEND(yytext);",
-     "<ESCAPED>n      \t YY_BUFFER_APPEND(\"\\n\"); BEGIN STRING;",
-     "<ESCAPED>\\\"      \t YY_BUFFER_APPEND(\"\\\"\"); BEGIN STRING ;",
-     "<ESCAPED>\\\\      \t YY_BUFFER_APPEND(\"\\\\\"); BEGIN STRING;",
-     "<ESCAPED>t       \t YY_BUFFER_APPEND(\"\\t\"); BEGIN STRING;",
-     "<ESCAPED>.       \t YY_BUFFER_APPEND(yytext); BEGIN STRING;"
-    ]
-   chStates = unlines --These handle escaped characters in Chars.
-    [
-     "<YYINITIAL>\"'\" \tBEGIN CHAR;",
-     "<CHAR>\\\\      \t BEGIN CHARESC;",
-     "<CHAR>[^']      \t BEGIN CHAREND; " ++ ns ++ "yylval.char_ = yytext[0]; return " ++ nsDefine inPackage "_CHAR_" ++ ";",
-     "<CHARESC>n      \t BEGIN CHAREND; " ++ ns ++ "yylval.char_ = '\\n'; return " ++ nsDefine inPackage "_CHAR_" ++ ";",
-     "<CHARESC>t      \t BEGIN CHAREND; " ++ ns ++ "yylval.char_ = '\\t'; return " ++ nsDefine inPackage "_CHAR_" ++ ";",
-     "<CHARESC>.      \t BEGIN CHAREND; " ++ ns ++ "yylval.char_ = yytext[0]; return " ++ nsDefine inPackage "_CHAR_" ++ ";",
-     "<CHAREND>\"'\"      \t BEGIN YYINITIAL;"
-    ]
-   footer = unlines
-    [
-     "void " ++ ns ++ "initialize_lexer(FILE *inp) { yyrestart(inp); BEGIN YYINITIAL; }",
-     "int yywrap(void) { return 1; }"
-    ]
+   userDefTokens =
+     [ "<YYINITIAL>" ++ printRegFlex exp ++
+         "     \t " ++ ns ++ "yylval._string = strdup(yytext); return " ++ sName name ++ ";"
+     | (name, exp) <- tokenPragmas cf
+     ]
+     where sName n = fromMaybe n $ lookup n env
+   strStates =  --These handle escaped characters in Strings.
+     [ "<YYINITIAL>\"\\\"\"      \t BEGIN STRING;"
+     , "<STRING>\\\\      \t BEGIN ESCAPED;"
+     , "<STRING>\\\"      \t " ++ ns ++ "yylval._string = strdup(YY_PARSED_STRING); YY_BUFFER_RESET(); BEGIN YYINITIAL; return " ++ nsDefine inPackage "_STRING_" ++ ";"
+     , "<STRING>.      \t YY_BUFFER_APPEND(yytext);"
+     , "<ESCAPED>n      \t YY_BUFFER_APPEND(\"\\n\"); BEGIN STRING;"
+     , "<ESCAPED>\\\"      \t YY_BUFFER_APPEND(\"\\\"\"); BEGIN STRING ;"
+     , "<ESCAPED>\\\\      \t YY_BUFFER_APPEND(\"\\\\\"); BEGIN STRING;"
+     , "<ESCAPED>t       \t YY_BUFFER_APPEND(\"\\t\"); BEGIN STRING;"
+     , "<ESCAPED>.       \t YY_BUFFER_APPEND(yytext); BEGIN STRING;"
+     ]
+   chStates = --These handle escaped characters in Chars.
+     [ "<YYINITIAL>\"'\" \tBEGIN CHAR;"
+     , "<CHAR>\\\\      \t BEGIN CHARESC;"
+     , "<CHAR>[^']      \t BEGIN CHAREND; " ++ ns ++ "yylval._char = yytext[0]; return " ++ nsDefine inPackage "_CHAR_" ++ ";"
+     , "<CHARESC>n      \t BEGIN CHAREND; " ++ ns ++ "yylval._char = '\\n'; return " ++ nsDefine inPackage "_CHAR_" ++ ";"
+     , "<CHARESC>t      \t BEGIN CHAREND; " ++ ns ++ "yylval._char = '\\t'; return " ++ nsDefine inPackage "_CHAR_" ++ ";"
+     , "<CHARESC>.      \t BEGIN CHAREND; " ++ ns ++ "yylval._char = yytext[0]; return " ++ nsDefine inPackage "_CHAR_" ++ ";"
+     , "<CHAREND>\"'\"      \t BEGIN YYINITIAL;"
+     ]
+   footer =
+     [ "void " ++ ns ++ "initialize_lexer(FILE *inp) { yyrestart(inp); BEGIN YYINITIAL; }"
+     , "int yywrap(void) { return 1; }"
+     ]
 
 
 -- ---------------------------------------------------------------------------

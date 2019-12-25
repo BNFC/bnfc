@@ -206,7 +206,7 @@ mkHeaderFile _ cf env = unlines $ concat
     , "typedef union"
     , "{"
     ]
-  , unionBuiltinTokens
+  , map ("  " ++) unionBuiltinTokens
   , concatMap mkPointer $ allParserCatsNorm cf
   , [ "} YYSTYPE;"
     , ""

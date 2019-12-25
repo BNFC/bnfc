@@ -28,6 +28,7 @@ import BNFC.Utils
 import BNFC.CF
 import BNFC.Options
 import BNFC.Backend.Base
+import BNFC.Backend.C.CFtoBisonC (unionBuiltinTokens)
 import BNFC.Backend.CPP.Makefile
 import BNFC.Backend.CPP.STL.CFtoSTLAbs
 import BNFC.Backend.CPP.NoSTL.CFtoFlex
@@ -136,38 +137,39 @@ cpptest inPackage cf =
    def = identCat cat
    scope = nsScope inPackage
 
-mkHeaderFile inPackage cf cats eps env = unlines
- [
-  "#ifndef " ++ hdef,
-  "#define " ++ hdef,
-  "",
-  "#include<vector>",
-  "#include<string>",
-  "",
-  nsStart inPackage,
-  concatMap mkForwardDec $ nub $ map normCat cats,
-  "typedef union",
-  "{",
-  "  int int_;",
-  "  char char_;",
-  "  double double_;",
-  "  char* string_;",
-  concatMap mkVar cats ++ "} YYSTYPE;",
-  "",
-  concatMap mkFuncs eps,
-  nsEnd inPackage,
-  "",
-  "#define " ++ nsDefine inPackage "_ERROR_" ++ " 258",
-  mkDefines (259 :: Int) env,
-  "extern " ++ nsScope inPackage ++ "YYSTYPE " ++ nsString inPackage ++ "yylval;",
-  "",
-  "#endif"
- ]
- where
+mkHeaderFile inPackage cf cats eps env = unlines $ concat
+  [ [ "#ifndef " ++ hdef
+    , "#define " ++ hdef
+    , ""
+    , "#include<vector>"
+    , "#include<string>"
+    , ""
+    , nsStart inPackage
+    ]
+  , map mkForwardDec $ nub $ map normCat cats
+  , [ "typedef union"
+    , "{"
+    ]
+  , map ("  " ++) unionBuiltinTokens
+  , concatMap mkVar cats
+  , [ "} YYSTYPE;"
+    , ""
+    ]
+  , concatMap mkFuncs eps
+  , [ nsEnd inPackage
+    , ""
+    , "#define " ++ nsDefine inPackage "_ERROR_" ++ " 258"
+    , mkDefines (259 :: Int) env
+    , "extern " ++ nsScope inPackage ++ "YYSTYPE " ++ nsString inPackage ++ "yylval;"
+    , ""
+    , "#endif"
+    ]
+  ]
+  where
   hdef = nsDefine inPackage "PARSER_HEADER_FILE"
-  mkForwardDec s = "class " ++ identCat s ++ ";\n"
-  mkVar s | normCat s == s = "  " ++ identCat s ++"*" +++ map toLower (identCat s) ++ "_;\n"
-  mkVar _ = ""
+  mkForwardDec s = "class " ++ identCat s ++ ";"
+  mkVar s | normCat s == s = [ "  " ++ identCat s ++"*" +++ map toLower (identCat s) ++ "_;" ]
+  mkVar _ = []
   mkDefines n [] = mkString n
   mkDefines n ((_,s):ss) = "#define " ++ s +++ show n ++ "\n" ++ mkDefines (n+1) ss -- "nsDefine inPackage s" not needed (see cf2flex::makeSymEnv)
   mkString n =  if isUsedCat cf (TokenCat catString)
@@ -185,5 +187,7 @@ mkHeaderFile inPackage cf cats eps env = unlines
   mkIdent n =  if isUsedCat cf (TokenCat catIdent)
    then "#define " ++ nsDefine inPackage "_IDENT_ " ++ show n ++ "\n"
    else ""
-  mkFuncs s = identCat (normCat s) ++ "*" +++ "p" ++ identCat s ++ "(FILE *inp);\n" ++
-              identCat (normCat s) ++ "*" +++ "p" ++ identCat s ++ "(const char *str);\n"
+  mkFuncs s =
+    [ identCat (normCat s) ++ "*" +++ "p" ++ identCat s ++ "(FILE *inp);"
+    , identCat (normCat s) ++ "*" +++ "p" ++ identCat s ++ "(const char *str);"
+    ]
