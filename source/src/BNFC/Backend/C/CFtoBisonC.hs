@@ -38,8 +38,9 @@
    **************************************************************
 -}
 
+{-# LANGUAGE PatternGuards #-}
 
-module BNFC.Backend.C.CFtoBisonC (cf2Bison, startSymbol) where
+module BNFC.Backend.C.CFtoBisonC (cf2Bison, startSymbol, unionBuiltinTokens, mkPointer) where
 
 import Data.Char (toLower)
 import Data.List (intercalate, nub)
@@ -63,7 +64,7 @@ cf2Bison :: RecordPositions -> String -> CF -> SymEnv -> String
 cf2Bison rp name cf env
  = unlines
     [header name cf,
-     union (allCatsNorm cf),
+     union (allParserCatsNorm cf),
      "%token _ERROR_",
      tokens user env,
      declarations cf,
@@ -97,7 +98,7 @@ header name cf = unlines
       -- this must be deferred until yylloc is defined
     , "extern void yyerror(const char *str);"
     , ""
-    , concatMap reverseList $ filter isList $ allCatsNorm cf
+    , concatMap reverseList $ filter isList $ allParserCatsNorm cf
     , unlines $ map parseResult $ nub $ map normCat eps
     , unlines $ map (parseMethod cf name) eps
     , "%}"
@@ -197,23 +198,30 @@ reverseList c = unlines
 --The union declaration is special to Bison/Yacc and gives the type of yylval.
 --For efficiency, we may want to only include used categories here.
 union :: [Cat] -> String
-union cats = unlines
- [
-  "%union",
-  "{",
-  "  int int_;",
-  "  char char_;",
-  "  double double_;",
-  "  char* string_;",
-  concatMap mkPointer cats,
-  "}"
- ]
- where --This is a little weird because people can make [Exp2] etc.
- mkPointer s | identCat s /= show s = --list. add it even if it refers to a coercion.
-   "  " ++ identCat (normCat s) +++ varName (normCat s) ++ ";\n"
- mkPointer s | normCat s == s = --normal cat
-   "  " ++ identCat (normCat s) +++ varName (normCat s) ++ ";\n"
- mkPointer _ = ""
+union cats = unlines $ concat
+  [ [ "%union"
+    , "{"
+    ]
+  , unionBuiltinTokens
+  , concatMap mkPointer cats
+  , [ "}"
+    ]
+  ]
+--This is a little weird because people can make [Exp2] etc.
+mkPointer :: Cat -> [String]
+mkPointer c
+  | identCat c /= show c  --list. add it even if it refers to a coercion.
+    || normCat c == c     --normal cat
+    = [ "  " ++ identCat (normCat c) +++ varName (normCat c) ++ ";" ]
+  | otherwise = []
+
+unionBuiltinTokens :: [String]
+unionBuiltinTokens =
+  [ "  int    _int;"
+  , "  char   _char;"
+  , "  double _double;"
+  , "  char*  _string;"
+  ]
 
 --declares non-terminal types.
 declarations :: CF -> String
@@ -230,7 +238,7 @@ tokens :: [UserDef] -> SymEnv -> String
 tokens user = concatMap (declTok user)
  where
   declTok u (s,r) = if s `elem` u
-    then "%token<string_> " ++ r ++ "    /*   " ++ cStringEscape s ++ "   */\n"
+    then "%token<_string> " ++ r ++ "    /*   " ++ cStringEscape s ++ "   */\n"
     else "%token " ++ r ++ "    /*   " ++ cStringEscape s ++ "   */\n"
 
 -- | Escape characters inside a C string.
@@ -242,15 +250,15 @@ cStringEscape = concatMap escChar
       | otherwise = [c]
 
 specialToks :: CF -> String
-specialToks cf = concat [
-  ifC catString "%token<string_> _STRING_\n",
-  ifC catChar "%token<char_> _CHAR_\n",
-  ifC catInteger "%token<int_> _INTEGER_\n",
-  ifC catDouble "%token<double_> _DOUBLE_\n",
-  ifC catIdent "%token<string_> _IDENT_\n"
+specialToks cf = unlines $ concat
+  [ ifC catString  "%token<_string> _STRING_"
+  , ifC catChar    "%token<_char>   _CHAR_"
+  , ifC catInteger "%token<_int>    _INTEGER_"
+  , ifC catDouble  "%token<_double> _DOUBLE_"
+  , ifC catIdent   "%token<_string> _IDENT_"
   ]
-   where
-    ifC cat s = if isUsedCat cf (TokenCat cat) then s else ""
+  where
+    ifC cat s = if isUsedCat cf (TokenCat cat) then [s] else []
 
 startSymbol :: CF -> String
 startSymbol cf = "%start" +++ identCat (firstEntry cf)
@@ -337,7 +345,9 @@ resultName s = "YY_RESULT_" ++ s ++ "_"
 -- >>> varName (Cat "Abc")
 -- "abc_"
 varName :: Cat -> String
-varName = (++ "_") . map toLower . identCat . normCat
+varName = \case
+  TokenCat s -> "_" ++ map toLower s
+  c          -> (++ "_") . map toLower . identCat . normCat $ c
 
 typeName :: String -> String
 typeName "Ident" = "_IDENT_"

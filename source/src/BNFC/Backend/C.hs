@@ -32,7 +32,7 @@ import BNFC.Backend.C.CFtoBisonC
 import BNFC.Backend.C.CFtoCSkel
 import BNFC.Backend.C.CFtoCPrinter
 import BNFC.PrettyPrint
-import Data.Char
+
 import qualified BNFC.Backend.Common.Makefile as Makefile
 
 makeC :: SharedOptions -> CF -> MkFiles ()
@@ -44,7 +44,7 @@ makeC opts cf = do
     mkfile (name ++ ".l") flex
     let bison = cf2Bison (linenumbers opts) prefix cf env
     mkfile (name ++ ".y") bison
-    let header = mkHeaderFile (linenumbers opts) cf (allParserCats cf) (allEntryPoints cf) env
+    let header = mkHeaderFile (linenumbers opts) cf env
     mkfile "Parser.h" header
     let (skelH, skelC) = cf2CSkel cf
     mkfile "Skeleton.h" skelH
@@ -196,41 +196,42 @@ ctest cf =
   dat :: String
   dat = identCat . normCat $ cat
 
-mkHeaderFile :: RecordPositions -> CF -> [Cat] -> [Cat] -> [(a, String)] -> String
-mkHeaderFile _ cf cats eps env = unlines
- [
-  "#ifndef PARSER_HEADER_FILE",
-  "#define PARSER_HEADER_FILE",
-  "",
-  "#include \"Absyn.h\"",
-  "",
-  "typedef union",
-  "{",
-  "  int int_;",
-  "  char char_;",
-  "  double double_;",
-  "  char* string_;",
-  concatMap mkVar cats ++ "} YYSTYPE;",
-  "",
-  -- https://www.gnu.org/software/bison/manual/html_node/Location-Type.html#Location-Type
-  "typedef struct YYLTYPE",
-  "{",
-  "  int first_line;",
-  "  int first_column;",
-  "  int last_line;",
-  "  int last_column;",
-  "} YYLTYPE;",
-  "#define _ERROR_ 258",
-  mkDefines (259::Int) env,
-  "extern YYLTYPE yylloc;",
-  "extern YYSTYPE yylval;",
-  concatMap mkFunc eps,
-  "",
-  "#endif"
- ]
- where
-  mkVar s | (normCat s == s) = "  " ++ (identCat s) +++ (map toLower (identCat s)) ++ "_;\n"
-  mkVar _ = ""
+mkHeaderFile :: RecordPositions -> CF -> [(a, String)] -> String
+mkHeaderFile _ cf env = unlines $ concat
+  [ [ "#ifndef PARSER_HEADER_FILE"
+    , "#define PARSER_HEADER_FILE"
+    , ""
+    , "#include \"Absyn.h\""
+    , ""
+    , "typedef union"
+    , "{"
+    ]
+  , unionBuiltinTokens
+  , concatMap mkPointer $ allParserCatsNorm cf
+  , [ "} YYSTYPE;"
+    , ""
+      -- https://www.gnu.org/software/bison/manual/html_node/Location-Type.html#Location-Type
+    , "typedef struct YYLTYPE"
+    , "{"
+    , "  int first_line;"
+    , "  int first_column;"
+    , "  int last_line;"
+    , "  int last_column;"
+    , "} YYLTYPE;"
+    , ""
+    , "#define _ERROR_ 258"
+    , mkDefines (259::Int) env
+    , ""
+    , "extern YYLTYPE yylloc;"
+    , "extern YYSTYPE yylval;"
+    , ""
+    ]
+  , concatMap mkFunc $ allEntryPoints cf
+  , [ ""
+    , "#endif"
+    ]
+  ]
+  where
   mkDefines n [] = mkString n
   mkDefines n ((_,s):ss) = ("#define " ++ s +++ (show n) ++ "\n") ++ (mkDefines (n+1) ss)
   mkString n =  if isUsedCat cf (TokenCat catString)
@@ -249,7 +250,7 @@ mkHeaderFile _ cf cats eps env = unlines
    then ("#define _IDENT_ " ++ show n ++ "\n")
    else ""
   -- Andreas, 2019-04-29, issue #210: generate parsers also for coercions
-  mkFunc c = concat
-    [ identCat (normCat c) ++ "  p" ++ identCat c ++ "(FILE *inp);\n"
-    , identCat (normCat c) ++ " ps" ++ identCat c ++ "(const char *str);\n"
+  mkFunc c =
+    [ identCat (normCat c) ++ "  p" ++ identCat c ++ "(FILE *inp);"
+    , identCat (normCat c) ++ " ps" ++ identCat c ++ "(const char *str);"
     ]

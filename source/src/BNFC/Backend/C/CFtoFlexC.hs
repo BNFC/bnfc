@@ -137,60 +137,59 @@ lexSymbols ss = concatMap transSym ss
          s' = escapeChars s
 
 restOfFlex :: CF -> SymEnv -> String
-restOfFlex cf env = concat
-  [
-   render $ lexComments Nothing (comments cf),
-   "\n\n",
-   userDefTokens,
-   ifC catString  strStates,
-   ifC catChar    chStates,
-   ifC catDouble  "<YYINITIAL>{DIGIT}+\".\"{DIGIT}+(\"e\"(\\-)?{DIGIT}+)?      \t yylval.double_ = atof(yytext); return _DOUBLE_;\n",
-   ifC catInteger "<YYINITIAL>{DIGIT}+      \t yylval.int_ = atoi(yytext); return _INTEGER_;\n",
-   ifC catIdent   "<YYINITIAL>{LETTER}{IDENT}*      \t yylval.string_ = strdup(yytext); return _IDENT_;\n",
-   "<YYINITIAL>[ \\t\\r\\n\\f]      \t /* ignore white space. */;\n",
-   "<YYINITIAL>.      \t return _ERROR_;\n",
-   "%%\n",
-   footer
+restOfFlex cf env = unlines $ concat
+  [ [ render $ lexComments Nothing (comments cf)
+    , ""
+    ]
+  , userDefTokens
+  , ifC catString  strStates
+  , ifC catChar    chStates
+  , ifC catDouble  [ "<YYINITIAL>{DIGIT}+\".\"{DIGIT}+(\"e\"(\\-)?{DIGIT}+)?      \t yylval._double = atof(yytext); return _DOUBLE_;" ]
+  , ifC catInteger [ "<YYINITIAL>{DIGIT}+      \t yylval._int = atoi(yytext); return _INTEGER_;" ]
+  , ifC catIdent   [ "<YYINITIAL>{LETTER}{IDENT}*      \t yylval._string = strdup(yytext); return _IDENT_;" ]
+  , [ "<YYINITIAL>[ \\t\\r\\n\\f]      \t /* ignore white space. */;"
+    , "<YYINITIAL>.      \t return _ERROR_;"
+    , "%%"
+    ]
+  , footer
   ]
   where
-   ifC cat s = if isUsedCat cf (TokenCat cat) then s else ""
-   userDefTokens = unlines $
-     ["<YYINITIAL>" ++ printRegFlex exp ++
-      "     \t yylval.string_ = strdup(yytext); return " ++ sName name ++ ";"
-       | (name, exp) <- tokenPragmas cf]
-      where
-        sName n = fromMaybe n $ lookup n env
-   strStates = unlines --These handle escaped characters in Strings.
-    [
-     "<YYINITIAL>\"\\\"\"      \t BEGIN STRING;",
-     "<STRING>\\\\      \t BEGIN ESCAPED;",
-     "<STRING>\\\"      \t yylval.string_ = strdup(YY_PARSED_STRING); YY_BUFFER_RESET(); BEGIN YYINITIAL; return _STRING_;",
-     "<STRING>.      \t YY_BUFFER_APPEND(yytext);",
-     "<ESCAPED>n      \t YY_BUFFER_APPEND(\"\\n\"); BEGIN STRING;",
-     "<ESCAPED>\\\"      \t YY_BUFFER_APPEND(\"\\\"\"); BEGIN STRING ;",
-     "<ESCAPED>\\\\      \t YY_BUFFER_APPEND(\"\\\\\"); BEGIN STRING;",
-     "<ESCAPED>t       \t YY_BUFFER_APPEND(\"\\t\"); BEGIN STRING;",
-     "<ESCAPED>.       \t YY_BUFFER_APPEND(yytext); BEGIN STRING;"
+  ifC cat s = if isUsedCat cf (TokenCat cat) then s else []
+  userDefTokens =
+    [ "<YYINITIAL>" ++ printRegFlex exp ++
+       "    \t yylval._string = strdup(yytext); return " ++ sName name ++ ";"
+    | (name, exp) <- tokenPragmas cf
     ]
-   chStates = unlines --These handle escaped characters in Chars.
-    [
-     "<YYINITIAL>\"'\" \tBEGIN CHAR;",
-     "<CHAR>\\\\      \t BEGIN CHARESC;",
-     "<CHAR>[^']      \t BEGIN CHAREND; yylval.char_ = yytext[0]; return _CHAR_;",
-     "<CHARESC>n      \t BEGIN CHAREND; yylval.char_ = '\\n'; return _CHAR_;",
-     "<CHARESC>t      \t BEGIN CHAREND; yylval.char_ = '\\t'; return _CHAR_;",
-     "<CHARESC>.      \t BEGIN CHAREND; yylval.char_ = yytext[0]; return _CHAR_;",
-     "<CHAREND>\"'\"      \t BEGIN YYINITIAL;"
+    where sName n = fromMaybe n $ lookup n env
+  strStates =  --These handle escaped characters in Strings.
+    [ "<YYINITIAL>\"\\\"\"      \t BEGIN STRING;"
+    , "<STRING>\\\\      \t BEGIN ESCAPED;"
+    , "<STRING>\\\"      \t yylval._string = strdup(YY_PARSED_STRING); YY_BUFFER_RESET(); BEGIN YYINITIAL; return _STRING_;"
+    , "<STRING>.      \t YY_BUFFER_APPEND(yytext);"
+    , "<ESCAPED>n      \t YY_BUFFER_APPEND(\"\\n\"); BEGIN STRING;"
+    , "<ESCAPED>\\\"      \t YY_BUFFER_APPEND(\"\\\"\"); BEGIN STRING ;"
+    , "<ESCAPED>\\\\      \t YY_BUFFER_APPEND(\"\\\\\"); BEGIN STRING;"
+    , "<ESCAPED>t       \t YY_BUFFER_APPEND(\"\\t\"); BEGIN STRING;"
+    , "<ESCAPED>.       \t YY_BUFFER_APPEND(yytext); BEGIN STRING;"
     ]
-   footer = unlines
+  chStates =  --These handle escaped characters in Chars.
+    [ "<YYINITIAL>\"'\" \tBEGIN CHAR;"
+    , "<CHAR>\\\\      \t BEGIN CHARESC;"
+    , "<CHAR>[^']      \t BEGIN CHAREND; yylval._char = yytext[0]; return _CHAR_;"
+    , "<CHARESC>n      \t BEGIN CHAREND; yylval._char = '\\n'; return _CHAR_;"
+    , "<CHARESC>t      \t BEGIN CHAREND; yylval._char = '\\t'; return _CHAR_;"
+    , "<CHARESC>.      \t BEGIN CHAREND; yylval._char = yytext[0]; return _CHAR_;"
+    , "<CHAREND>\"'\"      \t BEGIN YYINITIAL;"
+    ]
+  footer =
     [
      "void init_lexer(FILE *inp)",
      "{",
      "  yyrestart(inp);",
-     "  yylloc.first_line = 1;",
+     "  yylloc.first_line   = 1;",
      "  yylloc.first_column = 1;",
-     "  yylloc.last_line = 1;",
-     "  yylloc.last_column = 1;",
+     "  yylloc.last_line    = 1;",
+     "  yylloc.last_column  = 1;",
      "  BEGIN YYINITIAL;",
      "}"
     ]
