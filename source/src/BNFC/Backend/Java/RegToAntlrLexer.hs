@@ -75,7 +75,7 @@ instance Print Reg where
    REps       -> prPrec i 3 [""]
    RChar c    -> prPrec i 3 (concat [["'"], prt 0 c, ["'"]])
    RAlts str  -> prPrec i 3 (concat [["["],prt 0 str,["]"]])
-   RSeqs str  -> prPrec i 2 (concatMap (prt 0) str)
+   RSeqs str  -> prPrec i 2 $ map show str
    RDigit     -> prPrec i 3 ["DIGIT"]
    RLetter    -> prPrec i 3 ["LETTER"]
    RUpper     -> prPrec i 3 ["CAPITAL"]
