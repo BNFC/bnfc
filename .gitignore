@@ -77,3 +77,4 @@ cabal.sandbox.config
 /testing/regression-tests/278_Keywords/haskell/
 /testing/regression-tests/278_Keywords/java/
 /testing/regression-tests/278_Keywords/ocaml/
+/testing/regression-tests/278_Keywords/ocaml-old/
