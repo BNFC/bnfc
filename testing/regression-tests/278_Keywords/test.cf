@@ -98,6 +98,7 @@ Prg. Program ::=
     Not
     NotEq
     Not_Eq
+    Null
     Object
     Of
     Open
@@ -256,6 +257,7 @@ Nonrec_           .  Nonrec               ::= "nonrec"           ;
 Not_              .  Not                  ::= "not"              ;
 NotEq_            .  NotEq                ::= "not_eq"           ;
 Not_Eq_           .  Not_Eq               ::= "not_eq"           ;
+Null_             .  Null                 ::= "null"             ;
 Object_           .  Object               ::= "object"           ;
 Of_               .  Of                   ::= "of"               ;
 Open_             .  Open                 ::= "open"             ;
@@ -414,6 +416,7 @@ newtype
 nonrec
 not
 not_eq
+null
 object
 of
 open

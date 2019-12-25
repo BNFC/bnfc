@@ -94,6 +94,7 @@ nonrec
 not
 not_eq
 not_eq
+null
 object
 of
 open
