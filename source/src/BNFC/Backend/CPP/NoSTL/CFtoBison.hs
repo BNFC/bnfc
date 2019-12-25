@@ -124,7 +124,7 @@ header name cf = unlines
     , "}"
     , ""
     , definedRules cf
-    , concatMap reverseList $ filter isList $ allCatsNorm cf
+    , concatMap reverseList $ filter isList $ allParserCatsNorm cf
     , unlines $ map parseResult dats
     , unlines $ map (parseMethod cf name) eps
     , "%}"

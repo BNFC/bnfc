@@ -54,7 +54,7 @@ module BNFC.CF (
             isDefinedRule,  -- defined rules (allows syntactic sugar)
             isProperLabel,  -- not coercion or defined rule
             allCats,        -- all categories of a grammar
-            allParserCats,
+            allParserCats, allParserCatsNorm,
             reallyAllCats,
             allCatsNorm,
             allCatsIdNorm,
@@ -500,6 +500,10 @@ allCatsIdNorm = nub . map (identCat . normCat . valCat) . cfgRules
 -- | Get all normalized Cat
 allCatsNorm :: CF -> [Cat]
 allCatsNorm = nub . map (normCat . valCat) . cfgRules
+
+-- | Get all normalized Cat
+allParserCatsNorm :: CFG f -> [Cat]
+allParserCatsNorm = nub . map normCat . allParserCats
 
 -- | Is the category is used on an rhs?
 isUsedCat :: CFG f -> Cat -> Bool

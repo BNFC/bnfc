@@ -88,7 +88,7 @@ header namespace cf = unlines [
   "%namespace " ++ namespace,
   "%{",
   definedRules namespace cf,
-  unlinesInline $ map (parseMethod namespace) (allCatsNorm cf ++ positionCats cf),
+  unlinesInline $ map (parseMethod namespace) (allParserCatsNorm cf ++ positionCats cf),
   "%}"
   ]
 
