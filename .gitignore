@@ -68,12 +68,18 @@ cabal.sandbox.config
 /examples/prolog/Makefile
 /examples/prolog/Prolog/
 
+/testing/regression-tests/#100_coercion_lists/c/
 /testing/regression-tests/#100_coercion_lists/java/
+
 /testing/regression-tests/194_layout/haskell/
+
 /testing/regression-tests/202_comments/C/
 /testing/regression-tests/202_comments/haskell/
 
+/testing/regression-tests/222_IntegerList/c/
+
 /testing/regression-tests/278_Keywords/agda/
+/testing/regression-tests/278_Keywords/c/
 /testing/regression-tests/278_Keywords/haskell/
 /testing/regression-tests/278_Keywords/java/
 /testing/regression-tests/278_Keywords/ocaml/
