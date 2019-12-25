@@ -67,7 +67,7 @@ makeC opts cf = do
 makefile :: String -> String -> String -> Doc
 makefile name prefix basename = vcat
     [ "CC = gcc"
-    , "CCFLAGS = -g -W -Wall"
+    , "CCFLAGS = -g -W -Wall -Wno-unused-parameter -Wno-unused-function -Wno-unneeded-internal-declaration"
     , ""
     , "FLEX = flex"
     , "FLEX_OPTS = -P" <> text prefix

@@ -6,7 +6,7 @@ import BNFC.PrettyPrint
 makefile :: String -> String -> Doc
 makefile name basename = vcat
     [ mkVar "CC" "g++"
-    , mkVar "CCFLAGS" "-g -W -Wall"
+    , mkVar "CCFLAGS" "-g -W -Wall -Wno-unused-parameter -Wno-unused-function -Wno-unneeded-internal-declaration"
     , ""
     , mkVar "FLEX" "flex"
     , mkVar "FLEX_OPTS" ("-P" ++ name)

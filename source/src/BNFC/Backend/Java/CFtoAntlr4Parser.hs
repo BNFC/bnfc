@@ -131,7 +131,7 @@ constructRule packageAbsyn cf env rules nt =
     , let r      = applyWhen b revSepListRule r0
     , let (p,m0) = generatePatterns index env r
     , let m      = applyWhen b reverse m0
-    , let label  = funRule r
+    -- , let label  = funRule r
     ]
 
 -- Generates a string containing the semantic action.
