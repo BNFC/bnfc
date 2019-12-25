@@ -76,7 +76,7 @@ cf2AntlrParse packageBase packageAbsyn cf _ env = unlines
     -- _X returns [ dX result ] : x=X EOF { $result = $x.result; }
     , prRules packageAbsyn $ map entrypoint $ allEntryPoints cf
     -- Generate regular rules
-    , prRules packageAbsyn (rulesForAntlr4 packageAbsyn cf env)
+    , prRules packageAbsyn $ rulesForAntlr4 packageAbsyn cf env
     ]
   where
     header :: String
@@ -120,13 +120,18 @@ constructRule packageAbsyn cf env rules nt =
   PDef Nothing nt $
     [ ( p
       , generateAction packageAbsyn nt (funRule r) m b
-      , Just $ funRule r
+      , Nothing  -- labels not needed for BNFC-generated AST parser
+      -- , Just label
+      -- -- Did not work:
+      -- -- , if firstLowerCase (getLabelName label)
+      -- --   == getRuleName (firstLowerCase $ identCat nt) then Nothing else Just label
       )
     | (index, r0) <- zip [1..] rules
     , let b      = isConsFun (funRule r0) && elem (valCat r0) (cfgReversibleCats cf)
     , let r      = applyWhen b revSepListRule r0
     , let (p,m0) = generatePatterns index env r
     , let m      = applyWhen b reverse m0
+    , let label  = funRule r
     ]
 
 -- Generates a string containing the semantic action.

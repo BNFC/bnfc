@@ -22,6 +22,7 @@ javaReserved =
   , "else"
   , "enum"
   , "extends"
+  , "false"         -- there for Java/ANTLR backend
   , "final"
   , "finally"
   , "float"
@@ -36,7 +37,7 @@ javaReserved =
   , "long"
   , "native"
   , "new"
-  -- , "null"
+  , "null"          -- there for Java/ANTLR backend
   -- , "Object"
   , "package"
   , "private"
@@ -49,6 +50,7 @@ javaReserved =
   , "super"
   , "switch"
   , "synchronized"
+  , "true"          -- there for Java/ANTLR backend
   , "this"
   , "throw"
   , "throws"
