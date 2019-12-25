@@ -24,9 +24,10 @@ module BNFC.Backend.Haskell.CFtoTemplate (cf2Template) where
 
 import Prelude'
 
-import BNFC.Backend.Haskell.Utils (ModuleName, catvars)
 import BNFC.CF
 import BNFC.PrettyPrint
+import BNFC.Utils                 ( ModuleName )
+import BNFC.Backend.Haskell.Utils ( catvars )
 
 cf2Template :: ModuleName -> ModuleName -> Bool -> CF -> String
 cf2Template skelName absName functor cf = unlines

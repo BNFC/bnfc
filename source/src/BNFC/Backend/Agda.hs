@@ -138,10 +138,10 @@ import qualified Data.Set as Set
 import BNFC.CF
 import BNFC.Backend.Base           (Backend, mkfile)
 import BNFC.Backend.Haskell.HsOpts
-import BNFC.Backend.Haskell.Utils  (ModuleName, parserName, catToType)
+import BNFC.Backend.Haskell.Utils  (parserName, catToType)
 import BNFC.Options                (SharedOptions, TokenText(..), tokenText)
 import BNFC.PrettyPrint
-import BNFC.Utils                  (replace, when)
+import BNFC.Utils                  (ModuleName, replace, when)
 
 type NEList = NEList.NonEmpty
 

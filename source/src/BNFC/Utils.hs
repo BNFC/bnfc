@@ -21,7 +21,8 @@
 {-# LANGUAGE FlexibleInstances #-}
 
 module BNFC.Utils
-    ( when, unless, unlessNull
+    ( ModuleName
+    , when, unless, unlessNull
     , applyWhen, applyUnless
     , for
     , duplicatesOn
@@ -54,6 +55,9 @@ import System.IO       (IOMode(ReadMode),hClose,hGetContents,openFile)
 import System.IO.Error (tryIOError)
 
 import BNFC.PrettyPrint hiding ((<>))
+
+-- | The name of a module, e.g. "Foo.Abs", "Foo.Print" etc.
+type ModuleName = String
 
 -- * Control flow.
 

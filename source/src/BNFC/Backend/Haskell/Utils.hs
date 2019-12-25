@@ -1,8 +1,7 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module BNFC.Backend.Haskell.Utils
-  ( ModuleName
-  , parserName
+  ( parserName
   , hsReservedWords
   , catToType
   , catvars
@@ -16,9 +15,6 @@ import BNFC.PrettyPrint
 import BNFC.CF      (Cat(..), identCat, baseTokenCatNames)
 import BNFC.Options (TokenText(..))
 import BNFC.Utils   (mkNames, NameStyle(..))
-
--- | The name of a module, e.g. "Foo.Abs", "Foo.Print" etc.
-type ModuleName = String
 
 -- * Parameterization by 'TokenText'.
 
