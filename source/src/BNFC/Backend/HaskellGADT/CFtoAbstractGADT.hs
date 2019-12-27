@@ -37,9 +37,11 @@ cf2Abstract tokenText name cf composOpMod = unlines $ concat $
     , ""
     , "module" +++ name +++ "(" ++ intercalate ", " exports ++ ")" +++ "where"
     , ""
-    , "import " ++ composOpMod
+    , "import Prelude (Char, String, Integer, Double, (.), (>), (&&), (==))"
+    , "import qualified Prelude as P"
+    , "import qualified Data.Monoid as P"
     , ""
-    , "import Data.Monoid (mappend)"
+    , "import " ++ composOpMod
     ]
   , tokenTextImport tokenText
   , [ ""
@@ -108,59 +110,59 @@ prCompos cf =
     isRecursive c = any (isTreeType cf) (map fst (consVars c))
     rhs c = "r" +++ consFun c +++ unwords (map prRec (consVars c))
       where prRec (cat,var) | not (isTreeType cf cat) = "`a`" +++ "r" +++ var
-                            | isList cat = "`a` foldr (\\ x z -> r (:) `a` f x `a` z) (r [])" +++ var
+                            | isList cat = "`a` P.foldr (\\ x z -> r (:) `a` f x `a` z) (r [])" +++ var
                             | otherwise = "`a`" +++ "f" +++ var
 
 prShow :: CF -> [String]
-prShow cf = ["instance Show (Tree c) where",
+prShow cf = ["instance P.Show (Tree c) where",
               "  showsPrec n t = case t of"]
               ++ map (("    "++) .prShowCons) cs
-              ++ ["   where opar n = if n > 0 then showChar '(' else id",
-                  "         cpar n = if n > 0 then showChar ')' else id"]
+              ++ ["   where opar n = if n > 0 then P.showChar '(' else P.id",
+                  "         cpar n = if n > 0 then P.showChar ')' else P.id"]
   where
     cs = cf2cons cf
-    prShowCons c | null vars = fun +++ "->" +++ "showString" +++ show fun
+    prShowCons c | null vars = fun +++ "->" +++ "P.showString" +++ show fun
                  | otherwise = fun +++ unwords (map snd vars) +++ "->"
-                                   +++ "opar n . showString" +++ show fun
-                                   +++ unwords [". showChar ' ' . showsPrec 1 " ++ x | (_,x) <- vars]
+                                   +++ "opar n . P.showString" +++ show fun
+                                   +++ unwords [". P.showChar ' ' . P.showsPrec 1 " ++ x | (_,x) <- vars]
                                    +++ ". cpar n"
       where (fun, vars) = (consFun c, consVars c)
 
 prEq :: CF -> [String]
-prEq cf = ["instance Eq (Tree c) where (==) = johnMajorEq",
+prEq cf = ["instance P.Eq (Tree c) where (==) = johnMajorEq",
            "",
-           "johnMajorEq :: Tree a -> Tree b -> Bool"]
+           "johnMajorEq :: Tree a -> Tree b -> P.Bool"]
            ++ map prEqCons (cf2cons cf)
-           ++ ["johnMajorEq _ _ = False"]
+           ++ ["johnMajorEq _ _ = P.False"]
   where prEqCons c
-            | null vars = "johnMajorEq" +++ fun +++ fun +++ "=" +++ "True"
+            | null vars = "johnMajorEq" +++ fun +++ fun +++ "=" +++ "P.True"
             | otherwise = "johnMajorEq" +++ "(" ++ fun +++ unwords vars ++ ")"
                           +++ "(" ++ fun +++ unwords vars' ++ ")" +++ "="
                           +++ intercalate " && " (zipWith (\x y -> x +++ "==" +++ y) vars vars')
           where (fun, vars) = (consFun c, map snd (consVars c))
-                vars' = map (++"_") vars
+                vars' = map (++ "_") vars
 
 prOrd :: CF -> [String]
 prOrd cf = concat
-  [ [ "instance Ord (Tree c) where"
-    , "  compare x y = compare (index x) (index y) `mappend` compareSame x y"
+  [ [ "instance P.Ord (Tree c) where"
+    , "  compare x y = P.compare (index x) (index y) `P.mappend` compareSame x y"
     ]
-  , [ "", "index :: Tree c -> Int" ]
+  , [ "", "index :: Tree c -> P.Int" ]
   , zipWith mkIndex cs [0..]
-  , when (null cs) [ "index = undefined" ]
-  , [ "", "compareSame :: Tree c -> Tree c -> Ordering" ]
+  , when (null cs) [ "index = P.undefined" ]
+  , [ "", "compareSame :: Tree c -> Tree c -> P.Ordering" ]
   , map mkCompareSame cs
-  , [ "compareSame x y = error \"BNFC error:\" compareSame" ]
+  , [ "compareSame x y = P.error \"BNFC error:\" compareSame" ]
   ]
   where cs = cf2cons cf
         mkCompareSame c
-            | null vars = "compareSame" +++ fun +++ fun +++ "=" +++ "EQ"
+            | null vars = "compareSame" +++ fun +++ fun +++ "=" +++ "P.EQ"
             | otherwise = "compareSame" +++ "(" ++ fun +++ unwords vars ++ ")"
                           +++ "(" ++ fun +++ unwords vars' ++ ")" +++ "="
-                          +++ foldr1 (\x y -> "mappend (" ++ x ++") ("++y++")") cc
+                          +++ foldr1 (\x y -> "P.mappend (" ++ x ++") ("++y++")") cc
             where (fun, vars) = (consFun c, map snd (consVars c))
                   vars' = map (++"_") vars
-                  cc = zipWith (\x y -> "compare"+++x+++y) vars vars'
+                  cc = zipWith (\x y -> "P.compare"+++x+++y) vars vars'
         mkIndex c i = "index" +++ "(" ++ consFun c
                        +++ unwords (replicate (length (consVars c)) "_") ++ ")"
                        +++ "=" +++ show i
