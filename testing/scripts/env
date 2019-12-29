@@ -1,4 +1,5 @@
 #!/bin/sh
+
 export PATH=".cabal-sandbox/bin:$HOME/.cabal/bin:$PATH"
 export CLASSPATH=.:$(pwd)/data/java-cup-11b.jar:$(pwd)/data/java-cup-11b-runtime.jar:$(pwd)/data/javatools.jar
 export CLASSPATH="$CLASSPATH:/usr/share/java/stringtemplate4.jar:/usr/share/java/antlr4.jar:/usr/share/java/antlr4-runtime.jar:/usr/share/java/antlr3-runtime.jar/:/usr/share/java/treelayout.jar"

@@ -113,7 +113,7 @@ data SharedOptions = Options
   , wcf           :: Bool        -- ^ Windows Communication Foundation.
   } deriving (Eq, Ord, Show)
 
--- | We take this oportunity to define the type of the backend functions.
+-- We take this opportunity to define the type of the backend functions.
 type Backend = SharedOptions  -- ^ Options
             -> CF             -- ^ Grammar
             -> IO ()

@@ -51,20 +51,26 @@ cabal.sandbox.config
 /source/windows-dist/bnfc.exe
 
 # bnfc generated files
-/examples/C/C/
-/examples/C/CWithDelimiters/
-/examples/C/Makefile
+/examples/C/c/
+/examples/C/cpp/
+/examples/C/cpp-nostl/
+/examples/C/java-antlr/
+
 /examples/cpp/csharp/
 /examples/cpp/pygments/
+
 /examples/GF/GF/
 /examples/GF/ANTLR/
+
 /examples/Java/agda
 /examples/Java/cpp
 /examples/Java/cpp-nostl
 /examples/Java/java/
 /examples/Java/ocaml/
+
 /examples/Javalette/JavaletteLight/
 /examples/Javalette/Makefile
+/examples/Javalette/java-antlr/
 /examples/prolog/Makefile
 /examples/prolog/Prolog/
 
@@ -80,7 +86,11 @@ cabal.sandbox.config
 
 /testing/regression-tests/278_Keywords/agda/
 /testing/regression-tests/278_Keywords/c/
+/testing/regression-tests/278_Keywords/cpp/
+/testing/regression-tests/278_Keywords/cpp-nostl/
 /testing/regression-tests/278_Keywords/haskell/
+/testing/regression-tests/278_Keywords/haskell-gadt/
 /testing/regression-tests/278_Keywords/java/
+/testing/regression-tests/278_Keywords/java-antlr/
 /testing/regression-tests/278_Keywords/ocaml/
 /testing/regression-tests/278_Keywords/ocaml-old/

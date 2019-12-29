@@ -19,6 +19,7 @@
 
 -- based on BNFC Haskell backend
 
+{-# LANGUAGE LambdaCase #-}
 
 module BNFC.Backend.OCaml.CFtoOCamlYacc
        (

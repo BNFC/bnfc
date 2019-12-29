@@ -57,7 +57,7 @@ mkFile addLang name ext opts =
     pref ++ if inDir opts
        then lang opts </> name ++ ext'
        else addLang opts name ++ if null ext then "" else ext'
-    where pref = maybe "" (\p->pkgToDir p </> "") (inPackage opts)
+    where pref = maybe "" (\ p -> pkgToDir p </> "") (inPackage opts)
           ext' = if null ext then "" else "." ++ ext
 
 absFile, absFileM, ocamllexFile, ocamllexFileM, ocamlyaccFile, ocamlyaccFileM,
