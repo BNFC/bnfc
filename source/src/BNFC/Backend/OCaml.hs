@@ -113,7 +113,9 @@ codeDir opts = let pref = maybe "" pkgToDir (inPackage opts)
 makefile :: SharedOptions -> String -> Doc
 makefile opts basename = vcat
     [ mkVar "OCAMLC" "ocamlc"
-    , mkVar "OCAMLYACC" "ocamlyacc"
+    , mkVar "OCAMLYACC" $ case ocamlParser opts of
+        OCamlYacc -> "ocamlyacc"
+        Menhir    -> "menhir"
     , mkVar "OCAMLLEX" "ocamllex"
     , mkVar "OCAMLCFLAGS" ""
     , mkRule "all" []

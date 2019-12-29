@@ -17,6 +17,8 @@
     Foundation, 51 Franklin Street, Fifth Floor, Boston, MA 02110-1335, USA
 -}
 
+{-# LANGUAGE LambdaCase #-}
+
 module BNFC.Backend.OCaml.OCamlUtil where
 
 import BNFC.CF

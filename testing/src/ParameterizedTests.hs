@@ -282,19 +282,18 @@ haskellRunTestProg _lang args = do
 parameters :: [TestParameters]
 parameters = concat
   [ []
-    -- Haskell
-  , [ hsParams { tpName = "Haskell (with ghc)"
-               , tpBnfcOptions = ["--haskell", "--ghc"] }
-    , hsParams { tpName = "Haskell (with functor)"
-               , tpBnfcOptions = ["--haskell", "--functor"] }
-    , hsParams { tpName = "Haskell (with namespace)"
-               , tpBnfcOptions = ["--haskell", "-p", "Language", "-d"] }
+    -- OCaml/Menhir
+  , [ base { tpName = "OCaml/Menhir"
+           , tpBuild = tpMake ["OCAMLCFLAGS=-safe-string"]
+           , tpBnfcOptions = ["--ocaml", "--menhir"] }
     ]
-    -- C
-  , [ cBase { tpName = "C"
-            , tpBuild = tpMake ["CCFLAGS=-Wstrict-prototypes -Werror"]
-            , tpBnfcOptions = ["--c"] }
+    -- OCaml
+  , [ base { tpName = "OCaml"
+           , tpBuild = tpMake ["OCAMLCFLAGS=-safe-string"]
+           , tpBnfcOptions = ["--ocaml"] }
     ]
+    -- Haskell/GADT
+  , [ haskellGADTParameters ]
     -- C++
   , [ cBase { tpName = "C++"
             , tpBnfcOptions = ["--cpp"] }
@@ -303,19 +302,27 @@ parameters = concat
     , cBase { tpName = "C++ (no STL)"
             , tpBnfcOptions = ["--cpp-nostl"] }
     ]
+    -- C
+  , [ cBase { tpName = "C"
+            , tpBuild = tpMake ["CCFLAGS=-Wstrict-prototypes -Werror"]
+            , tpBnfcOptions = ["--c"] }
+    ]
+    -- Haskell
+  , [ hsParams { tpName = "Haskell (with ghc)"
+               , tpBnfcOptions = ["--haskell", "--ghc"] }
+    , hsParams { tpName = "Haskell (with functor)"
+               , tpBnfcOptions = ["--haskell", "--functor"] }
+    , hsParams { tpName = "Haskell (with namespace)"
+               , tpBnfcOptions = ["--haskell", "-p", "Language", "-d"] }
+    ]
     -- Agda
   , [ haskellAgdaParameters ]
-    -- Haskell/GADT
-  , [ haskellGADTParameters ]
-    -- OCaml
-  , [ base { tpName = "OCaml"
-           , tpBuild = tpMake ["OCAMLCFLAGS=-safe-string"]
-           , tpBnfcOptions = ["--ocaml"] }
-    ]
-    -- Java
+    -- Java (basic)
   , [ javaParams { tpName = "Java"
                  , tpBnfcOptions = ["--java"] }
-    , javaParams { tpName = "Java (with line numbers)"
+    ]
+    -- Java (extras)
+  , [ javaParams { tpName = "Java (with line numbers)"
                  , tpBnfcOptions = ["--java", "-l"] }
     , javaParams { tpName = "Java (with namespace)"
                  , tpBnfcOptions = ["--java", "-p", "my.stuff"] }

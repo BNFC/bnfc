@@ -1,4 +1,5 @@
 #!/bin/sh -u
+
 mkdir -p dist/test
 cabal configure
 cabal build

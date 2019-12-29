@@ -7,6 +7,7 @@
 	* C/C++/Java: support multiple block comment forms per grammar [#202]
 	* C++: fixed quadratic behavior in C++-generated printer (regression in 2.8.2)
 	* Java/ANTLR: emit start rules to work around ANTLR issue #2689 [#272]
+	* Ocaml: new flag --menhir to generate parser with menhir instead of ocamlyacc
 
 2.8.3 Andreas Abel <andreas.abel@gu.se>  August 2019
 	* GHC 8.8 compatibility

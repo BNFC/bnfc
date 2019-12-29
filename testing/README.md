@@ -30,11 +30,15 @@ It is important to be in this directory, and further:
   * JFLex
   * java-cup
   * java-cup-runtime
-
-- Have `jflex` installed.
+  * antlr
+  * antlr-runtime
 
 - On Mac OS X, Xcode may come with an old version of GNU bison like 2.3.
   `brew install bison` to get a newer one (like 3.2) and make sure it is
   in your PATH.
 
-- Have `hlint` installed and in the PATH.
+- Have installed and in the PATH:
+  * `jflex`
+  * `alex`, `happy`, `hlint`
+  * `ocamlc`, `ocamllex`, ``menhir`
+  * `agda`

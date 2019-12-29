@@ -71,6 +71,11 @@ data AlexVersion = Alex1 | Alex2 | Alex3
 data HappyMode = Standard | GLR
   deriving (Eq,Show,Bounded,Enum,Ord)
 
+-- | Which parser generator for ocaml?
+data OCamlParser = OCamlYacc | Menhir
+    deriving (Eq,Show,Ord)
+
+-- | Which Java backend?
 data JavaLexerParser = JLexCup | JFlexCup | Antlr4
     deriving (Eq,Show,Ord)
 
@@ -106,6 +111,8 @@ data SharedOptions = Options
   , xml           :: Int         -- ^ Options @--xml@, generate DTD and XML printers.
   , cnf           :: Bool        -- ^ Option @--cnf@. Generate CNF-like tables?
   , agda          :: Bool        -- ^ Option @--agda@. Create bindings for Agda?
+  --- OCaml specific
+  , ocamlParser   :: OCamlParser -- ^ Option @--menhir@ to switch to @Menhir@.
   --- Java specific
   , javaLexerParser :: JavaLexerParser
   --- C# specific
@@ -138,6 +145,8 @@ defaultOptions = Options
   , xml             = 0
   , cnf             = False
   , agda            = False
+  -- OCaml specific
+  , ocamlParser     = OCamlYacc
   -- Java specific
   , javaLexerParser = JLexCup
   -- C# specific
@@ -202,6 +211,8 @@ printOptions opts = unwords . concat $
   , [ "--wfc"             | wcf opts                            ]
   -- Java options:
   , unlessDefault javaLexerParser opts $ \ o -> [ printJavaLexerParserOption o ]
+  -- Java options:
+  , unlessDefault ocamlParser opts $ \ o -> [ printOCamlParserOption o ]
   -- Grammar file:
   , [ lbnfFile opts ]
   ]
@@ -236,6 +247,11 @@ printJavaLexerParserOption = ("--" ++) . \case
   JFlexCup -> "jflex"
   Antlr4   -> "antlr4"
 
+printOCamlParserOption :: OCamlParser -> String
+printOCamlParserOption = ("--" ++) . \case
+  OCamlYacc -> "yacc"
+  Menhir    -> "menhir"
+
 -- ~~~ Option definition ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 -- This defines bnfc's "global" options, like --help
 globalOptions :: [ OptDescr Mode ]
@@ -249,6 +265,8 @@ targetOptions :: [ OptDescr (SharedOptions -> SharedOptions)]
 targetOptions =
   [ Option "" ["java"]          (NoArg (\o -> o {target = TargetJava}))
     "Output Java code [default: for use with JLex and CUP]"
+  , Option "" ["java-antlr"]    (NoArg (\ o -> o{ target = TargetJava, javaLexerParser = Antlr4 }))
+    "Output Java code for use with ANTLR (short for --java --antlr)"
   , Option "" ["haskell"]       (NoArg (\o -> o {target = TargetHaskell}))
     "Output Haskell code for use with Alex and Happy (default)"
   , Option "" ["haskell-gadt"]  (NoArg (\o -> o {target = TargetHaskellGadt}))
@@ -265,6 +283,8 @@ targetOptions =
     "Output C# code for use with GPLEX and GPPG"
   , Option "" ["ocaml"]         (NoArg (\o -> o {target = TargetOCaml}))
     "Output OCaml code for use with ocamllex and ocamlyacc"
+  , Option "" ["ocaml-menhir"]  (NoArg (\ o -> o{ target = TargetOCaml, ocamlParser = Menhir }))
+    "Output OCaml code for use with ocamllex and menhir (short for --ocaml --menhir)"
   , Option "" ["profile"]       (NoArg (\o -> o {target = TargetProfile}))
     "Output Haskell code for rules with permutation profiles"
   , Option "" ["pygments"]      (NoArg (\o -> o {target = TargetPygments}))
@@ -294,6 +314,13 @@ specificOptions =
   , ( Option [] ["antlr4"] (NoArg (\o -> o {javaLexerParser = Antlr4}))
           "Lex and parse with antlr4"
     , [TargetJava] )
+  -- OCaml backend:
+  , ( Option [] ["yacc"  ] (NoArg (\ o -> o { ocamlParser = OCamlYacc }))
+          "Generate parser with ocamlyacc (default)"
+    , [TargetOCaml] )
+  , ( Option [] ["menhir"] (NoArg (\ o -> o { ocamlParser = Menhir }))
+          "Generate parser with menhir"
+    , [TargetOCaml] )
   -- C++ backend:
   , ( Option [] ["vs"] (NoArg (\o -> o {visualStudio = True}))
           "Generate Visual Studio solution/project files"
