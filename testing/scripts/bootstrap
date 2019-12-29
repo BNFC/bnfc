@@ -36,8 +36,9 @@ check antlr "javap org.antlr.v4.Tool"
 check ocamlc
 check ocamllex
 check ocamlyacc
-check menhir
-check agda
+## TODO: add installation of these tools on travis
+# check menhir
+# check agda
 
 if [ ! -z "$missing" ]; then
   >&2 echo -e "\033[31mSome tests will fail as they require tools that are missing from your system:\033[0m"
