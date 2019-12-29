@@ -13,7 +13,7 @@ spec = do
   describe "transItem" $ do
 
     it "translate a non-terminal" $
-        transItem (Abs.NTerminal (Abs.IdCat (Abs.Ident "Foo3")))
+        transItem (Abs.NTerminal (Abs.IdCat (Abs.Identifier "Foo3")))
             `shouldBe` [Left (CoercCat "Foo" 3)]
 
     it "translate a terminal" $

@@ -100,8 +100,8 @@ instance Print Integer where
 instance Print Double where
   prt _ x = doc (shows x)
 
-instance Print AbsBNF.Ident where
-  prt _ (AbsBNF.Ident i) = doc $ showString $ i
+instance Print AbsBNF.Identifier where
+  prt _ (AbsBNF.Identifier i) = doc $ showString $ i
   prtList _ [x] = concatD [prt 0 x]
   prtList _ (x:xs) = concatD [prt 0 x, doc (showString ","), prt 0 xs]
 
@@ -112,8 +112,8 @@ instance Print AbsBNF.LGrammar where
 instance Print AbsBNF.LDef where
   prt i e = case e of
     AbsBNF.DefAll def -> prPrec i 0 (concatD [prt 0 def])
-    AbsBNF.DefSome ids def -> prPrec i 0 (concatD [prt 0 ids, doc (showString ":"), prt 0 def])
-    AbsBNF.LDefView ids -> prPrec i 0 (concatD [doc (showString "views"), prt 0 ids])
+    AbsBNF.DefSome identifiers def -> prPrec i 0 (concatD [prt 0 identifiers, doc (showString ":"), prt 0 def])
+    AbsBNF.LDefView identifiers -> prPrec i 0 (concatD [doc (showString "views"), prt 0 identifiers])
   prtList _ [] = concatD []
   prtList _ [x] = concatD [prt 0 x]
 
@@ -122,7 +122,7 @@ instance Print AbsBNF.LDef where
 instance Print [AbsBNF.LDef] where
   prt = prtList
 
-instance Print [AbsBNF.Ident] where
+instance Print [AbsBNF.Identifier] where
   prt = prtList
 
 instance Print AbsBNF.Grammar where
@@ -138,15 +138,15 @@ instance Print AbsBNF.Def where
     AbsBNF.Comment str -> prPrec i 0 (concatD [doc (showString "comment"), prt 0 str])
     AbsBNF.Comments str1 str2 -> prPrec i 0 (concatD [doc (showString "comment"), prt 0 str1, prt 0 str2])
     AbsBNF.Internal label cat items -> prPrec i 0 (concatD [doc (showString "internal"), prt 0 label, doc (showString "."), prt 0 cat, doc (showString "::="), prt 0 items])
-    AbsBNF.Token id reg -> prPrec i 0 (concatD [doc (showString "token"), prt 0 id, prt 0 reg])
-    AbsBNF.PosToken id reg -> prPrec i 0 (concatD [doc (showString "position"), doc (showString "token"), prt 0 id, prt 0 reg])
-    AbsBNF.Entryp ids -> prPrec i 0 (concatD [doc (showString "entrypoints"), prt 0 ids])
+    AbsBNF.Token identifier reg -> prPrec i 0 (concatD [doc (showString "token"), prt 0 identifier, prt 0 reg])
+    AbsBNF.PosToken identifier reg -> prPrec i 0 (concatD [doc (showString "position"), doc (showString "token"), prt 0 identifier, prt 0 reg])
+    AbsBNF.Entryp identifiers -> prPrec i 0 (concatD [doc (showString "entrypoints"), prt 0 identifiers])
     AbsBNF.Separator minimumsize cat str -> prPrec i 0 (concatD [doc (showString "separator"), prt 0 minimumsize, prt 0 cat, prt 0 str])
     AbsBNF.Terminator minimumsize cat str -> prPrec i 0 (concatD [doc (showString "terminator"), prt 0 minimumsize, prt 0 cat, prt 0 str])
     AbsBNF.Delimiters cat str1 str2 separation minimumsize -> prPrec i 0 (concatD [doc (showString "delimiters"), prt 0 cat, prt 0 str1, prt 0 str2, prt 0 separation, prt 0 minimumsize])
-    AbsBNF.Coercions id n -> prPrec i 0 (concatD [doc (showString "coercions"), prt 0 id, prt 0 n])
-    AbsBNF.Rules id rhss -> prPrec i 0 (concatD [doc (showString "rules"), prt 0 id, doc (showString "::="), prt 0 rhss])
-    AbsBNF.Function id args exp -> prPrec i 0 (concatD [doc (showString "define"), prt 0 id, prt 0 args, doc (showString "="), prt 0 exp])
+    AbsBNF.Coercions identifier n -> prPrec i 0 (concatD [doc (showString "coercions"), prt 0 identifier, prt 0 n])
+    AbsBNF.Rules identifier rhss -> prPrec i 0 (concatD [doc (showString "rules"), prt 0 identifier, doc (showString "::="), prt 0 rhss])
+    AbsBNF.Function identifier args exp -> prPrec i 0 (concatD [doc (showString "define"), prt 0 identifier, prt 0 args, doc (showString "="), prt 0 exp])
     AbsBNF.Layout strs -> prPrec i 0 (concatD [doc (showString "layout"), prt 0 strs])
     AbsBNF.LayoutStop strs -> prPrec i 0 (concatD [doc (showString "layout"), doc (showString "stop"), prt 0 strs])
     AbsBNF.LayoutTop -> prPrec i 0 (concatD [doc (showString "layout"), doc (showString "toplevel")])
@@ -168,7 +168,7 @@ instance Print [AbsBNF.Item] where
 instance Print AbsBNF.Cat where
   prt i e = case e of
     AbsBNF.ListCat cat -> prPrec i 0 (concatD [doc (showString "["), prt 0 cat, doc (showString "]")])
-    AbsBNF.IdCat id -> prPrec i 0 (concatD [prt 0 id])
+    AbsBNF.IdCat identifier -> prPrec i 0 (concatD [prt 0 identifier])
 
 instance Print AbsBNF.Label where
   prt i e = case e of
@@ -179,7 +179,7 @@ instance Print AbsBNF.Label where
 
 instance Print AbsBNF.LabelId where
   prt i e = case e of
-    AbsBNF.Id id -> prPrec i 0 (concatD [prt 0 id])
+    AbsBNF.Id identifier -> prPrec i 0 (concatD [prt 0 identifier])
     AbsBNF.Wild -> prPrec i 0 (concatD [doc (showString "_")])
     AbsBNF.ListE -> prPrec i 0 (concatD [doc (showString "["), doc (showString "]")])
     AbsBNF.ListCons -> prPrec i 0 (concatD [doc (showString "("), doc (showString ":"), doc (showString ")")])
@@ -209,7 +209,7 @@ instance Print [AbsBNF.ProfItem] where
 
 instance Print AbsBNF.Arg where
   prt i e = case e of
-    AbsBNF.Arg id -> prPrec i 0 (concatD [prt 0 id])
+    AbsBNF.Arg identifier -> prPrec i 0 (concatD [prt 0 identifier])
   prtList _ [] = concatD []
   prtList _ (x:xs) = concatD [prt 0 x, prt 0 xs]
 
@@ -228,8 +228,8 @@ instance Print [String] where
 instance Print AbsBNF.Exp where
   prt i e = case e of
     AbsBNF.Cons exp1 exp2 -> prPrec i 0 (concatD [prt 1 exp1, doc (showString ":"), prt 0 exp2])
-    AbsBNF.App id exps -> prPrec i 1 (concatD [prt 0 id, prt 2 exps])
-    AbsBNF.Var id -> prPrec i 2 (concatD [prt 0 id])
+    AbsBNF.App identifier exps -> prPrec i 1 (concatD [prt 0 identifier, prt 2 exps])
+    AbsBNF.Var identifier -> prPrec i 2 (concatD [prt 0 identifier])
     AbsBNF.LitInt n -> prPrec i 2 (concatD [prt 0 n])
     AbsBNF.LitChar c -> prPrec i 2 (concatD [prt 0 c])
     AbsBNF.LitString str -> prPrec i 2 (concatD [prt 0 str])

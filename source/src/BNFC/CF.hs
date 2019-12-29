@@ -301,7 +301,7 @@ strToCat s =
         Left _ -> Cat s -- error $ "Error parsing cat " ++ s ++ " (" ++ e ++ ")"
                        -- Might be one of the "Internal cat" which are not
                        -- really parsable...
-  where cat2cat (AbsBNF.IdCat (AbsBNF.Ident i)) =
+  where cat2cat (AbsBNF.IdCat (AbsBNF.Identifier i)) =
             case span isDigit (reverse i) of
                 ([],c') -> Cat (reverse c')
                 (d,c') ->  CoercCat (reverse c') (read (reverse d))

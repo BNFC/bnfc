@@ -6,13 +6,14 @@ module AbsBNF where
 import Prelude (Char, Double, Integer, String)
 import qualified Prelude as C (Eq, Ord, Show, Read)
 
-newtype Ident = Ident String
+newtype Identifier = Identifier String
   deriving (C.Eq, C.Ord, C.Show, C.Read)
 
 data LGrammar = LGr [LDef]
   deriving (C.Eq, C.Ord, C.Show, C.Read)
 
-data LDef = DefAll Def | DefSome [Ident] Def | LDefView [Ident]
+data LDef
+    = DefAll Def | DefSome [Identifier] Def | LDefView [Identifier]
   deriving (C.Eq, C.Ord, C.Show, C.Read)
 
 data Grammar = Grammar [Def]
@@ -23,15 +24,15 @@ data Def
     | Comment String
     | Comments String String
     | Internal Label Cat [Item]
-    | Token Ident Reg
-    | PosToken Ident Reg
-    | Entryp [Ident]
+    | Token Identifier Reg
+    | PosToken Identifier Reg
+    | Entryp [Identifier]
     | Separator MinimumSize Cat String
     | Terminator MinimumSize Cat String
     | Delimiters Cat String String Separation MinimumSize
-    | Coercions Ident Integer
-    | Rules Ident [RHS]
-    | Function Ident [Arg] Exp
+    | Coercions Identifier Integer
+    | Rules Identifier [RHS]
+    | Function Identifier [Arg] Exp
     | Layout [String]
     | LayoutStop [String]
     | LayoutTop
@@ -40,7 +41,7 @@ data Def
 data Item = Terminal String | NTerminal Cat
   deriving (C.Eq, C.Ord, C.Show, C.Read)
 
-data Cat = ListCat Cat | IdCat Ident
+data Cat = ListCat Cat | IdCat Identifier
   deriving (C.Eq, C.Ord, C.Show, C.Read)
 
 data Label
@@ -50,7 +51,7 @@ data Label
     | LabF LabelId LabelId
   deriving (C.Eq, C.Ord, C.Show, C.Read)
 
-data LabelId = Id Ident | Wild | ListE | ListCons | ListOne
+data LabelId = Id Identifier | Wild | ListE | ListCons | ListOne
   deriving (C.Eq, C.Ord, C.Show, C.Read)
 
 data ProfItem = ProfIt [IntList] [Integer]
@@ -59,7 +60,7 @@ data ProfItem = ProfIt [IntList] [Integer]
 data IntList = Ints [Integer]
   deriving (C.Eq, C.Ord, C.Show, C.Read)
 
-data Arg = Arg Ident
+data Arg = Arg Identifier
   deriving (C.Eq, C.Ord, C.Show, C.Read)
 
 data Separation = SepNone | SepTerm String | SepSepar String
@@ -67,8 +68,8 @@ data Separation = SepNone | SepTerm String | SepSepar String
 
 data Exp
     = Cons Exp Exp
-    | App Ident [Exp]
-    | Var Ident
+    | App Identifier [Exp]
+    | Var Identifier
     | LitInt Integer
     | LitChar Char
     | LitString String

@@ -22,8 +22,8 @@
 LGr.      LGrammar ::= [LDef] ;
 
 DefAll.   LDef ::= Def ;
-DefSome.  LDef ::= [Ident] ":" Def ;
-LDefView. LDef ::= "views" [Ident] ;
+DefSome.  LDef ::= [Identifier] ":" Def ;
+LDefView. LDef ::= "views" [Identifier] ;
 
 -- separator LDef ";" ;
 [].       [LDef] ::= ;
@@ -32,7 +32,7 @@ LDefView. LDef ::= "views" [Ident] ;
 -- extra semicolons allowed
 _.        [LDef] ::= ";" [LDef] ;
 
-separator nonempty Ident "," ;
+separator nonempty Identifier "," ;
 
 -- A Grammar is a sequence of definitions
 
@@ -56,7 +56,7 @@ terminator Item "" ;
 
 -- Categories (non-terminals)
 ListCat  . Cat ::= "[" Cat "]" ;
-IdCat    . Cat ::= Ident ;
+IdCat    . Cat ::= Identifier ;
 
 -- Labels with or without profiles
 LabNoP   . Label ::= LabelId ;
@@ -67,7 +67,7 @@ LabPF    . Label ::= LabelId LabelId [ProfItem] ;
 LabF     . Label ::= LabelId LabelId ;
 
 -- functional labels
-Id       . LabelId ::= Ident               ;  -- AST constructor
+Id       . LabelId ::= Identifier          ;  -- AST constructor
 Wild     . LabelId ::= "_"                 ;  -- No AST constructor (embedding)
 ListE    . LabelId ::= "[" "]"             ;  -- Empty list
 ListCons . LabelId ::= "(" ":" ")"         ;  -- Cons
@@ -86,17 +86,17 @@ terminator nonempty ProfItem "" ;
 Comment  .  Def ::= "comment"  String                     ; -- Line comment
 Comments .  Def ::= "comment"  String String              ; -- Block comment
 Internal .  Def ::= "internal" Label "." Cat "::=" [Item] ; -- No parsing, AST and printing only
-Token.      Def ::=            "token" Ident Reg          ; -- Lexer token
-PosToken.   Def ::= "position" "token" Ident Reg          ; -- Lexer token with position info
-Entryp.     Def ::= "entrypoints" [Ident]                 ; -- Names of parsers
+Token.      Def ::=            "token" Identifier Reg     ; -- Lexer token
+PosToken.   Def ::= "position" "token" Identifier Reg     ; -- Lexer token with position info
+Entryp.     Def ::= "entrypoints" [Identifier]            ; -- Names of parsers
 Separator.  Def ::= "separator"   MinimumSize Cat String  ; -- List
 Terminator. Def ::= "terminator"  MinimumSize Cat String  ; -- List
 Delimiters. Def ::= "delimiters"  Cat String String Separation MinimumSize;
-Coercions.  Def ::= "coercions"   Ident Integer           ; -- Embeddings and parenthesized exprs.
-Rules.      Def ::= "rules"       Ident "::=" [RHS]       ; -- Automatically generated lables (e.g. enums)
-Function.   Def ::= "define"      Ident [Arg] "=" Exp     ;
+Coercions.  Def ::= "coercions"   Identifier Integer      ; -- Embeddings and parenthesized exprs.
+Rules.      Def ::= "rules"       Identifier "::=" [RHS]  ; -- Automatically generated lables (e.g. enums)
+Function.   Def ::= "define"      Identifier [Arg] "=" Exp;
 
-Arg.        Arg ::= Ident ;
+Arg.        Arg ::= Identifier ;
 separator   Arg "" ;
 
 -- Lists
@@ -113,8 +113,8 @@ separator nonempty String "," ;
 
 -- Expressions
 Cons.       Exp  ::= Exp1 ":" Exp ;
-App.        Exp1 ::= Ident [Exp2] ;
-Var.        Exp2 ::= Ident ;
+App.        Exp1 ::= Identifier [Exp2] ;
+Var.        Exp2 ::= Identifier ;
 LitInt.     Exp2 ::= Integer ;
 LitChar.    Exp2 ::= Char ;
 LitString.  Exp2 ::= String ;
@@ -158,6 +158,10 @@ RLower.   Reg3 ::= "lower"        ;
 RAny.     Reg3 ::= "char"         ;
 
 coercions Reg 3;
+
+-- LBNF identifiers
+
+token Identifier letter (letter | digit | '_')* ;
 
 -- Comments in BNF source
 comment "--"      ;

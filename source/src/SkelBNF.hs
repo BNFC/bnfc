@@ -10,17 +10,17 @@ type Result = Err String
 failure :: Show a => a -> Result
 failure x = Left $ "Undefined case: " ++ show x
 
-transIdent :: AbsBNF.Ident -> Result
-transIdent x = case x of
-  AbsBNF.Ident string -> failure x
+transIdentifier :: AbsBNF.Identifier -> Result
+transIdentifier x = case x of
+  AbsBNF.Identifier string -> failure x
 transLGrammar :: AbsBNF.LGrammar -> Result
 transLGrammar x = case x of
   AbsBNF.LGr ldefs -> failure x
 transLDef :: AbsBNF.LDef -> Result
 transLDef x = case x of
   AbsBNF.DefAll def -> failure x
-  AbsBNF.DefSome idents def -> failure x
-  AbsBNF.LDefView idents -> failure x
+  AbsBNF.DefSome identifiers def -> failure x
+  AbsBNF.LDefView identifiers -> failure x
 transGrammar :: AbsBNF.Grammar -> Result
 transGrammar x = case x of
   AbsBNF.Grammar defs -> failure x
@@ -30,15 +30,15 @@ transDef x = case x of
   AbsBNF.Comment string -> failure x
   AbsBNF.Comments string1 string2 -> failure x
   AbsBNF.Internal label cat items -> failure x
-  AbsBNF.Token ident reg -> failure x
-  AbsBNF.PosToken ident reg -> failure x
-  AbsBNF.Entryp idents -> failure x
+  AbsBNF.Token identifier reg -> failure x
+  AbsBNF.PosToken identifier reg -> failure x
+  AbsBNF.Entryp identifiers -> failure x
   AbsBNF.Separator minimumsize cat string -> failure x
   AbsBNF.Terminator minimumsize cat string -> failure x
   AbsBNF.Delimiters cat string1 string2 separation minimumsize -> failure x
-  AbsBNF.Coercions ident integer -> failure x
-  AbsBNF.Rules ident rhss -> failure x
-  AbsBNF.Function ident args exp -> failure x
+  AbsBNF.Coercions identifier integer -> failure x
+  AbsBNF.Rules identifier rhss -> failure x
+  AbsBNF.Function identifier args exp -> failure x
   AbsBNF.Layout strings -> failure x
   AbsBNF.LayoutStop strings -> failure x
   AbsBNF.LayoutTop -> failure x
@@ -49,7 +49,7 @@ transItem x = case x of
 transCat :: AbsBNF.Cat -> Result
 transCat x = case x of
   AbsBNF.ListCat cat -> failure x
-  AbsBNF.IdCat ident -> failure x
+  AbsBNF.IdCat identifier -> failure x
 transLabel :: AbsBNF.Label -> Result
 transLabel x = case x of
   AbsBNF.LabNoP labelid -> failure x
@@ -58,7 +58,7 @@ transLabel x = case x of
   AbsBNF.LabF labelid1 labelid2 -> failure x
 transLabelId :: AbsBNF.LabelId -> Result
 transLabelId x = case x of
-  AbsBNF.Id ident -> failure x
+  AbsBNF.Id identifier -> failure x
   AbsBNF.Wild -> failure x
   AbsBNF.ListE -> failure x
   AbsBNF.ListCons -> failure x
@@ -71,7 +71,7 @@ transIntList x = case x of
   AbsBNF.Ints integers -> failure x
 transArg :: AbsBNF.Arg -> Result
 transArg x = case x of
-  AbsBNF.Arg ident -> failure x
+  AbsBNF.Arg identifier -> failure x
 transSeparation :: AbsBNF.Separation -> Result
 transSeparation x = case x of
   AbsBNF.SepNone -> failure x
@@ -80,8 +80,8 @@ transSeparation x = case x of
 transExp :: AbsBNF.Exp -> Result
 transExp x = case x of
   AbsBNF.Cons exp1 exp2 -> failure x
-  AbsBNF.App ident exps -> failure x
-  AbsBNF.Var ident -> failure x
+  AbsBNF.App identifier exps -> failure x
+  AbsBNF.Var identifier -> failure x
   AbsBNF.LitInt integer -> failure x
   AbsBNF.LitChar char -> failure x
   AbsBNF.LitString string -> failure x

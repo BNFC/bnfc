@@ -43,10 +43,10 @@ extract name (LGr ldefs) =
   [(file lang,Grammar $ mapMaybe (getDef lang) ldefs) |
       lang <- views]
  where
-   views = [lang | LDefView langs <- ldefs, Ident lang <- langs]
+   views = [lang | LDefView langs <- ldefs, Identifier lang <- langs]
    getDef lang ldef = case ldef of
      DefAll d -> Just d
-     DefSome ids d | elem (Ident lang) ids -> Just d
+     DefSome ids d | elem (Identifier lang) ids -> Just d
      _ -> Nothing
    file lang = name ++ "_" ++ lang ++ ".cf"
 
@@ -54,8 +54,8 @@ extract name (LGr ldefs) =
 
 entrypoint :: LGrammar -> String
 entrypoint (LGr rs0) = head $
-  [c | Entryp (Ident c:_) <- rs] ++
-  [c | Rule _ (IdCat (Ident c)) _ <- rs]
+  [c | Entryp (Identifier c:_) <- rs] ++
+  [c | Rule _ (IdCat (Identifier c)) _ <- rs]
  where
    rs = mapMaybe getR rs0
    getR d = case d of

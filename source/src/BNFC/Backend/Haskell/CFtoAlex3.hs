@@ -387,8 +387,8 @@ instance Print Char where
 prPrec :: Int -> Int -> [String] -> [String]
 prPrec i j = if j<i then parenth else id
 
-instance Print Ident where
-  prt _ (Ident i) = [i]
+instance Print Identifier where
+  prt _ (Identifier i) = [i]
 
 instance Print Reg where
   prt i e = case e of

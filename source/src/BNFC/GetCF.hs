@@ -324,8 +324,8 @@ terminatorRules size c s = [
                 then Rule "(:[])" cs (Left c' : if null s then [] else [Right s]) Parsable
                 else Rule "[]" cs [] Parsable
 
-coercionRules :: Abs.Ident -> Integer -> [Rule]
-coercionRules (Abs.Ident c) n = concat
+coercionRules :: Abs.Identifier -> Integer -> [Rule]
+coercionRules (Abs.Identifier c) n = concat
   [ [ Rule "_" (Cat c)            [Left (CoercCat c 1)] Parsable
     ]
   , [ Rule "_" (CoercCat c (i-1)) [Left (CoercCat c i)] Parsable
@@ -335,8 +335,8 @@ coercionRules (Abs.Ident c) n = concat
     ]
   ]
 
-ebnfRules :: Abs.Ident -> [Abs.RHS] -> [Rule]
-ebnfRules (Abs.Ident c) rhss =
+ebnfRules :: Abs.Identifier -> [Abs.RHS] -> [Rule]
+ebnfRules (Abs.Identifier c) rhss =
   [Rule (mkFun k its) (strToCat c) (concatMap transItem its) Parsable
      | (k, Abs.RHS its) <- zip [1 :: Int ..] rhss]
  where
@@ -362,7 +362,7 @@ transItem (Abs.NTerminal cat) = [Left (transCat cat)]
 transCat :: Abs.Cat -> Cat
 transCat x = case x of
  Abs.ListCat cat  -> ListCat (transCat cat)
- Abs.IdCat (Abs.Ident c)     -> strToCat c
+ Abs.IdCat (Abs.Identifier c)     -> strToCat c
 
 transLabel :: Abs.Label -> (Fun,Prof)
 transLabel y = case y of
@@ -380,9 +380,9 @@ transLabel y = case y of
    transProf (Abs.ProfIt bss as) =
      ([map fromInteger bs | Abs.Ints bs <- bss], map fromInteger as)
 
-transIdent :: Abs.Ident -> String
+transIdent :: Abs.Identifier -> String
 transIdent x = case x of
- Abs.Ident str  -> str
+ Abs.Identifier str  -> str
 
 transArg :: Abs.Arg -> String
 transArg (Abs.Arg x) = transIdent x
@@ -484,9 +484,9 @@ checkRule cf (Rule (f,_) cat rhs _)
 -- | Pre-processor that converts the `rules` macros to regular rules
 -- by creating unique function names for them.
 -- >>> :{
--- let rules1 = Abs.Rules (Abs.Ident "Foo")
+-- let rules1 = Abs.Rules (Abs.Identifier "Foo")
 --         [ Abs.RHS [Abs.Terminal "abc"]
---         , Abs.RHS [Abs.NTerminal (Abs.IdCat (Abs.Ident "A"))]
+--         , Abs.RHS [Abs.NTerminal (Abs.IdCat (Abs.Identifier "A"))]
 --         , Abs.RHS [Abs.Terminal "foo", Abs.Terminal "bar"]
 --         , Abs.RHS [Abs.Terminal "++"]
 --         ]
@@ -502,10 +502,10 @@ checkRule cf (Rule (f,_) cat rhs _)
 -- Note that if there are two `rules` macro with the same category, the
 -- generated names should be uniques:
 -- >>> :{
--- let rules1 = Abs.Rules (Abs.Ident "Foo")
+-- let rules1 = Abs.Rules (Abs.Identifier "Foo")
 --         [ Abs.RHS [Abs.Terminal "foo", Abs.Terminal "bar"] ]
 -- in
--- let rules2 = Abs.Rules (Abs.Ident "Foo")
+-- let rules2 = Abs.Rules (Abs.Identifier "Foo")
 --         [ Abs.RHS [Abs.Terminal "foo", Abs.Terminal "foo"] ]
 -- in
 -- let tree = expandRules (Abs.Grammar [rules1, rules2])
@@ -523,18 +523,18 @@ expandRules (Abs.Grammar defs) =
     expand (Abs.Rules ident rhss) = mapM (mkRule ident) rhss
     expand other = return [other]
 
-    mkRule :: Abs.Ident -> Abs.RHS -> State [(String, Int)] Abs.Def
+    mkRule :: Abs.Identifier -> Abs.RHS -> State [(String, Int)] Abs.Def
     mkRule ident (Abs.RHS rhs) = do
-      fun <- Abs.LabNoP . Abs.Id . Abs.Ident <$> mkName ident rhs
+      fun <- Abs.LabNoP . Abs.Id . Abs.Identifier <$> mkName ident rhs
       return (Abs.Rule fun (Abs.IdCat ident) rhs)
 
-    mkName :: Abs.Ident -> [Abs.Item] -> State [(String, Int)] String
-    mkName (Abs.Ident cat) [Abs.Terminal s]
+    mkName :: Abs.Identifier -> [Abs.Item] -> State [(String, Int)] String
+    mkName (Abs.Identifier cat) [Abs.Terminal s]
       | all (\c -> isAlphaNum c || elem c ("_'" :: String)) s =
         return (cat ++ "_" ++ s)
-    mkName (Abs.Ident cat) [Abs.NTerminal (Abs.IdCat (Abs.Ident s))] =
+    mkName (Abs.Identifier cat) [Abs.NTerminal (Abs.IdCat (Abs.Identifier s))] =
         return (cat ++ s)
-    mkName (Abs.Ident cat) _ = do
+    mkName (Abs.Identifier cat) _ = do
         i <- maybe 1 (+1) . lookup cat <$> get
         modify ((cat, i):)
         return (cat ++ show i)
