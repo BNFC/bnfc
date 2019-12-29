@@ -55,6 +55,7 @@ cabal.sandbox.config
 /examples/C/cpp/
 /examples/C/cpp-nostl/
 /examples/C/java-antlr/
+/examples/C/ocaml/
 
 /examples/cpp/csharp/
 /examples/cpp/pygments/
@@ -93,4 +94,5 @@ cabal.sandbox.config
 /testing/regression-tests/278_Keywords/java/
 /testing/regression-tests/278_Keywords/java-antlr/
 /testing/regression-tests/278_Keywords/ocaml/
+/testing/regression-tests/278_Keywords/ocaml-menhir/
 /testing/regression-tests/278_Keywords/ocaml-old/
