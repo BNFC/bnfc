@@ -574,10 +574,12 @@ javaTest (JavaTestParams
     cf =
     render $ vcat $ concat $
       [ [ "package" <+> text packageBase <> ";"
+        , ""
         , "import" <+> text packageBase <> ".*;"
         , "import java.io.*;"
         ]
       , map importfun imports
+      , [ "" ]
       , errhand err
       , [ ""
         , "public class Test"
@@ -590,14 +592,13 @@ javaTest (JavaTestParams
                 [ "try"
                 , codeblock 2
                     [ "Reader input;"
-                    , "if (args.length == 0)"
-                       <> "input = new InputStreamReader(System.in);"
+                    , "if (args.length == 0) input = new InputStreamReader(System.in);"
                     , "else input = new FileReader(args[0]);"
-                    , "l = new "<>lexerconstruction lx "(input)"
+                    , "l = new " <> lexerconstruction lx "(input)"
                     ]
                 , "catch(IOException e)"
-                , codeblock 2 [ "System.err.println"
-                        <>"(\"Error: File not found: \" + args[0]);"
+                , codeblock 2
+                    [ "System.err.println(\"Error: File not found: \" + args[0]);"
                     , "System.exit(1);"
                     ]
                 , "p = new "<> parserconstruction px "l"
@@ -605,26 +606,32 @@ javaTest (JavaTestParams
             , ""
             , "public" <+> text packageAbsyn <> "." <> dat
                 <+> "parse() throws Exception"
-            , codeblock 2
-                [ "/* The default parser is the first-defined entry point. */"
-                , "/* Other options are: */"
-                , "/* " <> fsep (punctuate "," (showOpts (tail eps))) <> " */"
-                , invocation px (text packageAbsyn) dat absentity
-                , printOuts [ "\"Parse Succesful!\""
-                    , "\"[Abstract Syntax]\""
-                    , "PrettyPrinter.show(ast)"
-                    , "\"[Linearized Tree]\""
-                    , "PrettyPrinter.print(ast)"
-                    ]
-                , "return ast;"
+            , codeblock 2 $ concat
+                [ [ "/* The default parser is the first-defined entry point. */" ]
+                , unlessNull (drop 1 eps) $ \ eps' ->
+                  [ "/* Other options are: */"
+                  , "/* " <> fsep (punctuate "," (showOpts eps')) <> " */"
+                  ]
+                , [ invocation px (text packageAbsyn) dat absentity
+                  , printOuts
+                     [ "\"Parse Succesful!\""
+                     , "\"[Abstract Syntax]\""
+                     , "PrettyPrinter.show(ast)"
+                     , "\"[Linearized Tree]\""
+                     , "PrettyPrinter.print(ast)"
+                     ]
+                  , "return ast;"
+                  ]
                 ]
             , ""
             , "public static void main(String args[]) throws Exception"
-            , codeblock 2 [ "Test t = new Test(args);"
+            , codeblock 2
+                [ "Test t = new Test(args);"
                 , "try"
                 , codeblock 2 [ "t.parse();" ]
-                ,"catch("<>text err<+>"e)"
-                , codeblock 2 [ "System.err.println(\""<>text errmsg<>"\");"
+                ,"catch(" <> text err <+> "e)"
+                , codeblock 2
+                    [ "System.err.println(\"" <> text errmsg <> "\");"
                     , "System.err.println(\"     \" + e.getMessage());"
                     , "System.exit(1);"
                     ]

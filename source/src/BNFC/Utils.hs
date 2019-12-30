@@ -22,7 +22,7 @@
 
 module BNFC.Utils
     ( ModuleName
-    , when, unless, unlessNull
+    , when, unless, unlessNull, unlessNull'
     , applyWhen, applyUnless
     , for
     , duplicatesOn
@@ -95,8 +95,14 @@ applyUnless False f = f
 applyUnless True  _ = id
 
 -- | Invoke continuation for non-empty list.
-unlessNull :: Monoid m => [a] -> (a -> [a] -> m) -> m
+unlessNull :: Monoid m => [a] -> ([a] -> m) -> m
 unlessNull l k = case l of
+  [] -> mempty
+  as -> k as
+
+-- | Invoke continuation for non-empty list.
+unlessNull' :: Monoid m => [a] -> (a -> [a] -> m) -> m
+unlessNull' l k = case l of
   []     -> mempty
   (a:as) -> k a as
 
