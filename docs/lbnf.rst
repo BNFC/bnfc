@@ -859,34 +859,33 @@ which produces trees of the form
 and would accept strings like *a man is always a man*, *a bike is always
 a bike*, but not *a man is always a bike*.
 
+.. _leftrec:
+
 An optimization: left-recursive lists
 =====================================
 
-[leftrec]
-
 The BNF representation of lists is right-recursive, following the list
-conctructor in Haskell and most other languages. Right-recursive lists,
-however, are an inefficient way of parsing lists in an LALR parser,
-because they can blow up the stack size. The smart programmer would
-implement a pair of rules such as
+constructor in Haskell and most other languages. Right-recursive lists,
+however, require linear stack space in a shift-reduce parser (such as
+the LR parser family).  This can be a problem when the size of the
+stack is limited (e.g. in ``bison`` generated parsers).
+
+A right-recursive list definition
 
 ::
 
       [].    [Stm] ::= ;
       (:).   [Stm] ::= Stm ";" [Stm] ;
 
-not in the direct way, but under a left-recursive transformation, as if
-we wrote,
-
-::
+becomes left recursive under the left-recursive transformation::
 
       [].         [Stm] ::= ;
       (flip (:)). [Stm] ::= [Stm] Stm ";" ;
 
-Then the smart programmer would also be careful to reverse the list when
-it is used as an argument of another rule construction.
+However, the thus parsed lists need to be reversed when used as part of another rule.
 
-The BNF Converter automatically performs the left-recursion
+For backends that target stack-restricted parsers (C, C++, Java),
+the BNF Converter automatically performs the left-recursion
 transformation for pairs of rules of the form
 
 ::
@@ -896,10 +895,12 @@ transformation for pairs of rules of the form
 
 where C is any category and x is any sequence of terminals (possibly
 empty). These rules can, of course, be generated from the terminator
-macro (Section [terminator]).
+macro (Section :ref:`terminator`).
 
 **Notice**. The transformation is currently not performed if the
 one-element list is the base case.
+It is also not performed in the Haskell backend that generates parsers with a
+heap-allocated stack via ``happy``.
 
 .. _appendix:
 
