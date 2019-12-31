@@ -1,4 +1,9 @@
-The BNF Converter [![Build Status](https://travis-ci.org/BNFC/bnfc.png?branch=master)](https://travis-ci.org/BNFC/bnfc)
+[![Hackage version](https://img.shields.io/hackage/v/BNFC.svg?label=Hackage)](http://hackage.haskell.org/package/BNFC)
+[![Stackage version](https://www.stackage.org/package/BNFC/badge/lts?label=Stackage)](https://www.stackage.org/package/BNFC)
+[![Build Status](https://travis-ci.org/BNFC/bnfc.svg?branch=master)](https://travis-ci.org/BNFC/bnfc)
+[![Documentation Status](https://readthedocs.org/projects/bnfc/badge/?version=latest)](http://bnfc.readthedocs.io/en/latest/?badge=latest)
+
+The BNF Converter
 =================
 
 What is the BNF Converter?
@@ -11,9 +16,9 @@ C#, Haskell, Java, and OCaml, as well as XML representations.
 Given a Labelled BNF grammar the tool produces:
 - an abstract syntax implementation
 - a case skeleton for the abstract syntax in the same language
-- an Alex, JLex, or Flex lexer generator file
-- a Happy, CUP, or Bison parser generator file
-- a pretty-printer as a Haskell/Java/C++/C module
+- an Alex, Ocamllex, JLex, or Flex lexer generator file
+- a Happy, Ocamlyacc, Menhir, ANTLR, CUP, or Bison parser generator file
+- a pretty-printer as a Haskell/Ocaml/Java/C++/C module
 - a Latex file containing a readable specification of the language
 
 *More information*: http://bnfc.digitalgrammars.com/

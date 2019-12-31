@@ -51,6 +51,8 @@ cabal.sandbox.config
 /source/windows-dist/bnfc.exe
 
 # bnfc generated files
+/docs/Calc/java-antlr/
+
 /examples/C/c/
 /examples/C/cpp/
 /examples/C/cpp-nostl/

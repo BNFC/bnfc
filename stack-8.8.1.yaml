@@ -1,4 +1,4 @@
-resolver: nightly-2019-12-27
+resolver: nightly-2019-12-30
 packages:
 - source
 - testing
