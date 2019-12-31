@@ -20,10 +20,10 @@ env:
   - CABAL=yes PACKAGEDIR="testing"
 matrix:
   exclude:
-    # ghc 8.8.1 not yet supported by stack lts
-    # nightly does not include HTF
-    - ghc: 8.8.1
-      env: STACK=yes
+    # # ghc 8.8.1 not yet supported by stack lts
+    # # nightly does not include HTF
+    # - ghc: 8.8.1
+    #   env: STACK=yes
 
     # testing binary has dependencies not yet compatible with ghc 8.8.1
     - ghc: 8.8.1
