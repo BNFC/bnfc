@@ -26,12 +26,13 @@ module BNFC.Backend.CPP.PrettyPrinter (cf2CPPPrinter, prRender) where
 
 import Prelude'
 
+import Data.Char(toLower)
+
 import BNFC.CF
-import BNFC.Utils ((+++))
+import BNFC.Utils ((+++), when)
 import BNFC.Backend.Common
 import BNFC.Backend.Common.NamedVariables
 import BNFC.Backend.Common.StrUtils (renderCharOrString)
-import Data.Char(toLower)
 import BNFC.Backend.CPP.STL.STLUtils
 import BNFC.PrettyPrint
 
@@ -656,8 +657,8 @@ setI n = "_i_ = " ++ show n ++ "; "
 
 --An extremely simple renderer for terminals.
 prRender :: Bool -> String
-prRender useStl = unlines
-  [
+prRender useStl = unlines $ concat
+  [ [
       "//You may wish to change render",
       "void PrintAbsyn::render(Char c)",
       "{",
@@ -710,17 +711,24 @@ prRender useStl = unlines
       "     bufAppend(' ');",
       "  }",
       "}",
-      "",
-      let renderString = "void PrintAbsyn::render(String s_)" $$ codeblock 2
-                             [ "const char *s = s_.c_str() ;"
-                             , "if(strlen(s) > 0)"
-                             , codeblock 2
-                                 [ "bufAppend(s);"
-                                 , "bufAppend(' ');" ] ]
-      in if useStl then render renderString else "",
-      "void PrintAbsyn::render(const char *s)",
+      ""
+    ]
+  , when useStl
+    [ render $ vcat
+        [ "void PrintAbsyn::render(String s)"
+        , codeblock 2
+            [ "if (!s.empty())"
+            , codeblock 2
+                [ "bufAppend(s.c_str());"
+                , "bufAppend(' ');"
+                ]
+            ]
+        , ""
+        ]
+    ]
+  , [ "void PrintAbsyn::render(const char *s)",
       "{",
-      "  if(strlen(s) > 0)",
+      "  if (*s) /* C string not empty */",
       "  {",
       "    bufAppend(s);",
       "    bufAppend(' ');",
@@ -730,20 +738,15 @@ prRender useStl = unlines
       "void PrintAbsyn::indent()",
       "{",
       "  int n = _n_;",
-      "  while (n > 0)",
-      "  {",
+      "  while (--n >= 0)",
       "    bufAppend(' ');",
-      "    n--;",
-      "  }",
       "}",
       "",
       "void PrintAbsyn::backup()",
       "{",
       "  if (buf_[cur_ - 1] == ' ')",
-      "  {",
-      "    buf_[cur_ - 1] = 0;",
-      "    cur_--;",
-      "  }",
+      "    buf_[--cur_] = 0;",
       "}",
       ""
+    ]
   ]
