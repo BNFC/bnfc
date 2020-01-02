@@ -100,7 +100,7 @@ cf2JavaPrinter packageBase packageAbsyn cf =
       "  private static void pp(Character c, int _i_) { buf_.append(\"'\" + c.toString() + \"'\"); buf_.append(\" \"); }",
       "  private static void sh(Integer n) { render(n.toString()); }",
       "  private static void sh(Double d) { render(d.toString()); }",
-      "  private static void sh(Character c) { render(c.toString()); }",
+      "  private static void sh(Character c) { render(\"'\" + c.toString() + \"'\"); }",
       "  private static void sh(String s) { printQuoted(s); }",
       "  private static void printQuoted(String s) { render(\"\\\"\" + s + \"\\\"\"); }",
       "  private static void indent()",
