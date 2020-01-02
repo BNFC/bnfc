@@ -46,7 +46,7 @@ module BNFC.Backend.C.CFtoCPrinter (cf2CPrinter) where
 import Prelude'
 
 import BNFC.CF
-import BNFC.Utils ((+++))
+import BNFC.Utils ((+++), unless)
 import BNFC.Backend.Common (renderListSepByPrecedence)
 import BNFC.Backend.Common.NamedVariables
 import BNFC.Backend.Common.StrUtils (renderCharOrString)
@@ -355,53 +355,55 @@ prPrintFun _ = ""
 -- Generates methods for the Pretty Printer
 
 prPrintData :: (Cat, [Rule]) -> String
-prPrintData (cat, rules) = unlines $
- if isList cat
- then
- [
-  "void pp" ++ cl ++ "("++ cl +++ vname ++ ", int i)",
-  "{",
-  "  while(" ++ vname +++ "!= 0)",
-  "  {",
-  "    if (" ++ vname ++ "->" ++ vname ++ "_ == 0)",
-  "    {",
-  visitMember,
-  optsep,
-  "      " ++ vname +++ "= 0;",
-  "    }",
-  "    else",
-  "    {",
-  visitMember,
-  render (nest 6 (renderListSepByPrecedence "i" renderSep
-      (getSeparatorByPrecedence rules))),
-  "      " ++ vname +++ "=" +++ vname ++ "->" ++ vname ++ "_;",
-  "    }",
-  "  }",
-  "}",
-  ""
- ] --Not a list:
- else
- [
-   "void pp" ++ cl ++ "(" ++ cl ++ " p, int _i_)",
-   "{",
-   "  switch(p->kind)",
-   "  {",
-   concatMap prPrintRule rules,
-   "  default:",
-   "    fprintf(stderr, \"Error: bad kind field when printing " ++ show cat ++ "!\\n\");",
-   "    exit(1);",
-   "  }",
-   "}\n"
- ]
+prPrintData (cat, rules)
+  | isList cat = unlines $ concat
+    [ [ "void pp" ++ cl ++ "("++ cl +++ vname ++ ", int i)"
+      , "{"
+      , "  while(" ++ vname +++ "!= 0)"
+      , "  {"
+      , "    if (" ++ vname ++ "->" ++ vname ++ "_ == 0)"
+      , "    {"
+      , visitMember
+      ]
+    , unless (hasOneFunc rules)
+      [ "      " ++ render (renderSep sep') ++ ";" ]
+    , [ "      " ++ vname +++ "= 0;"
+      , "    }"
+      , "    else"
+      , "    {"
+      , visitMember
+      , render (nest 6 (renderListSepByPrecedence "i" renderSep
+          (getSeparatorByPrecedence rules)))
+      , "      " ++ vname +++ "=" +++ vname ++ "->" ++ vname ++ "_;"
+      , "    }"
+      , "  }"
+      , "}"
+      , ""
+      ]
+    ]
+  | otherwise = unlines $ concat
+    [ [ "void pp" ++ cl ++ "(" ++ cl ++ " p, int _i_)"
+      , "{"
+      , "  switch(p->kind)"
+      , "  {"
+      ]
+    , concatMap prPrintRule rules
+    , [ "  default:"
+      , "    fprintf(stderr, \"Error: bad kind field when printing " ++ show cat ++ "!\\n\");"
+      , "    exit(1);"
+      , "  }"
+      , "}"
+      , ""
+      ]
+    ]
  where
-   cl = identCat (normCat cat)
-   ecl = identCat (normCatOfList cat)
-   vname = map toLower cl
-   member = map toLower ecl
+   cl          = identCat (normCat cat)
+   ecl         = identCat (normCatOfList cat)
+   vname       = map toLower cl
+   member      = map toLower ecl
    visitMember = "      pp" ++ ecl ++ "(" ++ vname ++ "->" ++ member ++ "_, i);"
-   sep' = getCons rules
-   optsep = if hasOneFunc rules then "" else "      " ++ render (renderSep sep') ++ ";"
    renderSep s = renderX $ if null s then " " else s
+   sep'        = getCons rules
 
 -- | Helper function that call the right c function (renderC or renderS) to
 -- render a literal string.
@@ -419,32 +421,33 @@ renderX sep' = "render" <> char sc <> parens (text sep)
 
 -- | Pretty Printer methods for a rule.
 
-prPrintRule :: Rule -> String
-prPrintRule r@(Rule fun _ cats _) | not (isCoercion fun) = unlines
-  [
-   "  case is_" ++ fun ++ ":",
-   lparen,
-   cats',
-   rparen,
-   "    break;\n"
+prPrintRule :: Rule -> [String]
+prPrintRule r@(Rule fun _ cats _) | not (isCoercion fun) = concat
+  [ [ "  case is_" ++ fun ++ ":"
+    , "    if (_i_ > " ++ show p ++ ") renderC(_L_PAREN);"
+    ]
+  , map (prPrintCat fun) $ numVars cats
+  , [ "    if (_i_ > " ++ show p ++ ") renderC(_R_PAREN);"
+    , "    break;"
+    , ""
+    ]
   ]
-   where
+  where
     p = precRule r
-    (lparen, rparen) =
-      ("    if (_i_ > " ++ show p ++ ") renderC(_L_PAREN);",
-       "    if (_i_ > " ++ show p ++ ") renderC(_R_PAREN);")
-    cats' = concatMap (prPrintCat fun) (numVars cats)
-prPrintRule _ = ""
+prPrintRule _ = []
 
 -- | This goes on to recurse to the instance variables.
 
 prPrintCat :: String -> Either (Cat, Doc) String -> String
-prPrintCat fnm (c) = case c of
-  Right t -> "    " ++ render (renderX t) ++ ";\n"
-  Left (cat, nt) | isTokenCat cat -> "    pp" ++ basicFunName (render nt) ++ "(p->u." ++ v ++ "_." ++ render nt ++ ", " ++ show (precCat cat) ++ ");\n"
-  Left (cat, nt) -> "    pp" ++ identCat (normCat cat) ++ "(p->u." ++ v ++ "_." ++ render nt ++ ", " ++ show (precCat cat) ++ ");\n"
- where
-  v = map toLower (normFun fnm)
+prPrintCat fnm = \case
+  Right t -> "    " ++ render (renderX t) ++ ";"
+  Left (cat, nt) -> concat
+    [ "    pp"
+    , if isTokenCat cat then basicFunName (render nt) else identCat (normCat cat)
+    , "(p->u."
+    , map toLower (normFun fnm)
+    , "_.", render nt, ", ", show (precCat cat), ");"
+    ]
 
 {- **** Abstract Syntax Tree Printer **** -}
 
