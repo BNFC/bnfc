@@ -284,16 +284,16 @@ haskellRunTestProg _lang args = do
 parameters :: [TestParameters]
 parameters = concat
   [ []
+    -- C
+  , [ cBase { tpName = "C"
+            , tpBuild = tpMake ["CC_OPTS=-Wstrict-prototypes -Werror"]  -- additional flags
+            , tpBnfcOptions = ["--c"] }
+    ]
     -- C++ (basic)
   , [ cBase { tpName = "C++ (no STL)"
             , tpBnfcOptions = ["--cpp-nostl"] }
     , cBase { tpName = "C++"
             , tpBnfcOptions = ["--cpp"] }
-    ]
-    -- C
-  , [ cBase { tpName = "C"
-            , tpBuild = tpMake ["CCFLAGS=-Wstrict-prototypes -Werror"]
-            , tpBnfcOptions = ["--c"] }
     ]
     -- C++ (extras)
   , [ cBase { tpName = "C++ (with namespace)"
