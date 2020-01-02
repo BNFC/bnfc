@@ -84,8 +84,7 @@ prelude inPackage _ = unlines
    "}",
    "static void YY_BUFFER_RESET(void)",
    "{",
-   "  for(int x = 0; x < YY_BUFFER_LENGTH; x++)",
-   "    YY_PARSED_STRING[x] = 0;",
+   "  memset(YY_PARSED_STRING, 0, YY_BUFFER_LENGTH);",
    "}",
    "",
    "%}"
