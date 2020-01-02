@@ -2,13 +2,13 @@ default :
 	make -C source
 	make -C testing
 
-legacy : install internal-tests test
+testing : install test
 
 install :
-	cd source && cabal install && cd ..
+	make -C source install
 
 internal-tests :
-	cd source && cabal configure --enable-tests && cabal test && cd ..
+	make -C source test
 
 test :
 	cd testing && cabal install && bnfc-system-tests && cd ..

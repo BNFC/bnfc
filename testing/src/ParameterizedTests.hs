@@ -284,31 +284,33 @@ haskellRunTestProg _lang args = do
 parameters :: [TestParameters]
 parameters = concat
   [ []
-    -- OCaml/Menhir
-  , [ base { tpName = "OCaml/Menhir"
-           , tpBuild = tpMake ["OCAMLCFLAGS=-safe-string"]
-           , tpBnfcOptions = ["--ocaml", "--menhir"] }
-    ]
-    -- OCaml
-  , [ base { tpName = "OCaml"
-           , tpBuild = tpMake ["OCAMLCFLAGS=-safe-string"]
-           , tpBnfcOptions = ["--ocaml"] }
-    ]
-    -- Haskell/GADT
-  , [ haskellGADTParameters ]
-    -- C++
-  , [ cBase { tpName = "C++"
-            , tpBnfcOptions = ["--cpp"] }
-    , cBase { tpName = "C++ (with namespace)"
-            , tpBnfcOptions = ["--cpp", "-p foobar"] }
-    , cBase { tpName = "C++ (no STL)"
+    -- C++ (basic)
+  , [ cBase { tpName = "C++ (no STL)"
             , tpBnfcOptions = ["--cpp-nostl"] }
+    , cBase { tpName = "C++"
+            , tpBnfcOptions = ["--cpp"] }
     ]
     -- C
   , [ cBase { tpName = "C"
             , tpBuild = tpMake ["CCFLAGS=-Wstrict-prototypes -Werror"]
             , tpBnfcOptions = ["--c"] }
     ]
+    -- C++ (extras)
+  , [ cBase { tpName = "C++ (with namespace)"
+            , tpBnfcOptions = ["--cpp", "-p foobar"] }
+    ]
+    -- OCaml
+  , [ base { tpName = "OCaml"
+           , tpBuild = tpMake ["OCAMLCFLAGS=-safe-string"]
+           , tpBnfcOptions = ["--ocaml"] }
+    ]
+    -- OCaml/Menhir
+  , [ base { tpName = "OCaml/Menhir"
+           , tpBuild = tpMake ["OCAMLCFLAGS=-safe-string"]
+           , tpBnfcOptions = ["--ocaml", "--menhir"] }
+    ]
+    -- Haskell/GADT
+  , [ haskellGADTParameters ]
     -- Haskell
   , [ hsParams { tpName = "Haskell (with ghc)"
                , tpBnfcOptions = ["--haskell", "--ghc"] }
