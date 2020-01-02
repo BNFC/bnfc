@@ -64,7 +64,7 @@ prologue = unlines [
   "type doc = Buffer.t -> int -> int",
   "",
   "let rec printTree (printer : int -> 'a -> doc) (tree : 'a) : string = ",
-  "    let buffer_init_size = 16 (* you may want to change this *)",
+  "    let buffer_init_size = 64 (* you may want to change this *)",
   "    in let buffer = Buffer.create buffer_init_size",
   "    in ",
   "        let _ = printer 0 tree buffer 0 in (* discard return value *)",
@@ -122,7 +122,7 @@ integerRule cf = unlines [
     ]
 
 doubleRule cf = unlines [
-    "let rec prtFloat (_:int) (f:float) : doc = render (sprintf \"%f\" f)",
+    "let rec prtFloat (_:int) (f:float) : doc = render (sprintf \"%g\" f)",
     ifList cf (TokenCat catDouble),
     ""
     ]
