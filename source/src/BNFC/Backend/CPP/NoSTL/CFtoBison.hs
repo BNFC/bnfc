@@ -63,6 +63,7 @@ module BNFC.Backend.CPP.NoSTL.CFtoBison (cf2Bison) where
 import Data.Char  ( toLower, isUpper )
 import Data.List  ( intersperse, nub )
 import Data.Maybe ( fromMaybe )
+import qualified Data.Map as Map
 
 import BNFC.CF
 import BNFC.Backend.Common.NamedVariables hiding (varName)
@@ -82,7 +83,7 @@ type Action      = String
 type MetaVar     = String
 
 --The environment comes from the CFtoFlex
-cf2Bison :: String -> CF -> SymEnv -> String
+cf2Bison :: String -> CF -> SymMap -> String
 cf2Bison name cf env
  = unlines
     [header name cf,
@@ -249,12 +250,12 @@ declarations cf = concatMap (typeNT cf) (allParserCats cf)
 
 --The following functions are a (relatively) straightforward translation
 --of the ones in CFtoHappy.hs
-rulesForBison :: String -> CF -> SymEnv -> Rules
+rulesForBison :: String -> CF -> SymMap -> Rules
 rulesForBison _ cf env = map mkOne $ ruleGroups cf where
   mkOne (cat,rules) = constructRule cf env rules cat
 
 -- For every non-terminal, we construct a set of rules.
-constructRule :: CF -> SymEnv -> [Rule] -> NonTerminal -> (NonTerminal,[(Pattern,Action)])
+constructRule :: CF -> SymMap -> [Rule] -> NonTerminal -> (NonTerminal,[(Pattern,Action)])
 constructRule cf env rules nt = (nt,[(p,(generateAction (ruleName r) b m) +++ result) |
      r0 <- rules,
      let (b,r) = if isConsFun (funRule r0) && elem (valCat r0) revs
@@ -286,15 +287,15 @@ generateAction f b ms =
 
 -- Generate patterns and a set of metavariables indicating
 -- where in the pattern the non-terminal
-generatePatterns :: CF -> SymEnv -> Rule -> (Pattern,[MetaVar])
+generatePatterns :: CF -> SymMap -> Rule -> (Pattern,[MetaVar])
 generatePatterns cf env r = case rhsRule r of
   []  -> ("/* empty */",[])
   its -> (unwords (map mkIt its), metas its)
  where
    mkIt i = case i of
-     Left (TokenCat s) -> fromMaybe (typeName s) $ lookup s env
+     Left (TokenCat s) -> fromMaybe (typeName s) $ Map.lookup (Tokentype s) env
      Left  c -> identCat c
-     Right s -> fromMaybe s $ lookup s env
+     Right s -> fromMaybe s $ Map.lookup (Keyword s) env
    metas its = [revIf c ('$': show i) | (i,Left c) <- zip [1 :: Int ..] its]
    revIf c m = if (not (isConsFun (funRule r)) && elem c revs)
                  then ("reverse" ++ (identCat (normCat c)) ++ "(" ++ m ++ ")")

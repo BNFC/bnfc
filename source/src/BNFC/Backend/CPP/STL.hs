@@ -23,6 +23,7 @@ module BNFC.Backend.CPP.STL (makeCppStl,) where
 
 import Data.Char
 import Data.List (nub)
+import qualified Data.Map as Map
 
 import BNFC.Utils
 import BNFC.CF
@@ -47,7 +48,7 @@ makeCppStl opts cf = do
     mkfile (name ++ ".l") flex
     let bison = cf2Bison (linenumbers opts) (inPackage opts) name cf env
     mkfile (name ++ ".y") bison
-    let header = mkHeaderFile (inPackage opts) cf (allParserCats cf) (allEntryPoints cf) env
+    let header = mkHeaderFile (inPackage opts) cf (allParserCats cf) (allEntryPoints cf) (Map.elems env)
     mkfile "Parser.H" header
     let (skelH, skelC) = cf2CVisitSkel (inPackage opts) cf
     mkfile "Skeleton.H" skelH
@@ -171,7 +172,7 @@ mkHeaderFile inPackage cf cats eps env = unlines $ concat
   mkVar s | normCat s == s = [ "  " ++ identCat s ++"*" +++ map toLower (identCat s) ++ "_;" ]
   mkVar _ = []
   mkDefines n [] = mkString n
-  mkDefines n ((_,s):ss) = "#define " ++ s +++ show n ++ "\n" ++ mkDefines (n+1) ss -- "nsDefine inPackage s" not needed (see cf2flex::makeSymEnv)
+  mkDefines n (s:ss) = "#define " ++ s +++ show n ++ "\n" ++ mkDefines (n+1) ss -- "nsDefine inPackage s" not needed (see cf2flex::makeSymEnv)
   mkString n =  if isUsedCat cf (TokenCat catString)
    then ("#define " ++ nsDefine inPackage "_STRING_ " ++ show n ++ "\n") ++ mkChar (n+1)
    else mkChar n

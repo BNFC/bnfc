@@ -41,7 +41,9 @@
 module BNFC.Backend.C.CFtoFlexC (cf2flex, lexComments, cMacros, commentStates) where
 
 import Prelude'
+import Data.Bifunctor (first)
 import Data.Maybe (fromMaybe)
+import qualified Data.Map as Map
 
 import BNFC.CF
 import BNFC.Backend.C.RegToFlex
@@ -50,16 +52,17 @@ import BNFC.PrettyPrint
 import BNFC.Utils (cstring)
 
 -- | Entrypoint.
-cf2flex :: String -> CF -> (String, SymEnv) -- The environment is reused by the parser.
-cf2flex name cf = (, env') $ unlines
+cf2flex :: String -> CF -> (String, SymMap) -- The environment is reused by the parser.
+cf2flex name cf = (, env) $ unlines
     [ prelude name
     , cMacros cf
-    , lexSymbols env
-    , restOfFlex cf env'
+    , lexSymbols env0
+    , restOfFlex cf env
     ]
   where
-    env  = makeSymEnv (cfgSymbols cf ++ reservedWords cf) [0 :: Int ..]
-    env' = env ++ makeSymEnv (tokenNames cf) [length env ..]
+    env  = Map.fromList env1
+    env0 = makeSymEnv (cfgSymbols cf ++ reservedWords cf) [0 :: Int ..]
+    env1 = map (first Keyword )env0 ++ makeSymEnv (map Tokentype $ tokenNames cf) [length env0 ..]
     makeSymEnv = zipWith $ \ s n -> (s, "_SYMB_" ++ show n)
 
 prelude :: String -> String
@@ -128,7 +131,7 @@ cMacros cf = unlines
   , "%%"
   ]
 
-lexSymbols :: SymEnv -> String
+lexSymbols :: KeywordEnv -> String
 lexSymbols ss = concatMap transSym ss
   where
     transSym (s,r) =
@@ -136,7 +139,7 @@ lexSymbols ss = concatMap transSym ss
         where
          s' = escapeChars s
 
-restOfFlex :: CF -> SymEnv -> String
+restOfFlex :: CF -> SymMap -> String
 restOfFlex cf env = unlines $ concat
   [ [ render $ lexComments Nothing (comments cf)
     , ""
@@ -160,7 +163,7 @@ restOfFlex cf env = unlines $ concat
        "    \t yylval._string = strdup(yytext); return " ++ sName name ++ ";"
     | (name, exp) <- tokenPragmas cf
     ]
-    where sName n = fromMaybe n $ lookup n env
+    where sName n = fromMaybe n $ Map.lookup (Tokentype n) env
   strStates =  --These handle escaped characters in Strings.
     [ "<YYINITIAL>\"\\\"\"      \t BEGIN STRING;"
     , "<STRING>\\\\      \t BEGIN ESCAPED;"

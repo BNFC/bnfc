@@ -86,8 +86,8 @@ declarations absName cf = unlines
 tokens :: [String] -> [String] -> String
 tokens symbols reswords = unlines
     [
-        if (length reswords) > 0
-            then "%token" +++ concat (intersperse " " (map ("TOK_" ++) reswords))
+        if not (null reswords)
+            then "%token" +++ concat (intersperse " " (map ("KW_" ++) reswords))
         else ""
         ,
         concatMap (\(s,n) -> "\n%token SYMB" ++ (show n) +++ "/*" +++ s +++ "*/")
@@ -96,7 +96,7 @@ tokens symbols reswords = unlines
 
 -- | map a CF terminal into a ocamlyacc token
 terminal :: CF -> String -> String
-terminal cf s  |  s `elem` reservedWords cf = "TOK_" ++ s
+terminal cf s  |  s `elem` reservedWords cf = "KW_" ++ s
 terminal cf s  = case lookup s (zip (cfgSymbols cf) [1..]) of
     Just i -> "SYMB" ++ show i
     Nothing -> error $ "CFtoOCamlYacc: terminal " ++ show s ++ " not defined in CF."

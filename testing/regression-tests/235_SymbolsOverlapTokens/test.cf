@@ -1,0 +1,11 @@
+Init.        Main ::= Type Type Integer Double Char String Ident MyId;
+
+TypeType.    Type ::= "Type"    ;  -- #235 conflict with non-terminal Type
+TypeInteger. Type ::= "Integer" ;  -- #235 conflict with token type Integer
+TypeDouble.  Type ::= "Double"  ;  -- etc.
+TypeChar.    Type ::= "Char"    ;
+TypeString.  Type ::= "String"  ;
+TypeIdent.   Type ::= "Ident"   ;
+TypeMyId.    Type ::= "MyId"    ;
+
+token MyId letter (letter | digit)*;

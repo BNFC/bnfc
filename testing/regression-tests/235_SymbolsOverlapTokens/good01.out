@@ -1,0 +1,7 @@
+[Abstract Syntax]
+
+Init TypeInteger TypeMyId 5 5.5 'A' "Ha!" (Ident "Foo_") (MyId "Bar1")
+
+[Linearized tree]
+
+Integer MyId 5 5.5 'A' "Ha!" Foo_ Bar1

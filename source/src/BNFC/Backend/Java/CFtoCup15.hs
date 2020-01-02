@@ -54,7 +54,7 @@ type Action  = String
 type MetaVar = String
 
 --The environment comes from the CFtoJLex
-cf2Cup :: String -> String -> CF -> RecordPositions -> SymEnv -> String
+cf2Cup :: String -> String -> CF -> RecordPositions -> KeywordEnv -> String
 cf2Cup packageBase packageAbsyn cf rp env = unlines
     [ header
     , declarations packageAbsyn (allParserCats cf)
@@ -182,7 +182,7 @@ declarations packageAbsyn ns = unlines (map (typeNT packageAbsyn) ns)
                     ++ identCat (normCat nt) +++ identCat nt ++ ";"
 
 --terminal types
-tokens :: SymEnv -> String
+tokens :: KeywordEnv -> String
 tokens ts = unlines (map declTok ts)
  where
   declTok (s,r) = "terminal" +++ r ++ ";    //   " ++ s
@@ -204,13 +204,13 @@ specialRules cf =
 
 --The following functions are a (relatively) straightforward translation
 --of the ones in CFtoHappy.hs
-rulesForCup :: String -> CF -> RecordPositions -> SymEnv -> Rules
+rulesForCup :: String -> CF -> RecordPositions -> KeywordEnv -> Rules
 rulesForCup packageAbsyn cf rp env = map mkOne $ ruleGroups cf where
   mkOne (cat,rules) = constructRule packageAbsyn cf rp env rules cat
 
 -- | For every non-terminal, we construct a set of rules. A rule is a sequence of
 -- terminals and non-terminals, and an action to be performed.
-constructRule :: String -> CF -> RecordPositions -> SymEnv -> [Rule] -> NonTerminal
+constructRule :: String -> CF -> RecordPositions -> KeywordEnv -> [Rule] -> NonTerminal
     -> (NonTerminal,[(Pattern,Action)])
 constructRule packageAbsyn cf rp env rules nt =
     (nt, [ (p, generateAction packageAbsyn nt (funRule r) (revM b m) b rp)
@@ -277,7 +277,7 @@ generateAction packageAbsyn nt f ms rev rp
 -- >>> generatePatterns [("def", "_SYMB_1")] (Rule "myfun" (Cat "A") [Right "def", Left (Cat "B")] Parsable)
 -- ("_SYMB_1:p_1 B:p_2 ",["p_2"])
 
-generatePatterns :: SymEnv -> Rule -> (Pattern,[MetaVar])
+generatePatterns :: KeywordEnv -> Rule -> (Pattern,[MetaVar])
 generatePatterns env r = case rhsRule r of
     []  -> (" /* empty */ ", [])
     its -> (mkIt 1 its, metas its)

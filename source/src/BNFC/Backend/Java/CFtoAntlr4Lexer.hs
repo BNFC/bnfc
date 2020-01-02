@@ -54,7 +54,7 @@ import BNFC.Backend.Common.NamedVariables
 -- This introduces risks of clashes if somebody uses the same identifier for
 -- user defined tokens. This is not handled.
 -- returns the environment because the parser uses it.
-cf2AntlrLex :: String -> CF -> (Doc, SymEnv)
+cf2AntlrLex :: String -> CF -> (Doc, KeywordEnv)
 cf2AntlrLex packageBase cf = (vcat
     [ prelude packageBase
     , cMacros
@@ -102,7 +102,7 @@ escapeChars = concatMap escapeChar
 -- bar : '/' ;
 -- >>> lexSymbols [("~","bar")]
 -- bar : '~' ;
-lexSymbols :: SymEnv -> Doc
+lexSymbols :: KeywordEnv -> Doc
 lexSymbols ss = vcat $  map transSym ss
   where
     transSym (s,r) = text r <>  " : '" <> text (escapeChars s) <> "' ;"

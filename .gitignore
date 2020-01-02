@@ -98,3 +98,17 @@ cabal.sandbox.config
 /testing/regression-tests/278_Keywords/ocaml/
 /testing/regression-tests/278_Keywords/ocaml-menhir/
 /testing/regression-tests/278_Keywords/ocaml-old/
+
+/testing/regression-tests/235_SymbolsOverlapTokens/agda/
+/testing/regression-tests/235_SymbolsOverlapTokens/cnf/
+/testing/regression-tests/235_SymbolsOverlapTokens/c/
+/testing/regression-tests/235_SymbolsOverlapTokens/cpp-nostl/
+/testing/regression-tests/235_SymbolsOverlapTokens/cpp/
+/testing/regression-tests/235_SymbolsOverlapTokens/glr/
+/testing/regression-tests/235_SymbolsOverlapTokens/haskell/
+/testing/regression-tests/235_SymbolsOverlapTokens/java-antlr/
+/testing/regression-tests/235_SymbolsOverlapTokens/java/
+/testing/regression-tests/235_SymbolsOverlapTokens/ocaml/
+/testing/regression-tests/235_SymbolsOverlapTokens/ocaml-menhir/
+/testing/regression-tests/235_SymbolsOverlapTokens/xml/
+/testing/regression-tests/235_SymbolsOverlapTokens/xmlt/

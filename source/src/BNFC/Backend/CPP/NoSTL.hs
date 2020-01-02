@@ -21,6 +21,7 @@ module BNFC.Backend.CPP.NoSTL (makeCppNoStl) where
 
 import Data.Char
 import Data.List (nub)
+import qualified Data.Map as Map
 
 import BNFC.Utils
 import BNFC.CF
@@ -44,7 +45,7 @@ makeCppNoStl opts cf = do
     mkfile (name ++ ".l") flex
     let bison = cf2Bison name cf env
     mkfile (name ++ ".y") bison
-    let header = mkHeaderFile cf (allParserCats cf) (allEntryPoints cf) env
+    let header = mkHeaderFile cf (allParserCats cf) (allEntryPoints cf) (Map.elems env)
     mkfile "Parser.H" header
     let (skelH, skelC) = cf2CVisitSkel cf
     mkfile "Skeleton.H" skelH
@@ -161,7 +162,7 @@ mkHeaderFile cf cats eps env = unlines $ concat
   mkVar s | normCat s == s = [ "  " ++ identCat s ++"*" +++ map toLower (identCat s) ++ "_;" ]
   mkVar _ = []
   mkDefines n [] = mkString n
-  mkDefines n ((_,s):ss) = "#define " ++ s +++ show n ++ "\n" ++ mkDefines (n+1) ss
+  mkDefines n (s:ss) = "#define " ++ s +++ show n ++ "\n" ++ mkDefines (n+1) ss
   mkString n =  if isUsedCat cf (TokenCat catString)
    then ("#define _STRING_ " ++ show n ++ "\n") ++ mkChar (n+1)
    else mkChar n

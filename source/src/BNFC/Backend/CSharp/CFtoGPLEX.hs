@@ -36,10 +36,14 @@
    **************************************************************
 -}
 
+{-# LANGUAGE TupleSections #-}
+
 module BNFC.Backend.CSharp.CFtoGPLEX (cf2gplex) where
 
+import Data.Bifunctor (first)
 import Data.List
 import Data.Maybe
+import qualified Data.Map as Map
 
 import BNFC.CF
 import BNFC.Backend.CSharp.RegToGPLEX
@@ -47,19 +51,20 @@ import BNFC.Backend.Common.NamedVariables
 import BNFC.Backend.CSharp.CSharpUtils
 
 --The environment must be returned for the parser to use.
-cf2gplex :: Namespace -> CF -> (String, SymEnv)
-cf2gplex namespace cf = (unlines [
+cf2gplex :: Namespace -> CF -> (String, SymMap)
+cf2gplex namespace cf = (,env) $ unlines [
   prelude namespace,
   cMacros,
-  prettyprinter $ (lexSymbols env) ++ (gplex namespace cf env'),
+  prettyprinter $ (lexSymbols env0) ++ (gplex namespace cf env),
   "%%"
-  ], env')
+  ]
   where
-    env = makeSymEnv (cfgSymbols cf ++ reservedWords cf) (0 :: Int)
-    env' = env ++ (makeSymEnv (tokenNames cf) (length env))
+    env = Map.fromList env1
+    env0 = makeSymMap (cfgSymbols cf ++ reservedWords cf) (0 :: Int)
+    env1 = map (first Keyword) env0 ++ makeSymMap (map Tokentype $ tokenNames cf) (length env0)
     -- GPPG doesn't seem to like tokens beginning with an underscore, so they (the underscores, nothing else) have been removed.
-    makeSymEnv [] _ = []
-    makeSymEnv (s:symbs) n = (s, "SYMB_" ++ (show n)) : (makeSymEnv symbs (n+1))
+    makeSymMap [] _ = []
+    makeSymMap (s:symbs) n = (s, "SYMB_" ++ (show n)) : (makeSymMap symbs (n+1))
 
 prelude :: Namespace -> String
 prelude namespace = unlines [
@@ -152,7 +157,7 @@ lexSymbols ss = map transSym ss
         where
          s' = escapeChars s
 
-gplex :: Namespace -> CF -> SymEnv -> [(String, String)]
+gplex :: Namespace -> CF -> SymMap -> [(String, String)]
 gplex namespace cf env = concat [
   lexComments (comments cf),
   userDefTokens,
@@ -170,7 +175,7 @@ gplex namespace cf env = concat [
      where
        tokenline (name, exp) = ("<YYINITIAL>" ++ printRegGPLEX exp , action name)
        action n = "if(Trace) System.Console.Error.WriteLine(yytext); yylval." ++ varName n ++ " = new " ++ identifier namespace n ++ "(yytext); return (int)Tokens." ++ sName n ++ ";"
-       sName n = fromMaybe n $ lookup n env
+       sName n = fromMaybe n $ Map.lookup (Tokentype n) env
    -- These handle escaped characters in Strings.
    strStates = [
      ("<YYINITIAL>\"\\\"\"" , "BEGIN(STRING);"),

@@ -70,12 +70,15 @@ module BNFC.Backend.Common.NamedVariables where
 
 import Prelude'
 
-import BNFC.CF
-import Data.Char (toLower)
-import Data.List (nub)
-import Text.PrettyPrint
 import Control.Arrow (left, (&&&))
-import Data.Either (lefts)
+import Data.Char     (toLower)
+import Data.Either   (lefts)
+import Data.List     (nub)
+import Data.Map      (Map)
+
+import Text.PrettyPrint
+
+import BNFC.CF
 
 type IVar = (String, Int)
 --The type of an instance variable
@@ -83,9 +86,18 @@ type IVar = (String, Int)
 
 type UserDef = TokenCat --user-defined types
 
+-- | A symbol-mapping environment.
+type SymEnv = KeywordEnv
 
---A symbol-mapping environment.
-type SymEnv = [(String, String)]
+-- | Map keywords to their token name.
+type KeywordEnv = [(String, String)]
+
+-- | Map keywords and user-defined token types to their token name.
+type SymMap = Map SymKey String
+data SymKey
+  = Keyword String    -- ^ Keyword like "(", "while", "true", ...
+  | Tokentype String  -- ^ Token type like "Integer", "Char", ...
+  deriving (Eq, Ord, Show)
 
 -- | Converts a list of categories into their types to be used as instance
 -- variables. If a category appears only once, it is given the number 0,

@@ -52,6 +52,7 @@ module BNFC.Backend.C.CFtoBisonC
 import Data.Char (toLower)
 import Data.List (intercalate, nub)
 import Data.Maybe (fromMaybe)
+import qualified Data.Map as Map
 
 import BNFC.CF
 import BNFC.Backend.Common.NamedVariables hiding (varName)
@@ -67,7 +68,7 @@ type Action      = String
 type MetaVar     = String
 
 --The environment comes from the CFtoFlex
-cf2Bison :: RecordPositions -> String -> CF -> SymEnv -> String
+cf2Bison :: RecordPositions -> String -> CF -> SymMap -> String
 cf2Bison rp name cf env
  = unlines
     [header name cf,
@@ -241,12 +242,12 @@ declarations cf = concatMap (typeNT cf) (allParserCats cf)
 -- token name "literal"
 -- "Syntax error messages passed to yyerror from the parser will reference the literal string instead of the token name."
 -- https://www.gnu.org/software/bison/manual/html_node/Token-Decl.html
-tokens :: [UserDef] -> SymEnv -> String
-tokens user = concatMap (declTok user)
+tokens :: [UserDef] -> SymMap -> String
+tokens user env = unlines $ map declTok $ Map.toList env
  where
-  declTok u (s,r) = if s `elem` u
-    then "%token<_string> " ++ r ++ "    /*   " ++ cStringEscape s ++ "   */\n"
-    else "%token " ++ r ++ "    /*   " ++ cStringEscape s ++ "   */\n"
+  declTok (Keyword   s, r) = tok "" s r
+  declTok (Tokentype s, r) = tok (if s `elem` user then "<_string>" else "") s r
+  tok t s r = "%token" ++ t ++ " " ++ r ++ "    /*   " ++ cStringEscape s ++ "   */"
 
 -- | Escape characters inside a C string.
 cStringEscape :: String -> String
@@ -272,12 +273,12 @@ startSymbol cf = "%start" +++ identCat (firstEntry cf)
 
 --The following functions are a (relatively) straightforward translation
 --of the ones in CFtoHappy.hs
-rulesForBison :: RecordPositions -> CF -> SymEnv -> Rules
+rulesForBison :: RecordPositions -> CF -> SymMap -> Rules
 rulesForBison rp cf env = map mkOne $ ruleGroups cf where
   mkOne (cat,rules) = constructRule rp cf env rules cat
 
 -- For every non-terminal, we construct a set of rules.
-constructRule :: RecordPositions -> CF -> SymEnv -> [Rule] -> NonTerminal -> (NonTerminal,[(Pattern,Action)])
+constructRule :: RecordPositions -> CF -> SymMap -> [Rule] -> NonTerminal -> (NonTerminal,[(Pattern,Action)])
 constructRule rp cf env rules nt = (nt,[(p, generateAction rp (identCat (normCat nt)) (funRule r) b m +++ result) |
      r0 <- rules,
      let (b,r) = if isConsFun (funRule r0) && elem (valCat r0) revs
@@ -316,15 +317,15 @@ generateAction rp nt f b ms
 
 -- Generate patterns and a set of metavariables indicating
 -- where in the pattern the non-terminal
-generatePatterns :: CF -> SymEnv -> Rule -> (Pattern,[MetaVar])
+generatePatterns :: CF -> SymMap -> Rule -> (Pattern,[MetaVar])
 generatePatterns cf env r = case rhsRule r of
   []  -> ("/* empty */",[])
   its -> (unwords (map mkIt its), metas its)
  where
    mkIt i = case i of
-     Left (TokenCat s) -> fromMaybe (typeName s) $ lookup s env
+     Left (TokenCat s) -> fromMaybe (typeName s) $ Map.lookup (Tokentype s) env
      Left c  -> identCat c
-     Right s -> fromMaybe s $ lookup s env
+     Right s -> fromMaybe s $ Map.lookup (Keyword s) env
    metas its = [revIf c ('$': show i) | (i,Left c) <- zip [1 :: Int ..] its]
    revIf c m = if not (isConsFun (funRule r)) && elem c revs
                  then "reverse" ++ identCat (normCat c) ++ "(" ++ m ++ ")"

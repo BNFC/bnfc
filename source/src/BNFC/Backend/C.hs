@@ -21,6 +21,7 @@
 module BNFC.Backend.C (makeC) where
 
 import Prelude'
+import qualified Data.Map as Map
 
 import BNFC.Utils
 import BNFC.CF
@@ -44,7 +45,7 @@ makeC opts cf = do
     mkfile (name ++ ".l") flex
     let bison = cf2Bison (linenumbers opts) prefix cf env
     mkfile (name ++ ".y") bison
-    let header = mkHeaderFile (linenumbers opts) cf env
+    let header = mkHeaderFile (linenumbers opts) cf (Map.elems env)
     mkfile "Parser.h" header
     let (skelH, skelC) = cf2CSkel cf
     mkfile "Skeleton.h" skelH
@@ -196,7 +197,7 @@ ctest cf =
   dat :: String
   dat = identCat . normCat $ cat
 
-mkHeaderFile :: RecordPositions -> CF -> [(a, String)] -> String
+mkHeaderFile :: RecordPositions -> CF -> [String] -> String
 mkHeaderFile _ cf env = unlines $ concat
   [ [ "#ifndef PARSER_HEADER_FILE"
     , "#define PARSER_HEADER_FILE"
@@ -233,7 +234,7 @@ mkHeaderFile _ cf env = unlines $ concat
   ]
   where
   mkDefines n [] = mkString n
-  mkDefines n ((_,s):ss) = ("#define " ++ s +++ (show n) ++ "\n") ++ (mkDefines (n+1) ss)
+  mkDefines n (s:ss) = ("#define " ++ s +++ (show n) ++ "\n") ++ (mkDefines (n+1) ss)
   mkString n =  if isUsedCat cf (TokenCat catString)
    then ("#define _STRING_ " ++ show n ++ "\n") ++ mkChar (n+1)
    else mkChar n

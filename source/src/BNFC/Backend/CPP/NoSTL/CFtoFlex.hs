@@ -41,7 +41,9 @@
 module BNFC.Backend.CPP.NoSTL.CFtoFlex (cf2flex) where
 
 import Prelude'
+import Data.Bifunctor (first)
 import Data.Maybe (fromMaybe)
+import qualified Data.Map as Map
 
 import BNFC.CF
 import BNFC.Backend.C.CFtoFlexC (cMacros, commentStates)
@@ -52,16 +54,17 @@ import BNFC.PrettyPrint
 import BNFC.Utils (cstring)
 
 --The environment must be returned for the parser to use.
-cf2flex :: Maybe String -> String -> CF -> (String, SymEnv)
-cf2flex inPackage name cf = (, env') $ unlines
+cf2flex :: Maybe String -> String -> CF -> (String, SymMap)
+cf2flex inPackage name cf = (, env) $ unlines
     [ prelude inPackage name
     , cMacros cf
-    , lexSymbols env
-    , restOfFlex inPackage cf env'
+    , lexSymbols env0
+    , restOfFlex inPackage cf env
     ]
   where
-    env  = makeSymEnv (cfgSymbols cf ++ reservedWords cf) [0 :: Int ..]
-    env' = env ++ makeSymEnv (tokenNames cf) [length env ..]
+    env  = Map.fromList env1
+    env0 = makeSymEnv (cfgSymbols cf ++ reservedWords cf) [0 :: Int ..]
+    env1 = map (first Keyword) env0 ++ makeSymEnv (map Tokentype $ tokenNames cf) [length env0 ..]
     makeSymEnv = zipWith $ \ s n -> (s, "_SYMB_" ++ show n)
 
 prelude :: Maybe String -> String -> String
@@ -96,7 +99,7 @@ lexSymbols ss = concatMap transSym ss
         where
          s' = escapeChars s
 
-restOfFlex :: Maybe String -> CF -> SymEnv -> String
+restOfFlex :: Maybe String -> CF -> SymMap -> String
 restOfFlex inPackage cf env = unlines $ concat
   [ [ render $ lexComments inPackage (comments cf)
     , ""
@@ -122,7 +125,7 @@ restOfFlex inPackage cf env = unlines $ concat
          "     \t " ++ ns ++ "yylval._string = strdup(yytext); return " ++ sName name ++ ";"
      | (name, exp) <- tokenPragmas cf
      ]
-     where sName n = fromMaybe n $ lookup n env
+     where sName n = fromMaybe n $ Map.lookup (Tokentype n) env
    strStates =  --These handle escaped characters in Strings.
      [ "<YYINITIAL>\"\\\"\"      \t BEGIN STRING;"
      , "<STRING>\\\\      \t BEGIN ESCAPED;"

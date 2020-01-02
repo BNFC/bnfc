@@ -68,7 +68,7 @@ type MetaVar     = (String, Cat)
 
 -- | Creates the ANTLR parser grammar for this CF.
 --The environment comes from CFtoAntlr4Lexer
-cf2AntlrParse :: String -> String -> CF -> RecordPositions -> SymEnv -> String
+cf2AntlrParse :: String -> String -> CF -> RecordPositions -> KeywordEnv -> String
 cf2AntlrParse packageBase packageAbsyn cf _ env = unlines
     [ header
     , tokens
@@ -107,7 +107,7 @@ entrypoint cat =
 
 --The following functions are a (relatively) straightforward translation
 --of the ones in CFtoHappy.hs
-rulesForAntlr4 :: String -> CF -> SymEnv -> Rules
+rulesForAntlr4 :: String -> CF -> KeywordEnv -> Rules
 rulesForAntlr4 packageAbsyn cf env = map mkOne getrules
   where
     getrules          = ruleGroups cf
@@ -115,7 +115,7 @@ rulesForAntlr4 packageAbsyn cf env = map mkOne getrules
 
 -- | For every non-terminal, we construct a set of rules. A rule is a sequence of
 -- terminals and non-terminals, and an action to be performed.
-constructRule :: String -> CF -> SymEnv -> [Rule] -> NonTerminal -> PDef
+constructRule :: String -> CF -> KeywordEnv -> [Rule] -> NonTerminal -> PDef
 constructRule packageAbsyn cf env rules nt =
   PDef Nothing nt $
     [ ( p
@@ -177,7 +177,7 @@ generateAction packageAbsyn nt f ms rev
 -- (" /* empty */ ",[])
 -- >>> generatePatterns 3 [("def", "_SYMB_1")] $ Rule "myfun" (Cat "A") [Right "def", Left (Cat "B")] Parsable
 -- ("_SYMB_1 p_3_2=b",[("p_3_2",B)])
-generatePatterns :: Int -> SymEnv -> Rule -> (Pattern,[MetaVar])
+generatePatterns :: Int -> KeywordEnv -> Rule -> (Pattern,[MetaVar])
 generatePatterns ind env r =
   case rhsRule r of
     []  -> (" /* empty */ ", [])

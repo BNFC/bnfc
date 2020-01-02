@@ -56,6 +56,7 @@ import Prelude'
 import Data.Char  ( isUpper )
 import Data.List  ( nub, intercalate )
 import Data.Maybe ( fromMaybe )
+import qualified Data.Map as Map
 
 import BNFC.Backend.C.CFtoBisonC
   ( resultName, specialToks, startSymbol, typeName, unionBuiltinTokens, varName )
@@ -76,7 +77,7 @@ type Action      = String
 type MetaVar     = String
 
 --The environment comes from the CFtoFlex
-cf2Bison :: RecordPositions -> Maybe String -> String -> CF -> SymEnv -> String
+cf2Bison :: RecordPositions -> Maybe String -> String -> CF -> SymMap -> String
 cf2Bison rp inPackage name cf env
  = unlines
     [header inPackage name cf,
@@ -297,23 +298,26 @@ declarations cf = concatMap typeNT $
   typeNT nt = "%type <" ++ varName nt ++ "> " ++ identCat nt ++ "\n"
 
 --declares terminal types.
-tokens :: [UserDef] -> SymEnv -> String
-tokens user = concatMap $ \ (s, r) ->
-  concat [ "%token", when (s `elem` user) "<_string>", " ", r, "    //   ", s, "\n" ]
+tokens :: [UserDef] -> SymMap -> String
+tokens user env = unlines $ map declTok $ Map.toList env
+  where
+  declTok (Keyword   s, r) = tok "" s r
+  declTok (Tokentype s, r) = tok (if s `elem` user then "<_string>" else "") s r
+  tok t s r = concat [ "%token", t, " ", r, "    //   ", s ]
 
 --The following functions are a (relatively) straightforward translation
 --of the ones in CFtoHappy.hs
-rulesForBison :: RecordPositions -> Maybe String -> String -> CF -> SymEnv -> Rules
+rulesForBison :: RecordPositions -> Maybe String -> String -> CF -> SymMap -> Rules
 rulesForBison rp inPackage _ cf env = map mkOne (ruleGroups cf) ++ posRules where
   mkOne (cat,rules) = constructRule rp inPackage cf env rules cat
   posRules = (`map` positionCats cf) $ \ n -> (TokenCat n,
-    [( fromMaybe n $ lookup n env
+    [( fromMaybe n $ Map.lookup (Tokentype n) env
      , concat [ "$$ = new " , n , "($1," , nsString inPackage , "yy_mylinenumber) ; YY_RESULT_" , n , "_= $$ ;" ]
      )])
 
 -- For every non-terminal, we construct a set of rules.
 constructRule ::
-  RecordPositions -> Maybe String -> CF -> SymEnv -> [Rule] -> NonTerminal -> (NonTerminal,[(Pattern,Action)])
+  RecordPositions -> Maybe String -> CF -> SymMap -> [Rule] -> NonTerminal -> (NonTerminal,[(Pattern,Action)])
 constructRule rp inPackage cf env rules nt =
   (nt,[(p, generateAction rp inPackage nt (ruleName r) b m +++ result) |
      r0 <- rules,
@@ -361,7 +365,7 @@ generateAction rp inPackage cat f b mbs =
 
 -- Generate patterns and a set of metavariables indicating
 -- where in the pattern the non-terminal
-generatePatterns :: CF -> SymEnv -> Rule -> Bool -> (Pattern,[(MetaVar,Bool)])
+generatePatterns :: CF -> SymMap -> Rule -> Bool -> (Pattern,[(MetaVar,Bool)])
 generatePatterns cf env r _ = case rhsRule r of
   []  -> ("/* empty */",[])
   its -> (unwords (map mkIt its), metas its)
@@ -369,9 +373,9 @@ generatePatterns cf env r _ = case rhsRule r of
    mkIt = \case
      Left (TokenCat s)
        | isPositionCat cf s -> typeName s
-       | otherwise -> fromMaybe (typeName s) $ lookup s env
+       | otherwise -> fromMaybe (typeName s) $ Map.lookup (Tokentype s) env
      Left c  -> identCat c
-     Right s -> fromMaybe s $ lookup s env
+     Right s -> fromMaybe s $ Map.lookup (Keyword s) env
    metas its = [('$': show i,revert c) | (i,Left c) <- zip [1 :: Int ..] its]
 
    -- notice: reversibility with push_back vectors is the opposite
