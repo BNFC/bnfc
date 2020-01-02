@@ -67,8 +67,8 @@ makeC opts cf = do
 
 makefile :: String -> String -> String -> Doc
 makefile name prefix basename = vcat
-    [ "CC = gcc"
-    , "CCFLAGS = -g -W -Wall -Wno-unused-parameter -Wno-unused-function -Wno-unneeded-internal-declaration"
+    [ "CC = gcc -g"
+    , "CCFLAGS = --ansi -W -Wall -Wno-unused-parameter -Wno-unused-function -Wno-unneeded-internal-declaration"
     , ""
     , "FLEX = flex"
     , "FLEX_OPTS = -P" <> text prefix
@@ -95,7 +95,7 @@ makefile name prefix basename = vcat
       ]
     , Makefile.mkRule testName ["${OBJS}", "Test.o"]
       [ "@echo \"Linking " ++ testName ++ "...\""
-      , "${CC} ${CCFLAGS} ${OBJS} Test.o -o " ++ testName ]
+      , "${CC} ${OBJS} Test.o -o " ++ testName ]
     , Makefile.mkRule "Absyn.o" [ "Absyn.c", "Absyn.h"]
       [ "${CC} ${CCFLAGS} -c Absyn.c" ]
     , Makefile.mkRule "Lexer.c" [ name ++ ".l" ]

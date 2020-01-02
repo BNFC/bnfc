@@ -42,6 +42,7 @@ module BNFC.Backend.C.CFtoFlexC (cf2flex, lexComments, cMacros, commentStates) w
 
 import Prelude'
 import Data.Bifunctor (first)
+import Data.List  (isInfixOf)
 import Data.Maybe (fromMaybe)
 import qualified Data.Map as Map
 
@@ -49,7 +50,7 @@ import BNFC.CF
 import BNFC.Backend.C.RegToFlex
 import BNFC.Backend.Common.NamedVariables
 import BNFC.PrettyPrint
-import BNFC.Utils (cstring)
+import BNFC.Utils (cstring, unless)
 
 -- | Entrypoint.
 cf2flex :: String -> CF -> (String, SymMap) -- The environment is reused by the parser.
@@ -84,7 +85,7 @@ prelude name = unlines
    "char YY_PARSED_STRING[YY_BUFFER_LENGTH];",
    "void YY_BUFFER_APPEND(char *s)",
    "{",
-   "  strcat(YY_PARSED_STRING, s); //Do something better here!",
+   "  strcat(YY_PARSED_STRING, s); /* Do something better here! */",
    "}",
    "void YY_BUFFER_RESET(void)",
    "{",
@@ -209,8 +210,8 @@ restOfFlex cf env = unlines $ concat
 -- delimiters.
 --
 -- >>> lexComments (Just "myns.") ([("{-","-}")],["--"])
--- <YYINITIAL>"--"[^\n]* /* skip */; // BNFC: comment "--";
--- <YYINITIAL>"{-" BEGIN COMMENT; // BNFC: block comment "{-" "-}";
+-- <YYINITIAL>"--"[^\n]* /* skip */; /* BNFC: comment "--" */
+-- <YYINITIAL>"{-" BEGIN COMMENT; /* BNFC: block comment "{-" "-}" */
 -- <COMMENT>"-}" BEGIN YYINITIAL;
 -- <COMMENT>.    /* skip */;
 -- <COMMENT>[\n] /* skip */;
@@ -230,15 +231,18 @@ commentStates = map ("COMMENT" ++) $ "" : map show [1..]
 -- comment.
 --
 -- >>> lexSingleComment "--"
--- <YYINITIAL>"--"[^\n]* /* skip */; // BNFC: comment "--";
+-- <YYINITIAL>"--"[^\n]* /* skip */; /* BNFC: comment "--" */
 --
 -- >>> lexSingleComment "\""
--- <YYINITIAL>"\""[^\n]* /* skip */; // BNFC: comment "\"";
+-- <YYINITIAL>"\""[^\n]* /* skip */; /* BNFC: comment "\"" */
 lexSingleComment :: String -> Doc
 lexSingleComment c =
     "<YYINITIAL>" <> cstring c <> "[^\\n]*"
     <+> "/* skip */;"
-    <+> "// BNFC: comment" <+> cstring c <> ";"
+    <+> unless (containsCCommentMarker c) ("/* BNFC: comment" <+> cstring c <+> "*/")
+
+containsCCommentMarker :: String -> Bool
+containsCCommentMarker s = "/*" `isInfixOf` s || "*/" `isInfixOf` s
 
 -- | Create a lexer rule for multi-lines comments.
 -- The first argument is -- an optional c++ namespace
@@ -249,20 +253,21 @@ lexSingleComment c =
 -- with another.  However this seems rare.
 --
 -- >>> lexMultiComment ("{-", "-}") "COMMENT"
--- <YYINITIAL>"{-" BEGIN COMMENT; // BNFC: block comment "{-" "-}";
+-- <YYINITIAL>"{-" BEGIN COMMENT; /* BNFC: block comment "{-" "-}" */
 -- <COMMENT>"-}" BEGIN YYINITIAL;
 -- <COMMENT>.    /* skip */;
 -- <COMMENT>[\n] /* skip */;
 --
 -- >>> lexMultiComment ("\"'", "'\"") "COMMENT"
--- <YYINITIAL>"\"'" BEGIN COMMENT; // BNFC: block comment "\"'" "'\"";
+-- <YYINITIAL>"\"'" BEGIN COMMENT; /* BNFC: block comment "\"'" "'\"" */
 -- <COMMENT>"'\"" BEGIN YYINITIAL;
 -- <COMMENT>.    /* skip */;
 -- <COMMENT>[\n] /* skip */;
 lexMultiComment :: (String, String) -> String -> Doc
 lexMultiComment (b,e) comment = vcat
     [ "<YYINITIAL>" <> cstring b <+> "BEGIN" <+> text comment <> ";"
-        <+> "// BNFC: block comment" <+> cstring b <+> cstring e <> ";"
+      <+> unless (containsCCommentMarker b || containsCCommentMarker e)
+          ("/* BNFC: block comment" <+> cstring b <+> cstring e <+> "*/")
     , commentTag <> cstring e <+> "BEGIN YYINITIAL;"
     , commentTag <> ".    /* skip */;"
     , commentTag <> "[\\n] /* skip */;"

@@ -5,8 +5,8 @@ import BNFC.PrettyPrint
 
 makefile :: String -> String -> Doc
 makefile name basename = vcat
-    [ mkVar "CC" "g++"
-    , mkVar "CCFLAGS" "-g -W -Wall -Wno-unused-parameter -Wno-unused-function -Wno-unneeded-internal-declaration"
+    [ mkVar "CC" "g++ -g"
+    , mkVar "CCFLAGS" "--ansi -W -Wall -Wno-unused-parameter -Wno-unused-function -Wno-unneeded-internal-declaration"
     , ""
     , mkVar "FLEX" "flex"
     , mkVar "FLEX_OPTS" ("-P" ++ name)
@@ -33,7 +33,7 @@ makefile name basename = vcat
         ]
     , mkRule testName [ "${OBJS}", "Test.o" ]
         [ "@echo \"Linking " ++ testName ++ "...\""
-        , "${CC} ${CCFLAGS} ${OBJS} Test.o -o " ++ testName ]
+        , "${CC} ${OBJS} Test.o -o " ++ testName ]
     , mkRule "Absyn.o" [ "Absyn.C", "Absyn.H" ]
         [ "${CC} ${CCFLAGS} -c Absyn.C" ]
     , mkRule "Lexer.C" [ name ++ ".l" ]
