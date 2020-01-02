@@ -107,7 +107,6 @@ data SymKey
 -- [("A",1),("B",0),("A",2)]
 --
 getVars :: [Cat] -> [IVar]
-getVars [] = []
 getVars cs = foldl addVar [] (map identCat cs)
   where
     addVar vs = addVar' vs 0
