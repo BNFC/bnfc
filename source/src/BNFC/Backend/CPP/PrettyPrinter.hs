@@ -285,21 +285,21 @@ mkCFile useStl inPackage cf groups = concat
       "{",
       "  char tmp[20];",
       "  sprintf(tmp, \"%d\", i);",
-      "  bufAppend(tmp);",
+      "  render(tmp);",
       "}",
       "",
       "void PrintAbsyn::visitDouble(Double d)",
       "{",
       "  char tmp[24];",
       "  sprintf(tmp, \"%g\", d);",
-      "  bufAppend(tmp);",
+      "  render(tmp);",
       "}",
       "",
       "void PrintAbsyn::visitChar(Char c)",
       "{",
-      "  bufAppend('\\'');",
-      "  bufAppend(c);",
-      "  bufAppend('\\'');",
+      "  char tmp[4];",
+      "  sprintf(tmp, \"'%c'\", c);",
+      "  render(tmp);",
       "}",
       "",
       "void PrintAbsyn::visitString(String s)",
@@ -307,6 +307,7 @@ mkCFile useStl inPackage cf groups = concat
       "  bufAppend('\\\"');",
       "  bufAppend(s);",
       "  bufAppend('\\\"');",
+      "  bufAppend(' ');",
       "}",
       "",
       "void PrintAbsyn::visitIdent(String s)",
@@ -430,7 +431,7 @@ prPrintData _ inPackage _cf (cat, rules) = -- Not a list
 -- }
 genPrintVisitorList :: (Cat, [Rule]) -> Doc
 genPrintVisitorList (cat@(ListCat c), rules) =
-    "void PrintAbsyn::visit" <> text cl <> "("<> text cl <> " *" <> vname <> ")"
+    "void PrintAbsyn::visit" <> text cl <> "(" <> text cl <> " *" <> vname <> ")"
     $$ codeblock 2
       [ "for ("<> text cl <> "::const_iterator i = " <> vname <> "->begin() ; i != " <> vname <> "->end() ; ++i)"
       , codeblock 2
@@ -443,27 +444,28 @@ genPrintVisitorList (cat@(ListCat c), rules) =
             <+> renderListSepByPrecedence "_i_" renderSep separators
           ]
       ]
- where
-   separators = getSeparatorByPrecedence rules
-   cl = identCat (normCat cat)
-   vname = text $ map toLower cl
-   renderSep s = "render(" <> text (snd (renderCharOrString s')) <> ")"
-     where s' = if null s then " " else s
+  where
+   separators  = getSeparatorByPrecedence rules
+   cl          = identCat (normCat cat)
+   vname       = text $ map toLower cl
+   renderSep s = "render(" <> text (snd (renderCharOrString s)) <> ")"
+
 genPrintVisitorList _ = error "genPrintVisitorList expects a ListCat"
 
 -- | This is the only part of the pretty printer that differs significantly
 -- between the versions with and without STL.
 genPrintVisitorListNoStl :: (Cat, [Rule]) -> String
-genPrintVisitorListNoStl (cat@(ListCat c), rules) = unlines
-    [ "void PrintAbsyn::visit" ++ cl ++ "("++ cl ++ " *" ++ vname ++ ")"
+genPrintVisitorListNoStl (cat@(ListCat c), rules) = unlines $ concat
+  [ [ "void PrintAbsyn::visit" ++ cl ++ "("++ cl ++ " *" ++ vname ++ ")"
     , "{"
     , "  while(" ++ vname +++ "!= 0)"
     , "  {"
     , "    if (" ++ vname ++ "->" ++ vname ++ "_ == 0)"
     , "    {"
     , visitMember
-    , optsep
-    , "      " ++ vname +++ "= 0;"
+    ]
+  , optsep
+  , [ "      " ++ vname +++ "= 0;"
     , "    }"
     , "    else"
     , "    {"
@@ -475,18 +477,19 @@ genPrintVisitorListNoStl (cat@(ListCat c), rules) = unlines
     , "}"
     , ""
     ]
+  ]
   where
     visitMember = if isTokenCat c
         then "      visit" ++ funName c ++ "(" ++ vname ++ "->" ++ member ++ ");"
         else "      " ++ vname ++ "->" ++ member ++ "->accept(this);"
-    cl = identCat (normCat cat)
-    ecl = identCat (normCatOfList cat)
-    vname = map toLower cl
+    cl     = identCat (normCat cat)
+    ecl    = identCat (normCatOfList cat)
+    vname  = map toLower cl
     member = map toLower ecl ++ "_"
-    optsep = if hasOneFunc rules then "" else "      render(" ++ sep' ++ ");"
-    sepFix sep  = if null sep then " " else sep
-    sep' = snd $ renderCharOrString $ sepFix $ getCons rules
-    renderSep s = "render(" <> text (snd $ renderCharOrString $ sepFix s) <> ")"
+    optsep = if hasOneFunc rules || null sep' then []
+             else [ "      render(" ++ sep' ++ ");" ]
+    sep' = snd $ renderCharOrString $ getCons rules
+    renderSep s = "render(" <> text (snd $ renderCharOrString s) <> ")"
     separators = getSeparatorByPrecedence rules
 genPrintVisitorListNoStl _ = error "genPrintVisitorListNoStl expects a ListCat"
 
@@ -706,7 +709,6 @@ prRender useStl = unlines $ concat
       "  else if (c == 0) return;",
       "  else",
       "  {",
-      "     bufAppend(' ');",
       "     bufAppend(c);",
       "     bufAppend(' ');",
       "  }",

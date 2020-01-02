@@ -192,7 +192,7 @@ mkCFile cf groups = concat
       -- of a 64bit integer.  Might not be needed here, but does not hurt.
       "  char tmp[20];",
       "  sprintf(tmp, \"%d\", n);",
-      "  bufAppendS(tmp);",
+      "  renderS(tmp);",
       "}",
       "void ppDouble(Double d, int i)",
       "{",
@@ -202,19 +202,20 @@ mkCFile cf groups = concat
       -- (*)  5 digits for the exponent
       "  char tmp[24];",
       "  sprintf(tmp, \"%g\", d);",
-      "  bufAppendS(tmp);",
+      "  renderS(tmp);",
       "}",
       "void ppChar(Char c, int i)",
       "{",
-      "  bufAppendC('\\'');",
-      "  bufAppendC(c);",
-      "  bufAppendC('\\'');",
+      "  char tmp[4];",
+      "  sprintf(tmp, \"'%c'\", c);",
+      "  renderS(tmp);",
       "}",
       "void ppString(String s, int i)",
       "{",
       "  bufAppendC('\\\"');",
       "  bufAppendS(s);",
       "  bufAppendC('\\\"');",
+      "  bufAppendC(' ');",
       "}",
       "void ppIdent(String s, int i)",
       "{",
@@ -366,13 +367,13 @@ prPrintData (cat, rules)
       , visitMember
       ]
     , unless (hasOneFunc rules)
-      [ "      " ++ render (renderSep sep') ++ ";" ]
+      [ "      " ++ render (renderX $ getCons rules) ++ ";" ]
     , [ "      " ++ vname +++ "= 0;"
       , "    }"
       , "    else"
       , "    {"
       , visitMember
-      , render (nest 6 (renderListSepByPrecedence "i" renderSep
+      , render (nest 6 (renderListSepByPrecedence "i" renderX
           (getSeparatorByPrecedence rules)))
       , "      " ++ vname +++ "=" +++ vname ++ "->" ++ vname ++ "_;"
       , "    }"
@@ -402,8 +403,6 @@ prPrintData (cat, rules)
    vname       = map toLower cl
    member      = map toLower ecl
    visitMember = "      pp" ++ ecl ++ "(" ++ vname ++ "->" ++ member ++ "_, i);"
-   renderSep s = renderX $ if null s then " " else s
-   sep'        = getCons rules
 
 -- | Helper function that call the right c function (renderC or renderS) to
 -- render a literal string.
@@ -621,7 +620,6 @@ prRender = unlines
       "  else if (c == 0) return;",
       "  else",
       "  {",
-      "     bufAppendC(' ');",
       "     bufAppendC(c);",
       "     bufAppendC(' ');",
       "  }",
