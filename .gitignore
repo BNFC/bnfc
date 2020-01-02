@@ -64,8 +64,7 @@ cabal.sandbox.config
 /examples/cpp/csharp/
 /examples/cpp/pygments/
 
-/examples/GF/GF/
-/examples/GF/ANTLR/
+/examples/GF/haskell/
 
 /examples/Java/agda
 /examples/Java/cpp
@@ -73,11 +72,10 @@ cabal.sandbox.config
 /examples/Java/java/
 /examples/Java/ocaml/
 
-/examples/Javalette/JavaletteLight/
-/examples/Javalette/Makefile
 /examples/Javalette/java-antlr/
-/examples/prolog/Makefile
-/examples/prolog/Prolog/
+/examples/Javalette/c/
+
+/examples/prolog/haskell/
 
 /testing/regression-tests/#100_coercion_lists/c/
 /testing/regression-tests/#100_coercion_lists/cpp/
@@ -87,8 +85,11 @@ cabal.sandbox.config
 
 /testing/regression-tests/202_comments/C/
 /testing/regression-tests/202_comments/haskell/
+/testing/regression-tests/202_comments/cpp-nostl/
 
 /testing/regression-tests/222_IntegerList/c/
+/testing/regression-tests/222_IntegerList/cpp/
+/testing/regression-tests/222_IntegerList/cpp-nostl/
 
 /testing/regression-tests/278_Keywords/agda/
 /testing/regression-tests/278_Keywords/c/
