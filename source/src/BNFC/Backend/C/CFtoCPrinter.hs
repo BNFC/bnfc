@@ -187,13 +187,20 @@ mkCFile cf groups = concat
      [
       "void ppInteger(Integer n, int i)",
       "{",
-      "  char tmp[16];",
+      -- https://stackoverflow.com/questions/10536207/ansi-c-maximum-number-of-characters-printing-a-decimal-int
+      -- A buffer of 20 characters is sufficient to print the decimal representation
+      -- of a 64bit integer.  Might not be needed here, but does not hurt.
+      "  char tmp[20];",
       "  sprintf(tmp, \"%d\", n);",
       "  bufAppendS(tmp);",
       "}",
       "void ppDouble(Double d, int i)",
       "{",
-      "  char tmp[16];",
+      -- https://stackoverflow.com/questions/1701055/what-is-the-maximum-length-in-chars-needed-to-represent-any-double-value
+      -- Recommended buffer size is 24 for doubles (IEEE-754):
+      -- (*) 17 digits for the decimal representation of the integral part
+      -- (*)  5 digits for the exponent
+      "  char tmp[24];",
       "  sprintf(tmp, \"%g\", d);",
       "  bufAppendS(tmp);",
       "}",
@@ -228,13 +235,13 @@ mkCFile cf groups = concat
      [
       "void shInteger(Integer i)",
       "{",
-      "  char tmp[16];",
+      "  char tmp[20];",
       "  sprintf(tmp, \"%d\", i);",
       "  bufAppendS(tmp);",
       "}",
       "void shDouble(Double d)",
       "{",
-      "  char tmp[16];",
+      "  char tmp[24];",
       "  sprintf(tmp, \"%g\", d);",
       "  bufAppendS(tmp);",
       "}",
