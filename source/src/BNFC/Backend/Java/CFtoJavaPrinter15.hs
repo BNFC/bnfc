@@ -95,11 +95,11 @@ cf2JavaPrinter packageBase packageAbsyn cf =
       ]
     footer = unlines [ --later only include used categories
       "  private static void pp(Integer n, int _i_) { buf_.append(n); buf_.append(\" \"); }",
-      "  private static void pp(Double d, int _i_) { buf_.append(d); buf_.append(\" \"); }",
+      "  private static void pp(Double d, int _i_) { buf_.append(String.format(java.util.Locale.ROOT, \"%.15g \", d)); }",
       "  private static void pp(String s, int _i_) { buf_.append(s); buf_.append(\" \"); }",
       "  private static void pp(Character c, int _i_) { buf_.append(\"'\" + c.toString() + \"'\"); buf_.append(\" \"); }",
       "  private static void sh(Integer n) { render(n.toString()); }",
-      "  private static void sh(Double d) { render(d.toString()); }",
+      "  private static void sh(Double d) { render(String.format(java.util.Locale.ROOT, \"%.15g\", d)); }",
       "  private static void sh(Character c) { render(\"'\" + c.toString() + \"'\"); }",
       "  private static void sh(String s) { printQuoted(s); }",
       "  private static void printQuoted(String s) { render(\"\\\"\" + s + \"\\\"\"); }",

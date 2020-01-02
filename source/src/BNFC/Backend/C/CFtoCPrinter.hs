@@ -201,7 +201,7 @@ mkCFile cf groups = concat
       -- (*) 17 digits for the decimal representation of the integral part
       -- (*)  5 digits for the exponent
       "  char tmp[24];",
-      "  sprintf(tmp, \"%g\", d);",
+      "  sprintf(tmp, \"%.15g\", d);",
       "  renderS(tmp);",
       "}",
       "void ppChar(Char c, int i)",
@@ -243,7 +243,7 @@ mkCFile cf groups = concat
       "void shDouble(Double d)",
       "{",
       "  char tmp[24];",
-      "  sprintf(tmp, \"%g\", d);",
+      "  sprintf(tmp, \"%.15g\", d);",
       "  bufAppendS(tmp);",
       "}",
       "void shChar(Char c)",

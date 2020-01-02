@@ -122,7 +122,7 @@ integerRule cf = unlines [
     ]
 
 doubleRule cf = unlines [
-    "let rec prtFloat (_:int) (f:float) : doc = render (sprintf \"%g\" f)",
+    "let rec prtFloat (_:int) (f:float) : doc = render (sprintf \"%.15g\" f)",
     ifList cf (TokenCat catDouble),
     ""
     ]
