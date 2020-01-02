@@ -78,7 +78,7 @@ prelude inPackage _ = unlines
    "#define YY_BUFFER_LENGTH 4096",
    "extern int " ++ nsString inPackage ++ "yy_mylinenumber ;", --- hack to get line number. AR 2006
    "static char YY_PARSED_STRING[YY_BUFFER_LENGTH];",
-   "static void YY_BUFFER_APPEND(char *s)",
+   "static void YY_BUFFER_APPEND(const char *s)",
    "{",
    "  strcat(YY_PARSED_STRING, s); //Do something better here!",
    "}",
