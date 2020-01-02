@@ -356,7 +356,7 @@ importPragmas tokenText mods = vcat $ map imp $ prelude ++ extra ++ mods
     StringToken     -> []
     ByteStringToken -> [ "qualified Data.ByteString.Char8 as BS" ]
   prelude =
-    [ "Prelude (Char, Double, Integer, String, (.))"
+    [ "Prelude (Bool, Char, Double, Integer, String, (.))"
     , "qualified Data.Text"
     ]
 

@@ -81,6 +81,7 @@ cabal.sandbox.config
 /testing/regression-tests/#100_coercion_lists/cpp/
 /testing/regression-tests/#100_coercion_lists/java/
 
+/testing/regression-tests/194_layout/agda/
 /testing/regression-tests/194_layout/haskell/
 
 /testing/regression-tests/202_comments/C/
