@@ -39,6 +39,7 @@ import Data.List    (nub, partition)
 import Data.Maybe   (mapMaybe)
 
 import qualified Data.Foldable as Fold
+import qualified Data.Set      as Set
 
 import System.Exit (exitFailure)
 import System.IO   (hPutStrLn, stderr)
@@ -114,6 +115,19 @@ parseCFP opts target content = do
        -> putStrLn $ unlines $
             [ "Warning: names not unique ignoring case: " ++ unwords ns
             , "This can be an error in other backends."
+            ]
+
+  -- Fail if the grammar uses defined constructors which are not actually defined.
+  let definedConstructor = \case
+        FunDef x _ _ -> Just x
+        _ -> Nothing
+  let definedConstructors = Set.fromList $ mapMaybe definedConstructor $ cfgPragmas cf
+  let undefinedConstructor x = isDefinedRule x && x `Set.notMember` definedConstructors
+  case filter undefinedConstructor $ map funRule $ cfgRules cf of
+    [] -> return ()
+    xs -> die $ unlines $
+            [ "Lower case rule labels need a definition."
+            , "ERROR: undefined rule label(s): " ++ unwords xs
             ]
 
   -- Print warnings if user defined nullable tokens.
