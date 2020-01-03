@@ -49,6 +49,7 @@
 module BNFC.Backend.CPP.STL.CFtoBisonSTL
   ( cf2Bison
   , tokens, union
+  , definedRules
   ) where
 
 import Prelude'
