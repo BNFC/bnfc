@@ -114,7 +114,7 @@ prDataH (cat, rules) =
 
 --Visit functions for a rule.
 prRuleH :: Rule -> String
-prRuleH (Rule fun _ _ _) | not (isCoercion fun) = concat
+prRuleH (Rule fun _ _ _) | not (isCoercion fun) && not (isDefinedRule fun) = concat
   ["  void visit", fun, "(", fun, " *", fnm, ");\n"]
    where
     fnm = mkVariable fun
@@ -200,7 +200,7 @@ prData user (cat, rules) =
   "}",
   ""
  ] --Not a list:
- else abstract ++ (concatMap (render . prRule) rules)
+ else abstract ++ (concatMap (render . prRule) $ filter (not . isDefinedRule . funRule) rules)
  where
    cl = identCat (normCat cat)
    vname = mkVariable cl
