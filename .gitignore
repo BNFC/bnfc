@@ -117,3 +117,13 @@ cabal.sandbox.config
 /testing/regression-tests/235_SymbolsOverlapTokens/ocaml-menhir/
 /testing/regression-tests/235_SymbolsOverlapTokens/xml/
 /testing/regression-tests/235_SymbolsOverlapTokens/xmlt/
+
+/testing/regression-tests/266_define/agda/
+/testing/regression-tests/266_define/cnf/
+/testing/regression-tests/266_define/c/
+/testing/regression-tests/266_define/cpp*/
+/testing/regression-tests/266_define/glr/
+/testing/regression-tests/266_define/haskell*/
+/testing/regression-tests/266_define/java*/
+/testing/regression-tests/266_define/ocaml*/
+/testing/regression-tests/266_define/xml*/

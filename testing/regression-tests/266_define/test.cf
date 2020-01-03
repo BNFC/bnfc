@@ -1,0 +1,10 @@
+entrypoints Exp                  ;
+
+EHalf.   Exp2  ::= "1/2"         ;
+EDouble. Exp2  ::= Double        ;
+eSqrt.   Exp1  ::= "sqrt" Exp1   ;
+EPower.  Exp   ::= Exp1 "**" Exp ;
+
+coercions Exp 2                  ;
+
+define eSqrt e = EPower e EHalf  ;
