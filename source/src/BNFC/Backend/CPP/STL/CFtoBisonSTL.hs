@@ -128,8 +128,8 @@ header inPackage name cf = unlines
     , "    "++ns++"yy_mylinenumber, str, "++ns++"yytext);"
     , "}"
     , ""
-    , definedRules cf
     , nsStart inPackage
+    , definedRules cf
     , unlines $ map parseResult dats
     , unlines $ map (parseMethod cf inPackage name) eps
     , nsEnd inPackage
