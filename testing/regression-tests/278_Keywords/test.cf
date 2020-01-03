@@ -1,6 +1,8 @@
 -- Andreas, 2019-12-16
 -- A grammar of keywords of the C, C++, Haskell, Java, Ocaml backends
 
+-- Andreas, 2020-01-03: merge in testcase for issue #134
+
 Prg. Program ::=
     Abstract
     And
@@ -60,6 +62,7 @@ Prg. Program ::=
     Functor
     Goto
     Hiding
+    I               -- issue #134
     If
     Implements
     Import
@@ -219,6 +222,7 @@ Function_Mk         .  Function             ::= "function"         ;
 Functor_Mk          .  Functor              ::= "functor"          ;
 Goto_Mk             .  Goto                 ::= "goto"             ;
 Hiding_Mk           .  Hiding               ::= "hiding"           ;
+I_Mk                .  I                    ::= "i"                ; -- issue #134
 If_Mk               .  If                   ::= "if"               ;
 Implements_Mk       .  Implements           ::= "implements"       ;
 Import_Mk           .  Import               ::= "import"           ;
@@ -379,6 +383,7 @@ function
 functor
 goto
 hiding
+i
 if
 implements
 import

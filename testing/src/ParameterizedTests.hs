@@ -168,7 +168,6 @@ testCases params =
         , "204_InternalToken"
         , "249_unicode"
         , "#100_coercion_lists"
-        , "#134_category_named_I"
         , "comments"
         , "#149"
         ]
