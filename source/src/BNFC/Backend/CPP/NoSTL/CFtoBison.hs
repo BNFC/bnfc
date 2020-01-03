@@ -95,7 +95,7 @@ header name cf = unlines
     , "int yyparse(void);"
     , "int yylex(void);"
     , "int yy_mylinenumber;"  --- hack to get line number. AR 2006
-    , "int initialize_lexer(FILE * inp);"
+    , "void initialize_lexer(FILE * inp);"
     , "int yywrap(void)"
     , "{"
     , "  return 1;"

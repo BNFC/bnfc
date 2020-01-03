@@ -115,7 +115,7 @@ header inPackage name cf = unlines
     , "YY_BUFFER_STATE " ++ ns ++ "yy_scan_string(const char *str);"
     , "void " ++ ns ++ "yy_delete_buffer(YY_BUFFER_STATE buf);"
     , "int " ++ ns ++ "yy_mylinenumber;"  --- hack to get line number. AR 2006
-    , "int " ++ ns ++ "initialize_lexer(FILE * inp);"
+    , "void " ++ ns ++ "initialize_lexer(FILE * inp);"
     , "int " ++ ns ++ "yywrap(void)"
     , "{"
     , "  return 1;"
