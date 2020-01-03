@@ -60,7 +60,7 @@ cf2Happy name absName lexName mode tokenText functor cf = unlines
   , delimiter
   , specialRules absName tokenText cf
   , render $ prRules absName functor (rulesForHappy absName functor cf)
-  , finalize cf
+  , finalize absName cf
   ]
 
 -- | Construct the header.
@@ -222,8 +222,8 @@ prRules absM functor = vcat . map prOne
 
 -- Finally, some haskell code.
 
-finalize :: CF -> String
-finalize cf = unlines $ concat $
+finalize :: ModuleName -> CF -> String
+finalize absM cf = unlines $ concat $
   [ [ "{"
     , ""
     , "happyError :: [" ++ tokenName ++ "] -> Either String a"
@@ -241,21 +241,26 @@ finalize cf = unlines $ concat $
     , ""
     , "myLexer = tokens"
     ]
-  , definedRules cf
+  , definedRules absM cf
   , [ "}"
     ]
   ]
 
-definedRules cf = [ mkDef f xs e | FunDef f xs e <- cfgPragmas cf ]
+-- | Generate Haskell code for the @define@d constructors.
+definedRules :: ModuleName -> CF -> [String]
+definedRules absM cf = [ mkDef f xs e | FunDef f xs e <- cfgPragmas cf ]
     where
         mkDef f xs e = unwords $ (f ++ "_") : xs' ++ ["=", show e']
             where
-                xs' = map (++"_") xs
+                xs' = map (++ "_") xs
                 e'  = underscore e
         underscore (App x es)
             | isLower $ head x  = App (x ++ "_") $ map underscore es
-            | otherwise         = App x $ map underscore es
+            | otherwise         = App (qual x) $ map underscore es
         underscore e          = e
+        qual x
+          | null absM = x
+          | otherwise = concat [ absM, ".", x ]
 
 -- | GF literals.
 specialToks :: CF -> [String]
