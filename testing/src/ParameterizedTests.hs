@@ -47,8 +47,7 @@ allWithParams :: TestParameters -> Test
 allWithParams params = makeTestSuite (tpName params) $ concat $
   [ testCases params
   , map ($ params) $
-    [ noRulesTest
-    , exitCodeTest
+    [ exitCodeTest
     , entrypointTest
     , exampleTests
     , distcleanTest
@@ -85,17 +84,18 @@ layoutTest = makeTestSuite "Layout parsing test" $
   , haskellGADTParameters
   ]
 
--- | BNFC should not proceed if grammar does not define any rules.
-noRulesTest :: TestParameters -> Test
-noRulesTest params = do
-  makeShellyTest "#254: BNFC should raise error if grammar contains no rules" $
-    withTmpDir $ \ tmp -> do
-      cd tmp
-      writefile "Empty.cf" "-- This file contains no rules"
-      assertExitCode 1 $ tpBnfc params "Empty.cf"
-      err <- lastStderr
-      unless (Text.isInfixOf "ERROR" err) $
-        assertFailure "Expected BNFC to die with ERROR message."
+-- #254 is now covered by fail-lbnf/254-empty-input
+-- -- | BNFC should not proceed if grammar does not define any rules.
+-- noRulesTest :: TestParameters -> Test
+-- noRulesTest params = do
+--   makeShellyTest "#254: BNFC should raise error if grammar contains no rules" $
+--     withTmpDir $ \ tmp -> do
+--       cd tmp
+--       writefile "Empty.cf" "-- This file contains no rules"
+--       assertExitCode 1 $ tpBnfc params "Empty.cf"
+--       err <- lastStderr
+--       unless (Text.isInfixOf "ERROR" err) $
+--         assertFailure "Expected BNFC to die with ERROR message."
 
 -- | This tests checks that when given an invalid input, the generated example
 -- application exits with a non-zero exit code.
@@ -285,10 +285,17 @@ haskellRunTestProg _lang args = do
 parameters :: [TestParameters]
 parameters = concat
   [ []
-    -- C
-  , [ cBase { tpName = "C"
-            , tpBuild = tpMake ["CC_OPTS=-Wstrict-prototypes -Werror"]  -- additional flags
-            , tpBnfcOptions = ["--c"] }
+    -- Haskell
+  , [ hsParams { tpName = "Haskell (with generic)"
+               , tpBnfcOptions = ["--haskell", "--generic"] }
+    , hsParams { tpName = "Haskell (with functor)"
+               , tpBnfcOptions = ["--haskell", "--functor"] }
+    , hsParams { tpName = "Haskell (with namespace)"
+               , tpBnfcOptions = ["--haskell", "-p", "Language", "-d"] }
+    ]
+    -- C++ (extras)
+  , [ cBase { tpName = "C++ (with namespace)"
+            , tpBnfcOptions = ["--cpp", "-p foobar"] }
     ]
     -- C++ (basic)
   , [ cBase { tpName = "C++ (no STL)"
@@ -296,9 +303,14 @@ parameters = concat
     , cBase { tpName = "C++"
             , tpBnfcOptions = ["--cpp"] }
     ]
-    -- C++ (extras)
-  , [ cBase { tpName = "C++ (with namespace)"
-            , tpBnfcOptions = ["--cpp", "-p foobar"] }
+    -- Haskell/GADT
+  , [ haskellGADTParameters ]
+    -- Agda
+  , [ haskellAgdaParameters ]
+    -- C
+  , [ cBase { tpName = "C"
+            , tpBuild = tpMake ["CC_OPTS=-Wstrict-prototypes -Werror"]  -- additional flags
+            , tpBnfcOptions = ["--c"] }
     ]
     -- OCaml
   , [ base { tpName = "OCaml"
@@ -310,18 +322,6 @@ parameters = concat
            , tpBuild = tpMake ["OCAMLCFLAGS=-safe-string"]
            , tpBnfcOptions = ["--ocaml", "--menhir"] }
     ]
-    -- Haskell/GADT
-  , [ haskellGADTParameters ]
-    -- Haskell
-  , [ hsParams { tpName = "Haskell (with ghc)"
-               , tpBnfcOptions = ["--haskell", "--ghc"] }
-    , hsParams { tpName = "Haskell (with functor)"
-               , tpBnfcOptions = ["--haskell", "--functor"] }
-    , hsParams { tpName = "Haskell (with namespace)"
-               , tpBnfcOptions = ["--haskell", "-p", "Language", "-d"] }
-    ]
-    -- Agda
-  , [ haskellAgdaParameters ]
     -- Java (basic)
   , [ javaParams { tpName = "Java"
                  , tpBnfcOptions = ["--java"] }
