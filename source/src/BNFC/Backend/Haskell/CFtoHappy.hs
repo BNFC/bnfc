@@ -60,7 +60,7 @@ cf2Happy name absName lexName mode tokenText functor cf = unlines
   , delimiter
   , specialRules absName tokenText cf
   , render $ prRules absName functor (rulesForHappy absName functor cf)
-  , finalize absName cf
+  , finalize absName functor cf
   ]
 
 -- | Construct the header.
@@ -222,8 +222,8 @@ prRules absM functor = vcat . map prOne
 
 -- Finally, some haskell code.
 
-finalize :: ModuleName -> CF -> String
-finalize absM cf = unlines $ concat $
+finalize :: ModuleName -> Bool -> CF -> String
+finalize absM functor cf = unlines $ concat $
   [ [ "{"
     , ""
     , "happyError :: [" ++ tokenName ++ "] -> Either String a"
@@ -241,26 +241,31 @@ finalize absM cf = unlines $ concat $
     , ""
     , "myLexer = tokens"
     ]
-  , definedRules absM cf
+  , definedRules absM functor cf
   , [ "}"
     ]
   ]
 
 -- | Generate Haskell code for the @define@d constructors.
-definedRules :: ModuleName -> CF -> [String]
-definedRules absM cf = [ mkDef f xs e | FunDef f xs e <- cfgPragmas cf ]
+definedRules :: ModuleName -> Bool -> CF -> [String]
+definedRules absM functor cf = [ mkDef f xs e | FunDef f xs e <- cfgPragmas cf ]
     where
         mkDef f xs e = unwords $ (f ++ "_") : xs' ++ ["=", show e']
             where
-                xs' = map (++ "_") xs
+                xs' = addFunctorArg id $ map (++ "_") xs
                 e'  = underscore e
         underscore (App x es)
-            | isLower $ head x  = App (x ++ "_") $ map underscore es
-            | otherwise         = App (qual x) $ map underscore es
+            | isLower $ head x  = App (x ++ "_") $ map underscore es  -- TODO nested define!
+            | otherwise         = App (qual x) es'
+          where es' = addFunctorArg (`App` []) $ map underscore es
         underscore e          = e
         qual x
           | null absM = x
           | otherwise = concat [ absM, ".", x ]
+        -- Functor argument
+        addFunctorArg g
+          | functor = (g "_a" :)
+          | otherwise = id
 
 -- | GF literals.
 specialToks :: CF -> [String]
