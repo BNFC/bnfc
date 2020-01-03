@@ -40,6 +40,7 @@ data Mode
 data Target = TargetC | TargetCpp | TargetCppNoStl | TargetCSharp
             | TargetHaskell | TargetHaskellGadt | TargetLatex
             | TargetJava | TargetOCaml | TargetProfile | TargetPygments
+            | TargetCheck
   deriving (Eq, Bounded, Enum, Ord)
 
 -- | List of all targets (using the enum and bounded classes).
@@ -62,6 +63,7 @@ instance Show Target where
   show TargetOCaml        = "OCaml"
   show TargetProfile      = "Haskell (with permutation profiles)"
   show TargetPygments     = "Pygments"
+  show TargetCheck        = "Check LBNF file"
 
 -- | Which version of Alex is targeted?
 data AlexVersion = Alex1 | Alex2 | Alex3
@@ -234,6 +236,7 @@ printTargetOption = ("--" ++) . \case
   TargetOCaml       -> "ocaml"
   TargetProfile     -> "profile"
   TargetPygments    -> "pygments"
+  TargetCheck       -> "check"
 
 printAlexOption :: AlexVersion -> String
 printAlexOption = ("--" ++) . \case
@@ -289,6 +292,8 @@ targetOptions =
     "Output Haskell code for rules with permutation profiles"
   , Option "" ["pygments"]      (NoArg (\o -> o {target = TargetPygments}))
     "Output a Python lexer for Pygments"
+  , Option "" ["check"]         (NoArg (\ o -> o{target = TargetCheck }))
+    "No output. Just check input LBNF file"
   ]
 
 -- | A list of the options and for each of them, the target language

@@ -1,3 +1,5 @@
+{-# LANGUAGE LambdaCase #-}
+
 module TestUtils
     ( makeShellyTest
     , makeTestSuite
@@ -5,10 +7,10 @@ module TestUtils
     , assertFileExists, assertEqual, assertFailure, assertExitCode
     , assertEqualPretty
     , pathToString
-    , findFileRegex
-    , findFile
+    , findFileRegex, findFilesRegex, findFile
     , Test(..)
-    , matchFilePath ) where
+    , matchFilePath
+    ) where
 
 -- base, text, filepath
 import Control.Exception (handle, throwIO, SomeException)
@@ -33,7 +35,7 @@ import qualified Test.HUnit as HUnit
 
 -- | Replate the makeTestSuite function from HTF. This one returns a Test
 -- object instead of a TestSuite which makes it easier to mix single test
--- and test suites in ohter test suites
+-- and test suites in other test suites.
 makeTestSuite :: TestID -> [Test] -> Test
 makeTestSuite id = HTF.testSuiteAsTest . HTF.makeTestSuite id
 
@@ -67,7 +69,7 @@ assertFileExists p = test_f p >>= liftIO . HUnit.assertBool errorMessage
   where errorMessage = "Can't find file " ++ p
 
 -- | Lift HUnit's assertFailure
-assertFailure :: String -> Sh ()
+assertFailure :: String -> Sh a
 assertFailure = liftIO . HUnit.assertFailure
 
 -- | Expect a particular exit code:
@@ -89,16 +91,19 @@ pathToString :: FilePath -> String
 pathToString = id
 
 -- | Find a file given a regular expression.
--- Will fail if there is not exactly one file matching
+-- Will fail if there is not exactly one file matching.
 findFileRegex :: String -> Sh FilePath
-findFileRegex r = do
-    fs <- findWhen (return . matchFilePath r) "." >>= filterM test_f
-    when (length fs < 1) $ assertFailure "File not found"
-    when (length fs > 1) $ assertFailure $
-        "Too many files for regex " ++ r ++ " " ++ show fs
-    canonicalize (head fs)
+findFileRegex r = findFilesRegex "." r >>= \case
+  []  -> assertFailure "File not found"
+  [f] -> canonicalize f
+  fs  -> assertFailure $ "Too many files for regex " ++ r ++ " " ++ show fs
 
--- Find a file given its exact name
+-- | Find files given a regular expression.
+findFilesRegex :: FilePath -> String -> Sh [FilePath]
+findFilesRegex root r = filterM test_f =<< findWhen (return . matchFilePath r) root
+
+-- | Find a file given its exact name
+findFile :: String -> Sh FilePath
 findFile n = do
     f <- findWhen (return . (n==) . takeFileName) "."
     case listToMaybe f of

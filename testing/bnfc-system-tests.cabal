@@ -10,7 +10,7 @@ name:                bnfc-system-tests
 -- PVP summary:      +-+------- breaking API changes
 --                   | | +----- non-breaking API additions
 --                   | | | +--- code changes with no API change
-version:             0.1.1.0
+version:             0.1.2.0
 
 -- A short (one-line) description of the package.
 synopsis:            System tests for BNFC
@@ -25,7 +25,7 @@ license:             GPL-2
 license-file:        LICENSE
 
 -- The package author(s).
-author:              Grégoire Détrez
+author:              Grégoire Détrez, Andreas Abel
 
 -- An email address to which users can send suggestions, bug reports, and
 -- patches.
@@ -51,7 +51,8 @@ executable bnfc-system-tests
   main-is:             Main.hs
 
   -- Modules included in this executable, other than Main.
-  other-modules:       HaskellCnfTests
+  other-modules:       FailLBNFTests
+                       HaskellCnfTests
                        OutputParser
                        ParameterizedTests
                        PygmentsTests

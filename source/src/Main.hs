@@ -73,6 +73,10 @@ main = do
     Version      -> putStrLn (showVersion version) >> exitSuccess
 
     Target options file
+      | target options == TargetCheck ->
+          readFile file
+            >>= parseCFP options TargetCheck
+            >>  return ()
       | target options == TargetProfile ->
           readFile file
             >>= parseCFP options TargetProfile
@@ -95,3 +99,4 @@ maketarget = \case
     TargetOCaml        -> makeOCaml
     TargetProfile      -> error "impossible"
     TargetPygments     -> makePygments
+    TargetCheck        -> error "impossible"

@@ -91,7 +91,7 @@ parseCFP opts target content = do
   -- Warn or fail if the grammar uses non unique names.
   case filter (not . isDefinedRule) $ filterNonUnique names of
     [] -> return ()
-    ns | target `notElem` [TargetHaskell,TargetHaskellGadt,TargetOCaml]
+    ns | target `notElem` [TargetCheck,TargetHaskell,TargetHaskellGadt,TargetOCaml]
        -> die $ unlines $
             [ "ERROR: names not unique: " ++ unwords ns
             , "This is an error in the backend " ++ show target ++ "."
