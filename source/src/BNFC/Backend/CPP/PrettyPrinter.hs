@@ -680,6 +680,7 @@ prRender useStl = unlines $ concat
       "  {",
       "     backup();",
       "     bufAppend(c);",
+      "     bufAppend(' ');",
       "  }",
       "  else if (c == '}')",
       "  {",
