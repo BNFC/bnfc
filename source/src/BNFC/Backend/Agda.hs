@@ -337,7 +337,7 @@ importCats m cs = prettyList 2 pre lparen rparen semi $ map text cs
 -- | Import pragmas.
 --
 -- >>> importPragmas ByteStringToken ["qualified Foo.Abs", "Foo.Print (printTree)", "qualified Foo.Layout"]
--- {-# FOREIGN GHC import Prelude (Char, Double, Integer, String, (.)) #-}
+-- {-# FOREIGN GHC import Prelude (Bool, Char, Double, Integer, String, (.)) #-}
 -- {-# FOREIGN GHC import qualified Data.Text #-}
 -- {-# FOREIGN GHC import qualified Data.ByteString.Char8 as BS #-}
 -- {-# FOREIGN GHC import qualified Foo.Abs #-}
