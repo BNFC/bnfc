@@ -24,7 +24,7 @@ all = makeTestSuite "Regression tests" $
     ]
 
 current = makeTestSuite "Regression tests" $
-    [ issue222 ]
+    [ issue60 ]
 
 -- | A full regression test for the Haskell backend
 haskellRegressionTest
@@ -76,11 +76,11 @@ issue60 :: Test
 issue60 = makeShellyTest "#60 Compilation error in Java when a production uses more than one user-defined token" $
     withTmpDir $ \tmp -> do
         cd tmp
-        writefile "multiple_token.cf" $ T.unlines
+        writefile "multiple-token-123.cf" $ T.unlines
             [ "Label. Category ::= FIRST SECOND;"
             , "token FIRST 'a';"
             , "token SECOND 'b';" ]
-        cmd "bnfc" "--java" "-m" "multiple_token.cf"
+        cmd "bnfc" "--java" "-m" "multiple-token-123.cf"  -- test for package name sanitization #212
         cmd "make"
 
 issue108 :: Test

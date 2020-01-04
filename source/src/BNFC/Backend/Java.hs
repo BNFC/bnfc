@@ -68,12 +68,15 @@ import BNFC.PrettyPrint
 
 -- | This creates the Java files.
 makeJava :: SharedOptions -> CF -> MkFiles ()
-makeJava options@Options{..} cf = do
+makeJava opt = makeJava' opt{ lang = mkName javaReserved SnakeCase $ lang opt }
+  -- issue #212: make a legal package name, see also
+  -- https://docs.oracle.com/javase/tutorial/java/package/namingpkgs.html
+
+makeJava' :: SharedOptions -> CF -> MkFiles ()
+makeJava' options@Options{..} cf = do
      -- Create the package directories if necessary.
-    let packageBase  = case inPackage of
-                           Nothing -> lang
-                           Just p -> p ++ "." ++ lang
-        packageAbsyn = packageBase ++ "." ++ "Absyn"
+    let packageBase  = maybe id (+.+) inPackage lang
+        packageAbsyn = packageBase +.+ "Absyn"
         dirBase      = pkgToDir packageBase
         dirAbsyn     = pkgToDir packageAbsyn
         javaex str   = dirBase ++ str +.+ "java"
