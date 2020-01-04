@@ -37,7 +37,7 @@
 
    **************************************************************
 -}
-module BNFC.Backend.Java.CFtoCup15 ( cf2Cup ) where
+module BNFC.Backend.Java.CFtoCup15 ( cf2Cup, definedRules ) where
 
 import BNFC.CF
 import Data.List
@@ -86,7 +86,7 @@ cf2Cup packageBase packageAbsyn cf rp env = unlines
       , parseMethod packageAbsyn (firstEntry cf)
       , "public <B,A extends java.util.LinkedList<? super B>> "
         ++ "A cons_(B x, A xs) { xs.addFirst(x); return xs; }"
-      , definedRules packageAbsyn cf
+      , unlines $ definedRules packageAbsyn cf
       , "public void syntax_error(java_cup.runtime.Symbol cur_token)"
       , "{"
       , "  report_error(\"Syntax Error, trying to recover and continue"
@@ -102,9 +102,9 @@ cf2Cup packageBase packageAbsyn cf rp env = unlines
       , ":}"
       ]
 
-definedRules :: String -> CF -> String
+definedRules :: String -> CF -> [String]
 definedRules packageAbsyn cf =
-    unlines [ rule f xs e | FunDef f xs e <- cfgPragmas cf ]
+    concat [ rule f xs e | FunDef f xs e <- cfgPragmas cf ]
   where
     ctx = buildContext cf
 
@@ -118,7 +118,7 @@ definedRules packageAbsyn cf =
             Left err          ->
                 error $ "Panic! This should have been caught already:\n"
                     ++ err
-            Right (args,(e',t)) -> unlines
+            Right (args,(e',t)) ->
                 [ "public " ++ javaType t ++ " " ++ f ++ "_ (" ++
                     intercalate ", " (map javaArg args) ++ ") {"
                 , "  return " ++ javaExp e' ++ ";"

@@ -43,10 +43,12 @@ import Data.List     ( intercalate )
 import Data.Maybe
 
 import BNFC.CF
-import BNFC.Backend.Java.Utils
-import BNFC.Backend.Common.NamedVariables
 import BNFC.Options ( RecordPositions(..) )
 import BNFC.Utils   ( (+++), (+.+), applyWhen )
+
+import BNFC.Backend.Java.Utils
+import BNFC.Backend.Common.NamedVariables
+import BNFC.Backend.Java.CFtoCup15 ( definedRules )
 
 -- Type declarations
 
@@ -69,15 +71,21 @@ type MetaVar     = (String, Cat)
 -- | Creates the ANTLR parser grammar for this CF.
 --The environment comes from CFtoAntlr4Lexer
 cf2AntlrParse :: String -> String -> CF -> RecordPositions -> KeywordEnv -> String
-cf2AntlrParse packageBase packageAbsyn cf _ env = unlines
-    [ header
+cf2AntlrParse packageBase packageAbsyn cf _ env = unlines $ concat
+  [ [ header
     , tokens
+    , "@members {"
+    ]
+  , map ("  " ++) $ definedRules packageAbsyn cf
+  , [ "}"
+    , ""
     -- Generate start rules [#272]
     -- _X returns [ dX result ] : x=X EOF { $result = $x.result; }
     , prRules packageAbsyn $ map entrypoint $ allEntryPoints cf
     -- Generate regular rules
     , prRules packageAbsyn $ rulesForAntlr4 packageAbsyn cf env
     ]
+  ]
   where
     header :: String
     header = unlines
@@ -146,7 +154,7 @@ generateAction packageAbsyn nt f ms rev
     | isConsFun f = "$result = " ++ p_2 ++ "; "
                            ++ "$result." ++ add ++ "(" ++ p_1 ++ ");"
     | isCoercion f = "$result = " ++  p_1 ++ ";"
-    | isDefinedRule f = "$result = parser." ++ f ++ "_"
+    | isDefinedRule f = "$result = " ++ f ++ "_"
                         ++ "(" ++ intercalate "," (map resultvalue ms) ++ ");"
     | otherwise = "$result = new " ++ c
                   ++ "(" ++ intercalate "," (map resultvalue ms) ++ ");"
