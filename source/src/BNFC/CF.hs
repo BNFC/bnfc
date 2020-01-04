@@ -190,11 +190,13 @@ instance (Show function) => Show (CFG function) where
 
 -- | Expressions for function definitions.
 
-data Exp = App String [Exp]
-         | LitInt Integer
-         | LitDouble Double
-         | LitChar Char
-         | LitString String
+data Exp
+  = App String [Exp]  -- ^ (Possibly defined) label applied to expressions.
+  | Var String        -- ^ Function parameter.
+  | LitInt Integer
+  | LitDouble Double
+  | LitChar Char
+  | LitString String
   deriving (Eq)
 
 instance Show Exp where
@@ -204,6 +206,7 @@ instance Show Exp where
                 showString "["
                 . foldr (.) id (intersperse (showString ", ") $ map shows es)
                 . showString "]"
+            Left (Var x)    -> showString x
             Left (App x []) -> showString x
             Left (App  "(:)" [e1,e2]) ->
                 showParen (p>0)

@@ -173,9 +173,8 @@ definedRules cf =
         cppArg (x,t) = cppType t ++ " " ++ x ++ "_"
 
         cppExp :: Exp -> String
-        cppExp (App "[]" []) = "0"
-        cppExp (App x [])
-            | x `elem` xs         = x ++ "_"  -- argument
+        cppExp (App "[]" [])    = "0"
+        cppExp (Var x)          = x ++ "_"  -- argument
         cppExp (App t [e])
             | isToken t ctx     = cppExp e
         cppExp (App x es)

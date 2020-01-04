@@ -255,10 +255,14 @@ definedRules absM functor cf = [ mkDef f xs e | FunDef f xs e <- cfgPragmas cf ]
                 xs' = addFunctorArg id $ map (++ "_") xs
                 e'  = underscore e
         underscore (App x es)
-            | isLower $ head x  = App (x ++ "_") $ map underscore es  -- TODO nested define!
-            | otherwise         = App (qual x) es'
+            | isLower $ head x  = App (x ++ "_") es'
+            | otherwise         = App (qual x)   es'
           where es' = addFunctorArg (`App` []) $ map underscore es
-        underscore e          = e
+        underscore (Var x)      = Var (x ++ "_")
+        underscore e@LitInt{}    = e
+        underscore e@LitDouble{} = e
+        underscore e@LitChar{}   = e
+        underscore e@LitString{} = e
         qual x
           | null absM = x
           | otherwise = concat [ absM, ".", x ]

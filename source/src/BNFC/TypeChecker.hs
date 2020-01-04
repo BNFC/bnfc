@@ -132,27 +132,37 @@ checkDefinition' list ctx f xs e =
         plural _ = "s"
 
 checkExp :: ListConstructors -> Context -> Exp -> Base -> Err Exp
-checkExp list _   (App "[]" []) (ListT t) = return (App (nil list t) [])
-checkExp _ _      (App "[]" _) _  = throwError "[] is applied to too many arguments."
-checkExp list ctx (App "(:)" [e,es]) (ListT t) =
-    do  e'  <- checkExp list ctx e t
-        es' <- checkExp list ctx es (ListT t)
-        return $ App (cons list t) [e',es']
-checkExp _ _ (App "(:)" es) _   = throwError $ "(:) takes 2 arguments, but has been given " ++ show (length es) ++ "."
-checkExp list ctx e@(App x es) t =
-    do  FunT ts t' <- lookupCtx x ctx
-        es' <- matchArgs ts
-        unless (t == t') $ throwError $ show e ++ " has type " ++ show t' ++ ", but something of type " ++ show t ++ " was expected."
-        return $ App x es'
+checkExp list ctx = curry $ \case
+  (App "[]" []     , ListT t        ) -> return (App (nil list t) [])
+  (App "[]" _      , _              ) -> throwError $
+    "[] is applied to too many arguments."
+
+  (App "(:)" [e,es], ListT t        ) -> do
+    e'  <- checkExp list ctx e t
+    es' <- checkExp list ctx es (ListT t)
+    return $ App (cons list t) [e',es']
+
+  (App "(:)" es    , _              ) -> throwError $
+    "(:) takes 2 arguments, but has been given " ++ show (length es) ++ "."
+
+  (e@(App x es)    , t              ) -> checkApp e x es t
+  (e@(Var x)       , t              ) -> e <$ checkApp e x [] t
+  (e@LitInt{}      , BaseT "Integer") -> return e
+  (e@LitDouble{}   , BaseT "Double" ) -> return e
+  (e@LitChar{}     , BaseT "Char"   ) -> return e
+  (e@LitString{}   , BaseT "String" ) -> return e
+  (e               , t              ) -> throwError $
+    show e ++ " does not have type " ++ show t ++ "."
+  where
+  checkApp e x es t = do
+    FunT ts t' <- lookupCtx x ctx
+    es' <- matchArgs ts
+    unless (t == t') $ throwError $ show e ++ " has type " ++ show t' ++ ", but something of type " ++ show t ++ " was expected."
+    return $ App x es'
     where
-        matchArgs ts
-            | expect /= given   = throwError $ "'" ++ x ++ "' takes " ++ show expect ++ " arguments, but has been given " ++ show given ++ "."
-            | otherwise         = zipWithM (checkExp list ctx) es ts
-            where
-                expect = length ts
-                given  = length es
-checkExp _ _ e@(LitInt _) (BaseT "Integer")     = return e
-checkExp _ _ e@(LitDouble _) (BaseT "Double")   = return e
-checkExp _ _ e@(LitChar _) (BaseT "Char")       = return e
-checkExp _ _ e@(LitString _) (BaseT "String")   = return e
-checkExp _ _ e t = throwError $ show e ++ " does not have type " ++ show t ++ "."
+    matchArgs ts
+      | expect /= given   = throwError $ "'" ++ x ++ "' takes " ++ show expect ++ " arguments, but has been given " ++ show given ++ "."
+      | otherwise         = zipWithM (checkExp list ctx) es ts
+      where
+        expect = length ts
+        given  = length es

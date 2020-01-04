@@ -265,7 +265,8 @@ transDef = \case
  Abs.Layout ss      -> [Left $ Layout ss]
  Abs.LayoutStop ss  -> [Left $ LayoutStop ss]
  Abs.LayoutTop      -> [Left LayoutTop]
- Abs.Function f xs e -> [Left $ FunDef (transIdent f) (map transArg xs) (transExp e)]
+ Abs.Function f xs e -> [ Left $ FunDef (transIdent f) xs' (transExp xs' e)
+                        | let xs' = map transArg xs ]
 
 delimiterRules :: Abs.Cat -> String -> String -> Abs.Separation -> Abs.MinimumSize -> [Rule]
 delimiterRules a0 l r (Abs.SepTerm  "") size = delimiterRules a0 l r Abs.SepNone size
@@ -395,25 +396,30 @@ transLabel y = case y of
      ([map fromInteger bs | Abs.Ints bs <- bss], map fromInteger as)
 
 transIdent :: Abs.Identifier -> String
-transIdent x = case x of
+transIdent = \case
  Abs.Identifier str  -> str
 
 transArg :: Abs.Arg -> String
 transArg (Abs.Arg x) = transIdent x
 
-transExp :: Abs.Exp -> Exp
-transExp e = case e of
-    Abs.App x es    -> App (transIdent x) (map transExp es)
-    Abs.Var x       -> App (transIdent x) []
-    Abs.Cons e1 e2  -> cons e1 (transExp e2)
+transExp
+  :: [String] -- ^ Arguments of definition (in scope in expression).
+  -> Abs.Exp  -- ^ Expression.
+  -> Exp      -- ^ Translated expression.
+transExp xs = loop
+  where
+  loop = \case
+    Abs.App x es    -> App (transIdent x) (map loop es)
+    Abs.Var x       -> let x' = transIdent x in
+                       if x' `elem` xs then Var x' else App x' []
+    Abs.Cons e1 e2  -> cons e1 (loop e2)
     Abs.List es     -> foldr cons nil es
     Abs.LitInt x    -> LitInt x
     Abs.LitDouble x -> LitDouble x
     Abs.LitChar x   -> LitChar x
     Abs.LitString x -> LitString x
-  where
-    cons e1 e2 = App "(:)" [transExp e1, e2]
-    nil        = App "[]" []
+  cons e1 e2 = App "(:)" [loop e1, e2]
+  nil        = App "[]" []
 
 --------------------------------------------------------------------------------
 

@@ -1,3 +1,5 @@
+-- #266 "define" pragma
+
 Prg.      Program ::= "integers" Ints "chars" Chars "in" Exp ;
 
 EHalf.    Exp2  ::= "1/2"           ;
@@ -8,6 +10,8 @@ EPower.   Exp   ::= Exp1 "**" Exp   ;
 coercions Exp 2                     ;
 
 define    eSqrt e = EPower e EHalf  ;
+
+-- #285 "define" pragma involving token categories
 
 INil.     Ints ::=                  ;
 iSg.      Ints ::= Integer          ;

@@ -138,8 +138,7 @@ definedRules packageAbsyn cf =
 
        javaExp :: Exp -> String
        javaExp (App "null" []) = "null"
-       javaExp (App x [])
-           | x `elem` xs       = x ++ "_"      -- argument
+       javaExp (Var x)         = x ++ "_"      -- argument
        javaExp (App t [e])
            | isToken t ctx     = call "new String" [e]
        javaExp (App x es)
