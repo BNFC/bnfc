@@ -591,6 +591,7 @@ prRender = unlines
       "  {",
       "     backup();",
       "     bufAppendC(c);",
+      "     bufAppendC(' ');",
       "  }",
       "  else if (c == '}')",
       "  {",
