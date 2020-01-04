@@ -25,6 +25,7 @@ module BNFC.Utils
     , when, unless, unlessNull, unlessNull'
     , applyWhen, applyUnless
     , for
+    , curry3, uncurry3
     , duplicatesOn
     , (+++), (++++), (+-+), (+.+)
     , pad, table
@@ -109,6 +110,18 @@ unlessNull' l k = case l of
 -- | Non-monadic 'forM'.
 for :: [a] -> (a -> b) -> [b]
 for = flip map
+
+-- * Tuple utilities.
+
+-- From https://hackage.haskell.org/package/extra-1.6.18/docs/Data-Tuple-Extra.html
+
+-- | Converts an uncurried function to a curried function.
+curry3 :: ((a, b, c) -> d) -> a -> b -> c -> d
+curry3 f a b c = f (a,b,c)
+
+-- | Converts a curried function to a function on a triple.
+uncurry3 :: (a -> b -> c -> d) -> ((a, b, c) -> d)
+uncurry3 f ~(a,b,c) = f a b c
 
 -- * String operations for printing.
 

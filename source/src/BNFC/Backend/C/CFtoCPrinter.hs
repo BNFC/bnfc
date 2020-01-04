@@ -45,22 +45,25 @@ module BNFC.Backend.C.CFtoCPrinter (cf2CPrinter) where
 
 import Prelude'
 
+import Data.Bifunctor ( second )
+import Data.Char      ( toLower )
+import Data.Either    ( lefts )
+import Data.List      ( nub, isPrefixOf )
+
 import BNFC.CF
+import BNFC.PrettyPrint
 import BNFC.Utils ((+++), unless)
 import BNFC.Backend.Common (renderListSepByPrecedence)
 import BNFC.Backend.Common.NamedVariables
 import BNFC.Backend.Common.StrUtils (renderCharOrString)
-import Data.List
-import Data.Char(toLower)
-import Data.Either (lefts)
-import BNFC.PrettyPrint
 
 -- | Produces (.h file, .c file).
 
 cf2CPrinter :: CF -> (String, String)
 cf2CPrinter cf = (mkHFile cf groups, mkCFile cf groups)
  where
-    groups = fixCoercions (ruleGroupsInternals cf)
+    groups = fixCoercions $ filterOutDefs $ ruleGroupsInternals cf
+    filterOutDefs = map $ second $ filter $ not . isDefinedRule . funRule
 
 {- **** Header (.h) File Methods **** -}
 
