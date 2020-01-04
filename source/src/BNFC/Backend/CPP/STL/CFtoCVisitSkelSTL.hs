@@ -39,6 +39,8 @@
 
 module BNFC.Backend.CPP.STL.CFtoCVisitSkelSTL (cf2CVisitSkel) where
 
+import Data.Char
+
 import BNFC.CF
 import BNFC.Utils ((+++))
 import BNFC.Backend.Common.OOAbstract
@@ -46,8 +48,11 @@ import BNFC.Backend.CPP.Naming
 import BNFC.Backend.CPP.STL.STLUtils
 
 --Produces (.H file, .C file)
-cf2CVisitSkel :: Maybe String -> CF -> (String, String)
-cf2CVisitSkel inPackage cf = (mkHFile inPackage cab, mkCFile inPackage cab)
+cf2CVisitSkel :: Bool -> Maybe String -> CF -> (String, String)
+cf2CVisitSkel useSTL inPackage cf =
+ ( mkHFile inPackage cab
+ , mkCFile useSTL inPackage cab
+ )
  where
     cab = cf2cabs cf
 
@@ -83,15 +88,15 @@ mkHFile inPackage cf = unlines [
 -- **** Implementation (.C) File Functions ****
 
 --Makes the .C File
-mkCFile :: Maybe String -> CAbs -> String
-mkCFile inPackage cf = unlines [
+mkCFile :: Bool -> Maybe String -> CAbs -> String
+mkCFile useSTL inPackage cf = unlines [
   headerC,
   nsStart inPackage,
   unlines [
     "void Skeleton::visit" ++ t ++ "(" ++
        t ++ " *t) {} //abstract class" | t <- absclasses cf],
   unlines [prCon   r  | (_,rs)  <- signatures cf, r <- rs],
-  unlines [prList  cb | cb <- listtypes cf],
+  unlines [prList useSTL cb | cb <- listtypes cf],
   unlines [prBasic b  | b  <- tokentypes cf ++ map fst basetypes],
   nsEnd inPackage
  ]
@@ -114,7 +119,7 @@ prBasic c = unlines [
   "}"
   ]
 
-prList (cl,b) = unlines [
+prList True (cl,b) = unlines [
   "void Skeleton::visit" ++ cl ++ "("++ cl +++ "*" ++ vname ++ ")",
   "{",
   "  for ("++ cl ++"::iterator i = " ++
@@ -129,6 +134,26 @@ prList (cl,b) = unlines [
  where
    vname = mkVariable cl
 
+prList False (cl,b) = unlines
+  [ "void Skeleton::visit" ++ cl ++ "("++ cl +++ "*" ++ vname ++ ")"
+  , "{"
+  , "  while (" ++ vname ++ ")"
+  , "  {"
+  , "    /* Code For " ++ cl ++ " Goes Here */"
+  , if b
+      then "    if (" ++ field ++ ") " ++ field ++ "->accept(this);"
+      else "    visit" ++ ecl ++ "(" ++ field ++ ");"
+  , "    " ++ vname ++ " = " ++ vname ++ "->" ++ next ++ "_;"
+  , "  }"
+  , "}"
+  ]
+  where
+  ecl    = drop 4 cl  -- drop "List"
+  vname  = mkVariable cl
+  next   = map toLower cl
+  member = map toLower ecl ++ "_"
+  field  = vname ++ "->" ++ member
+
 prCon (f,cs) = unlines [
   "void Skeleton::visit" ++ f ++ "(" ++ f ++ " *" ++ v ++ ")",
   "{",
@@ -139,7 +164,7 @@ prCon (f,cs) = unlines [
  ]
  where
    v = mkVariable f
-   visitArg (cat,isPt,var) =
-     if isPt
-       then (v ++ "->" ++ var ++ "->accept(this);")
-       else ("visit" ++ cat ++ "(" ++ v ++ "->" ++ var ++ ");")
+   visitArg (cat,isPt,var)
+     | isPt      = "if (" ++ field ++ ") " ++ field ++ "->accept(this);"
+     | otherwise = "visit" ++ cat ++ "(" ++ field ++ ");"
+     where field = v ++ "->" ++ var

@@ -50,7 +50,7 @@ makeCppStl opts cf = do
     mkfile (name ++ ".y") bison
     let header = mkHeaderFile (inPackage opts) cf (allParserCats cf) (allEntryPoints cf) (Map.elems env)
     mkfile "Parser.H" header
-    let (skelH, skelC) = cf2CVisitSkel (inPackage opts) cf
+    let (skelH, skelC) = cf2CVisitSkel True (inPackage opts) cf
     mkfile "Skeleton.H" skelH
     mkfile "Skeleton.C" skelC
     let (prinH, prinC) = cf2CPPPrinter True (inPackage opts) cf

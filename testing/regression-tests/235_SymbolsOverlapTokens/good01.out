@@ -1,7 +1,7 @@
 [Abstract Syntax]
 
-Init TypeInteger TypeMyId 1234567890 2.12345678901234e-300 'A' "Ha!" (Ident "Foo_") (MyId "Bar1")
+Init TypeInteger TypeMyId [] 1234567890 2.12345678901234e-300 'A' "Ha!" (Ident "Foo_") (MyId "Bar1") (MyId "Bar2") []
 
 [Linearized tree]
 
-Integer MyId 1234567890 2.12345678901234e-300 'A' "Ha!" Foo_ Bar1
+Integer MyId [] 1234567890 2.12345678901234e-300 'A' "Ha!" Foo_ Bar1 Bar2 []

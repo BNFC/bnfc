@@ -1,3 +1,7 @@
+---------------------------------------------------------------------------
+-- RETIRED, use STL/CFtoCVisitSkelSTL instead
+---------------------------------------------------------------------------
+
 {-# LANGUAGE NoImplicitPrelude #-}
 
 {-
@@ -43,18 +47,23 @@ module BNFC.Backend.CPP.NoSTL.CFtoCVisitSkel (cf2CVisitSkel) where
 
 import Prelude'
 
-import BNFC.CF
-import BNFC.Utils ((+++))
-import BNFC.Backend.Common.NamedVariables
-import BNFC.Backend.CPP.Naming (mkVariable)
 import Data.List
 import Data.Char(toLower, toUpper)
 import Data.Either (lefts)
+
+import BNFC.CF
+import BNFC.Utils ((+++))
 import BNFC.PrettyPrint
+
+import BNFC.Backend.Common.NamedVariables
+import BNFC.Backend.Common.OOAbstract (cf2cabs)
+import BNFC.Backend.CPP.Naming (mkVariable)
+import qualified BNFC.Backend.CPP.STL.CFtoCVisitSkelSTL as STL
 
 --Produces (.H file, .C file)
 cf2CVisitSkel :: CF -> (String, String)
-cf2CVisitSkel cf = (mkHFile cf groups, mkCFile cf groups)
+cf2CVisitSkel cf = (STL.mkHFile Nothing (cf2cabs cf), mkCFile cf groups)
+  -- (mkHFile cf groups, mkCFile cf groups)
   where
     groups = fixCoercions (ruleGroupsInternals cf)
 

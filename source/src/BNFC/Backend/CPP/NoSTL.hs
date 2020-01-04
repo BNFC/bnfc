@@ -32,7 +32,7 @@ import BNFC.Backend.CPP.Makefile
 import BNFC.Backend.CPP.NoSTL.CFtoCPPAbs
 import BNFC.Backend.CPP.NoSTL.CFtoFlex
 import BNFC.Backend.CPP.NoSTL.CFtoBison
-import BNFC.Backend.CPP.NoSTL.CFtoCVisitSkel
+import BNFC.Backend.CPP.STL.CFtoCVisitSkelSTL
 import BNFC.Backend.CPP.PrettyPrinter
 import qualified BNFC.Backend.Common.Makefile as Makefile
 
@@ -47,7 +47,7 @@ makeCppNoStl opts cf = do
     mkfile (name ++ ".y") bison
     let header = mkHeaderFile cf (allParserCats cf) (allEntryPoints cf) (Map.elems env)
     mkfile "Parser.H" header
-    let (skelH, skelC) = cf2CVisitSkel cf
+    let (skelH, skelC) = cf2CVisitSkel False Nothing cf
     mkfile "Skeleton.H" skelH
     mkfile "Skeleton.C" skelC
     let (prinH, prinC) = cf2CPPPrinter False Nothing cf
