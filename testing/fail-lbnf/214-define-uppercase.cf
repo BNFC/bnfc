@@ -1,0 +1,5 @@
+MkFoo.  Foo ::= "foo" ;
+Parens. Foo ::= "(" Foo ")";
+
+-- Definitions need to be lowercase.
+define Parens x = x ;

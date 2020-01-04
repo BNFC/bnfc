@@ -1,0 +1,4 @@
+MkFoo. Foo ::= "foo" ;
+
+-- BNFC does not accept definitions that are not rule lables.
+define id x = x ;
