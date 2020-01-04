@@ -42,6 +42,7 @@ module BNFC.Backend.Java.CFtoCup15 ( cf2Cup ) where
 import BNFC.CF
 import Data.List
 import BNFC.Backend.Common.NamedVariables
+import BNFC.Backend.Java.CFtoJavaAbs15 (typename)
 import BNFC.Options (RecordPositions(..))
 import BNFC.Utils ( (+++) )
 import BNFC.TypeChecker  -- We need to (re-)typecheck to figure out list instances in
@@ -127,12 +128,10 @@ definedRules packageAbsyn cf =
 
        javaType :: Base -> String
        javaType (ListT (BaseT x)) = packageAbsyn ++ ".List"
-                                   ++ show (normCat $ strToCat x)
+                                   ++ catToStr (normCat $ strToCat x)
        javaType (ListT t)         = javaType t
-       javaType (BaseT x)
-           | isToken x ctx = "String"
-           | otherwise     = packageAbsyn ++ "."
-                           ++ show (normCat $ strToCat x)
+       javaType (BaseT x)         = typename packageAbsyn (ctxTokens ctx) $
+                                      catToStr $ normCat $ strToCat x
 
        javaArg :: (String, Base) -> String
        javaArg (x,t) = javaType t ++ " " ++ x ++ "_"

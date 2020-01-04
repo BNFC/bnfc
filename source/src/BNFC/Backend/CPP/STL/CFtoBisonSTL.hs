@@ -165,6 +165,7 @@ definedRules cf =
         cppType (ListT (BaseT x)) = "List" ++ show (normCat $ strToCat x) ++ " *"
         cppType (ListT t)         = cppType t ++ " *"
         cppType (BaseT x)
+            | x `elem` baseTokenCatNames = x
             | isToken x ctx = "String"
             | otherwise     = show (normCat $ strToCat x) ++ " *"
 

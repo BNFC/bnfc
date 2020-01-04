@@ -1,10 +1,22 @@
-entrypoints Exp                  ;
+Prg.      Program ::= "integers" Ints "chars" Chars "in" Exp ;
 
-EHalf.   Exp2  ::= "1/2"         ;
-EDouble. Exp2  ::= Double        ;
-eSqrt.   Exp1  ::= "sqrt" Exp1   ;
-EPower.  Exp   ::= Exp1 "**" Exp ;
+EHalf.    Exp2  ::= "1/2"           ;
+EDouble.  Exp2  ::= Double          ;
+eSqrt.    Exp1  ::= "sqrt" Exp1     ;
+EPower.   Exp   ::= Exp1 "**" Exp   ;
 
-coercions Exp 2                  ;
+coercions Exp 2                     ;
 
-define eSqrt e = EPower e EHalf  ;
+define    eSqrt e = EPower e EHalf  ;
+
+INil.     Ints ::=                  ;
+iSg.      Ints ::= Integer          ;
+ISnoc.    Ints ::= Ints "," Integer ;
+
+define    iSg i = ISnoc INil i      ;
+
+CNil.     Chars ::=                 ;
+cSg.      Chars ::= Char            ;
+CSnoc.    Chars ::= Chars "," Char  ;
+
+define    cSg c = CSnoc CNil c      ;

@@ -10,7 +10,8 @@ module BNFC.TypeChecker
   , Base(..)
   , -- * Backdoor for rechecking defined syntax constructors for list types
     checkDefinition'
-  , buildContext, isToken, ListConstructors(LC)
+  , buildContext, ctxTokens, isToken
+  , ListConstructors(LC)
   ) where
 
 import Control.Monad
