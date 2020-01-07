@@ -144,7 +144,7 @@ definedRules :: CF -> String
 definedRules cf =
     unlines [ rule f xs e | FunDef f xs e <- cfgPragmas cf ]
   where
-    ctx = buildContext cf
+    ctx = either error id $ buildContext cf
 
     list = LC (const "[]") (\ t -> "List" ++ unBase t)
       where

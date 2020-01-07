@@ -1,5 +1,6 @@
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE RecordWildCards #-}
 
 -- | Type checker for defined syntax constructors @define f xs = e@.
@@ -17,20 +18,26 @@ module BNFC.TypeChecker
 import Control.Monad
 import Control.Monad.Except (MonadError(..))
 
+import Data.Bifunctor (second)
 import Data.Char
-import Data.Function (on)
-import Data.List
+import Data.Map       (Map)
+
+import qualified Data.Map as Map
+import qualified Data.Set as Set
 
 import BNFC.CF
 
+-- * Types and context
+
+-- | Type checking monad, reports errors.
 type Err = Either String
 
 data Base = BaseT String
           | ListT Base
-    deriving (Eq)
+    deriving (Eq, Ord)
 
 data Type = FunT [Base] Base
-    deriving (Eq)
+    deriving (Eq, Ord)
 
 instance Show Base where
     show (BaseT x) = x
@@ -40,73 +47,10 @@ instance Show Type where
     show (FunT ts t) = unwords $ map show ts ++ ["->", show t]
 
 data Context = Ctx
-  { ctxLabels :: [(String, Type)]
-  , ctxTokens :: [String]
+  { ctxLabels :: Map String Type   -- ^ Types of labels, extracted from rules.
+  , ctxTokens :: [String]          -- ^ User-defined token types.
+  , ctxLocals :: [(String, Base)]  -- ^ Types of local variables of a definition.
   }
-
-buildContext :: CF -> Context
-buildContext cf@CFG{..} = Ctx
-  { ctxLabels =
-      [ (f, mkType cat args)
-        | Rule f cat args _ <- cfgRules
-        , not (isCoercion f)
-        , not (isNilCons f)
-      ]
-  , ctxTokens =
-      ("Ident" : tokenNames cf)
-  }
-  where
-    mkType cat args = FunT [ mkBase t | Left t <- args ]
-                           (mkBase cat)
-    mkBase t
-        | isList t  = ListT $ mkBase $ normCatOfList t
-        | otherwise = BaseT $ show $ normCat t
-
-isToken :: String -> Context -> Bool
-isToken x ctx = elem x $ ctxTokens ctx
-
-extendContext :: Context -> [(String,Type)] -> Context
-extendContext ctx xs = ctx { ctxLabels = xs ++ ctxLabels ctx }
-
-lookupCtx :: String -> Context -> Err Type
-lookupCtx x ctx
-    | isToken x ctx = return $ FunT [BaseT "String"] (BaseT x)
-    | otherwise     =
-    case lookup x $ ctxLabels ctx of
-        Nothing -> throwError $ "Undefined symbol '" ++ x ++ "'."
-        Just t  -> return t
-
--- | Entry point.
-checkDefinitions :: CF -> Err ()
-checkDefinitions cf =
-    do  checkContext ctx
-        sequence_ [checkDefinition ctx f xs e | FunDef f xs e <- cfgPragmas cf]
-    where
-        ctx = buildContext cf
-
-checkContext :: Context -> Err ()
-checkContext ctx =
-    mapM_ checkEntry $ groupSnd $ ctxLabels ctx
-    where
-        -- This is a very handy function which transforms a lookup table
-        -- with duplicate keys to a list valued lookup table with no duplicate
-        -- keys.
-        groupSnd :: Ord a => [(a,b)] -> [(a,[b])]
-        groupSnd =
-            map (\ ps -> (fst (head ps), map snd ps))
-            . groupBy ((==) `on` fst)
-            . sortBy (compare `on` fst)
-
-        checkEntry (f,ts) =
-            case nub ts of
-                [_] -> return ()
-                ts' ->
-                    throwError $ "The symbol '" ++ f ++ "' is used at conflicting types:\n" ++
-                            unlines (map (("  " ++) . show) ts')
-
-checkDefinition :: Context -> String -> [String] -> Exp -> Err ()
-checkDefinition ctx f xs e =
-    void $ checkDefinition' dummyConstructors ctx f xs e
 
 data ListConstructors = LC
         { nil   :: Base -> String
@@ -116,6 +60,19 @@ data ListConstructors = LC
 dummyConstructors :: ListConstructors
 dummyConstructors = LC (const "[]") (const "(:)")
 
+
+-- * Type checker for definitions and expressions
+
+-- | Entry point.
+checkDefinitions :: CF -> Err ()
+checkDefinitions cf = do
+  ctx <- buildContext cf
+  sequence_ [ checkDefinition ctx f xs e | FunDef f xs e <- cfgPragmas cf ]
+
+checkDefinition :: Context -> String -> [String] -> Exp -> Err ()
+checkDefinition ctx f xs e =
+    void $ checkDefinition' dummyConstructors ctx f xs e
+
 checkDefinition' :: ListConstructors -> Context -> String -> [String] -> Exp -> Err ([(String,Base)],(Exp,Base))
 checkDefinition' list ctx f xs e =
     do  unless (isLower $ head f) $ throwError "Defined functions must start with a lowercase letter."
@@ -124,7 +81,7 @@ checkDefinition' list ctx f xs e =
         let expect = length ts
             given  = length xs
         unless (expect == given) $ throwError $ "'" ++ f ++ "' is used with type " ++ show t ++ " but defined with " ++ show given ++ " argument" ++ plural given ++ "."
-        e' <- checkExp list (extendContext ctx $ zip xs (map (FunT []) ts)) e t'
+        e' <- checkExp list (setLocals ctx $ zip xs ts) e t'
         return (zip xs ts, (e', t'))
     `catchError` \err -> throwError $ "In the definition " ++ unwords (f : xs ++ ["=",show e,";"]) ++ "\n  " ++ err
     where
@@ -166,3 +123,60 @@ checkExp list ctx = curry $ \case
       where
         expect = length ts
         given  = length es
+
+
+-- * Context handling
+
+-- | Create context containing the types of all labels,
+--   computed from the rules.
+--
+--   Fail if a label is used at different types.
+--
+buildContext :: CF -> Err Context
+buildContext cf@CFG{..} = do
+  -- Build label signature with duplicates
+  let sig0 = Map.fromListWith mappend $ map (second Set.singleton) labels
+  -- Check for duplicates; extract from singleton sets.
+  sig <- forM (Map.toAscList sig0) $ \ (f,ts) ->
+    case Set.toList ts of
+      []  -> undefined  -- impossible
+      [t] -> return (f,t)
+      ts' -> throwError $ unlines $ concat
+        [ [ "The label '" ++ f ++ "' is used at conflicting types:" ]
+        , map (("  " ++) . show) ts'
+        ]
+  return $ Ctx
+    { ctxLabels = Map.fromAscList sig
+    , ctxTokens = ("Ident" : tokenNames cf)
+    , ctxLocals = []
+    }
+  where
+    mkType cat args = FunT [ mkBase t | Left t <- args ]
+                           (mkBase cat)
+    mkBase t
+        | isList t  = ListT $ mkBase $ normCatOfList t
+        | otherwise = BaseT $ catToStr $ normCat t
+
+    labels =
+      [ (f, mkType cat args)
+        | Rule f cat args _ <- cfgRules
+        , not (isCoercion f)
+        , not (isNilCons f)
+      ]
+
+isToken :: String -> Context -> Bool
+isToken x ctx = elem x $ ctxTokens ctx
+
+setLocals :: Context -> [(String,Base)] -> Context
+setLocals ctx xs = ctx { ctxLocals = xs }
+
+lookupCtx :: String -> Context -> Err Type
+lookupCtx x ctx
+  | isToken x ctx = return $ FunT [BaseT "String"] (BaseT x)
+  | otherwise     = do
+    case lookup x $ ctxLocals ctx of
+      Just b -> return $ FunT [] b
+      Nothing -> do
+        case Map.lookup x $ ctxLabels ctx of
+          Nothing -> throwError $ "Undefined symbol '" ++ x ++ "'."
+          Just t  -> return t
