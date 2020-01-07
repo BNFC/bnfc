@@ -1,0 +1,4 @@
+The label 'Foo' is used at conflicting types:
+  -> Bar
+  -> Baz
+
