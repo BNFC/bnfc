@@ -29,6 +29,7 @@ module BNFC.CF (
             Rule, Rul(..), lookupRule, InternalRule(..),
             Pragma(..),
             Exp(..),
+            Base(..), Type(..), Signature,
             Literal,
             Symbol,
             KeyWord,
@@ -118,6 +119,7 @@ import Control.Monad (guard)
 import Data.Char
 import Data.List (nub, intersperse, sort, group, intercalate, find)
 import Data.Maybe
+import Data.Map  (Map)
 import qualified Data.Set as Set
 
 import AbsBNF (Reg())
@@ -181,12 +183,31 @@ data CFG function = CFG
     , cfgKeywords       :: [KeyWord]  -- ^ Reserved words, e.g. 'if' 'while'.
     , cfgReversibleCats :: [Cat]      -- ^ Categories that can be made left-recursive.
     , cfgRules          :: [Rul function]
+    , cfgSignature      :: Signature  -- ^ Types of rule labels, computed from 'cfgRules'.
     } deriving (Functor)
 
 
 instance (Show function) => Show (CFG function) where
   show CFG{..} = unlines $ map show cfgRules
 
+-- | Types of the rule labels.
+type Signature = Map String Type
+
+-- | Type of a non-terminal.
+data Base = BaseT String
+          | ListT Base
+    deriving (Eq, Ord)
+
+-- | Type of a rule label.
+data Type = FunT [Base] Base
+    deriving (Eq, Ord)
+
+instance Show Base where
+    show (BaseT x) = x
+    show (ListT t) = "[" ++ show t ++ "]"
+
+instance Show Type where
+    show (FunT ts t) = unwords $ map show ts ++ ["->", show t]
 
 -- | Expressions for function definitions.
 

@@ -100,7 +100,7 @@ definedRules _ cf = unlinesInline [
     else error "Defined rules are not yet available in C# mode!"
   ]
   where
-    ctx = either error id $ buildContext cf
+    ctx = buildContext cf
 
     list = LC (const "[]") (\ t -> "List" ++ unBase t)
       where

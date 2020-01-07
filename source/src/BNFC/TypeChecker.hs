@@ -11,7 +11,7 @@ module BNFC.TypeChecker
   , Base(..)
   , -- * Backdoor for rechecking defined syntax constructors for list types
     checkDefinition'
-  , buildContext, ctxTokens, isToken
+  , buildSignature, buildContext, ctxTokens, isToken
   , ListConstructors(LC)
   ) where
 
@@ -32,24 +32,13 @@ import BNFC.CF
 -- | Type checking monad, reports errors.
 type Err = Either String
 
-data Base = BaseT String
-          | ListT Base
-    deriving (Eq, Ord)
-
-data Type = FunT [Base] Base
-    deriving (Eq, Ord)
-
-instance Show Base where
-    show (BaseT x) = x
-    show (ListT t) = "[" ++ show t ++ "]"
-
-instance Show Type where
-    show (FunT ts t) = unwords $ map show ts ++ ["->", show t]
+-- | Function arguments with type.
+type Telescope = [(String, Base)]
 
 data Context = Ctx
-  { ctxLabels :: Map String Type   -- ^ Types of labels, extracted from rules.
+  { ctxLabels :: Signature         -- ^ Types of labels, extracted from rules.
   , ctxTokens :: [String]          -- ^ User-defined token types.
-  , ctxLocals :: [(String, Base)]  -- ^ Types of local variables of a definition.
+  , ctxLocals :: Telescope         -- ^ Types of local variables of a definition.
   }
 
 data ListConstructors = LC
@@ -66,24 +55,35 @@ dummyConstructors = LC (const "[]") (const "(:)")
 -- | Entry point.
 checkDefinitions :: CF -> Err ()
 checkDefinitions cf = do
-  ctx <- buildContext cf
+  let ctx = buildContext cf
   sequence_ [ checkDefinition ctx f xs e | FunDef f xs e <- cfgPragmas cf ]
 
 checkDefinition :: Context -> String -> [String] -> Exp -> Err ()
 checkDefinition ctx f xs e =
     void $ checkDefinition' dummyConstructors ctx f xs e
 
-checkDefinition' :: ListConstructors -> Context -> String -> [String] -> Exp -> Err ([(String,Base)],(Exp,Base))
+checkDefinition'
+  :: ListConstructors  -- ^ Translation of the list constructors.
+  -> Context           -- ^ Signature (types of labels).
+  -> String            -- ^ Function name.
+  -> [String]          -- ^ Function arguments.
+  -> Exp               -- ^ Function body.
+  -> Err (Telescope, (Exp, Base))  -- ^ Typed arguments, translated body, type of body.
 checkDefinition' list ctx f xs e =
-    do  unless (isLower $ head f) $ throwError "Defined functions must start with a lowercase letter."
+    do  unless (isLower $ head f) $ throwError $
+          "Defined functions must start with a lowercase letter."
         t@(FunT ts t') <- lookupCtx f ctx `catchError` \_ ->
                                 throwError $ "'" ++ f ++ "' must be used in a rule."
         let expect = length ts
             given  = length xs
-        unless (expect == given) $ throwError $ "'" ++ f ++ "' is used with type " ++ show t ++ " but defined with " ++ show given ++ " argument" ++ plural given ++ "."
+        unless (expect == given) $ throwError $ concat
+          [ "'", f, "' is used with type ", show t
+          , " but defined with ", show given, " argument", plural given ++ "."
+          ]
         e' <- checkExp list (setLocals ctx $ zip xs ts) e t'
         return (zip xs ts, (e', t'))
-    `catchError` \err -> throwError $ "In the definition " ++ unwords (f : xs ++ ["=",show e,";"]) ++ "\n  " ++ err
+    `catchError` \ err -> throwError $
+      "In the definition " ++ unwords (f : xs ++ ["=",show e,";"]) ++ "\n  " ++ err
     where
         plural 1 = ""
         plural _ = "s"
@@ -132,8 +132,8 @@ checkExp list ctx = curry $ \case
 --
 --   Fail if a label is used at different types.
 --
-buildContext :: CF -> Err Context
-buildContext cf@CFG{..} = do
+buildSignature :: [Rule] -> Err Signature
+buildSignature rules = do
   -- Build label signature with duplicates
   let sig0 = Map.fromListWith mappend $ map (second Set.singleton) labels
   -- Check for duplicates; extract from singleton sets.
@@ -145,11 +145,7 @@ buildContext cf@CFG{..} = do
         [ [ "The label '" ++ f ++ "' is used at conflicting types:" ]
         , map (("  " ++) . show) ts'
         ]
-  return $ Ctx
-    { ctxLabels = Map.fromAscList sig
-    , ctxTokens = ("Ident" : tokenNames cf)
-    , ctxLocals = []
-    }
+  return $ Map.fromAscList sig
   where
     mkType cat args = FunT [ mkBase t | Left t <- args ]
                            (mkBase cat)
@@ -159,10 +155,17 @@ buildContext cf@CFG{..} = do
 
     labels =
       [ (f, mkType cat args)
-        | Rule f cat args _ <- cfgRules
+        | Rule f cat args _ <- rules
         , not (isCoercion f)
         , not (isNilCons f)
       ]
+
+buildContext :: CF -> Context
+buildContext cf = Ctx
+    { ctxLabels = cfgSignature cf
+    , ctxTokens = ("Ident" : tokenNames cf)
+    , ctxLocals = []
+    }
 
 isToken :: String -> Context -> Bool
 isToken x ctx = elem x $ ctxTokens ctx

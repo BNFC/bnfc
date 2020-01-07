@@ -106,7 +106,7 @@ definedRules :: String -> CF -> [String]
 definedRules packageAbsyn cf =
     concat [ rule f xs e | FunDef f xs e <- cfgPragmas cf ]
   where
-    ctx = either error id $ buildContext cf
+    ctx = buildContext cf
 
     list = LC (\ t -> "List" ++ unBase t) (const "cons")
       where

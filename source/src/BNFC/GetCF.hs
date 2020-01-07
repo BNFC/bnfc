@@ -174,27 +174,29 @@ die msg = hPutStrLn stderr msg >> exitFailure
 
 getCFP :: Bool -> Abs.Grammar -> Err CFP
 getCFP cnf (Abs.Grammar defs0) = do
-    let rules = inlineDelims rules0
-        cf0 = revs srt
-        srt = let literals           = nub [lit | xs <- map rhsRule rules,
-                                                     Left (Cat lit) <- xs,
-                                                     lit `elem` specialCatsP]
-                  (symbols,keywords) = partition notIdent reservedWords
-                  notIdent s         = null s || not (isAlpha (head s)) || any (not . isIdentRest) s
-                  isIdentRest c      = isAlphaNum c || c == '_' || c == '\''
-                  reservedWords      = nub [t | r <- rules, isParsable r, Right t <- rhsRule r, not $ all isSpace t]
-                     -- Issue #204: exclude keywords from internal rules
-                     -- Issue #70: whitespace separators should be treated like "", at least in the parser
-              in CFG pragma literals symbols keywords [] rules
-    case mapMaybe (checkRule (cfp2cf cf0)) (cfgRules cf0) of
+    sig <- buildSignature $ map (fmap fst) rules
+    let cf = revs $ CFG pragma literals symbols keywords [] rules sig
+    case mapMaybe (checkRule (cfp2cf cf)) rules of
       [] -> return ()
       msgs -> throwError $ unlines msgs
-    return cf0
+    return cf
   where
-    (pragma,rules0) = partitionEithers $ concatMap transDef defs
-    (defs,inlineDelims) = if cnf then (defs0,id) else removeDelims defs0
-    revs cf1@CFG{..} =
-        cf1 { cfgReversibleCats = findAllReversibleCats (cfp2cf cf1) }
+    rules              = inlineDelims rules0
+    (pragma,rules0)    = partitionEithers $ concatMap transDef defs
+    (defs,inlineDelims)= if cnf then (defs0,id) else removeDelims defs0
+    literals           = nub
+      [ lit | xs <- map rhsRule rules
+            , Left (Cat lit) <- xs
+            , lit `elem` specialCatsP
+      ]
+    (symbols,keywords) = partition notIdent reservedWords
+    notIdent s         = null s || not (isAlpha (head s)) || any (not . isIdentRest) s
+    isIdentRest c      = isAlphaNum c || c == '_' || c == '\''
+    reservedWords      = nub [t | r <- rules, isParsable r, Right t <- rhsRule r, not $ all isSpace t]
+       -- Issue #204: exclude keywords from internal rules
+       -- Issue #70: whitespace separators should be treated like "", at least in the parser
+    revs cfp@CFG{..} =
+        cfp { cfgReversibleCats = findAllReversibleCats (cfp2cf cfp) }
 
 -- | This function goes through each rule of a grammar and replace Cat "X" with
 -- TokenCat "X" when "X" is a token type.
