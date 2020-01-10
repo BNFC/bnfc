@@ -46,9 +46,9 @@ cf2Abstract tokenText generic functor name cf = vsep . concat $
         ]
       ]
     , [ vcat . concat $
-        [ [ "{-# LANGUAGE DeriveDataTypeable #-}" | generic ]
-        , [ "{-# LANGUAGE DeriveGeneric #-}"      | generic ]
-        , [ "{-# LANGUAGE GeneralizedNewtypeDeriving #-}"   ] -- for IsString
+        [ [ "{-# LANGUAGE DeriveDataTypeable #-}" | gen ]
+        , [ "{-# LANGUAGE DeriveGeneric #-}"      | gen ]
+        , [ "{-# LANGUAGE GeneralizedNewtypeDeriving #-}" | not $ null $ specialCats cf  ] -- for IsString
         ]
       ]
     , [ hsep [ "module", text name, "where" ] ]
@@ -60,15 +60,17 @@ cf2Abstract tokenText generic functor name cf = vsep . concat $
       ]
     , [ vcat . concat $
         [ map text $ tokenTextImport tokenText
-        , [ "import qualified Data.Data    as C (Data, Typeable)" | generic ]
-        , [ "import qualified GHC.Generics as C (Generic)"        | generic ]
+        , [ "import qualified Data.Data    as C (Data, Typeable)" | gen ]
+        , [ "import qualified GHC.Generics as C (Generic)"        | gen ]
         ]
       ]
     , map (\ c -> prSpecialData tokenText (isPositionCat cf c) derivingClassesTokenType c) $ specialCats cf
-    , concatMap (prData functorName derivingClasses) $ cf2data cf
+    , concatMap (prData functorName derivingClasses) datas
     , [ "" ] -- ensure final newline
     ]
   where
+    datas = cf2data cf
+    gen   = generic && not (null datas)
     derivingClasses = map ("C." ++) $ concat
       [ [ "Eq", "Ord", "Show", "Read" ]
       , when generic [ "Data", "Typeable", "Generic" ]

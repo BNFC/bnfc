@@ -250,7 +250,7 @@ haskellParameters = baseParameters
         "-i" "Use camelCase"
         "-i" "Use newtype instead of data"
         "-i" "Use fmap"
-        "-i" "Unused LANGUAGE pragma"
+        -- "-i" "Unused LANGUAGE pragma"
         "."
       tpMake
       cmd "ghc" . (:[]) =<< findFileRegex "Skel.*\\.hs$"
