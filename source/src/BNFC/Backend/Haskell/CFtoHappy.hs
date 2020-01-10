@@ -21,7 +21,6 @@ module BNFC.Backend.Haskell.CFtoHappy (cf2Happy, convert) where
 
 import Prelude hiding ((<>))
 
-import Data.Char
 import Data.List (intersperse)
 
 import BNFC.CF
@@ -60,7 +59,7 @@ cf2Happy name absName lexName mode tokenText functor cf = unlines
   , delimiter
   , specialRules absName tokenText cf
   , render $ prRules absName functor (rulesForHappy absName functor cf)
-  , finalize absName functor cf
+  , footer
   ]
 
 -- | Construct the header.
@@ -156,7 +155,7 @@ constructRule absName functor (Rule fun _cat rhs Parsable) = (pattern, action)
            | otherwise                      = unwords (qualify fun : metavars)
     qualify f
       | isConsFun f || isNilCons f = f
-      | isDefinedRule f = f ++ "_"  -- Definitions are local to Par.hs, not in Abs.hs
+      | isDefinedRule f = absName ++ "." ++ f ++ "_"
       | otherwise       = absName ++ "." ++ f
 
 
@@ -206,7 +205,7 @@ generatePatterns its =
 -- ListExp2 : Exp2 { (:[]) $1 } | Exp2 ',' ListExp2 { (:) $1 $3 }
 --
 prRules :: ModuleName -> Bool -> Rules -> Doc
-prRules absM functor = vcat . map prOne
+prRules absM functor = vsep . map prOne
   where
     prOne (_ , []      ) = empty -- nt has only internal use
     prOne (nt, (p,a):ls) =
@@ -222,9 +221,9 @@ prRules absM functor = vcat . map prOne
 
 -- Finally, some haskell code.
 
-finalize :: ModuleName -> Bool -> CF -> String
-finalize absM functor cf = unlines $ concat $
-  [ [ "{"
+footer :: String
+footer = unlines $
+    [ "{"
     , ""
     , "happyError :: [" ++ tokenName ++ "] -> Either String a"
     , "happyError ts = Left $"
@@ -240,36 +239,8 @@ finalize absM functor cf = unlines $ concat $
       ]
     , ""
     , "myLexer = tokens"
+    , "}"
     ]
-  , definedRules absM functor cf
-  , [ "}"
-    ]
-  ]
-
--- | Generate Haskell code for the @define@d constructors.
-definedRules :: ModuleName -> Bool -> CF -> [String]
-definedRules absM functor cf = [ mkDef f xs e | FunDef f xs e <- cfgPragmas cf ]
-    where
-        mkDef f xs e = unwords $ (f ++ "_") : xs' ++ ["=", show e']
-            where
-                xs' = addFunctorArg id $ map (++ "_") xs
-                e'  = underscore e
-        underscore (App x es)
-            | isLower $ head x  = App (x ++ "_") es'
-            | otherwise         = App (qual x)   es'
-          where es' = addFunctorArg (`App` []) $ map underscore es
-        underscore (Var x)      = Var (x ++ "_")
-        underscore e@LitInt{}    = e
-        underscore e@LitDouble{} = e
-        underscore e@LitChar{}   = e
-        underscore e@LitString{} = e
-        qual x
-          | null absM = x
-          | otherwise = concat [ absM, ".", x ]
-        -- Functor argument
-        addFunctorArg g
-          | functor = (g "_a" :)
-          | otherwise = id
 
 -- | GF literals.
 specialToks :: CF -> [String]

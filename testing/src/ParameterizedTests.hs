@@ -245,6 +245,7 @@ haskellParameters = baseParameters
 
   , tpBuild = do
       cmd "hlint"
+        "-i" "Eta reduce"
         "-i" "Redundant bracket"
         "-i" "Redundant $"
         "-i" "Use camelCase"

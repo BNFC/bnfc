@@ -26,6 +26,7 @@ import Data.List (intercalate, nub)
 import BNFC.CF
 import BNFC.Backend.HaskellGADT.HaskellGADTCommon
 import BNFC.Backend.Haskell.Utils
+import BNFC.Backend.Haskell.CFtoAbstract (definedRules)
 import BNFC.Options
 import BNFC.Utils ((+++), when)
 
@@ -59,11 +60,14 @@ cf2Abstract tokenText name cf composOpMod = unlines $ concat $
   , prEq cf
   , [""]
   , prOrd cf
+  , [""]
+  , map ((++ "\n") . show) $ definedRules False cf
   ]
   where
     exports = concat $
       [ [ "Tree(..)" ]
       , getTreeCats cf
+      , map (++ "_") $ getDefinitions cf
       , [ "johnMajorEq"
         , "module " ++ composOpMod
         ]
@@ -71,6 +75,9 @@ cf2Abstract tokenText name cf composOpMod = unlines $ concat $
 
 getTreeCats :: CF -> [String]
 getTreeCats cf = nub $ map show $ filter (not . isList) $ map consCat $ cf2cons cf
+
+getDefinitions :: CF -> [String]
+getDefinitions cf = [ f | FunDef f _ _ <- cfgPragmas cf ]
 
 prDummyTypes :: CF -> [String]
 prDummyTypes cf = prDummyData : map prDummyType cats

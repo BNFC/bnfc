@@ -19,16 +19,18 @@
     Foundation, 51 Franklin Street, Fifth Floor, Boston, MA 02110-1335, USA
 -}
 
-module BNFC.Backend.Haskell.CFtoAbstract (cf2Abstract) where
+module BNFC.Backend.Haskell.CFtoAbstract (cf2Abstract, definedRules) where
 
 import Prelude'
+import Data.Maybe
 
 import BNFC.CF
 import BNFC.Options               ( TokenText(..) )
 import BNFC.PrettyPrint
 import BNFC.Utils                 ( when )
 
-import BNFC.Backend.Haskell.Utils ( catToType, catvars, tokenTextImport, tokenTextType )
+import BNFC.Backend.Haskell.Utils
+  ( catToType, catvars, tokenTextImport, tokenTextType, typeToHaskell )
 
 -- | Create a Haskell module containing data type definitions for the abstract syntax.
 
@@ -66,6 +68,7 @@ cf2Abstract tokenText generic functor name cf = vsep . concat $
       ]
     , map (\ c -> prSpecialData tokenText (isPositionCat cf c) derivingClassesTokenType c) $ specialCats cf
     , concatMap (prData functorName derivingClasses) datas
+    , definedRules functor cf
     , [ "" ] -- ensure final newline
     ]
   where
@@ -219,3 +222,29 @@ prSpecialData tokenText position classes cat = vcat
 --
 deriving_ :: [String] -> Doc
 deriving_ cls = "deriving" <+> parens (hsep $ punctuate "," $ map text cls)
+
+-- | Generate Haskell code for the @define@d constructors.
+definedRules :: Bool -> CF -> [Doc]
+definedRules functor cf = [ mkDef f xs e | FunDef f xs e <- cfgPragmas cf ]
+  where
+    mkDef f xs e = vcat $ map text $ concat
+      [ [ unwords [ underscore f, "::", typeToHaskell t ]
+        | not functor  -- TODO: make type signatures work with --functor
+        , t <- maybeToList $ sigLookup f cf
+        ]
+      , [ unwords $ underscore f : xs' ++ [ "=", show $ underscores e ] ]
+      ]
+      where xs' = addFunctorArg id $ map underscore xs
+    -- Add underscore
+    underscore  = (++ "_")
+    underscores = \case
+      App x es      -> App x $ addFunctorArg (`App` []) $ map underscores es
+      Var x         -> Var (x ++ "_")
+      e@LitInt{}    -> e
+      e@LitDouble{} -> e
+      e@LitChar{}   -> e
+      e@LitString{} -> e
+    -- Functor argument
+    addFunctorArg g
+      | functor = (g "_a" :)
+      | otherwise = id

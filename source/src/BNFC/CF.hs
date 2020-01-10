@@ -103,6 +103,7 @@ module BNFC.CF (
             hasLayout,
             layoutPragmas,
             normFun,
+            sigLookup,      -- Get the type of a rule label.
 
             CFP,            -- CF with profiles
             RuleP,
@@ -120,6 +121,7 @@ import Data.Char
 import Data.List (nub, intersperse, sort, group, intercalate, find)
 import Data.Maybe
 import Data.Map  (Map)
+import qualified Data.Map as Map
 import qualified Data.Set as Set
 
 import AbsBNF (Reg())
@@ -636,10 +638,9 @@ cf2dataLists = cf2data' $ isDataOrListCat . normCat
 specialData :: CF -> [Data]
 specialData cf = [(TokenCat name, [(name, [TokenCat catString])]) | name <- specialCats cf]
 
--- to deal with coercions
-
--- the Haskell convention: the wildcard _ is not a constructor
-
+-- | Get the type of a rule label.
+sigLookup :: Fun -> CF -> Maybe Type
+sigLookup f = Map.lookup f . cfgSignature
 
 
 -- | Checks if the rule is parsable.

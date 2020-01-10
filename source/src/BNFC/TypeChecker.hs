@@ -20,7 +20,6 @@ import Control.Monad.Except (MonadError(..))
 
 import Data.Bifunctor (second)
 import Data.Char
-import Data.Map       (Map)
 
 import qualified Data.Map as Map
 import qualified Data.Set as Set

@@ -3,6 +3,7 @@
 module BNFC.Backend.Haskell.Utils
   ( parserName
   , hsReservedWords
+  , typeToHaskell
   , catToType
   , catvars
   , tokenTextImport, tokenTextType
@@ -12,7 +13,7 @@ module BNFC.Backend.Haskell.Utils
 import Prelude'
 
 import BNFC.PrettyPrint
-import BNFC.CF      (Cat(..), identCat, baseTokenCatNames)
+import BNFC.CF      (Cat(..), identCat, baseTokenCatNames, Base, Type(FunT))
 import BNFC.Options (TokenText(..))
 import BNFC.Utils   (mkNames, NameStyle(..))
 
@@ -149,6 +150,15 @@ catToType qualify param cat = parensIf isApp $ loop cat
                     -> text c
         | otherwise -> qualify (text c)
 
+-- | Convert a base type to Haskell syntax.
+baseTypeToHaskell :: Base -> String
+baseTypeToHaskell = show
+
+-- | Convert a function type to Haskell syntax in curried form.
+typeToHaskell :: Type -> String
+typeToHaskell (FunT ts t) =
+  foldr arr (baseTypeToHaskell t) $ map baseTypeToHaskell ts
+  where arr a b = unwords [a, "->", b]
 
 -- | Gives a list of variables usable for pattern matching.
 --
