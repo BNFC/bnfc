@@ -30,7 +30,8 @@ import BNFC.PrettyPrint
 import BNFC.Utils                 ( when )
 
 import BNFC.Backend.Haskell.Utils
-  ( catToType, catvars, tokenTextImport, tokenTextType, typeToHaskell )
+  ( avoidReservedWords, catToType, catvars, mkDefName
+  , tokenTextImport, tokenTextType, typeToHaskell )
 
 -- | Create a Haskell module containing data type definitions for the abstract syntax.
 
@@ -228,18 +229,16 @@ definedRules :: Bool -> CF -> [Doc]
 definedRules functor cf = [ mkDef f xs e | FunDef f xs e <- cfgPragmas cf ]
   where
     mkDef f xs e = vcat $ map text $ concat
-      [ [ unwords [ underscore f, "::", typeToHaskell t ]
+      [ [ unwords [ mkDefName f, "::", typeToHaskell t ]
         | not functor  -- TODO: make type signatures work with --functor
         , t <- maybeToList $ sigLookup f cf
         ]
-      , [ unwords $ underscore f : xs' ++ [ "=", show $ underscores e ] ]
+      , [ unwords $ mkDefName f : xs' ++ [ "=", show $ sanitize e ] ]
       ]
-      where xs' = addFunctorArg id $ map underscore xs
-    -- Add underscore
-    underscore  = (++ "_")
-    underscores = \case
-      App x es      -> App x $ addFunctorArg (`App` []) $ map underscores es
-      Var x         -> Var (x ++ "_")
+      where xs' = addFunctorArg id $ map avoidReservedWords xs
+    sanitize = \case
+      App x es      -> App x $ addFunctorArg (`App` []) $ map sanitize es
+      Var x         -> Var $ avoidReservedWords x
       e@LitInt{}    -> e
       e@LitDouble{} -> e
       e@LitChar{}   -> e

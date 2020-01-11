@@ -20,16 +20,16 @@
 module BNFC.Backend.XML ---- (cf2DTD, cf2XML)
   where
 
+import Data.List  ( intersperse, intercalate )
+import Data.Maybe ( fromJust )
+
 import BNFC.CF
 import BNFC.Utils
 import BNFC.Backend.Base
 import BNFC.Options hiding ( Backend )
 import BNFC.Backend.Haskell.CFtoTemplate ()
 import BNFC.Backend.Haskell.HsOpts ( xmlFile, xmlFileM, absFileM )
-import BNFC.Backend.Haskell.Utils  ( hsReservedWords )
-import Data.List  ( intersperse, intercalate )
-import Data.Char  ( toLower )
-import Data.Maybe ( fromJust )
+import BNFC.Backend.Haskell.Utils  ( catToVar )
 
 type Coding = Bool ---- change to at least three values
 
@@ -208,21 +208,11 @@ rules :: CF -> String
 rules cf = unlines $
   map (\(s,xs) -> case_fun s (map toArgs xs)) $ cf2data cf
  where
-   toArgs (cons,args) = ((cons, names (map (checkRes . var) args) (0 :: Int)), ruleOf cons)
+   toArgs (cons,args) = ((cons, names (map catToVar args) (0 :: Int)), ruleOf cons)
    names [] _ = []
    names (x:xs) n
      | x `elem` xs = (x ++ show n) : names xs (n+1)
-     | otherwise = x             : names xs n
-   var (ListCat c)  = var c ++ "s"
-   var (Cat "Ident")   = "id"
-   var (Cat "Integer") = "n"
-   var (Cat "String")  = "str"
-   var (Cat "Char")    = "c"
-   var (Cat "Double")  = "d"
-   var cat            = map toLower (show cat)
-   checkRes s
-        | s `elem` hsReservedWords = s ++ "'"
-        | otherwise                = s
+     | otherwise   = x             : names xs n
    ruleOf s = fromJust $ lookupRule s (cfgRules cf)
 
 -- case_fun :: Cat -> [(Constructor,Rule)] -> String

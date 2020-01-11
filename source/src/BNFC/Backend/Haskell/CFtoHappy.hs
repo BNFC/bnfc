@@ -155,7 +155,7 @@ constructRule absName functor (Rule fun _cat rhs Parsable) = (pattern, action)
            | otherwise                      = unwords (qualify fun : metavars)
     qualify f
       | isConsFun f || isNilCons f = f
-      | isDefinedRule f = absName ++ "." ++ f ++ "_"
+      | isDefinedRule f = absName ++ "." ++ mkDefName f
       | otherwise       = absName ++ "." ++ f
 
 

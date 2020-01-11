@@ -20,9 +20,8 @@
 module BNFC.Backend.HaskellGADT.HaskellGADTCommon (Constructor(..), cf2cons, isTreeType) where
 
 import BNFC.CF
-import BNFC.Backend.Haskell.Utils ( hsReservedWords )
+import BNFC.Backend.Haskell.Utils ( catToVar )
 
-import Data.Char
 
 data Constructor = Constructor
     { consCat :: Cat
@@ -48,19 +47,6 @@ cf2cons cf =
     mkUnique [] _ = []
     mkUnique (x:xs) n | x `elem` xs || n > 0 = (x ++ show n) : mkUnique xs (n+1)
                       | otherwise = x : mkUnique xs n
-
--- | Make a variable name for a category.
-catToVar :: Cat -> String
-catToVar = checkRes . var
-  where var (ListCat cat) = var cat ++ "s"
-        var (Cat "Ident")   = "i"
-        var (Cat "Integer") = "n"
-        var (Cat "String")  = "str"
-        var (Cat "Char")    = "c"
-        var (Cat "Double")  = "d"
-        var xs        = map toLower $ show xs
-        checkRes s |  s `elem` hsReservedWords = s ++ "'"
-                   | otherwise                 = s
 
 -- | Get the rule for a function.
 ruleFun :: CF -> Fun -> Rule

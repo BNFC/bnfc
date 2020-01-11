@@ -2,18 +2,19 @@
 
 module BNFC.Backend.Haskell.Utils
   ( parserName
-  , hsReservedWords
+  , hsReservedWords, avoidReservedWords, mkDefName
   , typeToHaskell
   , catToType
-  , catvars
+  , catToVar, catvars
   , tokenTextImport, tokenTextType
   , tokenTextPack, tokenTextPackParens, tokenTextUnpack
   ) where
 
 import Prelude'
+import Data.Char
 
 import BNFC.PrettyPrint
-import BNFC.CF      (Cat(..), identCat, baseTokenCatNames, Base, Type(FunT))
+import BNFC.CF      (Cat(..), catToStr, identCat, baseTokenCatNames, Base, Type(FunT))
 import BNFC.Options (TokenText(..))
 import BNFC.Utils   (mkNames, NameStyle(..))
 
@@ -101,6 +102,14 @@ hsReservedWords =
     , "where"
     ]
 
+avoidReservedWords :: String -> String
+avoidReservedWords  x
+  | x `elem` hsReservedWords = x ++ "'"
+  | otherwise                = x
+
+-- | Modifier to avoid clashes in definition.
+mkDefName :: String -> String
+mkDefName = avoidReservedWords
 
 -- | Render a category from the grammar to a Haskell type.
 --
@@ -159,6 +168,18 @@ typeToHaskell :: Type -> String
 typeToHaskell (FunT ts t) =
   foldr arr (baseTypeToHaskell t) $ map baseTypeToHaskell ts
   where arr a b = unwords [a, "->", b]
+
+-- | Make a variable name for a category.
+catToVar :: Cat -> String
+catToVar = avoidReservedWords . var
+  where
+  var (ListCat cat)   = var cat ++ "s"
+  var (Cat "Ident")   = "x"
+  var (Cat "Integer") = "n"
+  var (Cat "String")  = "str"
+  var (Cat "Char")    = "c"
+  var (Cat "Double")  = "d"
+  var xs              = map toLower $ catToStr xs
 
 -- | Gives a list of variables usable for pattern matching.
 --

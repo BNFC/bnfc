@@ -67,7 +67,7 @@ cf2Abstract tokenText name cf composOpMod = unlines $ concat $
     exports = concat $
       [ [ "Tree(..)" ]
       , getTreeCats cf
-      , map (++ "_") $ getDefinitions cf
+      , map mkDefName $ getDefinitions cf
       , [ "johnMajorEq"
         , "module " ++ composOpMod
         ]
