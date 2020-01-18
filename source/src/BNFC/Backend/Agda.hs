@@ -138,7 +138,7 @@ import qualified Data.Set as Set
 import BNFC.CF
 import BNFC.Backend.Base           (Backend, mkfile)
 import BNFC.Backend.Haskell.HsOpts
-import BNFC.Backend.Haskell.Utils  (parserName, catToType)
+import BNFC.Backend.Haskell.Utils  (parserName, catToType, mkDefName, typeToHaskell')
 import BNFC.Options                (SharedOptions, TokenText(..), tokenText)
 import BNFC.PrettyPrint
 import BNFC.Utils                  (ModuleName, replace, when, table)
@@ -218,6 +218,7 @@ cf2AgdaAST time tokenText mod amod pmod cf = vsep $
       ]
   , vsep $ map (prToken amod tokenText) tcats
   , absyn amod NamedArg dats
+  , definedRules cf
   -- , allTokenCats printToken tcats  -- seem to be included in printerCats
   , printers amod printerCats
   , empty -- Make sure we terminate the file with a new line.
@@ -598,6 +599,31 @@ type Frequency a = Map a Int
 -- | Increase the frequency of the given key.
 incr :: Ord a => a -> Frequency a -> Frequency a
 incr = Map.alter $ maybe (Just 1) (Just . succ)
+
+-- * Generate the defined constructors.
+
+-- | Generate Haskell code for the @define@d constructors.
+definedRules :: CF -> Doc
+definedRules cf = vsep [ mkDef f xs e | FunDef f xs e <- cfgPragmas cf ]
+  where
+    mkDef f xs e = vcat $ map text $ concat
+      [ [ unwords [ mkDefName f, ":", typeToHaskell' "→" t ]
+        | t <- maybeToList $ sigLookup f cf
+        ]
+      , [ unwords $ concat
+          [ [ mkDefName f, "=", "λ" ]
+          , map agdaLower xs
+          , [ "→", show $ sanitize e ]
+          ]
+        ]
+      ]
+    sanitize = \case
+      App x es      -> App (agdaLower x) $ map sanitize es
+      Var x         -> Var $ agdaLower x
+      e@LitInt{}    -> e
+      e@LitDouble{} -> e
+      e@LitChar{}   -> e
+      e@LitString{} -> e
 
 -- * Generate bindings for the pretty printers
 

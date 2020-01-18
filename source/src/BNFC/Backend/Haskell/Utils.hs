@@ -3,7 +3,7 @@
 module BNFC.Backend.Haskell.Utils
   ( parserName
   , hsReservedWords, avoidReservedWords, mkDefName
-  , typeToHaskell
+  , typeToHaskell, typeToHaskell'
   , catToType
   , catToVar, catvars
   , tokenTextImport, tokenTextType
@@ -165,9 +165,12 @@ baseTypeToHaskell = show
 
 -- | Convert a function type to Haskell syntax in curried form.
 typeToHaskell :: Type -> String
-typeToHaskell (FunT ts t) =
-  foldr arr (baseTypeToHaskell t) $ map baseTypeToHaskell ts
-  where arr a b = unwords [a, "->", b]
+typeToHaskell = typeToHaskell' "->"
+
+typeToHaskell' :: String -> Type -> String
+typeToHaskell' arr (FunT ts t) =
+  foldr f (baseTypeToHaskell t) $ map baseTypeToHaskell ts
+  where f a b = unwords [a, arr, b]
 
 -- | Make a variable name for a category.
 catToVar :: Cat -> String
