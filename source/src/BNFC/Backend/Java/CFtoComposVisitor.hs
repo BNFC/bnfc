@@ -24,8 +24,9 @@ module BNFC.Backend.Java.CFtoComposVisitor (cf2ComposVisitor) where
 
 import Prelude'
 
-import Data.List
+import Data.List   (intercalate)
 import Data.Either (lefts)
+
 import BNFC.CF
 import BNFC.Backend.Java.CFtoJavaAbs15 (typename)
 import BNFC.Utils ((+++))
@@ -33,27 +34,28 @@ import BNFC.Backend.Common.NamedVariables
 import BNFC.PrettyPrint
 
 cf2ComposVisitor :: String -> String -> CF -> String
-cf2ComposVisitor packageBase packageAbsyn cf =
-  concat [
-    header,
-    concatMap (prData packageAbsyn user) groups,
-    "}"]
+cf2ComposVisitor packageBase packageAbsyn cf = concat
+  [ header
+  , intercalate "\n" $ map (prData packageAbsyn user) groups
+  , "}"
+  ]
   where
-    user   = fst (unzip (tokenPragmas cf))
+    user   = map fst $ tokenPragmas cf
     groups =
         [ g
         | g@(c,_) <- fixCoercions (ruleGroupsInternals cf)
         , not (isList c)
         ]
     is     = map (prInterface packageAbsyn) groups
-    header = unlines
-      [ "package" +++ packageBase ++ ";"
-      , "/** BNFC-Generated Composition Visitor"
-      , "*/"
-      , ""
-      , "public class ComposVisitor<A>" ++ if null is then "" else " implements"
-      , intercalate ",\n" $ map ("  "++) is
-      , "{"
+    header = unlines $ concat
+      [ [ "package" +++ packageBase ++ ";"
+        , "/** BNFC-Generated Composition Visitor"
+        , "*/"
+        , ""
+        , "public class ComposVisitor<A>" ++ if null is then "" else " implements"
+        ]
+      , [ intercalate ",\n" $ map ("  " ++) is | not $ null is ]
+      , [ "{" ]
       ]
 
 
@@ -66,8 +68,8 @@ prInterface packageAbsyn (cat, _) =
 
 prData :: String -> [UserDef] -> (Cat, [Rule]) -> String
 prData packageAbsyn user (cat, rules) = unlines
-    [ "/* " ++ identCat cat ++ " */"
-    , concatMap (render . prRule packageAbsyn user cat) rules
+    [ "    /* " ++ identCat cat ++ " */"
+    , render $ vcat $ map (prRule packageAbsyn user cat) rules
     ]
 
 -- | Traverses a standard rule.
@@ -98,7 +100,7 @@ prRule packageAbsyn user cat (Rule fun _ cats _)
     cls    = qual fun
     qual s = text (packageAbsyn ++ "." ++ s)
     vnames = map snd cats'
-prRule  _ _ _ _ = ""
+prRule  _ _ _ _ = empty
 
 -- | Traverses a class's instance variables.
 --

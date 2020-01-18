@@ -27,16 +27,16 @@ import BNFC.Backend.Common.NamedVariables
 
 
 cf2AllVisitor :: String -> String -> CF -> String
-cf2AllVisitor packageBase packageAbsyn cf =
-  unlines [
-           "package" +++ packageBase ++ ";",
-           "",
-           "import" +++ packageAbsyn ++ ".*;",
-           "",
-           "/** BNFC-Generated All Visitor */",
-           "public interface AllVisitor<R,A>" ++ if null is then "" else " extends",
-           intercalate ",\n" $ map ("  "++) is,
-           "{}"]
+cf2AllVisitor packageBase packageAbsyn cf = unlines $ concat
+  [ [ "package" +++ packageBase ++ ";"
+    , ""
+    , "/** BNFC-Generated All Visitor */"
+    , ""
+    , "public interface AllVisitor<R,A>" ++ if null is then "" else " extends"
+    ]
+  , [ intercalate ",\n" $ map ("  "++) is | not $ null is ]
+  , [ "{}" ]
+  ]
   where
     groups = [ g
         | g@(c,_) <- fixCoercions (ruleGroupsInternals cf), not (isList c) ]

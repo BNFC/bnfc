@@ -44,9 +44,8 @@ module BNFC.Backend.Java.CFtoVisitSkel15 (cf2VisitSkel) where
 
 import Prelude'
 
-import Data.Either      ( lefts )
-import Data.Bifunctor   ( second)
-import Data.List        ( intercalate )
+import Data.Bifunctor   ( second )
+import Data.Either      ( lefts  )
 import Text.PrettyPrint
 
 import BNFC.CF
@@ -62,7 +61,6 @@ cf2VisitSkel :: String -> String -> CF -> String
 cf2VisitSkel packageBase packageAbsyn cf =
   concat [
     header,
---    "  // NOT IMPLEMENTED for java1.5\n",
     concatMap (prData packageAbsyn user) groups,
     "}"]
   where
@@ -72,6 +70,7 @@ cf2VisitSkel packageBase packageAbsyn cf =
       "package" +++ packageBase ++ ";",
       "",
       "/*** BNFC-Generated Visitor Design Pattern Skeleton. ***/",
+      "",
       "/* This implements the common visitor design pattern.",
       "   Tests show it to be slightly less efficient than the",
       "   instanceof method, but easier to use. ",
@@ -91,7 +90,7 @@ prData packageAbsyn user (cat, rules)
         ["  public class " ++ identCat cat ++ "Visitor<R,A> implements "
             ++ qual (identCat cat) ++ ".Visitor<R,A>"
         , "  {"
-        , intercalate "\n" $ map (render . nest 4 . prRule packageAbsyn user) rules
+        , render $ vcat $ map (nest 4 . prRule packageAbsyn user) rules
         , "  }"
         ]
   where
@@ -128,7 +127,7 @@ prRule packageAbsyn user (Rule fun _ cats _)
   where
     fname = text fun              -- function name
     cats' = map (second ("p." <>)) $ lefts $ numVars cats  -- non-terminals in the rhs
-prRule _ _ _ = ""
+prRule _ _ _ = empty
 
 -- | Traverses a class's instance variables.
 --
