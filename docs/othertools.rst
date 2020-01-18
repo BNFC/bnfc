@@ -15,7 +15,7 @@ Similar tools
 
 bnfc-meta_
     Like BNFC for haskell but allows you to define your grammar in a .hs file
-    using a quasi-quotter
+    using a quasi-quoter.
 ANTLR_
     From a grammar, ANTLR generates a Java parser that can build and walk parse
     trees.
