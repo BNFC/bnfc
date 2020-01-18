@@ -141,7 +141,7 @@ import BNFC.Backend.Haskell.HsOpts
 import BNFC.Backend.Haskell.Utils  (parserName, catToType)
 import BNFC.Options                (SharedOptions, TokenText(..), tokenText)
 import BNFC.PrettyPrint
-import BNFC.Utils                  (ModuleName, replace, when)
+import BNFC.Utils                  (ModuleName, replace, when, table)
 
 type NEList = NEList.NonEmpty
 
@@ -390,7 +390,7 @@ absyn  amod  style ds = vsep . ("mutual" :) . concatMap (map (nest 2) . prData a
 -- >>> vsep $ prData "Foo" UnnamedArg (Cat "Nat", [ ("Zero", []), ("Suc", [Cat "Nat"]) ])
 -- data Nat : Set where
 --   zero : Nat
---   suc : Nat → Nat
+--   suc  : Nat → Nat
 -- <BLANKLINE>
 -- {-# COMPILE GHC Nat = data Foo.Nat
 --   ( Foo.Zero
@@ -422,7 +422,7 @@ prData _    _     (c    , _ ) = error $ "prData: unexpected category " ++ show c
 --
 -- >>> vsep $ prData' "ErrM" UnnamedArg "Err A" [ ("Ok", [Cat "A"]), ("Bad", [ListCat $ Cat "Char"]) ]
 -- data Err A : Set where
---   ok : A → Err A
+--   ok  : A → Err A
 --   bad : #List Char → Err A
 -- <BLANKLINE>
 -- {-# COMPILE GHC Err = data ErrM.Err
@@ -448,7 +448,7 @@ prErrM emod = vsep $ prData' emod UnnamedArg "Err A"
 -- >>> prettyData UnnamedArg "Nat" [ ("zero", []), ("suc", [Cat "Nat"]) ]
 -- data Nat : Set where
 --   zero : Nat
---   suc : Nat → Nat
+--   suc  : Nat → Nat
 --
 -- >>> prettyData UnnamedArg "C" [ ("C1", []), ("C2", [Cat "C"]) ]
 -- data C : Set where
@@ -473,12 +473,19 @@ prErrM emod = vsep $ prData' emod UnnamedArg "Err A"
 -- :}
 -- data Stm : Set where
 --   block : (ss : #List Stm) → Stm
---   if : (e : Exp) (s₁ s₂ : Stm) → Stm
+--   if    : (e : Exp) (s₁ s₂ : Stm) → Stm
 --
 prettyData :: ConstructorStyle -> String -> [(Fun, [Cat])] -> Doc
-prettyData style d cs = vcat $
-  [ hsep [ "data", text d, colon, "Set", "where" ] ] ++
-  map (nest 2 . prettyConstructor style d) cs
+prettyData style d cs = vcat $ concat
+  [ [ hsep [ "data", text d, colon, "Set", "where" ] ]
+  , mkTSTable $ map (prettyConstructor style d) cs
+  ]
+  where
+
+mkTSTable :: [(Doc,Doc)] -> [Doc]
+mkTSTable = map (nest 2 . text) . table " : " . map mkRow
+  where
+  mkRow (c,t) = [ render c, render t ]
 
 -- | Generate pragmas to bind Haskell AST to Agda.
 --
@@ -500,22 +507,15 @@ pragmaData amod d cs = prettyList 2 pre lparen (rparen <+> "#-}") "|" $
 -- | Pretty-print since rule as Agda constructor declaration.
 --
 -- >>> prettyConstructor UnnamedArg "D" ("c", [Cat "A", Cat "B", Cat "C"])
--- c : A → B → C → D
+-- (c,A → B → C → D)
 -- >>> prettyConstructor undefined  "D" ("c1", [])
--- c1 : D
+-- (c1,D)
 -- >>> prettyConstructor NamedArg "Stm" ("SIf", map Cat ["Exp", "Stm", "Stm"])
--- sIf : (e : Exp) (s₁ s₂ : Stm) → Stm
+-- (sIf,(e : Exp) (s₁ s₂ : Stm) → Stm)
 --
-prettyConstructor :: ConstructorStyle -> String -> (Fun,[Cat]) -> Doc
-prettyConstructor _style d (c, []) = hsep $
-  [ prettyCon c
-  , colon
-  , text d
-  ]
-prettyConstructor style d (c, as) = hsep $
-  [ prettyCon c
-  , colon
-  , prettyConstructorArgs style as
+prettyConstructor :: ConstructorStyle -> String -> (Fun,[Cat]) -> (Doc,Doc)
+prettyConstructor style d (c, as) = (prettyCon c,) $ if null as then text d else hsep $
+  [ prettyConstructorArgs style as
   , arrow
   , text d
   ]
@@ -630,14 +630,13 @@ printToken t = vcat
 --
 printers :: ModuleName -> [Cat] -> Doc
 printers _amod []   = empty
-printers  amod cats =
-  "-- Binding the pretty printers."
-  $++$
-  vcat ("postulate" : map (nest 2 . prettyTySig) cats)
-  $++$
-  vcat (map pragmaBind cats)
+printers  amod cats = vsep
+  [ "-- Binding the pretty printers."
+  , vcat $ "postulate" : mkTSTable (map (prettyTySig) cats)
+  , vcat $ map pragmaBind cats
+  ]
   where
-  prettyTySig c = hsep [ agdaPrinterName c, colon, prettyCat c, arrow, stringT ]
+  prettyTySig c = (agdaPrinterName c, hsep [ prettyCat c, arrow, stringT ])
   pragmaBind  c = hsep
     [ "{-#", "COMPILE", "GHC", agdaPrinterName c, equals, "\\", y, "->"
     , "Data.Text.pack", parens ("printTree" <+> parens (y <+> "::" <+> t)), "#-}"
