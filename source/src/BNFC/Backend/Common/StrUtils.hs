@@ -1,5 +1,7 @@
 module BNFC.Backend.Common.StrUtils where
 
+import Data.Char (ord)
+
 -- | Function that, given an input string, renders it either as a char (if
 -- it has legth 1) or a string. It should also excape characters correctly.
 -- The first returned value is the 'type' of the string: either C for char
@@ -15,8 +17,8 @@ module BNFC.Backend.Common.StrUtils where
 -- >>> renderCharOrString "\"\\'"
 -- ('S',"\"\\\"\\\\\\'\"")
 renderCharOrString :: String -> (Char, String)
-renderCharOrString [char] = ('C', show char)     -- using show shoud quote '
-renderCharOrString s =('S', "\"" ++ escapeChars s ++ "\"")
+renderCharOrString [c] | ord c <= 255 = ('C', show c)     -- using show should quote '
+renderCharOrString s = ('S', "\"" ++ escapeChars s ++ "\"")
 
 -- | Helper function that escapes characters in strings
 -- >>> escapeChars "\\"
@@ -31,5 +33,3 @@ escapeChars ('\\':xs) = '\\' : '\\' : escapeChars xs
 escapeChars ('\"':xs) = '\\' : '\"' : escapeChars xs
 escapeChars ('\'':xs) = '\\' : '\'' : escapeChars xs
 escapeChars (x:xs) = x : escapeChars xs
-
-
