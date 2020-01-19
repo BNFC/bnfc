@@ -720,36 +720,46 @@ prRender useStl = unlines $ concat
     [ render $ vcat
         [ "void PrintAbsyn::render(String s)"
         , codeblock 2
-            [ "if (!s.empty())"
-            , codeblock 2
-                [ "bufAppend(s.c_str());"
-                , "bufAppend(' ');"
-                ]
+            [ "render(s.c_str());"
             ]
         , ""
         ]
     ]
-  , [ "void PrintAbsyn::render(const char *s)",
-      "{",
-      "  if (*s) /* C string not empty */",
-      "  {",
-      "    bufAppend(s);",
-      "    bufAppend(' ');",
-      "  }",
-      "}",
-      "",
-      "void PrintAbsyn::indent()",
-      "{",
-      "  int n = _n_;",
-      "  while (--n >= 0)",
-      "    bufAppend(' ');",
-      "}",
-      "",
-      "void PrintAbsyn::backup()",
-      "{",
-      "  if (buf_[cur_ - 1] == ' ')",
-      "    buf_[--cur_] = 0;",
-      "}",
-      ""
+  , [ "bool allIsSpace(const char *s)"
+    , "{"
+    , "  char c;"
+    , "  while ((c = *s++))"
+    , "    if (! isspace(c)) return false;"
+    , "  return true;"
+    , "}"
+    , ""
+    ]
+  , [ "void PrintAbsyn::render(const char *s)"
+    , "{"
+    , "  if (*s) /* C string not empty */"
+    , "  {"
+    , "    if (allIsSpace(s)) {"
+    , "      backup();"
+    , "      bufAppend(s);"
+    , "    } else {"
+    , "      bufAppend(s);"
+    , "      bufAppend(' ');"
+    , "    }"
+    , "  }"
+    , "}"
+    , ""
+    , "void PrintAbsyn::indent()"
+    , "{"
+    , "  int n = _n_;"
+    , "  while (--n >= 0)"
+    , "    bufAppend(' ');"
+    , "}"
+    , ""
+    , "void PrintAbsyn::backup()"
+    , "{"
+    , "  if (buf_[cur_ - 1] == ' ')"
+    , "    buf_[--cur_] = 0;"
+    , "}"
+    , ""
     ]
   ]
