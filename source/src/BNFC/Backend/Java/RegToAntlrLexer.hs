@@ -2,7 +2,7 @@ module BNFC.Backend.Java.RegToAntlrLexer (printRegJLex, escapeChar) where
 
 -- modified from RegToJLex.hs
 
-import Data.Char (showLitChar)
+import Data.Char (ord, showLitChar)
 
 import AbsBNF
 
@@ -42,8 +42,10 @@ instance Print Char where
   prtList = map (concat . prt 0)
 
 escapeChar :: Char -> String
-escapeChar x | x `elem` reserved = '\\' : [x]
-escapeChar x = showLitChar x ""
+escapeChar x
+  | x `elem` reserved = '\\' : [x]
+  | ord x >= 256      = [x]
+  | otherwise         = showLitChar x ""
 
 -- Characters that must be escaped in ANTLR regular expressions
 reserved :: [Char]
