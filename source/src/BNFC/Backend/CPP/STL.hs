@@ -50,6 +50,7 @@ makeCppStl opts cf = do
     mkfile (name ++ ".y") bison
     let header = mkHeaderFile (inPackage opts) cf (allParserCats cf) (allEntryPoints cf) (Map.elems env)
     mkfile "Parser.H" header
+    mkfile "ParserError.H" (printParseErrHeader (inPackage opts) cf)
     let (skelH, skelC) = cf2CVisitSkel True (inPackage opts) cf
     mkfile "Skeleton.H" skelH
     mkfile "Skeleton.C" skelC
@@ -60,7 +61,35 @@ makeCppStl opts cf = do
     Makefile.mkMakefile opts $ makefile name
   where name = lang opts
 
-
+printParseErrHeader :: Maybe String -> CF -> String
+printParseErrHeader inPackage cf =
+  unlines
+  [
+     " #pragma once "
+     , " #include <string>"
+     , " #include <stdexcept>"
+     , ""
+     , nsStart inPackage
+     , " class parse_error : public std::runtime_error"
+     , " {"
+     , " public:"
+     , "     parse_error(int line, std::string str)"
+     , "         : std::runtime_error(str)"
+     , "         , m_line(line) {}"
+     , "     int getLine() {"
+     , "         return m_line;"
+     , "     } "
+     , " private:"
+     , "     int m_line;"
+     , " }; "
+     , nsEnd inPackage
+     ]
+     where
+      cat = head $ allEntryPoints cf
+      dat = identCat $ normCat cat
+      def = identCat cat
+      scope = nsScope inPackage
+   
 cpptest :: Maybe String -> CF -> String
 cpptest inPackage cf =
   unlines
@@ -71,11 +100,13 @@ cpptest inPackage cf =
     "/* pretty-print the result.                                                 */",
     "/*                                                                          */",
     "/****************************************************************************/",
-    "#include <stdio.h>",
-    "#include <string.h>",
+    "#include <cstdio>",
+    "#include <string>",
+    "#include <iostream>",
     "#include \"Parser.H\"",
     "#include \"Printer.H\"",
     "#include \"Absyn.H\"",
+    "#include \"ParserError.H\"",
     "",
     "void usage() {",
     "  printf(\"usage: Call with one of the following argument " ++
@@ -114,7 +145,12 @@ cpptest inPackage cf =
     "    }",
     "  } else input = stdin;",
     "  /* The default entry point is used. For other options see Parser.H */",
-    "  " ++ scope ++ dat ++ " *parse_tree = " ++ scope ++ "p" ++ def ++ "(input);",
+    "  " ++ scope ++ dat ++ " *parse_tree = nullptr;",
+    "  try { ",
+    "  parse_tree = " ++ scope ++ "p" ++ def ++ "(input);",
+    "  } catch( " ++ scope ++ "parse_error &e) {",
+    "     std::cout << \"Parse error on line \" << e.getLine(); ",
+    "  }",
     "  if (parse_tree)",
     "  {",
     "    printf(\"\\nParse Successful!\\n\");",

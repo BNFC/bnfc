@@ -106,6 +106,7 @@ header inPackage name cf = unlines
     , "#include <stdio.h>"
     , "#include <string.h>"
     , "#include <algorithm>"
+    , "#include \"ParserError.H\""
     , "#include \"Absyn.H\""
     , ""
     , "#define YYMAXDEPTH 10000000"  -- default maximum stack size is 10000, but right-recursion needs O(n) stack
@@ -124,8 +125,7 @@ header inPackage name cf = unlines
     , "void " ++ ns ++ "yyerror(const char *str)"
     , "{"
     , "  extern char *"++ns++"yytext;"
-    , "  fprintf(stderr,\"error: line %d: %s at %s\\n\", "
-    , "    "++ns++"yy_mylinenumber, str, "++ns++"yytext);"
+    , "  throw "++ns++"::parse_error("++ ns ++ "yy_mylinenumber,str);"
     , "}"
     , ""
     , nsStart inPackage
