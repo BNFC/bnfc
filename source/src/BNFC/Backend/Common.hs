@@ -2,11 +2,15 @@
 
 -- | Functions common to different backends.
 
-module BNFC.Backend.Common (renderListSepByPrecedence) where
+module BNFC.Backend.Common where
 
 import Prelude'
 
 import BNFC.PrettyPrint
+
+-- | Representation of the empty word as Flex regular expression
+flexEps :: String
+flexEps = "[^.\\n]?"
 
 -- | Helper function for c-like languages that generates the code printing
 -- the list separator according to the given precedence level:

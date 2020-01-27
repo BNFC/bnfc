@@ -4,6 +4,7 @@ module BNFC.Backend.C.RegToFlex (printRegFlex) where
 
 import Data.Char (showLitChar)
 import AbsBNF
+import BNFC.Backend.Common (flexEps)
 
 -- the top-level printing method
 printRegFlex :: Reg -> String
@@ -63,7 +64,7 @@ instance Print Reg where
    RStar reg -> prPrec i 3 (concat [prt 3 reg , ["*"]])
    RPlus reg -> prPrec i 3 (concat [prt 3 reg , ["+"]])
    ROpt reg  -> prPrec i 3 (concat [prt 3 reg , ["?"]])
-   REps  -> prPrec i 3 (["[^.]"])
+   REps  -> prPrec i 3 [ flexEps ]
    RChar c -> prPrec i 3 (prt 0 [mkEsc [c]])
    RAlts str -> prPrec i 3 (concat [["["], prt 0 $ mkEsc str, ["]"]])
    RSeqs str -> prPrec i 2 (concat (map (prt 0) $ mkEsc str))

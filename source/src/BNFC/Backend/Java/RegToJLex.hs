@@ -5,6 +5,7 @@ module BNFC.Backend.Java.RegToJLex (printRegJLex, escapeChar) where
 import Data.Char (ord, showLitChar)
 import AbsBNF
 import BNFC.Options (JavaLexerParser(..))
+import BNFC.Backend.Common (flexEps)
 
 -- the top-level printing method
 printRegJLex :: Reg -> String
@@ -79,7 +80,7 @@ instance Print Reg where
    RStar reg -> prPrec i 3 (concat [prt 3 reg , ["*"]])
    RPlus reg -> prPrec i 3 (concat [prt 3 reg , ["+"]])
    ROpt reg  -> prPrec i 3 (concat [prt 3 reg , ["?"]])
-   REps  -> prPrec i 3 ["[^.]"]
+   REps  -> prPrec i 3 [ flexEps ]
    RChar c -> prPrec i 3 (prt 0 c)
    RAlts str -> prPrec i 3 (concat [["["],prt 0 str,["]"]])
    RSeqs str -> prPrec i 2 (concatMap (prt 0) str)
