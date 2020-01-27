@@ -48,7 +48,7 @@ import Prelude'
 import Data.Bifunctor ( second )
 import Data.Char      ( toLower )
 import Data.Either    ( lefts )
-import Data.List      ( nub, isPrefixOf )
+import Data.List      ( nub )
 
 import BNFC.CF
 import BNFC.PrettyPrint
@@ -446,7 +446,7 @@ prPrintCat fnm = \case
   Right t -> "    " ++ render (renderX t) ++ ";"
   Left (cat, nt) -> concat
     [ "    pp"
-    , if isTokenCat cat then basicFunName (render nt) else identCat (normCat cat)
+    , maybe (identCat $ normCat cat) basicFunName $ maybeTokenCat cat
     , "(p->u."
     , map toLower (normFun fnm)
     , "_.", render nt, ", ", show (precCat cat), ");"
@@ -549,28 +549,25 @@ prShowRule (Rule fun _ cats _) | not (isCoercion fun) = unlines
     allTerms (_:zs) = allTerms zs
 prShowRule _ = ""
 
--- | This goes on to recurse to the instance variables.
-
 prShowCat :: Fun -> (Cat, Doc) -> String
-prShowCat fnm c = case c of
-    (cat,nt) | isTokenCat cat ->
-        "    sh" ++ basicFunName (render nt) ++ "(p->u." ++ v ++ "_." ++ render nt ++ ");\n"
-    (cat,nt) ->
-        "    sh" ++ identCat (normCat cat) ++ "(p->u." ++ v ++ "_." ++ render nt ++ ");\n"
-  where v = map toLower (normFun fnm)
+prShowCat fnm (cat, nt) = concat
+  [ "    sh"
+  , maybe (identCat $ normCat cat) basicFunName $ maybeTokenCat cat
+  , "(p->u."
+  , map toLower $ normFun fnm
+  , "_."
+  , render nt
+  , ");\n"
+  ]
 
 {- **** Helper Functions Section **** -}
 
 -- | The visit-function name of a basic type.
 
-basicFunName :: String -> String
-basicFunName v
-  | "integer_" `isPrefixOf` v = "Integer"
-  | "char_" `isPrefixOf` v    = "Char"
-  | "string_" `isPrefixOf` v  = "String"
-  | "double_" `isPrefixOf` v  = "Double"
-  | "ident_" `isPrefixOf` v   = "Ident"
-  | otherwise = "Ident" --User-defined type
+basicFunName :: TokenCat -> String
+basicFunName k
+  | k `elem` baseTokenCatNames = k
+  | otherwise                  = "Ident"
 
 -- | An extremely simple @renderC@ for terminals.
 

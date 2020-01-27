@@ -1,0 +1,316 @@
+-- Andreas, 2019-12-16
+-- A grammar of keywords of the C, C++, Haskell, Java, Ocaml backends
+
+-- Andreas, 2020-01-03: merge in testcase for issue #134
+
+Prg. Program ::=
+    Abstract
+    And
+    And_Eq
+    As
+    Asm
+    Asr
+    Assert
+    Auto
+    Begin
+    Bitand
+    Bitor
+    Bool
+    Boolean
+    Break
+    Byte
+    Case
+    Catch
+    Char_
+    Class
+    Compl
+    Const
+    Const_Cast
+    Constraint
+    Continue
+    Data
+    Default
+    Delete
+    Deriving
+    Do
+    Done
+    Double_
+    Downto
+    Dynamic_Cast
+    Else
+    End
+    Enum
+    Eof
+    Exception
+    Explicit
+    Extends
+    Extern
+    External
+    False
+    Family
+    Final
+    Finally
+    Float
+    For
+    Forall
+    Foreign
+    Friend
+    Fun
+    Function
+    Functor
+    Goto
+    Hiding
+    I               -- issue #134
+    If
+    Implements
+    Import
+    In
+    Include
+    Infix
+    Infixl
+    Infixr
+    Inherit
+    Initializer
+    Inline
+    Instance
+    Instanceof
+    Int
+    Interface
+    Land
+    Lazy
+    Let
+    List
+    Long
+    Lor
+    Lsl
+    Lsr
+    Lxor
+    Match
+    Mdo
+    Method
+    Mod
+    Module
+    Mutable
+    Namespace
+    Native
+    New
+    Newtype
+    Nonrec
+    Not
+    Not_Eq
+    Null
+    Object
+    Of
+    Open
+    Operator
+    Or
+    Or_Eq
+    Package
+    Parse
+    Pattern
+    Private
+    Proc
+    Protected
+    Public
+    Qualified
+    Rec
+    Refill
+    Register
+    Reinterpret_Cast
+    Return
+    Rule
+    Short
+    Shortest
+    Sig
+    Signed
+    Sizeof
+    Static_Cast
+    Strictfp
+    String_
+    Struct
+    Super
+    Switch
+    Synchronized
+    Template
+    Then
+    This
+    Throw
+    Throws
+    To
+    Transient
+    True
+    Try
+    Type
+    Typedef
+    Typeid
+    Typename
+    Union
+    Unsigned
+    Using
+    Val
+    Virtual
+    Void
+    Volatile
+    Wchar_T
+    When
+    Where
+    While
+    With
+    Xor
+    Xor_Eq
+    ;
+
+token  Abstract            { "abstract"         } ;
+token  And                 { "and"              } ;  -- ocamllex
+token  And_Eq              { "and_eq"           } ;
+token  As                  { "as"               } ;  -- ocamlles
+token  Asm                 { "asm"              } ;
+token  Asr                 { "asr"              } ;
+token  Assert              { "assert"           } ;
+token  Auto                { "auto"             } ;
+token  Begin               { "begin"            } ;
+token  Bitand              { "bitand"           } ;
+token  Bitor               { "bitor"            } ;
+token  Bool                { "bool"             } ;
+token  Boolean             { "boolean"          } ;
+token  Break               { "break"            } ;
+token  Byte                { "byte"             } ;
+token  Case                { "case"             } ;
+token  Catch               { "catch"            } ;
+token  Char_               { "char"             } ;
+token  Class               { "class"            } ;
+token  Compl               { "compl"            } ;
+token  Const               { "const"            } ;
+token  Const_Cast          { "const_cast"       } ;
+token  Constraint          { "constraint"       } ;
+token  Continue            { "continue"         } ;
+token  Data                { "data"             } ;
+token  Default             { "default"          } ;
+token  Delete              { "delete"           } ;
+token  Deriving            { "deriving"         } ;
+token  Do                  { "do"               } ;
+token  Done                { "done"             } ;
+token  Double_             { "double"           } ;
+token  Downto              { "downto"           } ;
+token  Dynamic_Cast        { "dynamic_cast"     } ;
+token  Else                { "else"             } ;
+token  End                 { "end"              } ;
+token  Enum                { "enum"             } ;
+token  Eof                 { "eof"              } ;  -- ocamllex
+token  Exception           { "exception"        } ;
+token  Explicit            { "explicit"         } ;
+token  Extends             { "extends"          } ;
+token  Extern              { "extern"           } ;
+token  External            { "external"         } ;
+token  False               { "false"            } ;
+token  Family              { "family"           } ;
+token  Final               { "final"            } ;
+token  Finally             { "finally"          } ;
+token  Float               { "float"            } ;
+token  For                 { "for"              } ;
+token  Forall              { "forall"           } ;
+token  Foreign             { "foreign"          } ;
+token  Friend              { "friend"           } ;
+token  Fun                 { "fun"              } ;
+token  Function            { "function"         } ;
+token  Functor             { "functor"          } ;
+token  Goto                { "goto"             } ;
+token  Hiding              { "hiding"           } ;
+token  I                   { "i"                } ; -- issue #134
+token  If                  { "if"               } ;
+token  Implements          { "implements"       } ;
+token  Import              { "import"           } ;
+token  In                  { "in"               } ;
+token  Include             { "include"          } ;
+token  Infix               { "infix"            } ;
+token  Infixl              { "infixl"           } ;
+token  Infixr              { "infixr"           } ;
+token  Inherit             { "inherit"          } ;
+token  Initializer         { "initializer"      } ;
+token  Inline              { "inline"           } ;
+token  Instance            { "instance"         } ;
+token  Instanceof          { "instanceof"       } ;
+token  Int                 { "int"              } ;
+token  Interface           { "interface"        } ;
+token  Land                { "land"             } ;
+token  Lazy                { "lazy"             } ;
+token  Let                 { "let"              } ;  -- ocamllex
+token  List                { "list"             } ;
+token  Long                { "long"             } ;
+token  Lor                 { "lor"              } ;
+token  Lsl                 { "lsl"              } ;
+token  Lsr                 { "lsr"              } ;
+token  Lxor                { "lxor"             } ;
+token  Match               { "match"            } ;
+token  Mdo                 { "mdo"              } ;
+token  Method              { "method"           } ;
+token  Mod                 { "mod"              } ;
+token  Module              { "module"           } ;
+token  Mutable             { "mutable"          } ;
+token  Namespace           { "namespace"        } ;
+token  Native              { "native"           } ;
+token  New                 { "new"              } ;
+token  Newtype             { "newtype"          } ;
+token  Nonrec              { "nonrec"           } ;
+token  Not                 { "not"              } ;
+token  Not_Eq              { "not_eq"           } ;
+token  Null                { "null"             } ;
+token  Object              { "object"           } ;
+token  Of                  { "of"               } ;
+token  Open                { "open"             } ;
+token  Operator            { "operator"         } ;
+token  Or                  { "or"               } ;
+token  Or_Eq               { "or_eq"            } ;
+token  Package             { "package"          } ;
+token  Parse               { "parse"            } ;  -- ocamllex
+token  Pattern             { "pattern"          } ;
+token  Private             { "private"          } ;
+token  Proc                { "proc"             } ;
+token  Protected           { "protected"        } ;
+token  Public              { "public"           } ;
+token  Qualified           { "qualified"        } ;
+token  Rec                 { "rec"              } ;
+token  Refill              { "refill"           } ;  -- ocamllex
+token  Register            { "register"         } ;
+token  Reinterpret_Cast    { "reinterpret_cast" } ;
+token  Return              { "return"           } ;
+token  Rule                { "rule"             } ;  -- ocamllex
+token  Short               { "short"            } ;
+token  Shortest            { "shortest"         } ;  -- ocamllex
+token  Sig                 { "sig"              } ;
+token  Signed              { "signed"           } ;
+token  Sizeof              { "sizeof"           } ;
+token  Static_Cast         { "static_cast"      } ;
+token  Strictfp            { "strictfp"         } ;
+token  String_             { "string"           } ;
+token  Struct              { "struct"           } ;
+token  Super               { "super"            } ;
+token  Switch              { "switch"           } ;
+token  Synchronized        { "synchronized"     } ;
+token  Template            { "template"         } ;
+token  Then                { "then"             } ;
+token  This                { "this"             } ;
+token  Throw               { "throw"            } ;
+token  Throws              { "throws"           } ;
+token  To                  { "to"               } ;
+token  Transient           { "transient"        } ;
+token  True                { "true"             } ;
+token  Try                 { "try"              } ;
+token  Type                { "type"             } ;
+token  Typedef             { "typedef"          } ;
+token  Typeid              { "typeid"           } ;
+token  Typename            { "typename"         } ;
+token  Union               { "union"            } ;
+token  Unsigned            { "unsigned"         } ;
+token  Using               { "using"            } ;
+token  Val                 { "val"              } ;
+token  Virtual             { "virtual"          } ;
+token  Void                { "void"             } ;
+token  Volatile            { "volatile"         } ;
+token  Wchar_T             { "wchar_t"          } ;
+token  When                { "when"             } ;
+token  Where               { "where"            } ;
+token  While               { "while"            } ;
+token  With                { "with"             } ;
+token  Xor                 { "xor"              } ;
+token  Xor_Eq              { "xor_eq"           } ;

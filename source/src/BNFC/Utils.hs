@@ -26,6 +26,7 @@ module BNFC.Utils
     , applyWhen, applyUnless
     , for
     , curry3, uncurry3
+    , mapHead
     , duplicatesOn
     , (+++), (++++), (+-+), (+.+)
     , pad, table
@@ -169,6 +170,12 @@ table sep m = map (intercalate sep . zipWith pad widths) m
       col -> f col : columns f (map (drop 1) rows)
 
 -- * List utilities
+
+-- | Apply a function to the head of a list.
+mapHead :: (a -> a) -> [a] -> [a]
+mapHead f = \case
+ []   -> []
+ a:as -> f a : as
 
 -- | Replace all occurences of a value by another value
 replace :: Eq a =>

@@ -65,6 +65,27 @@ reservedOCaml = [
     "true","try","type","val","virtual","when",
     "while","with"]
 
+-- | Keywords of @ocamllex@.
+reservedOCamlLex :: [String]
+reservedOCamlLex =
+  [ "and"
+  , "as"
+  , "eof"
+  , "let"
+  , "parse"
+  , "refill"
+  , "rule"
+  , "shortest"
+  ]
+
+-- | Heuristics to produce name for ocamllex token definition that
+-- does not clash with the ocamllex keywords.
+ocamlTokenName :: String -> String
+ocamlTokenName x0
+  | x `elem` reservedOCamlLex = x ++ "_"
+  | otherwise                 = x
+  where x = mapHead toLower x0
+
 mkTuple :: [String] -> String
 mkTuple [] = ""
 mkTuple [x] = x

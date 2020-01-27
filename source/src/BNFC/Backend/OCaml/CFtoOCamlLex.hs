@@ -26,7 +26,6 @@ module BNFC.Backend.OCaml.CFtoOCamlLex (cf2ocamllex) where
 
 import Prelude'
 
-import Data.Char
 import qualified Data.List as List
 import Text.PrettyPrint hiding (render)
 import qualified Text.PrettyPrint as PP
@@ -34,7 +33,7 @@ import qualified Text.PrettyPrint as PP
 import AbsBNF
 import BNFC.CF
 import BNFC.Backend.OCaml.CFtoOCamlYacc (terminal)
-import BNFC.Backend.OCaml.OCamlUtil (mkEsc)
+import BNFC.Backend.OCaml.OCamlUtil (mkEsc, ocamlTokenName)
 import BNFC.Lexing (mkRegMultilineComment)
 import BNFC.Utils (cstring, unless)
 
@@ -134,7 +133,7 @@ uMacros cf = ["let " ++ name ++ " = " ++ rep | (name, rep, _) <- userTokens cf]
 -- returns the tuple of (reg_name, reg_representation, token_name)
 userTokens :: CF -> [(String, String, String)]
 userTokens cf =
-  [ (map toLower name, printRegOCaml reg, name) | (name, reg) <- tokenPragmas cf ]
+  [ (ocamlTokenName name, printRegOCaml reg, name) | (name, reg) <- tokenPragmas cf ]
 
 
 

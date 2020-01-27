@@ -73,7 +73,7 @@ module BNFC.CF (
             allNames,        -- Checking for non-unique names, like @Name. Name ::= Ident;@.
             filterNonUnique,
             isList,         -- Checks if a category is a list category.
-            isTokenCat,
+            isTokenCat, maybeTokenCat,
             sameCat,
             -- Information functions for list functions.
             isNilFun,       -- empty list function? ([])
@@ -395,6 +395,11 @@ isList _           = False
 isTokenCat :: Cat -> Bool
 isTokenCat (TokenCat _) = True
 isTokenCat _            = False
+
+maybeTokenCat :: Cat -> Maybe TokenCat
+maybeTokenCat = \case
+  TokenCat c -> Just c
+  _          -> Nothing
 
 -- | Unwraps the list constructor from the category name.
 --   E.g. @[C1] => C1@.
