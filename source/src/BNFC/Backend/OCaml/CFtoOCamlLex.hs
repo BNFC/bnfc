@@ -26,8 +26,8 @@ module BNFC.Backend.OCaml.CFtoOCamlLex (cf2ocamllex) where
 
 import Prelude'
 
-import Data.List
 import Data.Char
+import qualified Data.List as List
 import Text.PrettyPrint hiding (render)
 import qualified Text.PrettyPrint as PP
 
@@ -40,7 +40,7 @@ import BNFC.Utils (cstring, unless)
 
 cf2ocamllex :: String -> String -> CF -> String
 cf2ocamllex _ parserMod cf =
-  unlines $ intercalate [""] [
+  unlines $ List.intercalate [""] [
     header parserMod cf,
     definitions cf,
     [PP.render (rules cf)]
@@ -95,7 +95,7 @@ hashtables cf = unlines . concat $
   ht table syms = unless (null syms) $
     [ unwords [ "let", table, "= Hashtbl.create", show (length syms)                  ]
     , unwords [ "let _ = List.iter (fun (kwd, tok) -> Hashtbl.add", table, "kwd tok)" ]
-    , concat  [ "                  [", concat (intersperse ";" keyvals), "]"          ]
+    , concat  [ "                  [", concat (List.intersperse ";" keyvals), "]"     ]
     ]
     where
     keyvals = map (\ s -> concat [ "(", mkEsc s, ", ", terminal cf s, ")" ]) syms
@@ -119,13 +119,13 @@ cMacros = [
   ]
 
 rMacros :: CF -> [String]
-rMacros cf =
-  let symbs = cfgSymbols cf
-  in
-  (if null symbs then [] else [
-   "let rsyms =    (* reserved words consisting of special symbols *)",
-   "            " ++ unwords (intersperse "|" (map mkEsc symbs))
-   ])
+rMacros cf
+  | null symbs = []
+  | otherwise  =
+      [ "let rsyms =    (* reserved words consisting of special symbols *)"
+      , "            " ++ unwords (List.intersperse "|" (map mkEsc symbs))
+      ]
+  where symbs = cfgSymbols cf
 
 -- user macros, derived from the user-defined tokens
 uMacros :: CF -> [String]
