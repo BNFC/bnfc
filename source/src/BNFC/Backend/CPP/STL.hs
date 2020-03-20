@@ -89,7 +89,7 @@ printParseErrHeader inPackage cf =
       dat = identCat $ normCat cat
       def = identCat cat
       scope = nsScope inPackage
-   
+
 cpptest :: Maybe String -> CF -> String
 cpptest inPackage cf =
   unlines
