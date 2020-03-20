@@ -5,6 +5,7 @@
 	* Haskell: allow block comment delimiters of any length [#202,#169]
 	* Haskell: define Err monad as Either String [#273]
 	* C/C++/Java: support multiple block comment forms per grammar [#202]
+	* C++(STL): parser now throws exception on parse error [#288]
 	* C++: fixed quadratic behavior in C++-generated printer (regression in 2.8.2)
 	* Java/ANTLR: emit start rules to work around ANTLR issue #2689 [#272]
 	* Ocaml: new flag --menhir to generate parser with menhir instead of ocamlyacc

@@ -26,7 +26,7 @@ makefile name basename = vcat
             [ name ++ e | e <- [".aux", ".log", ".pdf",".dvi", ".ps", ""]] ]
     , mkRule "distclean" ["clean"]
         [ "rm -f " ++ unwords
-            [ "Absyn.C", "Absyn.H", "Test.C", "Parser.C", "Parser.H", "Lexer.C",
+            [ "Absyn.C", "Absyn.H", "Test.C", "Parser.C", "Parser.H", "ParserError.H", "Lexer.C",
               "Skeleton.C", "Skeleton.H", "Printer.C", "Printer.H", basename,
               name ++ ".l", name ++ ".y", name ++ ".tex"
             ]
