@@ -8,7 +8,9 @@ cache:
     - $HOME/.stack
 # Make sure to update tested-with in source/BNFC.cabal when updating these:
 ghc:
-  - 8.8.1
+  - 8.10.1
+  - 8.8.3
+  - 8.8.2
   - 8.6.5
   - 8.4.4
   - 8.2.2
@@ -20,13 +22,12 @@ env:
   - CABAL=yes PACKAGEDIR="testing"
 matrix:
   exclude:
-    # # ghc 8.8.1 not yet supported by stack lts
-    # # nightly does not include HTF
-    # - ghc: 8.8.1
-    #   env: STACK=yes
+    # ghc 8.10.1 not yet supported by stack 
+    - ghc: 8.10.1
+      env: STACK=yes
 
-    # testing binary has dependencies not yet compatible with ghc 8.8.1
-    - ghc: 8.8.1
+    # testing binary has dependencies not yet compatible with ghc 8.10.1
+    - ghc: 8.10.1
       env: CABAL=yes PACKAGEDIR="testing"
 
     # shelly-1.9 not available for ghc 7
