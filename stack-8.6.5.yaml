@@ -1,4 +1,13 @@
 resolver: lts-14.27
 packages:
 - source
-- testing
+# - testing
+
+# Andreas, 2020-04-14
+# "testing" does not build with stack:
+#
+# In the dependencies for bnfc-system-tests-0.1.2.0:
+#     HTF-0.13.2.5 from stack configuration does not match >=0.14.0.1
+#                  (latest matching version is 0.14.0.3)
+#     shelly-1.8.1 from stack configuration does not match >=1.9
+#                  (latest matching version is 1.9.0)
