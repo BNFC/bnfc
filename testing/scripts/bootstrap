@@ -1,10 +1,10 @@
 #!/bin/bash -eu
 
 # Setup sandbox
-cabal sandbox init
-cabal install --only-dependencies
-cabal sandbox add-source ../source
-cabal install bnfc
+cabal v1-sandbox init
+cabal v1-install --only-dependencies
+cabal v1-sandbox add-source ../source
+cabal v1-install bnfc
 
 # Check for tools required to run system tests
 missing=""

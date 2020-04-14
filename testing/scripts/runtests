@@ -1,6 +1,6 @@
 #!/bin/sh -u
 
 mkdir -p dist/test
-cabal configure
-cabal build
-cabal exec -- cabal run -- --xml=dist/test/bnfc-system-tests.xml $*
+cabal v1-configure
+cabal v1-build
+cabal v1-exec -- cabal v1-run -- --xml=dist/test/bnfc-system-tests.xml $*
