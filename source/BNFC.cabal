@@ -23,17 +23,23 @@ Description:
   a pretty-printer as a Haskell, Agda, C, C++, C#, Java, or Ocaml module,
   an XML representation,
   a LaTeX file containing a readable specification of the language.
+
 tested-with: GHC == 7.10.3
-           , GHC == 8.0.2
-           , GHC == 8.2.2
-           , GHC == 8.4.4
-           , GHC == 8.6.5
-           , GHC == 8.8.1
-Extra-source-files: src/BNF.cf changelog Makefile
+             GHC == 8.0.2
+             GHC == 8.2.2
+             GHC == 8.4.4
+             GHC == 8.6.5
+             GHC == 8.8.4
+             GHC == 8.10.2
+
+Extra-source-files:
+  src/BNF.cf
+  changelog
+  Makefile
 
 Source-repository head
   type: git
-  location: https://github.com/BNFC/bnfc.git
+  location: git://github.com/BNFC/bnfc.git
   subdir: source
 
 Library
