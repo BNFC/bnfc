@@ -1,6 +1,6 @@
 Name: BNFC
 Version: 2.8.4
-cabal-version: >= 1.8
+cabal-version: >= 1.10
 build-type: Simple
 category: Development
 Copyright: (c) Andreas Abel, Jonas Almström Duregård, Krasimir Angelov, Jean-Philippe Bernardy, Bjorn Bringert, Johan Broberg, Kyle Butt, Paul Callaghan, Grégoire Détrez, Markus Forsberg, Ola Frid, Peter Gammie, Thomas Hallgren, Pascal Hof, Patrik Jansson, Kristofer Johannisson, Antti-Juhani Kaijanaho, Andreas Lööw, Justin Meiners, Kent Mein, Ulf Norell, Gabrielle Paganelli, Michael Pellauer, Fabian Ruch, and Aarne Ranta 2002 - 2020. Free software under GNU General Public License (GPL).
@@ -55,6 +55,7 @@ Source-repository head
 Library
   hs-source-dirs: runtime, src
   Build-Depends: base>=4.6 && <5, array
+  default-language: Haskell2010
   exposed-modules:
    Algebra.RingUtils
    Data.Pair
@@ -64,6 +65,7 @@ Library
    Parsing.TestProgram
 
 Executable bnfc
+  default-language: Haskell2010
   Build-Depends:
     base>=4.6 && <5,
     semigroups,
@@ -80,7 +82,7 @@ Executable bnfc
   Main-is: Main.hs
   HS-source-dirs: compat src
   ghc-options:     -W
-  extensions:
+  default-extensions:
     CPP
     FlexibleContexts
     LambdaCase
@@ -223,6 +225,7 @@ Executable bnfc
 
 -- --- Testing --------------------------------------------------------------
 Test-suite unit-tests
+  default-language: Haskell2010
   Type: exitcode-stdio-1.0
   Build-Depends:
     -- base-4.9 would be needed for Show1 needed for Show WriterT
@@ -243,7 +246,7 @@ Test-suite unit-tests
     time
   Main-is: unit-tests.hs
   HS-source-dirs: compat src test
-  extensions:
+  default-extensions:
     CPP
     FlexibleContexts
     LambdaCase
@@ -408,9 +411,10 @@ Test-suite unit-tests
 
 
 Test-suite bnfc-doctests
-  type:           exitcode-stdio-1.0
-  ghc-options:    -threaded
-  extensions:     CPP
-  main-is:        doctests.hs
-  build-depends:  base, doctest >= 0.8
-  HS-source-dirs: test
+  default-language:   Haskell2010
+  type:               exitcode-stdio-1.0
+  ghc-options:        -threaded
+  default-extensions: CPP
+  main-is:            doctests.hs
+  build-depends:      base, doctest >= 0.8
+  HS-source-dirs:     test
