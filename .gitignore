@@ -23,6 +23,9 @@ cabal-dev
 .cabal-sandbox/
 cabal.sandbox.config
 
+# Stack generated
+.stack-work
+
 # local HTF files
 .HTF
 

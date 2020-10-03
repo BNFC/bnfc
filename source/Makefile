@@ -10,10 +10,10 @@ CABAL_INSTALL_OPTS   = $(CABAL_CONFIGURE_OPTS) $(CABAL_BUILD_OPTS)
 CABAL_TEST_OPTS      = $(CABAL_BUILD_OPTS)
 
 CABAL                = cabal $(CABAL_OPTS)
-CABAL_CONFIGURE      = $(CABAL) configure $(CABAL_CONFIGURE_OPTS)
-CABAL_BUILD          = $(CABAL) build     $(CABAL_BUILD_OPTS)
-CABAL_INSTALL        = $(CABAL) install   $(CABAL_INSTALL_OPTS)
-CABAL_TEST           = $(CABAL) test      $(CABAL_TEST_OPTS)
+CABAL_CONFIGURE      = $(CABAL) v1-configure $(CABAL_CONFIGURE_OPTS)
+CABAL_BUILD          = $(CABAL) v1-build     $(CABAL_BUILD_OPTS)
+CABAL_INSTALL        = $(CABAL) v1-install   $(CABAL_INSTALL_OPTS)
+CABAL_TEST           = $(CABAL) v1-test      $(CABAL_TEST_OPTS)
 
 # Name for binary distribution (e.g. bnfc-2.4.5-linux32)
 BDIST_TAG=bnfc-${BNFC_VERSION}-$(shell uname -s)-$(shell uname -m)
@@ -33,7 +33,7 @@ test:
 	$(CABAL_TEST)
 
 doc:
-	$(CABAL) haddock --executables --internal
+	$(CABAL) v1-haddock --executables --internal
 
 TAGS :
 	hasktags --etags .
@@ -42,11 +42,11 @@ TAGS :
 bdist: dist/${BDIST_TAG}.tar.gz
 
 dist/%.tar.gz:
-	cabal clean
-	cabal install ${CABAL_OPTS} --only-dependencies
-	cabal configure ${CABAL_OPTS} --prefix=/
-	cabal build ${CABAL_OPTS}
-	cabal copy --destdir=dist/install
+	cabal v1-clean
+	cabal v1-install ${CABAL_OPTS} --only-dependencies
+	cabal v1-configure ${CABAL_OPTS} --prefix=/
+	cabal v1-build ${CABAL_OPTS}
+	cabal v1-copy --destdir=dist/install
 	mkdir dist/$*
 	cp dist/install/bin/bnfc dist/$*
 	cp LICENSE dist/$*
