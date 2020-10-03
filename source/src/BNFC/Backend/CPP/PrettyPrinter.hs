@@ -479,9 +479,11 @@ genPrintVisitorListNoStl (cat@(ListCat c), rules) = unlines $ concat
     ]
   ]
   where
-    visitMember = if isTokenCat c
-        then "      visit" ++ funName c ++ "(" ++ vname ++ "->" ++ member ++ ");"
-        else "      " ++ vname ++ "->" ++ member ++ "->accept(this);"
+    visitMember
+      | Just t <- maybeTokenCat c =
+          "      visit" ++ t ++ "(" ++ vname ++ "->" ++ member ++ ");"
+      | otherwise =
+          "      " ++ vname ++ "->" ++ member ++ "->accept(this);"
     cl     = identCat (normCat cat)
     ecl    = identCat (normCatOfList cat)
     vname  = map toLower cl
@@ -521,11 +523,13 @@ prPrintCat :: String -> Either (Cat, Doc) String -> String
 prPrintCat _ (Right t) = "  render(" ++ t' ++ ");\n"
   where t' = snd (renderCharOrString t)
 prPrintCat fnm (Left (c, nt))
-  | isTokenCat c  = "  visit" ++ funName c ++ "(" ++ fnm ++ "->" ++ render nt ++ ");\n"
-  | isList c            = "  if(" ++ fnm ++ "->" ++ render nt ++ ") {" ++ accept ++ "}\n"
-  | otherwise           = "  " ++ accept ++ "\n"
+  | Just t <- maybeTokenCat c
+              = "  visit" ++ t ++ "(" ++ fnm ++ "->" ++ s ++ ");\n"
+  | isList c  = "  if(" ++ fnm ++ "->" ++ s ++ ") {" ++ accept ++ "}\n"
+  | otherwise = "  " ++ accept ++ "\n"
   where
-    accept = setI (precCat c) ++ fnm ++ "->" ++ render nt ++ "->accept(this);"
+    s = render nt
+    accept = setI (precCat c) ++ fnm ++ "->" ++ s ++ "->accept(this);"
 
 {- **** Abstract Syntax Tree Printer **** -}
 
@@ -576,9 +580,11 @@ prShowData False (cat@(ListCat c), _) =
     ecl = identCat (normCatOfList cat)
     vname = map toLower cl
     member = map toLower ecl ++ "_"
-    visitMember = if isTokenCat c
-      then "      visit" ++ funName c ++ "(" ++ vname ++ "->" ++ member ++ ");"
-      else "      " ++ vname ++ "->" ++ member ++ "->accept(this);"
+    visitMember
+      | Just t <- maybeTokenCat c =
+          "      visit" ++ t ++ "(" ++ vname ++ "->" ++ member ++ ");"
+      | otherwise =
+          "      " ++ vname ++ "->" ++ member ++ "->accept(this);"
 prShowData _ (cat, rules) =  --Not a list:
   abstract ++ concatMap prShowRule rules
   where
@@ -601,58 +607,46 @@ prShowRule (Rule fun _ cats _) | isProperLabel fun = concat
    "}\n"
   ]
    where
-    (optspace, lparen, rparen) = if allTerms cats
-      then ("","","")
-      else ("  bufAppend(' ');\n", "  bufAppend('(');\n","  bufAppend(')');\n")
-    cats' = if allTerms cats
-        then ""
-        else concat (insertSpaces (map (prShowCat fnm) (numVars cats)))
+    (optspace, lparen, rparen, cats')
+      | null [ () | Left _ <- cats ]  -- @all isRight cats@, but Data.Either.isRight requires base >= 4.7
+                  = ("", "", "", "")
+      | otherwise = ("  bufAppend(' ');\n", "  bufAppend('(');\n","  bufAppend(')');\n"
+                    , concat (insertSpaces (map (prShowCat fnm) (numVars cats))))
     insertSpaces [] = []
     insertSpaces (x:[]) = [x]
     insertSpaces (x:xs) = if x == ""
       then insertSpaces xs
       else x : "  bufAppend(' ');\n" : insertSpaces xs
-    allTerms [] = True
-    allTerms (Left _:_) = False
-    allTerms (_:zs) = allTerms zs
     fnm = "p" --other names could cause conflicts
 prShowRule _ = ""
 
 -- This recurses to the instance variables of a class.
 prShowCat :: String -> Either (Cat, Doc) String -> String
-prShowCat _ (Right _)               = ""
-prShowCat fnm (Left (cat,nt))
-  | isTokenCat cat              =
-    "  visit" ++ funName cat ++ "(" ++ fnm ++ "->" ++ render nt ++ ");\n"
-  | show (normCat $ strToCat $ render nt) /= render nt = accept
-  | otherwise                         =
-    concat [
-           "  bufAppend('[');\n",
-           "  if (" ++ fnm ++ "->" ++ render nt ++ ")" ++ accept,
-           "  bufAppend(']');\n"
-          ]
-  where accept = "  " ++ fnm ++ "->" ++ render nt ++ "->accept(this);\n"
+prShowCat _   (Right _) = ""
+prShowCat fnm (Left (cat, nt))
+  | Just t <- maybeTokenCat cat =
+      unlines
+        [ "  visit" ++ t ++ "(" ++ fnm ++ "->" ++ s ++ ");"
+        ]
+  | catToStr (normCat $ strToCat s) /= s =
+      unlines
+        [ accept
+        ]
+  | otherwise =
+      unlines
+        [ "  bufAppend('[');"
+        , "  if (" ++ fnm ++ "->" ++ s ++ ")" ++ accept
+        , "  bufAppend(']');"
+        ]
+  where
+  s = render nt
+  accept = "  " ++ fnm ++ "->" ++ s ++ "->accept(this);"
 
 {- **** Helper Functions Section **** -}
 
 -- from ListIdent to Ident
 baseName = drop 4
 
-
---The visit-function name of a basic type
-funName :: Cat -> String
-funName (TokenCat c) | c `elem` builtin = c
-  where builtin = ["Integer", "Char", "String", "Double", "Ident" ]
-funName _ = "Ident" --User-defined type
---The visit-function name of a basic type
--- funName :: String -> String
--- funName v =
---     if "integer_" `isPrefixOf` v then "Integer"
---     else if "char_" `isPrefixOf` v then "Char"
---     else if "string_" `isPrefixOf` v then "String"
---     else if "double_" `isPrefixOf` v then "Double"
---     else if "ident_" `isPrefixOf` v then "Ident"
---     else "Ident" --User-defined type
 
 --Just sets the coercion level for parentheses in the Pretty Printer.
 setI :: Integer -> String

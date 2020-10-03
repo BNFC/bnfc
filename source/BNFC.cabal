@@ -69,6 +69,7 @@ Executable bnfc
     FlexibleContexts
     LambdaCase
     OverloadedStrings
+    PatternGuards
     RecordWildCards
     ScopedTypeVariables
     TupleSections
@@ -231,6 +232,7 @@ Test-suite unit-tests
     FlexibleContexts
     LambdaCase
     OverloadedStrings
+    PatternGuards
     RecordWildCards
     ScopedTypeVariables
     TupleSections
