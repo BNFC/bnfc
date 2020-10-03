@@ -1,4 +1,8 @@
 resolver: lts-6.35
+
+extra-deps:
+- alex-3.2.2
+
 packages:
 - source
 # - testing

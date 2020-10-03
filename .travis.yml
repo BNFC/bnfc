@@ -10,13 +10,13 @@ cache:
 
 # Make sure to update tested-with in source/BNFC.cabal when updating these:
 ghc:
+  - 7.10.3
   - 8.10.2
   - 8.8.4
   - 8.6.5
   - 8.4.4
   - 8.2.2
   - 8.0.2
-  - 7.10.3
 
 env:
   - STACK=yes
