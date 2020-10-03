@@ -4,7 +4,7 @@
 cabal v1-sandbox init
 cabal v1-install --only-dependencies
 cabal v1-sandbox add-source ../source
-cabal v1-install bnfc
+cabal v1-install BNFC
 
 # Check for tools required to run system tests
 missing=""
