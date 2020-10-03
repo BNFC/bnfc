@@ -40,13 +40,13 @@ matrix:
     # - ghc: 8.8.4
     #   env: CABAL=yes PACKAGEDIR="testing"
 
-    # # HTF-0.14 does not build under 8.0 because of cabal version
-    # - ghc: 8.0.2
-    #   env: CABAL=yes PACKAGEDIR="testing"
+    # HTF-0.14 does not build under 8.0 because of cabal version
+    - ghc: 8.0.2
+      env: CABAL=yes PACKAGEDIR="testing"
 
-    # # shelly-1.9 not available for ghc 7
-    # - ghc: 7.10.3
-    #   env: CABAL=yes PACKAGEDIR="testing"
+    # shelly-1.9 not available for ghc 7
+    - ghc: 7.10.3
+      env: CABAL=yes PACKAGEDIR="testing"
 
 script:
   - if [ "$CABAL" = yes -a "$PACKAGEDIR" = source  ]; then cabal v1-configure --enable-tests && cabal v1-build && cabal v1-test; fi
@@ -63,7 +63,7 @@ before_install:
   - if [ "$STACK" = yes ]; then
       mkdir -p $HOME/.local/bin &&
       export PATH=$HOME/.local/bin:$PATH &&
-      travis_retry curl -L https://github.com/commercialhaskell/stack/releases/download/v2.3.3/stack-2.3.3-linux-x86_64-static.tar.gz | tar xz --wildcards --strip-components=1 -C $HOME/.local/bin '*/stack' &&
+      travis_retry curl -L https://github.com/commercialhaskell/stack/releases/download/v2.3.3/stack-2.3.3-linux-x86_64.tar.gz | tar xz --wildcards --strip-components=1 -C $HOME/.local/bin '*/stack' &&
       stack config set system-ghc --global true;
     fi
   - if [ "$CABAL" = yes -a "$PACKAGEDIR" = testing ]; then sudo apt-get install openjdk-9-jdk-headless jflex antlr4 ocaml texlive-latex-base hlint; fi
