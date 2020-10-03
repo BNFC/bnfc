@@ -21,7 +21,7 @@
 
 module BNFC.Backend.HaskellGADT.CFtoAbstractGADT (cf2Abstract) where
 
-import Data.List (intercalate, nub)
+import qualified Data.List as List
 
 import BNFC.CF
 import BNFC.Backend.HaskellGADT.HaskellGADTCommon
@@ -36,9 +36,9 @@ cf2Abstract tokenText name cf composOpMod = unlines $ concat $
   [ [ "{-# LANGUAGE GADTs, KindSignatures, DataKinds #-}"
     , "{-# LANGUAGE EmptyCase #-}"
     , ""
-    , "module" +++ name +++ "(" ++ intercalate ", " exports ++ ")" +++ "where"
+    , "module" +++ name +++ "(" ++ List.intercalate ", " exports ++ ")" +++ "where"
     , ""
-    , "import Prelude (Char, String, Integer, Double, (.), (>), (&&), (==))"
+    , "import Prelude (" ++ typeImports ++ ", (.), (>), (&&), (==))"
     , "import qualified Prelude as P"
     , "import qualified Data.Monoid as P"
     , ""
@@ -72,9 +72,14 @@ cf2Abstract tokenText name cf composOpMod = unlines $ concat $
         , "module " ++ composOpMod
         ]
       ]
+    typeImports = List.intercalate ", " $ concat
+      [ [ "Char", "Double" ]
+      , [ "Int" | hasPositionTokens cf ]
+      , [ "Integer", "String" ]
+      ]
 
 getTreeCats :: CF -> [String]
-getTreeCats cf = nub $ map show $ filter (not . isList) $ map consCat $ cf2cons cf
+getTreeCats cf = List.nub $ map show $ filter (not . isList) $ map consCat $ cf2cons cf
 
 getDefinitions :: CF -> [String]
 getDefinitions cf = [ f | FunDef f _ _ <- cfgPragmas cf ]
@@ -85,7 +90,7 @@ prDummyTypes cf = prDummyData : map prDummyType cats
   cats = getTreeCats cf
   prDummyData
     | null cats = "data Tag"
-    | otherwise = "data Tag =" +++ intercalate " | " (map mkRealType cats)
+    | otherwise = "data Tag =" +++ List.intercalate " | " (map mkRealType cats)
   prDummyType cat = "type" +++ cat +++ "= Tree" +++ mkRealType cat
 
 mkRealType :: String -> String
@@ -145,7 +150,7 @@ prEq cf = ["instance P.Eq (Tree c) where (==) = johnMajorEq",
             | null vars = "johnMajorEq" +++ fun +++ fun +++ "=" +++ "P.True"
             | otherwise = "johnMajorEq" +++ "(" ++ fun +++ unwords vars ++ ")"
                           +++ "(" ++ fun +++ unwords vars' ++ ")" +++ "="
-                          +++ intercalate " && " (zipWith (\x y -> x +++ "==" +++ y) vars vars')
+                          +++ List.intercalate " && " (zipWith (\x y -> x +++ "==" +++ y) vars vars')
           where (fun, vars) = (consFun c, map snd (consVars c))
                 vars' = map (++ "_") vars
 
