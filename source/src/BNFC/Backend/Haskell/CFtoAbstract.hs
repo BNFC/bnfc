@@ -23,6 +23,7 @@ module BNFC.Backend.Haskell.CFtoAbstract (cf2Abstract, definedRules) where
 
 import Prelude'
 import Data.Maybe
+import qualified Data.List as List
 
 import BNFC.CF
 import BNFC.Options               ( TokenText(..) )
@@ -56,7 +57,7 @@ cf2Abstract tokenText generic functor name cf = vsep . concat $
       ]
     , [ hsep [ "module", text name, "where" ] ]
     , [ vcat
-        [ text $ "import Prelude (Char, Double, Integer, String" ++ functorImportsUnqual ++ ")"
+        [ text $ "import Prelude (" ++ typeImports ++ functorImportsUnqual ++ ")"
         , text $ "import qualified Prelude as C (Eq, Ord, Show, Read" ++ functorImportsQual ++ ")"
         , "import qualified Data.String"  -- for IsString
         ]
@@ -67,7 +68,9 @@ cf2Abstract tokenText generic functor name cf = vsep . concat $
         , [ "import qualified GHC.Generics as C (Generic)"        | gen ]
         ]
       ]
-    , map (\ c -> prSpecialData tokenText (isPositionCat cf c) derivingClassesTokenType c) $ specialCats cf
+    , (`map` specialCats cf) $ \ c ->
+        let hasPos = isPositionCat cf c
+        in  prSpecialData tokenText hasPos (derivingClassesTokenType hasPos) c
     , concatMap (prData functorName derivingClasses) datas
     , definedRules functor cf
     , [ "" ] -- ensure final newline
@@ -79,9 +82,14 @@ cf2Abstract tokenText generic functor name cf = vsep . concat $
       [ [ "Eq", "Ord", "Show", "Read" ]
       , when generic [ "Data", "Typeable", "Generic" ]
       ]
-    derivingClassesTokenType = concat
+    derivingClassesTokenType hasPos = concat
       [ derivingClasses
-      , [ "Data.String.IsString" ]
+      , [ "Data.String.IsString" | not hasPos ]
+      ]
+    typeImports = List.intercalate ", " $ concat
+      [ [ "Char", "Double" ]
+      , [ "Int" | hasPositionTokens cf ]
+      , [ "Integer", "String" ]
       ]
     functorImportsUnqual
       | functor   = ", map, fmap"
@@ -186,7 +194,7 @@ genFunctorInstance functorName (cat, cons) =
 --   deriving (Show, Data.String.IsString)
 --
 -- >>> prSpecialData StringToken True ["Show"] catIdent
--- newtype Ident = Ident ((Int,Int),String)
+-- newtype Ident = Ident ((Int, Int), String)
 --   deriving (Show)
 --
 -- >>> prSpecialData TextToken False ["Show"] catIdent
@@ -198,7 +206,7 @@ genFunctorInstance functorName (cat, cons) =
 --   deriving (Show)
 --
 -- >>> prSpecialData ByteStringToken True ["Show"] catIdent
--- newtype Ident = Ident ((Int,Int),BS.ByteString)
+-- newtype Ident = Ident ((Int, Int), BS.ByteString)
 --   deriving (Show)
 --
 prSpecialData
@@ -212,7 +220,7 @@ prSpecialData tokenText position classes cat = vcat
     , nest 2 $ deriving_ classes
     ]
   where
-    contentSpec | position    = parens ( "(Int,Int)," <> stringType)
+    contentSpec | position    = parens ( "(Int, Int), " <> stringType)
                 | otherwise   = stringType
     stringType = text $ tokenTextType tokenText
 

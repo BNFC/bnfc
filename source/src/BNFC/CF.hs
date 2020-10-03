@@ -99,6 +99,7 @@ module BNFC.CF (
             precCF,         -- Check if the CF consists of precendence levels.
             isUsedCat,
             isPositionCat,
+            hasPositionTokens,
             hasIdent,
             hasLayout,
             layoutPragmas,
@@ -721,6 +722,9 @@ precLevels cf = Set.toAscList $ Set.fromList [ precCat c | c <- reallyAllCats cf
 precCF :: CF -> Bool
 precCF cf = length (precLevels cf) > 1
 
+-- | Is there a @position token@ declaration in the grammar?
+hasPositionTokens :: CFG g -> Bool
+hasPositionTokens cf = or [ b | TokenReg _ b _ <- cfgPragmas cf ]
 
 -- | Does the category have a position stored in AST?
 isPositionCat :: CFG f -> TokenCat -> Bool
