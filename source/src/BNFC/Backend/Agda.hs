@@ -125,7 +125,6 @@ import Prelude'
 import Control.Monad.State hiding (when)
 import Data.Char
 import Data.Function (on)
-import Data.Functor  ((<$>))
 import qualified Data.List as List
 import Data.List.NonEmpty (NonEmpty((:|)))
 import qualified Data.List.NonEmpty as NEList

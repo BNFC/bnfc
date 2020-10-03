@@ -5,7 +5,6 @@
 
 module BNFC.Regex ( simpReg ) where
 
-import Data.Monoid    (Monoid(..))
 import Data.Semigroup (Semigroup(..))
 import Data.Set (Set)
 import qualified Data.Set as Set

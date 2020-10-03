@@ -50,7 +50,7 @@ makeCppStl opts cf = do
     mkfile (name ++ ".y") bison
     let header = mkHeaderFile (inPackage opts) cf (allParserCats cf) (allEntryPoints cf) (Map.elems env)
     mkfile "Parser.H" header
-    mkfile "ParserError.H" (printParseErrHeader (inPackage opts) cf)
+    mkfile "ParserError.H" $ printParseErrHeader (inPackage opts)
     let (skelH, skelC) = cf2CVisitSkel True (inPackage opts) cf
     mkfile "Skeleton.H" skelH
     mkfile "Skeleton.C" skelC
@@ -61,8 +61,8 @@ makeCppStl opts cf = do
     Makefile.mkMakefile opts $ makefile name
   where name = lang opts
 
-printParseErrHeader :: Maybe String -> CF -> String
-printParseErrHeader inPackage cf =
+printParseErrHeader :: Maybe String -> String
+printParseErrHeader inPackage =
   unlines
   [
      " #pragma once "
@@ -84,11 +84,6 @@ printParseErrHeader inPackage cf =
      , " }; "
      , nsEnd inPackage
      ]
-     where
-      cat = head $ allEntryPoints cf
-      dat = identCat $ normCat cat
-      def = identCat cat
-      scope = nsScope inPackage
 
 cpptest :: Maybe String -> CF -> String
 cpptest inPackage cf =

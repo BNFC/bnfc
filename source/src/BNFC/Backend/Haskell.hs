@@ -20,7 +20,6 @@
 module BNFC.Backend.Haskell (makeHaskell, AlexVersion(..), makefile, testfile) where
 
 import qualified Control.Monad as Ctrl
-import Data.Functor    ((<$>))
 import System.FilePath ((<.>), (</>), pathSeparator)
 import Text.Printf     (printf)
 import Text.PrettyPrint
