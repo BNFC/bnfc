@@ -108,25 +108,31 @@ Identifier  : L_Identifier { AbsBNF.Identifier $1 }
 
 LGrammar :: { AbsBNF.LGrammar }
 LGrammar : ListLDef { AbsBNF.LGr $1 }
+
 LDef :: { AbsBNF.LDef }
 LDef : Def { AbsBNF.DefAll $1 }
      | ListIdentifier ':' Def { AbsBNF.DefSome $1 $3 }
      | 'views' ListIdentifier { AbsBNF.LDefView $2 }
+
 ListLDef :: { [AbsBNF.LDef] }
 ListLDef : {- empty -} { [] }
          | LDef { (:[]) $1 }
          | LDef ';' ListLDef { (:) $1 $3 }
          | ';' ListLDef { $2 }
+
 ListIdentifier :: { [AbsBNF.Identifier] }
 ListIdentifier : Identifier { (:[]) $1 }
                | Identifier ',' ListIdentifier { (:) $1 $3 }
+
 Grammar :: { AbsBNF.Grammar }
 Grammar : ListDef { AbsBNF.Grammar $1 }
+
 ListDef :: { [AbsBNF.Def] }
 ListDef : {- empty -} { [] }
         | Def { (:[]) $1 }
         | Def ';' ListDef { (:) $1 $3 }
         | ';' ListDef { $2 }
+
 Def :: { AbsBNF.Def }
 Def : Label '.' Cat '::=' ListItem { AbsBNF.Rule $1 $3 $5 }
     | 'comment' String { AbsBNF.Comment $2 }
@@ -144,54 +150,71 @@ Def : Label '.' Cat '::=' ListItem { AbsBNF.Rule $1 $3 $5 }
     | 'layout' ListString { AbsBNF.Layout $2 }
     | 'layout' 'stop' ListString { AbsBNF.LayoutStop $3 }
     | 'layout' 'toplevel' { AbsBNF.LayoutTop }
+
 Item :: { AbsBNF.Item }
 Item : String { AbsBNF.Terminal $1 } | Cat { AbsBNF.NTerminal $1 }
+
 ListItem :: { [AbsBNF.Item] }
 ListItem : {- empty -} { [] } | Item ListItem { (:) $1 $2 }
+
 Cat :: { AbsBNF.Cat }
 Cat : '[' Cat ']' { AbsBNF.ListCat $2 }
     | Identifier { AbsBNF.IdCat $1 }
+
 Label :: { AbsBNF.Label }
 Label : LabelId { AbsBNF.LabNoP $1 }
       | LabelId ListProfItem { AbsBNF.LabP $1 $2 }
       | LabelId LabelId ListProfItem { AbsBNF.LabPF $1 $2 $3 }
       | LabelId LabelId { AbsBNF.LabF $1 $2 }
+
 LabelId :: { AbsBNF.LabelId }
 LabelId : Identifier { AbsBNF.Id $1 }
         | '_' { AbsBNF.Wild }
         | '[' ']' { AbsBNF.ListE }
         | '(' ':' ')' { AbsBNF.ListCons }
         | '(' ':' '[' ']' ')' { AbsBNF.ListOne }
+
 ProfItem :: { AbsBNF.ProfItem }
 ProfItem : '(' '[' ListIntList ']' ',' '[' ListInteger ']' ')' { AbsBNF.ProfIt $3 $7 }
+
 IntList :: { AbsBNF.IntList }
 IntList : '[' ListInteger ']' { AbsBNF.Ints $2 }
+
 ListInteger :: { [Integer] }
 ListInteger : {- empty -} { [] }
             | Integer { (:[]) $1 }
             | Integer ',' ListInteger { (:) $1 $3 }
+
 ListIntList :: { [AbsBNF.IntList] }
 ListIntList : {- empty -} { [] }
             | IntList { (:[]) $1 }
             | IntList ',' ListIntList { (:) $1 $3 }
+
 ListProfItem :: { [AbsBNF.ProfItem] }
 ListProfItem : ProfItem { (:[]) $1 }
              | ProfItem ListProfItem { (:) $1 $2 }
+
 Arg :: { AbsBNF.Arg }
 Arg : Identifier { AbsBNF.Arg $1 }
+
 ListArg :: { [AbsBNF.Arg] }
 ListArg : {- empty -} { [] } | Arg ListArg { (:) $1 $2 }
+
 Separation :: { AbsBNF.Separation }
 Separation : {- empty -} { AbsBNF.SepNone }
            | 'terminator' String { AbsBNF.SepTerm $2 }
            | 'separator' String { AbsBNF.SepSepar $2 }
+
 ListString :: { [String] }
 ListString : String { (:[]) $1 }
            | String ',' ListString { (:) $1 $3 }
+
 Exp :: { AbsBNF.Exp }
 Exp : Exp1 ':' Exp { AbsBNF.Cons $1 $3 } | Exp1 { $1 }
+
 Exp1 :: { AbsBNF.Exp }
 Exp1 : Identifier ListExp2 { AbsBNF.App $1 $2 } | Exp2 { $1 }
+
 Exp2 :: { AbsBNF.Exp }
 Exp2 : Identifier { AbsBNF.Var $1 }
      | Integer { AbsBNF.LitInt $1 }
@@ -200,25 +223,34 @@ Exp2 : Identifier { AbsBNF.Var $1 }
      | Double { AbsBNF.LitDouble $1 }
      | '[' ListExp ']' { AbsBNF.List $2 }
      | '(' Exp ')' { $2 }
+
 ListExp :: { [AbsBNF.Exp] }
 ListExp : {- empty -} { [] }
         | Exp { (:[]) $1 }
         | Exp ',' ListExp { (:) $1 $3 }
+
 ListExp2 :: { [AbsBNF.Exp] }
 ListExp2 : Exp2 { (:[]) $1 } | Exp2 ListExp2 { (:) $1 $2 }
+
 RHS :: { AbsBNF.RHS }
 RHS : ListItem { AbsBNF.RHS $1 }
+
 ListRHS :: { [AbsBNF.RHS] }
 ListRHS : RHS { (:[]) $1 } | RHS '|' ListRHS { (:) $1 $3 }
+
 MinimumSize :: { AbsBNF.MinimumSize }
 MinimumSize : 'nonempty' { AbsBNF.MNonempty }
             | {- empty -} { AbsBNF.MEmpty }
+
 Reg :: { AbsBNF.Reg }
 Reg : Reg '|' Reg1 { AbsBNF.RAlt $1 $3 } | Reg1 { $1 }
+
 Reg1 :: { AbsBNF.Reg }
 Reg1 : Reg1 '-' Reg2 { AbsBNF.RMinus $1 $3 } | Reg2 { $1 }
+
 Reg2 :: { AbsBNF.Reg }
 Reg2 : Reg2 Reg3 { AbsBNF.RSeq $1 $2 } | Reg3 { $1 }
+
 Reg3 :: { AbsBNF.Reg }
 Reg3 : Reg3 '*' { AbsBNF.RStar $1 }
      | Reg3 '+' { AbsBNF.RPlus $1 }
