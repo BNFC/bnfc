@@ -78,7 +78,7 @@ cf2cabs cf = CAbs {
   absclasses = nub $ map (show.normCat) cats,
   conclasses = [f | Just f <- map testRule (cfgRules cf)],
   signatures = posdata ++ map normSig (cf2data cf),
-  postokens  = map show pos,
+  postokens  = pos,
   defineds   = defs
   }
  where

@@ -386,7 +386,7 @@ prPrintData False {- use STL -} _ _ (cat@(ListCat _), rules) =
 -- Not a list :
 prPrintData _ _inPackage cf (TokenCat cat, _rules) | isPositionCat cf cat = unlines $
   -- a position token
-  [ "void PrintAbsyn::visit" ++ show cat ++ "(" ++ show cat ++ " *p)"
+  [ "void PrintAbsyn::visit" ++ cat ++ "(" ++ cat ++ " *p)"
   , "{"
   , "  visitIdent(p->string_);"
   , "}"
