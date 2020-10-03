@@ -128,14 +128,13 @@ rMacros cf
 
 -- user macros, derived from the user-defined tokens
 uMacros :: CF -> [String]
-uMacros cf = ["let " ++ name ++ " = " ++ rep | (name, rep, _) <- userTokens cf]
+uMacros cf = ["let " ++ name ++ " = " ++ rep | (name, rep, _, _) <- userTokens cf]
 
--- returns the tuple of (reg_name, reg_representation, token_name)
-userTokens :: CF -> [(String, String, String)]
+-- | Returns the tuple of @(reg_name, reg_representation, token_name, is_position_token)@.
+
+userTokens :: CF -> [(String, String, String, Bool)]
 userTokens cf =
-  [ (ocamlTokenName name, printRegOCaml reg, name) | (name, reg) <- tokenPragmas cf ]
-
-
+  [ (ocamlTokenName name, printRegOCaml reg, name, pos) | TokenReg name pos reg <- cfgPragmas cf ]
 
 -- | Make OCamlLex rule
 -- >>> mkRule "token" [("REGEX1","ACTION1"),("REGEX2","ACTION2"),("...","...")]
@@ -187,10 +186,10 @@ rules cf = mkRule "token" $
       | not (null (cfgSymbols cf))]
     ++
     -- user tokens
-    [ (text n , tokenAction (text t)) | (n,_,t) <- userTokens cf]
+    [ (text n , tokenAction pos (text t)) | (n,_,t,pos) <- userTokens cf]
     ++
     -- predefined tokens
-    [ ( "l i*", tokenAction "Ident" ) ]
+    [ ( "l i*", tokenAction False "Ident" ) ]
     ++
     -- integers
     [ ( "d+", "let i = lexeme lexbuf in TOK_Integer (int_of_string i)" )
@@ -212,9 +211,12 @@ rules cf = mkRule "token" $
     ]
   where
     (multilineC, singleLineC) = comments cf
-    tokenAction t = case reservedWords cf of
-        [] -> "let l = lexeme lexbuf in TOK_" <> t <>" l"
-        _  -> "let l = lexeme lexbuf in try Hashtbl.find resword_table l with Not_found -> TOK_" <> t <+> "l"
+    tokenAction pos t = case reservedWords cf of
+        [] -> "let l = lexeme lexbuf in TOK_" <> t <+> arg
+        _  -> "let l = lexeme lexbuf in try Hashtbl.find resword_table l with Not_found -> TOK_" <> t <+> arg
+      where
+      arg | pos       = "((lexeme_start lexbuf, lexeme_end lexbuf), l)"
+          | otherwise = "l"
 
 -------------------------------------------------------------------
 -- Modified from the inlined version of @RegToAlex@.

@@ -27,10 +27,9 @@ module BNFC.Backend.OCaml.CFtoOCamlYacc
        )
         where
 
-import BNFC.CF
-import Data.List (intersperse,nub)
 import Data.Char
 
+import BNFC.CF
 import BNFC.Utils ((+++))
 import BNFC.Backend.OCaml.OCamlUtil
 
@@ -78,22 +77,25 @@ definedRules cf = unlines [ mkDef f xs e | FunDef f xs e <- cfgPragmas cf ]
       LitString s -> "\"" ++ s ++ "\""
 
 declarations :: String -> CF -> String
-declarations absName cf = unlines
-    [tokens (cfgSymbols cf) (reservedWords cf),
-     specialTokens cf,
-     entryPoints absName cf
+declarations absName cf =
+  unlines
+    [ tokens (cfgSymbols cf) (reservedWords cf)
+    , specialTokens cf
+    , entryPoints absName cf
     ]
 
+-- | Declare keyword and symbol tokens.
+
 tokens :: [String] -> [String] -> String
-tokens symbols reswords = unlines
-    [
-        if not (null reswords)
-            then "%token" +++ concat (intersperse " " (map ("KW_" ++) reswords))
-        else ""
-        ,
-        concatMap (\(s,n) -> "\n%token SYMB" ++ (show n) +++ "/*" +++ s +++ "*/")
-            (zip symbols [1..])
+tokens symbols reswords =
+  unlines $ concat
+    [ [ unwords $ "%token" : map ("KW_" ++) reswords | hasReserved ]
+    , [ "" | hasReserved ]
+    , (`map` zip symbols [1..]) $ \ (s, n) ->
+        "%token SYMB" ++ show n +++ "/*" +++ s +++ "*/"
     ]
+  where
+  hasReserved = not $ null reswords
 
 -- | map a CF terminal into a ocamlyacc token
 terminal :: CF -> String -> String
@@ -110,21 +112,27 @@ nonterminal c = map spaceToUnderscore (fixType c)
           spaceToUnderscore x = x
 
 specialTokens :: CF -> String
-specialTokens cf = unlines . ("%token TOK_EOF" :) $
-  map (\ n -> "%token" +++ aux n +++ "TOK_" ++ n) $ nub $ specialCatsP ++ literals cf
+specialTokens cf = unlines $ concat $
+  [ [ "%token TOK_EOF" ]
+  , [ prToken (ty n)      n | n                <- specialCatsP  ]
+  , [ prToken (posTy pos) n | TokenReg n pos _ <- cfgPragmas cf ]
+  ]
   where
-  aux = \case
+  prToken t n = "%token" +++ t +++ "TOK_" ++ n
+  ty = \case
     "Ident"   -> "<string>"
     "String"  -> "<string>"
     "Integer" -> "<int>"
     "Double"  -> "<float>"
     "Char"    -> "<char>"
-    _         -> "<string>"
+  posTy = \case
+    True  -> "<(int * int) * string>"
+    False -> "<string>"
+
 
 entryPoints :: String -> CF -> String
 entryPoints absName cf = unlines $
-    ("%start" +++
-        concat (intersperse " " (map epName eps)))
+    ("%start" +++ unwords (map epName eps))
     :
     (map typing eps)
     where eps = allEntryPoints cf
@@ -168,7 +176,7 @@ rules cf = unlines [
            nt' = nonterminal nt
            pr [] = []
            pr ((p,a):ls) =
-             unlines [(concat $ intersperse " " ["  |", p, "{", a , "}"])] ++ pr ls
+             unlines [ unwords [ "  |", p, "{", a , "}" ] ] ++ pr ls
 
 
 
