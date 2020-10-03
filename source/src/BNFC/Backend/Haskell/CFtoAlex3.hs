@@ -144,19 +144,21 @@ restOfAlex _ shareStrings tokenText cf = [
   "posLineCol :: Posn -> (Int, Int)",
   "posLineCol (Pn _ l c) = (l,c)",
   "",
-  "mkPosToken :: Token -> ((Int, Int), String)",
-  "mkPosToken t@(PT p _) = (posLineCol p, prToken t)",
+  "mkPosToken :: Token -> ((Int, Int), " ++ stringType ++ ")",
+  "mkPosToken t@(PT p _) = (posLineCol p, tokenText t)",
   "",
-  "prToken :: Token -> String",
-  "prToken t = case t of",
-  "  PT _ (TS s _) -> " ++ apply stringUnpack "s",
-  "  PT _ (TL s)   -> show s",
-  "  PT _ (TI s)   -> " ++ apply stringUnpack "s",
-  "  PT _ (TV s)   -> " ++ apply stringUnpack "s",
-  "  PT _ (TD s)   -> " ++ apply stringUnpack "s",
-  "  PT _ (TC s)   -> " ++ apply stringUnpack "s",
-  "  Err _         -> \"#error\"",
+  "tokenText :: Token -> " ++ stringType,
+  "tokenText t = case t of",
+  "  PT _ (TS s _) -> s",
+  "  PT _ (TL s)   -> " ++ applyP stringPack "show s",
+  "  PT _ (TI s)   -> s",
+  "  PT _ (TV s)   -> s",
+  "  PT _ (TD s)   -> s",
+  "  PT _ (TC s)   -> s",
+  "  Err _         -> " ++ apply stringPack "\"#error\"",
   userDefTokenPrint,
+  "prToken :: Token -> String",
+  "prToken t = " ++ applyP stringUnpack "tokenText t",
   "",
   "data BTree = N | B "++stringType++" Tok BTree BTree deriving (Show)",
   "",
@@ -266,6 +268,11 @@ restOfAlex _ shareStrings tokenText cf = [
    apply "id" s = s
    apply f    s = f ++ " " ++ s
 
+   applyP :: String -> String -> String
+   applyP ""   s = s
+   applyP "id" s = s
+   applyP f    s = f ++ " (" ++ s ++ ")"
+
    ifC :: TokenCat -> String -> String
    ifC cat s = if isUsedCat cf (TokenCat cat) then s else ""
 
@@ -308,7 +315,7 @@ restOfAlex _ shareStrings tokenText cf = [
      ]
 
    userDefTokenPrint = unlines
-     [ "  PT _ (T_" ++ name ++ " s) -> " ++ tokenTextUnpack tokenText "s"
+     [ "  PT _ (T_" ++ name ++ " s) -> s"
      | name <- tokenNames cf
      ]
 
