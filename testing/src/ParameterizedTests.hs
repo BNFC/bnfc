@@ -65,8 +65,10 @@ current :: Test
 current = makeTestSuite "Current parameterized test" $
   map (`makeTestCase` ("regression-tests" </> cur)) parameters
   where
-  cur = "266_define"
-  -- cur = "235_SymbolsOverlapTokens"
+  -- cur = "289_LexerKeywords"
+  -- cur = "249_unicode"
+  -- cur = "266_define"
+  cur = "235_SymbolsOverlapTokens"
   -- cur = "202_comments"
   -- cur = "278_Keywords"
   -- cur = "256_Regex"
@@ -169,6 +171,7 @@ testCases params =
         , "210_NumberedCatWithoutCoerce"
         , "204_InternalToken"
         , "249_unicode"
+        , "289_LexerKeywords"
         , "#100_coercion_lists"
         , "comments"
         , "#149"

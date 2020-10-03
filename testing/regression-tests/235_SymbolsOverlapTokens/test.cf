@@ -3,10 +3,12 @@
 -- #277 C++ NoSTL backend produces ill-formed skeletons
 -- when user-defined token category is repeated on rhs.
 
+-- #296 Haskell backend missed import of Int in Abs.hs (needed for position token)
+
 
 Init.        Main ::= Type Type "[" [Type] "]"
                       Integer Double Char String Ident
-                      MyId MyId "[" [MyId] "]" ;
+                      MyId MyPosId "[" [MyId] "]" ;
 
 TypeType.    Type ::= "Type"    ;  -- #235 conflict with non-terminal Type
 TypeInteger. Type ::= "Integer" ;  -- #235 conflict with token type Integer
@@ -20,3 +22,4 @@ separator Type "," ;
 separator MyId "," ;
 
 token MyId letter (letter | digit)*;
+position token MyPosId letter (letter | digit | '!')*;
