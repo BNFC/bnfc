@@ -1,0 +1,9 @@
+resolver: ghc-8.10.2
+compiler: ghc-8.10.2
+# compiler-check: match-exact
+
+extra-deps:
+- alex-3.2.5
+- happy-1.19.12
+- semigroups-0.19.1
+
