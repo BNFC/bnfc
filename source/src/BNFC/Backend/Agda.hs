@@ -133,6 +133,7 @@ import qualified Data.Map as Map
 import Data.Maybe
 import Data.Set (Set)
 import qualified Data.Set as Set
+import Data.String (IsString)
 
 import BNFC.CF
 import BNFC.Backend.Base           (Backend, mkfile)
@@ -209,13 +210,14 @@ cf2AgdaAST
 cf2AgdaAST time tokenText mod amod pmod cf = vsep $
   [ preamble time "abstract syntax data types"
   , hsep [ "module", text mod, "where" ]
-  , imports YesImportNumeric False
-  , if usesString then hsep [ "String", equals, listT, charT ] else empty
-  , importPragmas tokenText
+  , imports YesImportNumeric False usesPos
+  , when usesString $ hsep [ "String", equals, listT, charT ]
+  , importPragmas tokenText usesPos
       [ unwords [ "qualified", amod ]
       , unwords [ pmod, "(printTree)" ]
       ]
-  , vsep $ map (prToken amod tokenText) tcats
+  , when usesPos defineIntAndPair
+  , vsep $ map (uncurry $ prToken amod tokenText) tcats
   , absyn amod NamedArg dats
   , definedRules cf
   -- , allTokenCats printToken tcats  -- seem to be included in printerCats
@@ -228,13 +230,38 @@ cf2AgdaAST time tokenText mod amod pmod cf = vsep $
   dats = cf2data cf
          -- getAbstractSyntax also includes list categories, which isn't what we need
   -- The user-defined token categories (including Ident).
-  tcats :: [TokenCat]
-  tcats = specialCats cf
+  tcats :: [(TokenCat, Bool)]
+  tcats = (if hasIdent cf then ((catIdent, False) :) else id)
+    [ (name, b) | TokenReg name b _ <- cfgPragmas cf ]
   -- Bind printers for the following categories (involves lists and literals).
   printerCats :: [Cat]
-  printerCats = map fst (getAbstractSyntax cf) ++ map TokenCat (cfgLiterals cf)
+  printerCats = concat
+    [ map fst (getAbstractSyntax cf)
+    , map TokenCat $ List.nub $ cfgLiterals cf ++ map fst tcats
+    ]
   usesString = "String" `elem` cfgLiterals cf
-
+  usesPos    = hasPositionTokens cf
+  defineIntAndPair = vsep
+    [ vcat $ concat
+      [ [ "postulate" ]
+      , map (nest 2 . text) $ table " "
+        [ [ intT,      ":", "Set" ]
+        , [ intToNatT, ":", intT, arrow , natT ]
+        , [ natToIntT, ":", natT, arrow , intT ]
+        ]
+      ]
+    , vcat $ map (\ s -> hsep [ "{-#", "COMPILE", "GHC", text s, "#-}" ]) $
+        table " = "
+        [ [ intT,      "type Prelude.Int"    ]
+        , [ intToNatT, "Prelude.toInteger"   ]
+        , [ natToIntT, "Prelude.fromInteger" ]
+        ]
+    , vcat
+      [ "data #Pair (A B : Set) : Set where"
+      , nest 2 $ "#pair : A → B → #Pair A B"
+      ]
+    , "{-# COMPILE GHC #Pair = data (,) ((,)) #-}"
+    ]
 
 -- | Generate parser bindings for Agda.
 --
@@ -252,9 +279,9 @@ cf2AgdaParser
 cf2AgdaParser time tokenText mod astmod emod pmod layoutMod cats = vsep $
   [ preamble time "parsers"
   , hsep [ "module", text mod, "where" ]
-  , imports NoImportNumeric (isJust layoutMod)
+  , imports NoImportNumeric (isJust layoutMod) False
   , importCats astmod (List.nub cs)
-  , importPragmas tokenText $ [ qual emod, pmod] ++ maybeToList (qual <$> layoutMod)
+  , importPragmas tokenText False $ [ qual emod, pmod] ++ maybeToList (qual <$> layoutMod)
   , "-- Error monad of BNFC"
   , prErrM emod
   , "-- Happy parsers"
@@ -274,13 +301,17 @@ cf2AgdaParser time tokenText mod astmod emod pmod layoutMod cats = vsep $
   qual m = "qualified " ++ m
 
 -- We prefix the Agda types with "#" to not conflict with user-provided nonterminals.
-arrow, charT, intT, listT, stringT, stringFromListT :: Doc
+arrow, charT, integerT, listT, intT, natT, intToNatT, natToIntT, stringT, stringFromListT :: IsString a => a
 arrow = "→"
 charT           = "Char"     -- This is the BNFC name for token type Char!
-intT            = "Integer"  -- This is the BNFC name for token type Integer!
+integerT        = "Integer"  -- This is the BNFC name for token type Integer!
 doubleT         = "Double"   -- This is the BNFC name for token type Double!
 boolT           = "#Bool"
 listT           = "#List"
+intT            = "#Int"     -- Int is the type used by the Haskell backend for line and column positions.
+natT            = "#Nat"
+intToNatT       = "#intToNat"
+natToIntT       = "#natToInt"
 stringT         = "#String"
 stringFromListT = "#stringFromList"
 
@@ -302,21 +333,23 @@ preamble _time what = vcat $
 imports
   :: ImportNumeric -- ^ Import also numeric types?
   -> Bool          -- ^ If have layout, import booleans.
+  -> Bool          -- ^ If have position tokens, import natural numbers.
   -> Doc
-imports numeric layout = vcat . map prettyImport . concat $
+imports numeric layout pos = vcat . map prettyImport . concat $
   [ when layout
     [ ("Agda.Builtin.Bool",   [("Bool", boolT)]) ]
   , [ ("Agda.Builtin.Char",   [("Char", charT)]) ]
   , when (numeric == YesImportNumeric) importNumeric
-  , [ ("Agda.Builtin.List",   [("List", listT)])
-    , ("Agda.Builtin.String", [("String", stringT), ("primStringFromList", stringFromListT) ])
-    ]
+  , [ ("Agda.Builtin.List",   [("List", listT)]) ]
+  , when pos
+    [ ("Agda.Builtin.Nat",    [("Nat" , natT )]) ]
+  , [ ("Agda.Builtin.String", [("String", stringT), ("primStringFromList", stringFromListT) ]) ]
   ]
   where
   importNumeric :: [(String, [(String, Doc)])]
   importNumeric =
     [ ("Agda.Builtin.Float public", [("Float", doubleT)])
-    , ("Agda.Builtin.Int   public", [("Int", intT)])
+    , ("Agda.Builtin.Int   public", [("Int", integerT)])
     ]
   prettyImport :: (String, [(String, Doc)]) -> Doc
   prettyImport (m, ren) = prettyList 2 pre lparen rparen semi $
@@ -336,44 +369,63 @@ importCats m cs = prettyList 2 pre lparen rparen semi $ map text cs
 
 -- | Import pragmas.
 --
--- >>> importPragmas ByteStringToken ["qualified Foo.Abs", "Foo.Print (printTree)", "qualified Foo.Layout"]
+-- >>> importPragmas ByteStringToken False ["qualified Foo.Abs", "Foo.Print (printTree)", "qualified Foo.Layout"]
 -- {-# FOREIGN GHC import Prelude (Bool, Char, Double, Integer, String, (.)) #-}
--- {-# FOREIGN GHC import qualified Data.Text #-}
 -- {-# FOREIGN GHC import qualified Data.ByteString.Char8 as BS #-}
+-- {-# FOREIGN GHC import qualified Data.Text #-}
 -- {-# FOREIGN GHC import qualified Foo.Abs #-}
 -- {-# FOREIGN GHC import Foo.Print (printTree) #-}
 -- {-# FOREIGN GHC import qualified Foo.Layout #-}
 --
 importPragmas
   :: TokenText
+  -> Bool      -- ^ Do we use position tokens?
   -> [String]  -- ^ Haskell modules to import.
   -> Doc
-importPragmas tokenText mods = vcat $ map imp $ prelude ++ extra ++ mods
+importPragmas tokenText pos mods = vcat $ map imp $ base ++ mods
   where
   imp s = hsep [ "{-#", "FOREIGN", "GHC", "import", text s, "#-}" ]
-  extra = case tokenText of
-    TextToken       -> []
-    StringToken     -> []
-    ByteStringToken -> [ "qualified Data.ByteString.Char8 as BS" ]
-  prelude =
-    [ "Prelude (Bool, Char, Double, Integer, String, (.))"
-    , "qualified Data.Text"
+  base = concat
+    [ [ "Prelude (" ++ preludeImports ++ ")" ]
+    , when pos
+      [ "qualified Prelude" ]
+    , case tokenText of
+        TextToken       -> []
+        StringToken     -> []
+        ByteStringToken -> [ "qualified Data.ByteString.Char8 as BS" ]
+    , [ "qualified Data.Text" ]
+    ]
+  preludeImports = List.intercalate ", " $ concat
+    [ [ "Bool", "Char", "Double", "Integer", "String", "(.)" ]
+    , when pos
+      [ "error" ] -- used unqualified by the GHC backend for postulates
     ]
 
 -- * Bindings for the AST.
 
 -- | Pretty-print types for token types similar to @Ident@.
 
-prToken :: ModuleName -> TokenText -> String -> Doc
-prToken amod tokenText t =
-  prettyData UnnamedArg t [(agdaLower t, typ)]
-  $++$
-  pragmaData amod t [(t, [])]
+prToken :: ModuleName -> TokenText -> String -> Bool -> Doc
+prToken amod tokenText t pos = vsep
+  [ if pos then vcat
+      -- can't use prettyData as it excepts a Cat for the type
+      [ hsep [ "data", text t, ":", "Set", "where" ]
+      , nest 2 $ hsep
+          [ text $ agdaLower t
+          , ":"
+          , "#Pair (#Pair #Int #Int)"
+          , prettyCat typ
+          , arrow, text t
+          ]
+      ]
+    else prettyData UnnamedArg t [(agdaLower t, [ typ ])]
+  , pragmaData amod t [(t, [])]
+  ]
   where
   typ = case tokenText of
-    TextToken       -> [Cat "#String" ]
-    ByteStringToken -> [Cat "#String" ]
-    StringToken     -> [ListCat (Cat "Char")]
+    TextToken       -> Cat "#String"
+    ByteStringToken -> Cat "#String"
+    StringToken     -> ListCat (Cat "Char")
 
 -- | Pretty-print abstract syntax definition in Agda syntax.
 --
