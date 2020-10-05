@@ -90,7 +90,7 @@ cf2Bison rp inPackage name cf env
      startSymbol cf,
      specialToks cf,
      "%%",
-     prRules (rulesForBison rp inPackage name cf env)
+     prRules (rulesForBison rp inPackage cf env)
     ]
   where
    user = fst (unzip (tokenPragmas cf))
@@ -308,12 +308,17 @@ tokens user env = unlines $ map declTok $ Map.toList env
 
 --The following functions are a (relatively) straightforward translation
 --of the ones in CFtoHappy.hs
-rulesForBison :: RecordPositions -> Maybe String -> String -> CF -> SymMap -> Rules
-rulesForBison rp inPackage _ cf env = map mkOne (ruleGroups cf) ++ posRules where
+
+rulesForBison :: RecordPositions -> Maybe String -> CF -> SymMap -> Rules
+rulesForBison rp inPackage cf env = map mkOne (ruleGroups cf) ++ posRules
+  where
   mkOne (cat,rules) = constructRule rp inPackage cf env rules cat
   posRules = (`map` positionCats cf) $ \ n -> (TokenCat n,
     [( fromMaybe n $ Map.lookup (Tokentype n) env
-     , concat [ "$$ = new " , n , "($1," , nsString inPackage , "yy_mylinenumber) ; YY_RESULT_" , n , "_= $$ ;" ]
+     , concat
+         [ "$$ = new ", nsScope inPackage, n, "($1, ", nsString inPackage, "yy_mylinenumber); "
+         , nsScope inPackage, "YY_RESULT_", n, "_= $$;"
+         ]
      )])
 
 -- For every non-terminal, we construct a set of rules.
