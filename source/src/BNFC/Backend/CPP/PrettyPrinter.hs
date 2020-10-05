@@ -41,7 +41,8 @@ cf2CPPPrinter :: Bool -> Maybe String -> CF -> (String, String)
 cf2CPPPrinter useStl inPackage cf =
     (mkHFile useStl inPackage cf groups, mkCFile useStl inPackage cf groups)
  where
-    groups = positionRules cf ++ fixCoercions (ruleGroupsInternals cf)
+    groups = when useStl (positionRules cf)  -- CPP/NoSTL treats position tokens as just tokens
+          ++ fixCoercions (ruleGroupsInternals cf)
 
 positionRules :: CF -> [(Cat,[Rule])]
 positionRules cf =
