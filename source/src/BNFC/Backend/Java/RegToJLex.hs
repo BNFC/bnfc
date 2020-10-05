@@ -8,39 +8,24 @@ import BNFC.Options (JavaLexerParser(..))
 import BNFC.Backend.Common (flexEps)
 
 -- the top-level printing method
-printRegJLex :: Reg -> String
-printRegJLex = render . prt 0
-
--- you may want to change render and parenth
-
-render :: [String] -> String
-render = rend (0 :: Int) where
-  rend i ss = case ss of
-    "["      :ts -> cons "["  $ rend i ts
-    "("      :ts -> cons "("  $ rend i ts
-    t  : "," :ts -> cons t    $ space "," $ rend i ts
-    t  : ")" :ts -> cons t    $ cons ")"  $ rend i ts
-    t  : "]" :ts -> cons t    $ cons "]"  $ rend i ts
-    t        :ts -> space t   $ rend i ts
-    _            -> ""
-  cons s t  = s ++ t
-  space t s = if null s then t else t ++ s
+printRegJLex :: JavaLexerParser -> Reg -> String
+printRegJLex lexer = concat . prt lexer 0
 
 parenth :: [String] -> [String]
 parenth ss = ["("] ++ ss ++ [")"]
 
 -- the printer class does the job
 class Print a where
-  prt :: Int -> a -> [String]
-  prtList :: [a] -> [String]
-  prtList = concatMap (prt 0)
+  prt     :: JavaLexerParser -> Int -> a -> [String]
+  prtList :: JavaLexerParser -> [a] -> [String]
+  prtList lexer = concatMap (prt lexer 0)
 
 instance Print a => Print [a] where
-  prt _ = prtList
+  prt lexer _ = prtList lexer
 
 instance Print Char where
-  prt _ c = [escapeChar JLexCup c]
-  prtList = map (concat . prt 0)
+  prt lexer _ c = [ escapeChar lexer c ]
+  prtList lexer = map (concat . prt lexer 0)
 
 escapeChar :: JavaLexerParser -> Char -> String
 escapeChar _ '^' = "\\x5E" -- special case, since \^ is a control character escape
@@ -62,30 +47,30 @@ prPrec :: Int -> Int -> [String] -> [String]
 prPrec i j = if j<i then parenth else id
 
 instance Print Identifier where
-  prt _ (Identifier i) = [i]
+  prt _ _ (Identifier i) = [i]
 
 instance Print Reg where
-  prt i e = case e of
-   RSeq reg0 reg -> prPrec i 2 (concat [prt 2 reg0 , prt 3 reg])
-   RAlt reg0 reg -> prPrec i 1 (concat [prt 1 reg0 , ["|"] , prt 2 reg])
+  prt lexer i = \case
+   RSeq reg0 reg             -> prPrec i 2 $ concat [ prt lexer 2 reg0, prt lexer 3 reg ]
+   RAlt reg0 reg             -> prPrec i 1 $ concat [ prt lexer 1 reg0, ["|"], prt lexer 2 reg ]
 
    -- JLex does not support set difference
-   --RMinus reg0 reg -> prPrec i 1 (concat [prt 2 reg0 , ["#"] , prt 2 reg])
-   RMinus reg0 REps -> prt i reg0 -- REps is identity for set difference
-   RMinus RAny reg@(RChar _) ->  prPrec i 3 (concat [["[^"],prt 0 reg,["]"]])
-   RMinus RAny (RAlts str) ->  prPrec i 3 (concat [["[^"],prt 0 str,["]"]])
+   --RMinus reg0 reg         -> prPrec i 1 (concat [prt lexer 2 reg0 , ["#"] , prt lexer 2 reg])
+   RMinus reg0 REps          -> prt lexer i reg0 -- REps is identity for set difference
+   RMinus RAny reg@(RChar _) -> prPrec i 3 $ concat [ ["[^"], prt lexer 0 reg, ["]"] ]
+   RMinus RAny (RAlts str)   -> prPrec i 3 $ concat [ ["[^"], prt lexer 0 str, ["]"] ]
    -- FIXME: maybe we could add cases for char - RDigit, RLetter etc.
-   RMinus _ _ -> error  "JLex does not support general set difference"
+   RMinus _ _                -> error $ "J[F]Lex does not support general set difference"
 
-   RStar reg -> prPrec i 3 (concat [prt 3 reg , ["*"]])
-   RPlus reg -> prPrec i 3 (concat [prt 3 reg , ["+"]])
-   ROpt reg  -> prPrec i 3 (concat [prt 3 reg , ["?"]])
-   REps  -> prPrec i 3 [ flexEps ]
-   RChar c -> prPrec i 3 (prt 0 c)
-   RAlts str -> prPrec i 3 (concat [["["],prt 0 str,["]"]])
-   RSeqs str -> prPrec i 2 (concatMap (prt 0) str)
-   RDigit  -> prPrec i 3 ["{DIGIT}"]
-   RLetter  -> prPrec i 3 ["{LETTER}"]
-   RUpper  -> prPrec i 3 ["{CAPITAL}"]
-   RLower  -> prPrec i 3 ["{SMALL}"]
-   RAny  -> prPrec i 3 ["."]
+   RStar reg                 -> prPrec i 3 $ concat [ prt lexer 3 reg, ["*"] ]
+   RPlus reg                 -> prPrec i 3 $ concat [ prt lexer 3 reg, ["+"] ]
+   ROpt reg                  -> prPrec i 3 $ concat [ prt lexer 3 reg, ["?"] ]
+   REps                      -> prPrec i 3 [ flexEps ]
+   RChar c                   -> prPrec i 3 $ prt lexer 0 c
+   RAlts str                 -> prPrec i 3 $ concat [ ["["], prt lexer 0 str, ["]"] ]
+   RSeqs str                 -> prPrec i 2 $ concatMap (prt lexer 0) str
+   RDigit                    -> prPrec i 3 [ "{DIGIT}" ]
+   RLetter                   -> prPrec i 3 [ "{LETTER}" ]
+   RUpper                    -> prPrec i 3 [ "{CAPITAL}" ]
+   RLower                    -> prPrec i 3 [ "{SMALL}" ]
+   RAny                      -> prPrec i 3 [ "." ]
