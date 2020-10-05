@@ -42,7 +42,7 @@ module BNFC.Backend.CPP.STL.CFtoCVisitSkelSTL (cf2CVisitSkel) where
 import Data.Char
 
 import BNFC.CF
-import BNFC.Utils ((+++))
+import BNFC.Utils ((+++), unless)
 import BNFC.Backend.Common.OOAbstract
 import BNFC.Backend.CPP.Naming
 import BNFC.Backend.CPP.STL.STLUtils
@@ -50,7 +50,7 @@ import BNFC.Backend.CPP.STL.STLUtils
 --Produces (.H file, .C file)
 cf2CVisitSkel :: Bool -> Maybe String -> CF -> (String, String)
 cf2CVisitSkel useSTL inPackage cf =
- ( mkHFile inPackage cab
+ ( mkHFile useSTL inPackage cab
  , mkCFile useSTL inPackage cab
  )
  where
@@ -59,8 +59,8 @@ cf2CVisitSkel useSTL inPackage cf =
 -- **** Header (.H) File Functions ****
 
 --Generates the Header File
-mkHFile :: Maybe String -> CAbs -> String
-mkHFile inPackage cf = unlines [
+mkHFile :: Bool -> Maybe String -> CAbs -> String
+mkHFile useSTL inPackage cf = unlines [
   "#ifndef " ++ hdef,
   "#define " ++ hdef,
   "/* You might want to change the above name. */",
@@ -72,8 +72,8 @@ mkHFile inPackage cf = unlines [
   "{",
   "public:",
   unlines ["  void visit" ++ b ++ "(" ++ b ++ " *p);" |
-                              b <- classes, notElem b (defineds cf)],
-  unlines ["  void visit" ++ b ++ "(" ++ b ++  " x);" | b <- basics],
+            b <- classes, notElem b (defineds cf), useSTL || notElem b (postokens cf) ],
+  unlines ["  void visit" ++ b ++ "(" ++ b ++  " x);" | b <- basics useSTL cf ],
   "};",
   nsEnd inPackage,
   "",
@@ -82,7 +82,14 @@ mkHFile inPackage cf = unlines [
  where
    hdef = nsDefine inPackage "SKELETON_HEADER"
    classes = allClasses cf
-   basics = tokentypes cf ++ map fst basetypes
+
+-- CPP/NoSTL treats 'position token' as just 'token'.
+basics :: Bool -> CAbs -> [String]
+basics useSTL cf = concat
+  [ map fst basetypes
+  , tokentypes cf
+  , unless useSTL $ postokens cf
+  ]
 
 
 -- **** Implementation (.C) File Functions ****
@@ -95,11 +102,30 @@ mkCFile useSTL inPackage cf = unlines [
   unlines [
     "void Skeleton::visit" ++ t ++ "(" ++
        t ++ " *t) {} //abstract class" | t <- absclasses cf],
-  unlines [prCon   r  | (_,rs)  <- signatures cf, r <- rs],
-  unlines [prList useSTL cb | cb <- listtypes cf],
-  unlines [prBasic b  | b  <- tokentypes cf ++ map fst basetypes],
+  unlines [ prCon   r  | (_,rs)  <- signatures cf, r <- rs, useSTL || not (posRule r) ],
+  unlines [ prList useSTL cb | cb <- listtypes cf ],
+  unlines [ prBasic b  | b  <- base ],
   nsEnd inPackage
  ]
+  where
+  -- See OOAbstract 'posdata':
+  posRule (c, _) = c `elem` postokens cf
+  base = basics useSTL cf
+  prCon (f,cs) = unlines [
+    "void Skeleton::visit" ++ f ++ "(" ++ f ++ " *" ++ v ++ ")",
+    "{",
+    "  /* Code For " ++ f ++ " Goes Here */",
+    "",
+    unlines ["  " ++ visitArg c | c <- cs],
+    "}"
+   ]
+   where
+     v = mkVariable f
+     visitArg (cat,isPt,var)
+       | isPt && (useSTL || cat `notElem` base)
+                   = "if (" ++ field ++ ") " ++ field ++ "->accept(this);"
+       | otherwise = "visit" ++ cat ++ "(" ++ field ++ ");"
+       where field = v ++ "->" ++ var
 
 headerC = unlines [
       "/*** BNFC-Generated Visitor Design Pattern Skeleton. ***/",
@@ -153,18 +179,3 @@ prList False (cl,b) = unlines
   next   = map toLower cl
   member = map toLower ecl ++ "_"
   field  = vname ++ "->" ++ member
-
-prCon (f,cs) = unlines [
-  "void Skeleton::visit" ++ f ++ "(" ++ f ++ " *" ++ v ++ ")",
-  "{",
-  "  /* Code For " ++ f ++ " Goes Here */",
-  "",
-  unlines ["  " ++ visitArg c | c <- cs],
-  "}"
- ]
- where
-   v = mkVariable f
-   visitArg (cat,isPt,var)
-     | isPt      = "if (" ++ field ++ ") " ++ field ++ "->accept(this);"
-     | otherwise = "visit" ++ cat ++ "(" ++ field ++ ");"
-     where field = v ++ "->" ++ var
