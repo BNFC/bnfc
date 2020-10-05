@@ -117,6 +117,13 @@ parseCFP opts target content = do
             , "This can be an error in other backends."
             ]
 
+  () <- when (hasPositionTokens cf && target == TargetCppNoStl) $
+      putStrLn $ unwords
+        [ "Warning: the backend"
+        , show target
+        , "ignores the qualifier `position` in token definitions."
+        ]
+
   -- Fail if the grammar uses defined constructors which are not actually defined.
   let definedConstructor = \case
         FunDef x _ _ -> Just x
