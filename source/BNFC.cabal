@@ -177,7 +177,6 @@ Executable bnfc
     BNFC.Backend.CPP.NoSTL.CFtoFlex
     BNFC.Backend.CPP.NoSTL.CFtoBison
     BNFC.Backend.CPP.NoSTL.CFtoCPPAbs
-    -- BNFC.Backend.CPP.NoSTL.CFtoCVisitSkel -- retired
 
     -- C++ STL backend
     BNFC.Backend.CPP.STL
@@ -363,7 +362,6 @@ Test-suite unit-tests
     BNFC.Backend.CPP.NoSTL.CFtoFlex
     BNFC.Backend.CPP.NoSTL.CFtoBison
     BNFC.Backend.CPP.NoSTL.CFtoCPPAbs
-    -- BNFC.Backend.CPP.NoSTL.CFtoCVisitSkel --retired
 
     -- C++ STL backend
     BNFC.Backend.CPP.STL
