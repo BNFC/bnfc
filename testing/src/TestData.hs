@@ -1,9 +1,19 @@
-module TestData (exampleGrammars, Example) where
+{-# LANGUAGE DeriveFunctor #-}
+
+module TestData (exampleGrammars, Example, Example'(..)) where
 
 import Shelly ((</>), FilePath)
 import Prelude hiding (FilePath)
 
-type Example = (FilePath, [FilePath])
+data Example' a = Example
+  { grammarFile   :: a
+      -- ^ Name of the LBNF grammar file.
+  , exampleInputs :: [a]
+      -- ^ Files to test the generated parser with.
+  }
+  deriving (Functor)
+
+type Example = Example' FilePath
 
 -- The data to test the different backends with. The first file should be
 -- a lbnf grammar and the list contains example programs written in this
@@ -12,41 +22,19 @@ type Example = (FilePath, [FilePath])
 -- ore or more, they are fed to the test program and we expect that it exits
 -- successfully (i.e. exit code 0).
 exampleGrammars :: [Example]
-exampleGrammars =
-  [ ( examples</>"cpp"</>"cpp.cf"
-    , [ examples</>"cpp"</>"example.cpp"] )
-
-  , ( examples</>"GF"</>"gf.cf"
-    , [ examples</>"GF"</>"example.gf"] )
-
-  , ( examples</>"OCL"</>"OCL.cf"
-    , [ examples</>"OCL"</>"example.ocl"] )
-
-  , ( examples</>"prolog"</>"Prolog.cf"
-    , [ examples</>"prolog"</>"small.pl"
-      , examples</>"prolog"</>"simpsons.pl" ] )
-
-  , ( examples</>"C"</>"C.cf"
-    , [ examples</>"C"</>"runtime.c"
-      , examples</>"C"</>"koe2.c" ] )
-
-  , ( examples</>"C"</>"C4.cf"
-    , [ examples</>"C"</>"koe2.c"])
-
-  , ( examples</>"C"</>"C_with_delimiters.cf"
-    , [ examples</>"C"</>"small.c" ] )
-      -- , examples</>"C"</>"core.c" ] ) -- Fail with CNF!!!
-
-  , ( examples</>"Javalette"</>"JavaletteLight.cf"
-    , [examples</>"Javalette"</>"koe.jll"])
-
-  , ( examples</>"LBNF"</>"LBNF.cf"
-    , [examples</>"LBNF"</>"LBNF.cf"])
-
-  -- , ( examples</>"Java"</>"java.cf", [] ) -- Cannot be used for testing as
-  -- it has duplicate names
-
-  , ( examples</>"Calc.cf", [] )
-  , ( examples</>"fstStudio.cf", [] )
+exampleGrammars = map (fmap prefix) $
+  [ fmap ("cpp"       </>) $ Example "cpp.cf"    [ "example.cpp" ]
+  , fmap ("GF"        </>) $ Example "gf.cf"     [ "example.gf"  ]
+  , fmap ("OCL"       </>) $ Example "OCL.cf"    [ "example.ocl" ]
+  , fmap ("prolog"    </>) $ Example "Prolog.cf" [ "small.pl", "simpsons.pl" ]
+  , fmap ("C"         </>) $ Example "C.cf"      [ "runtime.c", "koe2.c" ]
+  , fmap ("C"         </>) $ Example "C4.cf"     [ "koe2.c" ]
+  , fmap ("C"         </>) $ Example "C_with_delimiters.cf" [ "small.c" ]  -- "core.c" fails with CNF!!!
+  , fmap ("Javalette" </>) $ Example "JavaletteLight.cf"    [ "koe.jll" ]
+  , fmap ("LBNF"      </>) $ Example "LBNF.cf"   [ "LBNF.cf" ]
+  , fmap ("Java"      </>) $ Example "java.cf"   []
+  , Example "Calc.cf" []
+  , Example "fstStudio.cf" []
   ]
-  where examples = ".."</>"examples"
+  where
+  prefix file = ".." </> "examples" </> file

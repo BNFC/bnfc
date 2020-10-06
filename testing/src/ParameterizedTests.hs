@@ -143,7 +143,7 @@ exampleTests params =
     makeTestSuite "Examples" $ map (exampleTest params) exampleGrammars
 
 exampleTest :: TestParameters -> Example -> Test
-exampleTest params (grammar, examples) =
+exampleTest params (Example grammar examples) =
         let lang = takeBaseName grammar in
         makeShellyTest lang $ withTmpDir $ \tmp -> do
             cp grammar tmp
