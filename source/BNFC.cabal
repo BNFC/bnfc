@@ -84,6 +84,7 @@ Executable bnfc
   ghc-options:     -W
   default-extensions:
     CPP
+    DoAndIfThenElse
     FlexibleContexts
     LambdaCase
     OverloadedStrings
@@ -247,6 +248,7 @@ Test-suite unit-tests
   HS-source-dirs: compat src test
   default-extensions:
     CPP
+    DoAndIfThenElse
     FlexibleContexts
     LambdaCase
     OverloadedStrings

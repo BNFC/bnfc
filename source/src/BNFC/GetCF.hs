@@ -75,14 +75,13 @@ parseCFP opts target content = do
                     >>= getCFP (cnf opts)
                     >>= markTokenCategories
   let cf = cfp2cf cfp
-  runErr $ checkDefinitions cf
+  either dieUnlessForce return $ checkDefinitions cf
 
   -- Some backends do not allow the grammar name to coincide with
   -- one of the category or constructor names.
   let names    = allNames cf
-  -- Note: the following @() <-@ works around an @Ambiguous type variable@
-  () <- when (target == TargetJava && lang opts `elem` names) $
-      die $ unwords $
+  when (target == TargetJava && lang opts `elem` names) $
+      dieUnlessForce $ unwords $
         [ "ERROR of backend", show target ++ ":"
         , "the language name"
         , lang opts
@@ -92,31 +91,32 @@ parseCFP opts target content = do
   -- Warn or fail if the grammar uses non unique names.
   case filter (not . isDefinedRule) $ filterNonUnique names of
     [] -> return ()
-    ns | target `notElem` [TargetCheck,TargetHaskell,TargetHaskellGadt,TargetOCaml]
-       -> die $ unlines $
+    ns | target `elem` [ TargetCpp , TargetCppNoStl , TargetJava ]
+       -> dieUnlessForce $ unlines $
             [ "ERROR: names not unique: " ++ unwords ns
             , "This is an error in the backend " ++ show target ++ "."
             ]
        | otherwise
        -> putStrLn $ unlines $
             [ "Warning: names not unique: " ++ unwords ns
-            , "This can be an error in other backends."
+            , "This can be an error in some backends."
             ]
 
   -- Warn or fail if the grammar uses names not unique modulo upper/lowercase.
   case filter (not . isDefinedRule) $ duplicatesOn (map toLower) names of
     [] -> return ()
-    ns | target `elem` [ TargetC , TargetCpp , TargetCppNoStl , TargetCSharp , TargetJava ]
-       -> die $ unlines $
+    ns | target `elem` [ TargetJava ]
+       -> dieUnlessForce $ unlines $
             [ "ERROR: names not unique ignoring case: " ++ unwords ns
             , "This is an error in the backend " ++ show target ++ "."
             ]
        | otherwise
        -> putStrLn $ unlines $
             [ "Warning: names not unique ignoring case: " ++ unwords ns
-            , "This can be an error in other backends."
+            , "This can be an error in some backends."
             ]
 
+  -- Note: the following @() <-@ works around an @Ambiguous type variable@
   () <- when (hasPositionTokens cf && target == TargetCppNoStl) $
       putStrLn $ unwords
         [ "Warning: the backend"
@@ -132,7 +132,7 @@ parseCFP opts target content = do
   let undefinedConstructor x = isDefinedRule x && x `Set.notMember` definedConstructors
   case filter undefinedConstructor $ map funRule $ cfgRules cf of
     [] -> return ()
-    xs -> die $ unlines $
+    xs -> dieUnlessForce $ unlines $
             [ "Lower case rule labels need a definition."
             , "ERROR: undefined rule label(s): " ++ unwords xs
             ]
@@ -143,15 +143,28 @@ parseCFP opts target content = do
   -- Print the number of rules
   let nRules = length (cfgRules cf)
   -- Note: the match against () is necessary for type class instance resolution.
-  () <- when (nRules == 0) $ die $ "ERROR: the grammar contains no rules."
+  when (nRules == 0) $ dieUnlessForce $ "ERROR: the grammar contains no rules."
   putStrLn $ show nRules +++ "rules accepted\n"
   return cfp
 
   where
-    runErr = either die return
+  runErr = either die return
+
+  dieUnlessForce :: String -> IO ()
+  dieUnlessForce msg = do
+    hPutStrLn stderr msg
+    if force opts then do
+      hPutStrLn stderr
+        "Ignoring error... (thanks to --force)"
+    else do
+      hPutStrLn stderr
+        "Aborting.  (Use option --force to continue despite errors.)"
+      exitFailure
 
 die :: String -> IO a
-die msg = hPutStrLn stderr msg >> exitFailure
+die msg = do
+  hPutStrLn stderr msg
+  exitFailure
 
 {-
     case filter (not . isDefinedRule) $ notUniqueFuns cf of

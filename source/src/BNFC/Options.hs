@@ -98,6 +98,7 @@ data SharedOptions = Options
   { lbnfFile    :: FilePath        -- ^ The input file BNFC processes.
   , lang        :: String          -- ^ The language we generate: the basename of 'lbnfFile'.
   , outDir      :: FilePath        -- ^ Target directory for generated files.
+  , force       :: Bool            -- ^ Ignore errors as much as possible?
   , target      :: Target          -- ^ E.g. @--haskell@.
   , make        :: Maybe String    -- ^ The name of the Makefile to generate or Nothing for no Makefile.
   , inPackage   :: Maybe String    -- ^ The hierarchical package to put the modules in, or Nothing.
@@ -132,6 +133,7 @@ defaultOptions = Options
   { lbnfFile        = error "lbnfFile not set"
   , lang            = error "lang not set"
   , outDir          = "."
+  , force           = False
   , target          = TargetHaskell
   , make            = Nothing
   , inPackage       = Nothing
@@ -393,6 +395,8 @@ commonOptions =
       "generate Makefile"
   , Option "o" ["outputdir"] (ReqArg (\n o -> o {outDir = n}) "DIR")
       "Redirects all generated files into DIR"
+  , Option ""  ["force"]     (NoArg (\ o -> o { force = True }))
+      "Ignore errors in the grammar (may produce ill-formed output or crash)"
   ]
   where setMakefile mf o = o { make = Just mf }
 
