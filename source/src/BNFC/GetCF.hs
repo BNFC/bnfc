@@ -88,6 +88,14 @@ parseCFP opts target content = do
         , "conflicts with a name defined in the grammar."
         ]
 
+  -- Some (most) backends do not support layout.
+  when (hasLayout cf && target `notElem`
+    [ TargetHaskell, TargetHaskellGadt, TargetLatex, TargetPygments, TargetCheck ]) $
+      dieUnlessForce $ unwords
+        [ "ERROR: the grammar uses layout, which is not supported by backend"
+        , show target ++ "."
+        ]
+
   -- Warn or fail if the grammar uses non unique names.
   case filter (not . isDefinedRule) $ filterNonUnique names of
     [] -> return ()
