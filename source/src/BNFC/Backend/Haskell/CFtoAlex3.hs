@@ -409,7 +409,7 @@ instance Print Reg where
    REps             -> ["()"]
    RChar c          -> prt 0 c
    RAlts str        -> concat [["["],prt 0 str,["]"]]
-   RSeqs str        -> [show str]
+   RSeqs str        -> prPrec i 2 $ prt 0 str
    RDigit           -> ["$d"]
    RLetter          -> ["$l"]
    RUpper           -> ["$c"]
