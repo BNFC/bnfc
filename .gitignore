@@ -57,6 +57,24 @@ cabal.sandbox.config
 # bnfc generated files
 /docs/Calc/java-antlr/
 
+/examples/Alfa/agda/
+/examples/Alfa/c/
+/examples/Alfa/cnf/
+/examples/Alfa/cpp/
+/examples/Alfa/cpp-nostl/
+/examples/Alfa/functor/
+/examples/Alfa/generic/
+/examples/Alfa/haskell/
+/examples/Alfa/haskell-gadt/
+/examples/Alfa/java/
+/examples/Alfa/java-antlr/
+/examples/Alfa/latex/
+/examples/Alfa/ocaml/
+/examples/Alfa/ocaml-menhir/
+/examples/Alfa/pygments/
+/examples/Alfa/xml/
+/examples/Alfa/xmlt/
+
 /examples/C/c/
 /examples/C/cpp/
 /examples/C/cpp-nostl/

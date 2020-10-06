@@ -39,7 +39,8 @@ pattern Example grm inputs = Example' NoLimit grm inputs
 -- successfully (i.e. exit code 0).
 exampleGrammars :: [Example]
 exampleGrammars = map (fmap prefix) $
-  [ fmap ("cubicaltt" </>) $ Example' needsLayout "cubicaltt.cf" [ "prelude.ctt" ]
+  [ fmap ("Alfa"      </>) $ Example' needsLayout "Alfa.cf"      [ "Sorting.alfa" ]
+  , fmap ("cubicaltt" </>) $ Example' needsLayout "cubicaltt.cf" [ "prelude.ctt" ]
   , fmap ("cpp"       </>) $ Example "cpp.cf"    [ "example.cpp" ]
   , fmap ("GF"        </>) $ Example "gf.cf"     [ "example.gf"  ]
   , fmap ("OCL"       </>) $ Example "OCL.cf"    [ "example.ocl" ]
