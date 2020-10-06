@@ -235,7 +235,7 @@ prCat fnm (cat, vname) =
                        then basicFunName cat
                        else text (identCat (normCat cat))
       in visitf <> parens ("p->u." <> text v <> "_." <> vname ) <> ";"
-    where v = map toLower $ normFun fnm
+    where v = map toLower fnm
 
 -- | The visit-function name of a basic type
 

@@ -448,7 +448,7 @@ prPrintCat fnm = \case
     [ "    pp"
     , maybe (identCat $ normCat cat) basicFunName $ maybeTokenCat cat
     , "(p->u."
-    , map toLower (normFun fnm)
+    , map toLower fnm
     , "_.", render nt, ", ", show (precCat cat), ");"
     ]
 
@@ -554,7 +554,7 @@ prShowCat fnm (cat, nt) = concat
   [ "    sh"
   , maybe (identCat $ normCat cat) basicFunName $ maybeTokenCat cat
   , "(p->u."
-  , map toLower $ normFun fnm
+  , map toLower fnm
   , "_."
   , render nt
   , ");\n"

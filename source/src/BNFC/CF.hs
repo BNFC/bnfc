@@ -103,7 +103,6 @@ module BNFC.CF (
             hasIdent,
             hasLayout,
             layoutPragmas,
-            normFun,
             sigLookup,      -- Get the type of a rule label.
 
             CFP,            -- CF with profiles
@@ -425,17 +424,6 @@ isDefinedRule [] = error "isDefinedRule: empty function name"
 
 isProperLabel :: Fun -> Bool
 isProperLabel f = not (isCoercion f || isDefinedRule f)
-
-
--- | FIXME: This is a copy of the old normCat function that some backend use
--- on Fun. Now that the type of Cat has changed, this is no longer possible
--- so this is added for those odd cases. It should be verified if this is
--- really necessary.
-normFun :: Fun -> Fun
-normFun f = case f of
-    '[':cs -> "[" ++ norm (init cs) ++ "]"
-    _     -> norm f
-  where norm = reverse . dropWhile isDigit . reverse
 
 isNilFun, isOneFun, isConsFun, isNilCons,isConcatFun :: Fun -> Bool
 isNilCons f = isNilFun f || isOneFun f || isConsFun f || isConcatFun f
