@@ -69,6 +69,24 @@ cabal.sandbox.config
 /examples/cpp/csharp/
 /examples/cpp/pygments/
 
+/examples/cubicaltt/agda/
+/examples/cubicaltt/c/
+/examples/cubicaltt/cnf/
+/examples/cubicaltt/cpp/
+/examples/cubicaltt/cpp-nostl/
+/examples/cubicaltt/functor/
+/examples/cubicaltt/generic/
+/examples/cubicaltt/haskell/
+/examples/cubicaltt/haskell-gadt/
+/examples/cubicaltt/java/
+/examples/cubicaltt/java-antlr/
+/examples/cubicaltt/latex/
+/examples/cubicaltt/ocaml/
+/examples/cubicaltt/ocaml-menhir/
+/examples/cubicaltt/pygments/
+/examples/cubicaltt/xml/
+/examples/cubicaltt/xmlt/
+
 /examples/GF/haskell/
 
 /examples/Java/agda
@@ -132,5 +150,6 @@ cabal.sandbox.config
 /testing/regression-tests/*_*/haskell*/
 /testing/regression-tests/*_*/java*/
 /testing/regression-tests/*_*/ocaml*/
+/testing/regression-tests/*_*/pygments/
 /testing/regression-tests/*_*/xml*/
 

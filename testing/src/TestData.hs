@@ -1,12 +1,27 @@
 {-# LANGUAGE DeriveFunctor #-}
+{-# LANGUAGE PatternSynonyms #-}
 
-module TestData (exampleGrammars, Example, Example'(..)) where
+module TestData (exampleGrammars, Example, Example'(..), LimitTests(..)) where
 
 import Shelly ((</>), FilePath)
 import Prelude hiding (FilePath)
 
-data Example' a = Example
-  { grammarFile   :: a
+-- | Limit parameterized tests.  Allows e.g. to exclude some backends.
+data LimitTests
+  = Included [String]
+      -- ^ Run only these tests whose name matches any of these regexs.
+  | Excluded [String]
+      -- ^ Run only these tests whose name matches none of these regexs.
+
+pattern NoLimit = Excluded []
+
+data Example' a = Example'
+  { limitTests    :: LimitTests
+      -- ^ Possibly empty list of regular expressions.
+      --   Can be positive ('Included') or negative ('Excluded').
+      --   E.g.: If the name of the parameterized test matches one of
+      --   the 'Excluded' expressions, it is skipped.
+  , grammarFile   :: a
       -- ^ Name of the LBNF grammar file.
   , exampleInputs :: [a]
       -- ^ Files to test the generated parser with.
@@ -14,6 +29,7 @@ data Example' a = Example
   deriving (Functor)
 
 type Example = Example' FilePath
+pattern Example grm inputs = Example' NoLimit grm inputs
 
 -- The data to test the different backends with. The first file should be
 -- a lbnf grammar and the list contains example programs written in this
@@ -23,7 +39,8 @@ type Example = Example' FilePath
 -- successfully (i.e. exit code 0).
 exampleGrammars :: [Example]
 exampleGrammars = map (fmap prefix) $
-  [ fmap ("cpp"       </>) $ Example "cpp.cf"    [ "example.cpp" ]
+  [ fmap ("cubicaltt" </>) $ Example' needsLayout "cubicaltt.cf" [ "prelude.ctt" ]
+  , fmap ("cpp"       </>) $ Example "cpp.cf"    [ "example.cpp" ]
   , fmap ("GF"        </>) $ Example "gf.cf"     [ "example.gf"  ]
   , fmap ("OCL"       </>) $ Example "OCL.cf"    [ "example.ocl" ]
   , fmap ("prolog"    </>) $ Example "Prolog.cf" [ "small.pl", "simpsons.pl" ]
@@ -38,3 +55,8 @@ exampleGrammars = map (fmap prefix) $
   ]
   where
   prefix file = ".." </> "examples" </> file
+  -- Regular expressions to include certain parameterized tests:
+  needsLayout = Included ["Agda", "Haskell"]
+  -- Regular expressions to exclude certain parameterized tests:
+  noJava = "^Java"    -- begins with "Java"
+  noCPP  = "^C\\+\\+" -- begins with "C++"

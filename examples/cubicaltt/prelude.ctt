@@ -1,0 +1,360 @@
+-- The prelude. Definition of Path types and basic operations on them
+-- (refl, mapOnPath, funExt...). Definition of prop, set and
+-- groupoid. Some basic data types (empty, unit, or, and).
+module prelude where
+
+-- Identity types
+
+Path (A : U) (a0 a1 : A) : U = PathP (<i> A) a0 a1
+
+refl (A : U) (a : A) : Path A a a = <i> a
+
+testEta (A : U) (a b : A) (p : Path A a b) : Path (Path A a b) p p = refl (Path A a b) (<i> p @ i)
+
+mapOnPath (A B : U) (f : A -> B) (a b : A)
+          (p : Path A a b) : Path B (f a) (f b) = <i> f (p @ i)
+
+funExt (A : U) (B : A -> U) (f g : (x : A) -> B x)
+       (p : (x : A) -> Path (B x) (f x) (g x)) :
+       Path ((y : A) -> B y) f g = <i> \(a : A) -> (p a) @ i
+
+-- Transport can be defined using comp
+trans (A B : U) (p : Path U A B) (a : A) : B = comp p a []
+transNeg (A B : U) (p : Path U A B) (b : B) : A = comp (<i> p @ - i) b []
+
+transK (A B : U) (p : Path U A B) (y : B) :
+  Path B y (trans A B p (transNeg A B p y)) =
+    <i> comp p (transNeg A B p y) [(i=0) -> rem1
+                                  ,(i=1) -> rem2 (transNeg A B p y)]
+    where
+    rem1 : PathP p (transNeg A B p y) y =
+      <i> comp (<j> p @ (i\/-j)) y [(i=1) -> <j>y]
+    rem2 (x:A) : PathP p x (trans A B p x) =
+      <i> comp (<j> p @ (i/\j)) x [(i=0) -> <j> x]
+
+transNegK (A B : U) (p : Path U A B) (a : A) :
+  Path A a (transNeg A B p (trans A B p a)) =
+    <i> comp (<j> p @ -j) (trans A B p a) [(i=0) -> rem1
+                                         ,(i=1) -> rem2 (trans A B p a) ]
+    where
+    rem1 : PathP (<i> p@-i) (trans A B p a) a =
+       <i> comp (<j> p @ (-i /\ j)) a [(i=1) -> <j>a]
+    rem2 (b:B) : PathP (<i> p@-i) b (transNeg A B p b) =
+      <i> comp (<j> p @ (-i \/ -j)) b [(i=0) -> <j> b]
+
+-- subst can be defined using trans:
+substTrans (A : U) (P : A -> U) (a b : A) (p : Path A a b) (e : P a) : P b =
+  trans (P a) (P b) (mapOnPath A U P a b p) e
+
+subst (A : U) (P : A -> U) (a b : A) (p : Path A a b) (e : P a) : P b =
+  transport (mapOnPath A U P a b p) e
+
+substEq (A : U) (P : A -> U) (a : A) (e : P a)
+  : Path (P a) e (subst A P a a (refl A a) e) =
+  fill (<i> P a) e []
+
+substInv (A : U) (P : A -> U) (a b : A) (p : Path A a b) : P b -> P a =
+ subst A P b a (<i> p @ -i)
+
+singl (A : U) (a : A) : U = (x : A) * Path A a x
+
+contrSingl (A : U) (a b : A) (p : Path A a b) :
+  Path (singl A a) (a,refl A a) (b,p) = <i> (p @ i,<j> p @ i/\j)
+
+J (A : U) (a : A) (C : (x : A) -> Path A a x -> U)
+  (d : C a (refl A a)) (x : A) (p : Path A a x) : C x p =
+    subst (singl A a) T (a, refl A a) (x, p) (contrSingl A a x p) d
+      where T (z : singl A a) : U = C (z.1) (z.2)
+
+-- Normal form of J:
+-- comp (<i> C (p @ i) (<j> p @ i /\ j)) d []
+
+-- Alternative proof of J
+J' (A : U) (a : A) (C : (x : A) -> Path A a x -> U)
+   (d : C a (<_> a)) (x : A) (p : Path A a x) : C x p =
+   transport (<i> C (comp (<_> A) a [(i=0) -> <_> a,(i=1) -> p])
+                    (fill (<_> A) a [(i=0) -> <_> a,(i=1) -> p])) d
+
+-- Normal form of J':
+-- comp (<i> C (comp (<_> A) a [ (i=0) -> <_> a, (i=1) -> p ])
+--             (<j> comp (<_> A) a [ (i=0) -> <_> a, (i=1) -> <k> p @ j /\ k, (j=0) -> <_> a ])) d []
+
+JEq (A : U) (a : A) (C : (x : A) -> Path A a x -> U) (d : C a (refl A a))
+  : Path (C a (refl A a)) d (J A a C d a (refl A a)) =
+  substEq (singl A a) T (a, refl A a) d
+    where T (z : singl A a) : U = C (z.1) (z.2)
+
+inv (A : U) (a b : A) (p : Path A a b) : Path A b a = <i> p @ -i
+
+compPath (A : U) (a b c : A) (p : Path A a b) (q : Path A b c) : Path A a c =
+  <i> comp (<j>A) (p @ i) [ (i=0) -> <j> a, (i=1) -> q ]
+
+compPath' (A : U) (a b c : A) (p : Path A a b) (q : Path A b c) : Path A a c =
+  subst A (Path A a) b c q p
+
+compPath'' (A : U) (a b : A) (p : Path A a b) : (c : A) -> (q : Path A b c) -> Path A a c =
+  J A a ( \ (b : A) (p : Path A a b) -> (c : A) -> (q : Path A b c) -> Path A a c) rem b p
+    where rem (c : A) (p : Path A a c) : Path A a c = p
+
+compUp (A : U) (a a' b b' : A)
+       (p : Path A a a') (q : Path A b b') (r : Path A a b) : Path A a' b' =
+  <i> comp (<j>A) (r @ i) [(i = 0) -> p, (i = 1) -> q]
+
+compDown (A : U) (a a' b b' : A)
+         (p : Path A a a') (q: Path A b b') : Path A a' b' -> Path A a b =
+ compUp A a' a b' b (inv A a a' p) (inv A b b' q)
+
+lemCompInv (A:U) (a b c:A) (p:Path A a b) (q:Path A b c)
+  : Path (Path A a b) (compPath A a c b (compPath A a b c p q) (inv A b c q)) p =
+  <j i> comp (<k>A)
+          ((fill (<k>A) (p @ i) [(i=0) -> <k>a, (i=1) -> q]) @ -j)
+          [ (i=0) -> <k> a
+          , (i=1) -> <k> q @ - (j \/  k)
+          , (j=0) -> fill (<k>A) ((compPath A a b c p q @ i))
+                       [(i=0) -> <k>a, (i=1) -> <k> q @ -k ]
+          , (j=1) -> <k> p @ i
+          ]
+
+lemInv (A:U) (a b:A) (p:Path A a b) : Path (Path A b b) (compPath A b a b (inv A a b p) p)  (refl A b) =
+   <j i> comp (<k>A) (p @ (-i \/ j)) [(i=0) -> <l>b, (j=1) -> <l>b, (i=1) -> <k> p @ (j \/ k)]
+
+test0 (A : U) (a b : A) (p : Path A a b) : Path A a a = refl A (p @ 0)
+test1 (A : U) (a b : A) (p : Path A a b) : Path A b b = refl A (p @ 1)
+
+-- compEmpty (A : U) (a b : A) (p : Path A a b) : Path A a b =
+--   <i> comp A (p @ i) [ ]
+
+kan (A : U) (a b c d : A) (p : Path A a b) (q : Path A a c)
+                          (r : Path A b d) : Path A c d =
+  <i> comp (<j>A) (p @ i) [ (i = 0) -> q, (i = 1) -> r ]
+
+lemSimpl (A : U) (a b c : A) (p : Path A a b) (q q' : Path A b c)
+  (s : Path (Path A a c) (compPath A a b c p q) (compPath A a b c p q')) :
+  Path (Path A b c) q q' =
+   <j k> comp (<i> A) a
+           [ (j = 0) -> <i> comp (<l> A) (p @ i)
+                              [ (k = 0) -> <l> p @ i
+                              , (i = 0) -> <l> a
+                              , (i = 1) -> <l> q @ k /\ l]
+           , (j = 1) -> <i> comp (<l> A) (p @ i)
+                              [ (k = 0) -> <l> p @ i
+                              , (i = 0) -> <l> a
+                              , (i = 1) -> <l> q' @ k /\ l]
+           , (k = 0)  -> p
+           , (k = 1)  -> s @ j ]
+
+PathPathTest1 (A : U) (a b : A) (p : Path A a b) :
+  Path (Path A a b) p (<i> comp (<j> A) (p @ i) [(i=0) -> <j> a,(i=1) -> <j> b]) =
+  <j i> fill (<k> A) (p @ i) [(i=0) -> <k> a,(i=1) -> <k> b] @ j
+
+idfun (A : U) (a : A) : A = a
+
+--         u
+--    a0 -----> a1
+--    |         |
+-- r0 |         | r1
+--    |         |
+--    V         V
+--    b0 -----> b1
+--         v
+Square (A : U) (a0 a1 b0 b1 : A)
+               (u : Path A a0 a1) (v : Path A b0 b1)
+               (r0 : Path A a0 b0) (r1 : Path A a1 b1) : U
+  = PathP (<i> (PathP (<j> A) (u @ i) (v @ i))) r0 r1
+
+constSquare (A : U) (a : A) (p : Path A a a) : Square A a a a a p p p p =
+  <i j> comp (<_> A) a
+             [ (i = 0) -> <k> p @ j \/ - k
+             , (i = 1) -> <k> p @ j /\ k
+             , (j = 0) -> <k> p @ i \/ - k
+             , (j = 1) -> <k> p @ i /\ k ]
+
+prop (A : U) : U = (a b : A) -> Path A a b
+set (A : U) : U = (a b : A) -> prop (Path A a b)
+groupoid (A : U) : U = (a b : A) -> set (Path A a b)
+
+-- the collection of all sets
+SET : U = (X:U) * set X
+
+propSet (A : U) (h : prop A) : set A =
+ \(a b : A) (p q : Path A a b) ->
+   <j i> comp (<k>A) a [ (i=0) -> h a a
+                       , (i=1) -> h a b
+                       , (j=0) -> h a (p @ i)
+                       , (j=1) -> h a (q @ i)]
+
+propIsProp (A : U) : prop (prop A) =
+  \(f g : prop A) -> <i> \(a b : A) ->
+    propSet A f a b (f a b) (g a b) @ i
+
+setIsProp (A : U) : prop (set A) =
+ \(f g : set A) -> <i> \(a b :A) ->
+   propIsProp (Path A a b) (f a b) (g a b) @ i
+
+PathS (A : U) (P : A -> U) (a0 a1 : A)
+  (p : Path A a0 a1) (u0 : P a0) (u1 : P a1) : U =
+    PathP (<i> P (p @ i)) u0 u1
+
+lemProp (A : U) (h : A -> prop A) : prop A =
+  \(a : A) -> h a a
+
+propPi (A : U) (B : A -> U) (h : (x : A) -> prop (B x))
+       (f0 f1 : (x : A) -> B x) : Path ((x : A) -> B x) f0 f1
+  = <i> \ (x:A) -> (h x (f0 x) (f1 x)) @ i
+
+lemPropF (A : U) (P : A -> U) (pP : (x : A) -> prop (P x)) (a0 a1 :A)
+         (p : Path A a0 a1) (b0 : P a0) (b1 : P a1) : PathP (<i>P (p@i)) b0 b1 =
+ <i>pP (p@i) (comp (<j>P (p@i/\j)) b0 [(i=0) -> <_>b0]) (comp (<j>P (p@i\/-j)) b1 [(i=1) -> <_>b1])@i
+
+-- other proof
+-- lemPropF (A : U) (P : A -> U) (pP : (x : A) -> prop (P x)) (a :A) :
+--          (a1 : A) (p : Path A a a1) (b0 : P a) (b1 : P a1) -> PathP (<i>P (p@i)) b0 b1 =
+-- J A a (\ (a1 : A) (p : Path A a a1) ->
+--          (b0 : P a) (b1 : P a1) -> PathP (<i>P (p@i)) b0 b1)
+--   rem
+-- where rem : (b0 b1:P a) -> Path (P a) b0 b1 = pP a
+
+Sigma (A : U) (B : A -> U) : U = (x : A) * B x
+
+lemSig (A : U) (B : A -> U) (pB : (x : A) -> prop (B x))
+       (u v : (x:A) * B x) (p : Path A u.1 v.1) :
+       Path ((x:A) * B x) u v =
+  <i> (p@i,(lemPropF A B pB u.1 v.1 p u.2 v.2)@i)
+
+propSig (A : U) (B : A -> U) (pA : prop A)
+        (pB : (x : A) -> prop (B x)) (t u : (x:A) * B x) :
+        Path ((x:A) * B x) t u =
+  lemSig A B pB t u (pA t.1 u.1)
+
+isContr (A : U) : U = (x : A) * ((y : A) -> Path A x y)
+
+propIsContr (A : U) : prop (isContr A) = lemProp (isContr A) rem
+  where
+    rem (t : isContr A) : prop (isContr A) = propSig A T pA pB
+      where
+        T (x : A) : U = (y : A) -> Path A x y
+        pA (x y : A) : Path A x y = compPath A x t.1 y (<i> t.2 x @ -i) (t.2 y)
+        pB (x : A) : prop (T x) =
+          propPi A (\ (y : A) -> Path A x y) (propSet A pA x)
+
+isContrProp (A : U) (h : isContr A) : prop A =
+  \(a b : A) -> <i> comp (<_> A) h.1 [ (i = 0) -> h.2 a, (i = 1) -> h.2 b ]
+
+
+-- Alternative proof:
+-- propIsContr (A:U) (z0 z1:isContr A) : Path (isContr A) z0 z1 =
+--  <j>(p0 a1@j,
+--      \ (x:A) ->
+--         <i>comp (<_>A) (lem1 x@i@j) [ (i=0) -> <k>p0 a1@j, (i=1) -> <k>p0 x@(j\/k),
+--                                       (j=0) -> <k>p0 x@(i/\k), (j=1) -> <k>p1 x@i ])
+--  where
+--   a0 : A = z0.1
+--   p0 : (x:A) -> Path A a0 x = z0.2
+--   a1 : A = z1.1
+--   p1 : (x:A) -> Path A a1 x = z1.2
+--   lem1 (x:A) : PathP (<i>Path A a0 (p1 x@i)) (p0 a1) (p0 x) = <i j> p0 (p1 x@i) @ j
+
+
+-- Basic data types
+
+data N0 =
+
+efq (A : U) : N0 -> A = split {}
+neg (A : U) : U = A -> N0
+
+data Unit = tt
+
+propUnit : prop Unit = split
+ tt -> split@((x:Unit) -> Path Unit tt x) with
+  tt -> <i> tt
+
+setUnit : set Unit = propSet Unit propUnit
+
+data or (A B : U) = inl (a : A)
+                  | inr (b : B)
+
+propOr (A B : U) (hA : prop A) (hB : prop B) (h : A -> neg B) : prop (or A B) = split
+    inl a' -> split@((b : or A B) -> Path (or A B) (inl a') b) with
+        inl b' -> <i> inl (hA a' b' @ i)
+        inr b' -> efq (Path (or A B) (inl a') (inr b')) (h a' b')
+    inr a' -> split@((b : or A B) -> Path (or A B) (inr a') b) with
+        inl b' -> efq (Path (or A B) (inr a') (inl b')) (h b' a')
+        inr b' -> <i> inr (hB a' b' @ i)
+
+-- Direct proof that or A B is a set if A and B are:
+invOr (A B : U) : (u v : or A B) (p : Path (or A B) u v) -> U = split
+  inl a -> split@((v : or A B) -> (p : Path (or A B) (inl a) v) -> U) with
+    inl a' -> \(p : Path (or A B) (inl a) (inl a')) ->
+              (q : Path A a a') * (Path (Path (or A B) (inl a) (inl a')) p (<i> inl (q @ i)))
+    inr b' -> \(p : Path (or A B) (inl a) (inr b')) -> N0
+  inr b -> split@((v : or A B) -> (p : Path (or A B) (inr b) v) -> U) with
+    inl a' -> \(p : Path (or A B) (inr b) (inl a')) -> N0
+    inr b' -> \(p : Path (or A B) (inr b) (inr b')) ->
+              (q : Path B b b') * (Path (Path (or A B) (inr b) (inr b')) p (<i> inr (q @ i)))
+
+pinvOr (A B : U) : (u v : or A B) (p : Path (or A B) u v) -> invOr A B u v p = split
+  inl a -> J (or A B) (inl a) (invOr A B (inl a)) (<_> a,<_ _> inl a)
+  inr b -> J (or A B) (inr b) (invOr A B (inr b)) (<_> b,<_ _> inr b)
+
+lemOr (A B : U) (setA : set A) (setB : set B) :
+  (u : or A B) (p : Path (or A B) u u) -> Path (Path (or A B) u u) p (<_> u) = split
+  inl a -> \(p : Path (or A B) (inl a) (inl a)) ->
+    let qa : invOr A B (inl a) (inl a) p = pinvOr A B (inl a) (inl a) p
+    in compPath (Path (or A B) (inl a) (inl a)) p (<i> inl (qa.1 @ i)) (<_> inl a) qa.2
+                (<i j> inl (setA a a qa.1 (<_> a) @ i @ j))
+  inr b -> \(p : Path (or A B) (inr b) (inr b)) ->
+    let qb : invOr A B (inr b) (inr b) p = pinvOr A B (inr b) (inr b) p
+    in compPath (Path (or A B) (inr b) (inr b)) p (<i> inr (qb.1 @ i)) (<_> inr b) qb.2
+                (<i j> inr (setB b b qb.1 (<_> b) @ i @ j))
+
+orset' (A B : U) (setA : set A) (setB : set B) (u : or A B) :
+  (v : or A B) (p q : Path (or A B) u v) -> Path (Path (or A B) u v) q p =
+  J (or A B) u (\(v : or A B) (p : Path (or A B) u v) ->
+               (q : Path (or A B) u v) -> Path (Path (or A B) u v) q p)
+    (lemOr A B setA setB u)
+
+orset (A B : U) (setA : set A) (setB : set B) (u v : or A B) (p q : Path (or A B) u v) :
+  Path (Path (or A B) u v) p q = orset' A B setA setB u v q p
+
+
+stable (A:U) : U = neg (neg A) -> A
+
+const (A : U) (f : A -> A) : U = (x y : A) -> Path A (f x) (f y)
+
+exConst (A : U) : U = (f:A -> A) * const A f
+
+propN0 : prop N0 = \ (x y:N0) -> efq (Path N0 x y) x
+
+propNeg (A:U) : prop (neg A) = \ (f g:neg A) -> <i>\(x:A) -> (propN0 (f x) (g x))@i
+
+dNeg (A:U) (a:A) : neg (neg A) = \ (h : neg A) -> h a
+
+dec (A : U) : U = or A (neg A)
+
+propDec (A : U) (h : prop A) : prop (dec A) =
+  propOr A (neg A) h (propNeg A) (\(x : A) (h : neg A) -> h x)
+
+decEqCong (A B : U) (f : A -> B) (g : B -> A) : dec A -> dec B = split
+  inl a -> inl (f a)
+  inr h -> inr (\ (b:B) -> h (g b))
+
+decStable (A:U) : dec A -> stable A = split
+ inl a -> \ (h :neg (neg A)) -> a
+ inr b -> \ (h :neg (neg A)) -> efq A (h b)
+
+decConst (A : U) : dec A -> exConst A = split
+  inl a -> (\ (x:A)  -> a, \ (x y:A) -> refl A a)
+  inr h -> (\ (x:A) -> x, \ (x y:A) -> efq (Path A x y) (h x))
+
+stableConst (A : U) (sA: stable A) : exConst A =
+ (\ (x:A) -> sA (dNeg A x),\ (x y:A) -> <i>sA (propNeg (neg A) (dNeg A x) (dNeg A y) @ i))
+
+discrete (A : U) : U = (a b : A) -> dec (Path A a b)
+
+injective (A B : U) (f : A -> B) : U =
+  (a0 a1 : A) -> Path B (f a0) (f a1) -> Path A a0 a1
+
+and (A B : U) : U = (_ : A) * B
+
+propAnd (A B : U) (pA : prop A) (pB : prop B) : prop (and A B) =
+  propSig A (\(_ : A) -> B) pA (\(_ : A) -> pB)

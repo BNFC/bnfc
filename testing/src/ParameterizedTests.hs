@@ -13,13 +13,14 @@ module ParameterizedTests where
 import Prelude hiding (FilePath)
 
 import Control.Monad (forM_, unless)
--- import Data.Functor
+import Data.Maybe    (mapMaybe)
 #if __GLASGOW_HASKELL__ < 808
 import Data.Semigroup ((<>))
 #endif
 import Data.Text (Text)
 import qualified Data.Text as Text
 
+import Text.Regex.Posix ((=~))
 import System.FilePath (takeBaseName, takeFileName, dropExtension, replaceExtension)
 
 import Shelly
@@ -57,12 +58,16 @@ allWithParams params = makeTestSuite (tpName params) $ concat $
 -- | This parameterized test is called first.
 --   Use it while working in connection with a certain test case. (For quicker response.)
 current :: Test
+current = currentExampleTest
+-- current = currentRegressionTest
 -- current = layoutTest
---
--- current = makeTestSuite "Current parameterized test" $
---   map (`exampleTest` (exampleGrammars !! 1)) parameters
---
-current = makeTestSuite "Current parameterized test" $
+
+currentExampleTest :: Test
+currentExampleTest = makeTestSuite "Current parameterized test" $
+  mapMaybe (`exampleTest` (exampleGrammars !! 0)) parameters
+
+currentRegressionTest :: Test
+currentRegressionTest = makeTestSuite "Current parameterized test" $
   map (`makeTestCase` ("regression-tests" </> cur)) parameters
   where
   -- cur = "289_LexerKeywords"
@@ -140,10 +145,20 @@ entrypointTest params =
 -- examples with the generated test program.
 exampleTests :: TestParameters -> Test
 exampleTests params =
-    makeTestSuite "Examples" $ map (exampleTest params) exampleGrammars
+    makeTestSuite "Examples" $ mapMaybe (exampleTest params) exampleGrammars
+  --     filter (not . excluded) exampleGrammars
+  -- where
+  --   excluded :: Example -> Bool
+  --   excluded (Example' exclude _ _) = any (tpName params =~) exclude
 
-exampleTest :: TestParameters -> Example -> Test
-exampleTest params (Example grammar examples) =
+-- | Construct a test from an example grammar and test inputs,
+--   unless the test parameters are contained in the exclusion list
+--   or not contained in the inclusion list.
+exampleTest :: TestParameters -> Example -> Maybe Test
+exampleTest params (Example' limit grammar examples)
+  | Excluded exclude <- limit,       any (tpName params =~) exclude = Nothing
+  | Included include <- limit, not $ any (tpName params =~) include = Nothing
+  | otherwise = Just $
         let lang = takeBaseName grammar in
         makeShellyTest lang $ withTmpDir $ \tmp -> do
             cp grammar tmp
