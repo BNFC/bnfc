@@ -17,7 +17,7 @@ testPygmentsCalc =
             cmd "bnfc" "--pygments" "Calc.cf"
             assertFileExists "setup.py"
             assertFileExists "calc/__init__.py"
-            cmd "virtualenv" "env"
+            cmd "python3" "-m" "venv" "env"
             env <- canonicalize "./env/"
             cmd (env </> "bin/python") "setup.py" "install"
             assertFileExists (env </> "bin/pygmentize")
@@ -25,4 +25,3 @@ testPygmentsCalc =
             readfile "pygments-calc-input.txt" >>= setStdin
             output <- cmd (env </> "bin/pygmentize") "-l" "calc" "-fraw"
             assertEqual expected output
-
