@@ -3,5 +3,5 @@ Warning: names not unique:
   succeed-lbnf/duplicate-label-same-cat.cf:4:1: Baz
 This can be an error in some backends.
 
-2 rules accepted
+3 rules accepted
 
