@@ -112,13 +112,13 @@ parseCFP opts target content = do
     ns | target `elem` [ TargetCpp , TargetCppNoStl , TargetJava ]
        -> dieUnlessForce $ unlines $ concat
             [ [ "ERROR: names not unique:" ]
-            , map (("  " ++) . blendInPosition) ns
+            , printNames ns
             , [ "This is an error in the backend " ++ show target ++ "." ]
             ]
        | otherwise
        -> putStrLn $ unlines $ concat
             [ [ "Warning: names not unique:" ]
-            , map (("  " ++) . blendInPosition) ns
+            , printNames ns
             , [ "This can be an error in some backends." ]
             ]
 
@@ -127,14 +127,14 @@ parseCFP opts target content = do
     [] -> return ()
     ns | target `elem` [ TargetJava ]
        -> dieUnlessForce $ unlines $ concat
-            [ [ "ERROR: names not unique ignoring case: " ]
-            , map (("  " ++) . blendInPosition) ns
+            [ [ "ERROR: names not unique ignoring case:" ]
+            , printNames ns
             , [ "This is an error in the backend " ++ show target ++ "."]
             ]
        | otherwise
        -> putStr $ unlines $ concat
             [ [ "Warning: names not unique ignoring case:" ]
-            , map (("  " ++) . blendInPosition) ns
+            , printNames ns
             , [ "This can be an error in some backends." ]
             ]
 
@@ -158,7 +158,7 @@ parseCFP opts target content = do
             [ [ "Lower case rule labels need a definition."
               , "ERROR: undefined rule label(s):"
               ]
-            , map (("  " ++) . blendInPosition) xs
+            , printNames xs
             ]
 
   -- Print warnings if user defined nullable tokens.
@@ -184,6 +184,11 @@ parseCFP opts target content = do
       hPutStrLn stderr
         "Aborting.  (Use option --force to continue despite errors.)"
       exitFailure
+
+  printNames :: [RString] -> [String]
+  printNames = map (("  " ++) . blendInPosition) . List.sortOn lexicoGraphic
+    where
+    lexicoGraphic (WithPosition pos x) = (pos,x)
 
 die :: String -> IO a
 die msg = do

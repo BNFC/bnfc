@@ -1,2 +1,4 @@
 Foo.  Bar ::= "foo";
 Foo.  Bar ::= "foz";
+
+Baz.  Baz ::= "baz";

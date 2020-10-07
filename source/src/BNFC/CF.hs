@@ -306,7 +306,7 @@ data Position
     { posFile    :: FilePath  -- ^ Name of the grammar file.
     , posLine    :: Int       -- ^ Line in the grammar file.
     , posColumn  :: Int       -- ^ Column in the grammar file.
-    } deriving Show
+    } deriving (Show, Eq, Ord)
 
 prettyPosition :: Position -> String
 prettyPosition = \case
@@ -535,13 +535,16 @@ firstEntry cf =
 
 -- aggressively ban nonunique names (AR 31/5/2012)
 
--- | Categories and constructors.
+-- | Constructors and categories.
 allNames :: CF -> [RString]
-allNames cf = map (WithPosition NoPosition) (allCatsIdNorm cf) ++
+allNames cf =
   [ f | f <- map funRule $ cfgRules cf
       , not $ isNilCons f
       , not $ isCoercion f
-  ]
+  ] ++
+  allCatsIdNorm cf
+    -- Put the categories after the labels so that the error location
+    -- for a non-unique name is at the label rather than the category.
 
 -- | Get all elements with more than one occurrence.
 filterNonUnique :: (Ord a) => [a] -> [a]
@@ -598,8 +601,8 @@ allParserCats :: CFG f -> [Cat]
 allParserCats = allCats (== Parsable)
 
 -- | Gets all normalized identified Categories
-allCatsIdNorm :: CF -> [String]
-allCatsIdNorm = nub . map (identCat . normCat . valCat) . cfgRules
+allCatsIdNorm :: CF -> [RString]
+allCatsIdNorm = nub . map (fmap (identCat . normCat) . valRCat) . cfgRules
 
 -- | Get all normalized Cat
 allCatsNorm :: CF -> [Cat]
