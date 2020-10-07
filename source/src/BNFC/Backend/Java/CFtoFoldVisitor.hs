@@ -65,7 +65,7 @@ prRule packageAbsyn user _ (Rule fun _ cats _)
       "    }"]
    where
     cats' = lefts $ numVars cats
-    cls = packageAbsyn ++ "." ++ fun
+    cls = packageAbsyn ++ "." ++ funName fun
     visitVars = lines $ render $ vcat $ map (prCat packageAbsyn user) cats'
 prRule  _ _ _ _ = ""
 

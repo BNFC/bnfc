@@ -179,7 +179,7 @@ genCombine units cf = vcat $ map genEntry $ group' $ map (alt units) (cfgRules c
     ]
 
 alt :: UnitRel Cat -> Rul Exp -> ((RHSEl,RHSEl),[(Cat,Exp)])
-alt units (Rule f c [r1, r2] _) = ((r1, r2), initial:others)
+alt units (Rule f (WithPosition _ c) [r1, r2] _) = ((r1, r2), initial:others)
   where
   initial = (c, f `appMany` args)
   others  = [ (c', f' `app'` (f `appMany` args))

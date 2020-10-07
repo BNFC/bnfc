@@ -85,16 +85,16 @@ cf2cabs cf = CAbs {
   (pos,  toks) = partition (isPositionCat cf) $ map fst $ tokenPragmas cf
   (lists,cats) = partition isList $ allCatsNorm cf
   testRule (Rule f c _ _)
-   | isList c  = Nothing
-   | f == "_"  = Nothing
-   | otherwise = Just f
+   | isList (wpThing c)  = Nothing
+   | funName f == "_"  = Nothing
+   | otherwise = Just $ funName f
   normSig (c,fcs) =
     (identCat c,[(f, classVars (map (status . identCat) cs)) | (f,cs) <- fcs])
   posdata =
     [("Visitable",  -- to give superclass
      [(c,[("String",False,"string_"),("Integer",False,"integer_")])]) | c<-pos]
   status cat = (cat, notElem cat (map fst basetypes ++ toks))
-  defs = [f | FunDef f _ _ <- cfgPragmas cf]
+  defs = [ funName f | FunDef f _ _ <- cfgPragmas cf]
 
   classVars :: [(String,Bool)] -> [(String,Bool,String)]
   classVars cs =

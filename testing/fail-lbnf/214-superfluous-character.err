@@ -1,3 +1,4 @@
 Lower case rule labels need a definition.
-ERROR: undefined rule label(s): x
+ERROR: undefined rule label(s):
+  fail-lbnf/214-superfluous-character.cf:1:15: x
 Aborting. (Use option --force to continue despite errors.)

@@ -74,7 +74,7 @@ prData packageAbsyn user (cat, rules) = unlines
 
 -- | Traverses a standard rule.
 --
--- >>> prRule "lang.absyn" ["A"] (Cat "B") $ Rule "F" (Cat "B") [Left (Cat "A"), Right "+", Left (ListCat (Cat "B"))] Parsable
+-- >>> prRule "lang.absyn" ["A"] (Cat "B") $ npRule "F" (Cat "B") [Left (Cat "A"), Right "+", Left (ListCat (Cat "B"))] Parsable
 --     public lang.absyn.B visit(lang.absyn.F p, A arg)
 --     {
 --       String a_ = p.a_;
@@ -86,7 +86,7 @@ prData packageAbsyn user (cat, rules) = unlines
 --       return new lang.absyn.F(a_, listb_);
 --     }
 
-prRule :: String -> [UserDef] -> Cat -> Rule -> Doc
+prRule :: IsFun f => String -> [UserDef] -> Cat -> Rul f -> Doc
 prRule packageAbsyn user cat (Rule fun _ cats _)
   | not (isCoercion fun || isDefinedRule fun) = nest 4 $ vcat
     [ "public " <> qual (identCat cat) <> " visit(" <> cls <> " p, A arg)"
@@ -97,7 +97,7 @@ prRule packageAbsyn user cat (Rule fun _ cats _)
     ]
   where
     cats'  = lefts $ numVars cats
-    cls    = qual fun
+    cls    = qual $ funName fun
     qual s = text (packageAbsyn ++ "." ++ s)
     vnames = map snd cats'
 prRule  _ _ _ _ = empty

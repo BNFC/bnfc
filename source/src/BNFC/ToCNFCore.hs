@@ -38,18 +38,24 @@ import Control.Monad.RWS
 #if __GLASGOW_HASKELL__ < 710
 import Control.Applicative hiding (Const)
 #endif
-import qualified Data.Map as M
-import Data.List (nub,sortBy,sort)
-import Data.Function (on)
-import Data.Char (isAlphaNum,ord)
+
+import Data.Bifunctor (second)
+import Data.Char      (isAlphaNum, ord)
+import Data.Function  (on)
+import Data.Functor   (($>))
+import Data.List      (nub, sortBy, sort)
+import Data.Map       (Map)
+import qualified Data.Map as Map
 import Data.Pair
-import Text.PrettyPrint.HughesPJ hiding (first,(<>))
 
-(f *** g) (a,b) = (f a, g b)
-second g = id *** g
+import Text.PrettyPrint.HughesPJ hiding (first, (<>))
 
+onRules ::([Rul f] -> [Rul g]) -> CFG f -> CFG g
 onRules f cfg@CFG{..} = cfg { cfgRules = f cfgRules }
 
+toCNF :: IsFun a => CFG a
+      -> (CFG Exp, CFG Exp, UnitRel Cat, CatDescriptions,
+          [(Either Cat String, [Either Cat String])])
 toCNF cf0 = (cf1,cf2,units,descriptions,neighbors)
   where cf01 = funToExp . onRules (filter isParsable) $ cf0
         (rules',descriptions) = toBin (cfgRules cf01)
@@ -58,11 +64,12 @@ toCNF cf0 = (cf1,cf2,units,descriptions,neighbors)
         units = unitSet cf2
         neighbors = neighborSet cf2
 
-funToExp :: CFG Fun -> CFG Exp
+funToExp :: IsFun a => CFG a -> CFG Exp
 funToExp = fmap toExp
 
+toExp :: IsFun a => a -> Exp
 toExp f | isCoercion f = Id
-        | otherwise = Con f
+        | otherwise = Con $ funName f
 
 isCat (Right _) = False
 isCat (Left _) = True
@@ -101,7 +108,7 @@ toBin :: [Rul Exp] -> ([Rul Exp], CatDescriptions)
 toBin cf = (a,w)
   where (a,_,w) = runRWS (concat <$> forM cf toBinRul) () 0
 
-type CatDescriptions = M.Map Cat Doc
+type CatDescriptions = Map Cat Doc
 
 -- | Convert a rule into a number of equivalent rules with at most 2
 -- symbols on the rhs.
@@ -109,8 +116,8 @@ type CatDescriptions = M.Map Cat Doc
 toBinRul :: Rul Exp -> RWS () CatDescriptions Int [Rul Exp]
 toBinRul (Rule f cat rhs internal) | length rhs > 2 = do
   cat' <- liftM Cat allocateCatName
-  r' <- toBinRul $ Rule f cat' p internal
-  tell $ M.singleton cat' (int (length p) <> "-prefix of " <> prettyExp f <> " " <> parens (prettyRHS p))
+  r' <- toBinRul $ Rule f (cat $> cat') p internal
+  tell $ Map.singleton cat' (int (length p) <> "-prefix of " <> prettyExp f <> " " <> parens (prettyRHS p))
   return $ Rule (Con "($)") cat [Left cat',l] internal
          : r'
   where l = last rhs
@@ -124,15 +131,15 @@ prettyRHS = hcat . punctuate " " . map (either (text . show) (quotes . text))
 
 x ∪ y = sort $ nub (x ++ y)
 
-lookupMulti cat nullset = maybe [] id (M.lookup cat nullset)
+lookupMulti cat nullset = maybe [] id (Map.lookup cat nullset)
 
-type Set k x = M.Map k [x]
+type Set k x = Map k [x]
 
 fixpointOnGrammar :: (Show k, Show x,Ord k, Ord x) => String -> (Set k x -> Rul f -> Set k x) -> CFG f -> Set k x
-fixpointOnGrammar name f cf = case fixn 100 step M.empty of
+fixpointOnGrammar name f cf = case fixn 100 step Map.empty of
   Left x -> error $ "Could not find fixpoint of " ++ name ++". Last iteration:\n" ++ show x
   Right x -> x
-  where step curSet = M.unionsWith (∪) (map (f curSet) (cfgRules cf))
+  where step curSet = Map.unionsWith (∪) (map (f curSet) (cfgRules cf))
 
 fixn :: Eq a => Int -> (a -> a) -> a -> Either a a
 fixn 0 _ x = Left x
@@ -149,12 +156,12 @@ cross [] = [[]]
 cross (x:xs) = [y:ys | y <- x,  ys <- cross xs]
 
 nullRule :: Nullable -> Rul Exp -> (Cat,[Exp])
-nullRule nullset (Rule f c rhs _) = (c, map (appMany f) (cross (map nulls rhs)))
+nullRule nullset (Rule f c rhs _) = (wpThing c, map (appMany f) (cross (map nulls rhs)))
     where nulls (Right _) = []
           nulls (Left cat) = lookupMulti cat nullset
 
 nullSet :: CFG Exp -> Nullable
-nullSet = fixpointOnGrammar "nullable" (\s r -> uncurry M.singleton (nullRule s r))
+nullSet = fixpointOnGrammar "nullable" (\s r -> uncurry Map.singleton (nullRule s r))
 
 -- | Replace nullable occurences by nothing, and adapt the function consequently.
 delNullable :: Nullable -> Rul Exp -> [Rul Exp]
@@ -167,7 +174,7 @@ delNullable nullset r@(Rule f cat rhs internal) = case rhs of
   where lk' (Right _) = []
         lk' (Left cat) = lookupMulti cat nullset
 
-
+delNull :: CFG Exp -> CFG Exp
 delNull cf = onRules (concatMap (delNullable (nullSet cf))) cf
 
 
@@ -181,12 +188,12 @@ type UnitRel cat = Set (Either cat String) (Exp,cat)
 unitSet :: CFG Exp -> UnitRel Cat
 unitSet = fixpointOnGrammar "unit set" unitRule
 
-unitRule unitSet (Rule f c [r] _internal) = M.singleton r $
+unitRule unitSet (Rule f (WithPosition _ c) [r] _internal) = Map.singleton r $
   (f,c) : [(g `appl` f,c') | (g,c') <- lookupMulti (Left c) unitSet]
          where appl = case r of
                  Left _ -> after
                  Right _ -> app'
-unitRule _ _ = M.empty
+unitRule _ _ = Map.empty
 
 isUnitRule (Rule _ _ [_] _) = True
 isUnitRule _ = False
@@ -232,7 +239,7 @@ splitOptim f cf xs = optim f $ splitLROn f cf $ xs
 -- Error reporting
 
 -- leftOf C = ⋃ { {X} ∪ leftOf X | C ::= X B ∈ Grammar or C ::= X ∈ Grammar }
-leftRight pos s (Rule _ c rhs _) = M.singleton (show c) (lkCat x s)
+leftRight pos s (Rule _ c rhs _) = Map.singleton (show c) (lkCat x s)
   where x = pos rhs
 
 lkCat (Right t) _ = [Right t]

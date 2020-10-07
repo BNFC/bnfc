@@ -14,9 +14,9 @@ module BNFC.Backend.Haskell.Utils
 import Data.Char
 
 import BNFC.PrettyPrint
-import BNFC.CF      (Cat(..), catToStr, identCat, baseTokenCatNames, Base, Type(FunT))
 import qualified BNFC.PrettyPrint as P
 
+import BNFC.CF      (Cat(..), catToStr, identCat, baseTokenCatNames, Base, Type(FunT), IsFun(..))
 import BNFC.Options (TokenText(..))
 import BNFC.Utils   (mkNames, NameStyle(..))
 
@@ -110,8 +110,8 @@ avoidReservedWords  x
   | otherwise                = x
 
 -- | Modifier to avoid clashes in definition.
-mkDefName :: String -> String
-mkDefName = avoidReservedWords
+mkDefName :: IsFun f => f -> String
+mkDefName = avoidReservedWords . funName
 
 -- | Render a category from the grammar to a Haskell type.
 --

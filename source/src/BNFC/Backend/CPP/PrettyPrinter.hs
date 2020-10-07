@@ -47,7 +47,7 @@ cf2CPPPrinter useStl inPackage cf =
 
 positionRules :: CF -> [(Cat,[Rule])]
 positionRules cf =
-  [ (TokenCat cat, [ Rule cat (TokenCat cat) (map (Left . TokenCat) [catString, catInteger]) Parsable ])
+  [ (TokenCat cat, [ Rule (noPosition cat) (noPosition $ TokenCat cat) (map (Left . TokenCat) [catString, catInteger]) Parsable ])
   | cat <- filter (isPositionCat cf) $ map fst (tokenPragmas cf)
   ]
 
@@ -200,14 +200,14 @@ prDataH (cat, rules) =
  else abstract ++ concatMap prRuleH rules
  where
    cl = identCat (normCat cat)
-   abstract = case lookupRule (show cat) rules of
+   abstract = case lookupRule (noPosition $ show cat) rules of
     Just _ -> ""
     Nothing ->  "  void visit" ++ cl ++ "(" ++ cl ++ " *p); /* abstract class */\n"
 
 --Prints all the methods to visit a rule.
-prRuleH :: Rule -> String
+prRuleH :: IsFun f => Rul f -> String
 prRuleH (Rule fun _ _ _) | isProperLabel fun = concat
-  ["  void visit", fun, "(", fun, " *p);\n"]
+  ["  void visit", funName fun, "(", funName fun, " *p);\n"]
 prRuleH _ = ""
 
 {- **** Implementation (.C) File Methods **** -}
@@ -398,14 +398,14 @@ prPrintData _ inPackage _cf (cat, rules) = -- Not a list
     abstract ++ concatMap (prPrintRule inPackage) rules
   where
   cl = identCat (normCat cat)
-  abstract = case lookupRule (show cat) rules of
+  abstract = case lookupRule (noPosition $ show cat) rules of
     Just _ -> ""
     Nothing ->  "void PrintAbsyn::visit" ++ cl ++ "(" ++ cl +++ "*p) {} //abstract class\n\n"
 
 -- | Generate pretty printer visitor for a list category:
 --
 -- >>> let c = Cat "C" ; lc = ListCat c
--- >>> let rules = [Rule "[]" lc [] Parsable, Rule "(:)" lc [Left c, Right "-", Left lc] Parsable]
+-- >>> let rules = [npRule "[]" lc [] Parsable, npRule "(:)" lc [Left c, Right "-", Left lc] Parsable]
 -- >>> genPrintVisitorList (lc, rules)
 -- void PrintAbsyn::visitListC(ListC *listc)
 -- {
@@ -417,7 +417,7 @@ prPrintData _ inPackage _cf (cat, rules) = -- Not a list
 -- }
 --
 -- >>> let c2 = CoercCat "C" 2 ; lc2 = ListCat c2
--- >>> let rules2 = rules ++ [Rule "[]" lc2 [] Parsable, Rule "(:)" lc2 [Left c2, Right "+", Left lc2] Parsable]
+-- >>> let rules2 = rules ++ [npRule "[]" lc2 [] Parsable, npRule "(:)" lc2 [Left c2, Right "+", Left lc2] Parsable]
 -- >>> genPrintVisitorList (lc, rules2)
 -- void PrintAbsyn::visitListC(ListC *listc)
 -- {
@@ -501,7 +501,7 @@ genPrintVisitorListNoStl _ = error "genPrintVisitorListNoStl expects a ListCat"
 prPrintRule :: Maybe String -> Rule -> String
 prPrintRule inPackage r@(Rule fun _ cats _) | isProperLabel fun = unlines
   [
-   "void PrintAbsyn::visit" ++ fun ++ "(" ++ fun +++ "*" ++ fnm ++ ")",
+   "void PrintAbsyn::visit" ++ funName fun ++ "(" ++ funName fun +++ "*" ++ fnm ++ ")",
    "{",
    "  int oldi = _i_;",
    lparen,
@@ -591,13 +591,13 @@ prShowData _ (cat, rules) =  --Not a list:
   abstract ++ concatMap prShowRule rules
   where
     cl = identCat (normCat cat)
-    abstract = case lookupRule (show cat) rules of
+    abstract = case lookupRule (noPosition $ show cat) rules of
       Just _ -> ""
       Nothing ->  "void ShowAbsyn::visit" ++ cl ++ "(" ++ cl ++ " *p) {} //abstract class\n\n"
 
 --This prints all the methods for Abstract Syntax tree rules.
-prShowRule :: Rule -> String
-prShowRule (Rule fun _ cats _) | isProperLabel fun = concat
+prShowRule :: IsFun f => Rul f -> String
+prShowRule (Rule f _ cats _) | isProperLabel f = concat
   [
    "void ShowAbsyn::visit" ++ fun ++ "(" ++ fun +++ "*" ++ fnm ++ ")\n",
    "{\n",
@@ -609,6 +609,7 @@ prShowRule (Rule fun _ cats _) | isProperLabel fun = concat
    "}\n"
   ]
    where
+    fun = funName f
     (optspace, lparen, rparen, cats')
       | null [ () | Left _ <- cats ]  -- @all isRight cats@, but Data.Either.isRight requires base >= 4.7
                   = ("", "", "", "")

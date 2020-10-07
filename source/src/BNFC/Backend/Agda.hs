@@ -234,7 +234,7 @@ cf2AgdaAST time tokenText mod amod pmod cf = vsep $
   -- The user-defined token categories (including Ident).
   tcats :: [(TokenCat, Bool)]
   tcats = (if hasIdent cf then ((catIdent, False) :) else id)
-    [ (name, b) | TokenReg name b _ <- cfgPragmas cf ]
+    [ (wpThing name, b) | TokenReg name b _ <- cfgPragmas cf ]
   -- Bind printers for the following categories (involves lists and literals).
   printerCats :: [Cat]
   printerCats = concat
@@ -660,7 +660,7 @@ definedRules :: CF -> Doc
 definedRules cf = vsep [ mkDef f xs e | FunDef f xs e <- cfgPragmas cf ]
   where
     mkDef f xs e = vcat $ map text $ concat
-      [ [ unwords [ mkDefName f, ":", typeToHaskell' "→" t ]
+      [ [ unwords [ mkDefName f, ":", typeToHaskell' "→" $ wpThing t ]
         | t <- maybeToList $ sigLookup f cf
         ]
       , [ unwords $ concat

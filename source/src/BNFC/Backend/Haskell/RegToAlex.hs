@@ -63,7 +63,7 @@ prPrec :: Int -> Int -> [String] -> [String]
 prPrec i j = if j<i then parenth else id
 
 instance Print Identifier where
-  prt _ (Identifier i) = [i]
+  prt _ (Identifier (_, i)) = [i]
 
 instance Print Reg where
   prt i e = case e of

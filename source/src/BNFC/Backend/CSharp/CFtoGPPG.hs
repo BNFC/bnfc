@@ -108,7 +108,7 @@ definedRules _ cf = unlinesInline [
         unBase (BaseT x) = show$normCat$strToCat x
 
     rule f xs e =
-      case checkDefinition' list ctx f xs e of
+      case runTypeChecker $ checkDefinition' list ctx f xs e of
         Left err -> error $ "Panic! This should have been caught already:\n" ++ err
         Right (_,(_,_)) -> unlinesInline [
           "Defined Rule goes here"
@@ -203,7 +203,7 @@ constructRule namespace cf env rules nt =
                  else (False,r0),
      let (p,m) = generatePatterns cf env r b])
   where
-    ruleName r = case funRule r of
+    ruleName r = case funName $ funRule r of
       ---- "(:)" -> identCat nt
       ---- "(:[])" -> identCat nt
       z -> z

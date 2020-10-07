@@ -1,24 +1,30 @@
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE TypeSynonymInstances #-}
 
 -- | Type checker for defined syntax constructors @define f xs = e@.
 
 module BNFC.TypeChecker
   ( -- * Type checker entry point
-    checkDefinitions
+    runTypeChecker
+  , checkDefinitions
   , Base(..)
-  , -- * Backdoor for rechecking defined syntax constructors for list types
-    checkDefinition'
+    -- * Backdoor for rechecking defined syntax constructors for list types
+  , checkDefinition'
   , buildSignature, buildContext, ctxTokens, isToken
   , ListConstructors(LC)
   ) where
 
 import Control.Monad
 import Control.Monad.Except (MonadError(..))
+import Control.Monad.Reader
 
-import Data.Bifunctor (second)
+import Data.Bifunctor
 import Data.Char
 
 import qualified Data.Map as Map
@@ -26,10 +32,28 @@ import qualified Data.Set as Set
 
 import BNFC.CF
 
--- * Types and context
+-- * Error monad
+
+type TCError = WithPosition String
 
 -- | Type checking monad, reports errors.
-type Err = Either String
+newtype Err a = Err { unErr :: ReaderT Position (Either TCError) a }
+  deriving (Functor, Applicative, Monad, MonadReader Position)
+
+instance MonadError String Err where
+  throwError msg = Err $ do
+    pos <- ask
+    throwError $ WithPosition pos msg
+  catchError m h = Err $ do
+    unErr m `catchError` \ (WithPosition _ msg) -> unErr (h msg)
+
+withPosition :: Position -> Err a -> Err a
+withPosition pos = local (const pos)
+
+runTypeChecker :: Err a -> Either String a
+runTypeChecker m = first blendInPosition $ unErr m `runReaderT` NoPosition
+
+-- * Types and context
 
 -- | Function arguments with type.
 type Telescope = [(String, Base)]
@@ -57,18 +81,19 @@ checkDefinitions cf = do
   let ctx = buildContext cf
   sequence_ [ checkDefinition ctx f xs e | FunDef f xs e <- cfgPragmas cf ]
 
-checkDefinition :: Context -> String -> [String] -> Exp -> Err ()
+checkDefinition :: Context -> RFun -> [String] -> Exp -> Err ()
 checkDefinition ctx f xs e =
     void $ checkDefinition' dummyConstructors ctx f xs e
 
 checkDefinition'
   :: ListConstructors  -- ^ Translation of the list constructors.
   -> Context           -- ^ Signature (types of labels).
-  -> String            -- ^ Function name.
+  -> RFun              -- ^ Function name.
   -> [String]          -- ^ Function arguments.
   -> Exp               -- ^ Function body.
   -> Err (Telescope, (Exp, Base))  -- ^ Typed arguments, translated body, type of body.
-checkDefinition' list ctx f xs e =
+checkDefinition' list ctx ident xs e =
+  withPosition (wpPosition ident) $
     do  unless (isLower $ head f) $ throwError $
           "Defined functions must start with a lowercase letter."
         t@(FunT ts t') <- lookupCtx f ctx `catchError` \_ ->
@@ -84,6 +109,7 @@ checkDefinition' list ctx f xs e =
     `catchError` \ err -> throwError $
       "In the definition " ++ unwords (f : xs ++ ["=",show e,";"]) ++ "\n  " ++ err
     where
+        f = wpThing ident
         plural 1 = ""
         plural _ = "s"
 
@@ -123,7 +149,6 @@ checkExp list ctx = curry $ \case
         expect = length ts
         given  = length es
 
-
 -- * Context handling
 
 -- | Create context containing the types of all labels,
@@ -142,7 +167,7 @@ buildSignature rules = do
       [t] -> return (f,t)
       ts' -> throwError $ unlines $ concat
         [ [ "The label '" ++ f ++ "' is used at conflicting types:" ]
-        , map (("  " ++) . show) ts'
+        , map (("  " ++) . blendInPosition . fmap show) ts'
         ]
   return $ Map.fromAscList sig
   where
@@ -153,8 +178,8 @@ buildSignature rules = do
         | otherwise = BaseT $ catToStr $ normCat t
 
     labels =
-      [ (f, mkType cat args)
-        | Rule f cat args _ <- rules
+      [ (x, WithPosition pos $ mkType (wpThing cat) args)
+        | Rule f@(WithPosition pos x) cat args _ <- rules
         , not (isCoercion f)
         , not (isNilCons f)
       ]
@@ -181,4 +206,4 @@ lookupCtx x ctx
       Nothing -> do
         case Map.lookup x $ ctxLabels ctx of
           Nothing -> throwError $ "Undefined symbol '" ++ x ++ "'."
-          Just t  -> return t
+          Just t  -> return $ wpThing t

@@ -50,7 +50,7 @@ cf2cons cf =
 
 -- | Get the rule for a function.
 ruleFun :: CF -> Fun -> Rule
-ruleFun cf f = head $ filter (\r -> funRule r == f) $ cfgRules cf
+ruleFun cf f = head $ filter ((f ==) . funName . funRule) $ cfgRules cf
 
 -- | Get the precedence of a function.
 precFun :: CF -> Fun -> Integer

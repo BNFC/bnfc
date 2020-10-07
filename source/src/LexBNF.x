@@ -27,7 +27,7 @@ $u = [. \n]          -- universal: any character
 "--" [.]* ;
 
 -- Block comments
-"{-" [$u # \-]* \- ([$u # [\- \}]] [$u # \-]* \- | \-)* \} ;
+\{ \- [$u # \-]* \- ([$u # [\- \}]] [$u # \-]* \- | \-)* \} ;
 
 $white+ ;
 @rsyms
@@ -88,10 +88,10 @@ posLineCol :: Posn -> (Int, Int)
 posLineCol (Pn _ l c) = (l,c)
 
 mkPosToken :: Token -> ((Int, Int), String)
-mkPosToken t@(PT p _) = (posLineCol p, prToken t)
+mkPosToken t@(PT p _) = (posLineCol p, tokenText t)
 
-prToken :: Token -> String
-prToken t = case t of
+tokenText :: Token -> String
+tokenText t = case t of
   PT _ (TS s _) -> s
   PT _ (TL s)   -> show s
   PT _ (TI s)   -> s
@@ -101,6 +101,8 @@ prToken t = case t of
   Err _         -> "#error"
   PT _ (T_Identifier s) -> s
 
+prToken :: Token -> String
+prToken t = tokenText t
 
 data BTree = N | B String Tok BTree BTree deriving (Show)
 

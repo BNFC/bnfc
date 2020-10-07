@@ -1,3 +1,3 @@
-In the definition id x = x ;
+fail-lbnf/214-define-only-label.cf:4:8: In the definition id x = x ;
   'id' must be used in a rule.
 Aborting. (Use option --force to continue despite errors.)

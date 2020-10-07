@@ -114,12 +114,12 @@ definedRules packageAbsyn cf =
          unBase (BaseT x) = show $ normCat $ strToCat x
 
     rule f xs e =
-        case checkDefinition' list ctx f xs e of
-            Left err          ->
+        case runTypeChecker $ checkDefinition' list ctx f xs e of
+            Left err ->
                 error $ "Panic! This should have been caught already:\n"
                     ++ err
             Right (args,(e',t)) ->
-                [ "public " ++ javaType t ++ " " ++ f ++ "_ (" ++
+                [ "public " ++ javaType t ++ " " ++ funName f ++ "_ (" ++
                     intercalate ", " (map javaArg args) ++ ") {"
                 , "  return " ++ javaExp e' ++ ";"
                 , "}"
@@ -211,7 +211,7 @@ rulesForCup packageAbsyn cf rp env = map mkOne $ ruleGroups cf where
 constructRule :: String -> CF -> RecordPositions -> KeywordEnv -> [Rule] -> NonTerminal
     -> (NonTerminal,[(Pattern,Action)])
 constructRule packageAbsyn cf rp env rules nt =
-    (nt, [ (p, generateAction packageAbsyn nt (funRule r) (revM b m) b rp)
+    (nt, [ (p, generateAction packageAbsyn nt (funName $ funRule r) (revM b m) b rp)
           | r0 <- rules,
           let (b,r) = if isConsFun (funRule r0) && elem (valCat r0) revs
                           then (True, revSepListRule r0)
@@ -228,7 +228,7 @@ generateAction :: String -> NonTerminal -> Fun -> [MetaVar]
                          --   Only used if this is a list rule.
                -> RecordPositions   -- ^ Record line and column info.
                -> Action
-generateAction packageAbsyn nt f ms rev rp
+generateAction packageAbsyn nt fun ms rev rp
     | isNilFun f      = "RESULT = new " ++ c ++ "();"
     | isOneFun f      = "RESULT = new " ++ c ++ "(); RESULT.addLast("
                            ++ p_1 ++ ");"
@@ -240,6 +240,7 @@ generateAction packageAbsyn nt f ms rev rp
     | otherwise       = "RESULT = new " ++ c
                   ++ "(" ++ intercalate "," ms ++ ");" ++ lineInfo
    where
+     f   = funName fun
      c   = packageAbsyn ++ "." ++
            if isNilFun f || isOneFun f || isConsFun f
              then identCat (normCat nt) else f
@@ -269,10 +270,10 @@ generateAction packageAbsyn nt f ms rev rp
 -- | Generate patterns and a set of metavariables indicating
 -- where in the pattern the non-terminal.
 --
--- >>> generatePatterns [] (Rule "myfun" (Cat "A") [] Parsable)
+-- >>> generatePatterns [] (npRule "myfun" (Cat "A") [] Parsable)
 -- (" /* empty */ ",[])
 --
--- >>> generatePatterns [("def", "_SYMB_1")] (Rule "myfun" (Cat "A") [Right "def", Left (Cat "B")] Parsable)
+-- >>> generatePatterns [("def", "_SYMB_1")] (npRule "myfun" (Cat "A") [Right "def", Left (Cat "B")] Parsable)
 -- ("_SYMB_1:p_1 B:p_2 ",["p_2"])
 
 generatePatterns :: KeywordEnv -> Rule -> (Pattern,[MetaVar])

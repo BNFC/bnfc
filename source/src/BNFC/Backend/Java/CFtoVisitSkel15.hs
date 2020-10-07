@@ -126,7 +126,7 @@ prRule packageAbsyn user (Rule fun _ cats _)
     , "}"
     ]
   where
-    fname = text fun              -- function name
+    fname = text $ funName fun              -- function name
     cats' = map (second ("p." P.<>)) $ lefts $ numVars cats  -- non-terminals in the rhs
 prRule _ _ _ = empty
 

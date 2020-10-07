@@ -19,6 +19,7 @@
 
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE LambdaCase #-}
 
 module BNFC.Utils
     ( ModuleName
@@ -167,6 +168,10 @@ table sep m = map (intercalate sep . zipWith pad widths) m
       col -> f col : columns f (map (drop 1) rows)
 
 -- * List utilities
+
+-- | Give a telling name to the electric monkey.
+singleton :: a -> [a]
+singleton = (:[])
 
 -- | Apply a function to the head of a list.
 mapHead :: (a -> a) -> [a] -> [a]

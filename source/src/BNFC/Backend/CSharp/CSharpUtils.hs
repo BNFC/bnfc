@@ -84,10 +84,12 @@ toString :: String -> String
 toString v = if isUserDefined v then ".ToString()" else ""
 
 -- Prepends namespace ".Absyn." to typ unless it is one of the basetypes
-identifier :: Namespace -> String -> String
-identifier namespace typ
+identifier :: IsFun a => Namespace -> a -> String
+identifier namespace f
   | typ `elem` (map snd basetypes) = typ
   | otherwise                      = namespace ++ ".Absyn." ++ typ
+  where
+  typ = funName f
 
 -- Removes empty lines, and removes the line-break at the end.
 -- This can be useful if you want to use unlines "inside" unlines and don't want a whole lot of "useless" line-breaks.

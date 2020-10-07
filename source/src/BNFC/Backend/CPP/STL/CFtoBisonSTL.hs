@@ -153,10 +153,10 @@ definedRules cf =
         unBase (BaseT x) = show $ normCat $ strToCat x
 
     rule f xs e =
-        case checkDefinition' list ctx f xs e of
+        case runTypeChecker $ checkDefinition' list ctx f xs e of
         Left err -> error $ "Panic! This should have been caught already:\n" ++ err
         Right (args,(e',t)) -> unlines
-            [ cppType t ++ " " ++ f ++ "_ (" ++
+            [ cppType t ++ " " ++ funName f ++ "_ (" ++
                 intercalate ", " (map cppArg args) ++ ") {"
             , "  return " ++ cppExp e' ++ ";"
             , "}"
@@ -326,7 +326,7 @@ rulesForBison rp inPackage cf env = map mkOne (ruleGroups cf) ++ posRules
 constructRule ::
   RecordPositions -> Maybe String -> CF -> SymMap -> [Rule] -> NonTerminal -> (NonTerminal,[(Pattern,Action)])
 constructRule rp inPackage cf env rules nt =
-  (nt,[(p, generateAction rp inPackage nt (ruleName r) b m +++ result) |
+  (nt,[(p, generateAction rp inPackage nt (funName $ ruleName r) b m +++ result) |
      r0 <- rules,
      let (b,r) = if isConsFun (funRule r0) && elem (valCat r0) revs
                    then (True,revSepListRule r0)

@@ -104,10 +104,10 @@ mkHFile rp cf = unlines $ concat
   prForward _ = ""
   getRules cf = map testRule (cfgRules cf)
   getClasses = map show . filter isDataCat
-  testRule (Rule f c _ _)
+  testRule (Rule f (WithPosition _ c) _ _)
     | isList c && isConsFun f = identCat (normCat c)
     | otherwise = "_"
-  definedConstructors = [ (f, xs, e) | FunDef f xs e <- cfgPragmas cf ]
+  definedConstructors = [ (funName f, xs, e) | FunDef f xs e <- cfgPragmas cf ]
 
 -- | For @define@d constructors, make a CPP definition.
 --

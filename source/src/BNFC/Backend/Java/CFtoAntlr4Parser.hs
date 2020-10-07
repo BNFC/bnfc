@@ -146,7 +146,7 @@ constructRule packageAbsyn cf env rules nt =
     ]
 
 -- Generates a string containing the semantic action.
-generateAction :: String -> NonTerminal -> Fun -> [MetaVar]
+generateAction :: IsFun f => String -> NonTerminal -> f -> [MetaVar]
                -> Bool   -- ^ Whether the list should be reversed or not.
                          --   Only used if this is a list rule.
                -> Action
@@ -157,14 +157,14 @@ generateAction packageAbsyn nt f ms rev
     | isConsFun f = "$result = " ++ p_2 ++ "; "
                            ++ "$result." ++ add ++ "(" ++ p_1 ++ ");"
     | isCoercion f = "$result = " ++  p_1 ++ ";"
-    | isDefinedRule f = "$result = " ++ f ++ "_"
+    | isDefinedRule f = "$result = " ++ funName f ++ "_"
                         ++ "(" ++ intercalate "," (map resultvalue ms) ++ ");"
     | otherwise = "$result = new " ++ c
                   ++ "(" ++ intercalate "," (map resultvalue ms) ++ ");"
    where
      c                 = packageAbsyn ++ "." ++
                             if isNilFun f || isOneFun f || isConsFun f
-                            then identCat (normCat nt) else f
+                            then identCat (normCat nt) else funName f
      p_1               = resultvalue $ ms!!0
      p_2               = resultvalue $ ms!!1
      add               = if rev then "addLast" else "addFirst"
@@ -184,9 +184,9 @@ generateAction packageAbsyn nt f ms rev
 
 -- | Generate patterns and a set of metavariables indicating
 -- where in the pattern the non-terminal
--- >>> generatePatterns 2 [] $ Rule "myfun" (Cat "A") [] Parsable
+-- >>> generatePatterns 2 [] $ npRule "myfun" (Cat "A") [] Parsable
 -- (" /* empty */ ",[])
--- >>> generatePatterns 3 [("def", "_SYMB_1")] $ Rule "myfun" (Cat "A") [Right "def", Left (Cat "B")] Parsable
+-- >>> generatePatterns 3 [("def", "_SYMB_1")] $ npRule "myfun" (Cat "A") [Right "def", Left (Cat "B")] Parsable
 -- ("_SYMB_1 p_3_2=b",[("p_3_2",B)])
 generatePatterns :: Int -> KeywordEnv -> Rule -> (Pattern,[MetaVar])
 generatePatterns ind env r =

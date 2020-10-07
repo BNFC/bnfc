@@ -55,7 +55,7 @@ prRule :: String -> [UserDef] -> Cat -> Rule -> [String]
 prRule packageAbsyn _ _ (Rule fun _ _ _)
   | not (isCoercion fun || isDefinedRule fun) = return $ concat
       [ "    public R visit("
-      , packageAbsyn ++ "." ++ fun
+      , packageAbsyn ++ "." ++ funName fun
       , " p, A arg) { return visitDefault(p, arg); }"
       ]
   | otherwise = []

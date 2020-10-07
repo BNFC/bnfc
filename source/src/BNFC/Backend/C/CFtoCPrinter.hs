@@ -427,16 +427,17 @@ renderX sep' = "render" <> char sc <> parens (text sep)
 
 prPrintRule :: Rule -> [String]
 prPrintRule r@(Rule fun _ cats _) | not (isCoercion fun) = concat
-  [ [ "  case is_" ++ fun ++ ":"
+  [ [ "  case is_" ++ f ++ ":"
     , "    if (_i_ > " ++ show p ++ ") renderC(_L_PAREN);"
     ]
-  , map (prPrintCat fun) $ numVars cats
+  , map (prPrintCat f) $ numVars cats
   , [ "    if (_i_ > " ++ show p ++ ") renderC(_R_PAREN);"
     , "    break;"
     , ""
     ]
   ]
   where
+    f = funName fun
     p = precRule r
 prPrintRule _ = []
 
@@ -525,21 +526,22 @@ prShowData (cat, rules) = unlines $
 prShowRule :: Rule -> String
 prShowRule (Rule fun _ cats _) | not (isCoercion fun) = unlines
   [
-   "  case is_" ++ fun ++ ":",
+   "  case is_" ++ f ++ ":",
    "  " ++ lparen,
-   "    bufAppendS(\"" ++ fun ++ "\");\n",
+   "    bufAppendS(\"" ++ f ++ "\");\n",
    "  " ++ optspace,
    cats',
    "  " ++ rparen,
    "    break;"
   ]
    where
+    f = funName fun
     (optspace, lparen, rparen) = if allTerms cats
       then ("","","")
       else ("  bufAppendC(' ');\n", "  bufAppendC('(');\n","  bufAppendC(')');\n")
     cats' = if allTerms cats
         then ""
-        else concat (insertSpaces (map (prShowCat fun) (lefts $ numVars cats)))
+        else concat (insertSpaces (map (prShowCat f) (lefts $ numVars cats)))
     insertSpaces [] = []
     insertSpaces (x:[]) = [x]
     insertSpaces (x:xs) = if x == ""

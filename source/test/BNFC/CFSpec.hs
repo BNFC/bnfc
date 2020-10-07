@@ -60,8 +60,8 @@ spec = do
   describe "getSeparatorByPrecedence" $ do
     let c0 = CoercCat "C" 0
         c1 = CoercCat "C" 1
-        rule0 = Rule "(:)" (ListCat c0) [Left c0, Right ",", Left (ListCat c0)] Parsable
-        rule1 = Rule "(:)" (ListCat c1) [Left c1, Right ";", Left (ListCat c1)] Parsable
+        rule0 = Rule (noPosition "(:)") (noPosition $ ListCat c0) [Left c0, Right ",", Left (ListCat c0)] Parsable
+        rule1 = Rule (noPosition "(:)") (noPosition $ ListCat c1) [Left c1, Right ";", Left (ListCat c1)] Parsable
 
     it "returns a single value for a simple list" $
       getSeparatorByPrecedence [rule0] `shouldBe` [(0,",")]

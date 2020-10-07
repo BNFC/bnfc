@@ -1,4 +1,5 @@
-Warning: names not unique: Foo
+Warning: names not unique: 
+  succeed-lbnf/duplicate-label-same-cat.cf:1:1: Foo
 This can be an error in some backends.
 
 2 rules accepted

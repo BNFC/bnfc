@@ -161,7 +161,7 @@ coercions Reg 3;
 
 -- LBNF identifiers
 
-token Identifier letter (letter | digit | '_')* ;
+position token Identifier letter (letter | digit | '_')* ;
 
 -- Comments in BNF source
 comment "--"      ;

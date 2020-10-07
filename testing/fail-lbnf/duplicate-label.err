@@ -1,4 +1,4 @@
 The label 'Foo' is used at conflicting types:
-  -> Bar
-  -> Baz
+  fail-lbnf/duplicate-label.cf:1:1: -> Bar
+  fail-lbnf/duplicate-label.cf:2:1: -> Baz
 

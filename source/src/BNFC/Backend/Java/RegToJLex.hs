@@ -39,7 +39,7 @@ jflexReserved :: [Char]
 jflexReserved = '~':'!':'/':[]  -- plus the @jlexReserved@, but they are tested separately
 
 instance Print Identifier where
-  prt _ _ (Identifier x) = showString x
+  prt _ _ (Identifier (_, x)) = showString x
 
 instance Print Reg where
   prt lexer i = \case

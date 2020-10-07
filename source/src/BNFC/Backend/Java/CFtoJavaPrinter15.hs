@@ -249,7 +249,7 @@ prData packageAbsyn user (cat, rules) = unlines k
 
 
 prRule :: String -> Rule -> String
-prRule packageAbsyn r@(Rule fun _c cats _) | not (isCoercion fun || isDefinedRule fun) = concat
+prRule packageAbsyn r@(Rule f _c cats _) | not (isCoercion f || isDefinedRule f) = concat
     [ "    if (foo instanceof" +++ packageAbsyn ++ "." ++ fun ++ ")\n"
     , "    {\n"
     , "       " ++ packageAbsyn ++ "." ++ fun +++ fnm +++ "= ("
@@ -260,6 +260,7 @@ prRule packageAbsyn r@(Rule fun _c cats _) | not (isCoercion fun || isDefinedRul
     , "    }\n"
     ]
   where
+    fun = funName f
     p = precRule r
     (lparen, rparen) =
         ("       if (_i_ > " ++ show p ++ ") render(_L_PAREN);\n",
@@ -274,7 +275,7 @@ prRule _nm _ = ""
 -- |
 --
 -- >>> let lfoo = ListCat (Cat "Foo")
--- >>> prList "absyn" [] lfoo [Rule "[]" lfoo [] Parsable, Rule "(:)" lfoo [Left (Cat "Foo"), Right ".", Left lfoo] Parsable]
+-- >>> prList "absyn" [] lfoo [npRule "[]" lfoo [] Parsable, npRule "(:)" lfoo [Left (Cat "Foo"), Right ".", Left lfoo] Parsable]
 -- for (java.util.Iterator<absyn.Foo> it = foo.iterator(); it.hasNext();)
 -- {
 --   pp(it.next(), _i_);
@@ -341,7 +342,7 @@ shData packageAbsyn user (cat, rules) = unlines k
 
 
 shRule :: String -> Rule -> String
-shRule packageAbsyn (Rule fun _c cats _) | not (isCoercion fun || isDefinedRule fun) = unlines
+shRule packageAbsyn (Rule f _c cats _) | not (isCoercion f || isDefinedRule f) = unlines
     [ "    if (foo instanceof" +++ packageAbsyn ++ "." ++ fun ++ ")"
     , "    {"
     , "       " ++ packageAbsyn ++ "." ++ fun +++ fnm +++ "= ("
@@ -349,6 +350,7 @@ shRule packageAbsyn (Rule fun _c cats _) | not (isCoercion fun || isDefinedRule 
     , members ++ "    }"
     ]
   where
+    fun = funName f
     members = concat [ lparen
                      , "       render(\"" ++ escapeChars fun ++ "\");\n"
                      , cats'

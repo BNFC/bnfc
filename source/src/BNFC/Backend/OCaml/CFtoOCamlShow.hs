@@ -117,7 +117,7 @@ rules absMod cf = unlines $ mutualDefs $
    checkRes s
         | elem s reservedOCaml = s ++ "'"
         | otherwise              = s
-   ruleOf s = fromJust $ lookupRule s (cfgRules cf)
+   ruleOf s = fromJust $ lookupRule (noPosition s) (cfgRules cf)
 
 -- case_fun :: Cat -> [(Constructor,Rule)] -> String
 case_fun absMod cat xs = unlines [

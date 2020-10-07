@@ -201,7 +201,7 @@ constructRule cf env rules nt = (nt,[(p,(generateAction (ruleName r) b m) +++ re
                  else (False,r0),
      let (p,m) = generatePatterns cf env r])
  where
-   ruleName r = case funRule r of
+   ruleName r = case funName $ funRule r of
      "(:)" -> identCat (normCat nt)
      "(:[])" -> identCat (normCat nt)
      z -> z

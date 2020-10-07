@@ -165,7 +165,7 @@ fixCoercions rs = nub (fixAll rs rs)
     else fixCoercion cat cats
   fixAll :: [(Cat, [Rule])] -> [(Cat, [Rule])] -> [(Cat, [Rule])]
   fixAll _ [] = []
-  fixAll top ((cat,_):cats) = if isCoercion (show cat) -- This is weird: isCoercion is supposed to be applied to functions!!!!
+  fixAll top ((cat,_):cats) = if isCoercion (noPosition $ show cat) -- This is weird: isCoercion is supposed to be applied to functions!!!!
     then fixAll top cats
     else (normCat cat, fixCoercion cat top) : fixAll top cats
 

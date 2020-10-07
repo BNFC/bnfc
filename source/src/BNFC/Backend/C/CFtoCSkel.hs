@@ -215,8 +215,8 @@ prData (cat, rules)
 --     break;
 -- <BLANKLINE>
 prPrintRule :: Rule -> Doc
-prPrintRule (Rule fun _c cats _)
-  | isCoercion fun = ""
+prPrintRule (Rule f _c cats _)
+  | isCoercion f   = ""
   | otherwise      = nest 2 $ vcat
     [ text $ "case is_" ++ fun ++ ":"
     , nest 2 (vcat
@@ -226,6 +226,7 @@ prPrintRule (Rule fun _c cats _)
         ])
     ]
   where
+    fun = funName f
     cats' = vcat $ map (prCat fun) (lefts (numVars cats))
 
 -- Prints the actual instance-variable visiting.

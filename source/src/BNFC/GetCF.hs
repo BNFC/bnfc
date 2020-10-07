@@ -31,13 +31,15 @@ module BNFC.GetCF
   ) where
 
 import Control.Arrow (left)
+import Control.Monad.Reader (Reader, runReader, MonadReader(..), asks)
 import Control.Monad.State (State, evalState, get, modify)
 import Control.Monad.Except (MonadError(..))
 
 import Data.Char
 import Data.Either  (partitionEithers)
--- import Data.Functor ((<&>)) -- only from ghc 8.4
+import Data.Functor (($>)) -- ((<&>)) -- only from ghc 8.4
 import Data.List    (nub, partition)
+import qualified Data.List as List
 import Data.Maybe   (mapMaybe)
 
 import qualified Data.Foldable as Fold
@@ -74,21 +76,27 @@ parseCFP opts target content = do
   cfp <- runErr $ pGrammar (myLexer content)
                     -- <&> expandRules -- <&> from ghc 8.4
                     >>= return . expandRules
-                    >>= getCFP (cnf opts)
-                    >>= markTokenCategories
+                    >>= getCFP opts
+                    >>= return . markTokenCategories
   let cf = cfp2cf cfp
-  either dieUnlessForce return $ checkDefinitions cf
+  either dieUnlessForce return $ runTypeChecker $ checkDefinitions cf
 
   -- Some backends do not allow the grammar name to coincide with
   -- one of the category or constructor names.
   let names    = allNames cf
-  when (target == TargetJava && lang opts `elem` names) $
-      dieUnlessForce $ unwords $
-        [ "ERROR of backend", show target ++ ":"
-        , "the language name"
-        , lang opts
-        , "conflicts with a name defined in the grammar."
-        ]
+  when (target == TargetJava) $
+    case List.find ((lang opts ==) . wpThing) names of
+      Nothing -> return ()
+      Just px ->
+        dieUnlessForce $ unlines
+          [ unwords $
+            [ "ERROR of backend", show target ++ ":"
+            , "the language name"
+            , lang opts
+            , "conflicts with a name defined in the grammar:"
+            ]
+          , blendInPosition px
+          ]
 
   -- Some (most) backends do not support layout.
   when (hasLayout cf && target `notElem`
@@ -102,28 +110,32 @@ parseCFP opts target content = do
   case filter (not . isDefinedRule) $ filterNonUnique names of
     [] -> return ()
     ns | target `elem` [ TargetCpp , TargetCppNoStl , TargetJava ]
-       -> dieUnlessForce $ unlines $
-            [ "ERROR: names not unique: " ++ unwords ns
-            , "This is an error in the backend " ++ show target ++ "."
+       -> dieUnlessForce $ unlines $ concat
+            [ [ "ERROR: names not unique:" ]
+            , map (("  " ++) . blendInPosition) ns
+            , [ "This is an error in the backend " ++ show target ++ "." ]
             ]
        | otherwise
-       -> putStrLn $ unlines $
-            [ "Warning: names not unique: " ++ unwords ns
-            , "This can be an error in some backends."
+       -> putStrLn $ unlines $ concat
+            [ [ "Warning: names not unique:" ]
+            , map (("  " ++) . blendInPosition) ns
+            , [ "This can be an error in some backends." ]
             ]
 
   -- Warn or fail if the grammar uses names not unique modulo upper/lowercase.
-  case filter (not . isDefinedRule) $ duplicatesOn (map toLower) names of
+  case filter (not . isDefinedRule) $ duplicatesOn (map toLower . wpThing) names of
     [] -> return ()
     ns | target `elem` [ TargetJava ]
-       -> dieUnlessForce $ unlines $
-            [ "ERROR: names not unique ignoring case: " ++ unwords ns
-            , "This is an error in the backend " ++ show target ++ "."
+       -> dieUnlessForce $ unlines $ concat
+            [ [ "ERROR: names not unique ignoring case: " ]
+            , map (("  " ++) . blendInPosition) ns
+            , [ "This is an error in the backend " ++ show target ++ "."]
             ]
        | otherwise
-       -> putStrLn $ unlines $
-            [ "Warning: names not unique ignoring case: " ++ unwords ns
-            , "This can be an error in some backends."
+       -> putStr $ unlines $ concat
+            [ [ "Warning: names not unique ignoring case:" ]
+            , map (("  " ++) . blendInPosition) ns
+            , [ "This can be an error in some backends." ]
             ]
 
   -- Note: the following @() <-@ works around an @Ambiguous type variable@
@@ -142,9 +154,11 @@ parseCFP opts target content = do
   let undefinedConstructor x = isDefinedRule x && x `Set.notMember` definedConstructors
   case filter undefinedConstructor $ map funRule $ cfgRules cf of
     [] -> return ()
-    xs -> dieUnlessForce $ unlines $
-            [ "Lower case rule labels need a definition."
-            , "ERROR: undefined rule label(s): " ++ unwords xs
+    xs -> dieUnlessForce $ unlines $ concat
+            [ [ "Lower case rule labels need a definition."
+              , "ERROR: undefined rule label(s):"
+              ]
+            , map (("  " ++) . blendInPosition) xs
             ]
 
   -- Print warnings if user defined nullable tokens.
@@ -176,65 +190,42 @@ die msg = do
   hPutStrLn stderr msg
   exitFailure
 
-{-
-    case filter (not . isDefinedRule) $ notUniqueFuns cf of
-     [] -> case (badInheritence cf) of
-       [] -> return (ret,True)
-       xs -> do
-        putStrLn "Warning :"
-        putStrLn $ "  Bad Label name in Category(s) :" ++ unwords xs
-        putStrLn $ "  These categories have more than one Label, yet one of these"
-        putStrLn $ "  Labels has the same name as the Category. This will almost"
-        putStrLn $ "  certainly cause problems in languages other than Haskell.\n"
-        return (ret,True)
-     xs -> do
-       putStrLn $ "Warning :"
-       putStrLn $ "  Non-unique label name(s) : " ++ unwords xs
-       putStrLn $ "  There may be problems with the pretty-printer.\n"
-       case (badInheritence cf) of
-         [] -> return (ret,True)
-         xs -> do
-          putStrLn $ "Warning :"
-          putStrLn $ "  Bad Label name in Category(s) :" ++ unwords xs
-          putStrLn $ "  These categories have more than one Label, yet one of these"
-          putStrLn $ "  Labels has the same name as the Category. This will almost"
-          putStrLn $ "  certainly cause problems in languages other than Haskell.\n"
-          return (ret,True)
--}
+-- | Translate the parsed grammar file into a context-free grammar 'CFP'.
+--   Desugars and type-checks.
 
-getCFP :: Bool -> Abs.Grammar -> Err CFP
-getCFP cnf (Abs.Grammar defs0) = do
-    sig <- buildSignature $ map (fmap fst) rules
+getCFP :: SharedOptions -> Abs.Grammar -> Err CFP
+getCFP opts (Abs.Grammar defs0) = do
+    let (defs,inlineDelims)= if cnf opts then (defs0,id) else removeDelims defs0
+        (pragma,rules0)    = partitionEithers $ concat $ mapM transDef defs `runTrans` opts
+        rules              = inlineDelims rules0
+        reservedWords      = nub [t | r <- rules, isParsable r, Right t <- rhsRule r, not $ all isSpace t]
+          -- Issue #204: exclude keywords from internal rules
+          -- Issue #70: whitespace separators should be treated like "", at least in the parser
+        literals           = nub
+          [ lit | xs <- map rhsRule rules
+                , Left (Cat lit) <- xs
+                , lit `elem` specialCatsP
+          ]
+        (symbols,keywords) = partition notIdent reservedWords
+    sig <- runTypeChecker $ buildSignature $ map (fmap fst) rules
     let cf = revs $ CFG pragma literals symbols keywords [] rules sig
     case mapMaybe (checkRule (cfp2cf cf)) rules of
       [] -> return ()
       msgs -> throwError $ unlines msgs
     return cf
   where
-    rules              = inlineDelims rules0
-    (pragma,rules0)    = partitionEithers $ concatMap transDef defs
-    (defs,inlineDelims)= if cnf then (defs0,id) else removeDelims defs0
-    literals           = nub
-      [ lit | xs <- map rhsRule rules
-            , Left (Cat lit) <- xs
-            , lit `elem` specialCatsP
-      ]
-    (symbols,keywords) = partition notIdent reservedWords
-    notIdent s         = null s || not (isAlpha (head s)) || any (not . isIdentRest) s
-    isIdentRest c      = isAlphaNum c || c == '_' || c == '\''
-    reservedWords      = nub [t | r <- rules, isParsable r, Right t <- rhsRule r, not $ all isSpace t]
-       -- Issue #204: exclude keywords from internal rules
-       -- Issue #70: whitespace separators should be treated like "", at least in the parser
+    notIdent s       = null s || not (isAlpha (head s)) || any (not . isIdentRest) s
+    isIdentRest c    = isAlphaNum c || c == '_'
     revs cfp@CFG{..} =
         cfp { cfgReversibleCats = findAllReversibleCats (cfp2cf cfp) }
 
 -- | This function goes through each rule of a grammar and replace Cat "X" with
 -- TokenCat "X" when "X" is a token type.
-markTokenCategories :: CFP -> Err CFP
-markTokenCategories cf@CFG{..} = return $ cf { cfgRules = newRules }
+markTokenCategories :: CFP -> CFP
+markTokenCategories cf@CFG{..} = cf { cfgRules = newRules }
   where
-    newRules = [ Rule f (mark c) (map (left mark) rhs) internal | Rule f c rhs internal <- cfgRules ]
-    tokenCatNames = [ n | TokenReg n _ _ <- cfgPragmas ] ++ specialCatsP
+    newRules = [ Rule f (fmap mark c) (map (left mark) rhs) internal | Rule f c rhs internal <- cfgRules ]
+    tokenCatNames = [ wpThing n | TokenReg n _ _ <- cfgPragmas ] ++ specialCatsP
     mark = toTokenCat tokenCatNames
 
 
@@ -263,12 +254,12 @@ removeDelims xs = (ys ++ map delimToSep ds,
 
     inlineDelim :: Abs.Def -> Either Cat String ->  [Either Cat String]
     inlineDelim (Abs.Delimiters cat open close _ _) (Left c)
-      | c == ListCat (transCat cat) = [Right open, Left c, Right close]
+      | c == ListCat (transCat' cat) = [Right open, Left c, Right close]
     inlineDelim _ x = [x]
 
     inlineDelim' :: Abs.Def -> RuleP -> RuleP
     inlineDelim' d@(Abs.Delimiters cat _ _ _ _) r@(Rule f c rhs internal)
-      | c == ListCat (transCat cat) = r
+      | wpThing c == ListCat (transCat' cat) = r
       | otherwise = Rule f c (concatMap (inlineDelim d) rhs) internal
     inlineDelim' _ _ = error "Not a delimiters pragma"
 
@@ -278,118 +269,161 @@ removeDelims xs = (ys ++ map delimToSep ds,
     delimToSep (Abs.Delimiters cat _ _  Abs.SepNone     sz) = Abs.Terminator sz cat ""
     delimToSep x = x
 
-transDef :: Abs.Def -> [Either Pragma RuleP]
-transDef = \case
- Abs.Rule label cat items ->
-   [Right $ Rule (transLabel label) (transCat cat) (concatMap transItem items) Parsable]
- Abs.Comment str               -> [Left $ CommentS str]
- Abs.Comments str0 str         -> [Left $ CommentM (str0,str)]
- Abs.Token ident reg           -> [Left $ TokenReg (transIdent ident) False $ simpReg reg]
- Abs.PosToken ident reg        -> [Left $ TokenReg (transIdent ident) True  $ simpReg reg]
- Abs.Entryp idents             -> [Left $ EntryPoints (map (strToCat .transIdent) idents)]
- Abs.Internal label cat items  ->
-   [Right $ Rule (transLabel label) (transCat cat) (concatMap transItem items) Internal]
- Abs.Separator size ident str -> map  (Right . cf2cfpRule) $ separatorRules size ident str
- Abs.Terminator size ident str -> map  (Right . cf2cfpRule) $ terminatorRules size ident str
- Abs.Delimiters a b c d e -> map  (Right . cf2cfpRule) $ delimiterRules a b c d e
- Abs.Coercions ident int -> map  (Right . cf2cfpRule) $ coercionRules ident int
- Abs.Rules ident strs -> map (Right . cf2cfpRule) $ ebnfRules ident strs
- Abs.Layout ss      -> [Left $ Layout ss]
- Abs.LayoutStop ss  -> [Left $ LayoutStop ss]
- Abs.LayoutTop      -> [Left LayoutTop]
- Abs.Function f xs e -> [ Left $ FunDef (transIdent f) xs' (transExp xs' e)
-                        | let xs' = map transArg xs ]
+-- | Translation monad.
+newtype Trans a = Trans { unTrans :: Reader SharedOptions a }
+  deriving (Functor, Applicative, Monad, MonadReader SharedOptions)
 
-delimiterRules :: Abs.Cat -> String -> String -> Abs.Separation -> Abs.MinimumSize -> [Rule]
+runTrans :: Trans a -> SharedOptions -> a
+runTrans m opts = unTrans m `runReader` opts
+
+transDef :: Abs.Def -> Trans [Either Pragma RuleP]
+transDef = \case
+    Abs.Rule label cat items  -> do
+      f <- transLabel label
+      c <- transCat cat
+      return $ [ Right $ Rule f c (concatMap transItem items) Parsable ]
+    Abs.Internal label cat items  -> do
+      f <- transLabel label
+      c <- transCat cat
+      return $ [ Right $ Rule f c (concatMap transItem items) Internal ]
+
+    Abs.Comment str               -> return [ Left $ CommentS str ]
+    Abs.Comments str1 str2        -> return [ Left $ CommentM (str1, str2) ]
+
+    Abs.Token ident reg           -> do x <- transIdent ident; return [Left $ TokenReg x False $ simpReg reg]
+    Abs.PosToken ident reg        -> do x <- transIdent ident; return [Left $ TokenReg x True  $ simpReg reg]
+    Abs.Entryp idents             -> do xs <- mapM transIdent idents; return [Left $ EntryPoints $ map (fmap strToCat) xs]
+    Abs.Separator size ident str  -> map (Right . cf2cfpRule) <$> separatorRules size ident str
+    Abs.Terminator size ident str -> map (Right . cf2cfpRule) <$> terminatorRules size ident str
+    Abs.Delimiters a b c d e      -> map (Right . cf2cfpRule) <$> delimiterRules a b c d e
+    Abs.Coercions ident int       -> map (Right . cf2cfpRule) <$> coercionRules ident int
+    Abs.Rules ident strs          -> map (Right . cf2cfpRule) <$> ebnfRules ident strs
+    Abs.Layout ss                 -> return [ Left $ Layout ss ]
+    Abs.LayoutStop ss             -> return [ Left $ LayoutStop ss]
+    Abs.LayoutTop                 -> return [ Left $ LayoutTop ]
+    Abs.Function ident xs e       -> do
+      f <- transIdent ident
+      let xs' = map transArg xs
+      return [ Left $ FunDef f xs' $ transExp xs' e ]
+
+delimiterRules :: Abs.Cat -> String -> String -> Abs.Separation -> Abs.MinimumSize -> Trans [Rule]
 delimiterRules a0 l r (Abs.SepTerm  "") size = delimiterRules a0 l r Abs.SepNone size
 delimiterRules a0 l r (Abs.SepSepar "") size = delimiterRules a0 l r Abs.SepNone size
-delimiterRules a0 l r sep size =
+delimiterRules a0 l r sep size = do
+  WithPosition pos a <- transCat a0
+  let as = ListCat a
+      a' = '@':'@':show a
+      c  = '@':'{':show a
+      d  = '@':'}':show a
+  let wp = WithPosition pos
+      rule f c = Rule (wp f) (wp c)
+  return $ concat
    -- recognizing a single element
-  [ Rule "(:[])"  (strToCat a')  (Left a : termin) Parsable -- optional terminator/separator
+    [ [ rule "(:[])"  (strToCat a')  (Left a : termin) Parsable -- optional terminator/separator
 
-  -- glueing two sublists
-  , Rule "(++)"   (strToCat a')  [Left (strToCat a'), Left (strToCat a')] Parsable
+      -- glueing two sublists
+      , rule "(++)"   (strToCat a')  [Left (strToCat a'), Left (strToCat a')] Parsable
 
-   -- starting on either side with a delimiter
-  , Rule "[]"     (strToCat c)   [Right l] Parsable
-  , Rule (if optFinal then "(:[])" else
-                         "[]")
-                (strToCat d)   ([Left a | optFinal] ++ [Right r]) Parsable
+       -- starting on either side with a delimiter
+      , rule "[]"     (strToCat c)   [Right l] Parsable
+      , rule (if optFinal then "(:[])" else "[]")
+                      (strToCat d)   ([Left a | optFinal] ++ [Right r]) Parsable
 
-   -- gathering chains
-  , Rule "(++)"   (strToCat c)   [Left (strToCat c), Left (strToCat a')] Parsable
-  , Rule "(++)"   (strToCat d)   [Left (strToCat a'), Left (strToCat d)] Parsable
+       -- gathering chains
+      , rule "(++)"   (strToCat c)   [Left (strToCat c), Left (strToCat a')] Parsable
+      , rule "(++)"   (strToCat d)   [Left (strToCat a'), Left (strToCat d)] Parsable
 
-   -- finally, put together left and right chains
-  , Rule "(++)"   as  [Left (strToCat c),Left (strToCat d)] Parsable
-  ] ++
-  -- special rule for the empty list if necessary
-  [ Rule "[]"     as  [Right l,Right r] Parsable | optEmpty ]
- where a = transCat a0
-       as = ListCat a
-       a' = '@':'@':show a
-       c  = '@':'{':show a
-       d  = '@':'}':show a
-       -- optionally separated concat. of x and y categories.
-       termin = case sep of
-                  Abs.SepSepar t -> [Right t]
-                  Abs.SepTerm  t -> [Right t]
-                  _ -> []
-       optFinal = case (sep,size) of
-         (Abs.SepSepar _,_) -> True
-         (Abs.SepTerm _,Abs.MNonempty) -> True
-         (Abs.SepNone,Abs.MNonempty) -> True
-         _ -> False
-       optEmpty = case sep of
-         Abs.SepSepar _ -> size == Abs.MEmpty
-         _ -> False
-
--- If the user-provided separator consists of white space only,
--- we turn it into a terminator rule to prevent reduce/reduce conflicts.
-separatorRules :: Abs.MinimumSize -> Abs.Cat -> String -> [Rule]
-separatorRules size c s = if all isSpace s then terminatorRules size c s else ifEmpty [
-  Rule "(:[])" cs [Left c'] Parsable,
-  Rule "(:)"   cs [Left c', Right s, Left cs] Parsable
-  ]
- where
-   c' = transCat c
-   cs = ListCat c'
-   ifEmpty rs = if size == Abs.MNonempty
-                then rs
-                else Rule "[]" cs [] Parsable : rs
-
-terminatorRules :: Abs.MinimumSize -> Abs.Cat -> String -> [Rule]
-terminatorRules size c s = [
-  ifEmpty,
-  Rule "(:)" cs (Left c' : s' [Left cs]) Parsable
-  ]
- where
-   c' = transCat c
-   cs = ListCat c'
-   s' its = if null s then its else Right s : its
-   ifEmpty = if size == Abs.MNonempty
-                then Rule "(:[])" cs (Left c' : if null s then [] else [Right s]) Parsable
-                else Rule "[]" cs [] Parsable
-
-coercionRules :: Abs.Identifier -> Integer -> [Rule]
-coercionRules (Abs.Identifier c) n = concat
-  [ [ Rule "_" (Cat c)            [Left (CoercCat c 1)] Parsable
+       -- finally, put together left and right chains
+      , rule "(++)"   as  [Left (strToCat c), Left (strToCat d)] Parsable
+      ]
+      -- special rule for the empty list if necessary
+    , [ rule "[]"     as  [Right l, Right r] Parsable | optEmpty ]
     ]
-  , [ Rule "_" (CoercCat c (i-1)) [Left (CoercCat c i)] Parsable
-    | i <- [2..n]
-    ]
-  , [ Rule "_" (CoercCat c n)     [Right "(", Left (Cat c), Right ")"] Parsable
-    ]
-  ]
+  where
+  -- optionally separated concat. of x and y categories.
+  termin = case sep of
+     Abs.SepSepar t -> [Right t]
+     Abs.SepTerm  t -> [Right t]
+     _ -> []
+  optFinal = case (sep, size) of
+    (Abs.SepSepar _, _             ) -> True
+    (Abs.SepTerm _ , Abs.MNonempty ) -> True
+    (Abs.SepNone   ,  Abs.MNonempty) -> True
+    _ -> False
+  optEmpty = case sep of
+    Abs.SepSepar _ -> size == Abs.MEmpty
+    _ -> False
 
-ebnfRules :: Abs.Identifier -> [Abs.RHS] -> [Rule]
-ebnfRules (Abs.Identifier c) rhss =
-  [Rule (mkFun k its) (strToCat c) (concatMap transItem its) Parsable
-     | (k, Abs.RHS its) <- zip [1 :: Int ..] rhss]
+-- | Translate @separator [nonempty] C "s"@.
+--   The position attached to the generated rules is taken from @C@.
+--
+--   (Ideally, we would take them from the @terminator@ keyword.
+--   But BNFC does not deliver position information there.)
+--
+--   If the user-provided separator consists of white space only,
+--   we turn it into a terminator rule to prevent reduce/reduce conflicts.
+
+separatorRules :: Abs.MinimumSize -> Abs.Cat -> String -> Trans [Rule]
+separatorRules size c0 s
+  | all isSpace s = terminatorRules size c0 s
+  | otherwise     = do
+      WithPosition pos c <- transCat c0
+      let wp = WithPosition pos
+      let cs = ListCat c
+      let rule x rhs = Rule (wp x) (wp cs) rhs Parsable
+      return $ concat
+        [ [ rule "[]"    []                         | size == Abs.MEmpty ]
+        , [ rule "(:[])" [Left c]                   ]
+        , [ rule "(:)"   [Left c, Right s, Left cs] ]
+        ]
+
+-- | Translate @terminator [nonempty] C "s"@.
+--   The position attached to the generated rules is taken from @C@.
+--
+--   (Ideally, we would take them from the @terminator@ keyword.
+--   But BNFC does not deliver position information there.)
+
+terminatorRules :: Abs.MinimumSize -> Abs.Cat -> String -> Trans [Rule]
+terminatorRules size c0 s = do
+  WithPosition pos c <- transCat c0
+  let wp = WithPosition pos
+  let cs = ListCat c
+  let rule x rhs = Rule (wp x) (wp cs) rhs Parsable
+  return
+    [ case size of
+      Abs.MNonempty ->
+        rule "(:[])" (Left c : term [])
+      Abs.MEmpty ->
+        rule "[]"    []
+    ,   rule "(:)"   (Left c : term [Left cs])
+    ]
+  where
+  term = if null s then id else (Right s :)
+
+coercionRules :: Abs.Identifier -> Integer -> Trans [Rule]
+coercionRules c0 n = do
+  WithPosition pos c <- transIdent c0
+  let wp = WithPosition pos
+  let urule x rhs = Rule (wp "_") (wp x) rhs Parsable
+  return $ concat
+    [ [ urule (Cat c)            [Left (CoercCat c 1)]                ]
+    , [ urule (CoercCat c (i-1)) [Left (CoercCat c i)]                | i <- [2..n] ]
+    , [ urule (CoercCat c n)     [Right "(", Left (Cat c), Right ")"] ]
+    ]
+
+ebnfRules :: Abs.Identifier -> [Abs.RHS] -> Trans [Rule]
+ebnfRules (Abs.Identifier ((line, col), c)) rhss = do
+  file <- asks lbnfFile
+  let wp = WithPosition $ Position file line col
+  let rule x rhs = Rule (wp x) (wp $ strToCat c) rhs Parsable
+  return
+    [ rule (mkFun k its) (concatMap transItem its)
+    | (k, Abs.RHS its) <- zip [1 :: Int ..] rhss
+    ]
  where
-   mkFun k i = case i of
+   mkFun k = \case
      [Abs.Terminal s]  -> c' ++ "_" ++ mkName k s
-     [Abs.NTerminal n] -> c' ++ identCat (transCat n)
+     [Abs.NTerminal n] -> c' ++ identCat (transCat' n)
      _ -> c' ++ "_" ++ show k
    c' = c --- normCat c
    mkName k s = if all (\c -> isAlphaNum c || elem c ("_'" :: String)) s
@@ -403,36 +437,44 @@ ebnfRules (Abs.Identifier c) rhss =
 -- is equivalent to
 --   Foo. S ::= "foo" "bar"
 transItem :: Abs.Item -> [Either Cat String]
-transItem (Abs.Terminal str) = [Right w | w <- words str]
-transItem (Abs.NTerminal cat) = [Left (transCat cat)]
+transItem (Abs.Terminal str)  = [ Right w | w <- words str ]
+transItem (Abs.NTerminal cat) = [ Left (transCat' cat) ]
 
-transCat :: Abs.Cat -> Cat
-transCat x = case x of
- Abs.ListCat cat  -> ListCat (transCat cat)
- Abs.IdCat (Abs.Identifier c)     -> strToCat c
+transCat' :: Abs.Cat -> Cat
+transCat' = \case
+    Abs.ListCat cat                      -> ListCat $ transCat' cat
+    Abs.IdCat (Abs.Identifier (_pos, c)) -> strToCat c
 
-transLabel :: Abs.Label -> (Fun,Prof)
-transLabel y = case y of
-   Abs.LabNoP f     -> let g = transLabelId f in (g,(g,[])) ---- should be Nothing
-   Abs.LabP   f p   -> let g = transLabelId f in (g,(g, map transProf p))
-   Abs.LabPF  f g p -> (transLabelId f,(transLabelId g, map transProf p))
-   Abs.LabF   f g   -> (transLabelId f,(transLabelId g, []))
- where
-   transLabelId x = case x of
-     Abs.Id id     -> transIdent id
-     Abs.Wild      -> "_"
-     Abs.ListE     -> "[]"
-     Abs.ListCons  -> "(:)"
-     Abs.ListOne   -> "(:[])"
-   transProf (Abs.ProfIt bss as) =
+transCat :: Abs.Cat -> Trans (WithPosition Cat)
+transCat = \case
+    Abs.ListCat cat                             -> fmap ListCat <$> transCat cat
+    Abs.IdCat (Abs.Identifier ((line, col), c)) -> do
+      file <- asks lbnfFile
+      return $ WithPosition (Position file line col) $ strToCat c
+
+transLabel :: Abs.Label -> Trans (RFun, Prof)
+transLabel = \case
+    Abs.LabNoP f     -> do g <- transLabelId f; return (g,(g,[])) ---- should be Nothing
+    Abs.LabP   f p   -> do g <- transLabelId f; return (g,(g, map transProf p))
+    Abs.LabPF  f g p -> (,) <$> transLabelId f <*> do (,map transProf p) <$> transLabelId g
+    Abs.LabF   f g   -> (,) <$> transLabelId f <*> do (,[])              <$> transLabelId g
+  where
+  transLabelId = \case
+    Abs.Id id     -> transIdent id
+    Abs.Wild      -> return $ noPosition $ "_"
+    Abs.ListE     -> return $ noPosition $ "[]"
+    Abs.ListCons  -> return $ noPosition $ "(:)"
+    Abs.ListOne   -> return $ noPosition $ "(:[])"
+  transProf (Abs.ProfIt bss as) =
      ([map fromInteger bs | Abs.Ints bs <- bss], map fromInteger as)
 
-transIdent :: Abs.Identifier -> String
-transIdent = \case
- Abs.Identifier str  -> str
+transIdent :: Abs.Identifier -> Trans RString
+transIdent (Abs.Identifier ((line, col), str)) = do
+  file <- asks lbnfFile
+  return $ WithPosition (Position file line col) str
 
 transArg :: Abs.Arg -> String
-transArg (Abs.Arg x) = transIdent x
+transArg (Abs.Arg (Abs.Identifier (_pos, x))) = x
 
 transExp
   :: [String] -- ^ Arguments of definition (in scope in expression).
@@ -441,8 +483,8 @@ transExp
 transExp xs = loop
   where
   loop = \case
-    Abs.App x es    -> App (transIdent x) (map loop es)
-    Abs.Var x       -> let x' = transIdent x in
+    Abs.App x es    -> App (transIdent' x) (map loop es)
+    Abs.Var x       -> let x' = transIdent' x in
                        if x' `elem` xs then Var x' else App x' []
     Abs.Cons e1 e2  -> cons e1 (loop e2)
     Abs.List es     -> foldr cons nil es
@@ -452,6 +494,7 @@ transExp xs = loop
     Abs.LitString x -> LitString x
   cons e1 e2 = App "(:)" [loop e1, e2]
   nil        = App "[]" []
+  transIdent' (Abs.Identifier (_pos, x)) = x
 
 --------------------------------------------------------------------------------
 
@@ -494,21 +537,22 @@ nullable r =
 -- (2) no other digits are used
 
 checkRule :: CF -> RuleP -> Maybe String
-checkRule _ (Rule _ (Cat ('@':_)) _ _) = Nothing -- Generated by a pragma; it's a trusted category
-checkRule cf (Rule (f,_) cat rhs _)
-  | badCoercion    = Just $ "Bad coercion in rule" +++ s
-  | badNil         = Just $ "Bad empty list rule" +++ s
-  | badOne         = Just $ "Bad one-element list rule" +++ s
-  | badCons        = Just $ "Bad list construction rule" +++ s
-  | badList        = Just $ "Bad list formation rule" +++ s
-  | badSpecial     = Just $ "Bad special category rule" +++ s
-  | badTypeName    = Just $ "Bad type name" +++ unwords (map show badtypes) +++ "in" +++ s
-  | badFunName     = Just $ "Bad constructor name" +++ f +++ "in" +++ s
-  | badMissing     = Just $ "no production for" +++ unwords missing ++
-                             ", appearing in rule\n    " ++ s
+checkRule cf (Rule (f,_) (WithPosition _ cat) rhs _)
+  | Cat ('@':_) <- cat = Nothing -- Generated by a pragma; it's a trusted category
+  | badCoercion    = failure $ "Bad coercion in rule" +++ s
+  | badNil         = failure $ "Bad empty list rule" +++ s
+  | badOne         = failure $ "Bad one-element list rule" +++ s
+  | badCons        = failure $ "Bad list construction rule" +++ s
+  | badList        = failure $ "Bad list formation rule" +++ s
+  | badSpecial     = failure $ "Bad special category rule" +++ s
+  | badTypeName    = failure $ "Bad type name" +++ unwords (map show badtypes) +++ "in" +++ s
+  | badFunName     = failure $ "Bad constructor name" +++ fun +++ "in" +++ s
+  | badMissing     = failure $ "no production for" +++ unwords missing ++ ", appearing in rule\n    " ++ s
   | otherwise      = Nothing
  where
-   s  = f ++ "." +++ show cat +++ "::=" +++ unwords (map (either show show) rhs) -- Todo: consider using the show instance of Rule
+   failure = Just . blendInPosition . (f $>)
+   fun = wpThing f
+   s  = fun ++ "." +++ show cat +++ "::=" +++ unwords (map (either show show) rhs) -- Todo: consider using the show instance of Rule
    c  = normCat cat
    cs = [normCat c | Left c <- rhs]
    badCoercion = isCoercion f && [c] /= cs
@@ -529,16 +573,16 @@ checkRule cf (Rule (f,_) cat rhs _)
    isBadType (Cat s) = isBadCatName s
    isBadType (TokenCat s) = isBadCatName s
    isBadCatName s = not $ isUpper (head s) || (head s == '@')
-   badFunName = not (all (\c -> isAlphaNum c || c == '_') f {-isUpper (head f)-}
+   badFunName = not (all (\c -> isAlphaNum c || c == '_') (wpThing f) {-isUpper (head f)-}
                        || isCoercion f || isNilCons f)
 
 
 -- | Pre-processor that converts the `rules` macros to regular rules
 -- by creating unique function names for them.
 -- >>> :{
--- let rules1 = Abs.Rules (Abs.Identifier "Foo")
+-- let rules1 = Abs.Rules (Abs.Identifier ((0, 0), "Foo"))
 --         [ Abs.RHS [Abs.Terminal "abc"]
---         , Abs.RHS [Abs.NTerminal (Abs.IdCat (Abs.Identifier "A"))]
+--         , Abs.RHS [Abs.NTerminal (Abs.IdCat (Abs.Identifier ((0, 0), "A")))]
 --         , Abs.RHS [Abs.Terminal "foo", Abs.Terminal "bar"]
 --         , Abs.RHS [Abs.Terminal "++"]
 --         ]
@@ -554,10 +598,10 @@ checkRule cf (Rule (f,_) cat rhs _)
 -- Note that if there are two `rules` macro with the same category, the
 -- generated names should be uniques:
 -- >>> :{
--- let rules1 = Abs.Rules (Abs.Identifier "Foo")
+-- let rules1 = Abs.Rules (Abs.Identifier ((0, 0), "Foo"))
 --         [ Abs.RHS [Abs.Terminal "foo", Abs.Terminal "bar"] ]
 -- in
--- let rules2 = Abs.Rules (Abs.Identifier "Foo")
+-- let rules2 = Abs.Rules (Abs.Identifier ((0, 0), "Foo"))
 --         [ Abs.RHS [Abs.Terminal "foo", Abs.Terminal "foo"] ]
 -- in
 -- let tree = expandRules (Abs.Grammar [rules1, rules2])
@@ -569,24 +613,32 @@ checkRule cf (Rule (f,_) cat rhs _)
 -- This is using a State monad to remember the last used index for a category.
 expandRules :: Abs.Grammar -> Abs.Grammar
 expandRules (Abs.Grammar defs) =
-    Abs.Grammar (concat (evalState (mapM expand defs) []))
+    Abs.Grammar . concat $ mapM expand defs `evalState` []
   where
     expand :: Abs.Def -> State [(String, Int)] [Abs.Def]
-    expand (Abs.Rules ident rhss) = mapM (mkRule ident) rhss
-    expand other = return [other]
+    expand = \case
+      Abs.Rules ident rhss -> mapM (mkRule ident) rhss
+      other                -> return [ other ]
 
     mkRule :: Abs.Identifier -> Abs.RHS -> State [(String, Int)] Abs.Def
     mkRule ident (Abs.RHS rhs) = do
-      fun <- Abs.LabNoP . Abs.Id . Abs.Identifier <$> mkName ident rhs
-      return (Abs.Rule fun (Abs.IdCat ident) rhs)
+      fun <- Abs.LabNoP . Abs.Id <$> mkName ident rhs
+      return $ Abs.Rule fun (Abs.IdCat ident) rhs
 
-    mkName :: Abs.Identifier -> [Abs.Item] -> State [(String, Int)] String
-    mkName (Abs.Identifier cat) [Abs.Terminal s]
-      | all (\c -> isAlphaNum c || elem c ("_'" :: String)) s =
-        return (cat ++ "_" ++ s)
-    mkName (Abs.Identifier cat) [Abs.NTerminal (Abs.IdCat (Abs.Identifier s))] =
-        return (cat ++ s)
-    mkName (Abs.Identifier cat) _ = do
+    mkName :: Abs.Identifier -> [Abs.Item] -> State [(String, Int)] Abs.Identifier
+    mkName (Abs.Identifier (pos, cat)) = \case
+
+      -- A string that is a valid identifier.
+      [ Abs.Terminal s ] | all (\ c -> isAlphaNum c || c == '_') s ->
+        return $ Abs.Identifier (pos, cat ++ "_" ++ s)
+
+      -- Same but without double quotes.
+      [ Abs.NTerminal (Abs.IdCat (Abs.Identifier (pos', s))) ] ->
+        return $ Abs.Identifier (pos', cat ++ s)
+
+      -- Something else that does not immediately give a valid rule name.
+      -- Just number!
+      _ -> do
         i <- maybe 1 (+1) . lookup cat <$> get
         modify ((cat, i):)
-        return (cat ++ show i)
+        return $ Abs.Identifier (pos, cat ++ show i)

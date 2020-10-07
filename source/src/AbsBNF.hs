@@ -5,12 +5,12 @@
 
 module AbsBNF where
 
-import Prelude (Char, Double, Integer, String)
+import Prelude (Char, Double, Int, Integer, String)
 import qualified Prelude as C (Eq, Ord, Show, Read)
 import qualified Data.String
 
-newtype Identifier = Identifier String
-  deriving (C.Eq, C.Ord, C.Show, C.Read, Data.String.IsString)
+newtype Identifier = Identifier ((Int, Int), String)
+  deriving (C.Eq, C.Ord, C.Show, C.Read)
 
 data LGrammar = LGr [LDef]
   deriving (C.Eq, C.Ord, C.Show, C.Read)

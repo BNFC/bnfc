@@ -30,9 +30,10 @@ import BNFC.CF
 import BNFC.Options (TokenText(..))
 import BNFC.Utils
 
-import Data.Char   (toLower)
-import Data.Either (lefts)
-import Data.List   (sortBy, intersperse)
+import Data.Char     (toLower)
+import Data.Either   (lefts)
+import Data.Function (on)
+import Data.List     (sortBy, intersperse)
 
 -- import Debug.Trace (trace)
 import Text.PrettyPrint
@@ -223,7 +224,7 @@ rules absMod functor cf = do
   where
     toArgs :: Cat -> (Fun, [Cat]) -> Rule
     toArgs cat (cons, _) =
-      case filter (\ (Rule f c _rhs _internal) -> cons == f && cat == normCat c) (cfgRules cf)
+      case filter (\ (Rule f c _rhs _internal) -> cons == funName f && cat == normCat (wpThing c)) (cfgRules cf)
       of
         (r : _) -> r
         -- 2018-01-14:  Currently, there can be overlapping rules like
@@ -233,7 +234,7 @@ rules absMod functor cf = do
         [] -> error $ "CFToPrinter.rules: no rhs found for: " ++ cons ++ ". " ++ show cat ++ " ::= ?"
 
 -- |
--- >>> case_fun "Abs" False (Cat "A") [ (Rule "AA" (Cat "AB") [Right "xxx"]) Parsable ]
+-- >>> case_fun "Abs" False (Cat "A") [ (npRule "AA" (Cat "AB") [Right "xxx"]) Parsable ]
 -- instance Print Abs.A where
 --   prt i e = case e of
 --     Abs.AA -> prPrec i 0 (concatD [doc (showString "xxx")])
@@ -262,37 +263,37 @@ case_fun absMod functor cat xs =
 -- | When writing the Print instance for a category (in case_fun), we have
 -- a different case for each constructor for this category.
 --
--- >>> mkPrintCase "Abs" False (Rule "AA" (Cat "A") [Right "xxx"] Parsable)
+-- >>> mkPrintCase "Abs" False (npRule "AA" (Cat "A") [Right "xxx"] Parsable)
 -- Abs.AA -> prPrec i 0 (concatD [doc (showString "xxx")])
 --
 -- Coercion levels are passed to @prPrec@.
 --
--- >>> mkPrintCase "Abs" False (Rule "EInt" (CoercCat "Expr" 2) [Left (TokenCat "Integer")] Parsable)
+-- >>> mkPrintCase "Abs" False (npRule "EInt" (CoercCat "Expr" 2) [Left (TokenCat "Integer")] Parsable)
 -- Abs.EInt n -> prPrec i 2 (concatD [prt 0 n])
 --
--- >>> mkPrintCase "Abs" False (Rule "EPlus" (CoercCat "Expr" 1) [Left (Cat "Expr"), Right "+", Left (Cat "Expr")] Parsable)
+-- >>> mkPrintCase "Abs" False (npRule "EPlus" (CoercCat "Expr" 1) [Left (Cat "Expr"), Right "+", Left (Cat "Expr")] Parsable)
 -- Abs.EPlus expr1 expr2 -> prPrec i 1 (concatD [prt 0 expr1, doc (showString "+"), prt 0 expr2])
 --
 -- If the AST is a functor, ignore first argument.
 --
--- >>> mkPrintCase "Abs" True (Rule "EInt" (CoercCat "Expr" 2) [Left (TokenCat "Integer")] Parsable)
+-- >>> mkPrintCase "Abs" True (npRule "EInt" (CoercCat "Expr" 2) [Left (TokenCat "Integer")] Parsable)
 -- Abs.EInt _ n -> prPrec i 2 (concatD [prt 0 n])
 --
 -- Skip internal categories.
 --
--- >>> mkPrintCase "Abs" True $ Rule "EInternal" (Cat "Expr") [Left (Cat "Expr")] Internal
+-- >>> mkPrintCase "Abs" True $ npRule "EInternal" (Cat "Expr") [Left (Cat "Expr")] Internal
 -- Abs.EInternal _ expr -> prPrec i 0 (concatD [prt 0 expr])
 --
 mkPrintCase :: AbsMod -> Bool -> Rule -> Doc
 mkPrintCase absMod functor (Rule f cat rhs _internal) =
     pattern <+> "->"
-    <+> "prPrec i" <+> integer (precCat cat) <+> parens (mkRhs (map render variables) rhs)
+    <+> "prPrec i" <+> integer (precCat $ wpThing cat) <+> parens (mkRhs (map render variables) rhs)
   where
     pattern :: Doc
     pattern
       | isOneFun  f = text "[" <+> head variables <+> "]"
       | isConsFun f = hsep $ intersperse (text ":") variables
-      | otherwise   = text (qualify absMod f) <+> (if functor then "_" else empty) <+> hsep variables
+      | otherwise   = text (qualify absMod $ funName f) <+> (if functor then "_" else empty) <+> hsep variables
     -- Creating variables names used in pattern matching. In addition to
     -- haskell's reserved words, `e` and `i` are used in the printing function
     -- and should be avoided
@@ -321,26 +322,26 @@ ifList cf cat =
 
 -- | Pattern match on the list constructor and the coercion level
 --
--- >>> mkPrtListCase (Rule "[]" (ListCat (Cat "Foo")) [] Parsable)
+-- >>> mkPrtListCase (npRule "[]" (ListCat (Cat "Foo")) [] Parsable)
 -- prtList _ [] = concatD []
 --
--- >>> mkPrtListCase (Rule "(:[])" (ListCat (Cat "Foo")) [Left (Cat "FOO")] Parsable)
+-- >>> mkPrtListCase (npRule "(:[])" (ListCat (Cat "Foo")) [Left (Cat "FOO")] Parsable)
 -- prtList _ [x] = concatD [prt 0 x]
 --
--- >>> mkPrtListCase (Rule "(:)" (ListCat (Cat "Foo")) [Left (Cat "Foo"), Left (ListCat (Cat "Foo"))] Parsable)
+-- >>> mkPrtListCase (npRule "(:)" (ListCat (Cat "Foo")) [Left (Cat "Foo"), Left (ListCat (Cat "Foo"))] Parsable)
 -- prtList _ (x:xs) = concatD [prt 0 x, prt 0 xs]
 --
--- >>> mkPrtListCase (Rule "[]" (ListCat (CoercCat "Foo" 2)) [] Parsable)
+-- >>> mkPrtListCase (npRule "[]" (ListCat (CoercCat "Foo" 2)) [] Parsable)
 -- prtList 2 [] = concatD []
 --
--- >>> mkPrtListCase (Rule "(:[])" (ListCat (CoercCat "Foo" 2)) [Left (CoercCat "Foo" 2)] Parsable)
+-- >>> mkPrtListCase (npRule "(:[])" (ListCat (CoercCat "Foo" 2)) [Left (CoercCat "Foo" 2)] Parsable)
 -- prtList 2 [x] = concatD [prt 2 x]
 --
--- >>> mkPrtListCase (Rule "(:)" (ListCat (CoercCat "Foo" 2)) [Left (CoercCat "Foo" 2), Left (ListCat (CoercCat "Foo" 2))] Parsable)
+-- >>> mkPrtListCase (npRule "(:)" (ListCat (CoercCat "Foo" 2)) [Left (CoercCat "Foo" 2), Left (ListCat (CoercCat "Foo" 2))] Parsable)
 -- prtList 2 (x:xs) = concatD [prt 2 x, prt 2 xs]
 --
 mkPrtListCase :: Rule -> Doc
-mkPrtListCase (Rule f (ListCat c) rhs _internal)
+mkPrtListCase (Rule f (WithPosition _ (ListCat c)) rhs _internal)
   | isNilFun f = "prtList" <+> precPattern <+> "[]" <+> "=" <+> body
   | isOneFun f = "prtList" <+> precPattern <+> "[x]" <+> "=" <+> body
   | isConsFun f = "prtList" <+> precPattern <+> "(x:xs)" <+> "=" <+> body
@@ -362,29 +363,34 @@ mkPrtListCase _ = error "mkPrtListCase undefined for non-list categories"
 -- This is desiged to correctly order the rules in the prtList function so that
 -- the pattern matching works as expectd.
 --
--- >>> compareRules (Rule "[]" (ListCat (CoercCat "Foo" 3)) [] Parsable) (Rule "[]" (ListCat (CoercCat "Foo" 1)) [] Parsable)
+-- >>> compareRules (npRule "[]" (ListCat (CoercCat "Foo" 3)) [] Parsable) (npRule "[]" (ListCat (CoercCat "Foo" 1)) [] Parsable)
 -- LT
 --
--- >>> compareRules (Rule "[]" (ListCat (CoercCat "Foo" 3)) [] Parsable) (Rule "[]" (ListCat (Cat "Foo")) [] Parsable)
+-- >>> compareRules (npRule "[]" (ListCat (CoercCat "Foo" 3)) [] Parsable) (npRule "[]" (ListCat (Cat "Foo")) [] Parsable)
 -- LT
 --
--- >>> compareRules (Rule "[]" (ListCat (Cat "Foo")) [] Parsable) (Rule "(:[])" (ListCat (Cat "Foo")) [] Parsable)
+-- >>> compareRules (npRule "[]" (ListCat (Cat "Foo")) [] Parsable) (npRule "(:[])" (ListCat (Cat "Foo")) [] Parsable)
 -- LT
 --
--- >>> compareRules (Rule "(:[])" (ListCat (Cat "Foo")) [] Parsable) (Rule "(:)" (ListCat (Cat "Foo")) [] Parsable)
+-- >>> compareRules (npRule "(:[])" (ListCat (Cat "Foo")) [] Parsable) (npRule "(:)" (ListCat (Cat "Foo")) [] Parsable)
 -- LT
 --
-compareRules :: Rule -> Rule -> Ordering
-compareRules r1 r2 | precRule r1 > precRule r2 = LT
-compareRules r1 r2 | precRule r1 < precRule r2 = GT
-compareRules (Rule "[]" _ _ _) (Rule "[]" _ _ _) = EQ
-compareRules (Rule "[]" _ _ _) _ = LT
-compareRules (Rule "(:[])" _ _ _) (Rule "[]" _ _ _) = GT
-compareRules (Rule "(:[])" _ _ _) (Rule "(:[])" _ _ _) = EQ
-compareRules (Rule "(:[])" _ _ _) (Rule "(:)" _ _ _) = LT
-compareRules (Rule "(:)" _ _ _) (Rule "(:)" _ _ _) = EQ
-compareRules (Rule "(:)" _ _ _) _ = GT
-compareRules _ _ = EQ
+compareRules :: IsFun f => Rul f -> Rul f -> Ordering
+compareRules r1 r2
+  | precRule r1 > precRule r2 = LT
+  | precRule r1 < precRule r2 = GT
+  | otherwise = (compareFunNames `on` (funName . funRule)) r1 r2
+
+compareFunNames :: String -> String -> Ordering
+compareFunNames = curry $ \case
+  ("[]"    , "[]"   ) -> EQ
+  ("[]"    , _      ) -> LT
+  ("(:[])" , "[]"   ) -> GT
+  ("(:[])" , "(:[])") -> EQ
+  ("(:[])" , "(:)"  ) -> LT
+  ("(:)"   , "(:)"  ) -> EQ
+  ("(:)"   , _      ) -> GT
+  (_       , _      ) -> EQ
 
 
 -- |

@@ -119,7 +119,7 @@ prTokenBaseType useWCF =  unlinesInline [
 prToken :: Namespace -> Bool -> String -> String
 prToken namespace useWCF name = unlinesInline [
   prDataContract useWCF [],
-  "  public class " ++ name ++ " : " ++ identifier namespace "TokenBaseType",
+  "  public class " ++ name ++ " : " ++ identifier namespace ("TokenBaseType" :: String),
   "  {",
   "    public " ++ name ++ "(string str) : base(str)",
   "    {",

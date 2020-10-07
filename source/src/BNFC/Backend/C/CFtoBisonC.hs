@@ -305,13 +305,13 @@ constructRule rp cf env rules nt = (nt,[(p, generateAction rp (identCat (normCat
 -- "make_ListFoo($1, $2);"
 -- >>> generateAction NoRecordPositions "ListFoo" "(:)" True ["$1","$2"]
 -- "make_ListFoo($2, $1);"
-generateAction :: RecordPositions -> String -> Fun -> Bool -> [MetaVar] -> Action
+generateAction :: IsFun a => RecordPositions -> String -> a -> Bool -> [MetaVar] -> Action
 generateAction rp nt f b ms
   | isCoercion f = unwords ms ++ ";" ++ loc
   | isNilFun f   = "0;"
   | isOneFun f   = concat ["make_", nt, "(", intercalate ", " ms', ", 0);"]
   | isConsFun f  = concat ["make_", nt, "(", intercalate ", " ms', ");"]
-  | otherwise    = concat ["make_", f, "(", intercalate ", " ms', ");", loc]
+  | otherwise    = concat ["make_", funName f, "(", intercalate ", " ms', ");", loc]
  where
   ms' = if b then reverse ms else ms
   loc = if rp == RecordPositions then " $$->line_number = @$.first_line; $$->char_number = @$.first_column;" else ""

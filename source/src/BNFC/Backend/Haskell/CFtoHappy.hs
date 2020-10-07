@@ -127,30 +127,31 @@ rulesForHappy absM functor cf = for (ruleGroups cf) $ \ (cat, rules) ->
 -- | For every non-terminal, we construct a set of rules. A rule is a sequence
 -- of terminals and non-terminals, and an action to be performed.
 --
--- >>> constructRule "Foo" False (Rule "EPlus" (Cat "Exp") [Left (Cat "Exp"), Right "+", Left (Cat "Exp")] Parsable)
+-- >>> constructRule "Foo" False (npRule "EPlus" (Cat "Exp") [Left (Cat "Exp"), Right "+", Left (Cat "Exp")] Parsable)
 -- ("Exp '+' Exp","Foo.EPlus $1 $3")
 --
 -- If we're using functors, it adds void value:
 --
--- >>> constructRule "Foo" True (Rule "EPlus" (Cat "Exp") [Left (Cat "Exp"), Right "+", Left (Cat "Exp")] Parsable)
+-- >>> constructRule "Foo" True (npRule "EPlus" (Cat "Exp") [Left (Cat "Exp"), Right "+", Left (Cat "Exp")] Parsable)
 -- ("Exp '+' Exp","Foo.EPlus () $1 $3")
 --
 -- List constructors should not be prefixed by the abstract module name:
 --
--- >>> constructRule "Foo" False (Rule "(:)" (ListCat (Cat "A")) [Left (Cat "A"), Right",", Left (ListCat (Cat "A"))] Parsable)
+-- >>> constructRule "Foo" False (npRule "(:)" (ListCat (Cat "A")) [Left (Cat "A"), Right",", Left (ListCat (Cat "A"))] Parsable)
 -- ("A ',' ListA","(:) $1 $3")
 --
--- >>> constructRule "Foo" False (Rule "(:[])" (ListCat (Cat "A")) [Left (Cat "A")] Parsable)
+-- >>> constructRule "Foo" False (npRule "(:[])" (ListCat (Cat "A")) [Left (Cat "A")] Parsable)
 -- ("A","(:[]) $1")
 --
 -- Coercion are much simpler:
 --
--- >>> constructRule "Foo" True (Rule "_" (Cat "Exp") [Right "(", Left (Cat "Exp"), Right ")"] Parsable)
+-- >>> constructRule "Foo" True (npRule "_" (Cat "Exp") [Right "(", Left (Cat "Exp"), Right ")"] Parsable)
 -- ("'(' Exp ')'","$2")
 --
-constructRule :: String -> Bool -> Rule -> (Pattern, Action)
-constructRule absName functor (Rule fun _cat rhs Parsable) = (pattern, action)
+constructRule :: IsFun f => String -> Bool -> Rul f -> (Pattern, Action)
+constructRule absName functor (Rule fun0 _cat rhs Parsable) = (pattern, action)
   where
+    fun = funName fun0
     (pattern, metavars) = generatePatterns rhs
     action | isCoercion fun                 = unwords metavars
            | isNilCons fun                  = unwords (qualify fun : metavars)

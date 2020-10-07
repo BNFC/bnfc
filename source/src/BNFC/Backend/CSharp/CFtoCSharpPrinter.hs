@@ -354,7 +354,7 @@ prRule namespace maybeElse r@(Rule fun _c cats _)
       cats' = case cats of
         [] -> ""
         _  -> unlinesInline $ map (prCat fnm) (zip (fixOnes (numProps [] cats)) (map getPrec cats))
-      fnm = '_' : map toLower fun
+      fnm = '_' : map toLower (funName fun)
 
       getPrec (Right {}) = 0
       getPrec (Left  c)  = precCat c
@@ -405,7 +405,7 @@ shData namespace user (cat, rules)
     ]
 
 shRule :: Namespace -> Rule -> String
-shRule namespace (Rule fun _c cats _)
+shRule namespace (Rule f _c cats _)
   | not (isCoercion fun || isDefinedRule fun) = unlinesInline [
     "      if(p is " ++ identifier namespace fun ++ ")",
     "      {",
@@ -417,6 +417,7 @@ shRule namespace (Rule fun _c cats _)
     "      }"
     ]
   where
+    fun = funName f
     cats' | allTerms cats = ""
           | otherwise     = unlinesInline $ map (shCat fnm) (fixOnes (numProps [] cats))
     lparen | allTerms cats = ""
@@ -426,7 +427,7 @@ shRule namespace (Rule fun _c cats _)
     allTerms [] = True
     allTerms ((Left {}):_) = False
     allTerms (_:zs) = allTerms zs
-    fnm = '_' : map toLower fun
+    fnm = '_' : map toLower (funName fun)
 shRule _nm _ = ""
 
 shList :: [UserDef] -> Cat -> [Rule] -> String

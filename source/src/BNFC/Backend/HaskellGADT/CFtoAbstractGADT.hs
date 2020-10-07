@@ -82,7 +82,7 @@ getTreeCats :: CF -> [String]
 getTreeCats cf = List.nub $ map show $ filter (not . isList) $ map consCat $ cf2cons cf
 
 getDefinitions :: CF -> [String]
-getDefinitions cf = [ f | FunDef f _ _ <- cfgPragmas cf ]
+getDefinitions cf = [ funName f | FunDef f _ _ <- cfgPragmas cf ]
 
 prDummyTypes :: CF -> [String]
 prDummyTypes cf = prDummyData : map prDummyType cats

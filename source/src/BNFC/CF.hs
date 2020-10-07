@@ -30,26 +30,26 @@ module BNFC.CF (
             -- Types.
             CF,
             CFG(..),
-            Rule, Rul(..), lookupRule, InternalRule(..),
+            Rule, Rul(..), npRule, valCat, lookupRule, InternalRule(..),
             Pragma(..),
             Exp(..),
             Base(..), Type(..), Signature,
             Literal,
             Symbol,
             KeyWord,
+            Position(..), noPosition, prettyPosition, npIdentifier,
+            WithPosition(..), blendInPosition,
+            RString, RCat,
             Cat(..), strToCat, catToStr,
             TokenCat,
             catString, catInteger, catDouble, catChar, catIdent,
             NonTerminal, SentForm,
-            Fun,
-            Tree(..),
-            prTree,         -- print an abstract syntax tree
+            Fun, RFun, IsFun(..),
             Data,           -- describes the abstract syntax of a grammar
             cf2data,        -- translates a grammar to a Data object.
             cf2dataLists,   -- translates to a Data with List categories included.
             getAbstractSyntax,
             -- Literal categories, constants,
-            firstCat,       -- the first value category in the grammar.
             firstEntry,     -- the first entry or the first value category
             baseTokenCatNames,  -- "Char", "Double", "Integer", "String"
             specialCats,    -- ident
@@ -122,23 +122,26 @@ module BNFC.CF (
 
 import Control.Monad (guard)
 import Data.Char
+import Data.Function (on)
 import Data.List (nub, intersperse, sort, group, intercalate, find)
+import qualified Data.List as List
 import Data.Maybe
 import Data.Map  (Map)
 import qualified Data.Map as Map
 import qualified Data.Set as Set
+import Data.String  (IsString(..))
 
 import AbsBNF (Reg())
 import ParBNF (pCat)
 import LexBNF (tokens)
-import qualified AbsBNF
+import qualified AbsBNF as Abs
 
 import BNFC.Utils (prParenth,(+++))
 
 -- | A context free grammar consists of a set of rules and some extended
 -- information (e.g. pragmas, literals, symbols, keywords).
 
-type CF = CFG Fun
+type CF = CFG RFun
 
 -- | A rule consists of a function name, a main category and a sequence of
 -- terminals and non-terminals.
@@ -146,7 +149,7 @@ type CF = CFG Fun
 --   function_name . Main_Cat ::= sequence
 -- @
 
-type Rule = Rul Fun
+type Rule = Rul RFun
 
 -- | Polymorphic rule type for common type signatures for CF and CFP.
 
@@ -155,7 +158,7 @@ data Rul function = Rule
       -- ^ The function (semantic action) of a rule.
       --   In order to be able to generate data types this must be a constructor
       --   (or an identity function).
-  , valCat  :: Cat
+  , valRCat :: RCat
       -- ^ The value category, i.e., the defined non-terminal.
   , rhsRule :: SentForm
       -- ^ The sentential form, i.e.,
@@ -196,8 +199,8 @@ data CFG function = CFG
 instance (Show function) => Show (CFG function) where
   show CFG{..} = unlines $ map show cfgRules
 
--- | Types of the rule labels.
-type Signature = Map String Type
+-- | Types of the rule labels, together with the position of the rule label.
+type Signature = Map String (WithPosition Type)
 
 -- | Type of a non-terminal.
 data Base = BaseT String
@@ -259,18 +262,18 @@ instance Show Exp where
 
 data Pragma = CommentS  String -- ^ for single line comments
             | CommentM (String,String) -- ^  for multiple-line comments.
-            | TokenReg String Bool Reg -- ^ for tokens
-            | EntryPoints [Cat]
+            | TokenReg RString Bool Reg -- ^ for tokens
+            | EntryPoints [RCat]
             | Layout [String]
             | LayoutStop [String]
             | LayoutTop
-            | FunDef String [String] Exp
+            | FunDef RFun [String] Exp
             -- ...
               deriving (Show)
 
 -- | User-defined regular expression tokens
 tokenPragmas :: CFG f -> [(TokenCat,Reg)]
-tokenPragmas cf = [ (name, e) | TokenReg name _ e <- cfgPragmas cf ]
+tokenPragmas cf = [ (wpThing name, e) | TokenReg name _ e <- cfgPragmas cf ]
 
 -- | The names of all user-defined tokens.
 tokenNames :: CFG f -> [String]
@@ -291,6 +294,64 @@ hasLayout cf = case layoutPragmas cf of
 type Literal = String
 type Symbol  = String
 type KeyWord = String
+
+------------------------------------------------------------------------------
+-- Identifiers with position information
+------------------------------------------------------------------------------
+
+-- | Source positions.
+data Position
+  = NoPosition
+  | Position
+    { posFile    :: FilePath  -- ^ Name of the grammar file.
+    , posLine    :: Int       -- ^ Line in the grammar file.
+    , posColumn  :: Int       -- ^ Column in the grammar file.
+    } deriving Show
+
+prettyPosition :: Position -> String
+prettyPosition = \case
+  NoPosition -> ""
+  Position file line col -> List.intercalate ":" [ file, show line, show col, "" ]
+
+data WithPosition a = WithPosition
+  { wpPosition :: Position
+  , wpThing    :: a
+  } deriving (Show, Functor, Foldable, Traversable)
+
+-- | Ignore position in equality and ordering.
+instance Eq  a => Eq  (WithPosition a) where (==)    = (==)    `on` wpThing
+instance Ord a => Ord (WithPosition a) where compare = compare `on` wpThing
+
+noPosition :: a -> WithPosition a
+noPosition = WithPosition NoPosition
+
+-- | A "ranged string" (terminology from Agda code base).
+type RString = WithPosition String
+
+-- | Prefix string with pretty-printed position information.
+blendInPosition :: RString -> String
+blendInPosition (WithPosition pos msg)
+  | null p    = msg
+  | otherwise = unwords [ p, msg ]
+  where
+  p = prettyPosition pos
+
+type RCat    = WithPosition Cat
+
+valCat :: Rul fun -> Cat
+valCat = wpThing . valRCat
+
+npRule :: Fun -> Cat -> SentForm -> InternalRule -> Rule
+npRule f c r internal = Rule (noPosition f) (noPosition c) r internal
+
+npIdentifier :: String -> Abs.Identifier
+npIdentifier x = Abs.Identifier ((0, 0), x)
+
+-- identifierName :: Identifier -> String
+-- identifierName (Identifier (_, x)) = x
+
+-- identifierPosition :: String -> Identifier -> Position
+-- identifierPosition file (Identifier ((line, col), _)) = Position file line col
 
 ------------------------------------------------------------------------------
 -- Categories
@@ -331,11 +392,11 @@ strToCat s =
         Left _ -> Cat s -- error $ "Error parsing cat " ++ s ++ " (" ++ e ++ ")"
                        -- Might be one of the "Internal cat" which are not
                        -- really parsable...
-  where cat2cat (AbsBNF.IdCat (AbsBNF.Identifier i)) =
+  where cat2cat (Abs.IdCat (Abs.Identifier (_pos, i))) =
             case span isDigit (reverse i) of
                 ([],c') -> Cat (reverse c')
                 (d,c') ->  CoercCat (reverse c') (read (reverse d))
-        cat2cat (AbsBNF.ListCat c) = ListCat (cat2cat c)
+        cat2cat (Abs.ListCat c) = ListCat (cat2cat c)
 
 -- Build-in categories contants
 catString, catInteger, catDouble, catChar, catIdent :: TokenCat
@@ -417,47 +478,66 @@ catOfList c = c
 
 -- | Fun is the function name of a rule.
 type Fun     = String
+type RFun    = RString
+
+instance IsString RFun where
+  fromString = noPosition
+
+class IsFun a where
+  funName :: a -> String
+
+instance IsFun String where
+  funName = id
+
+instance IsFun a => IsFun (WithPosition a) where
+  funName = funName . wpThing
+
+funNameSatisfies :: IsFun a => (String -> Bool) -> a -> Bool
+funNameSatisfies f = f . funName
 
 -- | Is this function just a coercion? (I.e. the identity)
-isCoercion :: Fun -> Bool
-isCoercion = (== "_") -- perhaps this should be changed to "id"?
+isCoercion :: IsFun a => a -> Bool
+isCoercion = funNameSatisfies (== "_") -- perhaps this should be changed to "id"?
 
-isDefinedRule :: Fun -> Bool
-isDefinedRule (x:_) = isLower x
-isDefinedRule [] = error "isDefinedRule: empty function name"
+isDefinedRule :: IsFun a => a -> Bool
+isDefinedRule = funNameSatisfies $ \case
+  (x:_) -> isLower x
+  []    -> error "isDefinedRule: empty function name"
 
-isProperLabel :: Fun -> Bool
+-- isDefinedRule :: Fun -> Bool
+-- isDefinedRule (WithPosition _ (x:_)) = isLower x
+-- isDefinedRule (WithPosition pos []) = error $
+--   unwords [ prettyPosition pos, "isDefinedRule: empty function name" ]
+
+isProperLabel :: IsFun a => a -> Bool
 isProperLabel f = not (isCoercion f || isDefinedRule f)
 
-isNilFun, isOneFun, isConsFun, isNilCons,isConcatFun :: Fun -> Bool
+isNilFun, isOneFun, isConsFun, isNilCons,isConcatFun :: IsFun a => a -> Bool
 isNilCons f = isNilFun f || isOneFun f || isConsFun f || isConcatFun f
-isNilFun    = (== "[]")
-isOneFun    = (== "(:[])")
-isConsFun   = (== "(:)")
-isConcatFun = (== "(++)")
+isNilFun    = funNameSatisfies (== "[]")
+isOneFun    = funNameSatisfies (== "(:[])")
+isConsFun   = funNameSatisfies (== "(:)")
+isConcatFun = funNameSatisfies (== "(++)")
 
 ------------------------------------------------------------------------------
 
--- | Abstract syntax tree.
-newtype Tree = Tree (Fun,[Tree])
-
 -- | The abstract syntax of a grammar.
-type Data = (Cat, [(Fun,[Cat])])
+type Data = (Cat, [(String, [Cat])])
 
--- | @firstCat@ returns the first @Cat@egory appearing in the grammar.
-firstCat :: CF -> Cat
-firstCat = valCat . head . cfgRules
+-- | @firstEntry@ returns the first entrypoint
+--   or (if none), the first @Cat@egory appearing in the grammar.
 
 firstEntry :: CF -> Cat
-firstEntry cf = case allEntryPoints cf of
-                 (x:_) -> x
-                 _     -> firstCat cf
+firstEntry cf =
+  case allEntryPoints cf of
+    (x:_) -> x
+    []    -> valCat . head . cfgRules $ cf
 
 -- aggressively ban nonunique names (AR 31/5/2012)
 
 -- | Categories and constructors.
-allNames :: CF -> [Fun]
-allNames cf = allCatsIdNorm cf ++
+allNames :: CF -> [RString]
+allNames cf = map (WithPosition NoPosition) (allCatsIdNorm cf) ++
   [ f | f <- map funRule $ cfgRules cf
       , not $ isNilCons f
       , not $ isCoercion f
@@ -477,7 +557,7 @@ commentPragmas = filter isComment
 
 lookupRule :: Eq f => f -> [Rul f] -> Maybe (Cat, SentForm)
 lookupRule f = lookup f . map unRule
-  where unRule (Rule f' c rhs _internal) = (f',(c,rhs))
+  where unRule (Rule f' c rhs _internal) = (f', (wpThing c, rhs))
 
 -- | Returns all parseable rules that construct the given Cat.
 --   Whitespace separators have been removed.
@@ -581,14 +661,6 @@ hasIdent cf = isUsedCat cf $ TokenCat catIdent
 specialCats :: CF -> [TokenCat]
 specialCats cf = (if hasIdent cf then (catIdent:) else id) (map fst (tokenPragmas cf))
 
--- to print parse trees
-prTree :: Tree -> String
-prTree (Tree (fun,[])) = fun
-prTree (Tree (fun,trees)) = fun +++ unwords (map pr2 trees) where
-  pr2 t@(Tree (_,ts)) = (if null ts then id else prParenth) (prTree t)
-
-
-
 
 -- * abstract syntax trees: data type definitions
 --
@@ -609,7 +681,7 @@ getAbstractSyntax cf = [ ( c, nub (constructors c) ) | c <- allCatsNorm cf ]
         guard $ not (isCoercion f)
         guard $ normCat (valCat rule) == cat
         let cs = [normCat c | Left c <- rhsRule rule ]
-        return (f, cs)
+        return (wpThing f, cs)
 
 
 -- | All the functions below implement the idea of getting the
@@ -625,7 +697,7 @@ cf2data' predicate cf =
                               not (isCoercion f), sameCat cat (valCat r)]))
       | cat <- nub $ map normCat $ filter predicate $ reallyAllCats cf ]
  where
-  mkData (Rule f _ its _) = (f, [normCat c | Left c <- its ])
+  mkData (Rule f _ its _) = (wpThing f, [normCat c | Left c <- its ])
 
 cf2data :: CF -> [Data]
 cf2data = cf2data' $ isDataCat . normCat
@@ -637,8 +709,8 @@ specialData :: CF -> [Data]
 specialData cf = [(TokenCat name, [(name, [TokenCat catString])]) | name <- specialCats cf]
 
 -- | Get the type of a rule label.
-sigLookup :: Fun -> CF -> Maybe Type
-sigLookup f = Map.lookup f . cfgSignature
+sigLookup :: IsFun a => a -> CF -> Maybe (WithPosition Type)
+sigLookup f = Map.lookup (funName f) . cfgSignature
 
 
 -- | Checks if the rule is parsable.
@@ -669,7 +741,7 @@ getSeparatorByPrecedence rules = [ (p, getCons (getRulesFor p)) | p <- precedenc
     getRulesFor p = [ r | r <- rules, precRule r == p ]
 
 isEmptyListCat :: CF -> Cat -> Bool
-isEmptyListCat cf c = elem "[]" $ map funRule $ rulesForCat' cf c
+isEmptyListCat cf c = elem "[]" $ map (wpThing . funRule) $ rulesForCat' cf c
 
 isNonterm :: Either Cat String -> Bool
 isNonterm (Left _) = True
@@ -693,7 +765,7 @@ findAllReversibleCats cf = [c | (c,r) <- ruleGroups cf, isRev c r] where
                                         isConsFun f && isNonterm x && isNonterm (last ts)
   tryRev _ _ = False
 
-isEmptyNilRule :: Rul Fun -> Bool
+isEmptyNilRule :: IsFun a => Rul a -> Bool
 isEmptyNilRule (Rule f _ ts _) = isNilFun f && null ts
 
 -- | Returns the precedence of a category symbol.
@@ -705,7 +777,7 @@ precCat (CoercCat _ i) = i
 precCat (ListCat c) = precCat c
 precCat _ = 0
 
-precRule :: Rule -> Integer
+precRule :: Rul f -> Integer
 precRule = precCat . valCat
 
 precLevels :: CF -> [Integer]
@@ -720,15 +792,15 @@ hasPositionTokens cf = or [ b | TokenReg _ b _ <- cfgPragmas cf ]
 
 -- | Does the category have a position stored in AST?
 isPositionCat :: CFG f -> TokenCat -> Bool
-isPositionCat cf cat = or [ b | TokenReg name b _ <- cfgPragmas cf, name == cat]
+isPositionCat cf cat = or [ b | TokenReg name b _ <- cfgPragmas cf, wpThing name == cat]
 
 -- | Grammar with permutation profile à la GF. AR 22/9/2004
 type CFP   = CFG FunP
-type FunP  = (Fun,Prof)
+type FunP  = (RFun,Prof)
 type RuleP = Rul FunP
 
 -- | Pair of: the original function name, profile
-type Prof  = (Fun, [([[Int]],[Int])])
+type Prof  = (RFun, [([[Int]],[Int])])
 
 cf2cfp :: CF -> CFP
 cf2cfp cfg@CFG{..} = cfg { cfgRules = map cf2cfpRule cfgRules }
@@ -744,7 +816,7 @@ trivialProf its = [([],[i]) | (i,_) <- zip [0..] [c | Left c <- its]]
 
 {-# DEPRECATED allCatsP, allEntryPointsP  "Use the version without P postfix instead" #-}
 
-funRuleP :: RuleP -> Fun
+funRuleP :: RuleP -> RFun
 funRuleP = fst . funRule
 
 ruleGroupsP :: CFP -> [(Cat,[RuleP])]
@@ -759,9 +831,10 @@ allCatsP = reallyAllCats
 
 -- | Categories that are entry points to the parser
 allEntryPoints :: CFG f -> [Cat]
-allEntryPoints cf = case concat [cats | EntryPoints cats <- cfgPragmas cf] of
-  [] -> allParserCats cf
-  cs -> cs
+allEntryPoints cf =
+  case concat [ cats | EntryPoints cats <- cfgPragmas cf ] of
+    [] -> allParserCats cf
+    cs -> map wpThing cs
 
 allEntryPointsP :: CFP -> [Cat]
 allEntryPointsP = allEntryPoints

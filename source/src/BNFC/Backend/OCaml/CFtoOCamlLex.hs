@@ -134,7 +134,10 @@ uMacros cf = ["let " ++ name ++ " = " ++ rep | (name, rep, _, _) <- userTokens c
 
 userTokens :: CF -> [(String, String, String, Bool)]
 userTokens cf =
-  [ (ocamlTokenName name, printRegOCaml reg, name, pos) | TokenReg name pos reg <- cfgPragmas cf ]
+  [ (ocamlTokenName name, printRegOCaml reg, name, pos)
+  | TokenReg n pos reg <- cfgPragmas cf
+  , let name = wpThing n
+  ]
 
 -- | Make OCamlLex rule
 -- >>> mkRule "token" [("REGEX1","ACTION1"),("REGEX2","ACTION2"),("...","...")]
@@ -265,7 +268,7 @@ prPrec :: Int -> Int -> [String] -> [String]
 prPrec i j = if j<i then parenth else id
 
 instance Print Identifier where
-  prt _ (Identifier i) = [i]
+  prt _ (Identifier (_, i)) = [i]
 
 instance Print Reg where
   prt i e = case e of

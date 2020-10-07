@@ -165,7 +165,7 @@ issue151 = makeShellyTest "#151 Shouldn't print all categories in error message"
           err <- lastStderr
           assertEqual code 1
           let expectedErr = T.unlines
-                  [ "no production for Baz, appearing in rule"
+                  [ "test.cf:1:1: no production for Baz, appearing in rule"
                   , "    Foo. Bar ::= Baz", "" ]
           assertEqual expectedErr err
 

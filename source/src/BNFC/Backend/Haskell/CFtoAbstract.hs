@@ -238,7 +238,7 @@ definedRules :: Bool -> CF -> [Doc]
 definedRules functor cf = [ mkDef f xs e | FunDef f xs e <- cfgPragmas cf ]
   where
     mkDef f xs e = vcat $ map text $ concat
-      [ [ unwords [ mkDefName f, "::", typeToHaskell t ]
+      [ [ unwords [ mkDefName f, "::", typeToHaskell $ wpThing t ]
         | not functor  -- TODO: make type signatures work with --functor
         , t <- maybeToList $ sigLookup f cf
         ]

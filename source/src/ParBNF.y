@@ -87,7 +87,7 @@ import LexBNF
   L_integ  { PT _ (TI $$) }
   L_charac { PT _ (TC $$) }
   L_doubl  { PT _ (TD $$) }
-  L_Identifier { PT _ (T_Identifier $$) }
+  L_Identifier { PT _ (T_Identifier _) }
 
 %%
 
@@ -104,7 +104,7 @@ Double  :: { Double }
 Double   : L_doubl  { (read ($1)) :: Double }
 
 Identifier :: { AbsBNF.Identifier}
-Identifier  : L_Identifier { AbsBNF.Identifier $1 }
+Identifier  : L_Identifier { AbsBNF.Identifier (mkPosToken $1) }
 
 LGrammar :: { AbsBNF.LGrammar }
 LGrammar : ListLDef { AbsBNF.LGr $1 }

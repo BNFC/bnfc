@@ -20,8 +20,8 @@
 module BNFC.Backend.XML ---- (cf2DTD, cf2XML)
   where
 
-import Data.List  ( intersperse, intercalate )
-import Data.Maybe ( fromJust )
+import Data.Bifunctor ( second )
+import Data.List      ( intercalate )
 
 import BNFC.CF
 import BNFC.Utils
@@ -75,9 +75,7 @@ elemEmp :: String -> String
 elemEmp t = elemAtt t "value" []
 
 alts :: [String] -> String
-alts ts =
-  if null ts then "EMPTY" else parenth (unwords (intersperse "|" ts))
-
+alts ts = if null ts then "EMPTY" else parenth $ intercalate " | " ts
 
 -- choose between these two encodings:
 
@@ -130,7 +128,7 @@ symbCatNot cf c
  where
    funs k = case lookup k (cf2data cf) of
      Just []  -> "EMPTY"
-     Just fcs -> parenth $ unwords $ intersperse "|" $ map fst fcs
+     Just fcs -> parenth $ intercalate " | " $ map fst fcs
      _ -> parenth (show k) ----
 
 parenth s = "(" ++ s ++ ")"
@@ -206,23 +204,22 @@ ownPrintRule cf cat = unlines $
 
 rules :: CF -> String
 rules cf = unlines $
-  map (\(s,xs) -> case_fun s (map toArgs xs)) $ cf2data cf
+  map (\ (s, xs) -> case_fun s (map (second toArgs) xs)) $ cf2data cf
  where
-   toArgs (cons,args) = ((cons, names (map catToVar args) (0 :: Int)), ruleOf cons)
+   toArgs args = names (map catToVar args) (0 :: Int)
    names [] _ = []
    names (x:xs) n
      | x `elem` xs = (x ++ show n) : names xs (n+1)
      | otherwise   = x             : names xs n
-   ruleOf s = fromJust $ lookupRule s (cfgRules cf)
 
--- case_fun :: Cat -> [(Constructor,Rule)] -> String
-case_fun cat xs = unlines [
-  "instance XPrint" +++ show cat +++ "where",
-  "  prt i" +++ "e = case e of",
-  unlines $ map (\ ((c,xx),_) ->
+case_fun :: Cat -> [(String, [String])] -> String
+case_fun cat xs = unlines $ concat
+  [ [ "instance XPrint" +++ show cat +++ "where"
+    , "  prt i" +++ "e = case e of"
+    ]
+  , (`map` xs) $ \ (c, xx) ->
     "   " ++ c +++ unwords xx +++ "-> concat $ " +++
     "elemFun i \"" ++ show cat ++ "\" \"" ++ c ++ "\"" +++
     unwords [": prt (i+1)" +++ x | x <- xx] +++ ":" +++
     "[[replicate (i+i) ' ' ++ endtag \"" ++ c ++ "\" \"" ++ show cat ++ "\"]]"
-    ) xs
   ]

@@ -65,7 +65,7 @@ header _ absName _ cf = unlines
 definedRules :: CF -> String
 definedRules cf = unlines [ mkDef f xs e | FunDef f xs e <- cfgPragmas cf ]
   where
-    mkDef f xs e = "let " ++ f ++ " " ++ mkTuple xs ++ " = " ++ ocamlExp e
+    mkDef f xs e = "let " ++ funName f ++ " " ++ mkTuple xs ++ " = " ++ ocamlExp e
 
     ocamlExp :: Exp -> String
     ocamlExp = \case
@@ -114,8 +114,8 @@ nonterminal c = map spaceToUnderscore (fixType c)
 specialTokens :: CF -> String
 specialTokens cf = unlines $ concat $
   [ [ "%token TOK_EOF" ]
-  , [ prToken (ty n)      n | n                <- specialCatsP  ]
-  , [ prToken (posTy pos) n | TokenReg n pos _ <- cfgPragmas cf ]
+  , [ prToken (ty n)      n | n                 <- specialCatsP  ]
+  , [ prToken (posTy pos) n | TokenReg n0 pos _ <- cfgPragmas cf, let n = wpThing n0 ]
   ]
   where
   prToken t n = "%token" +++ t +++ "TOK_" ++ n
@@ -194,12 +194,13 @@ constructRule cf rules nt =
 -- Generates a string containing the semantic action.
 -- An action can for example be: Sum $1 $2, that is, construct an AST
 -- with the constructor Sum applied to the two metavariables $1 and $2.
-generateAction :: NonTerminal -> Fun -> [MetaVar] -> Action
+generateAction :: IsFun a => NonTerminal -> a -> [MetaVar] -> Action
 generateAction _ f ms = (if isCoercion f then "" else f') +++ mkTuple ms
-    where f' = case f of -- ocaml cons is somehow not a standard infix oper, right?
-                    "(:[])" -> "(fun x -> [x])"
-                    "(:)" -> "(fun (x,xs) -> x::xs)"
-                    _ -> f
+    where
+    f' = case funName f of -- ocaml cons is somehow not a standard infix oper, right?
+           "(:[])" -> "(fun x -> [x])"
+           "(:)"   -> "(fun (x,xs) -> x::xs)"
+           x       -> x
 
 
 generatePatterns :: CF -> Rule -> (Pattern,[MetaVar])
