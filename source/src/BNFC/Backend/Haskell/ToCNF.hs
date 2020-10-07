@@ -36,7 +36,7 @@ import BNFC.Backend.Haskell.HsOpts
 #if __GLASGOW_HASKELL__ < 710
 import Control.Applicative hiding (Const)
 #endif
-import qualified Data.Map as M
+import qualified Data.Map as Map
 #if !(MIN_VERSION_base(4,11,0))
 import Data.Monoid
 #endif
@@ -70,7 +70,7 @@ class Pretty a where
   pretty :: a -> Doc
 
 instance (Pretty k, Pretty v) => Pretty (Set k v) where
-  pretty s = sep [pretty k <> " --> " <> pretty v | (k,x) <- M.assocs s, v <- x]
+  pretty s = sep [pretty k <> " --> " <> pretty v | (k,x) <- Map.assocs s, v <- x]
 
 instance Pretty (Either Cat String) where
   pretty (Left x) = text $ show x
@@ -81,7 +81,7 @@ instance Pretty String where
 
 prettyUnitSet units = vcat $
   [ prettyExp f <> " : " <> catTag cat <> " --> " <> text (show cat')
-  | (cat, x)  <- M.assocs units
+  | (cat, x)  <- Map.assocs units
   , (f, cat') <- x
   ]
 
@@ -127,9 +127,11 @@ genShowFunction cf =
 
 genCatTags :: CFG Exp -> Doc
 genCatTags cf = vcat
-  [ "data CATEGORY = " <> punctuate' "|" (map catTag (allSyms cf))
+  [ "data CATEGORY = " <> punctuate' " |" cs
   , "  deriving (Eq, Ord, Show)"
   ]
+  where
+  cs = map catTag $ allSyms cf
 
 genDesc :: CFG Exp -> CatDescriptions -> Doc
 genDesc cf descs = vcat $
@@ -139,7 +141,7 @@ genDesc cf descs = vcat $
   where
   descOf :: Either Cat String -> String
   descOf (Right x) = "token " <> x
-  descOf (Left  x) = maybe (show x) render $ M.lookup x descs
+  descOf (Left  x) = maybe (show x) render $ Map.lookup x descs
 
 genCombTable :: UnitRel Cat -> CFG Exp -> Doc
 genCombTable units cf = vcat
