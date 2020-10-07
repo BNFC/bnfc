@@ -85,7 +85,7 @@ group' = group0 . sortBy (compare `on` fst)
 
 catTag :: Either Cat String -> Doc
 catTag (Left c) = "CAT_" <> text (concatMap escape (show c))
-catTag (Right t) = "TOK_" <> text (concatMap escape t)
+catTag (Right t) = "TOK_" <> text (concatMap escapeToken t)
 
 escape c | isAlphaNum c || c == '_' = [c]
 escape '[' = ""
@@ -93,7 +93,36 @@ escape ']' = "_List"
 escape '{' = "OPEN_"
 escape '}' = "CLOS_"
 escape '@' = "BIN_"
-escape c = show $ ord c
+escape c   = show (ord c) ++ "_"
+
+escapeToken c | isAlphaNum c || c == '_' = [c]
+escapeToken '(' = "LPAREN_"
+escapeToken ')' = "RPAREN_"
+escapeToken '[' = "LBRACKET_"
+escapeToken ']' = "RBRACKET_"
+escapeToken '{' = "LBRACE_"
+escapeToken '}' = "RBRACE_"
+escapeToken '~' = "TILDE_"
+escapeToken '^' = "CARET_"
+escapeToken '*' = "STAR_"
+escapeToken '+' = "PLUS_"
+escapeToken '-' = "DASH_"
+escapeToken '/' = "SLASH_"
+escapeToken '.' = "DOT_"
+escapeToken ',' = "COMMA_"
+escapeToken ';' = "SEMI_"
+escapeToken ':' = "COLON_"
+escapeToken '=' = "EQ_"
+escapeToken '<' = "LT_"
+escapeToken '>' = "GT_"
+escapeToken '&' = "AMP_"
+escapeToken '|' = "BAR_"
+escapeToken '%' = "PERCENT_"
+escapeToken '?' = "QUESTION_"
+escapeToken '!' = "BANG_"
+-- add more if you have fun
+-- or fall back to ASCII code:
+escapeToken c = show (ord c) ++ "_"
 
 punctuate' p = cat . punctuate p
 --------------------------------------------------------------
