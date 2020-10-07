@@ -50,7 +50,8 @@ exampleGrammars = map (fmap prefix) $
   , fmap ("C"         </>) $ Example "C_with_delimiters.cf" [ "small.c" ]  -- "core.c" fails with CNF!!!
   , fmap ("Javalette" </>) $ Example "JavaletteLight.cf"    [ "koe.jll" ]
   , fmap ("LBNF"      </>) $ Example "LBNF.cf"   [ "LBNF.cf" ]
-  , fmap ("Java"      </>) $ Example "java.cf"   []
+  , fmap ("Java"      </>) $ Example' (Excluded ["antlr"]) "java.cf"   []
+      -- ANTLR cannot handle mutual left recursion in java.cf
   , Example "Calc.cf" []
   , Example "fstStudio.cf" []
   ]
