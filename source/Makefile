@@ -4,7 +4,8 @@ BNFC_VERSION=$(shell sed -ne "s/^[Vv]ersion: *\([0-9.]*\).*/\1/p" BNFC.cabal)
 
 # Cabal options (to be overwritten from the command line)
 CABAL_OPTS           =
-CABAL_BUILD_OPTS     = --builddir=dist-ghc-$(GHC_VERSION)
+CABAL_BUILDDIR_SUFFIX=
+CABAL_BUILD_OPTS     = --builddir=dist-ghc-$(GHC_VERSION)$(CABAL_BUILDDIR_SUFFIX)
 CABAL_CONFIGURE_OPTS = --enable-tests
 CABAL_INSTALL_OPTS   = $(CABAL_CONFIGURE_OPTS) $(CABAL_BUILD_OPTS)
 CABAL_TEST_OPTS      = $(CABAL_BUILD_OPTS)
