@@ -40,7 +40,7 @@
 -}
 module BNFC.Backend.C.CFtoFlexC (cf2flex, lexComments, cMacros, commentStates) where
 
-import Prelude'
+import Prelude hiding ((<>))
 import Data.Bifunctor (first)
 import Data.List  (isInfixOf)
 import Data.Maybe (fromMaybe)

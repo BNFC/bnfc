@@ -17,6 +17,9 @@
     Foundation, 51 Franklin Street, Fifth Floor, Boston, MA 02110-1335, USA
 -}
 
+{-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE OverloadedStrings #-}
+
 module BNFC.Backend.Haskell.CFtoHappy (cf2Happy, convert) where
 
 import Prelude hiding ((<>))

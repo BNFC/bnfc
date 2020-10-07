@@ -1,4 +1,5 @@
-{-# LANGUAGE NoImplicitPrelude #-}
+{-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 {-
    **************************************************************
@@ -24,7 +25,7 @@
 
 module BNFC.Backend.CPP.PrettyPrinter (cf2CPPPrinter, prRender) where
 
-import Prelude'
+import Prelude hiding ((<>))
 
 import Data.Char(toLower)
 

@@ -41,7 +41,7 @@
 
 module BNFC.Backend.CPP.NoSTL.CFtoCPPAbs (cf2CPPAbs) where
 
-import Prelude'
+import Prelude hiding ((<>))
 
 import BNFC.CF
 import BNFC.Utils((+++),(++++))

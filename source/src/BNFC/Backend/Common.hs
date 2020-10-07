@@ -1,10 +1,10 @@
-{-# LANGUAGE NoImplicitPrelude #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 -- | Functions common to different backends.
 
 module BNFC.Backend.Common where
 
-import Prelude'
+import Prelude hiding ((<>))
 
 import BNFC.PrettyPrint
 

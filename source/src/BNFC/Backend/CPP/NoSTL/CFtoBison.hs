@@ -1,3 +1,5 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 {-
     BNF Converter: Bison generator
     Copyright (C) 2004  Author:  Michael Pellauer

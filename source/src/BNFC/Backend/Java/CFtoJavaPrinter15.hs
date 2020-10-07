@@ -1,4 +1,5 @@
-{-# LANGUAGE NoImplicitPrelude #-}
+{-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 {-
     BNF Converter: Java Pretty Printer generator
@@ -48,7 +49,7 @@
 -}
 module BNFC.Backend.Java.CFtoJavaPrinter15 ( cf2JavaPrinter ) where
 
-import Prelude'
+import Prelude hiding ((<>))
 
 import BNFC.Backend.Java.CFtoJavaAbs15
 

@@ -1,5 +1,3 @@
-{-# LANGUAGE NoImplicitPrelude #-}
-
 {-
     BNF Converter: Named instance variables
     Copyright (C) 2004  Author:  Michael Pellauer
@@ -68,15 +66,14 @@ This is what this module does.
 
 module BNFC.Backend.Common.NamedVariables where
 
-import Prelude'
-
 import Control.Arrow (left, (&&&))
 import Data.Char     (toLower)
 import Data.Either   (lefts)
 import Data.List     (nub)
 import Data.Map      (Map)
 
-import Text.PrettyPrint
+import Text.PrettyPrint (Doc)
+import qualified Text.PrettyPrint as P
 
 import BNFC.CF
 
@@ -142,7 +139,7 @@ numVars cats =
             let i = maybe 1 (+1) (lookup n env)
             -- Is there more use of the name u_ ?
                 thereIsMore = n `elem` map snd (lefts xs)
-                vname = text n <> if i > 1 || thereIsMore then int i else empty
+                vname = P.text n P.<> if i > 1 || thereIsMore then P.int i else P.empty
             in Left (c, vname) : f' ((n,i):env) xs
 
 --This makes numbers a little nicer.

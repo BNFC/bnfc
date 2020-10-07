@@ -1,4 +1,5 @@
-{-# LANGUAGE NoImplicitPrelude #-}
+{-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 {-
     BNF Converter: C Pretty Printer printer
@@ -43,7 +44,7 @@
 
 module BNFC.Backend.C.CFtoCPrinter (cf2CPrinter) where
 
-import Prelude'
+import Prelude hiding ((<>))
 
 import Data.Bifunctor ( second )
 import Data.Char      ( toLower )

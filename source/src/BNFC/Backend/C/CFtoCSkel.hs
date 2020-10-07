@@ -1,4 +1,4 @@
-{-# LANGUAGE NoImplicitPrelude #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 {-
     BNF Converter: C Skeleton generator
@@ -41,7 +41,7 @@
 
 module BNFC.Backend.C.CFtoCSkel (cf2CSkel) where
 
-import Prelude'
+import Prelude hiding ((<>))
 
 import BNFC.CF
 import BNFC.Utils                       ( (+++) )

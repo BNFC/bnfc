@@ -1,5 +1,3 @@
-{-# LANGUAGE NoImplicitPrelude #-}
-
 {-
     BNF Converter: Abstract syntax Generator
     Copyright (C) 2004  Author:  Markus Forberg
@@ -19,9 +17,12 @@
     Foundation, 51 Franklin Street, Fifth Floor, Boston, MA 02110-1335, USA
 -}
 
+{-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE OverloadedStrings #-}
+
 module BNFC.Backend.Haskell.CFtoAbstract (cf2Abstract, definedRules) where
 
-import Prelude'
+import Prelude hiding ((<>))
 import Data.Maybe
 import qualified Data.List as List
 

@@ -20,6 +20,7 @@
 -- there is no "deriving Show" in OCaml, although there are solutions based
 -- on camlp4. Here we generate our own "show module".
 
+{-# LANGUAGE LambdaCase #-}
 
 module BNFC.Backend.OCaml.CFtoOCamlShow (cf2show, showsFunQual) where
 

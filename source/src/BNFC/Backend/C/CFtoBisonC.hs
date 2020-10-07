@@ -38,6 +38,7 @@
    **************************************************************
 -}
 
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE PatternGuards #-}
 
 module BNFC.Backend.C.CFtoBisonC

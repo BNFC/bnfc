@@ -41,7 +41,7 @@
 
 module BNFC.Backend.Java.CFtoJLex15 ( cf2jlex ) where
 
-import Prelude'
+import Prelude hiding ((<>))
 
 import BNFC.CF
 import BNFC.Backend.Common.NamedVariables

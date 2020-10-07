@@ -20,7 +20,7 @@
 -}
 module BNFC.Backend.C (makeC) where
 
-import Prelude'
+import Prelude hiding ((<>))
 import qualified Data.Map as Map
 
 import BNFC.Utils

@@ -2,7 +2,7 @@
 
 module BNFC.Backend.Common.Makefile where
 
-import Prelude'
+import Prelude hiding ((<>))
 
 import BNFC.Options (SharedOptions(..))
 import BNFC.Backend.Base (mkfile, Backend)

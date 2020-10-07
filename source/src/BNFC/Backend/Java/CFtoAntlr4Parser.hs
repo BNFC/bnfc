@@ -37,6 +37,9 @@
 
    **************************************************************
 -}
+
+{-# LANGUAGE LambdaCase #-}
+
 module BNFC.Backend.Java.CFtoAntlr4Parser ( cf2AntlrParse ) where
 
 import Data.List     ( intercalate )

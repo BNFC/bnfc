@@ -37,7 +37,7 @@
 
 module BNFC.Backend.Java ( makeJava ) where
 
-import Prelude'
+import Prelude hiding ((<>))
 
 import System.FilePath (pathSeparator, isPathSeparator)
 import Data.List ( intersperse )

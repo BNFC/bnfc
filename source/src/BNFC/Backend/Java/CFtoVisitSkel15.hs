@@ -1,5 +1,3 @@
-{-# LANGUAGE NoImplicitPrelude #-}
-
 {-
     BNF Converter: Java Vistor skeleton generator
     Copyright (C) 2004  Author:  Michael Pellauer, Bjorn Bringert
@@ -40,13 +38,16 @@
 
    **************************************************************
 -}
-module BNFC.Backend.Java.CFtoVisitSkel15 (cf2VisitSkel) where
 
-import Prelude'
+{-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE OverloadedStrings #-}
+
+module BNFC.Backend.Java.CFtoVisitSkel15 (cf2VisitSkel) where
 
 import Data.Bifunctor   ( second )
 import Data.Either      ( lefts  )
 import Text.PrettyPrint
+import qualified Text.PrettyPrint as P
 
 import BNFC.CF
 import BNFC.Utils       ( (+++) )
@@ -112,13 +113,13 @@ prData packageAbsyn user (cat, rules)
 --   //p.integer_;
 --   return null;
 -- }
-prRule :: String -> [UserDef] -> Rule -> Doc
+prRule :: IsFun f => String -> [UserDef] -> Rul f -> Doc
 prRule packageAbsyn user (Rule fun _ cats _)
   | not (isCoercion fun || isDefinedRule fun) = vcat
-    [ "public R visit(" <> text packageAbsyn <> "." <> fname <> " p, A arg)"
+    [ "public R visit(" P.<> text packageAbsyn P.<> "." P.<> fname P.<> " p, A arg)"
     , "{"
     , nest 2 $ vcat
-        [ "/* Code for " <> fname <> " goes here */"
+        [ "/* Code for " P.<> fname P.<> " goes here */"
         , vcat $ map (prCat packageAbsyn user) cats'
         , "return null;"
         ]
@@ -126,7 +127,7 @@ prRule packageAbsyn user (Rule fun _ cats _)
     ]
   where
     fname = text fun              -- function name
-    cats' = map (second ("p." <>)) $ lefts $ numVars cats  -- non-terminals in the rhs
+    cats' = map (second ("p." P.<>)) $ lefts $ numVars cats  -- non-terminals in the rhs
 prRule _ _ _ = empty
 
 -- | Traverses a class's instance variables.
@@ -153,13 +154,13 @@ prCat :: String       -- ^ absyn package name.
       -> Doc          -- ^ Code for visiting the variable.
 prCat packageAbsyn user (cat, var) =
   case cat of
-    TokenCat{}   -> "//" <> var <> ";"
+    TokenCat{}   -> "//" P.<> var P.<> ";"
     ListCat cat' -> vcat
       [ "for" <+> parens (text et <+> "x:" <+> var) <+> "{"
       , nest 2 $ prCat packageAbsyn user (cat', "x")
       , "}"
       ]
-    _ -> var <> ".accept(new " <> text varType <> "Visitor<R,A>(), arg);"
+    _ -> var P.<> ".accept(new " P.<> text varType P.<> "Visitor<R,A>(), arg);"
   where
     varType = typename "" user $ identCat $ normCat cat    -- no qualification here!
     et      = typename packageAbsyn user $ identCat $ normCatOfList cat

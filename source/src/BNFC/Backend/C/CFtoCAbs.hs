@@ -1,5 +1,6 @@
-{-# LANGUAGE NoImplicitPrelude #-}
+{-# LANGUAGE LambdaCase        #-}
 {-# LANGUAGE PatternGuards     #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 {-
     BNF Converter: C Abstract syntax
@@ -43,7 +44,7 @@
 
 module BNFC.Backend.C.CFtoCAbs (cf2CAbs) where
 
-import Prelude'
+import Prelude hiding ((<>))
 import Data.Char     (toLower)
 import Data.Function (on)
 import Data.List     (groupBy, intercalate, nub, sort)

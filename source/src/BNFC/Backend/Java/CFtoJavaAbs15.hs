@@ -1,4 +1,7 @@
-{-# LANGUAGE NoImplicitPrelude, OverloadedStrings #-}
+{-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TupleSections #-}
+
 {-
     BNF Converter: Java 1.5 Abstract Syntax
     Copyright (C) 2004  Author:  Michael Pellauer, Bjorn Bringert
@@ -46,8 +49,6 @@
 
 module BNFC.Backend.Java.CFtoJavaAbs15 (cf2JavaAbs, typename, cat2JavaType) where
 
-import Prelude'
-
 import BNFC.CF
 import BNFC.Options (RecordPositions(..))
 import BNFC.Utils((+++),(++++))
@@ -57,6 +58,7 @@ import Data.List
 import Data.Char(toLower)
 import Data.Maybe (mapMaybe)
 import Text.PrettyPrint
+import qualified Text.PrettyPrint as P
 
 --Produces abstract data types in Java.
 --These follow Appel's "non-object oriented" version.
@@ -200,7 +202,7 @@ prInstVars rp [] = case rp of
   RecordPositions -> "public int line_num, col_num, offset;"
   NoRecordPositions -> empty
 prInstVars rp vars@((t,_,_):_) =
-    "public" <+> "final" <+> text t <+> uniques <> ";" $$ prInstVars rp vs'
+    "public" <+> "final" <+> text t <+> uniques P.<> ";" $$ prInstVars rp vs'
  where
    (uniques, vs') = prUniques t vars
    --these functions group the types together nicely
@@ -225,7 +227,7 @@ prInstVars rp vars@((t,_,_):_) =
 -- integer_
 
 iVarName :: IVar -> Doc
-iVarName (_,n,nm) = text (varName nm) <> text (showNum n)
+iVarName (_,n,nm) = text (varName nm) P.<> text (showNum n)
 
 -- | The constructor just assigns the parameters to the corresponding instance
 -- variables.
@@ -238,8 +240,8 @@ iVarName (_,n,nm) = text (varName nm) <> text (showNum n)
 
 prConstructor :: String -> [UserDef] -> [IVar] -> [Cat] -> Doc
 prConstructor c u vs cats =
-    "public" <+> text c <> parens (interleave types params)
-    <+> "{" <+> text (prAssigns vs params) <> "}"
+    "public" <+> text c P.<> parens (interleave types params)
+    <+> "{" <+> text (prAssigns vs params) P.<> "}"
   where
    (types, params) = unzip (prParams cats u (length cats) (length cats+1))
    interleave xs ys = hsep $ punctuate "," $ zipWith ((<+>) `on` text) xs ys

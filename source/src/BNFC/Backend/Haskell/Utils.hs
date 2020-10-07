@@ -1,4 +1,5 @@
-{-# LANGUAGE NoImplicitPrelude #-}
+{-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 module BNFC.Backend.Haskell.Utils
   ( parserName
@@ -10,11 +11,12 @@ module BNFC.Backend.Haskell.Utils
   , tokenTextPack, tokenTextPackParens, tokenTextUnpack
   ) where
 
-import Prelude'
 import Data.Char
 
 import BNFC.PrettyPrint
 import BNFC.CF      (Cat(..), catToStr, identCat, baseTokenCatNames, Base, Type(FunT))
+import qualified BNFC.PrettyPrint as P
+
 import BNFC.Options (TokenText(..))
 import BNFC.Utils   (mkNames, NameStyle(..))
 
@@ -63,7 +65,7 @@ tokenTextUnpack = \case
 -- pListXyz
 --
 parserName :: Cat -> Doc
-parserName = ("p" <>) . text . identCat
+parserName = ("p" P.<>) . text . identCat
 
 -- | Haskell's reserved words.
 --
@@ -117,7 +119,7 @@ mkDefName = avoidReservedWords
 -- A
 -- >>> catToType id empty (ListCat (Cat "A"))
 -- [A]
--- >>> catToType ("Foo." <>) empty (TokenCat "Ident")
+-- >>> catToType ("Foo." P.<>) empty (TokenCat "Ident")
 -- Foo.Ident
 --
 -- Note that there is no haskell type for coerced categories: they should be normalized:
@@ -132,7 +134,7 @@ mkDefName = avoidReservedWords
 -- [A a]
 --
 -- but not added to Token categories:
--- >>> catToType ("Foo." <>) (text "a") (TokenCat "Integer")
+-- >>> catToType ("Foo." P.<>) (text "a") (TokenCat "Integer")
 -- Integer
 --
 -- >>> catToType id (text "a") (ListCat (TokenCat "Integer"))
@@ -141,7 +143,7 @@ mkDefName = avoidReservedWords
 -- >>> catToType id empty (ListCat (CoercCat "Exp" 2))
 -- [Exp]
 --
--- >>> catToType ("Foo." <>) (text "()") (ListCat (CoercCat "Exp" 2))
+-- >>> catToType ("Foo." P.<>) (text "()") (ListCat (CoercCat "Exp" 2))
 -- [Foo.Exp ()]
 --
 catToType :: (Doc -> Doc) -> Doc -> Cat -> Doc

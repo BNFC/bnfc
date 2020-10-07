@@ -1,5 +1,6 @@
-{-# LANGUAGE NoImplicitPrelude #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE PatternGuards #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TupleSections #-}
 
 {-
@@ -52,7 +53,7 @@ module BNFC.Backend.CPP.STL.CFtoBisonSTL
   , definedRules
   ) where
 
-import Prelude'
+import Prelude hiding ((<>))
 
 import Data.Char  ( isUpper )
 import Data.List  ( nub, intercalate )

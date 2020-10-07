@@ -21,7 +21,7 @@
 
 module BNFC.Backend.OCaml.CFtoOCamlTest where
 
-import Prelude'
+import Prelude hiding ((<>))
 
 import Text.PrettyPrint
 

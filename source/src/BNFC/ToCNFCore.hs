@@ -1,4 +1,5 @@
 {-# LANGUAGE TypeSynonymInstances, FlexibleInstances, CPP #-}
+{-# LANGUAGE RecordWildCards #-}
 {-
     Copyright (C) 2012  Authors:
     Jean-Philippe Bernardy.

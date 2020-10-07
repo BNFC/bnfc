@@ -114,6 +114,8 @@ This should be accompanied by the following Agda code:
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE NoImplicitPrelude #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TupleSections #-}
 
 #if __GLASGOW_HASKELL__ >= 800
 {-# OPTIONS_GHC -fno-warn-unused-top-binds #-}
@@ -121,7 +123,7 @@ This should be accompanied by the following Agda code:
 
 module BNFC.Backend.Agda (makeAgda) where
 
-import Prelude'
+import Prelude hiding ((<>))
 import Control.Monad.State hiding (when)
 import Data.Char
 import Data.Function (on)

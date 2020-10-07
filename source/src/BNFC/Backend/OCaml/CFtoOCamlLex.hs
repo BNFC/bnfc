@@ -1,4 +1,4 @@
-{-# LANGUAGE NoImplicitPrelude #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 {-
     BNF Converter: ocamllex Generator
@@ -24,7 +24,7 @@
 
 module BNFC.Backend.OCaml.CFtoOCamlLex (cf2ocamllex) where
 
-import Prelude'
+import Prelude hiding ((<>))
 
 import qualified Data.List as List
 import Text.PrettyPrint hiding (render)

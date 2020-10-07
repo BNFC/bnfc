@@ -1,5 +1,3 @@
-{-# LANGUAGE NoImplicitPrelude #-}
-
 {-
     BNF Converter: Pretty-printer generator
     Copyright (C) 2005  Author:  Kristofer Johannisson
@@ -21,9 +19,11 @@
 
 -- based on BNFC Haskell backend
 
+{-# LANGUAGE OverloadedStrings #-}
+
 module BNFC.Backend.OCaml.CFtoOCamlPrinter (cf2Printer, prtFun) where
 
-import Prelude'
+import Prelude hiding ((<>))
 
 import Data.Char(toLower)
 import Data.List (intersperse, sortBy)

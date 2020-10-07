@@ -80,7 +80,7 @@ Executable bnfc
     time
   build-tools:         alex, happy
   Main-is: Main.hs
-  HS-source-dirs: compat src
+  HS-source-dirs: src
   ghc-options:     -W
   default-extensions:
     CPP
@@ -101,7 +101,6 @@ Executable bnfc
     AbsBNF
     PrintBNF
     -- BNFC core
-    Prelude'
     BNFC.Utils
     BNFC.CF
     BNFC.ToCNFCore
@@ -245,7 +244,7 @@ Test-suite unit-tests
     deepseq,
     time
   Main-is: unit-tests.hs
-  HS-source-dirs: compat src test
+  HS-source-dirs: src test
   default-extensions:
     CPP
     DoAndIfThenElse
@@ -287,7 +286,6 @@ Test-suite unit-tests
     AbsBNF
     PrintBNF
     -- BNFC core
-    Prelude'
     BNFC.Utils
     BNFC.CF
     BNFC.ToCNFCore

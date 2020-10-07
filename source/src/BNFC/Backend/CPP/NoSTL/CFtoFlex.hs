@@ -40,7 +40,7 @@
 -}
 module BNFC.Backend.CPP.NoSTL.CFtoFlex (cf2flex) where
 
-import Prelude'
+import Prelude hiding ((<>))
 import Data.Bifunctor (first)
 import Data.Maybe (fromMaybe)
 import qualified Data.Map as Map
