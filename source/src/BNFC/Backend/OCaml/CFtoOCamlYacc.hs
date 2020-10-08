@@ -31,6 +31,7 @@ import Data.Char
 
 import BNFC.CF
 import BNFC.Utils ((+++))
+import BNFC.Backend.Common
 import BNFC.Backend.OCaml.OCamlUtil
 
 -- Type declarations
@@ -79,7 +80,7 @@ definedRules cf = unlines [ mkDef f xs e | FunDef f xs e <- cfgPragmas cf ]
 declarations :: String -> CF -> String
 declarations absName cf =
   unlines
-    [ tokens (cfgSymbols cf) (reservedWords cf)
+    [ tokens (unicodeAndSymbols cf) (asciiKeywords cf)
     , specialTokens cf
     , entryPoints absName cf
     ]
@@ -99,11 +100,18 @@ tokens symbols reswords =
 
 -- | map a CF terminal into a ocamlyacc token
 terminal :: CF -> String -> String
-terminal cf s  |  s `elem` reservedWords cf = "KW_" ++ s
-terminal cf s  = case lookup s (zip (cfgSymbols cf) [1..]) of
-    Just i -> "SYMB" ++ show i
-    Nothing -> error $ "CFtoOCamlYacc: terminal " ++ show s ++ " not defined in CF."
-
+terminal cf = \ s ->
+    -- Use a lambda here to make sure that kws is computed before the
+    -- second argument is applied.
+    -- The GHC manual says that let-floating is not consistently applied
+    -- so just writing @terminal cf s = ...@ could result in computing
+    -- kws for every @s@ anew.
+    if s `elem` kws then "KW_" ++ s
+    else case lookup s (zip (unicodeAndSymbols cf) [1..]) of
+      Just i -> "SYMB" ++ show i
+      Nothing -> error $ "CFtoOCamlYacc: terminal " ++ show s ++ " not defined in CF."
+  where
+  kws = asciiKeywords cf
 
 -- | map a CF nonterminal into a ocamlyacc symbol
 nonterminal :: Cat -> String
@@ -168,7 +176,7 @@ rules cf = unlines [
     specialRules cf
     ]
     where
-        mkOne (cat,rules) = (cat, constructRule cf rules cat)
+        mkOne (cat,rules) = (cat, constructRule (terminal cf) rules cat)
         prOne (_,[]) = [] -- nt has only internal use
         prOne (nt,((p,a):ls)) =
           unwords [nt', ":" , p, "{", a, "}", "\n" ++ pr ls] ++ ";\n"
@@ -182,11 +190,11 @@ rules cf = unlines [
 
 -- For every non-terminal, we construct a set of rules. A rule is a sequence of
 -- terminals and non-terminals, and an action to be performed
-constructRule :: CF -> [Rule] -> NonTerminal -> [(Pattern,Action)]
-constructRule cf rules nt =
+constructRule :: (String -> String) -> [Rule] -> NonTerminal -> [(Pattern,Action)]
+constructRule terminal rules nt =
   [ (p, generateAction nt (funRule r) m)
   | r <- rules
-  , let (p, m) = generatePatterns cf r
+  , let (p, m) = generatePatterns terminal r
   ]
 
 
@@ -203,14 +211,14 @@ generateAction _ f ms = (if isCoercion f then "" else f') +++ mkTuple ms
            x       -> x
 
 
-generatePatterns :: CF -> Rule -> (Pattern,[MetaVar])
-generatePatterns cf r = case rhsRule r of
+generatePatterns :: (String -> String) -> Rule -> (Pattern,[MetaVar])
+generatePatterns terminal r = case rhsRule r of
   []  -> ("/* empty */",[])
   its -> (unwords (map mkIt its), metas its)
  where
    mkIt i = case i of
      Left c -> nonterminal c
-     Right s -> terminal cf s
+     Right s -> terminal s
    metas its = [ ('$': show i) | (i, Left _c) <- zip [1 ::Int ..] its ]
 
 specialRules :: CF -> String

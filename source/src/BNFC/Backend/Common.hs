@@ -6,7 +6,21 @@ module BNFC.Backend.Common where
 
 import Prelude hiding ((<>))
 
+import Data.Char
+
+import BNFC.CF
 import BNFC.PrettyPrint
+
+-- Andreas, 2020-10-08, issue #292:
+-- Since the produced lexer for Haskell and Ocaml only recognizes ASCII identifiers,
+-- but cfgKeywords also contains those using unicode characters,
+-- we have to reclassify any keyword using non-ASCII characters
+-- as symbol.
+unicodeAndSymbols :: CF -> [String]
+unicodeAndSymbols cf = filter (not . all isAscii) (cfgKeywords cf) ++ cfgSymbols cf
+
+asciiKeywords :: CF -> [String]
+asciiKeywords = filter (all isAscii) . cfgKeywords
 
 -- | Representation of the empty word as Flex regular expression
 flexEps :: String

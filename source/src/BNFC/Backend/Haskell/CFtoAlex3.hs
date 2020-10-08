@@ -22,7 +22,7 @@
 module BNFC.Backend.Haskell.CFtoAlex3 (cf2alex3) where
 
 import Data.Char
-import Data.List (intercalate, intersperse)
+import qualified Data.List as List
 
 import AbsBNF
 import BNFC.CF
@@ -30,11 +30,12 @@ import BNFC.Lexing  (mkRegMultilineComment)
 import BNFC.Options (TokenText(..))
 -- import BNFC.Utils   (unless)
 
+import BNFC.Backend.Common (asciiKeywords, unicodeAndSymbols)
 import BNFC.Backend.Haskell.Utils
 
 cf2alex3 :: String -> String -> Bool -> TokenText -> CF -> String
 cf2alex3 name shareMod shareStrings tokenText cf =
-  unlines $ intercalate [""] $
+  unlines $ concat $
   [ prelude name shareMod shareStrings tokenText
   , cMacros
   , rMacros cf
@@ -74,13 +75,13 @@ cMacros =
 rMacros :: CF -> [String]
 rMacros cf = if null symbs then [] else
   [ "@rsyms =    -- symbols and non-identifier-like reserved words"
-  , "   " ++ unwords (intersperse "|" (map mkEsc symbs))
+  , "   " ++ List.intercalate " | " (map mkEsc symbs)
   ]
- where
-  symbs = cfgSymbols cf
+  where
+  symbs = unicodeAndSymbols cf
   mkEsc = unwords . esc
   esc s = if null a then rest else show a : rest
-      where (a,r) = span isAlphaNum s
+      where (a,r) = span (\ c -> isAscii c && isAlphaNum c) s
             rest = case r of
                        [] -> []
                        (c:xs) -> s : esc xs
@@ -93,7 +94,7 @@ restOfAlex _ shareStrings tokenText cf = [
   "",
   lexComments (comments cf),
   "$white+ ;",
-  pTSpec (cfgSymbols cf),
+  pTSpec (unicodeAndSymbols cf),
 
   userDefTokenTypes,
   ident,

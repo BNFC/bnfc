@@ -32,6 +32,7 @@ import qualified Text.PrettyPrint as PP
 
 import AbsBNF
 import BNFC.CF
+import BNFC.Backend.Common (asciiKeywords, unicodeAndSymbols)
 import BNFC.Backend.OCaml.CFtoOCamlYacc (terminal)
 import BNFC.Backend.OCaml.OCamlUtil (mkEsc, ocamlTokenName)
 import BNFC.Lexing (mkRegMultilineComment)
@@ -87,8 +88,8 @@ header parserMod cf = [
 -- | set up hashtables for reserved symbols and words
 hashtables :: CF -> String
 hashtables cf = unlines . concat $
-  [ ht "symbol_table"  $ cfgSymbols cf
-  , ht "resword_table" $ reservedWords cf
+  [ ht "symbol_table"  $ unicodeAndSymbols cf
+  , ht "resword_table" $ asciiKeywords cf
   ]
   where
   ht table syms = unless (null syms) $
@@ -124,7 +125,7 @@ rMacros cf
       [ "let rsyms =    (* reserved words consisting of special symbols *)"
       , "            " ++ unwords (List.intersperse "|" (map mkEsc symbs))
       ]
-  where symbs = cfgSymbols cf
+  where symbs = unicodeAndSymbols cf
 
 -- user macros, derived from the user-defined tokens
 uMacros :: CF -> [String]
@@ -214,7 +215,7 @@ rules cf = mkRule "token" $
     ]
   where
     (multilineC, singleLineC) = comments cf
-    tokenAction pos t = case reservedWords cf of
+    tokenAction pos t = case asciiKeywords cf of
         [] -> "let l = lexeme lexbuf in TOK_" <> t <+> arg
         _  -> "let l = lexeme lexbuf in try Hashtbl.find resword_table l with Not_found -> TOK_" <> t <+> arg
       where

@@ -1,7 +1,9 @@
 -- Andreas, 2019-02-01, issue 249: unicode in tokens
+-- Andreas, 2020-10-08, issue 292: Greek letter keywords
 
 ETimes.  Exp ::= Exp "⊗" Atom ;
-EAtom.   Exp ::= Atom ;
+EAtom.   Exp ::= Atom         ;
 
-AInt.    Atom ::= Integer ;
-APar.    Atom ::= "⦅" Exp "⦆" ;
+AInt.    Atom ::= Integer     ;
+APar.    Atom ::= "⦅" Exp "⦆" ; -- Unicode symbols
+ALam.    Atom ::= "λ"         ; -- Greek letter
