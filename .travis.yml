@@ -51,7 +51,7 @@ matrix:
 script:
   - if [ "$CABAL" = yes -a "$PACKAGEDIR" = source  ]; then cabal v1-configure --enable-tests && cabal v1-build && cabal v1-test; fi
   - if [ "$CABAL" = yes -a "$PACKAGEDIR" = testing ]; then source scripts/env && ./scripts/bootstrap; fi # && ./scripts/runtests; fi
-  - if [ "$STACK" = yes ]; then stack --no-terminal --stack-yaml stack-$GHCVER.yaml build --test --no-run-tests; fi
+  - if [ "$STACK" = yes ]; then stack --no-terminal --stack-yaml stack-$GHCVER.yaml build --fast --test --no-run-tests; fi
 
 before_install:
   - export GHCVER=${GHCVER:-$TRAVIS_HASKELL_VERSION}
