@@ -53,14 +53,14 @@ cf2Abstract tokenText generic functor name cf = vsep . concat $
     , [ vcat . concat $
         [ [ "{-# LANGUAGE DeriveDataTypeable #-}" | gen ]
         , [ "{-# LANGUAGE DeriveGeneric #-}"      | gen ]
-        , [ "{-# LANGUAGE GeneralizedNewtypeDeriving #-}" | not $ null $ specialCats cf  ] -- for IsString
+        , [ "{-# LANGUAGE GeneralizedNewtypeDeriving #-}" | hasIdentLike  ] -- for IsString
         ]
       ]
     , [ hsep [ "module", text name, "where" ] ]
-    , [ vcat
-        [ text $ "import Prelude (" ++ typeImports ++ functorImportsUnqual ++ ")"
-        , text $ "import qualified Prelude as C (Eq, Ord, Show, Read" ++ functorImportsQual ++ ")"
-        , "import qualified Data.String"  -- for IsString
+    , [ vcat . concat $
+        [ [ text $ "import Prelude (" ++ typeImports ++ functorImportsUnqual ++ ")" ]
+        , [ text $ "import qualified Prelude as C (Eq, Ord, Show, Read" ++ functorImportsQual ++ ")" ]
+        , [ "import qualified Data.String" | hasIdentLike ] -- for IsString
         ]
       ]
     , [ vcat . concat $
@@ -77,6 +77,7 @@ cf2Abstract tokenText generic functor name cf = vsep . concat $
     , [ "" ] -- ensure final newline
     ]
   where
+    hasIdentLike = hasIdentLikeTokens cf
     datas = cf2data cf
     gen   = generic && not (null datas)
     derivingClasses = map ("C." ++) $ concat

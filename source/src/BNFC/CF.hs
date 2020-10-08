@@ -104,7 +104,7 @@ module BNFC.CF (
             isUsedCat,
             isPositionCat,
             hasPositionTokens,
-            hasIdent,
+            hasIdent, hasIdentLikeTokens,
             hasLayout,
             layoutPragmas,
             sigLookup,      -- Get the type of a rule label.
@@ -788,6 +788,11 @@ precLevels cf = Set.toAscList $ Set.fromList [ precCat c | c <- reallyAllCats cf
 
 precCF :: CF -> Bool
 precCF cf = length (precLevels cf) > 1
+
+-- | Defines or uses the grammar token types like @Ident@?
+--   Excludes position tokens.
+hasIdentLikeTokens :: CFG g -> Bool
+hasIdentLikeTokens cf = hasIdent cf || or [ not b | TokenReg _ b _ <- cfgPragmas cf ]
 
 -- | Is there a @position token@ declaration in the grammar?
 hasPositionTokens :: CFG g -> Bool
