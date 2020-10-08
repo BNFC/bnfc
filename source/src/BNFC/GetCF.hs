@@ -164,10 +164,17 @@ parseCFP opts target content = do
   -- Print warnings if user defined nullable tokens.
   Fold.mapM_ putStrLn $ checkTokens cf
 
-  -- Print the number of rules
+  -- Check for empty grammar.
   let nRules = length (cfgRules cf)
   -- Note: the match against () is necessary for type class instance resolution.
   when (nRules == 0) $ dieUnlessForce $ "ERROR: the grammar contains no rules."
+
+  -- Check whether one of the parsers could consume at least one token. [#213]
+  when (null (cfgLiterals cf) && null (cfTokens cf)) $
+    dieUnlessForce $
+      "ERROR: the languages defined by this grammar are empty since it mentions no terminals."
+
+  -- Passed the tests: Print the number of rules.
   putStrLn $ show nRules +++ "rules accepted\n"
   return cfp
 

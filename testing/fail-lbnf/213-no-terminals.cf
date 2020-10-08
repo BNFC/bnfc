@@ -1,0 +1,9 @@
+-- Andreas, 2020-10-08, issue #213
+-- Grammar of empty languages, should complain.
+
+A. S ::= T;
+B. T ::= S;
+
+-- Analysis should not be confused by token declaration.
+
+token Id letter (letter | digit)* ;

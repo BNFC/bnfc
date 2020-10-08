@@ -1,0 +1,2 @@
+ERROR: the languages defined by this grammar are empty since it mentions no terminals.
+Aborting.  (Use option --force to continue despite errors.)
