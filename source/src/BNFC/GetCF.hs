@@ -170,7 +170,7 @@ parseCFP opts target content = do
   when (nRules == 0) $ dieUnlessForce $ "ERROR: the grammar contains no rules."
 
   -- Check whether one of the parsers could consume at least one token. [#213]
-  when (null (cfgLiterals cf) && null (cfTokens cf)) $
+  when (null (usedTokenCats cf) && null (cfTokens cf)) $
     dieUnlessForce $
       "ERROR: the languages defined by this grammar are empty since it mentions no terminals."
 

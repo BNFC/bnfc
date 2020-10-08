@@ -101,7 +101,7 @@ module BNFC.CF (
             precLevels,     -- get all precendence levels in the grammar, sorted in increasing order.
             precRule,       -- get the precendence level of the value category of a rule.
             precCF,         -- Check if the CF consists of precendence levels.
-            isUsedCat,
+            isUsedCat, usedTokenCats,
             isPositionCat,
             hasPositionTokens,
             hasIdent, hasIdentLikeTokens,
@@ -613,8 +613,15 @@ allParserCatsNorm :: CFG f -> [Cat]
 allParserCatsNorm = nub . map normCat . allParserCats
 
 -- | Is the category is used on an rhs?
+--   Includes internal rules.
 isUsedCat :: CFG f -> Cat -> Bool
-isUsedCat cf cat = cat `elem` [c | r <- cfgRules cf, Left c <- rhsRule r]
+isUsedCat cf = (`elem` [ c | Rule _ _ rhs _ <- cfgRules cf, Left c <- rhs ])
+  -- TODO: isUsedCat is used in some places where the internal rules should be ignored.
+
+-- | All token categories used in the grammar.
+--   Includes internal rules.
+usedTokenCats :: CFG f -> [TokenCat]
+usedTokenCats cf = [ c | Rule _ _ rhs _ <- cfgRules cf, Left (TokenCat c) <- rhs ]
 
 -- | Group all parsable categories with their rules.
 --   Deletes whitespace separators, as they will not become part of the parsing rules.
