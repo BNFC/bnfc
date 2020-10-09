@@ -13,7 +13,7 @@ and an abstract syntax definition. Moreover, it produces a
 pretty-printer and a language specification in LaTeX, as well as a
 template file for the compiler back end. Since LBNF is purely
 declarative, these files can be generated in any programming language
-that supports appropriate compiler front-end tools. As of Version 2.8,
+that supports appropriate compiler front-end tools. As of Version 2.8.3,
 code can be generated in Agda, C, C++, Haskell, Java, and Ocaml. This document
 describes the LBNF formalism independently of code generation, and is
 aimed to serve as a manual for grammar writers.
@@ -55,7 +55,7 @@ Basic LBNF
 ----------
 
 Briefly, an LBNF grammar is a BNF grammar where every rule is given a
-label. The label is used for constructing a syntax tree whose subtrees
+label. The label is used for constructing abstract syntax trees whose subtrees
 are given by the nonterminals of the rule, in the same order.
 
 More formally, an LBNF grammar consists of a collection of rules, which
@@ -63,7 +63,7 @@ have the following form (expressed by a regular expression; the
 :ref:`appendix`
 gives a complete BNF definition of the notation)::
 
-    Ident "." Ident "::=" (Ident | String)* ";" ;
+    Ident "." Ident "::=" (Ident | String)* ";"
 
 The first identifier is the *rule
 label*, followed by the *value category*. On the right-hand side of the
@@ -120,6 +120,7 @@ feature present in some programming languages. LBNF has a set of rule
 formats for defining a limited form of layout syntax. It works as a
 preprocessor that translates layout syntax into explicit structure
 markers.
+Note: Only the Haskell backends (includes Agda) implement the layout feature.
 
 .. _conventions:
 
@@ -147,22 +148,24 @@ expression syntax):
 * Type ``Double`` of floating point numbers, defined
   ``digit+ '.' digit+ ('e' '-'? digit+)?``
 * Type ``Char`` of characters (in single quotes), defined
-  ``'\'' ((char - ["'\\"]) | ('\\' ["'\\nt"])) '\''``
+  ``'\'' ((char - ["'\\"]) | ('\\' ["'\\tnrf"])) '\''``
 * Type ``String`` of strings (in double quotes), defined
-  ``'"' ((char - ["\"\\"]) | ('\\' ["\"\\nt"]))* '"'``
-* Type ``Ident`` of identifiers, defined ``letter (letter | digit | '_' | '\'')*``
+  ``'"' ((char - ["\"\\"]) | ('\\' ["\"\\tnrf"]))* '"'``
+* Type ``Ident`` of identifiers, defined ``letter (letter | digit | '_')*``
 
 In the abstract syntax, these types are represented as corresponding
 types of each language, except ``Ident``, for which no such type exists. It
-is treated as a ``newtype`` in Haskell,
+is treated as a ``newtype`` for ``String`` in Haskell,
 
 .. code-block:: haskell
 
       newtype Ident = Ident String
 
-as ``String`` in Java, and as a ``typedef`` to ``char*`` in C and C++.
+as ``String`` in Java, as a ``typedef`` to ``char*`` in C and vanilla C++,
+and as ``typedef`` to ``std::string`` in C++ using the
+Standard Template Library (STL).
 
-As the names of the types suggest, the lexer produces high-precision
+As the names of the types may suggest, the lexer produces high-precision
 variants for integers and floats. Authors of applications can truncate
 these numbers later if they want to have low precision instead.
 
@@ -188,7 +191,7 @@ convention:
    A rule label can be an underscore \_, which does not add
    anything to the syntax tree.
 
-Thus we can write the following rule in LBNF::
+Thus, we can write the following rule in LBNF::
 
       _ . Stm ::= Stm ";" ;
 
@@ -229,8 +232,7 @@ that are just indexed variants of each other:
    as a type synonym of the corresponding non-indexed symbol.
 
 
-Thus ``Exp1`` and ``Exp2`` are indexed variants of ``Exp``. The plain ``Exp``
-is treated in the same way as ``Exp0``.
+Thus, ``Exp1`` and ``Exp2`` are indexed variants of ``Exp``.
 
 Transitions between indexed variants are semantic no-ops, and we do
 not want to represent them by constructors in the abstract syntax. To achieve
@@ -627,6 +629,10 @@ Because of the total coverage of these coercions, it does not matter if
 the integer indicating the highest level (here ``3``) is bigger than the
 highest level actually occurring, or if there are some other levels
 without productions in the grammar.
+However, unused levels may bloat the generated parser definition file
+(e.g., the Happy file in case of Haskell) unless the backend implements
+some sort of dead-code removal.  At the time of writing, no backend
+implements such clever analysis.
 
 .. HINT::
    Coerced categories (e.g. ``Exp2``) can also be used in other rules. For
