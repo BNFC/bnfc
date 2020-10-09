@@ -4,13 +4,17 @@
 -- The name of the package.
 name:                bnfc-system-tests
 
--- The package version.  See the Haskell package versioning policy (PVP)
+-- The package version.
+-- Does not play much of a role since this is just an internal executable.
+-- So let it equal the BNFC version!
+--
+-- Instruction: See the Haskell package versioning policy (PVP)
 -- for standards guiding when and how versions should be incremented.
 -- http://www.haskell.org/haskellwiki/Package_versioning_policy
 -- PVP summary:      +-+------- breaking API changes
 --                   | | +----- non-breaking API additions
 --                   | | | +--- code changes with no API change
-version:             0.1.2.0
+version:             2.8.4.0
 
 -- A short (one-line) description of the package.
 synopsis:            System tests for BNFC
@@ -70,7 +74,7 @@ executable bnfc-system-tests
                        HUnit >= 1.2,
                        shelly >= 1.9,
                        filepath,
-   -- filepath >= 1.4.2.1,
+                         -- filepath >= 1.4.2.1,
                        text,
                        HTF >= 0.14.0.1,
                        -- HTF-0.14.0.3 does not build with random-1.2
