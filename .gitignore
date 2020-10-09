@@ -66,6 +66,7 @@ cabal.sandbox.config
 /examples/*/csharp/
 /examples/*/functor/
 /examples/*/generic/
+/examples/*/glr/
 /examples/*/haskell/
 /examples/*/haskell-gadt/
 /examples/*/java/
@@ -73,7 +74,9 @@ cabal.sandbox.config
 /examples/*/latex/
 /examples/*/ocaml/
 /examples/*/ocaml-menhir/
+/examples/*/profile/
 /examples/*/pygments/
+/examples/*/sharestrings/
 /examples/*/xml/
 /examples/*/xmlt/
 
@@ -83,11 +86,16 @@ cabal.sandbox.config
 /testing/regression-tests/*_*/cnf/
 /testing/regression-tests/*_*/cpp*/
 /testing/regression-tests/*_*/csharp/
+/testing/regression-tests/*_*/functor/
+/testing/regression-tests/*_*/generic/
 /testing/regression-tests/*_*/glr/
 /testing/regression-tests/*_*/haskell*/
 /testing/regression-tests/*_*/java*/
+/testing/regression-tests/*_*/latex/
 /testing/regression-tests/*_*/ocaml*/
+/testing/regression-tests/*_*/profile/
 /testing/regression-tests/*_*/pygments/
+/testing/regression-tests/*_*/sharestrings/
 /testing/regression-tests/*_*/xml*/
 /testing/regression-tests/*_*/*-save/
 
