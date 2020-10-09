@@ -655,16 +655,17 @@ are generated automatically. For instance,
 
 ::
 
-      rules Type ::= Type "[" Integer "]" | "float" | "double" | Type "*" ;
+      rules Type ::= Type "[" Integer "]" | "float" | "double" | Type "*" | Ident ;
 
 is shorthand for
 
 ::
 
-      Type_0.      Type ::= Type "[" Integer "]" ;
+      Type1.       Type ::= Type "[" Integer "]" ;
       Type_float.  Type ::= "float" ;
       Type_double. Type ::= "double" ;
-      Type_3.      Type ::= Type "*" ;
+      Type2.       Type ::= Type "*" ;
+      TypeIdent.   Type ::= Ident ;
 
 The labels are created automatically. A label starts with the value
 category name. If the production has just one item, which is moreover
@@ -672,10 +673,6 @@ possible as a part of an identifier, that item is used as a suffix. In
 other cases, an integer suffix is used. No global checks are performed
 when generating these labels. Any label name clashes that result from
 them are captured by BNFC type checking on the generated rules.
-
-Notice that, using the ``rules`` macro, it is possible to define an LBNF
-grammar without giving any labels. To guarantee the uniqueness of
-labels, productions of the each category must be grouped together.
 
 .. _layout:
 
