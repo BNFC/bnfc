@@ -116,9 +116,8 @@ Executable bnfc
     BNFC.Backend.Common.OOAbstract
     BNFC.Backend.Common.StrUtils
     BNFC.Options
-    BNFC.WarningM
-    Data.Pair
     BNFC.PrettyPrint
+    Data.Pair
 
     -- Documentation backends
     BNFC.Backend.Latex
@@ -259,7 +258,6 @@ Test-suite unit-tests
     BNFC.CFSpec
     BNFC.GetCFSpec
     BNFC.OptionsSpec
-    BNFC.WarningMSpec
     BNFC.Hspec
     BNFC.Backend.BaseSpec
     BNFC.Backend.Common.MakefileSpec
@@ -285,6 +283,7 @@ Test-suite unit-tests
     ParBNF
     AbsBNF
     PrintBNF
+
     -- BNFC core
     BNFC.Utils
     BNFC.CF
@@ -301,9 +300,8 @@ Test-suite unit-tests
     BNFC.Backend.Common.OOAbstract
     BNFC.Backend.Common.StrUtils
     BNFC.Options
-    BNFC.WarningM
-    Data.Pair
     BNFC.PrettyPrint
+    Data.Pair
 
     -- Documentation backends
     BNFC.Backend.Latex
