@@ -57,7 +57,8 @@ prtTerminals name cf = unlines $
   , prtComments $ comments cf
   ]
 
-identSection cf = if not (hasIdent cf) then [] else
+identSection :: CF -> String
+identSection cf = if not (hasIdent Parsable cf) then [] else
                     unlines [
                                "===Identifiers===",
                                prtIdentifiers

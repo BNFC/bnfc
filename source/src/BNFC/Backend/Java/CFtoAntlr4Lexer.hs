@@ -139,7 +139,7 @@ restOfLexerGrammar cf = vcat
     , ifChar charmodes
     ]
   where
-    ifC cat s     = if isUsedCat cf (TokenCat cat) then vcat s else ""
+    ifC cat s     = if isUsedCat Parsable cf (TokenCat cat) then vcat s else ""
     ifString      = ifC catString
     ifChar        = ifC catChar
     strdec        = [ "// String token type"

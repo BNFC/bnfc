@@ -111,7 +111,7 @@ prtTerminals name cf = unlines $
 
 identSection :: CF -> [String]
 identSection cf
-  | hasIdent cf = [ "\\subsection*{Identifiers}" ] ++ prtIdentifiers
+  | hasIdent Parsable cf = [ "\\subsection*{Identifiers}" ] ++ prtIdentifiers
   | otherwise   = []
 
 prtIdentifiers :: [String]

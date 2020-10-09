@@ -153,7 +153,7 @@ restOfAlex cf = [
   ]
  where
    ifC :: TokenCat -> String -> String
-   ifC cat s = if isUsedCat cf (TokenCat cat) then s else ""
+   ifC cat s = if isUsedCat Parsable cf (TokenCat cat) then s else ""
    lexComments ([],[])           = []
    lexComments (xs,s1:ys) = "<>         ::= " ++ ('^':intersperse '^' s1) ++ " [.]* ^n\n" ++ lexComments (xs,ys)
    lexComments (([l1,l2],[r1,r2]):xs,[]) = concat

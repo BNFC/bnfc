@@ -163,19 +163,19 @@ mkHeaderFile cf cats eps env = unlines $ concat
   mkVar _ = []
   mkDefines n [] = mkString n
   mkDefines n (s:ss) = "#define " ++ s +++ show n ++ "\n" ++ mkDefines (n+1) ss
-  mkString n =  if isUsedCat cf (TokenCat catString)
+  mkString n =  if isUsedCat Parsable cf (TokenCat catString)
    then ("#define _STRING_ " ++ show n ++ "\n") ++ mkChar (n+1)
    else mkChar n
-  mkChar n =  if isUsedCat cf (TokenCat catChar)
+  mkChar n =  if isUsedCat Parsable cf (TokenCat catChar)
    then ("#define _CHAR_ " ++ show n ++ "\n") ++ mkInteger (n+1)
    else mkInteger n
-  mkInteger n =  if isUsedCat cf (TokenCat catInteger)
+  mkInteger n =  if isUsedCat Parsable cf (TokenCat catInteger)
    then ("#define _INTEGER_ " ++ show n ++ "\n") ++ mkDouble (n+1)
    else mkDouble n
-  mkDouble n =  if isUsedCat cf (TokenCat catDouble)
+  mkDouble n =  if isUsedCat Parsable cf (TokenCat catDouble)
    then ("#define _DOUBLE_ " ++ show n ++ "\n") ++ mkIdent(n+1)
    else mkIdent n
-  mkIdent n =  if isUsedCat cf (TokenCat catIdent)
+  mkIdent n =  if isUsedCat Parsable cf (TokenCat catIdent)
    then "#define _IDENT_ " ++ show n ++ "\n"
    else ""
   mkFunc s = identCat (normCat s) ++ "*" +++ "p" ++ identCat s ++ "(FILE *inp);"

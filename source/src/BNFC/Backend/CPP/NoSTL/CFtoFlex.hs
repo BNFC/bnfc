@@ -117,7 +117,7 @@ restOfFlex inPackage cf env = unlines $ concat
   , footer
   ]
   where
-   ifC cat s = if isUsedCat cf (TokenCat cat) then s else []
+   ifC cat s = if isUsedCat Parsable cf (TokenCat cat) then s else []
    ns = nsString inPackage
    userDefTokens =
      [ "<YYINITIAL>" ++ printRegFlex exp ++

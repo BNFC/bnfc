@@ -222,7 +222,7 @@ restOfAlex _ shareStrings tokenText cf = [
      TextToken       -> ("Data.Text.Text", "Data.Text.take", "Data.Text.uncons", "Data.Text.pack", "Data.Text.unpack", "Nothing", "Just (c,s)")
 
    ifC :: TokenCat -> String -> String
-   ifC cat s = if isUsedCat cf (TokenCat cat) then s else ""
+   ifC cat s = if isUsedCat Parsable cf (TokenCat cat) then s else ""
    lexComments ([],[])           = []
    lexComments (xs,s1:ys) = '\"' : s1 ++ "\"" ++ " [.]* ; -- Toss single line comments\n" ++ lexComments (xs, ys)
    lexComments (([l1,l2],[r1,r2]):xs,[]) = concat

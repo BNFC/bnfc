@@ -180,7 +180,7 @@ specialToks cf = unlinesInline [
   ifC catIdent   "%token<string_> IDENT_"
   ]
   where
-    ifC cat s = if isUsedCat cf (TokenCat cat) then s else ""
+    ifC cat s = if isUsedCat Parsable cf (TokenCat cat) then s else ""
 
 --The following functions are a (relatively) straightforward translation
 --of the ones in CFtoHappy.hs

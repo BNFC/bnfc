@@ -173,6 +173,12 @@ data InternalRule
   | Parsable  -- ^ ordinary rule (also for parser)
   deriving (Eq)
 
+-- | @'Parsable' < 'Internal'@.
+--   This allows to select only the parsable rule by @(<= Parsable)@.
+instance Ord InternalRule where
+  Internal <= Parsable = False
+  _        <= _        = True
+
 instance (Show function) => Show (Rul function) where
   show (Rule f cat rhs internal) = unwords $
     (if internal == Internal then ("internal" :) else id) $
@@ -613,10 +619,15 @@ allParserCatsNorm :: CFG f -> [Cat]
 allParserCatsNorm = nub . map normCat . allParserCats
 
 -- | Is the category is used on an rhs?
---   Includes internal rules.
-isUsedCat :: CFG f -> Cat -> Bool
-isUsedCat cf = (`elem` [ c | Rule _ _ rhs _ <- cfgRules cf, Left c <- rhs ])
-  -- TODO: isUsedCat is used in some places where the internal rules should be ignored.
+--
+--   * @isUsedCat Parsable@ only looks at the rules that generate the parser.
+--
+--   * @isUsedCat Internal@ also takes the internal rules into account
+--     (relevant for AST and Printer).
+--
+isUsedCat :: InternalRule -> CFG f -> Cat -> Bool
+isUsedCat internal cf = flip elem
+  [ c | Rule _ _ rhs i <- cfgRules cf, Left c <- rhs, i <= internal ]
 
 -- | All token categories used in the grammar.
 --   Includes internal rules.
@@ -660,8 +671,8 @@ numberOfBlockCommentForms = length . fst . comments
 -- built-in categories (corresponds to lexer)
 
 -- | Whether the grammar uses the predefined Ident type.
-hasIdent :: CFG f -> Bool
-hasIdent cf = isUsedCat cf $ TokenCat catIdent
+hasIdent :: InternalRule -> CFG f -> Bool
+hasIdent internal cf = isUsedCat internal cf $ TokenCat catIdent
 
 
 -- these need new datatypes
@@ -669,7 +680,9 @@ hasIdent cf = isUsedCat cf $ TokenCat catIdent
 -- | Categories corresponding to tokens. These end up in the
 -- AST. (unlike tokens returned by 'cfTokens')
 specialCats :: CF -> [TokenCat]
-specialCats cf = (if hasIdent cf then (catIdent:) else id) (map fst (tokenPragmas cf))
+specialCats cf =
+  (if hasIdent Internal cf then (catIdent:) else id) $
+    map fst (tokenPragmas cf)
 
 
 -- * abstract syntax trees: data type definitions
@@ -797,9 +810,10 @@ precCF :: CF -> Bool
 precCF cf = length (precLevels cf) > 1
 
 -- | Defines or uses the grammar token types like @Ident@?
+--   Includes internal rules.
 --   Excludes position tokens.
 hasIdentLikeTokens :: CFG g -> Bool
-hasIdentLikeTokens cf = hasIdent cf || or [ not b | TokenReg _ b _ <- cfgPragmas cf ]
+hasIdentLikeTokens cf = hasIdent Internal cf || or [ not b | TokenReg _ b _ <- cfgPragmas cf ]
 
 -- | Is there a @position token@ declaration in the grammar?
 hasPositionTokens :: CFG g -> Bool
