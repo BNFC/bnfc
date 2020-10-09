@@ -5,7 +5,6 @@ import BNFC.GetCF
 import BNFC.Hspec
 import BNFC.Options hiding (Backend)
 import BNFC.Backend.Base
-import Text.Printf (printf)
 
 import BNFC.Backend.Haskell -- SUT
 

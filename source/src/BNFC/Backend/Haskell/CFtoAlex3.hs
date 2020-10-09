@@ -30,7 +30,7 @@ import BNFC.Lexing  (mkRegMultilineComment)
 import BNFC.Options (TokenText(..))
 -- import BNFC.Utils   (unless)
 
-import BNFC.Backend.Common (asciiKeywords, unicodeAndSymbols)
+import BNFC.Backend.Common (unicodeAndSymbols)
 import BNFC.Backend.Haskell.Utils
 
 cf2alex3 :: String -> String -> Bool -> TokenText -> CF -> String

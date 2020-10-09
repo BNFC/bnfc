@@ -115,6 +115,7 @@ prelude jflex rp packageBase = vcat
     lexerName = case jflex of
       JFlexCup -> "JFlex"
       JLexCup  -> "JLex"
+      Antlr4   -> undefined
     positionDeclarations
       -- JFlex always defines yyline, yychar, yycolumn, even if unused.
       | jflex == JFlexCup     = ""

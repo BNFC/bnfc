@@ -161,6 +161,7 @@ constructRule absName functor (Rule fun0 _cat rhs Parsable) = (pattern, action)
       | isConsFun f || isNilCons f = f
       | isDefinedRule f = absName ++ "." ++ mkDefName f
       | otherwise       = absName ++ "." ++ f
+constructRule _ _ (Rule _ _ _ Internal) = undefined -- impossible
 
 
 -- | Generate patterns and a set of metavariables (de Bruijn indices) indicating

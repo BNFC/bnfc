@@ -136,8 +136,6 @@ import ParBNF (pCat)
 import LexBNF (tokens)
 import qualified AbsBNF as Abs
 
-import BNFC.Utils (prParenth,(+++))
-
 -- | A context free grammar consists of a set of rules and some extended
 -- information (e.g. pragmas, literals, symbols, keywords).
 

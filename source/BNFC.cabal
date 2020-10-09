@@ -81,7 +81,6 @@ Executable bnfc
   build-tools:         alex, happy
   Main-is: Main.hs
   HS-source-dirs: src
-  ghc-options:     -W
   default-extensions:
     CPP
     DoAndIfThenElse
@@ -244,6 +243,7 @@ Test-suite unit-tests
     time
   Main-is: unit-tests.hs
   HS-source-dirs: src test
+  ghc-options:     -W
   default-extensions:
     CPP
     DoAndIfThenElse

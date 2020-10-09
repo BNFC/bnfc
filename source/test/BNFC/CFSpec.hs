@@ -2,7 +2,7 @@ module BNFC.CFSpec where
 
 import Test.Hspec
 
--- SUT:
+-- SUT ("System/software Under Test"):
 import BNFC.CF
 
 spec :: Spec
