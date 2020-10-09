@@ -62,10 +62,10 @@ makeHaskellGadt opts cf = do
         liftIO $ putStrLn "   (Use Alex 1.1 to compile.)"
       Alex2 -> do
         mkfile (alexFile opts) $ cf2alex2 lexMod shareMod (shareStrings opts) (tokenText opts) cf
-        liftIO $ putStrLn "   (Use Alex 2.0 to compile.)"
+        liftIO $ putStrLn "   (Use Alex 2 to compile.)"
       Alex3 -> do
         mkfile (alexFile opts) $ cf2alex3 lexMod shareMod (shareStrings opts) (tokenText opts) cf
-        liftIO $ putStrLn "   (Use Alex 3.0 to compile.)"
+        liftIO $ putStrLn "   (Use Alex 3 to compile.)"
     mkfile (happyFile opts) $
       cf2Happy parMod absMod lexMod (glr opts) (tokenText opts) False cf
     liftIO $ putStrLn "   (Tested with Happy 1.15)"

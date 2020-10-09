@@ -28,6 +28,7 @@ import BNFC.Backend.Base
 import BNFC.Backend.HaskellProfile.CFtoHappyProfile
 import BNFC.Backend.Haskell.CFtoAlex
 import BNFC.Backend.Haskell.CFtoAlex2
+import BNFC.Backend.Haskell.CFtoAlex3
 import BNFC.Backend.Haskell.MkErrM
 
 -- naming conventions
@@ -65,12 +66,16 @@ makeHaskellProfile opts cfp = do
   let cf = cfp2cf cfp
   do
 ----    mkfile (absFile  (inDir opts) name) $ cf2Abstract (absFileM (inDir opts) name) cf
-    if alexMode opts == Alex1 then do
-                    mkfile (alexFile (inDir opts) name) $ cf2alex lexMod cf
-                    liftIO $ putStrLn "   (Use Alex 1.1 to compile.)"
-               else do
-                    mkfile (alexFile (inDir opts) name) $ cf2alex2 lexMod "" False StringToken cf
-                    liftIO $ putStrLn "   (Use Alex 2.0 to compile.)"
+    case alexMode opts of
+      Alex1 -> do
+        mkfile (alexFile (inDir opts) name) $ cf2alex lexMod cf
+        liftIO $ putStrLn "   (Use Alex 1.1 to compile.)"
+      Alex2 -> do
+        mkfile (alexFile (inDir opts) name) $ cf2alex2 lexMod "" False StringToken cf
+        liftIO $ putStrLn "   (Use Alex 2 to compile.)"
+      Alex3 -> do
+        mkfile (alexFile (inDir opts) name) $ cf2alex3 lexMod "" False StringToken cf
+        liftIO $ putStrLn "   (Use Alex 3 to compile.)"
     mkfile (happyFile (inDir opts) name) $
                  cf2HappyProfileS parMod absMod lexMod cfp
     liftIO $ putStrLn "   (Tested with Happy 1.13)"

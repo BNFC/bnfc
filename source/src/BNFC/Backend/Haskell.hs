@@ -74,10 +74,10 @@ makeHaskell opts cf = do
         liftIO $ printf "Use Alex 1.1 to compile %s.\n" (alexFile opts)
       Alex2 -> do
         mkfile (alexFile opts) $ cf2alex2 lexMod shareMod (shareStrings opts) (tokenText opts) cf
-        liftIO $ printf "Use Alex 2.0 to compile %s.\n" (alexFile opts)
+        liftIO $ printf "Use Alex 2 to compile %s.\n" (alexFile opts)
       Alex3 -> do
         mkfile (alexFile opts) $ cf2alex3 lexMod shareMod (shareStrings opts) (tokenText opts) cf
-        liftIO $ printf "Use Alex 3.0 to compile %s.\n" (alexFile opts)
+        liftIO $ printf "Use Alex 3 to compile %s.\n" (alexFile opts)
 
     Ctrl.when (shareStrings opts) $ mkfile (shareFile opts) $ sharedString shareMod (tokenText opts) cf
     Ctrl.when (hasLayout cf) $ mkfile (layoutFile opts) $

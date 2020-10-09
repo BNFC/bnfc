@@ -1,5 +1,5 @@
 {-
-    BNF Converter: Alex 3.0 Generator
+    BNF Converter: Alex 3.x Generator
     Copyright (C) 2012  Author:  Antti-Juhani Kaijanaho
     Copyright (C) 2004  Author:  Peter Gammie
     (C)opyright 2003, {aarne,markus,peteg} at cs dot chalmers dot se
