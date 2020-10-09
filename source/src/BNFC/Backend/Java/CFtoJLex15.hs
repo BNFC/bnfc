@@ -196,7 +196,7 @@ restOfJLex jflex rp cf = vcat
     ]
   where
     ifC :: TokenCat -> Doc -> Doc
-    ifC cat s = if isUsedCat cf (TokenCat cat) then s else ""
+    ifC cat s = if isUsedCat Parsable cf (TokenCat cat) then s else ""
     userDefTokens = vcat
         [ "<YYINITIAL>" <> text (printRegJLex jflex exp)
             <+> "{ return cf.newSymbol(\"\", sym." <> text name

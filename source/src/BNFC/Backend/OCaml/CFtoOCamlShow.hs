@@ -37,7 +37,7 @@ cf2show _name absMod cf = unlines
   [ prologue
   , integerRule
   , doubleRule
-  , if hasIdent cf then identRule absMod cf else ""
+  , if hasIdent Internal cf then identRule absMod cf else ""
   , unlines [ ownPrintRule absMod cf own | (own,_) <- tokenPragmas cf ]
   , rules absMod cf
   ]

@@ -233,7 +233,7 @@ cf2AgdaAST time tokenText mod amod pmod cf = vsep $
          -- getAbstractSyntax also includes list categories, which isn't what we need
   -- The user-defined token categories (including Ident).
   tcats :: [(TokenCat, Bool)]
-  tcats = (if hasIdent cf then ((catIdent, False) :) else id)
+  tcats = (if hasIdent Internal cf then ((catIdent, False) :) else id)
     [ (wpThing name, b) | TokenReg name b _ <- cfgPragmas cf ]
   -- Bind printers for the following categories (involves lists and literals).
   printerCats :: [Cat]

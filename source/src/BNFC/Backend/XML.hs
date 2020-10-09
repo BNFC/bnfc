@@ -48,7 +48,7 @@ cf2DTD typ name cf = unlines [
   elemEmp "Integer",
   elemEmp "Double",
   elemEmp "String",
-  if hasIdent cf then elemEmp "Ident" else "",
+  if hasIdent Internal cf then elemEmp "Ident" else "",
   unlines [elemEmp own | own <- tokenNames cf],
   unlines (map (elemData typ cf) (cf2data cf)),
   "]>"
@@ -141,7 +141,7 @@ cf2XMLPrinter typ opts absMod cf = unlines [
   integerRule cf,
   doubleRule cf,
   stringRule cf,
-  if hasIdent cf then identRule cf else "",
+  if hasIdent Internal cf then identRule cf else "",
   unlines [ownPrintRule cf own | (own,_) <- tokenPragmas cf],
   rules cf
   ]

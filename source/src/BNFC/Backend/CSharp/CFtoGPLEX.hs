@@ -170,7 +170,7 @@ gplex namespace cf env = concat [
   [("<YYINITIAL>."               , "return (int)Tokens.error;")]
   ]
   where
-   ifC cat s = if isUsedCat cf (TokenCat cat) then s else []
+   ifC cat s = if isUsedCat Parsable cf (TokenCat cat) then s else []
    userDefTokens = map tokenline (tokenPragmas cf)
      where
        tokenline (name, exp) = ("<YYINITIAL>" ++ printRegGPLEX exp , action name)

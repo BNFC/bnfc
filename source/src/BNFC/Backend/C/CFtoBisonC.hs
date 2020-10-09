@@ -267,7 +267,7 @@ specialToks cf = unlines $ concat
   , ifC catIdent   "%token<_string> _IDENT_"
   ]
   where
-    ifC cat s = if isUsedCat cf (TokenCat cat) then [s] else []
+    ifC cat s = if isUsedCat Parsable cf (TokenCat cat) then [s] else []
 
 startSymbol :: CF -> String
 startSymbol cf = "%start" +++ identCat (firstEntry cf)

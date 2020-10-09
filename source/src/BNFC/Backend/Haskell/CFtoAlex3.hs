@@ -275,7 +275,7 @@ restOfAlex _ shareStrings tokenText cf = [
    applyP f    s = f ++ " (" ++ s ++ ")"
 
    ifC :: TokenCat -> String -> String
-   ifC cat s = if isUsedCat cf (TokenCat cat) then s else ""
+   ifC cat s = if isUsedCat Parsable cf (TokenCat cat) then s else ""
 
    lexComments
      :: ( [(String, String)]  -- block comment delimiters
@@ -308,16 +308,19 @@ restOfAlex _ shareStrings tokenText cf = [
      [ printRegAlex exp ++
        "\n    { tok (\\p s -> PT p (eitherResIdent (T_"  ++ name ++ " . share) s)) }"
      | (name,exp) <- tokenPragmas cf
+     , isUsedCat Parsable cf $ TokenCat name
      ]
 
    userDefTokenConstrs = unlines
      [ " | T_" ++ name ++ " !"++stringType
      | name <- tokenNames cf
+     , isUsedCat Parsable cf $ TokenCat name
      ]
 
    userDefTokenPrint = unlines
      [ "  PT _ (T_" ++ name ++ " s) -> s"
      | name <- tokenNames cf
+     , isUsedCat Parsable cf $ TokenCat name
      ]
 
    ident =

@@ -56,7 +56,7 @@ cf2Printer tokenText functor useGadt name absMod cf = unlines $ concat $
   [ prologue tokenText useGadt name absMod
   , integerRule absMod cf
   , doubleRule absMod cf
-  , if hasIdent cf then identRule absMod tokenText cf else []
+  , if hasIdent Internal cf then identRule absMod tokenText cf else []
   ] ++ [ ownPrintRule absMod tokenText cf own | (own,_) <- tokenPragmas cf ] ++
   [ rules absMod functor cf
   ]

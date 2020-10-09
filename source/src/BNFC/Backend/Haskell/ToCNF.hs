@@ -200,13 +200,14 @@ genTokTable units cf = vcat
   , "tokenToCats p t = error (\"unknown token: \" ++ show t)"
   ]
 
+tokInfo :: CFG f -> [ (TokenCat, Doc, Exp) ]
 tokInfo cf = concat $
   [ [ (catChar   , "TC", Con "head")
     , (catString , "TL", Id)
     , (catInteger, "TI", Con "readInteger")
     , (catDouble , "TD", Con "readDouble")
     ]
-  , [ (catIdent,"TV", Con "Ident") | hasIdent cf ]
+  , [ (catIdent,"TV", Con "Ident") | hasIdent Parsable cf ]
   , [ (t, "T_" <> text t, Con t)   | (t, _) <- tokenPragmas cf ]
   ]
 

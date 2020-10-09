@@ -44,7 +44,7 @@ cf2Printer _name absMod cf = unlines [
   integerRule cf,
   doubleRule cf,
   stringRule cf,
-  if hasIdent cf then identRule absMod cf else "",
+  if hasIdent Internal cf then identRule absMod cf else "",
   unlines [ownPrintRule absMod cf own | (own,_) <- tokenPragmas cf],
   rules absMod cf
   ]
