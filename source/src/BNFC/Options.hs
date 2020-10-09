@@ -1,8 +1,19 @@
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE RecordWildCards #-}
 
-module BNFC.Options where
+module BNFC.Options
+  ( Mode(..), Target(..), Backend
+  , parseMode, usage, help
+  , SharedOptions(..)
+  , defaultOptions, isDefault, printOptions
+  , AlexVersion(..), HappyMode(..), OCamlParser(..), JavaLexerParser(..)
+  , RecordPositions(..), TokenText(..)
+  , translateOldOptions
+  )
+  where
 
+import qualified Control.Monad as Ctrl
 import Control.Monad.Writer (WriterT, runWriterT, tell)
 import Control.Monad.Except (MonadError(..))
 
@@ -42,10 +53,6 @@ data Target = TargetC | TargetCpp | TargetCppNoStl | TargetCSharp
             | TargetJava | TargetOCaml | TargetProfile | TargetPygments
             | TargetCheck
   deriving (Eq, Bounded, Enum, Ord)
-
--- | List of all targets (using the enum and bounded classes).
-targets :: [Target]
-targets = [minBound..]
 
 -- | List of Haskell target.
 haskellTargets :: [Target]
@@ -285,13 +292,13 @@ targetOptions =
   , Option "" ["cpp-nostl"]     (NoArg (\o -> o {target = TargetCppNoStl}))
     "Output C++ code (without STL) for use with FLex and Bison"
   , Option "" ["csharp"]        (NoArg (\o -> o {target = TargetCSharp}))
-    "Output C# code for use with GPLEX and GPPG"
+    "Output C# code for use with GPLEX and GPPG [deprecated]"
   , Option "" ["ocaml"]         (NoArg (\o -> o {target = TargetOCaml}))
     "Output OCaml code for use with ocamllex and ocamlyacc"
   , Option "" ["ocaml-menhir"]  (NoArg (\ o -> o{ target = TargetOCaml, ocamlParser = Menhir }))
     "Output OCaml code for use with ocamllex and menhir (short for --ocaml --menhir)"
   , Option "" ["profile"]       (NoArg (\o -> o {target = TargetProfile}))
-    "Output Haskell code for rules with permutation profiles"
+    "Output Haskell code for rules with permutation profiles [deprecated]"
   , Option "" ["pygments"]      (NoArg (\o -> o {target = TargetPygments}))
     "Output a Python lexer for Pygments"
   , Option "" ["check"]         (NoArg (\ o -> o{target = TargetCheck }))
@@ -302,14 +309,14 @@ targetOptions =
 -- they apply to.
 specificOptions :: [(OptDescr (SharedOptions -> SharedOptions), [Target])]
 specificOptions =
-  [ ( Option ['l'] [] (NoArg (\o -> o {linenumbers = RecordPositions})) $ unlines
+  [ ( Option ['l'] ["line-numbers"] (NoArg (\o -> o {linenumbers = RecordPositions})) $ unlines
         [ "Add and set line_number field for all syntax classes"
         , "(Note: Java requires cup version 0.11b-2014-06-11 or greater.)"
         ]
     , [TargetC, TargetCpp, TargetJava] )
-  , ( Option ['p'] []
-      (ReqArg (\n o -> o {inPackage = Just n}) "<namespace>")
-          "Prepend <namespace> to the package/module name"
+  , ( Option ['p'] ["name-space"]
+      (ReqArg (\n o -> o {inPackage = Just n}) "NAMESPACE")
+          "Prepend NAMESPACE to the package/module name"
     , [TargetCpp, TargetCSharp, TargetJava] ++ haskellTargets)
   -- Java backend:
   , ( Option [] ["jlex"  ] (NoArg (\o -> o {javaLexerParser = JLexCup}))
@@ -337,19 +344,19 @@ specificOptions =
     , [TargetCSharp] )
   -- Haskell backends:
   , ( Option ['d'] [] (NoArg (\o -> o {inDir = True}))
-          "Put Haskell code in modules Lang.* instead of Lang*"
+          "Put Haskell code in modules LANG.* instead of LANG* (recommended)"
     , haskellTargets )
   , ( Option []    ["alex1"] (NoArg (\o -> o {alexMode = Alex1}))
-          "Use Alex 1.1 as Haskell lexer tool"
+          "Use Alex 1.1 as Haskell lexer tool [deprecated]"
     , haskellTargets )
   , ( Option []    ["alex2"] (NoArg (\o -> o {alexMode = Alex2}))
-          "Use Alex 2 as Haskell lexer tool"
+          "Use Alex 2 as Haskell lexer tool [deprecated]"
     , haskellTargets )
   , ( Option []    ["alex3"] (NoArg (\o -> o {alexMode = Alex3}))
           "Use Alex 3 as Haskell lexer tool (default)"
     , haskellTargets )
   , ( Option []    ["sharestrings"] (NoArg (\o -> o {shareStrings = True}))
-          "Use string sharing in Alex 2 lexer"
+          "Use string sharing in Alex 2 lexer [deprecated]"
     , haskellTargets )
   , ( Option []    ["bytestrings"] (NoArg (\o -> o { tokenText = ByteStringToken }))
           "Use ByteString in Alex lexer"
@@ -362,7 +369,7 @@ specificOptions =
           "Use String in Alex lexer (default)"
     , haskellTargets )
   , ( Option []    ["glr"] (NoArg (\o -> o {glr = GLR}))
-          "Output Happy GLR parser"
+          "Output Happy GLR parser [deprecated]"
     , haskellTargets )
   , ( Option []    ["functor"] (NoArg (\o -> o {functor = True}))
           "Make the AST a functor and use it to store the position of the nodes"
@@ -427,15 +434,18 @@ oldContributors =
   ]
 
 usage :: String
-usage = "usage: bnfc [--version] [--help] <target language> [<args>] file.cf"
+usage = unlines
+  [ "usage: bnfc [--TARGET] [OPTIONS] LANG.cf"
+  , "   or: bnfc --[numeric-]version"
+  , "   or: bnfc [--help]"
+  ]
 
 help :: String
 help = unlines $ title ++
     [ usage
-    , ""
     , usageInfo "Global options"   globalOptions
     , usageInfo "Common options"   commonOptions
-    , usageInfo "Target languages" targetOptions
+    , usageInfo "TARGET languages" targetOptions
     ] ++ map targetUsage helpTargets
   where
   helpTargets = [ TargetHaskell, TargetJava, TargetC, TargetCpp, TargetCSharp ]
@@ -485,12 +495,68 @@ parseMode' args =
                        { lbnfFile = grammarFile
                        , lang = takeBaseName grammarFile
                        }
+            warnDeprecatedBackend tgt
+            warnDeprecatedOptions opts
             return $ Target opts grammarFile
           (_,  _, _,        _) -> usageError "Too many arguments"
   where
   options optionsUpdates = foldl (.) id optionsUpdates defaultOptions
   usageError = return . UsageError
 
+
+-- * Deprecation
+
+class Maintained a where
+  maintained   :: a -> Bool
+  printFeature :: a -> String
+
+instance Maintained Target where
+  printFeature = printTargetOption
+  maintained = \case
+    TargetC           -> True
+    TargetCpp         -> True
+    TargetCppNoStl    -> True
+    TargetCSharp      -> False
+    TargetHaskell     -> True
+    TargetHaskellGadt -> True
+    TargetLatex       -> True
+    TargetJava        -> True
+    TargetOCaml       -> True
+    TargetProfile     -> False
+    TargetPygments    -> True
+    TargetCheck       -> True
+
+instance Maintained AlexVersion where
+  printFeature = printAlexOption
+  maintained = \case
+    Alex1 -> False
+    Alex2 -> False
+    Alex3 -> True
+
+instance Maintained HappyMode where
+  printFeature = \case
+    Standard -> undefined
+    GLR      -> "--glr"
+  maintained = \case
+    Standard -> True
+    GLR      -> False
+
+warnDeprecatedBackend :: Maintained a => a -> ParseOpt ()
+warnDeprecatedBackend backend =
+  Ctrl.unless (maintained backend) $ warnDeprecated $ unwords [ "backend", printFeature backend ]
+
+warnDeprecated :: String -> ParseOpt ()
+warnDeprecated feature =
+  tell
+    [ unwords [ "Warning:", feature, "is deprecated and no longer maintained." ]
+    -- , "Should it be broken, try an older version of BNFC."
+    ]
+
+warnDeprecatedOptions :: SharedOptions -> ParseOpt ()
+warnDeprecatedOptions Options{..} = do
+  warnDeprecatedBackend alexMode
+  warnDeprecatedBackend glr
+  Ctrl.when shareStrings $ warnDeprecated $ "feature --sharestrings"
 
 -- * Backward compatibility
 

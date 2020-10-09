@@ -1,20 +1,15 @@
 {-# LANGUAGE FlexibleInstances, UndecidableInstances #-}
+
 module BNFC.OptionsSpec where
 
-import Control.Monad (liftM, liftM2)
 import Control.Monad.Writer (WriterT(..))
-
-import Data.List (intercalate)
-import Data.Maybe (fromJust)
-
-import System.Console.GetOpt
-import System.FilePath ((<.>), takeBaseName)
+import Data.List            (intercalate)
+import System.FilePath      ((<.>), takeBaseName)
 
 import Test.Hspec
 import Test.QuickCheck
 
 import BNFC.Options
-import BNFC.WarningM
 
 
 -- Expectation that a particular option has a particular value
@@ -93,7 +88,7 @@ isUsageError = \case
 randomOption :: Gen String
 randomOption = oneof [ nonOption, noArg, withArg ]
   where nonOption = stringOf1 ['a'..'z'] -- non-option argument
-        noArg     = liftM ("--"++) nonOption -- flag
+        noArg     = ("--"++) <$> nonOption -- flag
         withArg   = do
           arg   <- nonOption
           flag  <- noArg
@@ -110,7 +105,8 @@ stringOf1 :: [Char] -> Gen String
 stringOf1 = listOf1 . elements
 
 
-instance Arbitrary Target where arbitrary = elements [minBound .. ]
+instance Arbitrary Target where
+  arbitrary = elements [minBound .. maxBound]
 
 -- creates a filepath with the given extension
 arbitraryFilePath :: String -> Gen FilePath
@@ -124,15 +120,16 @@ arbitraryFilePath ext = do
 -- going to generate accidentally an global/target language option
 arbitraryOption :: Gen String
 arbitraryOption = oneof [arbitraryShortOption, arbitraryLongOption]
-  where arbitraryShortOption = liftM (('-':) . (:[])) (elements ['x'..'z'])
-        arbitraryLongOption  = liftM ("--" ++) (stringOf1 ['x'..'z'])
+  where
+  arbitraryShortOption = ('-':) . (:[]) <$> elements ['x'..'z']
+  arbitraryLongOption  = ("--" ++)      <$> stringOf1 ['x'..'z']
 
 -- Arbitrary instance for Mode
 instance Arbitrary Mode where
   arbitrary = oneof
     [ return Help
     , return Version
-    , liftM UsageError arbitrary          -- generates a random error message
+    , UsageError <$> arbitrary          -- generates a random error message
     , do target' <- arbitrary              -- random target
          cfFile <- arbitraryFilePath "cf"
          let args = defaultOptions { lang = takeBaseName cfFile, target = target'}
