@@ -683,22 +683,92 @@ Layout syntax
 =============
 
 Layout syntax is a means of using indentation to group program elements.
-It is used in some languages, e.g. Haskell. Those who do not know what
-layout syntax is or who do not like it can skip this section.
+It is used in some languages, e.g. Agda, Haskell, and Python.
+Layout syntax is a rather experimental feature of BNFC and only
+supported by the Haskell-family backends, so the reader
+might want to skip this section on the first reading.
 
 The pragmas ``layout``, ``layout stop``, and ``layout toplevel`` define a *layout
-syntax* for a language. Before these pragmas were added, layout syntax
-was not definable in BNFC. The layout pragmas are only available for the
-files generated for Haskell-related tools; if Java, C, or C++
-programmers want to handle layout, they can use the Haskell layout
-resolver as a preprocessor to their front end, before the lexer. In
-Haskell, the layout resolver appears, automatically, in its most natural
-place, which is between the lexer and the parser. The layout pragmas of
+syntax* for a language.
+From these pragmas, a Haskell module named ``Layout``, the layout
+resolver, is created to be plugged in between lexer and parser.  This
+module inserts extra tokens (braces and semicolons) into the token
+stream coming from the lexer, according to the rules explained below.
+
+.. hint::
+
+   To get layout resolution in other backends, the generated Haskell
+   layout resolver could to be hand-ported to the desired programming
+   language.  Alternatively, the generated Haskell lexer and layout
+   resolver could be turned into a stand-alone preprocessor that
+   lexes a file into tokens, inserts the extra tokens according to
+   the layout rules, and prints the tokens back into a character
+   stream that can be further processed by the lexer and parser
+   written in the desired programming language.
+
+The layout pragmas of
 BNFC are not powerful enough to handle the full layout rule of Haskell
 98, but they suffice for the “regular” cases.
 
-Here is an example, found in the the grammar of the logical framework
-Alfa.
+For a feature overview, a first simple example: a grammar for trees.
+A ``Tree`` be a number (the payload) followed by ``br`` plus a
+(possibly empty) list of subtrees::
+
+
+  Node. Tree ::= Integer "br" "{" [Tree] "}" ;
+  separator Tree ";" ;
+
+  layout "br" ;
+
+The lists are enclosed in braces and separated by semicolons.  This is
+the only syntax supported by the layout mechanism for the moment.
+
+The generated parser can process this example::
+
+  0 br
+    1 br
+      2 br
+      3 br
+    4 br
+      5 br
+        6 br
+    7 br
+
+Thanks to the layout resolution, this is treated in the same way as
+the following input would be treated without layout support::
+
+  0 br
+  { 1 br
+    { 2 br {}
+    ; 3 br {}
+    }
+  ; 4 br
+    { 5 br
+      { 6 br {}
+      }
+    }
+  ; 7 br {}
+  }
+
+The layout resolver produces, more precisely, the following equivalent
+intermediate text (in form of a token stream)::
+
+  0 br{
+    1 br{
+      2 br{
+    }; 3 br{
+    }
+  }; 4 br{
+      5 br{
+        6 br{
+      }
+    }
+  }; 7 br{
+  }}
+
+
+Now to a more realistic example, found in the the grammar of the logical framework
+Alfa.  (Caveat: This example is a bit dated...)
 
 ::
 
@@ -707,9 +777,7 @@ Alfa.
 The first line says that ``"of"``, ``"let"``, ``"where"``, ``"sig"``,
 ``"struct"`` are *layout words*, i.e. start a *layout list*. A layout list is a
 list of expressions normally enclosed in curly brackets and separated by
-semicolons, as shown by the Alfa example
-
-::
+semicolons, as shown by the Alfa example::
 
       ECase. Exp ::= "case" Exp "of" "{" [Branch] "}" ;
 
@@ -734,9 +802,7 @@ maintains a stack of positions. Pushing a position on the stack
 corresponds to inserting a left bracket, and popping from the stack
 corresponds to inserting a right bracket.
 
-Here is an example of an Alfa source file using layout:
-
-::
+Here is an example of an Alfa source file using layout::
 
       c :: Nat = case x of
         True -> b
@@ -748,9 +814,7 @@ Here is an example of an Alfa source file using layout:
                                       x -> b
                     y -> h
 
-Here is what it looks like after layout resolution:
-
-::
+Here is what it looks like after layout resolution::
 
       c :: Nat = case x of {
         True -> b
@@ -759,8 +823,8 @@ Here is what it looks like after layout resolution:
         };Neither -> d
 
       };d = case x of {True -> case y of {False -> g
-                                      ;x -> b
-                    };y -> h} ;
+                                         ;x -> b
+                      };y -> h} ;
 
 There are two more layout-related pragmas. The layout stop pragma, as in
 
@@ -778,21 +842,6 @@ list, even though no layout word indicates this. The position is the
 first column, and the resolver adds a semicolon after every paragraph
 whose first token is at this position. No curly brackets are added. The
 Alfa file above is an example of this, with two such semicolons added.
-
-To make layout resolution a stand-alone program, e.g. to serve as a
-preprocessor, the programmer can modify the BNFC source file
-``ResolveLayoutAlfa.hs`` as indicated in the file, and either compile it or
-run it in the Hugs interpreter by
-
-::
-
-      runhugs ResolveLayoutX.hs <X-source-file>
-
-We may add the generation of ``ResolveLayoutX.hs`` to a later version of
-BNFC.
-
-**Bug**. The generated layout resolver does not work correctly if a
-layout word is the first token on a line.
 
 .. _profile:
 
