@@ -55,7 +55,7 @@ import ParBNF
 
 import BNFC.CF
 import BNFC.Options
-import BNFC.Regex       (simpReg)
+import BNFC.Regex       (nullable, simpReg)
 import BNFC.TypeChecker
 import BNFC.Utils
 
@@ -522,26 +522,6 @@ checkTokens cf
       ]
   where
     ns = map (show . fst) . filter (nullable . snd) $ tokenPragmas cf
-
--- | Check if a regular expression is nullable (accepts the empty string)
-nullable :: Abs.Reg -> Bool
-nullable r =
-    case r of
-      Abs.RSeq r1 r2   -> nullable r1 && nullable r2
-      Abs.RAlt r1 r2   -> nullable r1 || nullable r2
-      Abs.RMinus r1 r2 -> nullable r1 && not (nullable r2)
-      Abs.RStar _      -> True
-      Abs.RPlus r1     -> nullable r1
-      Abs.ROpt _       -> True
-      Abs.REps         -> True
-      Abs.RChar _      -> False
-      Abs.RAlts _      -> False
-      Abs.RSeqs s      -> null s
-      Abs.RDigit       -> False
-      Abs.RLetter      -> False
-      Abs.RUpper       -> False
-      Abs.RLower       -> False
-      Abs.RAny         -> False
 
 
 -- we should actually check that

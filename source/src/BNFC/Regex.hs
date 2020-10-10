@@ -3,7 +3,7 @@
 
 -- | Tools to manipulate regular expressions.
 
-module BNFC.Regex ( simpReg ) where
+module BNFC.Regex ( nullable, simpReg ) where
 
 import Data.Semigroup (Semigroup(..))
 import Data.Set (Set)
@@ -11,6 +11,25 @@ import qualified Data.Set as Set
 import qualified Data.List as List
 
 import AbsBNF
+
+-- | Check if a regular expression is nullable (accepts the empty string)
+nullable :: Reg -> Bool
+nullable = \case
+  RSeq r1 r2   -> nullable r1 && nullable r2
+  RAlt r1 r2   -> nullable r1 || nullable r2
+  RMinus r1 r2 -> nullable r1 && not (nullable r2)
+  RStar _      -> True
+  RPlus r1     -> nullable r1
+  ROpt _       -> True
+  REps         -> True
+  RChar _      -> False
+  RAlts _      -> False
+  RSeqs s      -> null s
+  RDigit       -> False
+  RLetter      -> False
+  RUpper       -> False
+  RLower       -> False
+  RAny         -> False
 
 -- | Simplification of regular expression, mostly for the purpose
 --   of simplifying character alternatives (character classes).
