@@ -336,13 +336,14 @@ programmer to understand error messages related to the source, the BNF
 Converter performs some checks, which are mostly connected with the
 sanity of the abstract syntax.
 
-The type checker uses a notion of the *category skeleton* of a rule,
-which is a pair
+The type checker uses a notion of the *category skeleton* or *type* of a rule,
+which is of the form
 
-.. math:: (C, A\ldots B)
+.. math:: A_1\ldots A_n \to C
 
 where :math:`C` is the unindexed left-hand-side non-terminal and
-:math:`A\ldots B` is the sequence of unindexed right-hand-side
+:math:`A_1\ldots A_n` is the (possibly empty)
+sequence of unindexed right-hand-side
 non-terminals of the rule. In other words, the category skeleton of a
 rule expresses the abstract-syntax type of the semantic action
 associated to that rule.
@@ -358,15 +359,15 @@ of ``_``, ``[]``, ``(:)``, and ``(:[])``.
 The type checking rules are now the following:
 
 .. highlights::
-   A rule labelled by ``_`` must have a category skeleton of form :math:`(C,C)`.
+   A rule labelled by ``_`` must have a category skeleton of form :math:`C \to C`.
 
-   A rule labelled by ``[]`` must have a category skeleton of form :math:`([C],)`.
+   A rule labelled by ``[]`` must have a category skeleton of form :math:`\to [C]`.
 
    A rule labelled by ``(:)`` must have a category skeleton of form
-   :math:`([C],C[C])`.
+   :math:`C~[C] \to [C]`.
 
    A rule labelled by ``(:[])`` must have a category skeleton of form
-   :math:`([C],C)`.
+   :math:`C \to [C]`.
 
    Only regular categories may have productions with regular rule labels.
 
