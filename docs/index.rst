@@ -13,8 +13,8 @@ Welcome to BNFC's documentation!
 .. toctree::
    :maxdepth: 2
 
-   user_guide
    lbnf
+   user_guide
    othertools
    dev/release
 
@@ -25,4 +25,3 @@ Indices and tables
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`
-

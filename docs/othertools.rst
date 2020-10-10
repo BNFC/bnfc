@@ -20,9 +20,9 @@ ANTLR_
     From a grammar, ANTLR generates a Java parser that can build and walk parse
     trees.
 `BNF Parser Generator`_
-    Generate a C parser from a BNF like syntax
+    Generates a C parser from a BNF like syntax.
 `BNF for Java`_
-    Java implementation of Extended BNF
+    Java implementation of Extended BNF.
 `GF`_
     Powerful grammar formalism for natural language processing.
 `Syntax`_

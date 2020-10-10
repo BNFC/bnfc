@@ -2,6 +2,8 @@
 Releasing
 =========
 
+This document concerns the developers and contributors of BNFC only.
+
 ☐ Write changes
     In `source/changelog`. Write an overview of the important changes: features
     added, deprecated and removed.
