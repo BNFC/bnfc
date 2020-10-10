@@ -68,7 +68,7 @@ makeHaskellGadt opts cf = do
         liftIO $ putStrLn "   (Use Alex 3 to compile.)"
     mkfile (happyFile opts) $
       cf2Happy parMod absMod lexMod (glr opts) (tokenText opts) False cf
-    liftIO $ putStrLn "   (Tested with Happy 1.15)"
+    liftIO $ putStrLn "   (Tested with Happy 1.15 - 1.20)"
     mkfile (templateFile opts) $ cf2Template (templateFileM opts) absMod cf
     mkfile (printerFile opts)  $ cf2Printer StringToken False True prMod absMod cf
     when (hasLayout cf) $ mkfile (layoutFile opts) $

@@ -114,8 +114,8 @@ makeJava' options@Options{..} cf = do
     let (lex, env) = lexfun packageBase cf
     -- Where the lexer file is created. lex is the content!
     mkfile (dirBase ++ inputfile lexmake ) lex
-    liftIO $ putStrLn $ "   (Tested with "+++ toolname lexmake
-                                          +++ toolversion lexmake  +++")"
+    liftIO $ putStrLn $ "   (Tested with" +++ toolname lexmake
+                                          +++ toolversion lexmake  ++ ")"
     -- where the parser file is created.
     mkfile (dirBase ++ inputfile parmake)
           $ parsefun packageBase packageAbsyn cf rp env
@@ -123,8 +123,8 @@ makeJava' options@Options{..} cf = do
       if supportsEntryPoints parmake
        then "(Parser created for all categories)"
        else "   (Parser created only for category " ++ show (firstEntry cf) ++ ")"
-    liftIO $ putStrLn $ "   (Tested with " +++ toolname parmake
-                                           +++ toolversion parmake +++ ")"
+    liftIO $ putStrLn $ "   (Tested with"  +++ toolname parmake
+                                           +++ toolversion parmake ++ ")"
     Makefile.mkMakefile options $
         makefile dirBase dirAbsyn absynFileNames parselexspec
   where
@@ -460,7 +460,7 @@ jlexmakedetails = MakeDetails
     , filename            = "Yylex"
     , fileextension       = ""
     , toolname            = "JLex"
-    , toolversion         = "1.2.6."
+    , toolversion         = "1.2.6"
     , supportsEntryPoints = False
     , results             = ["Yylex"]
     , other_results       = []
@@ -470,7 +470,7 @@ jlexmakedetails = MakeDetails
 jflexmakedetails = jlexmakedetails
     { executable  = "jflex"
     , toolname    = "JFlex"
-    , toolversion = "1.4.3"
+    , toolversion = "1.4.3 - 1.7.0"
     }
 
 cupmakedetails rp = MakeDetails
