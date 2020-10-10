@@ -96,6 +96,98 @@ The usual abstract syntax tree returned by BNFC is in the ``result`` field of
 any ``ParserRuleContext`` returned by the available parse functions
 (here ``exp()``).
 
+Haskell Backend
+===============
+
+The Haskell backend is the default backend.  It targets the Alex lexer
+generator and the Happy parser generator.
+
+Option ``-d`` is strongly recommended.  It places the generated files, except for the ``Makefile`` into a subdirectory whose name is derived from the grammar file.  Example::
+
+    bnfc -d -m Calc.cf
+    make
+
+This will leave the following files (and some more) in directory ``Calc``:
+
+1. ``Abs.hs``
+
+   The generated data types that describe the abstract syntax of the
+   ``Calc`` language.  Import e.g. via::
+
+       import Calc.Abs
+
+2. ``Print.hs``
+
+   The generated pretty printer in form of an overloaded function ``printTree``.
+   Import e.g. as::
+
+       import Calc.Print ( printTree )
+
+3. ``Lex.x``
+
+   The input file for the Alex lexer generator.
+   The generated lexer ``Lex.hs`` also contains the ``Token`` definition.
+   Usually the lexer is just imported by the parser, but if you want
+   to handle tokens for some purpose you can for instance state::
+
+       import Calc.Lex   ( Token(..) )
+
+4. ``Par.y``
+
+   The input file for the Happy parser generator.
+   The generated parser ``Par.hs`` also contains the lexing function
+   by the name ``myLexer``.
+   Import lexer and parser (for the ``Exp`` category) via::
+
+       import Calc.Par   ( myLexer, pExp )
+
+5. ``Test.hs``
+
+   This is a sample command line program that just runs the parser
+   on the given input file.
+   You can invoke its compiled form e.g. via ``Calc/Test sample.txt``.
+   You can use it as model how to piece lexer, parser, and printer together.
+
+6. ``ErrM.hs``
+
+   This module is for backwards compatibility only.  From BNFC 2.8.4,
+   the generated parser returns ``Either String Exp`` where
+   the ``Left`` alternative is an error message of type ``String``
+   in case the parsing failed
+   and the ``Right`` alternative is a regular result
+   (``Exp`` in case of ``Calc``) when parsing succeeded.
+
+   Until BNFC 2.8.3, the parser returned ``Err Exp`` which was
+   essentially ``Either String Exp`` under a new name, with
+   constructors ``Bad`` instead of ``Left`` and ``Ok`` instead of
+   ``Right``.  In ``ErrM.hs``, type constructor ``Err`` is defined as
+   a type synoym for ``Either String`` and ``Bad`` and ``Ok`` as
+   pattern synonyms for ``Left`` and ``Right``.
+
+   Old code developed with the Haskell backend of BNFC 2.8.3 should
+   still continue to work, thanks to the ``ErrM.hs`` compatibility
+   module.  There is one exception:  An import statement like
+
+   ::
+
+       import Calc.ErrM ( Err (Ok, Bad) )
+
+   or
+
+   ::
+
+       import Calc.ErrM ( Err (..) )
+
+   does not work anymore, since ``Ok`` and ``Bad`` are not constructors anymore.
+   A robust statement that works *both for constructors and pattern synonyms* is::
+
+       {-# LANGUAGE PatternSynonyms #-}
+       import Calc.ErrM ( Err, pattern Ok, pattern Bad )
+
+   and this is the recommended minimal migration of Haskell code
+   written with BNFC 2.8.3.
+
+
 Pygments Backend
 ================
 
