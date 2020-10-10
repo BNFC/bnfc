@@ -213,11 +213,10 @@ highlighter right away without fiddling with pygments code.
 Here is an example (assuming you've put the Calc grammar in the current
 directory)::
 
-    virtualenv myenv    # If you don't use virtualenv, skip the first two steps
-    source myenv/bin/activate
     bnfc --pygments Calc.cf
-    python setup.py install
-    echo "1 + 2 - 3 * 4" | pygmentize -l calc
+    python3 -m venv myenv                 # If you don't use virtualenv, skip this step...
+    myenv/bin/python3 setup.py install    # ... and use the global python3 and pygmentize
+    echo "1 + 2 - 3 * 4" | myenv/bin/pygmentize -l calc
 
 You should see something like:
 
