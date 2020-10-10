@@ -1,14 +1,22 @@
-2.8.4 Andreas Abel <andreas.abel@gu.se>
-	* dropped support for GHC 7.6 and 7.8
+2.8.4 Andreas Abel <andreas.abel@gu.se>  October 2020
+	* GHC versions 7.10 - 8.10 supported, dropped GHC 7.6 and 7.8
 	* LBNF: whitespace list separators are now accepted; treated like "" [#70]
+	* `define` pragma now implemented by all maintained backends [#266, #285]
+	* BNFC performs more sanity checks on the grammar, reports errors with source locations [#186, #213, #214]
+	* option `--check` to only perform sanity checks [#286]
+	* Backends now more resilient against keyword and name clashes (e.g. via qualified imports) [#278, #289]
 	* Haskell: new option --text-token to use Data.Text instead of String in the lexer [#167]
-	* Haskell: allow block comment delimiters of any length [#202,#169]
-	* Haskell: define Err monad as Either String [#273]
+	* Haskell: allow block comment delimiters of any length [#169, #202]
+	* Haskell: define Err monad as Either String [#273], migration guide at https://bnfc.readthedocs.io/en/v2.8.4/user_guide.html#haskell-backend
+	* Haskell: IsString instances for Ident-like token types [#192]
 	* C/C++/Java: support multiple block comment forms per grammar [#202]
 	* C++(STL): parser now throws exception on parse error [#288]
 	* C++: fixed quadratic behavior in C++-generated printer (regression in 2.8.2)
+	* Java: escape JFlex special characters [#299]
 	* Java/ANTLR: emit start rules to work around ANTLR issue #2689 [#272]
 	* Ocaml: new flag --menhir to generate parser with menhir instead of ocamlyacc
+        * Bug fixes: #163, #169, #196, #212, #235, #256, #264, #269, #274, #276, #277, #279, #282, #283, #290
+	* Fact-checking and revising LBNF documentation at https://bnfc.readthedocs.io/en/v2.8.4/lbnf.html
 
 2.8.3 Andreas Abel <andreas.abel@gu.se>  August 2019
 	* GHC 8.8 compatibility
