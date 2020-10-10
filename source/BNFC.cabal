@@ -48,9 +48,15 @@ Extra-source-files:
   stack-7.10.3.yaml
 
 Source-repository head
-  type: git
+  type:     git
   location: git://github.com/BNFC/bnfc.git
-  subdir: source
+  subdir:   source
+
+Source-repository this
+  type:     git
+  location: git://github.com/BNFC/bnfc.git
+  subdir:   source
+  tag:      v2.8.4
 
 Library
   hs-source-dirs: runtime, src
