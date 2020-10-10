@@ -314,8 +314,9 @@ explicitly in the grammar.
 The list notation can also be seen as a variant of the Kleene star and
 plus, and hence as an ingredient from Extended BNF.
 
-In other languages than Haskell, monomorphic variants of lists are
-generated automatically.
+Some programming languages (such as C) have no parametric
+polymorphism.  The respective backends then generate monomorphic
+variants of lists.
 
 .. hint::
    See Section :ref:`terminator` for concise ways of defining lists by
@@ -382,7 +383,7 @@ generates only a warning, not a type error.
 
 .. _lexer:
 
-Lexer Definitions
+Lexer definitions
 =================
 
 .. _token:
@@ -400,7 +401,7 @@ rule defines the type of identifiers beginning with upper-case letters.
 
 The type ``UIdent`` becomes usable as an LBNF nonterminal and as a type in
 the abstract syntax. Each token type is implemented by a ``newtype`` in
-Haskell, as a ``String`` in Java, and as a ``typedef`` to ``char*`` in C/C++.
+Haskell, as a ``String`` in Java, and as a ``typedef`` to ``char*`` in C etc.
 
 The regular expression syntax of LBNF is specified in the Appendix. The
 abbreviations with strings in brackets need a word of explanation:
@@ -412,7 +413,7 @@ abbreviations with strings in brackets need a word of explanation:
     '``a``' '``b``' '``c``' '``7``' '``%``'
 
 The atomic expressions ``upper``, ``lower``, ``letter``, and ``digit`` denote the
-character classes suggested by their names (letters are isolatin1).
+*isolatin1* character classes corresponding to their names.
 The expression ``char`` matches any unicode character, and the
 “epsilon” expression ``eps`` matches the empty string.  Thus ``eps`` is
 equivalent to ``{""}``, whereas the empty language is expressed by ``[""]``.
@@ -423,14 +424,14 @@ equivalent to ``{""}``, whereas the empty language is expressed by ``[""]``.
    will never be parsed as a ``UIdent``.
 
 .. note::
-   The empty language is not available for the Java lexer tool JLex.
+   As of October 2020, the empty language is only handled by the Java backend.
 
 .. _postoken:
 
 The position token rule
 -----------------------
 
-(As of February 7, 2011, only available for Haskell). Any ``token`` rule can be
+Any ``token`` rule can be
 modified by the word position, which has the effect that the datatype defined
 will carry position information. For instance,
 
@@ -447,6 +448,9 @@ creates in Haskell the datatype definition
 where the pair of integers indicates the line and column of the first
 character of the token. The pretty-printer omits the position component.
 
+(As of October 2020, the ``cpp-nostl`` backend (C++ without using the STL)
+does not implement position tokens.)
+
 The comment rule
 ----------------
 
@@ -455,19 +459,30 @@ not passed to the parser. The natural place to deal with them is in the
 lexer. The ``comment`` rule instructs the lexer generator to treat certain
 pieces of text as comments.
 
-The comment rule takes one or two string arguments. The first string
+The comment rule takes one (for line comments) or two string arguments
+(for block comments).
+The first string
 defines how a comment begins. The second, optional string marks the end
 of a comment; if it is not given then the comment is ended by a newline.
-For instance, the Java comment convention is defined as follows:
-
-::
+For instance, the Java comment convention is defined as follows::
 
       comment "//" ;
       comment "/*" "*/" ;
 
+Note: The generated lexer does not recognize *nested* block comments,
+nor does it respect quotation, as in strings.  In the following snippet
+
+::
+
+    /* Commenting out...
+    printf("*/");
+    */
+
+the lexer will consider the block comment to be closed before ``");``.
+
 .. _pragmas:
 
-LBNF Pragmas
+LBNF pragmas
 ============
 
 Internal pragmas
@@ -598,8 +613,17 @@ between ``terminator`` and ``separator``.
 ``nonempty`` will actually also accept a list terminating with a
 semicolon, whereas the pretty-printer “normalizes” it away. This might
 be considered a bug, but a set of rules forbidding the terminating
-semicolon would be much more complicated. The ``nonempty`` case is
-strict.
+semicolon would be more complicated:
+
+::
+
+      [].    [Stm]  ::=                ;
+      _.     [Stm]  ::= [Stm]1         ;
+      (:[]). [Stm]1 ::= Stm            ;
+      (:).   [Stm]1 ::= Stm ";" [Stm]1 ;
+
+This is unfortunately not legal LBNF, since precedence levels for
+lists are not supported.
 
 .. _coercions:
 
@@ -622,14 +646,14 @@ is shorthand for
       _. Exp2 ::= Exp3 ;
       _. Exp3 ::= "(" Exp ")" ;
 
-Because of the total coverage of these coercions, it does not matter if
+Because of the total coverage of these coercions, it does not matter whether
 the integer indicating the highest level (here ``3``) is bigger than the
-highest level actually occurring, or if there are some other levels
+highest level actually occurring, or whether there are some other levels
 without productions in the grammar.
 However, unused levels may bloat the generated parser definition file
 (e.g., the Happy file in case of Haskell) unless the backend implements
-some sort of dead-code removal.  At the time of writing, no backend
-implements such clever analysis.
+some sort of dead-code removal.  (As of October 2020, no backend
+implements such clever analysis.)
 
 .. HINT::
    Coerced categories (e.g. ``Exp2``) can also be used in other rules. For
@@ -674,8 +698,9 @@ The labels are created automatically. A label starts with the value
 category name. If the production has just one item, which is moreover
 possible as a part of an identifier, that item is used as a suffix. In
 other cases, an integer suffix is used. No global checks are performed
-when generating these labels. Any label name clashes that result from
-them are captured by BNFC type checking on the generated rules.
+when generating these labels.
+Label name clashes leading to type errors are captured by BNFC type
+checking on the generated rules.
 
 .. _layout:
 
@@ -848,6 +873,7 @@ Alfa file above is an example of this, with two such semicolons added.
 Profiles
 ========
 
+(As of October 2020, the `profile` backend is deprecated.)
 This section explains a feature which is not intended to be used in LBNF
 grammars written by hand, but in ones generated from the grammar
 formalism GF (Grammatical Framework). GF supports grammars of
@@ -926,7 +952,7 @@ A right-recursive list definition
       [].    [Stm] ::= ;
       (:).   [Stm] ::= Stm ";" [Stm] ;
 
-becomes left recursive under the left-recursive transformation::
+becomes left recursive under the left-recursion transformation::
 
       [].         [Stm] ::= ;
       (flip (:)). [Stm] ::= [Stm] Stm ";" ;
@@ -956,11 +982,11 @@ heap-allocated stack via ``happy``.
 Appendix: LBNF Specification
 ============================
 
-This document was automatically generated by the *BNF-Converter*. It was
+This document was originally automatically generated by the *BNF-Converter*. It was
 generated together with the lexer, the parser, and the abstract syntax
-module, which guarantees that the document matches with the
-implementation of the language (provided no hand-hacking has taken
-place).
+module, to guarantee that the document matches the
+implementation of the language.
+In the present form, the document has gone through some manual editing.
 
 The lexical structure of BNF
 ============================
@@ -995,12 +1021,16 @@ conventions.
 
 The reserved words used in BNF are the following::
 
-    char        coercions   comment
-    digit       entrypoints eps
-    internal    layout      letter
-    lower       nonempty    position
-    rules       separator   stop
-    terminator  token       toplevel
+    char         coercions  comment
+    digit
+    entrypoints  eps
+    internal
+    layout       letter     lower
+    nonempty
+    position
+    rules
+    separator    stop
+    terminator   token      toplevel
     upper
 
 The symbols used in BNF are the following::
@@ -1015,8 +1045,8 @@ The symbols used in BNF are the following::
 Comments
 --------
 
-| Single-line comments begin with `--`.
-| Multiple-line comments are enclosed with `{-` and `-}`.
+| Single-line comments begin with ``--``.
+| Multiple-line comments (aka *block comments*) are enclosed between ``{-`` and ``-}``.
 
 The syntactic structure of BNF
 ==============================
@@ -1084,7 +1114,7 @@ All other symbols are terminals
 
     <LabelId>
       ::= <Ident>
-        | -
+        | _
         | [ ]
         | ( : )
         | ( : [ ] )
