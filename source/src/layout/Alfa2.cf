@@ -23,13 +23,6 @@ layout "of", "let", "where", "sig", "struct" ;
 layout stop "in" ;
 layout toplevel ;
 
---- identifiers, including infix in parentheses
-
-token Infix ([".:-^*+=<>&%$!#%|/\\"]+) ;
-
-I. AIdent ::= "(" Infix ")" ;
-F. AIdent ::= Ident ;
-
 -- top level
 
 Module.  Module ::= [Decl] ;
@@ -126,6 +119,13 @@ Import  .  Import  ::= "import" String ";" ;
 separator  DefAttr     "" ;
 separator  AIdent      "" ;
 separator  OpenArg     "," ;
+
+--- identifiers, including infix in parentheses
+
+token Infix ([".:-^*+=<>&%$!#%|/\\"]+) ;
+
+I. AIdent ::= "(" Infix ")" ;
+F. AIdent ::= Ident ;
 
 -- two kinds of comments
 
