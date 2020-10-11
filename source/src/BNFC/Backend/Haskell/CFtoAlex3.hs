@@ -35,7 +35,7 @@ import BNFC.Backend.Haskell.Utils
 
 cf2alex3 :: String -> String -> Bool -> TokenText -> CF -> String
 cf2alex3 name shareMod shareStrings tokenText cf =
-  unlines $ concat $
+  unlines $ List.intercalate [""] $   -- equivalent to vsep: intersperse empty lines
   [ prelude name shareMod shareStrings tokenText
   , cMacros
   , rMacros cf
