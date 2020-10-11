@@ -27,7 +27,7 @@ module BNFC.Utils
     , applyWhen, applyUnless
     , for
     , curry3, uncurry3
-    , mapHead
+    , singleton, mapHead, spanEnd
     , duplicatesOn
     , (+++), (++++), (+-+), (+.+)
     , pad, table
@@ -178,6 +178,20 @@ mapHead :: (a -> a) -> [a] -> [a]
 mapHead f = \case
  []   -> []
  a:as -> f a : as
+
+-- | @spanEnd p l == reverse (span p (reverse l))@.
+--
+-- Invariant: @l == front ++ end where (end, front) = spanEnd p l@
+--
+-- (From package ghc, module Util.)
+spanEnd :: (a -> Bool) -> [a] -> ([a], [a])
+spanEnd p l = go l [] [] l
+  where
+  go yes _        rev_no [] = (yes, reverse rev_no)
+  go yes rev_yes  rev_no (x:xs)
+    | p x       = go yes (x : rev_yes) rev_no                  xs
+    | otherwise = go xs  []            (x : rev_yes ++ rev_no) xs
+
 
 -- | Replace all occurences of a value by another value
 replace :: Eq a =>

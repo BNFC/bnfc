@@ -54,7 +54,7 @@ extract name (LGr ldefs) =
 
 entrypoint :: LGrammar -> String
 entrypoint (LGr rs0) = head $
-  [c | Entryp (Identifier (_,c) :_) <- rs] ++
+  [c | Entryp (IdCat (Identifier (_,c)) :_) <- rs] ++
   [c | Rule _ (IdCat (Identifier (_,c))) _ <- rs]
  where
    rs = mapMaybe getR rs0

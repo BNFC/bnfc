@@ -514,16 +514,13 @@ The BNF Converter generates, by default, a parser for every category in
 the grammar. This is unnecessarily rich in most cases, and makes the
 parser larger than needed. If the size of the parser becomes critical,
 the *entry points pragma* enables the user to define which of the
-parsers are actually exported:
+parsers are actually exported.
 
-::
+For instance, the following pragma defines ``Stm``, ``Exp2`` and lists
+of identifiers ``[Ident]`` to be the only entry points::
 
-      entrypoints (Ident ",")* Ident ;
+      entrypoints Stm, Exp2, [Ident];
 
-For instance, the following pragma defines ``Stm`` and ``Exp`` to be the only
-entry points::
-
-      entrypoints Stm, Exp ;
 
 .. _macros:
 
@@ -1069,7 +1066,7 @@ All other symbols are terminals
         | ; <ListDef>
 
     <Def>
-      ::= entrypoints <ListIdent>
+      ::= entrypoints <ListCat>
 
         |          <Label> . <Cat> ::= <ListItem>
         | internal <Label> . <Cat> ::= <ListItem>
@@ -1091,9 +1088,9 @@ All other symbols are terminals
         | layout stop <ListString>
         | layout toplevel
 
-    <ListIdent>
-      ::= <Ident>
-        | <Ident> , <ListIdent>
+    <ListCat>
+      ::= <Cat>
+        | <Cat> , <ListCat>
 
     <ListItem>
       ::= ε

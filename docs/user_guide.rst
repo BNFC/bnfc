@@ -57,7 +57,7 @@ ANTLRv4
 
 With the ``--antlr`` option (since 2.8.2) BNFC generates an ANTLRv4 parser and lexer.
 
-All categories can be entrypoints with ANTLR: the ``entrypoint`` directive is
+All categories can be entrypoints with ANTLR: the ``entrypoints`` directive is
 thus ignored.
 
 Make sure that your system's Java classpath variable points to an ANTLRv4 jar

@@ -136,6 +136,8 @@ import ParBNF (pCat)
 import LexBNF (tokens)
 import qualified AbsBNF as Abs
 
+import BNFC.Utils (spanEnd)
+
 -- | A context free grammar consists of a set of rules and some extended
 -- information (e.g. pragmas, literals, symbols, keywords).
 
@@ -390,11 +392,13 @@ strToCat s =
         Left _ -> Cat s -- error $ "Error parsing cat " ++ s ++ " (" ++ e ++ ")"
                        -- Might be one of the "Internal cat" which are not
                        -- really parsable...
-  where cat2cat (Abs.IdCat (Abs.Identifier (_pos, i))) =
-            case span isDigit (reverse i) of
-                ([],c') -> Cat (reverse c')
-                (d,c') ->  CoercCat (reverse c') (read (reverse d))
-        cat2cat (Abs.ListCat c) = ListCat (cat2cat c)
+  where
+  cat2cat = \case
+    Abs.IdCat (Abs.Identifier (_pos, x))
+      | null ds   -> if c `elem` specialCatsP then TokenCat c else Cat c
+      | otherwise -> CoercCat c (read ds)
+      where (ds, c) = spanEnd isDigit x
+    Abs.ListCat c -> ListCat (cat2cat c)
 
 -- Build-in categories contants
 catString, catInteger, catDouble, catChar, catIdent :: TokenCat

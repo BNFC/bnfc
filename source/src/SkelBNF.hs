@@ -32,7 +32,7 @@ transDef x = case x of
   AbsBNF.Internal label cat items -> failure x
   AbsBNF.Token identifier reg -> failure x
   AbsBNF.PosToken identifier reg -> failure x
-  AbsBNF.Entryp identifiers -> failure x
+  AbsBNF.Entryp cats -> failure x
   AbsBNF.Separator minimumsize cat string -> failure x
   AbsBNF.Terminator minimumsize cat string -> failure x
   AbsBNF.Delimiters cat string1 string2 separation minimumsize -> failure x

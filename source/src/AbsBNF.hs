@@ -26,7 +26,7 @@ data Def
     | Internal Label Cat [Item]
     | Token Identifier Reg
     | PosToken Identifier Reg
-    | Entryp [Identifier]
+    | Entryp [Cat]
     | Separator MinimumSize Cat String
     | Terminator MinimumSize Cat String
     | Delimiters Cat String String Separation MinimumSize

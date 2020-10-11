@@ -16,6 +16,7 @@ import LexBNF
 %name pItem Item
 %name pListItem ListItem
 %name pCat Cat
+%name pListCat ListCat
 %name pLabel Label
 %name pLabelId LabelId
 %name pProfItem ProfItem
@@ -83,25 +84,25 @@ import LexBNF
   '{' { PT _ (TS _ 38) }
   '|' { PT _ (TS _ 39) }
   '}' { PT _ (TS _ 40) }
-  L_quoted { PT _ (TL $$) }
-  L_integ  { PT _ (TI $$) }
   L_charac { PT _ (TC $$) }
   L_doubl  { PT _ (TD $$) }
+  L_integ  { PT _ (TI $$) }
+  L_quoted { PT _ (TL $$) }
   L_Identifier { PT _ (T_Identifier _) }
 
 %%
-
-String  :: { String }
-String   : L_quoted { $1 }
-
-Integer :: { Integer }
-Integer  : L_integ  { (read ($1)) :: Integer }
 
 Char    :: { Char }
 Char     : L_charac { (read ($1)) :: Char }
 
 Double  :: { Double }
 Double   : L_doubl  { (read ($1)) :: Double }
+
+Integer :: { Integer }
+Integer  : L_integ  { (read ($1)) :: Integer }
+
+String  :: { String }
+String   : L_quoted { $1 }
 
 Identifier :: { AbsBNF.Identifier}
 Identifier  : L_Identifier { AbsBNF.Identifier (mkPosToken $1) }
@@ -140,7 +141,7 @@ Def : Label '.' Cat '::=' ListItem { AbsBNF.Rule $1 $3 $5 }
     | 'internal' Label '.' Cat '::=' ListItem { AbsBNF.Internal $2 $4 $6 }
     | 'token' Identifier Reg { AbsBNF.Token $2 $3 }
     | 'position' 'token' Identifier Reg { AbsBNF.PosToken $3 $4 }
-    | 'entrypoints' ListIdentifier { AbsBNF.Entryp $2 }
+    | 'entrypoints' ListCat { AbsBNF.Entryp $2 }
     | 'separator' MinimumSize Cat String { AbsBNF.Separator $2 $3 $4 }
     | 'terminator' MinimumSize Cat String { AbsBNF.Terminator $2 $3 $4 }
     | 'delimiters' Cat String String Separation MinimumSize { AbsBNF.Delimiters $2 $3 $4 $5 $6 }
@@ -160,6 +161,11 @@ ListItem : {- empty -} { [] } | Item ListItem { (:) $1 $2 }
 Cat :: { AbsBNF.Cat }
 Cat : '[' Cat ']' { AbsBNF.ListCat $2 }
     | Identifier { AbsBNF.IdCat $1 }
+
+ListCat :: { [AbsBNF.Cat] }
+ListCat : {- empty -} { [] }
+        | Cat { (:[]) $1 }
+        | Cat ',' ListCat { (:) $1 $3 }
 
 Label :: { AbsBNF.Label }
 Label : LabelId { AbsBNF.LabNoP $1 }

@@ -213,14 +213,20 @@ getCFP opts (Abs.Grammar defs0) = do
         reservedWords      = nub [t | r <- rules, isParsable r, Right t <- rhsRule r, not $ all isSpace t]
           -- Issue #204: exclude keywords from internal rules
           -- Issue #70: whitespace separators should be treated like "", at least in the parser
-        literals           = nub
-          [ lit | xs <- map rhsRule rules
-                , Left (Cat lit) <- xs
-                , lit `elem` specialCatsP
-          ]
+        usedCats           = Set.fromList [ c | Rule _ _ rhs _ <- rules, Left c <- rhs ]
+        literals           = filter (\ s -> TokenCat s `Set.member` usedCats) $ specialCatsP
         (symbols,keywords) = partition notIdent reservedWords
     sig <- runTypeChecker $ buildSignature $ map (fmap fst) rules
-    let cf = revs $ CFG pragma literals symbols keywords [] rules sig
+    let
+      cf = revs $ CFG
+        { cfgPragmas        = pragma
+        , cfgLiterals       = literals
+        , cfgSymbols        = symbols
+        , cfgKeywords       = keywords
+        , cfgReversibleCats = []
+        , cfgRules          = rules
+        , cfgSignature      = sig
+        }
     case mapMaybe (checkRule (cfp2cf cf)) rules of
       [] -> return ()
       msgs -> throwError $ unlines msgs
@@ -304,7 +310,7 @@ transDef = \case
 
     Abs.Token ident reg           -> do x <- transIdent ident; return [Left $ TokenReg x False $ simpReg reg]
     Abs.PosToken ident reg        -> do x <- transIdent ident; return [Left $ TokenReg x True  $ simpReg reg]
-    Abs.Entryp idents             -> do xs <- mapM transIdent idents; return [Left $ EntryPoints $ map (fmap strToCat) xs]
+    Abs.Entryp cats               -> singleton . Left . EntryPoints <$> mapM transCat cats
     Abs.Separator size ident str  -> map (Right . cf2cfpRule) <$> separatorRules size ident str
     Abs.Terminator size ident str -> map (Right . cf2cfpRule) <$> terminatorRules size ident str
     Abs.Delimiters a b c d e      -> map (Right . cf2cfpRule) <$> delimiterRules a b c d e

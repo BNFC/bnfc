@@ -58,6 +58,8 @@ terminator Item "" ;
 ListCat  . Cat ::= "[" Cat "]" ;
 IdCat    . Cat ::= Identifier ;
 
+separator Cat "," ; -- for "entrypoints"
+
 -- Labels with or without profiles
 LabNoP   . Label ::= LabelId ;
 LabP     . Label ::= LabelId [ProfItem] ;
@@ -88,7 +90,7 @@ Comments .  Def ::= "comment"  String String              ; -- Block comment
 Internal .  Def ::= "internal" Label "." Cat "::=" [Item] ; -- No parsing, AST and printing only
 Token.      Def ::=            "token" Identifier Reg     ; -- Lexer token
 PosToken.   Def ::= "position" "token" Identifier Reg     ; -- Lexer token with position info
-Entryp.     Def ::= "entrypoints" [Identifier]            ; -- Names of parsers
+Entryp.     Def ::= "entrypoints" [Cat]                   ; -- Names of parsers
 Separator.  Def ::= "separator"   MinimumSize Cat String  ; -- List
 Terminator. Def ::= "terminator"  MinimumSize Cat String  ; -- List
 Delimiters. Def ::= "delimiters"  Cat String String Separation MinimumSize;
@@ -111,7 +113,7 @@ LayoutTop.  Def ::= "layout" "toplevel"      ; -- Should the toplevel be a block
 
 separator nonempty String "," ;
 
--- Expressions
+-- Expressions for "define" pragma
 Cons.       Exp  ::= Exp1 ":" Exp ;
 App.        Exp1 ::= Identifier [Exp2] ;
 Var.        Exp2 ::= Identifier ;

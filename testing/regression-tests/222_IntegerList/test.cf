@@ -1,3 +1,7 @@
+-- Andreas, 2020-10-11, also test #306: arbitrary entrypoints
+
+entrypoints [Integer];  -- ListCat entrypoint
+
 separator Integer "+";
 
 -- Obsolete after fix of #272:
