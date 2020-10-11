@@ -3,25 +3,25 @@
 -- Ulf Norell, 2006
 
 -- The core statement language. Nothing funny here.
-Assign.	Stm ::= Ident "=" Exp ;
-Block.	Stm ::= "{" [Stm] "}" ;
+Assign. Stm ::= Ident "=" Exp ;
+Block.  Stm ::= "{" [Stm] "}" ;
 While.  Stm ::= "while" "(" Exp ")" Stm ;
-If.	Stm ::= "if" "(" Exp ")" Stm "else" Stm "endif" ;
+If.     Stm ::= "if" "(" Exp ")" Stm "else" Stm "endif" ;
 
 -- We now want to have some syntactic sugar. Note that the labels for
 -- these rule all start with a lowercase letter, indicating that they
 -- correspond to defined functions rather than nodes in the abstract
 -- syntax tree.
-if.	Stm ::= "if" "(" Exp ")" Stm "endif" ;
-for.	Stm ::= "for" "(" Stm ";" Exp ";" Stm ")" Stm ;
-inc.	Stm ::= Ident "++" ;
+if.     Stm ::= "if" "(" Exp ")" Stm "endif" ;
+for.    Stm ::= "for" "(" Stm ";" Exp ";" Stm ")" Stm ;
+inc.    Stm ::= Ident "++" ;
 
 -- Functions are defined using the 'define' keyword. Definitions have
 -- the form 'define f x1 .. xn = e' where e is an expression on applicative
 -- form using labels, other defined functions, lists and literals.
-define if e s	    = If e s (Block []) ;
+define if e s       = If e s (Block []) ;
 define for i c s b  = Block [i, While c (Block [b, s])] ;
-define inc x	    = Assign x (EOp (EVar x) Plus (EInt 1)) ;
+define inc x        = Assign x (EOp (EVar x) Plus (EInt 1)) ;
 
 terminator Stm ";" ;
 
@@ -35,10 +35,10 @@ Equal. Op1 ::= "==";
 Plus.  Op2 ::= "+" ;
 Minus. Op2 ::= "-" ;
 
-op.	Exp  ::= Exp1 Op1 Exp1 ;
-op.	Exp1 ::= Exp1 Op2 Exp2 ;
-EInt.	Exp2 ::= Integer ;
-EVar.	Exp2 ::= Ident ;
+op.     Exp  ::= Exp1 Op1 Exp1 ;
+op.     Exp1 ::= Exp1 Op2 Exp2 ;
+EInt.   Exp2 ::= Integer ;
+EVar.   Exp2 ::= Ident ;
 
 -- Care has to be taken to make sure that the pretty printer prints enough
 -- parenthesis.
@@ -47,4 +47,3 @@ internal EOp. Exp ::= Exp1 Op Exp1 ;
 define op e1 o e2 = EOp e1 o e2 ;
 
 coercions Exp 2;
-

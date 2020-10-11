@@ -513,7 +513,7 @@ var "SortLemma" hide 2
 {-# GF Eng ThPermCons x ys zs p =
   mkText (p.s!text++
           [". We can now use the theorem about prepending an element to permutations"]) #-}
-{-# GF Eng ThPermTrans xs ys zs xy yz = 
+{-# GF Eng ThPermTrans xs ys zs xy yz =
   mkText (indent("·"++xy.s!text++"."++newParagraph++"·"++yz.s!text)++
           [". By the transitivity of the permutation relation,"]++
           zs.s!pnv++"is a permutation of"++xs.s!pnv) #-}

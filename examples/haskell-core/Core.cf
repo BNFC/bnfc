@@ -1,4 +1,4 @@
--- BNF Converter grammar for GHC External Core. 
+-- BNF Converter grammar for GHC External Core.
 -- (c) Aarne Ranta (aarne@cs.chalmers.se) 6/11/2003 under GNU GPL
 -- on the basis of ExternalCore.lhs and ParserExternalCore.y
 -- from the University of Glasgow (2001)
@@ -39,9 +39,9 @@ Dcon.     Exp2 ::= QualIdent ;
 Litc.     Exp2 ::= Lit ;
 App.      Exp1 ::= Exp1 Exp2 ;
 Appt.     Exp1 ::= Exp1 "@" Ty2 ;
-Lams.     Exp  ::= "\\" [Bind] "->" Exp ; --- foldr Lam  
+Lams.     Exp  ::= "\\" [Bind] "->" Exp ; --- foldr Lam
 Let.      Exp  ::= "%let" Vdefg "%in" Exp ;
-Case.     Exp  ::= "%case" Exp2 "%of" Vbind "{" [Alt] "}" ; 
+Case.     Exp  ::= "%case" Exp2 "%of" Vbind "{" [Alt] "}" ;
 Coerce.   Exp  ::= "%coerce" Ty2 Exp ;
 Note.     Exp  ::= "%note" String Exp ;   --- STRING
 External. Exp  ::= "%external" String Ty ;
@@ -75,7 +75,7 @@ separator ATbind "" ;
 Tvar.     Ty2  ::= Ident ;        -- aty
 Tcon.     Ty2  ::= QualIdent ;
 Tapp.     Ty1  ::= Ty1 Ty2 ;      -- bty
-TArrow.   Ty   ::= Ty1 "->" Ty ;  -- ty       --- tArrow 
+TArrow.   Ty   ::= Ty1 "->" Ty ;  -- ty       --- tArrow
 Tforalls. Ty   ::= "%forall" [Tbind] "." Ty ; --- foldr Tforall
 
 coercions Ty 2 ;
@@ -97,9 +97,9 @@ Qual.   QualIdent ::= Ident "." Ident ;  --- (,)
 
 {-
 ---- token Str '"'  ((char - ["\"\\"]) | ('\\' ["\"\\ntx"]))* '"' ;
-token Chr '\'' ((char - ["'\\"]) | 
-                ('\\' ["'\\nt"]) | 
-                ('\\' 'x' (letter|digit) (letter|digit))) 
+token Chr '\'' ((char - ["'\\"]) |
+                ('\\' ["'\\nt"]) |
+                ('\\' 'x' (letter|digit) (letter|digit)))
           '\'' ;
 
 -}
