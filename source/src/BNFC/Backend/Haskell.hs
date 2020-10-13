@@ -27,7 +27,6 @@ import Text.PrettyPrint
 import BNFC.Backend.Agda
 import BNFC.Backend.Base
 import BNFC.Backend.Haskell.CFtoHappy
-import BNFC.Backend.Haskell.CFtoAlex2
 import BNFC.Backend.Haskell.CFtoAlex3
 import BNFC.Backend.Haskell.CFtoAbstract
 import BNFC.Backend.Haskell.CFtoTemplate
@@ -68,9 +67,6 @@ makeHaskell opts cf = do
 
     -- Generate Alex lexer.  Layout is resolved after lexing.
     case alexMode opts of
-      Alex2 -> do
-        mkfile (alexFile opts) $ cf2alex2 lexMod shareMod (shareStrings opts) (tokenText opts) cf
-        liftIO $ printf "Use Alex 2 to compile %s.\n" (alexFile opts)
       Alex3 -> do
         mkfile (alexFile opts) $ cf2alex3 lexMod shareMod (shareStrings opts) (tokenText opts) cf
         liftIO $ printf "Use Alex 3 to compile %s.\n" (alexFile opts)

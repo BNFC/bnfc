@@ -26,7 +26,6 @@ import BNFC.CF
 import BNFC.Options hiding (Backend)
 import BNFC.Backend.Base
 import BNFC.Backend.HaskellProfile.CFtoHappyProfile
-import BNFC.Backend.Haskell.CFtoAlex2
 import BNFC.Backend.Haskell.CFtoAlex3
 import BNFC.Backend.Haskell.MkErrM
 
@@ -66,9 +65,6 @@ makeHaskellProfile opts cfp = do
   do
 ----    mkfile (absFile  (inDir opts) name) $ cf2Abstract (absFileM (inDir opts) name) cf
     case alexMode opts of
-      Alex2 -> do
-        mkfile (alexFile (inDir opts) name) $ cf2alex2 lexMod "" False StringToken cf
-        liftIO $ putStrLn "   (Use Alex 2 to compile.)"
       Alex3 -> do
         mkfile (alexFile (inDir opts) name) $ cf2alex3 lexMod "" False StringToken cf
         liftIO $ putStrLn "   (Use Alex 3 to compile.)"

@@ -27,7 +27,6 @@ import BNFC.Backend.Base hiding (Backend)
 import BNFC.Backend.Haskell.HsOpts
 import BNFC.CF
 import BNFC.Backend.Haskell.CFtoHappy
-import BNFC.Backend.Haskell.CFtoAlex2
 import BNFC.Backend.Haskell.CFtoAlex3
 import BNFC.Backend.HaskellGADT.CFtoAbstractGADT
 import BNFC.Backend.HaskellGADT.CFtoTemplateGADT
@@ -56,9 +55,6 @@ makeHaskellGadt opts cf = do
     mkfile (absFile opts) $ cf2Abstract (tokenText opts) absMod cf composOpMod
     mkfile (composOpFile opts) $ composOp composOpMod
     case alexMode opts of
-      Alex2 -> do
-        mkfile (alexFile opts) $ cf2alex2 lexMod shareMod (shareStrings opts) (tokenText opts) cf
-        liftIO $ putStrLn "   (Use Alex 2 to compile.)"
       Alex3 -> do
         mkfile (alexFile opts) $ cf2alex3 lexMod shareMod (shareStrings opts) (tokenText opts) cf
         liftIO $ putStrLn "   (Use Alex 3 to compile.)"
