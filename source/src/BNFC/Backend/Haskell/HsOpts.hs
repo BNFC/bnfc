@@ -8,8 +8,6 @@ import Data.Maybe (catMaybes)
 
 type Options = SharedOptions
 
-alex1 opts = alexMode opts == Alex1
-
 absFile, absFileM,
  alexFile, alexFileHs, alexFileM,
  composOpFile, composOpFileM,

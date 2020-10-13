@@ -27,7 +27,6 @@ import BNFC.Backend.Base hiding (Backend)
 import BNFC.Backend.Haskell.HsOpts
 import BNFC.CF
 import BNFC.Backend.Haskell.CFtoHappy
-import BNFC.Backend.Haskell.CFtoAlex
 import BNFC.Backend.Haskell.CFtoAlex2
 import BNFC.Backend.Haskell.CFtoAlex3
 import BNFC.Backend.HaskellGADT.CFtoAbstractGADT
@@ -57,9 +56,6 @@ makeHaskellGadt opts cf = do
     mkfile (absFile opts) $ cf2Abstract (tokenText opts) absMod cf composOpMod
     mkfile (composOpFile opts) $ composOp composOpMod
     case alexMode opts of
-      Alex1 -> do
-        mkfile (alexFile opts) $ cf2alex lexMod cf
-        liftIO $ putStrLn "   (Use Alex 1.1 to compile.)"
       Alex2 -> do
         mkfile (alexFile opts) $ cf2alex2 lexMod shareMod (shareStrings opts) (tokenText opts) cf
         liftIO $ putStrLn "   (Use Alex 2 to compile.)"
@@ -72,7 +68,7 @@ makeHaskellGadt opts cf = do
     mkfile (templateFile opts) $ cf2Template (templateFileM opts) absMod cf
     mkfile (printerFile opts)  $ cf2Printer StringToken False True prMod absMod cf
     when (hasLayout cf) $ mkfile (layoutFile opts) $
-      cf2Layout (tokenText opts) (alexMode opts == Alex1) layMod lexMod cf
+      cf2Layout (tokenText opts) layMod lexMod cf
     mkfile (tFile opts)        $ Haskell.testfile opts cf
     mkfile (errFile opts) $ mkErrM errMod
     when (shareStrings opts) $ mkfile (shareFile opts)    $ sharedString shareMod (tokenText opts) cf

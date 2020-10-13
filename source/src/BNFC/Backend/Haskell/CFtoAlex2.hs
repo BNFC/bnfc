@@ -27,7 +27,7 @@
 -- Stability   :  alpha
 -- Portability :  Haskell98
 --
--- Hacked version of @BNFC.Backend.Haskell.CFtoAlex@ to cope with Alex2.
+-- Hacked version of former @BNFC.Backend.Haskell.CFtoAlex@ to cope with Alex2.
 --
 -------------------------------------------------------------------
 module BNFC.Backend.Haskell.CFtoAlex2 (cf2alex2) where
@@ -275,7 +275,7 @@ sorted2tree xs = B x n (sorted2tree t1) (sorted2tree t2) where
 
 
 -------------------------------------------------------------------
--- Inlined version of @BNFC.Backend.Haskell.RegToAlex@.
+-- Inlined version of former @BNFC.Backend.Haskell.RegToAlex@.
 -- Syntax has changed...
 -------------------------------------------------------------------
 

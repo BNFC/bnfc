@@ -26,7 +26,6 @@ import BNFC.CF
 import BNFC.Options hiding (Backend)
 import BNFC.Backend.Base
 import BNFC.Backend.HaskellProfile.CFtoHappyProfile
-import BNFC.Backend.Haskell.CFtoAlex
 import BNFC.Backend.Haskell.CFtoAlex2
 import BNFC.Backend.Haskell.CFtoAlex3
 import BNFC.Backend.Haskell.MkErrM
@@ -67,9 +66,6 @@ makeHaskellProfile opts cfp = do
   do
 ----    mkfile (absFile  (inDir opts) name) $ cf2Abstract (absFileM (inDir opts) name) cf
     case alexMode opts of
-      Alex1 -> do
-        mkfile (alexFile (inDir opts) name) $ cf2alex lexMod cf
-        liftIO $ putStrLn "   (Use Alex 1.1 to compile.)"
       Alex2 -> do
         mkfile (alexFile (inDir opts) name) $ cf2alex2 lexMod "" False StringToken cf
         liftIO $ putStrLn "   (Use Alex 2 to compile.)"
@@ -83,7 +79,7 @@ makeHaskellProfile opts cfp = do
 ----             cf2Template tplMod absMod errMod cf
 ----    mkfile (printerFile (inDir opts) name)  $ cf2Printer prMod absMod cf
 ----    if hasLayout cf then
-----      mkfile (layoutFile (inDir opts) name) $ cf2Layout alex1 (inDir opts) layMod lexMod cf
+----      mkfile (layoutFile (inDir opts) name) $ cf2Layout (inDir opts) layMod lexMod cf
 ----      else return ()
     mkfile (tFile (inDir opts) name)        $ testfile (inDir opts) name (xml opts>0) cf
     mkfile (errFile (inDir opts) name) $ mkErrM errMod

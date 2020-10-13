@@ -345,7 +345,7 @@ sorted2tree xs = B x n (sorted2tree t1) (sorted2tree t2)
 
 
 -------------------------------------------------------------------
--- Inlined version of @BNFC.Backend.Haskell.RegToAlex@.
+-- Inlined version of former @BNFC.Backend.Haskell.RegToAlex@.
 -- Syntax has changed...
 -------------------------------------------------------------------
 

@@ -27,7 +27,6 @@ import Text.PrettyPrint
 import BNFC.Backend.Agda
 import BNFC.Backend.Base
 import BNFC.Backend.Haskell.CFtoHappy
-import BNFC.Backend.Haskell.CFtoAlex
 import BNFC.Backend.Haskell.CFtoAlex2
 import BNFC.Backend.Haskell.CFtoAlex3
 import BNFC.Backend.Haskell.CFtoAbstract
@@ -69,9 +68,6 @@ makeHaskell opts cf = do
 
     -- Generate Alex lexer.  Layout is resolved after lexing.
     case alexMode opts of
-      Alex1 -> do
-        mkfile (alexFile opts) $ cf2alex lexMod cf
-        liftIO $ printf "Use Alex 1.1 to compile %s.\n" (alexFile opts)
       Alex2 -> do
         mkfile (alexFile opts) $ cf2alex2 lexMod shareMod (shareStrings opts) (tokenText opts) cf
         liftIO $ printf "Use Alex 2 to compile %s.\n" (alexFile opts)
@@ -81,7 +77,7 @@ makeHaskell opts cf = do
 
     Ctrl.when (shareStrings opts) $ mkfile (shareFile opts) $ sharedString shareMod (tokenText opts) cf
     Ctrl.when (hasLayout cf) $ mkfile (layoutFile opts) $
-      cf2Layout (tokenText opts) (alex1 opts) layMod lexMod cf
+      cf2Layout (tokenText opts) layMod lexMod cf
 
     -- Generate Happy parser and matching test program unless --cnf.
     Ctrl.unless (cnf opts) $ do

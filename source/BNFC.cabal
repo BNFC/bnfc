@@ -130,11 +130,9 @@ Executable bnfc
     -- Haskell backend
     BNFC.Backend.Haskell
     BNFC.Backend.Haskell.ToCNF
-    BNFC.Backend.Haskell.RegToAlex
     BNFC.Backend.Haskell.CFtoTemplate
     BNFC.Backend.Haskell.CFtoAlex3
     BNFC.Backend.Haskell.CFtoAlex2
-    BNFC.Backend.Haskell.CFtoAlex
     BNFC.Backend.Haskell.CFtoHappy
     BNFC.Backend.Haskell.CFtoPrinter
     BNFC.Backend.Haskell.CFtoAbstract
@@ -314,11 +312,9 @@ Test-suite unit-tests
     -- Haskell backend
     BNFC.Backend.Haskell
     BNFC.Backend.Haskell.ToCNF
-    BNFC.Backend.Haskell.RegToAlex
     BNFC.Backend.Haskell.CFtoTemplate
     BNFC.Backend.Haskell.CFtoAlex3
     BNFC.Backend.Haskell.CFtoAlex2
-    BNFC.Backend.Haskell.CFtoAlex
     BNFC.Backend.Haskell.CFtoHappy
     BNFC.Backend.Haskell.CFtoPrinter
     BNFC.Backend.Haskell.CFtoAbstract

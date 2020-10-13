@@ -79,7 +79,7 @@ instance Show Target where
   show TargetCheck        = "Check LBNF file"
 
 -- | Which version of Alex is targeted?
-data AlexVersion = Alex1 | Alex2 | Alex3
+data AlexVersion = Alex2 | Alex3
   deriving (Show,Eq,Ord,Bounded,Enum)
 
 -- | Happy modes
@@ -255,7 +255,6 @@ printTargetOption = ("--" ++) . \case
 
 printAlexOption :: AlexVersion -> String
 printAlexOption = ("--" ++) . \case
-  Alex1 -> "alex1"
   Alex2 -> "alex2"
   Alex3 -> "alex3"
 
@@ -351,9 +350,6 @@ specificOptions =
   -- Haskell backends:
   , ( Option ['d'] [] (NoArg (\o -> o {inDir = True}))
           "Put Haskell code in modules LANG.* instead of LANG* (recommended)"
-    , haskellTargets )
-  , ( Option []    ["alex1"] (NoArg (\o -> o {alexMode = Alex1}))
-          "Use Alex 1.1 as Haskell lexer tool [deprecated]"
     , haskellTargets )
   , ( Option []    ["alex2"] (NoArg (\o -> o {alexMode = Alex2}))
           "Use Alex 2 as Haskell lexer tool [deprecated]"
@@ -538,7 +534,6 @@ instance Maintained Target where
 instance Maintained AlexVersion where
   printFeature = printAlexOption
   maintained = \case
-    Alex1 -> False
     Alex2 -> False
     Alex3 -> True
 
@@ -609,7 +604,7 @@ newtype RemovedOption = RemovedOption String
 
 classifyUnknownOption :: String -> Either (Either UnknownOption RemovedOption) ObsoleteOption
 classifyUnknownOption = \case
-  -- "--alex1" -> supportRemovedIn290 $ "Alex version 1"
+  "--alex1" -> supportRemovedIn290 $ "Alex version 1"
   _ -> unknown
   where
   unknown  = Left $ Left UnknownOption

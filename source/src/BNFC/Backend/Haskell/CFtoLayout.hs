@@ -29,12 +29,11 @@ layoutOpen  = "{"
 layoutClose = "}"
 layoutSep   = ";"
 
-cf2Layout :: TokenText -> Bool -> String -> String -> CF -> String
-cf2Layout tokenText alex1 layName lexName cf = unlines $ [
+cf2Layout :: TokenText -> String -> String -> CF -> String
+cf2Layout tokenText layName lexName cf = unlines $ [
   "module " ++ layName ++ " where",
   "",
   "import " ++ lexName,
-  if alex1 then "import Alex" else "",
   "",
   if tokenText == TextToken then "import qualified Data.Text" else "",
   "import Data.Maybe (isNothing, fromJust)",
