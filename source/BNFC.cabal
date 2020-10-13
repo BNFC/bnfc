@@ -109,7 +109,6 @@ Executable bnfc
     BNFC.Utils
     BNFC.CF
     BNFC.ToCNFCore
-    BNFC.MultiView
     BNFC.Regex
     BNFC.TypeChecker
     BNFC.GetCF
@@ -294,7 +293,6 @@ Test-suite unit-tests
     BNFC.Utils
     BNFC.CF
     BNFC.ToCNFCore
-    BNFC.MultiView
     BNFC.Regex
     BNFC.TypeChecker
     BNFC.GetCF

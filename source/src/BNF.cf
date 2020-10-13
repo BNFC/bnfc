@@ -17,23 +17,6 @@
     Foundation, 51 Franklin Street, Fifth Floor, Boston, MA 02110-1335, USA
 -}
 
--- Multi-view grammars (undocumented)
-
-LGr.      LGrammar ::= [LDef] ;
-
-DefAll.   LDef ::= Def ;
-DefSome.  LDef ::= [Identifier] ":" Def ;
-LDefView. LDef ::= "views" [Identifier] ;
-
--- separator LDef ";" ;
-[].       [LDef] ::= ;
-(:[]).    [LDef] ::= LDef ;
-(:).      [LDef] ::= LDef ";" [LDef] ;
--- extra semicolons allowed
-_.        [LDef] ::= ";" [LDef] ;
-
-separator nonempty Identifier "," ;
-
 -- A Grammar is a sequence of definitions
 
 Grammar . Grammar ::= [Def] ;

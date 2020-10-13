@@ -102,28 +102,6 @@ instance Print Double where
 
 instance Print AbsBNF.Identifier where
   prt _ (AbsBNF.Identifier (_,i)) = doc $ showString $ i
-  prtList _ [x] = concatD [prt 0 x]
-  prtList _ (x:xs) = concatD [prt 0 x, doc (showString ","), prt 0 xs]
-
-instance Print AbsBNF.LGrammar where
-  prt i e = case e of
-    AbsBNF.LGr ldefs -> prPrec i 0 (concatD [prt 0 ldefs])
-
-instance Print AbsBNF.LDef where
-  prt i e = case e of
-    AbsBNF.DefAll def -> prPrec i 0 (concatD [prt 0 def])
-    AbsBNF.DefSome identifiers def -> prPrec i 0 (concatD [prt 0 identifiers, doc (showString ":"), prt 0 def])
-    AbsBNF.LDefView identifiers -> prPrec i 0 (concatD [doc (showString "views"), prt 0 identifiers])
-  prtList _ [] = concatD []
-  prtList _ [x] = concatD [prt 0 x]
-
-  prtList _ (x:xs) = concatD [prt 0 x, doc (showString ";"), prt 0 xs]
-
-instance Print [AbsBNF.LDef] where
-  prt = prtList
-
-instance Print [AbsBNF.Identifier] where
-  prt = prtList
 
 instance Print AbsBNF.Grammar where
   prt i e = case e of

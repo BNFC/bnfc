@@ -13,14 +13,6 @@ failure x = Left $ "Undefined case: " ++ show x
 transIdentifier :: AbsBNF.Identifier -> Result
 transIdentifier x = case x of
   AbsBNF.Identifier string -> failure x
-transLGrammar :: AbsBNF.LGrammar -> Result
-transLGrammar x = case x of
-  AbsBNF.LGr ldefs -> failure x
-transLDef :: AbsBNF.LDef -> Result
-transLDef x = case x of
-  AbsBNF.DefAll def -> failure x
-  AbsBNF.DefSome identifiers def -> failure x
-  AbsBNF.LDefView identifiers -> failure x
 transGrammar :: AbsBNF.Grammar -> Result
 transGrammar x = case x of
   AbsBNF.Grammar defs -> failure x

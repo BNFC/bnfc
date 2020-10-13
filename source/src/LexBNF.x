@@ -19,7 +19,7 @@ $i = [$l $d _ ']     -- identifier character
 $u = [. \n]          -- universal: any character
 
 @rsyms =    -- symbols and non-identifier-like reserved words
-   \: | \; | \, | \. | \: \: \= | \[ | \] | \_ | \( | \) | \= | \| | \- | \* | \+ | \? | \{ | \}
+   \; | \. | \: \: \= | \[ | \] | \, | \_ | \( | \: | \) | \= | \| | \- | \* | \+ | \? | \{ | \}
 
 :-
 
@@ -115,7 +115,7 @@ eitherResIdent tv s = treeFind resWords
                               | s == a = t
 
 resWords :: BTree
-resWords = b "digit" 21 (b "=" 11 (b "-" 6 (b "*" 3 (b ")" 2 (b "(" 1 N N) N) (b "," 5 (b "+" 4 N N) N)) (b "::=" 9 (b ":" 8 (b "." 7 N N) N) (b ";" 10 N N))) (b "char" 16 (b "]" 14 (b "[" 13 (b "?" 12 N N) N) (b "_" 15 N N)) (b "define" 19 (b "comment" 18 (b "coercions" 17 N N) N) (b "delimiters" 20 N N)))) (b "separator" 31 (b "letter" 26 (b "internal" 24 (b "eps" 23 (b "entrypoints" 22 N N) N) (b "layout" 25 N N)) (b "position" 29 (b "nonempty" 28 (b "lower" 27 N N) N) (b "rules" 30 N N))) (b "upper" 36 (b "token" 34 (b "terminator" 33 (b "stop" 32 N N) N) (b "toplevel" 35 N N)) (b "|" 39 (b "{" 38 (b "views" 37 N N) N) (b "}" 40 N N))))
+resWords = b "delimiters" 20 (b ";" 10 (b "," 5 (b "*" 3 (b ")" 2 (b "(" 1 N N) N) (b "+" 4 N N)) (b ":" 8 (b "." 7 (b "-" 6 N N) N) (b "::=" 9 N N))) (b "_" 15 (b "[" 13 (b "?" 12 (b "=" 11 N N) N) (b "]" 14 N N)) (b "comment" 18 (b "coercions" 17 (b "char" 16 N N) N) (b "define" 19 N N)))) (b "rules" 30 (b "layout" 25 (b "eps" 23 (b "entrypoints" 22 (b "digit" 21 N N) N) (b "internal" 24 N N)) (b "nonempty" 28 (b "lower" 27 (b "letter" 26 N N) N) (b "position" 29 N N))) (b "toplevel" 35 (b "terminator" 33 (b "stop" 32 (b "separator" 31 N N) N) (b "token" 34 N N)) (b "|" 38 (b "{" 37 (b "upper" 36 N N) N) (b "}" 39 N N))))
    where b s n = let bs = s
                  in  B bs (TS bs n)
 

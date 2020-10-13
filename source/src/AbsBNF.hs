@@ -9,13 +9,6 @@ import qualified Prelude as C (Eq, Ord, Show, Read)
 newtype Identifier = Identifier ((Int, Int), String)
   deriving (C.Eq, C.Ord, C.Show, C.Read)
 
-data LGrammar = LGr [LDef]
-  deriving (C.Eq, C.Ord, C.Show, C.Read)
-
-data LDef
-    = DefAll Def | DefSome [Identifier] Def | LDefView [Identifier]
-  deriving (C.Eq, C.Ord, C.Show, C.Read)
-
 data Grammar = Grammar [Def]
   deriving (C.Eq, C.Ord, C.Show, C.Read)
 

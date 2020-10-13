@@ -6,10 +6,6 @@ import qualified AbsBNF
 import LexBNF
 }
 
-%name pLGrammar LGrammar
-%name pLDef LDef
-%name pListLDef ListLDef
-%name pListIdentifier ListIdentifier
 %name pGrammar Grammar
 %name pListDef ListDef
 %name pDef Def
@@ -80,10 +76,9 @@ import LexBNF
   'token' { PT _ (TS _ 34) }
   'toplevel' { PT _ (TS _ 35) }
   'upper' { PT _ (TS _ 36) }
-  'views' { PT _ (TS _ 37) }
-  '{' { PT _ (TS _ 38) }
-  '|' { PT _ (TS _ 39) }
-  '}' { PT _ (TS _ 40) }
+  '{' { PT _ (TS _ 37) }
+  '|' { PT _ (TS _ 38) }
+  '}' { PT _ (TS _ 39) }
   L_charac { PT _ (TC $$) }
   L_doubl  { PT _ (TD $$) }
   L_integ  { PT _ (TI $$) }
@@ -106,24 +101,6 @@ String   : L_quoted { $1 }
 
 Identifier :: { AbsBNF.Identifier}
 Identifier  : L_Identifier { AbsBNF.Identifier (mkPosToken $1) }
-
-LGrammar :: { AbsBNF.LGrammar }
-LGrammar : ListLDef { AbsBNF.LGr $1 }
-
-LDef :: { AbsBNF.LDef }
-LDef : Def { AbsBNF.DefAll $1 }
-     | ListIdentifier ':' Def { AbsBNF.DefSome $1 $3 }
-     | 'views' ListIdentifier { AbsBNF.LDefView $2 }
-
-ListLDef :: { [AbsBNF.LDef] }
-ListLDef : {- empty -} { [] }
-         | LDef { (:[]) $1 }
-         | LDef ';' ListLDef { (:) $1 $3 }
-         | ';' ListLDef { $2 }
-
-ListIdentifier :: { [AbsBNF.Identifier] }
-ListIdentifier : Identifier { (:[]) $1 }
-               | Identifier ',' ListIdentifier { (:) $1 $3 }
 
 Grammar :: { AbsBNF.Grammar }
 Grammar : ListDef { AbsBNF.Grammar $1 }
