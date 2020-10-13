@@ -1,3 +1,5 @@
+-- Grammar of cubicaltt, see https://github.com/mortberg/cubicaltt
+
 entrypoints Module, Exp ;
 
 comment "--" ;

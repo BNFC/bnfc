@@ -1,6 +1,9 @@
+-- Example for a cubicaltt module, see https://github.com/mortberg/cubicaltt
+
 -- The prelude. Definition of Path types and basic operations on them
 -- (refl, mapOnPath, funExt...). Definition of prop, set and
 -- groupoid. Some basic data types (empty, unit, or, and).
+
 module prelude where
 
 -- Identity types
