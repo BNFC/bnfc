@@ -1,6 +1,9 @@
 {-# LANGUAGE CPP #-}
+{-# LANGUAGE FlexibleInstances#-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE TupleSections #-}
+{-# LANGUAGE TypeSynonymInstances #-}
 
 module BNFC.Options
   ( Mode(..), Target(..), Backend
@@ -17,9 +20,12 @@ import qualified Control.Monad as Ctrl
 import Control.Monad.Writer (WriterT, runWriterT, tell)
 import Control.Monad.Except (MonadError(..))
 
+import Data.Bifunctor
+import Data.Either     (partitionEithers)
 import qualified Data.Map  as Map
-import qualified Data.List as List
+-- import qualified Data.List as List
 import Data.Maybe      (fromMaybe, maybeToList)
+import Data.Semigroup  (Semigroup(..))  -- for ghc 7.10
 import Data.Version    (showVersion )
 
 import System.Console.GetOpt
@@ -465,6 +471,9 @@ parseMode args =
 type ParseOpt = WriterT UsageWarnings (Either String)
 type UsageWarnings = [String]
 
+instance {-# OVERLAPPING #-} Semigroup (ParseOpt ()) where (<>)   = (>>)
+instance {-# OVERLAPPING #-} Monoid    (ParseOpt ()) where mempty = pure (); mappend = (<>)
+
 parseMode' :: [String] -> ParseOpt Mode
 parseMode' []   = return Help
 parseMode' args =
@@ -566,16 +575,48 @@ warnDeprecatedOptions Options{..} = do
 --   Note: this only works properly for former options that had no arguments.
 processUnknownOptions :: [String] -> ParseOpt ()
 processUnknownOptions os = do
-  case List.partition (`elem` obsoleteOptions) os of
-    -- Throw an error for properly unknown options.
-    (_, us@[_]  ) -> throwError $ unwords $ "Unrecognized option:"  : us
-    (_, us@(_:_)) -> throwError $ unwords $ "Unrecognized options:" : us
-    -- Generate warning for former options that are now obsolete.
-    (os@[_]  , _) -> tell [ unwords $ "Warning: ignoring obsolete options:" : os ]
-    (os@(_:_), _) -> tell [ unwords $ "Warning: ignoring obsolete options:" : os ]
-    ([], []) -> return ()
+
+  -- Classify unknown options.
+  let cl = map (\ o -> bimap (bimap (o,) (o,)) (o,) $ classifyUnknownOption o) os
+  let (errs, obsolete) = partitionEithers cl
+
+  -- Print warnings about obsolete options.
+  case map (\ (o, ObsoleteOption) -> o) obsolete of
+    []       -> pure ()
+    os@[_]   -> tell [ unwords $ "Warning: ignoring obsolete option:"  : os ]
+    os@(_:_) -> tell [ unwords $ "Warning: ignoring obsolete options:" : os ]
+
+  -- Throw errors.
+  unless (null errs) $ do
+    let (unknown, removed) = partitionEithers errs
+    throwError $ unlines $ concat
+      [ [ "Option error(s):" ]
+      , case map (\ (o, UnknownOption) -> o) unknown of
+          []       -> []
+          us@[_]   -> [ unwords $ "Unrecognized option:"  : us ]
+          us@(_:_) -> [ unwords $ "Unrecognized options:" : us ]
+      , map (\ (o, RemovedOption msg) -> concat [ o, ": ", msg ]) removed
+      ]
+
+-- | Option has never been known.
+data UnknownOption  = UnknownOption
+
+-- | Option is obsolete, print warning and continue.
+data ObsoleteOption = ObsoleteOption
+
+-- | Error: Option has been removed, throw error with given message.
+newtype RemovedOption = RemovedOption String
+
+classifyUnknownOption :: String -> Either (Either UnknownOption RemovedOption) ObsoleteOption
+classifyUnknownOption = \case
+  -- "--alex1" -> supportRemovedIn290 $ "Alex version 1"
+  _ -> unknown
   where
-  obsoleteOptions = []
+  unknown  = Left $ Left UnknownOption
+  obsolete = Right ObsoleteOption
+  removed  = Left . Right . RemovedOption
+  supportRemovedIn290 feature = removed $
+    unwords [ "Support for", feature, "has been removed in version 2.9.0." ]
 
 -- | A translation function to maintain backward compatibility
 --   with the old option syntax.

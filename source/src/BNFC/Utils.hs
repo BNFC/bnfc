@@ -65,10 +65,10 @@ type ModuleName = String
 -- for ghc >= 8.0
 
 #if __GLASGOW_HASKELL__ <= 710
-instance Monad m => Semigroup (m ()) where
+instance {-# OVERLAPPABLE #-} Monad m => Semigroup (m ()) where
   (<>) = (>>)
 
-instance Monad m => Monoid (m ()) where
+instance {-# OVERLAPPABLE #-} Monad m => Monoid (m ()) where
   mempty  = return ()
   mappend = (<>)
   mconcat = sequence_
