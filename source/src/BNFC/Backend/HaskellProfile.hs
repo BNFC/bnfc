@@ -66,7 +66,7 @@ makeHaskellProfile opts cfp = do
 ----    mkfile (absFile  (inDir opts) name) $ cf2Abstract (absFileM (inDir opts) name) cf
     case alexMode opts of
       Alex3 -> do
-        mkfile (alexFile (inDir opts) name) $ cf2alex3 lexMod "" False StringToken cf
+        mkfile (alexFile (inDir opts) name) $ cf2alex3 lexMod StringToken cf
         liftIO $ putStrLn "   (Use Alex 3 to compile.)"
     mkfile (happyFile (inDir opts) name) $
                  cf2HappyProfileS parMod absMod lexMod cfp

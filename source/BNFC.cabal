@@ -137,7 +137,6 @@ Executable bnfc
     BNFC.Backend.Haskell.CFtoAbstract
     BNFC.Backend.Haskell.CFtoLayout
     BNFC.Backend.Haskell.MkErrM
-    BNFC.Backend.Haskell.MkSharedString
     BNFC.Backend.Haskell.HsOpts
     BNFC.Backend.Haskell.Utils
     -- Profile
@@ -318,7 +317,6 @@ Test-suite unit-tests
     BNFC.Backend.Haskell.CFtoAbstract
     BNFC.Backend.Haskell.CFtoLayout
     BNFC.Backend.Haskell.MkErrM
-    BNFC.Backend.Haskell.MkSharedString
     BNFC.Backend.Haskell.HsOpts
     BNFC.Backend.Haskell.Utils
     -- Profile

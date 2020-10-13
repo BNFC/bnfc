@@ -34,7 +34,6 @@ import BNFC.Backend.Haskell.CFtoPrinter
 import BNFC.Backend.Haskell.CFtoLayout
 import BNFC.Backend.XML
 import BNFC.Backend.Haskell.MkErrM
-import BNFC.Backend.Haskell.MkSharedString
 import qualified BNFC.Backend.Common.Makefile as Makefile
 import qualified BNFC.Backend.Haskell as Haskell
 
@@ -50,13 +49,12 @@ makeHaskellGadt opts cf = do
       prMod  = printerFileM opts
       layMod = layoutFileM opts
       errMod = errFileM opts
-      shareMod = shareFileM opts
   do
     mkfile (absFile opts) $ cf2Abstract (tokenText opts) absMod cf composOpMod
     mkfile (composOpFile opts) $ composOp composOpMod
     case alexMode opts of
       Alex3 -> do
-        mkfile (alexFile opts) $ cf2alex3 lexMod shareMod (shareStrings opts) (tokenText opts) cf
+        mkfile (alexFile opts) $ cf2alex3 lexMod (tokenText opts) cf
         liftIO $ putStrLn "   (Use Alex 3 to compile.)"
     mkfile (happyFile opts) $
       cf2Happy parMod absMod lexMod (glr opts) (tokenText opts) False cf
@@ -67,7 +65,6 @@ makeHaskellGadt opts cf = do
       cf2Layout (tokenText opts) layMod lexMod cf
     mkfile (tFile opts)        $ Haskell.testfile opts cf
     mkfile (errFile opts) $ mkErrM errMod
-    when (shareStrings opts) $ mkfile (shareFile opts)    $ sharedString shareMod (tokenText opts) cf
     Makefile.mkMakefile opts $ Haskell.makefile opts
     case xml opts of
       2 -> makeXML opts True cf

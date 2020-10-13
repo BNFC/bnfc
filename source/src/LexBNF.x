@@ -31,28 +31,25 @@ $u = [. \n]          -- universal: any character
 
 $white+ ;
 @rsyms
-    { tok (\p s -> PT p (eitherResIdent (TV . share) s)) }
+    { tok (\p s -> PT p (eitherResIdent TV s)) }
 $l (\_ | ($d | $l)) *
-    { tok (\p s -> PT p (eitherResIdent (T_Identifier . share) s)) }
+    { tok (\p s -> PT p (eitherResIdent T_Identifier s)) }
 
 $l $i*
-    { tok (\p s -> PT p (eitherResIdent (TV . share) s)) }
+    { tok (\p s -> PT p (eitherResIdent TV s)) }
 \" ([$u # [\" \\ \n]] | (\\ (\" | \\ | \' | n | t | r | f)))* \"
-    { tok (\p s -> PT p (TL $ share $ unescapeInitTail s)) }
+    { tok (\p s -> PT p (TL $ unescapeInitTail s)) }
 \' ($u # [\' \\] | \\ [\\ \' n t r f]) \'
-    { tok (\p s -> PT p (TC $ share s))  }
+    { tok (\p s -> PT p (TC s))  }
 $d+
-    { tok (\p s -> PT p (TI $ share s))    }
+    { tok (\p s -> PT p (TI s))    }
 $d+ \. $d+ (e (\-)? $d+)?
-    { tok (\p s -> PT p (TD $ share s)) }
+    { tok (\p s -> PT p (TD s)) }
 
 {
 
 tok :: (Posn -> String -> Token) -> (Posn -> String -> Token)
 tok f p s = f p s
-
-share :: String -> String
-share = id
 
 data Tok =
    TS !String !Int    -- reserved words and symbols

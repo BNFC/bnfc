@@ -121,7 +121,6 @@ data SharedOptions = Options
   , functor       :: Bool        -- ^ Option @--functor@.  Make AST functorial?
   , generic       :: Bool        -- ^ Option @--generic@.  Derive Data, Generic, Typeable?
   , alexMode      :: AlexVersion -- ^ Options @--alex@.
-  , shareStrings  :: Bool        -- ^ Option @--sharestrings@.
   , tokenText     :: TokenText   -- ^ Options @--bytestrings@, @--string-token@, and @--text-token@.
   , glr           :: HappyMode   -- ^ Happy option @--glr@.
   , xml           :: Int         -- ^ Options @--xml@, generate DTD and XML printers.
@@ -156,7 +155,6 @@ defaultOptions = Options
   , functor         = False
   , generic         = False
   , alexMode        = Alex3
-  , shareStrings    = False
   , tokenText       = StringToken
   , glr             = Standard
   , xml             = 0
@@ -214,7 +212,6 @@ printOptions opts = unwords . concat $
   , [ "--functor"         | functor opts                        ]
   , [ "--generic"         | generic opts                        ]
   , unlessDefault alexMode opts $ \ o -> [ printAlexOption o ]
-  , [ "--sharestrings"    | shareStrings opts                   ]
   , [ "--bytestrings"     | tokenText opts == ByteStringToken   ]
   , [ "--text-token"      | tokenText opts == TextToken, not (agda opts) ]  -- default for --agda
   , [ "--string-token"    | tokenText opts == StringToken, agda opts ]      -- default unless --agda
@@ -352,9 +349,6 @@ specificOptions =
     , haskellTargets )
   , ( Option []    ["alex3"] (NoArg (\o -> o {alexMode = Alex3}))
           "Use Alex 3 as Haskell lexer tool (default)"
-    , haskellTargets )
-  , ( Option []    ["sharestrings"] (NoArg (\o -> o {shareStrings = True}))
-          "Use string sharing in Alex 2 lexer [deprecated]"
     , haskellTargets )
   , ( Option []    ["bytestrings"] (NoArg (\o -> o { tokenText = ByteStringToken }))
           "Use ByteString in Alex lexer"
@@ -555,7 +549,6 @@ warnDeprecatedOptions :: SharedOptions -> ParseOpt ()
 warnDeprecatedOptions Options{..} = do
   warnDeprecatedBackend alexMode
   warnDeprecatedBackend glr
-  Ctrl.when shareStrings $ warnDeprecated $ "feature --sharestrings"
 
 -- * Backward compatibility
 
@@ -601,6 +594,7 @@ classifyUnknownOption :: String -> Either (Either UnknownOption RemovedOption) O
 classifyUnknownOption = \case
   "--alex1" -> supportRemovedIn290 $ "Alex version 1"
   "--alex2" -> supportRemovedIn290 $ "Alex version 2"
+  s@"--sharestrings" -> optionRemovedIn290 s
   _ -> unknown
   where
   unknown  = Left $ Left UnknownOption
@@ -608,6 +602,8 @@ classifyUnknownOption = \case
   removed  = Left . Right . RemovedOption
   supportRemovedIn290 feature = removed $
     unwords [ "Support for", feature, "has been removed in version 2.9.0." ]
+  optionRemovedIn290 o = removed $
+    unwords [ "Option", o, "has been removed in version 2.9.0." ]
 
 -- | A translation function to maintain backward compatibility
 --   with the old option syntax.

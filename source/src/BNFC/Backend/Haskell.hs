@@ -34,7 +34,6 @@ import BNFC.Backend.Haskell.CFtoPrinter
 import BNFC.Backend.Haskell.CFtoLayout
 import BNFC.Backend.Haskell.HsOpts
 import BNFC.Backend.Haskell.MkErrM
-import BNFC.Backend.Haskell.MkSharedString
 import BNFC.Backend.Haskell.ToCNF as ToCNF
 import BNFC.Backend.Haskell.Utils
 import BNFC.Backend.Txt2Tag
@@ -59,7 +58,6 @@ makeHaskell opts cf = do
       prMod  = printerFileM opts
       layMod = layoutFileM opts
       errMod = errFileM opts
-      shareMod = shareFileM opts
   do
     -- Generate abstract syntax and pretty printer.
     mkfile (absFile opts) $ cf2Abstract (tokenText opts) (generic opts) (functor opts) absMod cf
@@ -68,10 +66,9 @@ makeHaskell opts cf = do
     -- Generate Alex lexer.  Layout is resolved after lexing.
     case alexMode opts of
       Alex3 -> do
-        mkfile (alexFile opts) $ cf2alex3 lexMod shareMod (shareStrings opts) (tokenText opts) cf
+        mkfile (alexFile opts) $ cf2alex3 lexMod (tokenText opts) cf
         liftIO $ printf "Use Alex 3 to compile %s.\n" (alexFile opts)
 
-    Ctrl.when (shareStrings opts) $ mkfile (shareFile opts) $ sharedString shareMod (tokenText opts) cf
     Ctrl.when (hasLayout cf) $ mkfile (layoutFile opts) $
       cf2Layout (tokenText opts) layMod lexMod cf
 
@@ -160,7 +157,6 @@ distCleanRule opts makeFile = Makefile.mkRule "distclean" ["clean"] $
       , alexFile       -- Lex.x
       , happyFile      -- Par.y
       , printerFile    -- Print.hs
-      , shareFile      -- SharedString.hs -- only if: shareStrings opt
       , templateFile   -- Skel.hs
       , tFile          -- Test.hs
       , xmlFile        -- XML.hs
