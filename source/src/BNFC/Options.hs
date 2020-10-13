@@ -347,9 +347,11 @@ specificOptions =
   , ( Option ['d'] [] (NoArg (\o -> o {inDir = True}))
           "Put Haskell code in modules LANG.* instead of LANG* (recommended)"
     , haskellTargets )
-  , ( Option []    ["alex3"] (NoArg (\o -> o {alexMode = Alex3}))
-          "Use Alex 3 as Haskell lexer tool (default)"
-    , haskellTargets )
+  -- -- Option --alex3 is obsolete since Alex 3 is the only choice now.
+  -- -- Keep this in case there will be a new lexer backend for Haskell.
+  -- , ( Option []    ["alex3"] (NoArg (\o -> o {alexMode = Alex3}))
+  --         "Use Alex 3 as Haskell lexer tool (default)"
+  --   , haskellTargets )
   , ( Option []    ["bytestrings"] (NoArg (\o -> o { tokenText = ByteStringToken }))
           "Use ByteString in Alex lexer"
     , haskellTargets )
@@ -594,6 +596,7 @@ classifyUnknownOption :: String -> Either (Either UnknownOption RemovedOption) O
 classifyUnknownOption = \case
   "--alex1" -> supportRemovedIn290 $ "Alex version 1"
   "--alex2" -> supportRemovedIn290 $ "Alex version 2"
+  "--alex3" -> obsolete
   s@"--sharestrings" -> optionRemovedIn290 s
   _ -> unknown
   where
