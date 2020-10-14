@@ -19,7 +19,7 @@ CABAL_TEST           = $(CABAL) v1-test      $(CABAL_TEST_OPTS)
 # Name for binary distribution (e.g. bnfc-2.4.5-linux32)
 BDIST_TAG=bnfc-${BNFC_VERSION}-$(shell uname -s)-$(shell uname -m)
 
-.PHONY: default build install doc test bdist show-version debug TAGS
+.PHONY: default build install doc test bdist show-version debug weed TAGS
 
 default: install test
 
@@ -35,6 +35,12 @@ test:
 
 doc:
 	$(CABAL) v1-haddock --executables --internal
+
+# See https://hackage.haskell.org/package/weeder
+# weeder can find dead code starting from the .hie files
+weed:
+	$(CABAL) build --project-file=cabal.project.local
+	weeder
 
 TAGS :
 	hasktags --etags .

@@ -1,0 +1,6 @@
+-- Write .hie files for dead-code detection with weeder
+
+packages: BNFC.cabal
+
+package *
+  ghc-options: -fwrite-ide-info
