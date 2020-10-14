@@ -45,9 +45,6 @@ transCat x = case x of
 transLabel :: AbsBNF.Label -> Result
 transLabel x = case x of
   AbsBNF.LabNoP labelid -> failure x
-  AbsBNF.LabP labelid profitems -> failure x
-  AbsBNF.LabPF labelid1 labelid2 profitems -> failure x
-  AbsBNF.LabF labelid1 labelid2 -> failure x
 transLabelId :: AbsBNF.LabelId -> Result
 transLabelId x = case x of
   AbsBNF.Id identifier -> failure x
@@ -55,9 +52,6 @@ transLabelId x = case x of
   AbsBNF.ListE -> failure x
   AbsBNF.ListCons -> failure x
   AbsBNF.ListOne -> failure x
-transProfItem :: AbsBNF.ProfItem -> Result
-transProfItem x = case x of
-  AbsBNF.ProfIt intlists integers -> failure x
 transIntList :: AbsBNF.IntList -> Result
 transIntList x = case x of
   AbsBNF.Ints integers -> failure x

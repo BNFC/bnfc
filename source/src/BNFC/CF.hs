@@ -115,7 +115,6 @@ module BNFC.CF (
             cf2cfp,
             cfp2cf,
             trivialProf,
-            ruleGroupsP, allCatsP
            ) where
 
 import Control.Monad (guard)
@@ -822,17 +821,6 @@ cfp2cf = fmap fst
 
 trivialProf :: SentForm -> [([[Int]],[Int])]
 trivialProf its = [([],[i]) | (i,_) <- zip [0..] [c | Left c <- its]]
-
-{-# DEPRECATED allCatsP "Use the version without P postfix instead" #-}
-
-ruleGroupsP :: CFP -> [(Cat,[RuleP])]
-ruleGroupsP cf = [(c, rulesForCatP cf c) | c <- allCatsP cf]
-
-rulesForCatP :: CFP -> Cat -> [RuleP]
-rulesForCatP cf cat = [r | r <- cfgRules cf, isParsable r, valCat r == cat]
-
-allCatsP :: CFP -> [Cat]
-allCatsP = reallyAllCats
 
 
 -- | Categories that are entry points to the parser

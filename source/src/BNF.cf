@@ -43,13 +43,8 @@ IdCat    . Cat ::= Identifier ;
 
 separator Cat "," ; -- for "entrypoints"
 
--- Labels with or without profiles
+-- Labels
 LabNoP   . Label ::= LabelId ;
-LabP     . Label ::= LabelId [ProfItem] ;
--- A second label can be given in use of profiles and serves as
--- ``original function name'' (undocumented feature).
-LabPF    . Label ::= LabelId LabelId [ProfItem] ;
-LabF     . Label ::= LabelId LabelId ;
 
 -- functional labels
 Id       . LabelId ::= Identifier          ;  -- AST constructor
@@ -58,14 +53,10 @@ ListE    . LabelId ::= "[" "]"             ;  -- Empty list
 ListCons . LabelId ::= "(" ":" ")"         ;  -- Cons
 ListOne  . LabelId ::= "(" ":" "[" "]" ")" ;  -- Singleton list
 
--- profiles (= permutation and binding patterns)
-ProfIt   . ProfItem ::= "(" "[" [IntList] "]" "," "[" [Integer] "]" ")" ;
-
 Ints     . IntList ::= "[" [Integer] "]" ;
 
 separator Integer "," ;
 separator IntList "," ;
-terminator nonempty ProfItem "" ;
 
 -- Pragmas
 Comment  .  Def ::= "comment"  String                     ; -- Line comment

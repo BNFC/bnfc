@@ -15,11 +15,9 @@ import LexBNF
 %name pListCat ListCat
 %name pLabel Label
 %name pLabelId LabelId
-%name pProfItem ProfItem
 %name pIntList IntList
 %name pListInteger ListInteger
 %name pListIntList ListIntList
-%name pListProfItem ListProfItem
 %name pArg Arg
 %name pListArg ListArg
 %name pSeparation Separation
@@ -146,9 +144,6 @@ ListCat : {- empty -} { [] }
 
 Label :: { AbsBNF.Label }
 Label : LabelId { AbsBNF.LabNoP $1 }
-      | LabelId ListProfItem { AbsBNF.LabP $1 $2 }
-      | LabelId LabelId ListProfItem { AbsBNF.LabPF $1 $2 $3 }
-      | LabelId LabelId { AbsBNF.LabF $1 $2 }
 
 LabelId :: { AbsBNF.LabelId }
 LabelId : Identifier { AbsBNF.Id $1 }
@@ -156,9 +151,6 @@ LabelId : Identifier { AbsBNF.Id $1 }
         | '[' ']' { AbsBNF.ListE }
         | '(' ':' ')' { AbsBNF.ListCons }
         | '(' ':' '[' ']' ')' { AbsBNF.ListOne }
-
-ProfItem :: { AbsBNF.ProfItem }
-ProfItem : '(' '[' ListIntList ']' ',' '[' ListInteger ']' ')' { AbsBNF.ProfIt $3 $7 }
 
 IntList :: { AbsBNF.IntList }
 IntList : '[' ListInteger ']' { AbsBNF.Ints $2 }
@@ -172,10 +164,6 @@ ListIntList :: { [AbsBNF.IntList] }
 ListIntList : {- empty -} { [] }
             | IntList { (:[]) $1 }
             | IntList ',' ListIntList { (:) $1 $3 }
-
-ListProfItem :: { [AbsBNF.ProfItem] }
-ListProfItem : ProfItem { (:[]) $1 }
-             | ProfItem ListProfItem { (:) $1 $2 }
 
 Arg :: { AbsBNF.Arg }
 Arg : Identifier { AbsBNF.Arg $1 }

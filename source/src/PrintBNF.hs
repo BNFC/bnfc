@@ -157,9 +157,6 @@ instance Print [AbsBNF.Cat] where
 instance Print AbsBNF.Label where
   prt i e = case e of
     AbsBNF.LabNoP labelid -> prPrec i 0 (concatD [prt 0 labelid])
-    AbsBNF.LabP labelid profitems -> prPrec i 0 (concatD [prt 0 labelid, prt 0 profitems])
-    AbsBNF.LabPF labelid1 labelid2 profitems -> prPrec i 0 (concatD [prt 0 labelid1, prt 0 labelid2, prt 0 profitems])
-    AbsBNF.LabF labelid1 labelid2 -> prPrec i 0 (concatD [prt 0 labelid1, prt 0 labelid2])
 
 instance Print AbsBNF.LabelId where
   prt i e = case e of
@@ -168,12 +165,6 @@ instance Print AbsBNF.LabelId where
     AbsBNF.ListE -> prPrec i 0 (concatD [doc (showString "["), doc (showString "]")])
     AbsBNF.ListCons -> prPrec i 0 (concatD [doc (showString "("), doc (showString ":"), doc (showString ")")])
     AbsBNF.ListOne -> prPrec i 0 (concatD [doc (showString "("), doc (showString ":"), doc (showString "["), doc (showString "]"), doc (showString ")")])
-
-instance Print AbsBNF.ProfItem where
-  prt i e = case e of
-    AbsBNF.ProfIt intlists ns -> prPrec i 0 (concatD [doc (showString "("), doc (showString "["), prt 0 intlists, doc (showString "]"), doc (showString ","), doc (showString "["), prt 0 ns, doc (showString "]"), doc (showString ")")])
-  prtList _ [x] = concatD [prt 0 x]
-  prtList _ (x:xs) = concatD [prt 0 x, prt 0 xs]
 
 instance Print AbsBNF.IntList where
   prt i e = case e of
@@ -186,9 +177,6 @@ instance Print [Integer] where
   prt = prtList
 
 instance Print [AbsBNF.IntList] where
-  prt = prtList
-
-instance Print [AbsBNF.ProfItem] where
   prt = prtList
 
 instance Print AbsBNF.Arg where

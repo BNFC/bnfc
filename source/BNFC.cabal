@@ -139,9 +139,6 @@ Executable bnfc
     BNFC.Backend.Haskell.MkErrM
     BNFC.Backend.Haskell.HsOpts
     BNFC.Backend.Haskell.Utils
-    -- Profile
-    BNFC.Backend.HaskellProfile
-    BNFC.Backend.HaskellProfile.CFtoHappyProfile
     -- Haskell GADT
     BNFC.Backend.HaskellGADT
     BNFC.Backend.HaskellGADT.HaskellGADTCommon
@@ -307,9 +304,6 @@ Test-suite unit-tests
     BNFC.Backend.Haskell.MkErrM
     BNFC.Backend.Haskell.HsOpts
     BNFC.Backend.Haskell.Utils
-    -- Profile
-    BNFC.Backend.HaskellProfile
-    BNFC.Backend.HaskellProfile.CFtoHappyProfile
     -- Haskell GADT
     BNFC.Backend.HaskellGADT
     BNFC.Backend.HaskellGADT.HaskellGADTCommon

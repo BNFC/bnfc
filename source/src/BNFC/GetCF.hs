@@ -473,9 +473,6 @@ transCat = \case
 transLabel :: Abs.Label -> Trans (RFun, Prof)
 transLabel = \case
     Abs.LabNoP f     -> do g <- transLabelId f; return (g,(g,[])) ---- should be Nothing
-    Abs.LabP   f p   -> do g <- transLabelId f; return (g,(g, map transProf p))
-    Abs.LabPF  f g p -> (,) <$> transLabelId f <*> do (,map transProf p) <$> transLabelId g
-    Abs.LabF   f g   -> (,) <$> transLabelId f <*> do (,[])              <$> transLabelId g
   where
   transLabelId = \case
     Abs.Id id     -> transIdent id
@@ -483,8 +480,6 @@ transLabel = \case
     Abs.ListE     -> return $ noPosition $ "[]"
     Abs.ListCons  -> return $ noPosition $ "(:)"
     Abs.ListOne   -> return $ noPosition $ "(:[])"
-  transProf (Abs.ProfIt bss as) =
-     ([map fromInteger bs | Abs.Ints bs <- bss], map fromInteger as)
 
 transIdent :: Abs.Identifier -> Trans RString
 transIdent (Abs.Identifier ((line, col), str)) = do

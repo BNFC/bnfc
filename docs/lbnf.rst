@@ -865,72 +865,6 @@ first column, and the resolver adds a semicolon after every paragraph
 whose first token is at this position. No curly brackets are added. The
 Alfa file above is an example of this, with two such semicolons added.
 
-.. _profile:
-
-Profiles
-========
-
-(As of October 2020, the `profile` backend is deprecated.)
-This section explains a feature which is not intended to be used in LBNF
-grammars written by hand, but in ones generated from the grammar
-formalism GF (Grammatical Framework). GF supports grammars of
-natural-languages and also higher-order abstract syntax which is
-sometimes used for formal languages to define their static semantics.
-The reader not familiar with these matters can skip this section.
-
-The relation between abstract and concrete syntax in LBNF is the
-simplest possible one: the subtrees of an abstract syntax tree are in
-one-to-one correspondence with the nonterminals in the parsing grammar.
-The GF formalism generalizes this relation to one in which permutations,
-omissions, and duplications can occur in the transition from abstract
-and concrete syntax. The way back then requires a rearrangement of the
-subtrees, which involves unification in the case of omissions and
-duplications. It is also possible to conceive some concrete-syntax
-constituents as bound variables, as is the case in higher-order abstract
-syntax. The recipe for doing this postprocessing can be compactly
-expressed by a *profile*, which has a list of positions of each
-argument. For instance, the profiles in basic LBNF look as follows:
-
-::
-
-      While ([],[0])([],[1])([],[2]). Stm ::= "while" "(" Exp ")" Stm Stm ;
-
-That is, each abstract argument occurs exactly once in the concrete
-expression, and in the same order. The syntax trees produced have the
-form
-
-::
-
-      While Ext Stm Stm
-
-The first components in each list of pairs are for variable bindings. An
-example is the variable declaration rule
-
-::
-
-      Decl ([],[0])([[1]],[2]). Stm ::= Typ Ident ";" Stm ;
-
-which creates the abstract syntax
-
-::
-
-      Decl Typ (\Ident -> Stm)
-
-An (artificial) example of duplication would be
-
-::
-
-      IsAlways ([],[0,1]). Sentence ::= "a" Noun "is" "always" "a" Noun  ;
-
-which produces trees of the form
-
-::
-
-      IsAlways Noun
-
-and would accept strings like *a man is always a man*, *a bike is always
-a bike*, but not *a man is always a bike*.
-
 .. _leftrec:
 
 An optimization: left-recursive lists
@@ -1106,8 +1040,6 @@ All other symbols are terminals
 
     <Label>
       ::= <LabelId>
-        | <LabelId> <ListProfItem>
-        | <LabelId> <LabelId> <ListProfItem>
 
     <LabelId>
       ::= <Ident>

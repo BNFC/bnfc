@@ -34,7 +34,6 @@ import BNFC.Backend.CPP.NoSTL
 import BNFC.Backend.CPP.STL
 import BNFC.Backend.Haskell
 import BNFC.Backend.HaskellGADT
-import BNFC.Backend.HaskellProfile
 import BNFC.Backend.Java
 import BNFC.Backend.Latex
 import BNFC.Backend.OCaml
@@ -76,10 +75,6 @@ main = do
           readFile file
             >>= parseCFP options TargetCheck
             >>  return ()
-      | target options == TargetProfile ->
-          readFile file
-            >>= parseCFP options TargetProfile
-            >>= writeFiles (outDir options) . makeHaskellProfile options
       | otherwise ->
           readFile file
             >>= parseCF options (target options)
@@ -95,6 +90,5 @@ maketarget = \case
     TargetLatex        -> makeLatex
     TargetJava         -> makeJava
     TargetOCaml        -> makeOCaml
-    TargetProfile      -> error "impossible"
     TargetPygments     -> makePygments
     TargetCheck        -> error "impossible"

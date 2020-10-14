@@ -56,13 +56,13 @@ data Mode
 -- | Target languages
 data Target = TargetC | TargetCpp | TargetCppNoStl
             | TargetHaskell | TargetHaskellGadt | TargetLatex
-            | TargetJava | TargetOCaml | TargetProfile | TargetPygments
+            | TargetJava | TargetOCaml | TargetPygments
             | TargetCheck
   deriving (Eq, Bounded, Enum, Ord)
 
 -- | List of Haskell target.
 haskellTargets :: [Target]
-haskellTargets = [ TargetHaskell, TargetHaskellGadt, TargetProfile ]
+haskellTargets = [ TargetHaskell, TargetHaskellGadt ]
 
 instance Show Target where
   show TargetC            = "C"
@@ -73,7 +73,6 @@ instance Show Target where
   show TargetLatex        = "Latex"
   show TargetJava         = "Java"
   show TargetOCaml        = "OCaml"
-  show TargetProfile      = "Haskell (with permutation profiles)"
   show TargetPygments     = "Pygments"
   show TargetCheck        = "Check LBNF file"
 
@@ -244,7 +243,6 @@ printTargetOption = ("--" ++) . \case
   TargetLatex       -> "latex"
   TargetJava        -> "java"
   TargetOCaml       -> "ocaml"
-  TargetProfile     -> "profile"
   TargetPygments    -> "pygments"
   TargetCheck       -> "check"
 
@@ -294,8 +292,6 @@ targetOptions =
     "Output OCaml code for use with ocamllex and ocamlyacc"
   , Option "" ["ocaml-menhir"]  (NoArg (\ o -> o{ target = TargetOCaml, ocamlParser = Menhir }))
     "Output OCaml code for use with ocamllex and menhir (short for --ocaml --menhir)"
-  , Option "" ["profile"]       (NoArg (\o -> o {target = TargetProfile}))
-    "Output Haskell code for rules with permutation profiles [deprecated]"
   , Option "" ["pygments"]      (NoArg (\o -> o {target = TargetPygments}))
     "Output a Python lexer for Pygments"
   , Option "" ["check"]         (NoArg (\ o -> o{target = TargetCheck }))
@@ -356,10 +352,10 @@ specificOptions =
     , haskellTargets )
   , ( Option []    ["functor"] (NoArg (\o -> o {functor = True}))
           "Make the AST a functor and use it to store the position of the nodes"
-    , haskellTargets )  -- TODO: ok with --profile?
+    , haskellTargets )
   , ( Option []    ["generic"] (NoArg (\o -> o {generic = True}))
           "Derive Data, Generic, and Typeable instances for AST types"
-    , haskellTargets )  -- TODO: ok with --profile?
+    , haskellTargets )
   , ( Option []    ["xml"] (NoArg (\o -> o {xml = 1}))
           "Also generate a DTD and an XML printer"
     , haskellTargets )
@@ -507,7 +503,6 @@ instance Maintained Target where
     TargetLatex       -> True
     TargetJava        -> True
     TargetOCaml       -> True
-    TargetProfile     -> False
     TargetPygments    -> True
     TargetCheck       -> True
 
@@ -587,6 +582,7 @@ classifyUnknownOption = \case
   "--alex3" -> obsolete
   s@"--sharestrings" -> optionRemovedIn290 s
   "--csharp" -> supportRemovedIn290 "C#"
+  "--profile" -> supportRemovedIn290 "permutation profiles"
   _ -> unknown
   where
   unknown  = Left $ Left UnknownOption
