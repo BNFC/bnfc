@@ -1,5 +1,6 @@
 2.9.0 Andreas Abel <andreas.abel@gu.se>
 	* Haskell: removed options --alex1, --alex2, and --sharestrings
+	* C#: backend removed
 
 2.8.4 Andreas Abel <andreas.abel@gu.se>  October 2020
 	* GHC versions 7.10 - 8.10 supported, dropped GHC 7.6 and 7.8

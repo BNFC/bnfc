@@ -54,7 +54,7 @@ data Mode
   deriving (Eq,Show,Ord)
 
 -- | Target languages
-data Target = TargetC | TargetCpp | TargetCppNoStl | TargetCSharp
+data Target = TargetC | TargetCpp | TargetCppNoStl
             | TargetHaskell | TargetHaskellGadt | TargetLatex
             | TargetJava | TargetOCaml | TargetProfile | TargetPygments
             | TargetCheck
@@ -68,7 +68,6 @@ instance Show Target where
   show TargetC            = "C"
   show TargetCpp          = "C++"
   show TargetCppNoStl     = "C++ (without STL)"
-  show TargetCSharp       = "C#"
   show TargetHaskell      = "Haskell"
   show TargetHaskellGadt  = "Haskell (with GADT)"
   show TargetLatex        = "Latex"
@@ -240,7 +239,6 @@ printTargetOption = ("--" ++) . \case
   TargetC           -> "c"
   TargetCpp         -> "cpp"
   TargetCppNoStl    -> "cpp-nostl"
-  TargetCSharp      -> "csharp"
   TargetHaskell     -> "haskell"
   TargetHaskellGadt -> "haskell-gadt"
   TargetLatex       -> "latex"
@@ -292,8 +290,6 @@ targetOptions =
     "Output C++ code for use with FLex and Bison"
   , Option "" ["cpp-nostl"]     (NoArg (\o -> o {target = TargetCppNoStl}))
     "Output C++ code (without STL) for use with FLex and Bison"
-  , Option "" ["csharp"]        (NoArg (\o -> o {target = TargetCSharp}))
-    "Output C# code for use with GPLEX and GPPG [deprecated]"
   , Option "" ["ocaml"]         (NoArg (\o -> o {target = TargetOCaml}))
     "Output OCaml code for use with ocamllex and ocamlyacc"
   , Option "" ["ocaml-menhir"]  (NoArg (\ o -> o{ target = TargetOCaml, ocamlParser = Menhir }))
@@ -318,7 +314,7 @@ specificOptions =
   , ( Option ['p'] ["name-space"]
       (ReqArg (\n o -> o {inPackage = Just n}) "NAMESPACE")
           "Prepend NAMESPACE to the package/module name"
-    , [TargetCpp, TargetCSharp, TargetJava] ++ haskellTargets)
+    , [TargetCpp, TargetJava] ++ haskellTargets)
   -- Java backend:
   , ( Option [] ["jlex"  ] (NoArg (\o -> o {javaLexerParser = JLexCup}))
           "Lex with JLex, parse with CUP (default)"
@@ -336,13 +332,6 @@ specificOptions =
   , ( Option [] ["menhir"] (NoArg (\ o -> o { ocamlParser = Menhir }))
           "Generate parser with menhir"
     , [TargetOCaml] )
-  -- C++ backend:
-  , ( Option [] ["vs"] (NoArg (\o -> o {visualStudio = True}))
-          "Generate Visual Studio solution/project files"
-    , [TargetCSharp] )
-  , ( Option [] ["wcf"] (NoArg (\o -> o {wcf = True}))
-          "Add support for Windows Communication Foundation,\n by marking abstract syntax classes as DataContracts"
-    , [TargetCSharp] )
   -- Haskell backends:
   , ( Option ['d'] [] (NoArg (\o -> o {inDir = True}))
           "Put Haskell code in modules LANG.* instead of LANG* (recommended)"
@@ -442,7 +431,7 @@ help = unlines $ title ++
     , usageInfo "TARGET languages" targetOptions
     ] ++ map targetUsage helpTargets
   where
-  helpTargets = [ TargetHaskell, TargetJava, TargetC, TargetCpp, TargetCSharp ]
+  helpTargets = [ TargetHaskell, TargetJava, TargetC, TargetCpp ]
   targetUsage t = usageInfo
     (printf "Special options for the %s backend" (show t))
     (specificOptions' t)
@@ -513,7 +502,6 @@ instance Maintained Target where
     TargetC           -> True
     TargetCpp         -> True
     TargetCppNoStl    -> True
-    TargetCSharp      -> False
     TargetHaskell     -> True
     TargetHaskellGadt -> True
     TargetLatex       -> True
@@ -598,6 +586,7 @@ classifyUnknownOption = \case
   "--alex2" -> supportRemovedIn290 $ "Alex version 2"
   "--alex3" -> obsolete
   s@"--sharestrings" -> optionRemovedIn290 s
+  "--csharp" -> supportRemovedIn290 "C#"
   _ -> unknown
   where
   unknown  = Left $ Left UnknownOption

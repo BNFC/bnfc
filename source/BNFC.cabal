@@ -13,14 +13,14 @@ Synopsis: A compiler front-end generator.
 Description:
   The BNF Converter is a compiler construction tool generating a compiler front-end
   from a Labelled BNF grammar. It was originally written to generate Haskell code,
-  but can also be used for generating Agda, C, C++, C#, Java, Ocaml and XML code.
+  but can also be used for generating Agda, C, C++, Java, Ocaml and XML code.
   .
   Given a Labelled BNF grammar the tool produces:
-  an abstract syntax as a Haskell, Agda, C, C++, C#, Ocaml module or Java directory,
+  an abstract syntax as a Haskell, Agda, C, C++, Ocaml module or Java directory,
   a case skeleton for the abstract syntax in the same language,
   an Alex, JLex, or Flex lexer generator file,
   a Happy, CUP, Bison, or Antlr parser generator file,
-  a pretty-printer as a Haskell, Agda, C, C++, C#, Java, or Ocaml module,
+  a pretty-printer as a Haskell, Agda, C, C++, Java, or Ocaml module,
   an XML representation,
   a LaTeX file containing a readable specification of the language.
 
@@ -184,17 +184,6 @@ Executable bnfc
     BNFC.Backend.CPP.STL.STLUtils
     BNFC.Backend.CPP.STL.CFtoCVisitSkelSTL
 
-    -- C# backend
-    BNFC.Backend.CSharp
-    BNFC.Backend.CSharp.RegToGPLEX
-    BNFC.Backend.CSharp.CFtoGPLEX
-    BNFC.Backend.CSharp.CSharpUtils
-    BNFC.Backend.CSharp.CFtoCSharpPrinter
-    BNFC.Backend.CSharp.CAbstoCSharpAbs
-    BNFC.Backend.CSharp.CAbstoCSharpAbstractVisitSkeleton
-    BNFC.Backend.CSharp.CAbstoCSharpVisitSkeleton
-    BNFC.Backend.CSharp.CFtoGPPG
-
     -- Java backend
     BNFC.Backend.Java
     BNFC.Backend.Java.CFtoAntlr4Lexer
@@ -265,7 +254,6 @@ Test-suite unit-tests
     BNFC.Backend.Common.NamedVariablesSpec
     BNFC.Backend.CPP.NoSTLSpec
     BNFC.Backend.CPP.STLSpec
-    BNFC.Backend.CSharpSpec
     BNFC.Backend.CSpec
     BNFC.Backend.HaskellSpec
     BNFC.Backend.HaskellGADTSpec
@@ -363,17 +351,6 @@ Test-suite unit-tests
     BNFC.Backend.CPP.STL.CFtoSTLAbs
     BNFC.Backend.CPP.STL.STLUtils
     BNFC.Backend.CPP.STL.CFtoCVisitSkelSTL
-
-    -- C# backend
-    BNFC.Backend.CSharp
-    BNFC.Backend.CSharp.RegToGPLEX
-    BNFC.Backend.CSharp.CFtoGPLEX
-    BNFC.Backend.CSharp.CSharpUtils
-    BNFC.Backend.CSharp.CFtoCSharpPrinter
-    BNFC.Backend.CSharp.CAbstoCSharpAbs
-    BNFC.Backend.CSharp.CAbstoCSharpAbstractVisitSkeleton
-    BNFC.Backend.CSharp.CAbstoCSharpVisitSkeleton
-    BNFC.Backend.CSharp.CFtoGPPG
 
     -- Java backend
     BNFC.Backend.Java
