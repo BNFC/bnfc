@@ -28,9 +28,8 @@ spec = do
   describe "checkRule" $ do
 
     it "returns an error if the rule uses an unknown category" $ do
-        let rulep = Rule ("Foo", ("Foo", [])) (noPosition $ Cat "Bar") [Left (Cat "Baz")] Parsable
-            rule  = npRule "Foo"              (Cat "Bar")              [Left (Cat "Baz")] Parsable
+        let rule  = npRule "Foo"              (Cat "Bar")              [Left (Cat "Baz")] Parsable
             cf = CFG [] [] [] [] [] [rule] mempty
             expected =
                 "no production for Baz, appearing in rule\n    Foo. Bar ::= Baz"
-        checkRule cf rulep `shouldBe` Just expected
+        checkRule cf rule `shouldBe` Just expected

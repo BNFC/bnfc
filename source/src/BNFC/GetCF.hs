@@ -26,7 +26,7 @@
 -- | Check LBNF input file and turn it into the 'CF' internal representation.
 
 module BNFC.GetCF
-  ( parseCF, parseCFP
+  ( parseCF
   , checkRule, transItem
   ) where
 
@@ -67,18 +67,12 @@ type Err = Either String
 -- | Entrypoint.
 
 parseCF :: SharedOptions -> Target -> String -> IO CF
-parseCF opts t s = cfp2cf <$> parseCFP opts t s
-
--- | Entrypoint (profiles).
-
-parseCFP :: SharedOptions -> Target -> String -> IO CFP
-parseCFP opts target content = do
-  cfp <- runErr $ pGrammar (myLexer content)
+parseCF opts target content = do
+  cf <- runErr $ pGrammar (myLexer content)
                     -- <&> expandRules -- <&> from ghc 8.4
                     >>= return . expandRules
-                    >>= getCFP opts
+                    >>= getCF opts
                     >>= return . markTokenCategories
-  let cf = cfp2cf cfp
   either dieUnlessForce return $ runTypeChecker $ checkDefinitions cf
 
   -- Some backends do not allow the grammar name to coincide with
@@ -176,7 +170,7 @@ parseCFP opts target content = do
 
   -- Passed the tests: Print the number of rules.
   putStrLn $ show nRules +++ "rules accepted\n"
-  return cfp
+  return cf
 
   where
   runErr = either die return
@@ -202,11 +196,11 @@ die msg = do
   hPutStrLn stderr msg
   exitFailure
 
--- | Translate the parsed grammar file into a context-free grammar 'CFP'.
+-- | Translate the parsed grammar file into a context-free grammar 'CF'.
 --   Desugars and type-checks.
 
-getCFP :: SharedOptions -> Abs.Grammar -> Err CFP
-getCFP opts (Abs.Grammar defs0) = do
+getCF :: SharedOptions -> Abs.Grammar -> Err CF
+getCF opts (Abs.Grammar defs0) = do
     let (defs,inlineDelims)= if cnf opts then (defs0,id) else removeDelims defs0
         (pragma,rules0)    = partitionEithers $ concat $ mapM transDef defs `runTrans` opts
         rules              = inlineDelims rules0
@@ -216,7 +210,7 @@ getCFP opts (Abs.Grammar defs0) = do
         usedCats           = Set.fromList [ c | Rule _ _ rhs _ <- rules, Left c <- rhs ]
         literals           = filter (\ s -> TokenCat s `Set.member` usedCats) $ specialCatsP
         (symbols,keywords) = partition notIdent reservedWords
-    sig <- runTypeChecker $ buildSignature $ map (fmap fst) rules
+    sig <- runTypeChecker $ buildSignature rules
     let
       cf = revs $ CFG
         { cfgPragmas        = pragma
@@ -227,19 +221,19 @@ getCFP opts (Abs.Grammar defs0) = do
         , cfgRules          = rules
         , cfgSignature      = sig
         }
-    case mapMaybe (checkRule (cfp2cf cf)) rules of
+    case mapMaybe (checkRule cf) rules of
       [] -> return ()
       msgs -> throwError $ unlines msgs
     return cf
   where
     notIdent s       = null s || not (isAlpha (head s)) || any (not . isIdentRest) s
     isIdentRest c    = isAlphaNum c || c == '_'
-    revs cfp@CFG{..} =
-        cfp { cfgReversibleCats = findAllReversibleCats (cfp2cf cfp) }
+    revs cf@CFG{..} =
+        cf{ cfgReversibleCats = findAllReversibleCats cf }
 
 -- | This function goes through each rule of a grammar and replace Cat "X" with
 -- TokenCat "X" when "X" is a token type.
-markTokenCategories :: CFP -> CFP
+markTokenCategories :: CF -> CF
 markTokenCategories cf@CFG{..} = cf { cfgRules = newRules }
   where
     newRules = [ Rule f (fmap mark c) (map (left mark) rhs) internal | Rule f c rhs internal <- cfgRules ]
@@ -262,7 +256,7 @@ toTokenCat _ c = c
 
 
 
-removeDelims :: [Abs.Def] -> ([Abs.Def], [RuleP] -> [RuleP])
+removeDelims :: [Abs.Def] -> ([Abs.Def], [Rule] -> [Rule])
 removeDelims xs = (ys ++ map delimToSep ds,
                    foldr (.) id [map (inlineDelim' d) | d <- ds])
   where
@@ -275,7 +269,7 @@ removeDelims xs = (ys ++ map delimToSep ds,
       | c == ListCat (transCat' cat) = [Right open, Left c, Right close]
     inlineDelim _ x = [x]
 
-    inlineDelim' :: Abs.Def -> RuleP -> RuleP
+    inlineDelim' :: Abs.Def -> Rule -> Rule
     inlineDelim' d@(Abs.Delimiters cat _ _ _ _) r@(Rule f c rhs internal)
       | wpThing c == ListCat (transCat' cat) = r
       | otherwise = Rule f c (concatMap (inlineDelim d) rhs) internal
@@ -294,7 +288,7 @@ newtype Trans a = Trans { unTrans :: Reader SharedOptions a }
 runTrans :: Trans a -> SharedOptions -> a
 runTrans m opts = unTrans m `runReader` opts
 
-transDef :: Abs.Def -> Trans [Either Pragma RuleP]
+transDef :: Abs.Def -> Trans [Either Pragma Rule]
 transDef = \case
     Abs.Rule label cat items  -> do
       f <- transLabel label
@@ -311,11 +305,11 @@ transDef = \case
     Abs.Token ident reg           -> do x <- transIdent ident; return [Left $ TokenReg x False $ simpReg reg]
     Abs.PosToken ident reg        -> do x <- transIdent ident; return [Left $ TokenReg x True  $ simpReg reg]
     Abs.Entryp cats               -> singleton . Left . EntryPoints <$> mapM transCat cats
-    Abs.Separator size ident str  -> map (Right . cf2cfpRule) <$> separatorRules size ident str
-    Abs.Terminator size ident str -> map (Right . cf2cfpRule) <$> terminatorRules size ident str
-    Abs.Delimiters a b c d e      -> map (Right . cf2cfpRule) <$> delimiterRules a b c d e
-    Abs.Coercions ident int       -> map (Right . cf2cfpRule) <$> coercionRules ident int
-    Abs.Rules ident strs          -> map (Right . cf2cfpRule) <$> ebnfRules ident strs
+    Abs.Separator size ident str  -> map Right <$> separatorRules size ident str
+    Abs.Terminator size ident str -> map Right <$> terminatorRules size ident str
+    Abs.Delimiters a b c d e      -> map Right <$> delimiterRules a b c d e
+    Abs.Coercions ident int       -> map Right <$> coercionRules ident int
+    Abs.Rules ident strs          -> map Right <$> ebnfRules ident strs
     Abs.Layout ss                 -> return [ Left $ Layout ss ]
     Abs.LayoutStop ss             -> return [ Left $ LayoutStop ss]
     Abs.LayoutTop                 -> return [ Left $ LayoutTop ]
@@ -470,9 +464,9 @@ transCat = \case
       file <- asks lbnfFile
       return $ WithPosition (Position file line col) $ strToCat c
 
-transLabel :: Abs.Label -> Trans (RFun, Prof)
+transLabel :: Abs.Label -> Trans RFun
 transLabel = \case
-    Abs.LabNoP f     -> do g <- transLabelId f; return (g,(g,[])) ---- should be Nothing
+    Abs.LabNoP f     -> transLabelId f
   where
   transLabelId = \case
     Abs.Id id     -> transIdent id
@@ -529,8 +523,8 @@ checkTokens cf
 -- (1) coercions are always between variants
 -- (2) no other digits are used
 
-checkRule :: CF -> RuleP -> Maybe String
-checkRule cf (Rule (f,_) (WithPosition _ cat) rhs _)
+checkRule :: CF -> Rule -> Maybe String
+checkRule cf (Rule f (WithPosition _ cat) rhs _)
   | Cat ('@':_) <- cat = Nothing -- Generated by a pragma; it's a trusted category
   | badCoercion    = failure $ "Bad coercion in rule" +++ s
   | badNil         = failure $ "Bad empty list rule" +++ s

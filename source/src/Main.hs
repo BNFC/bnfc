@@ -73,7 +73,7 @@ main = do
     Target options file
       | target options == TargetCheck ->
           readFile file
-            >>= parseCFP options TargetCheck
+            >>= parseCF options TargetCheck
             >>  return ()
       | otherwise ->
           readFile file

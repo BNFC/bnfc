@@ -105,16 +105,7 @@ module BNFC.CF (
             hasIdent, hasIdentLikeTokens,
             hasLayout,
             layoutPragmas,
-            sigLookup,      -- Get the type of a rule label.
-
-            CFP,            -- CF with profiles
-            RuleP,
-            FunP,
-            Prof,
-            cf2cfpRule,
-            cf2cfp,
-            cfp2cf,
-            trivialProf,
+            sigLookup      -- Get the type of a rule label.
            ) where
 
 import Control.Monad (guard)
@@ -148,8 +139,9 @@ type CF = CFG RFun
 
 type Rule = Rul RFun
 
--- | Polymorphic rule type for common type signatures for CF and CFP.
+-- | Polymorphic rule type.
 
+-- N.B.: Was originally made polymorphic for the sake of removed backend --profile.
 data Rul function = Rule
   { funRule :: function
       -- ^ The function (semantic action) of a rule.
@@ -178,7 +170,7 @@ instance (Show function) => Show (Rul function) where
 -- | A sentential form is a sequence of non-terminals or terminals.
 type SentForm = [Either Cat String]
 
--- | Polymorphic CFG type for common type signatures for CF and CFP.
+-- | Type of context-free grammars (GFG).
 
 data CFG function = CFG
     { cfgPragmas        :: [Pragma]
@@ -801,26 +793,6 @@ hasPositionTokens cf = or [ b | TokenReg _ b _ <- cfgPragmas cf ]
 -- | Does the category have a position stored in AST?
 isPositionCat :: CFG f -> TokenCat -> Bool
 isPositionCat cf cat = or [ b | TokenReg name b _ <- cfgPragmas cf, wpThing name == cat]
-
--- | Grammar with permutation profile à la GF. AR 22/9/2004
-type CFP   = CFG FunP
-type FunP  = (RFun,Prof)
-type RuleP = Rul FunP
-
--- | Pair of: the original function name, profile
-type Prof  = (RFun, [([[Int]],[Int])])
-
-cf2cfp :: CF -> CFP
-cf2cfp cfg@CFG{..} = cfg { cfgRules = map cf2cfpRule cfgRules }
-
-cf2cfpRule :: Rule -> RuleP
-cf2cfpRule (Rule f c its internal)  = Rule (f, (f, trivialProf its)) c its internal
-
-cfp2cf :: CFP -> CF
-cfp2cf = fmap fst
-
-trivialProf :: SentForm -> [([[Int]],[Int])]
-trivialProf its = [([],[i]) | (i,_) <- zip [0..] [c | Left c <- its]]
 
 
 -- | Categories that are entry points to the parser
