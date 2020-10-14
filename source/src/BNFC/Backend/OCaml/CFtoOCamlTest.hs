@@ -37,11 +37,6 @@ import BNFC.Backend.OCaml.CFtoOCamlShow    (showsFunQual)
 comment :: Doc -> Doc
 comment d = "(*" <+> d <+> "*)"
 
--- | OCaml String concatenation
--- >>> "print a" <^> doubleQuotes "abc"
--- print a ^ "abc"
-a <^> b = a <+> "^" <+> b
-
 -- | Generate a test program in OCaml
 ocamlTestfile :: String -> String -> String -> String -> String -> CF -> Doc
 ocamlTestfile absM lexM parM printM showM cf =

@@ -98,9 +98,7 @@ module BNFC.CF (
             tokenPragmas,   -- get the user-defined regular expression tokens
             tokenNames,     -- get the names of all user-defined tokens
             precCat,        -- get the precendence level of a Cat C1 => 1, C => 0
-            precLevels,     -- get all precendence levels in the grammar, sorted in increasing order.
             precRule,       -- get the precendence level of the value category of a rule.
-            precCF,         -- Check if the CF consists of precendence levels.
             isUsedCat, usedTokenCats,
             isPositionCat,
             hasPositionTokens,
@@ -117,7 +115,7 @@ module BNFC.CF (
             cf2cfp,
             cfp2cf,
             trivialProf,
-            funRuleP, ruleGroupsP, allCatsP, allEntryPointsP
+            ruleGroupsP, allCatsP
            ) where
 
 import Control.Monad (guard)
@@ -792,12 +790,6 @@ precCat _ = 0
 precRule :: Rul f -> Integer
 precRule = precCat . valCat
 
-precLevels :: CF -> [Integer]
-precLevels cf = Set.toAscList $ Set.fromList [ precCat c | c <- reallyAllCats cf]
-
-precCF :: CF -> Bool
-precCF cf = length (precLevels cf) > 1
-
 -- | Defines or uses the grammar token types like @Ident@?
 --   Excludes position tokens.
 hasIdentLikeTokens :: CFG g -> Bool
@@ -831,10 +823,7 @@ cfp2cf = fmap fst
 trivialProf :: SentForm -> [([[Int]],[Int])]
 trivialProf its = [([],[i]) | (i,_) <- zip [0..] [c | Left c <- its]]
 
-{-# DEPRECATED allCatsP, allEntryPointsP  "Use the version without P postfix instead" #-}
-
-funRuleP :: RuleP -> RFun
-funRuleP = fst . funRule
+{-# DEPRECATED allCatsP "Use the version without P postfix instead" #-}
 
 ruleGroupsP :: CFP -> [(Cat,[RuleP])]
 ruleGroupsP cf = [(c, rulesForCatP cf c) | c <- allCatsP cf]
@@ -852,6 +841,3 @@ allEntryPoints cf =
   case concat [ cats | EntryPoints cats <- cfgPragmas cf ] of
     [] -> allParserCats cf
     cs -> map wpThing cs
-
-allEntryPointsP :: CFP -> [Cat]
-allEntryPointsP = allEntryPoints

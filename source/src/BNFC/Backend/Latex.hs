@@ -32,7 +32,7 @@ import BNFC.Backend.Base
 import BNFC.Backend.Common.Makefile as Makefile
 import BNFC.CF
 import BNFC.Utils
-import BNFC.PrettyPrint hiding ((<.>), empty)
+import BNFC.PrettyPrint hiding (empty)
 
 -- | Entry point: create .tex file and a Makefile to compile it.
 makeLatex :: SharedOptions -> CF -> Backend

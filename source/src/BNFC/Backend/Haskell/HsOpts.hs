@@ -11,7 +11,6 @@ type Options = SharedOptions
 absFile, absFileM,
  alexFile, alexFileHs, alexFileM,
  composOpFile, composOpFileM,
- gfAbs,
  happyFile, happyFileHs, happyFileM,
  errFile, errFileM,
  templateFile, templateFileM,
@@ -31,7 +30,6 @@ templateFile  = mkFile withLang "Skel" "hs"
 templateFileM = mkMod  withLang "Skel"
 printerFile   = mkFile withLang "Print" "hs"
 printerFileM  = mkMod  withLang "Print"
-gfAbs         = mkFile withLang "" "Abs.gf"
 tFile         = mkFile withLang "Test" "hs"
 tFileExe      = mkFile withLang "Test" ""
 errFile       = mkFile noLang   "ErrM" "hs"
@@ -119,9 +117,6 @@ mkMod addLang name opts = mkNamespace opts <.> mod
 -- "A/B/C/Abc/Abstract.hs"
 mkFile :: (Options -> String -> String) -> String -> String -> Options -> FilePath
 mkFile addLang name ext opts = pkgToDir (mkMod addLang name opts) <.> ext
-
-mkFileName :: String -> String -> FilePath
-mkFileName module' ext = pkgToDir module' <.> ext
 
 
 -- | Determine the modules' namespace

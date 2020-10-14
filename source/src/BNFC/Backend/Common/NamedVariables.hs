@@ -142,17 +142,6 @@ numVars cats =
                 vname = P.text n P.<> if i > 1 || thereIsMore then P.int i else P.empty
             in Left (c, vname) : f' ((n,i):env) xs
 
---This makes numbers a little nicer.
---If there's only one variable of a type we drop the redundant _1 label.
---(Actually here we add _1 labels to variables that need it, but the effect
--- is the same.)
-fixOnes :: Eq b => [Either String b] -> [Either String b]
-fixOnes [] = []
-fixOnes (Right f : fs) = Right f : fixOnes fs
-fixOnes (Left f : fs) =
-  if Left (f ++ "2") `elem` fs
-    then Left (f ++ "1") : fixOnes fs
-    else Left f : fixOnes fs
 
 --This fixes the problem with coercions.
 fixCoercions :: [(Cat, [Rule])] -> [(Cat, [Rule])]

@@ -61,15 +61,6 @@ vsep = foldl ($++$) empty
 vcat' :: [Doc] -> Doc
 vcat' = foldl ($+$) empty
 
--- | Pretty print separator with a dot.
---
--- >>> "abc" <.> "py"
--- abc.py
---
-(<.>) :: Doc -> Doc -> Doc
-a <.> b = hcat [ a , text "." , b ]
-  -- Andreas A, 2019-02-07: avoiding <> due to clash with Semigroup
-
 -- | Pretty print separator with = (for assignments...).
 --
 -- >>> "a" <=> "123"

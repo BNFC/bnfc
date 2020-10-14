@@ -33,9 +33,9 @@ module BNFC.Utils
     , pad, table
     , mkName, mkNames, NameStyle(..)
     , lowerCase, upperCase, mixedCase, camelCase, snakeCase
-    , replace, prParenth
+    , replace
     , writeFileRep
-    , cstring, cchar
+    , cstring
     , getZonedTimeTruncatedToSeconds
     ) where
 
@@ -141,10 +141,6 @@ a +-+ b   = a ++ "_"    ++ b
 -- | Concatenate strings by a dot.
 (+.+) :: String -> String -> String
 a +.+ b   = a ++ "."    ++ b
-
--- | Parenthesize a string unless it is empty.
-prParenth :: String -> String
-prParenth s = if s == "" then "" else "(" ++ s ++ ")"
 
 -- | Pad a string on the right by spaces to reach the desired length.
 pad :: Int -> String -> String
@@ -467,14 +463,3 @@ snakeCase = text . mkName [] SnakeCase
 -- "foobar\""
 cstring :: String -> Doc
 cstring = text . show
-
-
--- | A function that renders a c-like character.
---
--- >>> cchar 'x'
--- 'x'
---
--- >>> cchar '\''
--- '\''
-cchar :: Char -> Doc
-cchar = text . show
