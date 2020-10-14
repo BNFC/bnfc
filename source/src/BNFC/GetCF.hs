@@ -466,9 +466,6 @@ transCat = \case
 
 transLabel :: Abs.Label -> Trans RFun
 transLabel = \case
-    Abs.LabNoP f     -> transLabelId f
-  where
-  transLabelId = \case
     Abs.Id id     -> transIdent id
     Abs.Wild      -> return $ noPosition $ "_"
     Abs.ListE     -> return $ noPosition $ "[]"
@@ -609,7 +606,7 @@ expandRules (Abs.Grammar defs) =
 
     mkRule :: Abs.Identifier -> Abs.RHS -> State [(String, Int)] Abs.Def
     mkRule ident (Abs.RHS rhs) = do
-      fun <- Abs.LabNoP . Abs.Id <$> mkName ident rhs
+      fun <- Abs.Id <$> mkName ident rhs
       return $ Abs.Rule fun (Abs.IdCat ident) rhs
 
     mkName :: Abs.Identifier -> [Abs.Item] -> State [(String, Int)] Abs.Identifier

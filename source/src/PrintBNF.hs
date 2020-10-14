@@ -156,10 +156,6 @@ instance Print [AbsBNF.Cat] where
 
 instance Print AbsBNF.Label where
   prt i e = case e of
-    AbsBNF.LabNoP labelid -> prPrec i 0 (concatD [prt 0 labelid])
-
-instance Print AbsBNF.LabelId where
-  prt i e = case e of
     AbsBNF.Id identifier -> prPrec i 0 (concatD [prt 0 identifier])
     AbsBNF.Wild -> prPrec i 0 (concatD [doc (showString "_")])
     AbsBNF.ListE -> prPrec i 0 (concatD [doc (showString "["), doc (showString "]")])

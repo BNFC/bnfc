@@ -44,14 +44,11 @@ IdCat    . Cat ::= Identifier ;
 separator Cat "," ; -- for "entrypoints"
 
 -- Labels
-LabNoP   . Label ::= LabelId ;
-
--- functional labels
-Id       . LabelId ::= Identifier          ;  -- AST constructor
-Wild     . LabelId ::= "_"                 ;  -- No AST constructor (embedding)
-ListE    . LabelId ::= "[" "]"             ;  -- Empty list
-ListCons . LabelId ::= "(" ":" ")"         ;  -- Cons
-ListOne  . LabelId ::= "(" ":" "[" "]" ")" ;  -- Singleton list
+Id       . Label ::= Identifier          ;  -- AST constructor
+Wild     . Label ::= "_"                 ;  -- No AST constructor (embedding)
+ListE    . Label ::= "[" "]"             ;  -- Empty list
+ListCons . Label ::= "(" ":" ")"         ;  -- Cons
+ListOne  . Label ::= "(" ":" "[" "]" ")" ;  -- Singleton list
 
 Ints     . IntList ::= "[" [Integer] "]" ;
 

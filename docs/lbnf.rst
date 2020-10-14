@@ -1039,9 +1039,6 @@ All other symbols are terminals
         | <Ident>
 
     <Label>
-      ::= <LabelId>
-
-    <LabelId>
       ::= <Ident>
         | _
         | [ ]

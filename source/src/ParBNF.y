@@ -14,7 +14,6 @@ import LexBNF
 %name pCat Cat
 %name pListCat ListCat
 %name pLabel Label
-%name pLabelId LabelId
 %name pIntList IntList
 %name pListInteger ListInteger
 %name pListIntList ListIntList
@@ -143,14 +142,11 @@ ListCat : {- empty -} { [] }
         | Cat ',' ListCat { (:) $1 $3 }
 
 Label :: { AbsBNF.Label }
-Label : LabelId { AbsBNF.LabNoP $1 }
-
-LabelId :: { AbsBNF.LabelId }
-LabelId : Identifier { AbsBNF.Id $1 }
-        | '_' { AbsBNF.Wild }
-        | '[' ']' { AbsBNF.ListE }
-        | '(' ':' ')' { AbsBNF.ListCons }
-        | '(' ':' '[' ']' ')' { AbsBNF.ListOne }
+Label : Identifier { AbsBNF.Id $1 }
+      | '_' { AbsBNF.Wild }
+      | '[' ']' { AbsBNF.ListE }
+      | '(' ':' ')' { AbsBNF.ListCons }
+      | '(' ':' '[' ']' ')' { AbsBNF.ListOne }
 
 IntList :: { AbsBNF.IntList }
 IntList : '[' ListInteger ']' { AbsBNF.Ints $2 }

@@ -37,10 +37,7 @@ data Item = Terminal String | NTerminal Cat
 data Cat = ListCat Cat | IdCat Identifier
   deriving (C.Eq, C.Ord, C.Show, C.Read)
 
-data Label = LabNoP LabelId
-  deriving (C.Eq, C.Ord, C.Show, C.Read)
-
-data LabelId = Id Identifier | Wild | ListE | ListCons | ListOne
+data Label = Id Identifier | Wild | ListE | ListCons | ListOne
   deriving (C.Eq, C.Ord, C.Show, C.Read)
 
 data IntList = Ints [Integer]
