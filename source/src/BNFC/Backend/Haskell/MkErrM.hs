@@ -1,6 +1,6 @@
 {-
     BNF Converter: Haskell error monad
-    Copyright (C) 2004-2007  Author:  Markus Forberg, Peter Gammie,
+    Copyright (C) 2004-2007  Author:  Markus Forsberg, Peter Gammie,
                                       Aarne Ranta, Björn Bringert
     Copyright (C) 2019 Author: Andreas Abel
 

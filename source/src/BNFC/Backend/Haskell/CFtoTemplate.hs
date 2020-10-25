@@ -1,6 +1,6 @@
 {-
     BNF Converter: Template Generator
-    Copyright (C) 2004  Author:  Markus Forberg
+    Copyright (C) 2004  Author:  Markus Forsberg
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by

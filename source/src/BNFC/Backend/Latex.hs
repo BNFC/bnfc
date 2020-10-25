@@ -1,7 +1,7 @@
 {-# LANGUAGE CPP #-}
 {-
     BNF Converter: Latex Generator
-    Copyright (C) 2004  Author:  Markus Forberg, Aarne Ranta
+    Copyright (C) 2004  Author:  Markus Forsberg, Aarne Ranta
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by

@@ -6,7 +6,7 @@
     Kristofer Johannisson, Antti-Juhani Kaijanaho, Ulf Norell,
     Michael Pellauer and Aarne Ranta 2002 - 2013.
 
-    Björn Bringert, Johan Broberg, Markus Forberg, Peter Gammie,
+    Björn Bringert, Johan Broberg, Markus Forsberg, Peter Gammie,
     Patrik Jansson, Antti-Juhani Kaijanaho, Ulf Norell,
     Michael Pellauer, Aarne Ranta
 
