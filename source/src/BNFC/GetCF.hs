@@ -31,7 +31,7 @@ module BNFC.GetCF
   ) where
 
 import Control.Arrow (left)
-import Control.Monad.Reader (Reader, runReader, MonadReader(..), asks)
+import Control.Monad.Reader (ReaderT, runReaderT, MonadReader(..), asks)
 import Control.Monad.State (State, evalState, get, modify)
 import Control.Monad.Except (MonadError(..))
 
@@ -202,9 +202,9 @@ die msg = do
 getCF :: SharedOptions -> Abs.Grammar -> Err CF
 getCF opts (Abs.Grammar defs0) = do
     let (defs,inlineDelims)= removeDelims defs0
-        (pragma,rules0)    = partitionEithers $ concat $ mapM transDef defs `runTrans` opts
-        rules              = inlineDelims rules0
-        reservedWords      = nub [t | r <- rules, isParsable r, Right t <- rhsRule r, not $ all isSpace t]
+    (pragma, rules0) <- partitionEithers . concat <$> mapM transDef defs `runTrans` opts
+    let rules              = inlineDelims rules0
+    let reservedWords      = nub [ t | r <- rules, isParsable r, Right t <- rhsRule r, not $ all isSpace t ]
           -- Issue #204: exclude keywords from internal rules
           -- Issue #70: whitespace separators should be treated like "", at least in the parser
         usedCats           = Set.fromList [ c | Rule _ _ rhs _ <- rules, Left c <- rhs ]
@@ -282,11 +282,11 @@ removeDelims xs = (ys ++ map delimToSep ds,
     delimToSep x = x
 
 -- | Translation monad.
-newtype Trans a = Trans { unTrans :: Reader SharedOptions a }
-  deriving (Functor, Applicative, Monad, MonadReader SharedOptions)
+newtype Trans a = Trans { unTrans :: ReaderT SharedOptions Err a }
+  deriving (Functor, Applicative, Monad, MonadReader SharedOptions, MonadError String)
 
-runTrans :: Trans a -> SharedOptions -> a
-runTrans m opts = unTrans m `runReader` opts
+runTrans :: Trans a -> SharedOptions -> Err a
+runTrans m opts = unTrans m `runReaderT` opts
 
 transDef :: Abs.Def -> Trans [Either Pragma Rule]
 transDef = \case
