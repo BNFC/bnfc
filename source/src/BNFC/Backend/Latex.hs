@@ -1,4 +1,5 @@
-{-# LANGUAGE CPP #-}
+{-# LANGUAGE LambdaCase #-}
+
 {-
     BNF Converter: Latex Generator
     Copyright (C) 2004  Author:  Markus Forsberg, Aarne Ranta
@@ -17,12 +18,10 @@
     along with this program; if not, write to the Free Software
     Foundation, 51 Franklin Street, Fifth Floor, Boston, MA 02110-1335, USA
 -}
+
 module BNFC.Backend.Latex where
 
-import Data.List
-#if !(MIN_VERSION_base(4,8,0))
-import Data.Monoid
-#endif
+import qualified Data.List as List
 import System.FilePath ((<.>),replaceExtension)
 import Text.Printf
 
@@ -123,7 +122,7 @@ prtIdentifiers =
 
 prtLiterals :: String -> CF -> String
 prtLiterals _ cf =
-  unlines . concat . intersperse [""] . map stringLit . filter (/= catIdent) $ literals cf
+  unlines . concat . List.intersperse [""] . map stringLit . filter (/= catIdent) $ literals cf
 
 stringLit :: TokenCat -> [String]
 stringLit = \case
@@ -165,8 +164,8 @@ prtComments (xs,ys) =
         then "There are no multiple-line comments in the grammar."
         else "Multiple-line comments are  enclosed with " ++ mult ++".")
  where
- sing = intercalate ", " $ map (symbol.prt) ys
- mult = intercalate ", " $
+ sing = List.intercalate ", " $ map (symbol.prt) ys
+ mult = List.intercalate ", " $
          map (\(x,y) -> symbol (prt x)
                        ++ " and " ++
                       symbol (prt y)) xs
