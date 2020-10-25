@@ -34,7 +34,6 @@ import BNFC.Backend.Haskell.CFtoPrinter
 import BNFC.Backend.Haskell.CFtoLayout
 import BNFC.Backend.Haskell.HsOpts
 import BNFC.Backend.Haskell.MkErrM
-import BNFC.Backend.Haskell.ToCNF as ToCNF
 import BNFC.Backend.Haskell.Utils
 import BNFC.Backend.Txt2Tag
 import BNFC.Backend.XML
@@ -72,8 +71,8 @@ makeHaskell opts cf = do
     Ctrl.when (hasLayout cf) $ mkfile (layoutFile opts) $
       cf2Layout (tokenText opts) layMod lexMod cf
 
-    -- Generate Happy parser and matching test program unless --cnf.
-    Ctrl.unless (cnf opts) $ do
+    -- Generate Happy parser and matching test program.
+    do
       mkfile (happyFile opts) $
         cf2Happy parMod absMod lexMod (glr opts) (tokenText opts) (functor opts) cf
       -- liftIO $ printf "%s Tested with Happy 1.15\n" (happyFile opts)
@@ -92,12 +91,6 @@ makeHaskell opts cf = do
       1 -> makeXML opts False cf
       _ -> return ()
 
-    -- CNF backend.  Currently does not make use of layout.
-    Ctrl.when (cnf opts) $ do
-      mkfile (cnfTablesFile opts) $ ToCNF.generate opts cf
-      mkfile (cnfTestFile opts)   $ ToCNF.genTestFile opts cf
-      mkfile (cnfBenchFile opts)  $ ToCNF.genBenchmark opts
-
     -- Generate Agda bindings for AST, Printer and Parser.
     Ctrl.when (agda opts) $ makeAgda time opts cf
 
@@ -112,12 +105,8 @@ _oldMakefile
   -> Doc       -- ^ Content of the makefile.
 _oldMakefile opts makeFile = vcat
   [ Makefile.mkRule "all" [] $ concat $
-      [ [ unwords $ [ "happy -gca" ] ++ glrParams ++ [ happyFile opts ] | not (cnf opts) ]
+      [ [ unwords $ [ "happy -gca" ] ++ glrParams ++ [ happyFile opts ] ]
       , [ "alex -g " ++ alexFile opts ]
-      , [ if cnf opts
-          then unwords [ "ghc --make", cnfTestFile opts, "-o", cnfTestFileExe opts ]
-          else unwords [ "ghc --make", tFile       opts, "-o", tFileExe       opts ]
-        ]
       ]
   , cleanRule opts
   , distCleanRule opts makeFile
@@ -165,7 +154,7 @@ distCleanRule opts makeFile = Makefile.mkRule "distclean" ["clean"] $
       , agdaLibFile    -- IOLib.agda
       , agdaMainFile   -- Main.agda
       , (\ opts -> dir ++ lang opts ++ ".dtd")
-      ]  -- TODO: clean up cnf files
+      ]
       -- Files that have no .bak variant
     , map (\ (file, ext) -> mkFile withLang file ext opts)
       [ ("Test"    , "")
@@ -206,9 +195,9 @@ makefile opts makeFile = vcat
   -- from the Makefile.  Thus, we have to drop the rule for
   -- reinvokation of bnfc.
   , when (isDefault outDir opts) $ bnfcRule
-  , unless (cnf opts) $ happyRule
+  , happyRule
   , alexRule
-  , if cnf opts then testCNFRule else testParserRule
+  , testParserRule
   , when (agda opts) $ agdaRule
   , vcat [ "# Rules for cleaning generated files." , "" ]
   , cleanRule opts
@@ -231,8 +220,7 @@ makefile opts makeFile = vcat
      , Makefile.mkRule "all" tgts []
      ]
      where
-     tgts | cnf opts  = [ cnfTestFileExe opts ]
-          | otherwise = concat $
+     tgts = concat $
               [ [ tFileExe opts ]
               , [ "Main" | agda opts ]
               ]
@@ -245,7 +233,7 @@ makefile opts makeFile = vcat
     recipe    = unwords [ "bnfc", printOptions opts{ make = Nothing } ]
     tgts      = unwords . concat $
       [ alexEtc
-      , if cnf opts then [ cnfTestFile opts ] else [ happyFile opts, tFile opts ]
+      , [ happyFile opts, tFile opts ]
       , when (agda opts) agdaFiles
       ]
     alexEtc   = map ($ opts) [ errFile, alexFile, printerFile ]
@@ -279,12 +267,6 @@ makefile opts makeFile = vcat
       , happyFileHs
       , printerFile
       ]
-
-  -- | Rule to build CNF test parser.
-  testCNFRule :: Doc
-  testCNFRule = Makefile.mkRule (cnfTestFileExe opts) deps [ "ghc --make $< -o $@" ]
-    where
-    deps = [ cnfTestFile opts {- must be first! -} , alexFileHs opts ]
 
   -- | Rule to build Agda parser.
   agdaRule :: Doc

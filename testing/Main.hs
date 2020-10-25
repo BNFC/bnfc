@@ -4,7 +4,6 @@ import Test.Framework (htfMain)
 
 import qualified SucceedLBNFTests
 import qualified FailLBNFTests
-import qualified HaskellCnfTests
 import qualified ParameterizedTests
 import qualified PygmentsTests
 import qualified RegressionTests
@@ -27,6 +26,5 @@ main = do
     RegressionTests.all    :
     ParameterizedTests.layoutTest :
     OutputParser.tests     :
-    HaskellCnfTests.all    :
     PygmentsTests.all      :
     []

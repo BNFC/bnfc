@@ -122,7 +122,6 @@ data SharedOptions = Options
   , tokenText     :: TokenText   -- ^ Options @--bytestrings@, @--string-token@, and @--text-token@.
   , glr           :: HappyMode   -- ^ Happy option @--glr@.
   , xml           :: Int         -- ^ Options @--xml@, generate DTD and XML printers.
-  , cnf           :: Bool        -- ^ Option @--cnf@. Generate CNF-like tables?
   , agda          :: Bool        -- ^ Option @--agda@. Create bindings for Agda?
   --- OCaml specific
   , ocamlParser   :: OCamlParser -- ^ Option @--menhir@ to switch to @Menhir@.
@@ -156,7 +155,6 @@ defaultOptions = Options
   , tokenText       = StringToken
   , glr             = Standard
   , xml             = 0
-  , cnf             = False
   , agda            = False
   -- OCaml specific
   , ocamlParser     = OCamlYacc
@@ -216,7 +214,6 @@ printOptions opts = unwords . concat $
   , [ "--glr"             | glr opts == GLR                     ]
   , [ "--xml"             | xml opts == 1                       ]
   , [ "--xmlt"            | xml opts == 2                       ]
-  , [ "--cnf"             | cnf opts                            ]
   , [ "--agda"            | agda opts                           ]
   -- C# options:
   , [ "--vs"              | visualStudio opts                   ]
@@ -362,10 +359,7 @@ specificOptions =
   , ( Option []    ["xmlt"] (NoArg (\o -> o {xml = 2}))
           "DTD and an XML printer, another encoding"
     , haskellTargets )
-  -- CNF and Agda do not support the GADT syntax
-  , ( Option []    ["cnf"] (NoArg (\o -> o {cnf = True}))
-          "Use the CNF parser instead of happy"
-    , [TargetHaskell] )
+  -- Agda does not support the GADT syntax
   , ( Option []    ["agda"] (NoArg (\o -> o { agda = True, tokenText = TextToken }))
           "Also generate Agda bindings for the abstract syntax"
     , [TargetHaskell] )
@@ -581,6 +575,7 @@ classifyUnknownOption = \case
   "--alex2" -> supportRemovedIn290 $ "Alex version 2"
   "--alex3" -> obsolete
   s@"--sharestrings" -> optionRemovedIn290 s
+  s@"--cnf" -> optionRemovedIn290 s
   "--csharp" -> supportRemovedIn290 "C#"
   "--profile" -> supportRemovedIn290 "permutation profiles"
   _ -> unknown

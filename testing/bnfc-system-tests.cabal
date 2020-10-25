@@ -57,7 +57,6 @@ executable bnfc-system-tests
   -- Modules included in this executable, other than Main.
   other-modules:       SucceedLBNFTests
                        FailLBNFTests
-                       HaskellCnfTests
                        OutputParser
                        ParameterizedTests
                        PygmentsTests

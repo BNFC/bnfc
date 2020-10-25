@@ -47,7 +47,7 @@ exampleGrammars = map (fmap prefix) $
   , fmap ("prolog"    </>) $ Example "Prolog.cf" [ "small.pl", "simpsons.pl" ]
   , fmap ("C"         </>) $ Example "C.cf"      [ "runtime.c", "koe2.c" ]
   , fmap ("C"         </>) $ Example "C4.cf"     [ "koe2.c" ]
-  , fmap ("C"         </>) $ Example "C_with_delimiters.cf" [ "small.c" ]  -- "core.c" fails with CNF!!!
+  , fmap ("C"         </>) $ Example "C_with_delimiters.cf" [ "small.c", "core.c" ]
   , fmap ("Javalette" </>) $ Example "JavaletteLight.cf"    [ "koe.jll" ]
   , fmap ("LBNF"      </>) $ Example "LBNF.cf"   [ "LBNF.cf" ]
   , fmap ("Java"      </>) $ Example' (Excluded ["antlr"]) "java.cf"   []

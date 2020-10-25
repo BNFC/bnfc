@@ -11,8 +11,7 @@ This directory contains different grammars related to the C language:
   Developed by Ulf Persson is 2003 as part of a BSc thesis at
   Chalmers University of Technology
 ``C_with_delimiters.cf``
-  Modified Ansi C grammar to make use of ``delimiter`` pragmas (used in the CNF
-  backend).
+  Modified Ansi C grammar to make use of ``delimiter`` pragmas.
 
 And some example programs:
 

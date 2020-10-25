@@ -61,18 +61,6 @@ Source-repository this
   subdir:   source
   tag:      v2.8.4
 
-Library
-  hs-source-dirs: runtime, src
-  default-language: Haskell2010
-  Build-Depends: base>=4.8 && <5, array
-  exposed-modules:
-   Algebra.RingUtils
-   Data.Pair
-   Data.Matrix.Quad
-   Data.Matrix.Class
-   Parsing.Chart
-   Parsing.TestProgram
-
 Executable bnfc
   default-language: Haskell2010
   Build-Depends:
@@ -111,7 +99,6 @@ Executable bnfc
     -- BNFC core
     BNFC.Utils
     BNFC.CF
-    BNFC.ToCNFCore
     BNFC.Regex
     BNFC.TypeChecker
     BNFC.GetCF
@@ -124,7 +111,6 @@ Executable bnfc
     BNFC.Backend.Common.StrUtils
     BNFC.Options
     BNFC.PrettyPrint
-    Data.Pair
 
     -- Documentation backends
     BNFC.Backend.Latex
@@ -132,7 +118,6 @@ Executable bnfc
 
     -- Haskell backend
     BNFC.Backend.Haskell
-    BNFC.Backend.Haskell.ToCNF
     BNFC.Backend.Haskell.CFtoTemplate
     BNFC.Backend.Haskell.CFtoAlex3
     BNFC.Backend.Haskell.CFtoHappy
@@ -276,7 +261,6 @@ Test-suite unit-tests
     -- BNFC core
     BNFC.Utils
     BNFC.CF
-    BNFC.ToCNFCore
     BNFC.Regex
     BNFC.TypeChecker
     BNFC.GetCF
@@ -289,7 +273,6 @@ Test-suite unit-tests
     BNFC.Backend.Common.StrUtils
     BNFC.Options
     BNFC.PrettyPrint
-    Data.Pair
 
     -- Documentation backends
     BNFC.Backend.Latex
@@ -297,7 +280,6 @@ Test-suite unit-tests
 
     -- Haskell backend
     BNFC.Backend.Haskell
-    BNFC.Backend.Haskell.ToCNF
     BNFC.Backend.Haskell.CFtoTemplate
     BNFC.Backend.Haskell.CFtoAlex3
     BNFC.Backend.Haskell.CFtoHappy

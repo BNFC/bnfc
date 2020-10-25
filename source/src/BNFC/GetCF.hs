@@ -201,7 +201,7 @@ die msg = do
 
 getCF :: SharedOptions -> Abs.Grammar -> Err CF
 getCF opts (Abs.Grammar defs0) = do
-    let (defs,inlineDelims)= if cnf opts then (defs0,id) else removeDelims defs0
+    let (defs,inlineDelims)= removeDelims defs0
         (pragma,rules0)    = partitionEithers $ concat $ mapM transDef defs `runTrans` opts
         rules              = inlineDelims rules0
         reservedWords      = nub [t | r <- rules, isParsable r, Right t <- rhsRule r, not $ all isSpace t]
