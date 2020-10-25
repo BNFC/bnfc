@@ -33,10 +33,12 @@ tested-with: GHC == 7.10.3
              GHC == 8.10.2
 
 Extra-source-files:
-  src/BNF.cf
   README.md
   changelog
+  -- LICENSE is automatically included
   Makefile
+  src/BNF.cf
+  src/Makefile
   stack-8.10.2.yaml
   stack-8.8.4.yaml
   stack-8.8.3.yaml

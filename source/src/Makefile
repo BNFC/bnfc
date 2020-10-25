@@ -25,4 +25,14 @@ Abs%.hs Doc%.txt Lex%.x Par%.y Print%.hs Skel%.hs Test%.hs : %.cf
 tags :
 	hasktags -e .
 
+# Fake cabal file for old version of haskell-mode (emacs)
+#########################################################
+
+fake-cabal :
+	touch inferior-haskell-find-project-root.cabal
+
+# Remove this this file confuses tools like cabal and stack.
+rm-fake-cabal :
+	rm inferior-haskell-find-project-root.cabal
+
 #EOF

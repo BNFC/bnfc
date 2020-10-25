@@ -19,6 +19,8 @@
     Foundation, 51 Franklin Street, Fifth Floor, Boston, MA 02110-1335, USA
 -}
 
+{-# LANGUAGE OverloadedStrings #-}
+
 module BNFC.Backend.Haskell.MkErrM where
 
 import BNFC.PrettyPrint
