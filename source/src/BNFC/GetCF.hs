@@ -200,10 +200,8 @@ die msg = do
 --   Desugars and type-checks.
 
 getCF :: SharedOptions -> Abs.Grammar -> Err CF
-getCF opts (Abs.Grammar defs0) = do
-    let (defs,inlineDelims)= removeDelims defs0
-    (pragma, rules0) <- partitionEithers . concat <$> mapM transDef defs `runTrans` opts
-    let rules              = inlineDelims rules0
+getCF opts (Abs.Grammar defs) = do
+    (pragma, rules) <- partitionEithers . concat <$> mapM transDef defs `runTrans` opts
     let reservedWords      = nub [ t | r <- rules, isParsable r, Right t <- rhsRule r, not $ all isSpace t ]
           -- Issue #204: exclude keywords from internal rules
           -- Issue #70: whitespace separators should be treated like "", at least in the parser
@@ -256,31 +254,6 @@ toTokenCat _ c = c
 
 
 
-removeDelims :: [Abs.Def] -> ([Abs.Def], [Rule] -> [Rule])
-removeDelims xs = (ys ++ map delimToSep ds,
-                   foldr (.) id [map (inlineDelim' d) | d <- ds])
-  where
-    (ds,ys) = partition isDelim xs
-    isDelim (Abs.Delimiters{}) = True
-    isDelim _ = False
-
-    inlineDelim :: Abs.Def -> Either Cat String ->  [Either Cat String]
-    inlineDelim (Abs.Delimiters cat open close _ _) (Left c)
-      | c == ListCat (transCat' cat) = [Right open, Left c, Right close]
-    inlineDelim _ x = [x]
-
-    inlineDelim' :: Abs.Def -> Rule -> Rule
-    inlineDelim' d@(Abs.Delimiters cat _ _ _ _) r@(Rule f c rhs internal)
-      | wpThing c == ListCat (transCat' cat) = r
-      | otherwise = Rule f c (concatMap (inlineDelim d) rhs) internal
-    inlineDelim' _ _ = error "Not a delimiters pragma"
-
-
-    delimToSep (Abs.Delimiters cat _ _ (Abs.SepTerm  s) sz) = Abs.Terminator sz cat s
-    delimToSep (Abs.Delimiters cat _ _ (Abs.SepSepar s) sz) = Abs.Separator  sz cat s
-    delimToSep (Abs.Delimiters cat _ _  Abs.SepNone     sz) = Abs.Terminator sz cat ""
-    delimToSep x = x
-
 -- | Translation monad.
 newtype Trans a = Trans { unTrans :: ReaderT SharedOptions Err a }
   deriving (Functor, Applicative, Monad, MonadReader SharedOptions, MonadError String)
@@ -307,7 +280,10 @@ transDef = \case
     Abs.Entryp cats               -> singleton . Left . EntryPoints <$> mapM transCat cats
     Abs.Separator size ident str  -> map Right <$> separatorRules size ident str
     Abs.Terminator size ident str -> map Right <$> terminatorRules size ident str
-    Abs.Delimiters a b c d e      -> map Right <$> delimiterRules a b c d e
+    Abs.Delimiters cat _ _ _ _    -> do
+      WithPosition pos _ <- transCat cat
+      throwError $ blendInPosition $ WithPosition pos $
+        "The delimiters pragma " ++ removedIn290
     Abs.Coercions ident int       -> map Right <$> coercionRules ident int
     Abs.Rules ident strs          -> map Right <$> ebnfRules ident strs
     Abs.Layout ss                 -> return [ Left $ Layout ss ]
@@ -317,54 +293,6 @@ transDef = \case
       f <- transIdent ident
       let xs' = map transArg xs
       return [ Left $ FunDef f xs' $ transExp xs' e ]
-
-delimiterRules :: Abs.Cat -> String -> String -> Abs.Separation -> Abs.MinimumSize -> Trans [Rule]
-delimiterRules a0 l r (Abs.SepTerm  "") size = delimiterRules a0 l r Abs.SepNone size
-delimiterRules a0 l r (Abs.SepSepar "") size = delimiterRules a0 l r Abs.SepNone size
-delimiterRules a0 l r sep size = do
-  WithPosition pos a <- transCat a0
-  let as = ListCat a
-      a' = '@':'@':show a
-      c  = '@':'{':show a
-      d  = '@':'}':show a
-  let wp = WithPosition pos
-      rule f c = Rule (wp f) (wp c)
-  return $ concat
-   -- recognizing a single element
-    [ [ rule "(:[])"  (strToCat a')  (Left a : termin) Parsable -- optional terminator/separator
-
-      -- glueing two sublists
-      , rule "(++)"   (strToCat a')  [Left (strToCat a'), Left (strToCat a')] Parsable
-
-       -- starting on either side with a delimiter
-      , rule "[]"     (strToCat c)   [Right l] Parsable
-      , rule (if optFinal then "(:[])" else "[]")
-                      (strToCat d)   ([Left a | optFinal] ++ [Right r]) Parsable
-
-       -- gathering chains
-      , rule "(++)"   (strToCat c)   [Left (strToCat c), Left (strToCat a')] Parsable
-      , rule "(++)"   (strToCat d)   [Left (strToCat a'), Left (strToCat d)] Parsable
-
-       -- finally, put together left and right chains
-      , rule "(++)"   as  [Left (strToCat c), Left (strToCat d)] Parsable
-      ]
-      -- special rule for the empty list if necessary
-    , [ rule "[]"     as  [Right l, Right r] Parsable | optEmpty ]
-    ]
-  where
-  -- optionally separated concat. of x and y categories.
-  termin = case sep of
-     Abs.SepSepar t -> [Right t]
-     Abs.SepTerm  t -> [Right t]
-     _ -> []
-  optFinal = case (sep, size) of
-    (Abs.SepSepar _, _             ) -> True
-    (Abs.SepTerm _ , Abs.MNonempty ) -> True
-    (Abs.SepNone   ,  Abs.MNonempty) -> True
-    _ -> False
-  optEmpty = case sep of
-    Abs.SepSepar _ -> size == Abs.MEmpty
-    _ -> False
 
 -- | Translate @separator [nonempty] C "s"@.
 --   The position attached to the generated rules is taken from @C@.

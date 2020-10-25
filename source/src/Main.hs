@@ -1,7 +1,7 @@
 {-
     BNF Converter: Main file
     Copyright (C) 2002-2013  Authors:
-    Jonas Almström Duregård, Krasimir Angelov, Jean-Philippe Bernardy, Björn Bringert, Johan Broberg, Paul Callaghan,
+    Jonas Almström Duregård, Krasimir Angelov, Björn Bringert, Johan Broberg, Paul Callaghan,
     Grégoire Détrez, Markus Forsberg, Ola Frid, Peter Gammie, Thomas Hallgren, Patrik Jansson,
     Kristofer Johannisson, Antti-Juhani Kaijanaho, Ulf Norell,
     Michael Pellauer and Aarne Ranta 2002 - 2013.

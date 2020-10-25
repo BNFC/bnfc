@@ -12,6 +12,7 @@ module BNFC.Options
   , defaultOptions, isDefault, printOptions
   , AlexVersion(..), HappyMode(..), OCamlParser(..), JavaLexerParser(..)
   , RecordPositions(..), TokenText(..)
+  , removedIn290
   , translateOldOptions
   )
   where
@@ -584,9 +585,12 @@ classifyUnknownOption = \case
   obsolete = Right ObsoleteOption
   removed  = Left . Right . RemovedOption
   supportRemovedIn290 feature = removed $
-    unwords [ "Support for", feature, "has been removed in version 2.9.0." ]
+    unwords [ "Support for", feature, removedIn290 ]
   optionRemovedIn290 o = removed $
-    unwords [ "Option", o, "has been removed in version 2.9.0." ]
+    unwords [ "Option", o, removedIn290 ]
+
+removedIn290 :: String
+removedIn290 = "has been removed in version 2.9.0."
 
 -- | A translation function to maintain backward compatibility
 --   with the old option syntax.

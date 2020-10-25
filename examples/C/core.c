@@ -1,5 +1,3 @@
-__BEGIN_PROGRAM
-
 /*
  *  kernel/sched/core.c
  *
@@ -1116,7 +1114,7 @@ out:
 /*
  * The caller (fork, wakeup) owns p->pi_lock, ->cpus_allowed is stable.
  */
-static 
+static
 int select_task_rq(struct task_struct *p, int sd_flags, int wake_flags)
 {
 	int cpu = p->sched_class->select_task_rq(p, sd_flags, wake_flags);
@@ -7752,6 +7750,3 @@ void cpuacct_charge(struct task_struct *tsk, int cputime)
 
 	rcu_read_unlock();
 }
-
-
-__END_PROGRAM

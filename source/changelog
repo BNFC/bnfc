@@ -1,4 +1,5 @@
 2.9.0 Andreas Abel <andreas.abel@gu.se>
+	* LBNF: removed `delimiters` pragma
 	* Haskell: removed options --alex1, --alex2, --sharestrings, --profile, and --cnf
 	* C#: backend removed
 
