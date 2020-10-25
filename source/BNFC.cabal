@@ -34,6 +34,7 @@ tested-with: GHC == 7.10.3
 
 Extra-source-files:
   src/BNF.cf
+  README.md
   changelog
   Makefile
   stack-8.10.2.yaml

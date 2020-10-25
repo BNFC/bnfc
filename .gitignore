@@ -100,3 +100,5 @@ cabal.sandbox.config
 /testing/regression-tests/*_*/xml*/
 /testing/regression-tests/*_*/*-save/
 
+/docs/Calc/
+/examples/C/with-delimiters/
