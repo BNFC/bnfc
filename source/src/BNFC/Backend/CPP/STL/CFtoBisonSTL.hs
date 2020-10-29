@@ -125,7 +125,6 @@ header inPackage name cf = unlines
     , "}"
     , "void " ++ ns ++ "yyerror(const char *str)"
     , "{"
-    , "  extern char *"++ns++"yytext;"
     , "  throw "++ns++"::parse_error("++ ns ++ "yy_mylinenumber,str);"
     , "}"
     , ""
