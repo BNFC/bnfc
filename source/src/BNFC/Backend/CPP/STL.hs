@@ -140,7 +140,7 @@ cpptest inPackage cf =
     "    }",
     "  } else input = stdin;",
     "  /* The default entry point is used. For other options see Parser.H */",
-    "  " ++ scope ++ dat ++ " *parse_tree = nullptr;",
+    "  " ++ scope ++ dat ++ " *parse_tree = NULL;",
     "  try { ",
     "  parse_tree = " ++ scope ++ "p" ++ def ++ "(input);",
     "  } catch( " ++ scope ++ "parse_error &e) {",
