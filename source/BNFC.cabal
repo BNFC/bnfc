@@ -218,6 +218,7 @@ Test-suite unit-tests
     time
   if impl(ghc < 8.0)
     Build-Depends: semigroups
+  build-tools:         alex, happy
   Main-is: unit-tests.hs
   HS-source-dirs: src test
   ghc-options:     -W
