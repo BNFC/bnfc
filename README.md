@@ -103,8 +103,8 @@ Mini tutorial
   (`gcc` / `g++`), lexer generator `flex` and parser generator `bison`,
   are usually present):
   ```
-  bnfc --c   -m -o sum-c    &&  make -C sum-c    &&  echo "1 + 2 + 3" | sum-c/TestSum
-  bnfc --cpp -m -o sum-cpp  &&  make -C sum-cpp  &&  echo "1 + 2 + 3" | sum-cpp/TestSum
+  bnfc --c   -m -o sum-c   Sum.cf  &&  make -C sum-c    &&  echo "1 + 2 + 3" | sum-c/TestSum
+  bnfc --cpp -m -o sum-cpp Sum.cf  &&  make -C sum-cpp  &&  echo "1 + 2 + 3" | sum-cpp/TestSum
   ```
 
 - Try the other backends:
