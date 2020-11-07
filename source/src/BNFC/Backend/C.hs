@@ -138,7 +138,7 @@ ctest cf =
     "  printf(\"usage: Call with one of the following argument " ++
       "combinations:\\n\");",
     "  printf(\"\\t--help\\t\\tDisplay this help message.\\n\");",
-    "  printf(\"\\t(no arguments)\tParse stdin verbosely.\\n\");",
+    "  printf(\"\\t(no arguments)\\tParse stdin verbosely.\\n\");",
     "  printf(\"\\t(files)\\t\\tParse content of files verbosely.\\n\");",
     "  printf(\"\\t-s (files)\\tSilent mode. Parse content of files " ++
       "silently.\\n\");",
