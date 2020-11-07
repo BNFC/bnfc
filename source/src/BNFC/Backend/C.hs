@@ -69,6 +69,9 @@ makefile :: String -> String -> String -> Doc
 makefile name prefix basename = vcat
     [ "CC = gcc -g"
     , "CCFLAGS = --ansi -W -Wall -Wno-unused-parameter -Wno-unused-function -Wno-unneeded-internal-declaration -D_POSIX_C_SOURCE=200809L ${CC_OPTS}"
+    , "# Setting _POSIX_C_SOURCE to 200809L activates strdup in string.h."
+    , "# strdup was not in the ISO C standard before 6/2019 (C2x), yet in POSIX 1003.1."
+    , "# See https://en.cppreference.com/w/c/experimental/dynamic/strdup"
     , ""
     , "FLEX = flex"
     , "FLEX_OPTS = -P" <> text prefix
