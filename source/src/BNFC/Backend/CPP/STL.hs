@@ -144,7 +144,7 @@ cpptest inPackage cf =
     "  try { ",
     "  parse_tree = " ++ scope ++ "p" ++ def ++ "(input);",
     "  } catch( " ++ scope ++ "parse_error &e) {",
-    "     std::cerr << \"Parse error on line \" << e.getLine(); ",
+    "     std::cerr << \"Parse error on line \" << e.getLine() << \"\\n\"; ",
     "  }",
     "  if (parse_tree)",
     "  {",
