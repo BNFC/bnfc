@@ -16,7 +16,8 @@ absFile, absFileM,
  templateFile, templateFileM,
  printerFile, printerFileM,
  layoutFile, layoutFileM,
- tFile, tFileExe :: Options -> String
+ tFile, tFileM, tFileExe
+  :: Options -> String
 absFile       = mkFile withLang "Abs" "hs"
 absFileM      = mkMod  withLang "Abs"
 alexFile      = mkFile withLang "Lex" "x"
@@ -31,6 +32,7 @@ templateFileM = mkMod  withLang "Skel"
 printerFile   = mkFile withLang "Print" "hs"
 printerFileM  = mkMod  withLang "Print"
 tFile         = mkFile withLang "Test" "hs"
+tFileM        = mkMod  withLang "Test"
 tFileExe      = mkFile withLang "Test" ""
 errFile       = mkFile noLang   "ErrM" "hs"
 errFileM      = mkMod  noLang   "ErrM"
