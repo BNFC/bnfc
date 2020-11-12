@@ -1,8 +1,9 @@
-module BNFC.Backend.Java.RegToAntlrLexer (printRegJLex, escapeChar) where
+module BNFC.Backend.Java.RegToAntlrLexer (printRegJLex, escapeCharInSingleQuotes) where
 
 -- modified from RegToJLex.hs
 
 import Data.Char (ord, showLitChar)
+import Numeric (showHex)
 
 import AbsBNF
 
@@ -31,25 +32,30 @@ parenth ss = ["("] ++ ss ++ [")"]
 -- the printer class does the job
 class Print a where
   prt :: Int -> a -> [String]
-  prtList :: [a] -> [String]
-  prtList = concatMap (prt 0)
 
-instance Print a => Print [a] where
-  prt _ = prtList
-
-instance Print Char where
-  prt _ c = [escapeChar c]
-  prtList = map (concat . prt 0)
-
-escapeChar :: Char -> String
-escapeChar x
+-- | Print char according to ANTLR regex format.
+escapeChar :: String -> Char -> String
+escapeChar reserved x
   | x `elem` reserved = '\\' : [x]
-  | ord x >= 256      = [x]
+  | ord x >= 65536    = "\\u{" ++ h ++ "}"
+  | ord x >= 256      = "\\u" ++ replicate (4 - length h) '0' ++ h
   | otherwise         = showLitChar x ""
+  where
+  h = showHex (ord x) ""
 
--- Characters that must be escaped in ANTLR regular expressions
-reserved :: [Char]
-reserved = ['\'','\\']
+-- | Escape character for use inside single quotes.
+escapeCharInSingleQuotes :: Char -> String
+escapeCharInSingleQuotes = escapeChar ['\'','\\']
+
+-- The ANTLR definition of what can be in a [char set] is here:
+-- https://github.com/antlr/antlr4/blob/master/doc/lexer-rules.md#lexer-rule-elements
+-- > The following escaped characters are interpreted as single special characters:
+-- > \n, \r, \b, \t, \f, \uXXXX, and \u{XXXXXX}.
+-- > To get ], \, or - you must escape them with \.
+
+-- | Escape character for use inside @[char set]@.
+escapeInCharSet :: Char -> String
+escapeInCharSet = escapeChar [ ']', '\\', '-' ]
 
 prPrec :: Int -> Int -> [String] -> [String]
 prPrec i j = if j<i then parenth else id
@@ -60,26 +66,24 @@ instance Print Identifier where
 instance Print Reg where
   prt i e = case e of
    RSeq reg0 reg
-              -> prPrec i 2 (concat [prt 2 reg0 , prt 3 reg])
+              -> prPrec i 2 (concat [prt 2 reg0 , [" "], prt 3 reg])
    RAlt reg0 reg
               -> prPrec i 1 (concat [prt 1 reg0 , ["|"] , prt 2 reg])
-   -- JLex does not support set difference
-   --RMinus reg0 reg -> prPrec i 1 (concat [prt 2 reg0 , ["#"] , prt 2 reg])
    RMinus reg0 REps -> prt i reg0 -- REps is identity for set difference
-   RMinus RAny reg@(RChar _)
-              ->  prPrec i 3 (concat [["~["],prt 0 reg,["]"]])
+   RMinus RAny (RChar c)
+              -> ["~'", escapeCharInSingleQuotes c, "'"]
    RMinus RAny (RAlts str)
-              ->  prPrec i 3 (concat [["~["],prt 0 str,["]"]])
+              -> concat [["~["], map escapeInCharSet str ,["]"]]
    RMinus _ _ -> error "Antlr does not support general set difference"
-   RStar reg  -> prPrec i 3 (concat [prt 3 reg , ["*"]])
-   RPlus reg  -> prPrec i 3 (concat [prt 3 reg , ["+"]])
-   ROpt reg   -> prPrec i 3 (concat [prt 3 reg , ["?"]])
-   REps       -> prPrec i 3 [""]
-   RChar c    -> prPrec i 3 (concat [["'"], prt 0 c, ["'"]])
-   RAlts str  -> prPrec i 3 (concat [["["],prt 0 str,["]"]])
+   RStar reg  -> concat [prt 3 reg , ["*"]]
+   RPlus reg  -> concat [prt 3 reg , ["+"]]
+   ROpt reg   -> concat [prt 3 reg , ["?"]]
+   REps       -> [""]
+   RChar c    -> ["'", escapeCharInSingleQuotes c, "'"]
+   RAlts str  -> concat [ ["["], map escapeInCharSet str, ["]"] ]
    RSeqs str  -> prPrec i 2 $ map show str
-   RDigit     -> prPrec i 3 ["DIGIT"]
-   RLetter    -> prPrec i 3 ["LETTER"]
-   RUpper     -> prPrec i 3 ["CAPITAL"]
-   RLower     -> prPrec i 3 ["SMALL"]
-   RAny       -> prPrec i 3 ["[\\u0000-\\u00FF]"]
+   RDigit     -> ["DIGIT"]
+   RLetter    -> ["LETTER"]
+   RUpper     -> ["CAPITAL"]
+   RLower     -> ["SMALL"]
+   RAny       -> ["[\\u0000-\\u00FF]"]

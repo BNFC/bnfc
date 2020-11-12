@@ -1,4 +1,5 @@
 {-# LANGUAGE NoImplicitPrelude #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 {-
     BNF Converter: Java Antlr4 Lexer generator
@@ -91,7 +92,7 @@ cMacros = vcat
   where frg a = "fragment" <+> a <+> ";"
 
 escapeChars :: String -> String
-escapeChars = concatMap escapeChar
+escapeChars = concatMap escapeCharInSingleQuotes
 
 -- |
 -- >>> lexSymbols [("foo","bar")]
@@ -154,7 +155,7 @@ restOfLexerGrammar cf = vcat
         , "mode STRINGMODE;"
         , "STRINGESC : '\\\\' -> more , pushMode(STRESCAPE);"
         , "STRINGEND : '\"' ->  type(STRING), mode(DEFAULT_MODE);"
-        , "STRINGTEXT : ~[\\\"\\\\] -> more;"
+        , "STRINGTEXT : ~[\"\\\\] -> more;"
         ]
     charmodes     = [ "mode CHARMODE;"
         , "CHARANY     :  ~[\\'\\\\] -> more, mode(CHAREND);"
