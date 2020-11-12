@@ -14,9 +14,6 @@ import LexBNF
 %name pCat Cat
 %name pListCat ListCat
 %name pLabel Label
-%name pIntList IntList
-%name pListInteger ListInteger
-%name pListIntList ListIntList
 %name pArg Arg
 %name pListArg ListArg
 %name pSeparation Separation
@@ -147,19 +144,6 @@ Label : Identifier { AbsBNF.Id $1 }
       | '[' ']' { AbsBNF.ListE }
       | '(' ':' ')' { AbsBNF.ListCons }
       | '(' ':' '[' ']' ')' { AbsBNF.ListOne }
-
-IntList :: { AbsBNF.IntList }
-IntList : '[' ListInteger ']' { AbsBNF.Ints $2 }
-
-ListInteger :: { [Integer] }
-ListInteger : {- empty -} { [] }
-            | Integer { (:[]) $1 }
-            | Integer ',' ListInteger { (:) $1 $3 }
-
-ListIntList :: { [AbsBNF.IntList] }
-ListIntList : {- empty -} { [] }
-            | IntList { (:[]) $1 }
-            | IntList ',' ListIntList { (:) $1 $3 }
 
 Arg :: { AbsBNF.Arg }
 Arg : Identifier { AbsBNF.Arg $1 }

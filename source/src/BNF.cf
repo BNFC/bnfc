@@ -50,11 +50,6 @@ ListE    . Label ::= "[" "]"             ;  -- Empty list
 ListCons . Label ::= "(" ":" ")"         ;  -- Cons
 ListOne  . Label ::= "(" ":" "[" "]" ")" ;  -- Singleton list
 
-Ints     . IntList ::= "[" [Integer] "]" ;
-
-separator Integer "," ;
-separator IntList "," ;
-
 -- Pragmas
 Comment  .  Def ::= "comment"  String                     ; -- Line comment
 Comments .  Def ::= "comment"  String String              ; -- Block comment

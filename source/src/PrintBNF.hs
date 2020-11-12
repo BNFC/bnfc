@@ -93,9 +93,6 @@ prPrec i j = if j < i then parenth else id
 
 instance Print Integer where
   prt _ x = doc (shows x)
-  prtList _ [] = concatD []
-  prtList _ [x] = concatD [prt 0 x]
-  prtList _ (x:xs) = concatD [prt 0 x, doc (showString ","), prt 0 xs]
 
 instance Print Double where
   prt _ x = doc (shows x)
@@ -161,19 +158,6 @@ instance Print AbsBNF.Label where
     AbsBNF.ListE -> prPrec i 0 (concatD [doc (showString "["), doc (showString "]")])
     AbsBNF.ListCons -> prPrec i 0 (concatD [doc (showString "("), doc (showString ":"), doc (showString ")")])
     AbsBNF.ListOne -> prPrec i 0 (concatD [doc (showString "("), doc (showString ":"), doc (showString "["), doc (showString "]"), doc (showString ")")])
-
-instance Print AbsBNF.IntList where
-  prt i e = case e of
-    AbsBNF.Ints ns -> prPrec i 0 (concatD [doc (showString "["), prt 0 ns, doc (showString "]")])
-  prtList _ [] = concatD []
-  prtList _ [x] = concatD [prt 0 x]
-  prtList _ (x:xs) = concatD [prt 0 x, doc (showString ","), prt 0 xs]
-
-instance Print [Integer] where
-  prt = prtList
-
-instance Print [AbsBNF.IntList] where
-  prt = prtList
 
 instance Print AbsBNF.Arg where
   prt i e = case e of

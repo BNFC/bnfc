@@ -40,9 +40,6 @@ data Cat = ListCat Cat | IdCat Identifier
 data Label = Id Identifier | Wild | ListE | ListCons | ListOne
   deriving (C.Eq, C.Ord, C.Show, C.Read)
 
-data IntList = Ints [Integer]
-  deriving (C.Eq, C.Ord, C.Show, C.Read)
-
 data Arg = Arg Identifier
   deriving (C.Eq, C.Ord, C.Show, C.Read)
 

@@ -1045,26 +1045,6 @@ All other symbols are terminals
         | ( : )
         | ( : [ ] )
 
-    <ProfItem>
-      ::= ( [ <ListIntList> ] , [ <ListInteger> ] )
-
-    <IntList>
-      ::= [ <ListInteger> ]
-
-    <ListInteger>
-      ::= ε
-        | <Integer>
-        | <Integer> , <ListInteger>
-
-    <ListIntList>
-      ::= ε
-        | <IntList>
-        | <IntList> , <ListIntList>
-
-    <ListProfItem>
-      ::= <ProfItem>
-        | <ProfItem> <ListProfItem>
-
     <ListString>
       ::= <String>
         | <String> , <ListString>
