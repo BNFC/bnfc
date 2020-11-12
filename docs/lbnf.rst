@@ -63,7 +63,7 @@ have the following form (expressed by a regular expression; the
 :ref:`appendix`
 gives a complete BNF definition of the notation)::
 
-    Ident "." Ident "::=" (Ident | String)* ";"
+    Identifier "." Identifier "::=" (Identifier | String)* ";"
 
 The first identifier is the *rule
 label*, followed by the *value category*. On the right-hand side of the
@@ -151,7 +151,7 @@ expression syntax):
   ``'\'' ((char - ["'\\"]) | ('\\' ["'\\tnrf"])) '\''``
 * Type ``String`` of strings (in double quotes), defined
   ``'"' ((char - ["\"\\"]) | ('\\' ["\"\\tnrf"]))* '"'``
-* Type ``Ident`` of identifiers, defined ``letter (letter | digit | '_')*``
+* Type ``Ident`` of (Haskell) identifiers, defined ``letter (letter | digit | '_' | '\'')*``
 
 In the abstract syntax, these types are represented as corresponding
 types of each language, except ``Ident``, for which no such type exists. It
@@ -503,7 +503,7 @@ where Rule is a normal LBNF rule. For instance,
 
 ::
 
-      internal EVarT. Exp ::= "(" Ident ":" Type ")";
+      internal EVarT. Exp ::= "(" Identifier ":" Type ")";
 
 introduces a type-annotated variant of a variable expression.
 
@@ -1008,15 +1008,15 @@ All other symbols are terminals
         | separator  <MinimumSize> <Cat> <String>
         | terminator <MinimumSize> <Cat> <String>
 
-        | coercions <Ident> <Integer>
+        | coercions <Identifier> <Integer>
 
-        | rules <Ident> ::= <ListRHS>
+        | rules <Identifier> ::= <ListRHS>
 
         | comment <String>
         | comment <String> <String>
 
-        |          token <Ident> <Reg>
-        | position token <Ident> <Reg>
+        |          token <Identifier> <Reg>
+        | position token <Identifier> <Reg>
 
         | layout <ListString>
         | layout stop <ListString>
@@ -1036,10 +1036,10 @@ All other symbols are terminals
 
     <Cat>
       ::= [ <Cat> ]
-        | <Ident>
+        | <Identifier>
 
     <Label>
-      ::= <Ident>
+      ::= <Identifier>
         | _
         | [ ]
         | ( : )
