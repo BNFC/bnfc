@@ -68,7 +68,7 @@ cf2CPrinter cf = (mkHFile cf groups, mkCFile cf groups)
 
 {- **** Header (.h) File Methods **** -}
 
--- | An extremely large function to make the Header File.
+-- | Make the Header File.
 
 mkHFile :: CF -> [(Cat,[Rule])] -> String
 mkHFile cf groups = unlines
@@ -98,7 +98,7 @@ mkHFile cf groups = unlines
     "#include \"Absyn.h\"",
     "",
     "/* Certain applications may improve performance by changing the buffer size */",
-    "#define BUFFER_INITIAL 2000",
+    "#define BUFFER_INITIAL 2048",
     "/* You may wish to change _L_PAREN or _R_PAREN */",
     "#define _L_PAREN '('",
     "#define _R_PAREN ')'",
@@ -288,7 +288,7 @@ mkCFile cf groups = concat
       "{",
       "  int len = strlen(s);",
       "  int n;",
-      "  while (cur_ + len > buf_size)",
+      "  while (cur_ + len >= buf_size)",
       "  {",
       "    buf_size *= 2; /* Double the buffer size */",
       "    resizeBuffer();",
@@ -302,7 +302,7 @@ mkCFile cf groups = concat
       "}",
       "void bufAppendC(const char c)",
       "{",
-      "  if (cur_ == buf_size)",
+      "  if (cur_ + 1 >= buf_size)",
       "  {",
       "    buf_size *= 2; /* Double the buffer size */",
       "    resizeBuffer();",
