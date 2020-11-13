@@ -1,6 +1,10 @@
 -- Issue #110: backslash in keyword
 
-Start. S ::= Name "/\\" Name;
+Start. S ::= Name "/\\" Name "and" Triple;
+
+-- Issue #319: quotation rule in ANTLR lexer definition
+
+token Triple upper letter ["]-\'"] '\'';
 
 -- Issue #256: iterated difference
 -- Issue #276: whitespace characters in character class
