@@ -1,6 +1,6 @@
 -- Issue #110: backslash in keyword
 
-Start. S ::= Name "/\\" Name "and" Triple;
+Start. Main ::= Name "/\\" Name "and" Triple;
 
 -- Issue #319: quotation rule in ANTLR lexer definition
 
@@ -10,3 +10,35 @@ token Triple upper letter ["]-\'"] '\'';
 -- Issue #276: whitespace characters in character class
 
 token Name (char - [ "(){};.@\"" ] - [ " \n\t" ]) + ;
+
+-- Re issue #322: Try to provoke clashes with BNFC character classes
+-- in generated ocamllex definition.
+
+token Letter  {"letter1"};
+token L       {"letter2"};
+token Alpha   {"letter3"};
+token A       {"letter4"};
+
+token Upper   {"upper1"};
+token U       {"upper2"};
+token Captial {"upper3"};
+token C       {"upper4"};
+
+token Lower   {"lower1"};
+-- token L       {"lower2"};
+token Small   {"lower3"};
+token S       {"lower4"};
+
+token Digit   {"digit1"};
+token D       {"digit2"};
+token Num     {"digit3"};
+token Number  {"digit4"};
+token Numberic{"digit5"};
+token N       {"digit6"};
+
+token Int     {"int1"};
+token I       {"int2"};
+
+token Universal {"universal1"};
+token Uni       {"universal2"};
+-- token U         {"universal3"};
