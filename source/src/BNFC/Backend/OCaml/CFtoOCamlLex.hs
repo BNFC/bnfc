@@ -26,6 +26,7 @@ module BNFC.Backend.OCaml.CFtoOCamlLex (cf2ocamllex) where
 
 import Prelude hiding ((<>))
 
+import Data.Char (ord)
 import qualified Data.List as List
 import Text.PrettyPrint hiding (render)
 import qualified Text.PrettyPrint as PP
@@ -169,10 +170,10 @@ mkRegexSingleLineComment s = cstring s <+> "(_ # '\\n')*"
 
 -- | Create regex for multiline comments.
 -- >>> mkRegexMultilineComment "<!--" "-->"
--- "<!--" (u # '-')* '-' ((u # '-')+ '-')* '-' ((u # ['-''>']) (u # '-')* '-' ((u # '-')+ '-')* '-' | '-')* '>'
+-- "<!--" [^ '-']* '-' ([^ '-']+ '-')* '-' ([^ '-' '>'][^ '-']* '-' ([^ '-']+ '-')* '-' | '-')* '>'
 --
 -- >>> mkRegexMultilineComment "\"'" "'\""
--- "\"'" (u # '\'')* '\'' ((u # ['"''\'']) (u # '\'')* '\'' | '\'')* '"'
+-- "\"'" [^ '\'']* '\'' ([^ '"' '\''][^ '\'']* '\'' | '\'')* '"'
 mkRegexMultilineComment :: String -> String -> Doc
 mkRegexMultilineComment b e = text $ printRegOCaml $ mkRegMultilineComment b e
 
@@ -262,8 +263,13 @@ instance Print a => Print [a] where
   prt _ = prtList
 
 instance Print Char where
-  prt _ c = [show c]   -- if isAlphaNum c then [[c]] else ['\\':[c]]
+  prt _ c   = [charLiteral c]
   prtList s = [show s] -- map (concat . prt 0) s
+
+charLiteral :: Char -> String
+charLiteral c
+  | ord c <= 256 = show c
+  | otherwise    = ['"', c, '"']  -- ocamllex does not accept unicode character literals
 
 prPrec :: Int -> Int -> [String] -> [String]
 prPrec i j = if j<i then parenth else id
@@ -275,17 +281,21 @@ instance Print Reg where
   prt i e = case e of
    RSeq reg0 reg   -> prPrec i 2 (concat [prt 2 reg0 , prt 3 reg])
    RAlt reg0 reg   -> prPrec i 1 (concat [prt 1 reg0 , ["|"] , prt 2 reg])
+   RMinus RAny (RChar c) -> ["[^", charLiteral c, "]"]
+   RMinus RAny (RAlts str) -> concat [ ["[^"], map charLiteral str, ["]"] ]
    RMinus reg0 reg -> prPrec i 1 (concat [prt 2 reg0 , ["#"] , prt 2 reg])
-   RStar reg       -> prPrec i 3 (concat [prt 3 reg , ["*"]])
-   RPlus reg       -> prPrec i 3 (concat [prt 3 reg , ["+"]])
-   ROpt reg        -> prPrec i 3 (concat [prt 3 reg , ["?"]])
-   REps            -> prPrec i 3 (["\"\""])  -- special construct for eps in ocamllex?
-   RChar c         -> prPrec i 3 (concat [prt 0 c])
-   RAlts str       -> prPrec i 3 (concat [["["], [concatMap show str], ["]"]])
+   RStar reg       -> concat [prt 3 reg , ["*"]]
+   RPlus reg       -> concat [prt 3 reg , ["+"]]
+   ROpt reg        -> concat [prt 3 reg , ["?"]]
+   REps            -> ["\"\""]
+   RChar c         -> [ charLiteral c ]
+   -- ocamllex accepts unicode characters only in string literals.
+   -- Thus we translate RAlts to a disjunction rather than a character set
+   RAlts str       -> prPrec i 1 $ List.intersperse "|" $ map charLiteral str
+   -- RAlts str       -> concat [ ["["], map charLiteral str, ["]"] ]
    RSeqs str       -> [ show str ]
-   -- RSeqs str       -> prPrec i 2 (concat (map (prt 0) str))
-   RDigit          -> prPrec i 3 (concat [["d"]])
-   RLetter         -> prPrec i 3 (concat [["l"]])
-   RUpper          -> prPrec i 3 (concat [["c"]])
-   RLower          -> prPrec i 3 (concat [["s"]])
-   RAny            -> prPrec i 3 (concat [["u"]])
+   RDigit          -> ["d"]
+   RLetter         -> ["l"]
+   RUpper          -> ["c"]
+   RLower          -> ["s"]
+   RAny            -> ["u"]
