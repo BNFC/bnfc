@@ -49,14 +49,14 @@ simpReg = rloop
     RPlus  r     -> Rx $ rPlus $ rloop r
     ROpt   r     -> Rx $ rOpt  $ rloop r
     REps         -> Rx $ REps
-    RSeqs ""     -> Rx $ REps
-    RSeqs [c]    -> CC $ cChar c
-    RSeqs s      -> Rx $ RSeqs s
+    RSeqs []     -> Rx $ REps
+    RSeqs s@(_:_:_) -> Rx $ RSeqs s
     -- Possibly character classes:
     RSeq   r1 r2 -> loop r1 `rcSeq`   loop r2
     RAlt   r1 r2 -> loop r1 `rcAlt`   loop r2
     RMinus r1 r2 -> loop r1 `rcMinus` loop r2
     -- Definitely character classes:
+    RSeqs [c]    -> CC $ cChar c
     RChar c      -> CC $ cChar c
     RAlts s      -> CC $ cAlts s
     RDigit       -> CC $ cDigit
