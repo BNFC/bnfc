@@ -20,6 +20,7 @@
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE PatternSynonyms #-}
 
 module BNFC.Utils
     ( ModuleName
@@ -43,18 +44,22 @@ import Control.Arrow   ((&&&))
 import Control.DeepSeq (rnf)
 
 import Data.Char
-import Data.List       (intercalate)
-import Data.Semigroup  (Semigroup(..))
+import Data.List          (intercalate)
+import Data.List.NonEmpty (pattern (:|), (<|))
+import Data.Semigroup     (Semigroup(..))
 import Data.Time
 
-import qualified Data.Foldable as Fold
-import qualified Data.Map      as Map
-import qualified Data.Set      as Set
+import qualified Data.Foldable      as Fold
+import qualified Data.Map           as Map
+import qualified Data.Set           as Set
+import qualified Data.List.NonEmpty as List1
 
 import System.IO       (IOMode(ReadMode),hClose,hGetContents,openFile)
 import System.IO.Error (tryIOError)
 
 import BNFC.PrettyPrint hiding ((<>))
+
+type List1 = List1.NonEmpty
 
 -- | The name of a module, e.g. "Foo.Abs", "Foo.Print" etc.
 type ModuleName = String
@@ -196,20 +201,20 @@ replace :: Eq a =>
         -> [a] -> [a]
 replace x y xs = [ if z == x then y else z | z <- xs]
 
--- | Returns all elements whose normal form appears more than once.
+-- | Returns lists of elements whose normal form appears more than once.
 --
---   E.g. @duplicatesOn abs [5,-5,1] = [-5,5]@.
-duplicatesOn :: (Foldable t, Ord a, Ord b) => (a -> b) -> t a -> [a]
+-- >>> duplicatesOn id  [5,1,2,5,1]
+-- [1 :| [1],5 :| [5]]
+-- >>> duplicatesOn abs [5,-5,1]
+-- [5 :| [-5]]
+duplicatesOn :: (Foldable t, Ord b) => (a -> b) -> t a -> [List1 a]
 duplicatesOn nf
-    -- Flatten.
-  = concat
     -- Keep groups of size >= 2.
-  . filter ((2 <=) . length)
-    -- Turn into a list of lists: elements grouped by their normal form.
-  . map Set.toList
+  = filter ((2 <=) . List1.length)
+    -- Turn into a list of listss: elements grouped by their normal form.
   . Map.elems
     -- Partition elements by their normal form.
-  . Fold.foldl (\ m a -> Map.insertWith Set.union (nf a) (Set.singleton a) m) Map.empty
+  . Fold.foldr (\ a -> Map.insertWith (<>) (nf a) (a :| [])) Map.empty
 
 -- * Time utilities
 

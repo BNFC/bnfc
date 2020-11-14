@@ -1,0 +1,5 @@
+-- Andreas Abel, 2020-11-14
+-- Raise error if token category is defined twice
+
+token L {"a"};
+token L {"b"};

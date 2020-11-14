@@ -1,0 +1,3 @@
+ERROR: duplicate token definitions:
+  L at fail-lbnf/323-duplicate-token-definitions.cf:4:7: fail-lbnf/323-duplicate-token-definitions.cf:5:7:
+Aborting. (Use option --force to continue despite errors.)

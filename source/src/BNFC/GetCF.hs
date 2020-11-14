@@ -20,6 +20,7 @@
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TupleSections #-}
 
@@ -39,7 +40,9 @@ import Data.Char
 import Data.Either  (partitionEithers)
 import Data.Functor (($>)) -- ((<&>)) -- only from ghc 8.4
 import Data.List    (nub, partition)
+import Data.List.NonEmpty (pattern (:|))
 import qualified Data.List as List
+import qualified Data.List.NonEmpty as List1
 import Data.Maybe   (mapMaybe)
 
 import qualified Data.Foldable as Fold
@@ -100,8 +103,22 @@ parseCF opts target content = do
         , show target ++ "."
         ]
 
+  -- Fail if grammar defines a @token@ twice.
+  case duplicatesOn wpThing [ rx | TokenReg rx _ _ <- cfgPragmas cf ] of
+    [] -> return ()
+    gs -> dieUnlessForce $ unlines $ concat
+             [ [ "ERROR: duplicate token definitions:" ]
+             , map printDuplicateTokenDefs gs
+             ]
+      where
+      printDuplicateTokenDefs (rx :| rxs) = concat $
+         [ concat [ "  ", wpThing rx, " at " ]
+         , unwords $ map (prettyPosition . wpPosition) (rx : rxs)
+         ]
+
   -- Warn or fail if the grammar uses non unique names.
-  case filter (not . isDefinedRule) $ filterNonUnique names of
+  let nonUniqueNames = filter (not . isDefinedRule) $ filterNonUnique names
+  case nonUniqueNames of
     [] -> return ()
     ns | target `elem` [ TargetCpp , TargetCppNoStl , TargetJava ]
        -> dieUnlessForce $ unlines $ concat
@@ -117,7 +134,8 @@ parseCF opts target content = do
             ]
 
   -- Warn or fail if the grammar uses names not unique modulo upper/lowercase.
-  case filter (not . isDefinedRule) $ duplicatesOn (map toLower . wpThing) names of
+  case nub $ filter (`notElem` nonUniqueNames) $ filter (not . isDefinedRule) $
+       concatMap List1.toList $ duplicatesOn (map toLower . wpThing) names of
     [] -> return ()
     ns | target `elem` [ TargetJava ]
        -> dieUnlessForce $ unlines $ concat
@@ -206,6 +224,7 @@ getCF opts (Abs.Grammar defs) = do
           -- Issue #204: exclude keywords from internal rules
           -- Issue #70: whitespace separators should be treated like "", at least in the parser
         usedCats           = Set.fromList [ c | Rule _ _ rhs _ <- rules, Left c <- rhs ]
+        -- literals = used builtin token cats (Integer, String, ...)
         literals           = filter (\ s -> TokenCat s `Set.member` usedCats) $ specialCatsP
         (symbols,keywords) = partition notIdent reservedWords
     sig <- runTypeChecker $ buildSignature rules
