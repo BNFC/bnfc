@@ -244,7 +244,7 @@ getCF opts (Abs.Grammar defs) = do
     return cf
   where
     notIdent s       = null s || not (isAlpha (head s)) || any (not . isIdentRest) s
-    isIdentRest c    = isAlphaNum c || c == '_'
+    isIdentRest c    = isAlphaNum c || c == '_' || c == '\''
     revs cf@CFG{..} =
         cf{ cfgReversibleCats = findAllReversibleCats cf }
 
