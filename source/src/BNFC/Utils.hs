@@ -70,8 +70,12 @@ type ModuleName = String
 -- * Control flow.
 
 -- ghc 7.10 misses the instance Monoid a => Monoid (IO a)
+
 #if __GLASGOW_HASKELL__ <= 710
-instance Monoid (IO ()) where
+instance {-# OVERLAPPING #-} Semigroup (IO ()) where
+  (<>) = (>>)
+
+instance {-# OVERLAPPING #-} Monoid (IO ()) where
   mempty  = return ()
   mappend = (<>)
   mconcat = sequence_
