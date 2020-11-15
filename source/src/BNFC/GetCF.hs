@@ -47,6 +47,7 @@ import Data.Maybe
 
 import qualified Data.Foldable as Fold
 import qualified Data.Set      as Set
+import qualified Data.Map      as Map
 
 import System.Exit (exitFailure)
 import System.IO   (hPutStrLn, stderr)
@@ -125,6 +126,15 @@ parseCF opts target content = do
          [ concat [ "  ", wpThing rx, " at " ]
          , unwords $ map (prettyPosition . wpPosition) (rx : rxs)
          ]
+
+  -- Fail if token name conflicts with category name.
+  let userTokenNames = Map.fromList $ map (\ rx -> (wpThing rx, rx)) userTokenTypes
+  case mapMaybe (\ rx -> (rx,) <$> Map.lookup (wpThing rx) userTokenNames) (allCatsIdNorm cf) of
+    [] -> return ()
+    ns -> dieUnlessForce $ unlines $ concat
+             [ [ "ERROR: these token definitions conflict with non-terminals:" ]
+             , map (\ (rx, rp) -> "  " ++ blendInPosition rp ++ " conflicts with " ++ blendInPosition rx) ns
+             ]
 
   -- Warn or fail if the grammar uses non unique names.
   let nonUniqueNames = filter (not . isDefinedRule) $ filterNonUnique names

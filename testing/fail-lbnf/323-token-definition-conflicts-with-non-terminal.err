@@ -1,0 +1,4 @@
+ERROR: these token definitions conflict with non-terminals:
+  fail-lbnf/323-token-definition-conflicts-with-non-terminal.cf:5:7: Main conflicts with fail-lbnf/323-token-definition-conflicts-with-non-terminal.cf:4:6: Main
+
+Aborting.  (Use option --force to continue despite errors.)
