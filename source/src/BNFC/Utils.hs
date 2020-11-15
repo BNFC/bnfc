@@ -67,14 +67,9 @@ type ModuleName = String
 
 -- * Control flow.
 
--- The following Monoid instance conflicts with Monoid a => Monoid (IO a)
--- for ghc >= 8.0
-
+-- ghc 7.10 misses the instance Monoid a => Monoid (IO a)
 #if __GLASGOW_HASKELL__ <= 710
-instance {-# OVERLAPPABLE #-} Monad m => Semigroup (m ()) where
-  (<>) = (>>)
-
-instance {-# OVERLAPPABLE #-} Monad m => Monoid (m ()) where
+instance Monoid (IO ()) where
   mempty  = return ()
   mappend = (<>)
   mconcat = sequence_
