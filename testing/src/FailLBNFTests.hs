@@ -4,6 +4,7 @@ module FailLBNFTests (all) where
 
 import Prelude hiding (all)
 import qualified Data.Text as T
+import qualified Data.Set as Set
 import Shelly
 import System.FilePath (dropExtension)
 import Test.HUnit (assertBool)
@@ -14,7 +15,7 @@ all = do
   stems <- shelly $ do
     map dropExtension <$> findFilesRegex "fail-lbnf" ".*\\.cf"
   return $ makeTestSuite "Testing BNFC on ill-formed LBNF input" $
-    map failingTest stems
+    map failingTest $ Set.toAscList $ Set.fromList stems
 
 failingTest :: FilePath -> Test
 failingTest stem = makeShellyTest stem $
