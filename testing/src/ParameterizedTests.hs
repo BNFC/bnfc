@@ -167,7 +167,7 @@ exampleTest params (Example' limit grammar examples)
             tpBnfc params (takeFileName grammar)
             tpBuild params
             forM_ examples $ \example ->
-                tpRunTestProg params (toTextArg lang) [takeFileName example]
+                tpRunTestProg params lang [takeFileName example]
 
 -- | To test certain grammatical constructions or interactions between rules,
 -- test grammar can be created under the regression-tests directory,
@@ -196,24 +196,27 @@ makeTestCase :: TestParameters -> FilePath -> Test
 makeTestCase params dir =
         makeShellyTest (mkTitle dir) $ withTmpDir $ \tmp -> do
             dir <- absPath dir
+            dirContents <- ls dir  -- Note: these are absolute filenames!
             cd tmp
             echo "§ Generate"
-            tpBnfc params (dir </> "test.cf")
+            let lbnfFile = head $ filter (matchFilePath ".*[.]cf$") dirContents
+            let testFile = takeBaseName lbnfFile
+            tpBnfc params lbnfFile
             echo "§ Build"
             tpBuild params
             echo "§ Run"
-            good <- filter (matchFilePath "good[0-9]*.in$") <$> ls dir
+            let good = filter (matchFilePath "good[0-9]*[.]in$") dirContents
             forM_ good $ \f -> do
-                output <- tpRunTestProg params "test" [f]
+                output <- tpRunTestProg params testFile [f]
                 goldExists <- test_f (replaceExtension f "out")
                 when goldExists $ do
                     gold <- readfile (replaceExtension f "out")
                     let (_, goldLT) = parseOutput gold
                         (_, actualLT) = parseOutput output
                     assertEqual goldLT actualLT
-            bad <- filter (matchFilePath "bad[0-9]*.in$") <$> ls dir
+            let bad = filter (matchFilePath "bad[0-9]*[.]in$") dirContents
             forM_ bad $ \f -> do
-                errExit False $ tpRunTestProg params "test" [f]
+                errExit False $ tpRunTestProg params testFile [f]
                 lastExitCode >>= assertEqual 1
   where
     mkTitle dir = tpName params ++ ":" ++ takeFileName dir
@@ -243,7 +246,7 @@ data TestParameters = TP
   , -- | Command for building the generated test executable
     tpBuild       :: Sh ()
   , -- | Command for running the test executable with the given arguments
-    tpRunTestProg :: Text -> [FilePath] -> Sh Text
+    tpRunTestProg :: FilePath -> [FilePath] -> Sh Text
   }
 
 baseParameters :: TestParameters
@@ -252,7 +255,7 @@ baseParameters =  TP
   , tpBnfcOptions = undefined
   , tpBuild       = tpMake
   , tpRunTestProg = \ lang args -> do
-      bin <- canonicalize ("." </> ("Test" <> lang))
+      bin <- canonicalize ("." </> ("Test" <> Text.pack lang))
       cmd bin args
   }
 
@@ -292,7 +295,7 @@ haskellAgdaParameters = haskellParameters
 
 
 -- | Haskell backend: default command for running the test executable with the given arguments.
-haskellRunTestProg :: Text -> [FilePath] -> Sh Text
+haskellRunTestProg :: FilePath -> [FilePath] -> Sh Text
 haskellRunTestProg _lang args = do
       -- cmd "echo" "Looking for Test* binary"
       -- -- can't print anything here because then the setStdin input is used up here
@@ -304,6 +307,27 @@ haskellRunTestProg _lang args = do
 parameters :: [TestParameters]
 parameters = concat
   [ []
+    -- C
+  , [ cBase { tpName = "C"
+            , tpBuild = tpMake ["CC_OPTS=-Wstrict-prototypes -Werror"]  -- additional flags
+            , tpBnfcOptions = ["--c"] }
+    ]
+    -- OCaml
+  , [ ocaml ]
+    -- C++ (basic)
+  , [ cBase { tpName = "C++ (no STL)"
+            , tpBnfcOptions = ["--cpp-nostl"] }
+    , cBase { tpName = "C++"
+            , tpBnfcOptions = ["--cpp"] }
+    ]
+    -- Java/ANTLR
+  , [ javaParams { tpName = "Java (with antlr)"
+                 , tpBnfcOptions = ["--java", "--antlr"] }
+    ]
+    -- C++ (extras)
+  , [ cBase { tpName = "C++ (with namespace)"
+            , tpBnfcOptions = ["--cpp", "-p foobar"] }
+    ]
     -- Haskell
   , [ hsParams { tpName = "Haskell (with generic)"
                , tpBnfcOptions = ["--haskell", "--generic"] }
@@ -312,34 +336,13 @@ parameters = concat
     , hsParams { tpName = "Haskell (with namespace)"
                , tpBnfcOptions = ["--haskell", "-p", "Language", "-d"] }
     ]
-    -- C++ (extras)
-  , [ cBase { tpName = "C++ (with namespace)"
-            , tpBnfcOptions = ["--cpp", "-p foobar"] }
-    ]
-    -- C++ (basic)
-  , [ cBase { tpName = "C++ (no STL)"
-            , tpBnfcOptions = ["--cpp-nostl"] }
-    , cBase { tpName = "C++"
-            , tpBnfcOptions = ["--cpp"] }
-    ]
     -- Haskell/GADT
   , [ haskellGADTParameters ]
     -- Agda
   , [ haskellAgdaParameters ]
-    -- C
-  , [ cBase { tpName = "C"
-            , tpBuild = tpMake ["CC_OPTS=-Wstrict-prototypes -Werror"]  -- additional flags
-            , tpBnfcOptions = ["--c"] }
-    ]
-    -- OCaml
-  , [ base { tpName = "OCaml"
-           , tpBuild = tpMake ["OCAMLCFLAGS=-safe-string"]
-           , tpBnfcOptions = ["--ocaml"] }
-    ]
     -- OCaml/Menhir
-  , [ base { tpName = "OCaml/Menhir"
-           , tpBuild = tpMake ["OCAMLCFLAGS=-safe-string"]
-           , tpBnfcOptions = ["--ocaml", "--menhir"] }
+  , [ ocaml { tpName = "OCaml/Menhir"
+            , tpBnfcOptions = ["--ocaml", "--menhir"] }
     ]
     -- Java (basic)
   , [ javaParams { tpName = "Java"
@@ -355,10 +358,6 @@ parameters = concat
     , javaParams { tpName = "Java (with jflex and line numbers)"
                  , tpBnfcOptions = ["--java", "--jflex", "-l"] }
     ]
-    -- Java/ANTLR
-  , [ javaParams { tpName = "Java (with antlr)"
-                 , tpBnfcOptions = ["--java", "--antlr"] }
-    ]
   ]
   where
     base = baseParameters
@@ -372,9 +371,15 @@ parameters = concat
         { tpBuild = do
             tpMake
             cmd "javac" . (:[]) =<< findFile "VisitSkel.java"
-        , tpRunTestProg = \_ args -> do
+        , tpRunTestProg = \ _lang args -> do
             class_ <- dropExtension <$> findFile "Test.class"
             cmd "java" $ "-Xss16M" : class_ : args
+        }
+    ocaml =  TP
+        { tpName        = "OCaml"
+        , tpBuild       = tpMake ["OCAMLCFLAGS=-safe-string"]
+        , tpBnfcOptions = ["--ocaml"]
+        , tpRunTestProg = haskellRunTestProg
         }
 
 -- | Helper function that runs bnfc with the context's options and an

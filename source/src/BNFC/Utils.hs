@@ -34,7 +34,9 @@ module BNFC.Utils
     , (+++), (++++), (+-+), (+.+)
     , pad, table
     , mkName, mkNames, NameStyle(..)
-    , lowerCase, upperCase, mixedCase, camelCase, snakeCase
+    , lowerCase, upperCase, mixedCase
+    , camelCase, camelCase_
+    , snakeCase, snakeCase_
     , replace
     , writeFileRep
     , cstring
@@ -447,7 +449,10 @@ upperCase = text . mkName [] UpperCase
 -- MyIdent
 
 camelCase :: String -> Doc
-camelCase = text . mkName [] CamelCase
+camelCase = text . camelCase_
+
+camelCase_ :: String -> String
+camelCase_ = mkName [] CamelCase
 
 -- | To mixed case.
 -- >>> mixedCase "my_ident"
@@ -461,7 +466,10 @@ mixedCase = text . mkName [] MixedCase
 -- my_ident
 
 snakeCase :: String -> Doc
-snakeCase = text . mkName [] SnakeCase
+snakeCase = text . snakeCase_
+
+snakeCase_ :: String -> String
+snakeCase_ = mkName [] SnakeCase
 
 -- ESCAPING
 

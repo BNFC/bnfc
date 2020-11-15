@@ -45,20 +45,25 @@ noLang :: SharedOptions -> String -> String
 noLang _ name = name
 
 withLang :: SharedOptions -> String -> String
-withLang opts name = name ++ lang opts
+withLang opts name = name ++ sanitizedLang opts
 
 mkMod :: (SharedOptions -> String -> String) -> String -> SharedOptions -> String
 mkMod addLang name opts =
-    pref ++ if inDir opts then lang opts ++ "." ++ name else addLang opts name
+    pref ++ if inDir opts then sanitizedLang opts ++ "." ++ name else addLang opts name
         where pref = maybe "" (++".") (inPackage opts)
 
 mkFile :: (SharedOptions -> String -> String) -> String -> String -> SharedOptions -> FilePath
 mkFile addLang name ext opts =
     pref ++ if inDir opts
-       then lang opts </> name ++ ext'
+       then sanitizedLang opts </> name ++ ext'
        else addLang opts name ++ if null ext then "" else ext'
     where pref = maybe "" (\ p -> pkgToDir p </> "") (inPackage opts)
           ext' = if null ext then "" else "." ++ ext
+
+-- | Turn language name into a valid ocaml module identifier.
+sanitizedLang :: SharedOptions -> String
+sanitizedLang = camelCase_ . lang
+
 
 absFile, absFileM, ocamllexFile, ocamllexFileM, ocamlyaccFile, ocamlyaccFileM,
   utilFile, templateFile, templateFileM, printerFile, printerFileM,
@@ -106,7 +111,7 @@ pkgToDir = replace '.' pathSeparator
 
 codeDir :: SharedOptions -> FilePath
 codeDir opts = let pref = maybe "" pkgToDir (inPackage opts)
-                   dir = if inDir opts then lang opts else ""
+                   dir = if inDir opts then sanitizedLang opts else ""
                    sep = if null pref || null dir then "" else [pathSeparator]
                  in pref ++ sep ++ dir
 

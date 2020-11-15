@@ -55,14 +55,14 @@ makeC opts cf = do
     mkfile "Printer.c" prinC
     mkfile "Test.c" (ctest cf)
     Makefile.mkMakefile opts (makefile name prefix)
-  where prefix :: String  -- The prefix is a string used by flex and bison
-                          -- that is prepended to generated function names.
-                          -- In most cases we want the grammar name as the prefix
-                          -- but in a few specific cases, this can create clashes
-                          -- with existing functions
-        prefix = if name `elem` ["m","c","re","std","str"]
-                  then name ++ "_" else name
-        name = lang opts
+  where
+    name :: String
+    name = lang opts
+    -- The prefix is a string used by flex and bison
+    -- that is prepended to generated function names.
+    -- It should be a valid C identifier.
+    prefix :: String
+    prefix = snakeCase_ name ++ "_"
 
 
 makefile :: String -> String -> String -> Doc
