@@ -81,6 +81,24 @@ cabal.sandbox.config
 /examples/*/xml/
 /examples/*/xmlt/
 
+/testing/*/agda/
+/testing/*/c/
+/testing/*/cpp/
+/testing/*/cpp-nostl/
+/testing/*/functor/
+/testing/*/generic/
+/testing/*/glr/
+/testing/*/haskell/
+/testing/*/haskell-gadt/
+/testing/*/java/
+/testing/*/java-antlr/
+/testing/*/latex/
+/testing/*/ocaml/
+/testing/*/ocaml-menhir/
+/testing/*/pygments/
+/testing/*/xml/
+/testing/*/xmlt/
+
 /testing/regression-tests/*_*/agda/
 /testing/regression-tests/*_*/C/
 /testing/regression-tests/*_*/c/
