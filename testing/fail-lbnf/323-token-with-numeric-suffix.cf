@@ -1,0 +1,6 @@
+-- Andreas Abel, 2020-11-15, issue #323
+-- Token names with numeric suffix confuse BNFC
+-- since in the rules such names are interpreted as coercion categories.
+
+Foo. Main ::= Main1 "fun";
+token Main1 {"main"};

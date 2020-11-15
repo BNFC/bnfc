@@ -43,7 +43,7 @@ import Data.List    (nub, partition)
 import Data.List.NonEmpty (pattern (:|))
 import qualified Data.List as List
 import qualified Data.List.NonEmpty as List1
-import Data.Maybe   (mapMaybe)
+import Data.Maybe
 
 import qualified Data.Foldable as Fold
 import qualified Data.Set      as Set
@@ -103,8 +103,18 @@ parseCF opts target content = do
         , show target ++ "."
         ]
 
+  -- Token types that end in a numeral confuse BNFC, because of CoerceCat.
+  let userTokenTypes = [ rx | TokenReg rx _ _ <- cfgPragmas cf ]
+  case filter (isJust . hasNumericSuffix . wpThing) userTokenTypes of
+    []  -> return ()
+    rxs -> dieUnlessForce $ unlines $ concat
+             [ [ "ERROR: illegal token names:" ]
+             , map (("  " ++) . blendInPosition) rxs
+             , [ "Token names may not end with a number---to avoid confusion with coercion categories." ]
+             ]
+
   -- Fail if grammar defines a @token@ twice.
-  case duplicatesOn wpThing [ rx | TokenReg rx _ _ <- cfgPragmas cf ] of
+  case duplicatesOn wpThing userTokenTypes of
     [] -> return ()
     gs -> dieUnlessForce $ unlines $ concat
              [ [ "ERROR: duplicate token definitions:" ]

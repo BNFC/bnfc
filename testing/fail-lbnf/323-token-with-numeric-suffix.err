@@ -1,0 +1,5 @@
+ERROR: illegal token names:
+  fail-lbnf/323-token-with-numeric-suffix.cf:6:7: Main1
+Token names may not end with a number---to avoid confusion with coercion categories.
+
+Aborting.  (Use option --force to continue despite errors.)

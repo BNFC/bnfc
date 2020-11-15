@@ -30,6 +30,7 @@ module BNFC.Utils
     , curry3, uncurry3
     , singleton, mapHead, spanEnd
     , duplicatesOn
+    , hasNumericSuffix
     , (+++), (++++), (+-+), (+.+)
     , pad, table
     , mkName, mkNames, NameStyle(..)
@@ -215,6 +216,20 @@ duplicatesOn nf
   . Map.elems
     -- Partition elements by their normal form.
   . Fold.foldr (\ a -> Map.insertWith (<>) (nf a) (a :| [])) Map.empty
+
+-- | Get a numeric suffix if it exists.
+--
+-- >>> hasNumericSuffix "hello world"
+-- Nothing
+-- >>> hasNumericSuffix "a1b2"
+-- Just ("a1b",2)
+-- >>> hasNumericSuffix "1234"
+-- Just ("",1234)
+
+hasNumericSuffix :: String -> Maybe (String, Integer)
+hasNumericSuffix s = case spanEnd isDigit s of
+  ([], _) -> Nothing
+  (num, front) -> Just (front, read num)
 
 -- * Time utilities
 
