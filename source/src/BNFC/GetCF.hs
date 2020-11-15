@@ -140,7 +140,7 @@ parseCF opts target content = do
   let nonUniqueNames = filter (not . isDefinedRule) $ filterNonUnique names
   case nonUniqueNames of
     [] -> return ()
-    ns | target `elem` [ TargetCpp , TargetCppNoStl , TargetJava ]
+    ns | target `elem` [ TargetC, TargetCpp , TargetCppNoStl , TargetJava ]
        -> dieUnlessForce $ unlines $ concat
             [ [ "ERROR: names not unique:" ]
             , printNames ns
