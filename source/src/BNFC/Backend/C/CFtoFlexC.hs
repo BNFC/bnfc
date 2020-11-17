@@ -73,6 +73,13 @@ prelude name = unlines
    -- noinput and nounput are most often unused
    -- https://stackoverflow.com/questions/39075510/option-noinput-nounput-what-are-they-for
    "%option noyywrap noinput nounput",
+   "%top{",  -- The following #define needs to be at the top before the automatic #include <stdlib.h>
+   "/* strdup was not in the ISO C standard before 6/2019 (C2x), but in POSIX 1003.1.",
+   " * See: https://en.cppreference.com/w/c/experimental/dynamic/strdup",
+   " * Setting _POSIX_C_SOURCE to 200809L activates strdup in string.h.",
+   " */",
+   "#define _POSIX_C_SOURCE 200809L",
+   "}",
    "%{",
    "#define yylval " ++ name ++ "lval",
    "#define yylloc " ++ name ++ "lloc",
