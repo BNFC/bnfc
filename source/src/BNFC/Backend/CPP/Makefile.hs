@@ -14,7 +14,7 @@ makefile name basename = vcat
     , mkVar "BISON" "bison"
     , mkVar "BISON_OPTS" ("-t -p" ++ name)
     , ""
-    , mkVar "OBJS" "Absyn.o Lexer.o Parser.o Printer.o"
+    , mkVar "OBJS" "Absyn.o Buffer.o Lexer.o Parser.o Printer.o"
     , ""
     , mkRule ".PHONY" ["clean", "distclean"]
         []
@@ -26,9 +26,15 @@ makefile name basename = vcat
             [ name ++ e | e <- [".aux", ".log", ".pdf",".dvi", ".ps", ""]] ]
     , mkRule "distclean" ["clean"]
         [ "rm -f " ++ unwords
-            [ "Absyn.C", "Absyn.H", "Test.C", "Parser.C", "Parser.H", "ParserError.H", "Lexer.C",
-              "Skeleton.C", "Skeleton.H", "Printer.C", "Printer.H", basename,
-              name ++ ".l", name ++ ".y", name ++ ".tex"
+            [ "Absyn.C", "Absyn.H"
+            , "Buffer.C", "Buffer.H"
+            , "Test.C"
+            , "Parser.C", "Parser.H", "ParserError.H", name ++ ".y"
+            , "Lexer.C", name ++ ".l"
+            , "Skeleton.C", "Skeleton.H"
+            , "Printer.C", "Printer.H"
+            , basename
+            , name ++ ".tex"
             ]
         ]
     , mkRule testName [ "${OBJS}", "Test.o" ]
@@ -36,6 +42,8 @@ makefile name basename = vcat
         , "${CC} ${OBJS} Test.o -o " ++ testName ]
     , mkRule "Absyn.o" [ "Absyn.C", "Absyn.H" ]
         [ "${CC} ${CCFLAGS} -c Absyn.C" ]
+    , mkRule "Buffer.o" [ "Buffer.C", "Buffer.H" ]
+        [ "${CC} ${CCFLAGS} -c Buffer.C " ]
     , mkRule "Lexer.C" [ name ++ ".l" ]
         [ "${FLEX} -oLexer.C " ++ name ++ ".l" ]
     , mkRule "Parser.C" [ name ++ ".y" ]

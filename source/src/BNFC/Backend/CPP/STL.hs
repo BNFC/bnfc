@@ -1,6 +1,7 @@
 {-
     BNF Converter: C++ Main file
     Copyright (C) 2004  Author:  Markus Forsberg, Michael Pellauer
+    Copyright (C) 2020  Andreas Abel
 
     Modified from CPPTop to BNFC.Backend.CPP.STL 2006 by Aarne Ranta.
 
@@ -22,13 +23,14 @@
 module BNFC.Backend.CPP.STL (makeCppStl,) where
 
 import Data.Char
-import Data.List (nub)
+import qualified Data.List as List
 import qualified Data.Map as Map
 
 import BNFC.Utils
 import BNFC.CF
 import BNFC.Options
 import BNFC.Backend.Base
+import BNFC.Backend.C            (bufferH, bufferC)
 import BNFC.Backend.C.CFtoBisonC (unionBuiltinTokens)
 import BNFC.Backend.CPP.Makefile
 import BNFC.Backend.CPP.STL.CFtoSTLAbs
@@ -44,6 +46,8 @@ makeCppStl opts cf = do
     let (hfile, cfile) = cf2CPPAbs (linenumbers opts) (inPackage opts) name cf
     mkfile "Absyn.H" hfile
     mkfile "Absyn.C" cfile
+    mkfile "Buffer.H" bufferH
+    mkfile "Buffer.C" $ bufferC "Buffer.H"
     let (flex, env) = cf2flex (inPackage opts) name cf
     mkfile (name ++ ".l") flex
     let bison = cf2Bison (linenumbers opts) (inPackage opts) name cf env
@@ -178,7 +182,7 @@ mkHeaderFile inPackage cf cats eps env = unlines $ concat
     , ""
     , nsStart inPackage
     ]
-  , map mkForwardDec $ nub $ map normCat cats
+  , map mkForwardDec $ List.nub $ map normCat cats
   , [ "typedef union"
     , "{"
     ]

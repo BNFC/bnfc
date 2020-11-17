@@ -46,14 +46,12 @@ all = makeTestSuite "Parameterized tests" [allWithParams p | p <- parameters ]
 
 allWithParams :: TestParameters -> Test
 allWithParams params = makeTestSuite (tpName params) $ concat $
-  [ testCases params
-  , map ($ params) $
-    [ exitCodeTest
-    , entrypointTest
-    , exampleTests
-    , distcleanTest
-    ]
-  ]
+  [ distcleanTest  params ] :
+  testCases params :
+  [ exitCodeTest   params ] :
+  [ entrypointTest params ] :
+  [ exampleTests   params ] :
+  []
 
 -- | This parameterized test is called first.
 --   Use it while working in connection with a certain test case. (For quicker response.)

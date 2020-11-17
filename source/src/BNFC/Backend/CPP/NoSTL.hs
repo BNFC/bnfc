@@ -27,6 +27,7 @@ import BNFC.Utils
 import BNFC.CF
 import BNFC.Options
 import BNFC.Backend.Base
+import BNFC.Backend.C            (bufferH, bufferC)
 import BNFC.Backend.C.CFtoBisonC (unionBuiltinTokens)
 import BNFC.Backend.CPP.Makefile
 import BNFC.Backend.CPP.NoSTL.CFtoCPPAbs
@@ -41,6 +42,8 @@ makeCppNoStl opts cf = do
     let (hfile, cfile) = cf2CPPAbs name cf
     mkfile "Absyn.H" hfile
     mkfile "Absyn.C" cfile
+    mkfile "Buffer.H" bufferH
+    mkfile "Buffer.C" $ bufferC "Buffer.H"
     let (flex, env) = cf2flex Nothing name cf
     mkfile (name ++ ".l") flex
     let bison = cf2Bison name cf env
