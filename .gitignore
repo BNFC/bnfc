@@ -15,6 +15,7 @@
 # Cabal generated directories and files
 build
 dist
+dist-newstyle
 cabal-dev
 /source/dist*
 /source/src/Paths_BNFC.hs
@@ -49,6 +50,7 @@ cabal.sandbox.config
 /source/src/LexBNF.info
 /source/src/ParBNF.hs
 /source/src/ParBNF.info
+/source/src/SkelBNF.hs
 /source/src/TestBNF
 /source/src/layout/haskell
 
