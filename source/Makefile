@@ -33,7 +33,7 @@ test:
 	$(CABAL_CONFIGURE)
 	$(CABAL_TEST)
 
-doc:
+haddock doc:
 	$(CABAL) v1-haddock --executables --internal
 
 # See https://hackage.haskell.org/package/weeder
