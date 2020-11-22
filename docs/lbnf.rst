@@ -372,10 +372,14 @@ The type checking rules are now the following:
 
    Only regular categories may have productions with regular rule labels.
 
+   Every regular category occurring in the grammar must have at least one
+   production with a regular rule label.
+
    All rules with the same regular rule label must have the same category
    skeleton.
 
-The last rule could be strengthened so as to require
+The second-last rule corresponds to the absence of empty data
+types in Haskell. The last rule could be strengthened so as to require
 that all regular rule labels be unique: this is needed to guarantee
 error-free pretty-printing. Violating this strengthened rule currently
 generates only a warning, not a type error.
