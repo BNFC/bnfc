@@ -110,7 +110,7 @@ parseCF opts target content = do
     []  -> return ()
     rxs -> dieUnlessForce $ unlines $ concat
              [ [ "ERROR: illegal token names:" ]
-             , map (("  " ++) . blendInPosition) rxs
+             , printNames rxs
              , [ "Token names may not end with a number---to avoid confusion with coercion categories." ]
              ]
 
@@ -224,10 +224,11 @@ parseCF opts target content = do
         "Aborting.  (Use option --force to continue despite errors.)"
       exitFailure
 
-  printNames :: [RString] -> [String]
-  printNames = map (("  " ++) . blendInPosition) . List.sortOn lexicoGraphic
-    where
-    lexicoGraphic (WithPosition pos x) = (pos,x)
+-- | Print vertical list of names with position sorted by position.
+printNames :: [RString] -> [String]
+printNames = map (("  " ++) . blendInPosition) . List.sortOn lexicoGraphic
+  where
+  lexicoGraphic (WithPosition pos x) = (pos,x)
 
 die :: String -> IO a
 die msg = do
@@ -475,7 +476,7 @@ checkTokens cf
   | null pxs  = Nothing
   | otherwise = Just $ unlines $ concat
       [ [ "ERROR: The following tokens accept the empty string:" ]
-      , map (("  " ++) . blendInPosition) pxs
+      , printNames pxs
       ]
   where
     pxs = [ px | TokenReg px _ regex <- cfgPragmas cf, nullable regex ]
