@@ -250,16 +250,16 @@ instance Show Exp where
 
 -- | Pragmas.
 
-data Pragma = CommentS  String -- ^ for single line comments
-            | CommentM (String,String) -- ^  for multiple-line comments.
-            | TokenReg RString Bool Reg -- ^ for tokens
-            | EntryPoints [RCat]
-            | Layout [String]
-            | LayoutStop [String]
-            | LayoutTop
-            | FunDef RFun [String] Exp
-            -- ...
-              deriving (Show)
+data Pragma
+  = CommentS  String              -- ^ for single line comments
+  | CommentM (String, String)     -- ^  for multiple-line comments.
+  | TokenReg RString Bool Reg     -- ^ for tokens
+  | EntryPoints [RCat]
+  | Layout [String]
+  | LayoutStop [String]
+  | LayoutTop
+  | FunDef RFun [String] Exp
+  deriving (Show)
 
 -- | User-defined regular expression tokens
 tokenPragmas :: CFG f -> [(TokenCat,Reg)]
