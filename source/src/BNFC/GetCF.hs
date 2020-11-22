@@ -194,7 +194,7 @@ parseCF opts target content = do
             ]
 
   -- Print warnings if user defined nullable tokens.
-  Fold.mapM_ putStrLn $ checkTokens cf
+  Fold.mapM_ dieUnlessForce $ checkTokens cf
 
   -- Check for empty grammar.
   let nRules = length (cfgRules cf)
@@ -472,15 +472,13 @@ transExp xs = loop
 -- | Check if any of the user-defined terminal categories is nullable.
 checkTokens :: CFG f -> Maybe String
 checkTokens cf
-  | null ns   = Nothing
-  | otherwise = Just $ unlines
-      [ "Warning : "  -- TODO: change to error in a future version
-      , "  The following tokens accept the empty string: "
-      , "    " ++ unwords ns
-      , "  This is error-prone and will not be supported in the future."
+  | null pxs  = Nothing
+  | otherwise = Just $ unlines $ concat
+      [ [ "ERROR: The following tokens accept the empty string:" ]
+      , map (("  " ++) . blendInPosition) pxs
       ]
   where
-    ns = map (show . fst) . filter (nullable . snd) $ tokenPragmas cf
+    pxs = [ px | TokenReg px _ regex <- cfgPragmas cf, nullable regex ]
 
 
 -- we should actually check that

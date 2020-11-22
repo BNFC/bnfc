@@ -1,0 +1,4 @@
+ERROR: The following tokens accept the empty string:
+  fail-lbnf/nullable-token.cf:3:7: Identifier
+
+Aborting.  (Use option --force to continue despite errors.)

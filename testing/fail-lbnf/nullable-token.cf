@@ -1,0 +1,3 @@
+Foo. Main ::= Identifier;
+
+token Identifier letter* (letter+ | digit+)* ;  -- nullable, that an ERROR
