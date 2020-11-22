@@ -100,6 +100,7 @@ Executable bnfc
     -- BNFC core
     BNFC.Utils
     BNFC.CF
+    BNFC.Check.EmptyTypes
     BNFC.Regex
     BNFC.TypeChecker
     BNFC.GetCF
@@ -264,6 +265,7 @@ Test-suite unit-tests
     -- BNFC core
     BNFC.Utils
     BNFC.CF
+    BNFC.Check.EmptyTypes
     BNFC.Regex
     BNFC.TypeChecker
     BNFC.GetCF

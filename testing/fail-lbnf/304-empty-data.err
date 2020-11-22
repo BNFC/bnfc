@@ -1,0 +1,4 @@
+ERROR: the following categories have empty abstract syntax:
+  fail-lbnf/304-empty-data.cf:5:4: Foo
+
+Aborting.  (Use option --force to continue despite errors.)

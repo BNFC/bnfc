@@ -41,7 +41,7 @@ module BNFC.CF (
             WithPosition(..), blendInPosition,
             RString, RCat,
             Cat(..), strToCat, catToStr,
-            TokenCat,
+            BaseCat, TokenCat,
             catString, catInteger, catDouble, catChar, catIdent,
             NonTerminal, SentForm,
             Fun, RFun, IsFun(..),
@@ -78,6 +78,7 @@ module BNFC.CF (
             filterNonUnique,
             isList,         -- Checks if a category is a list category.
             isTokenCat, maybeTokenCat,
+            baseCat,
             sameCat,
             -- Information functions for list functions.
             isNilFun,       -- empty list function? ([])
@@ -355,6 +356,7 @@ data Cat
   deriving (Eq, Ord)
 
 type TokenCat = String
+type BaseCat  = String
 
 -- An alias for Cat used in many backends:
 type NonTerminal = Cat
@@ -447,6 +449,14 @@ identCat c = catToStr c
 isList :: Cat -> Bool
 isList (ListCat _) = True
 isList _           = False
+
+-- | Get the underlying category identifier.
+baseCat :: Cat -> Either BaseCat TokenCat
+baseCat = \case
+  ListCat c    -> baseCat c
+  CoercCat x _ -> Left x
+  Cat x        -> Left x
+  TokenCat x   -> Right x
 
 isTokenCat :: Cat -> Bool
 isTokenCat (TokenCat _) = True

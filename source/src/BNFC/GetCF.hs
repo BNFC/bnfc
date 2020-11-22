@@ -58,6 +58,7 @@ import qualified AbsBNF as Abs
 import ParBNF
 
 import BNFC.CF
+import BNFC.Check.EmptyTypes
 import BNFC.Options
 import BNFC.Regex       (nullable, simpReg)
 import BNFC.TypeChecker
@@ -205,6 +206,12 @@ parseCF opts target content = do
   when (null (usedTokenCats cf) && null (cfTokens cf)) $
     dieUnlessForce $
       "ERROR: the languages defined by this grammar are empty since it mentions no terminals."
+
+  unlessNull (emptyData $ cfgRules cf) $ \ pcs -> do
+    dieUnlessForce $ unlines $ concat
+      [ [ "ERROR: the following categories have empty abstract syntax:" ]
+      , printNames $ map (fmap catToStr) pcs
+      ]
 
   -- Passed the tests: Print the number of rules.
   putStrLn $ show nRules +++ "rules accepted\n"

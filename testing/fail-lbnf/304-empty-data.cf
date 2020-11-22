@@ -1,0 +1,5 @@
+-- Andreas Abel, 2020-11-22, issue #304
+-- Check that cats have at least one non-coercion rule.
+-- Otherwise, EmptyDataDecls are produced in Haskell.
+
+_. Foo ::= "later" Foo ;
