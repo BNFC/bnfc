@@ -145,3 +145,7 @@ License
 -------
 
 The project is licensed under the BSD 3-clause [license](https://raw.githubusercontent.com/BNFC/bnfc/master/source/LICENSE).
+
+BNFC versions until 2.8.4 released under the
+GNU General Public License
+(<a href="https://www.gnu.org/licenses/gpl-2.0.html">GPL</a>).
