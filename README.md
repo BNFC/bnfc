@@ -144,4 +144,4 @@ Contribute
 License
 -------
 
-The project is licensed under the GNU GENERAL PUBLIC LICENSE Version 2.
+The project is licensed under the BSD 3-clause [license](https://raw.githubusercontent.com/BNFC/bnfc/master/source/LICENSE).
