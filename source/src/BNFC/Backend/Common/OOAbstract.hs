@@ -2,25 +2,6 @@
     BNF Converter: Datastructure for object-oriented abstract syntax generators
     Copyright (C) 2006  Author:  Aarne Ranta
 
-    This program is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation; either version 2 of the License, or
-    (at your option) any later version.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with this program; if not, write to the Free Software
-    Foundation, 51 Franklin Street, Fifth Floor, Boston, MA 02110-1335, USA
--}
-
-{-
-   **************************************************************
-    BNF Converter Module
-
     Description   : This module defines a data structure that is
                     used for generating abstract syntax in cpp_stl.
                     It should be used in other STL modules as well,
@@ -28,15 +9,8 @@
                     in general, to avoid duplicated work.
 
     Author        : Aarne Ranta (aarne@cs.chalmers.se)
-
-    License       : GPL (GNU General Public License)
-
     Created       : 29 August, 2006
 
-    Modified      : 29 August, 2006 / Aarne Ranta
-
-
-   **************************************************************
 -}
 
 module BNFC.Backend.Common.OOAbstract where

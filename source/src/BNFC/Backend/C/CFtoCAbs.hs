@@ -6,40 +6,13 @@
     BNF Converter: C Abstract syntax
     Copyright (C) 2004  Author:  Michael Pellauer
 
-    This program is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation; either version 2 of the License, or
-    (at your option) any later version.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with this program; if not, write to the Free Software
-    Foundation, 51 Franklin Street, Fifth Floor, Boston, MA 02110-1335, USA
--}
-
-{-
-   **************************************************************
-    BNF Converter Module
-
     Description   : This module generates the C Abstract Syntax
                     tree classes. It generates both a Header file
                     and an Implementation file, and Appel's C
                     method.
 
-    Author        : Michael Pellauer (pellauer@cs.chalmers.se)
-
-    License       : GPL (GNU General Public License)
-
+    Author        : Michael Pellauer
     Created       : 15 September, 2003
-
-    Modified      : 15 September, 2003
-
-
-   **************************************************************
 -}
 
 module BNFC.Backend.C.CFtoCAbs (cf2CAbs) where

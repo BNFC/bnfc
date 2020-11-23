@@ -11,12 +11,8 @@
 
                     The generated files use the Visitor design pattern.
 
-    Author        : Michael Pellauer (pellauer@cs.chalmers.se)
-
-    License       : GPL (GNU General Public License)
-
+    Author        : Michael Pellauer
     Created       : 10 August, 2003
-
     Modified      : 3 September, 2003
                     * Added resizable buffers
 

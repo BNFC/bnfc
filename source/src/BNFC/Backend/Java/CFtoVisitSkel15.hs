@@ -2,41 +2,16 @@
     BNF Converter: Java Vistor skeleton generator
     Copyright (C) 2004  Author:  Michael Pellauer, Bjorn Bringert
 
-    This program is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation; either version 2 of the License, or
-    (at your option) any later version.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with this program; if not, write to the Free Software
-    Foundation, 51 Franklin Street, Fifth Floor, Boston, MA 02110-1335, USA
--}
-
-{-
-   **************************************************************
-    BNF Converter Module
-
     Description   : This module generates a Skeleton function
                     which uses the Visitor Design Pattern, which
                     users may find more familiar than Appel's
                     method.
 
-    Author        : Michael Pellauer (pellauer@cs.chalmers.se),
-                    Bjorn Bringert (bringert@cs.chalmers.se)
-
-    License       : GPL (GNU General Public License)
-
+    Author        : Michael Pellauer
+                    Bjorn Bringert
     Created       : 4 August, 2003
-
     Modified      : 16 June, 2004
 
-
-   **************************************************************
 -}
 
 {-# LANGUAGE LambdaCase #-}

@@ -5,26 +5,6 @@
     BNF Converter: Java Pretty Printer generator
     Copyright (C) 2004  Author:  Michael Pellauer, Bjorn Bringert
 
-    This program is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation; either version 2 of the License, or
-    (at your option) any later version.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with this program; if not, write to the Free Software
-    Foundation, 51 Franklin Street, Fifth Floor, Boston, MA 02110-1335, USA
--}
-
-
-{-
-   **************************************************************
-    BNF Converter Module
-
     Description   : This module generates the Java Pretty Printer
                     class. In addition, since there's no good way
                     to display a class heirarchy (toString() doesn't
@@ -38,15 +18,13 @@
     Author        : Michael Pellauer (pellauer@cs.chalmers.se),
                     Bjorn Bringert (bringert@cs.chalmers.se)
 
-    License       : GPL (GNU General Public License)
-
     Created       : 24 April, 2003
 
     Modified      : 9 Aug, 2004
-
     Added string buffer for efficiency (Michael, August 03)
-   **************************************************************
+
 -}
+
 module BNFC.Backend.Java.CFtoJavaPrinter15 ( cf2JavaPrinter ) where
 
 import Prelude hiding ((<>))
