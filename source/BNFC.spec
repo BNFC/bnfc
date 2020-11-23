@@ -5,7 +5,7 @@ Version:        2.9.0
 Release:        1%{?dist}
 Summary:        A compiler front-end generator
 
-License:        GPL+
+License:        BSD3
 URL:            http://hackage.haskell.org/package/%{name}
 Source0:        http://hackage.haskell.org/packages/archive/%{name}/%{version}/%{name}-%{version}.tar.gz
 

@@ -47,7 +47,7 @@ data Mode
     -- e.g. invalid argument/combination of arguments
     = UsageError String
     -- Basic modes: print some info and exits
-    | Help | Version
+    | Help | License | Version
     -- Normal mode, specifying the back end to use,
     -- the option record to be passed to the backend
     -- and the path of the input grammar file
@@ -264,6 +264,7 @@ printOCamlParserOption = ("--" ++) . \case
 globalOptions :: [ OptDescr Mode ]
 globalOptions = [
   Option [] ["help"]                      (NoArg Help)         "show help",
+  Option [] ["license"]                   (NoArg License)      "show license",
   Option [] ["version","numeric-version"] (NoArg Version)      "show version number"]
 
 -- | Options for the target languages
@@ -393,7 +394,7 @@ allOptions' t = targetOptions ++ commonOptions ++ specificOptions' t
 title :: [String]
 title =
   [ "The BNF Converter, " ++ showVersion version ++ " (c) 2002-today BNFC development team."
-  , "Free software under GNU General Public License (GPL)."
+  , "Free software under the BSD 3-clause license."
   , "List of recent contributors at https://github.com/BNFC/bnfc/graphs/contributors."
   , "Report bugs at https://github.com/BNFC/bnfc/issues."
   , ""
@@ -411,6 +412,7 @@ usage :: String
 usage = unlines
   [ "usage: bnfc [--TARGET] [OPTIONS] LANG.cf"
   , "   or: bnfc --[numeric-]version"
+  , "   or: bnfc [--license]"
   , "   or: bnfc [--help]"
   ]
 

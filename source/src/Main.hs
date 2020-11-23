@@ -29,6 +29,7 @@ import BNFC.CF (CF)
 import BNFC.GetCF
 import BNFC.Options hiding (make, Backend)
 
+import License    ( license )
 import Paths_BNFC ( version )
 
 import Data.Version ( showVersion )
@@ -56,6 +57,7 @@ main = do
     UsageError e -> printUsageErrors [e]
     Help         -> putStrLn help >> exitSuccess
     Version      -> putStrLn (showVersion version) >> exitSuccess
+    License      -> putStr license >> exitSuccess
 
     Target options file
       | target options == TargetCheck ->
