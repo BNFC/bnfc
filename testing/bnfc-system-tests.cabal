@@ -20,10 +20,10 @@ version:             2.9.0.0
 synopsis:            System tests for BNFC
 
 -- A longer description of the package.
--- description:
+description:         Run the BNFC system test suite.
 
 -- The license under which the package is released.
-license:             GPL-2
+license:             BSD3
 
 -- The file containing the license text.
 license-file:        LICENSE
@@ -38,7 +38,7 @@ maintainer:          andreas.abel@gu.se
 -- A copyright notice.
 -- copyright:
 
--- category:
+category:            Testing
 
 build-type:          Simple
 
@@ -63,6 +63,7 @@ executable bnfc-system-tests
                        RegressionTests
                        TestData
                        TestUtils
+                       License
 
   -- LANGUAGE extensions used by modules in this package.
   -- other-extensions:
@@ -78,7 +79,8 @@ executable bnfc-system-tests
                        text,
                        HTF >= 0.14.0.1,
                        -- HTF-0.14.0.3 does not build with random-1.2
-                       random < 1.2
+                       random < 1.2,
+                       string-qq
 
   -- Directories containing source files.
   hs-source-dirs: . src
