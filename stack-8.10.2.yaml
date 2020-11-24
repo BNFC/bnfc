@@ -7,6 +7,7 @@ extra-deps:
 - alex-3.2.5
 - happy-1.19.12
 - semigroups-0.19.1
+- string-qq-0.0.4
 
 # For --test and package 'testing'
 - Diff-0.4.0
