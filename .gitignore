@@ -54,11 +54,13 @@ cabal.sandbox.config
 /source/src/TestBNF
 /source/src/layout/haskell
 
-# binary
+# binaries
 /source/windows-dist/bnfc.exe
 
+/testing/data/JLex/*.class
+
 # bnfc generated files
-/docs/Calc/java-antlr/
+/docs/Calc/
 
 /examples/*/agda/
 /examples/*/c/
@@ -80,6 +82,7 @@ cabal.sandbox.config
 /examples/*/profile/
 /examples/*/pygments/
 /examples/*/sharestrings/
+/examples/C/with-delimiters/
 /examples/*/xml/
 /examples/*/xmlt/
 
@@ -119,6 +122,3 @@ cabal.sandbox.config
 /testing/regression-tests/*_*/sharestrings/
 /testing/regression-tests/*_*/xml*/
 /testing/regression-tests/*_*/*-save/
-
-/docs/Calc/
-/examples/C/with-delimiters/
