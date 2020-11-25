@@ -1,0 +1,3 @@
+Bad list construction rule:
+  (:). [Seq] ::= Integer [Seq]
+In a cons rule (label (:)), the category on the left of ::= needs to be a list category [C], and C and [C] (in this order) must be the sole categories on the right.

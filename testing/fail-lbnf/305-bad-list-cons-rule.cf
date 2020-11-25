@@ -1,0 +1,5 @@
+-- Andreas, 2020-11-25, issue #305, reported by Ivan Perez.
+-- Better error messages for bad list rules.
+
+[]  . [Seq] ::= ;
+(:) . [Seq] ::= Integer [Seq] ;
