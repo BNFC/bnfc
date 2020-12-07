@@ -87,7 +87,7 @@ module BNFC.CF (
             tokenNames,     -- get the names of all user-defined tokens
             precCat,        -- get the precendence level of a Cat C1 => 1, C => 0
             precRule,       -- get the precendence level of the value category of a rule.
-            isUsedCat, usedTokenCats,
+            isUsedCat,
             isPositionCat,
             hasPositionTokens,
             hasIdent, hasIdentLikeTokens,
@@ -104,6 +104,7 @@ import qualified Data.List as List
 import Data.Maybe
 import Data.Map  (Map)
 import qualified Data.Map as Map
+import Data.Set  (Set)
 import qualified Data.Set as Set
 import Data.String  (IsString(..))
 
@@ -162,6 +163,7 @@ type SentForm = [Either Cat String]
 
 data CFG function = CFG
     { cfgPragmas        :: [Pragma]
+    , cfgUsedCats       :: Set Cat    -- ^ Categories used by the parser.
     , cfgLiterals       :: [Literal]  -- ^ @Char, String, Ident, Integer, Double@.
                                       --   @String@s are quoted strings,
                                       --   and @Ident@s are unquoted.
@@ -603,13 +605,7 @@ allParserCatsNorm = nub . map normCat . allParserCats
 -- | Is the category is used on an rhs?
 --   Includes internal rules.
 isUsedCat :: CFG f -> Cat -> Bool
-isUsedCat cf = (`elem` [ c | Rule _ _ rhs _ <- cfgRules cf, Left c <- rhs ])
-  -- TODO: isUsedCat is used in some places where the internal rules should be ignored.
-
--- | All token categories used in the grammar.
---   Includes internal rules.
-usedTokenCats :: CFG f -> [TokenCat]
-usedTokenCats cf = [ c | Rule _ _ rhs _ <- cfgRules cf, Left (TokenCat c) <- rhs ]
+isUsedCat cf = (`Set.member` cfgUsedCats cf)
 
 -- | Group all parsable categories with their rules.
 --   Deletes whitespace separators, as they will not become part of the parsing rules.

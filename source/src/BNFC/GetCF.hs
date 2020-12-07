@@ -36,6 +36,7 @@ import qualified Data.List as List
 import qualified Data.List.NonEmpty as List1
 import Data.Maybe
 
+import Data.Set (Set)
 import qualified Data.Foldable as Fold
 import qualified Data.Set      as Set
 import qualified Data.Map      as Map
@@ -222,6 +223,11 @@ parseCF opts target content = do
         "Aborting.  (Use option --force to continue despite errors.)"
       exitFailure
 
+  -- | All token categories used in the grammar.
+  --   Includes internal rules.
+  usedTokenCats :: CFG f -> [TokenCat]
+  usedTokenCats cf = [ c | Rule _ _ rhs _ <- cfgRules cf, Left (TokenCat c) <- rhs ]
+
 -- | Print vertical list of names with position sorted by position.
 printNames :: [RString] -> [String]
 printNames = map (("  " ++) . blendInPosition) . List.sortOn lexicoGraphic
@@ -250,6 +256,7 @@ getCF opts (Abs.Grammar defs) = do
     let
       cf = revs $ CFG
         { cfgPragmas        = pragma
+        , cfgUsedCats       = usedCats
         , cfgLiterals       = literals
         , cfgSymbols        = symbols
         , cfgKeywords       = keywords
@@ -283,6 +290,9 @@ class FixTokenCats a where
 instance FixTokenCats a => FixTokenCats [a]
 instance FixTokenCats a => FixTokenCats (WithPosition a)
 
+instance (FixTokenCats a, Ord a) => FixTokenCats (Set a) where
+  fixTokenCats = Set.map . fixTokenCats
+
 -- | Change the constructor of categories with the given names from Cat to
 -- TokenCat
 -- >>> fixTokenCats ["A"] (Cat "A") == TokenCat "A"
@@ -313,6 +323,7 @@ instance FixTokenCats Pragma where
 instance FixTokenCats (CFG f) where
   fixTokenCats ns cf@CFG{..} = cf
     { cfgPragmas  = fixTokenCats ns cfgPragmas
+    , cfgUsedCats = fixTokenCats ns cfgUsedCats
     , cfgRules    = fixTokenCats ns cfgRules
     }
 
