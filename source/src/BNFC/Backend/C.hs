@@ -8,6 +8,8 @@
 module BNFC.Backend.C (makeC, bufferC, bufferH) where
 
 import Prelude hiding ((<>))
+
+import Data.Foldable (toList)
 import qualified Data.Map as Map
 
 import BNFC.Utils
@@ -193,7 +195,7 @@ ctest cf =
    ]
   where
   cat :: Cat
-  cat = head $ allEntryPoints cf
+  cat = firstEntry cf
   def :: String
   def = identCat cat
   dat :: String
@@ -229,7 +231,7 @@ mkHeaderFile _ cf env = unlines $ concat
     , "extern YYSTYPE yylval;"
     , ""
     ]
-  , concatMap mkFunc $ allEntryPoints cf
+  , concatMap mkFunc $ toList $ allEntryPoints cf
   , [ ""
     , "#endif"
     ]

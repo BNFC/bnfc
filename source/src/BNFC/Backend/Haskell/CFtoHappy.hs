@@ -11,6 +11,7 @@ module BNFC.Backend.Haskell.CFtoHappy (cf2Happy, convert) where
 
 import Prelude hiding ((<>))
 
+import Data.Foldable (toList)
 import Data.List (intersperse)
 
 import BNFC.CF
@@ -44,7 +45,7 @@ cf2Happy
   -> String     -- ^ Generated code.
 cf2Happy name absName lexName mode tokenText functor cf = unlines
   [ header name absName lexName tokenText
-  , render $ declarations mode (allEntryPoints cf)
+  , render $ declarations mode $ toList $ allEntryPoints cf
   , render $ tokens cf
   , delimiter
   , specialRules absName tokenText cf

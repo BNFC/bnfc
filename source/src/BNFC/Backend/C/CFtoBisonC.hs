@@ -24,6 +24,7 @@ module BNFC.Backend.C.CFtoBisonC
   where
 
 import Data.Char (toLower)
+import Data.Foldable (toList)
 import Data.List (intercalate, nub)
 import Data.Maybe (fromMaybe)
 import qualified Data.Map as Map
@@ -86,7 +87,7 @@ header name cf = unlines
     , "%}"
     ]
   where
-  eps = allEntryPoints cf
+  eps = toList (allEntryPoints cf)
      -- Andreas, 2019-04-29, #210: Generate also parsers for CoercCat.
      -- WAS:  (allCatsNorm cf)
      -- Found old comment:
@@ -261,7 +262,7 @@ constructRule rp cf env rules nt = (nt,[(p, generateAction rp (identCat (normCat
      let (p,m) = generatePatterns cf env r])
  where
    revs = cfgReversibleCats cf
-   eps = allEntryPoints cf
+   eps = toList $ allEntryPoints cf
    isEntry nt = nt `elem` eps
    result = if isEntry nt then resultName (identCat (normCat nt)) ++ "= $$;" else ""
 

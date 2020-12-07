@@ -15,6 +15,7 @@
 
 module BNFC.Backend.Java.CFtoAntlr4Parser ( cf2AntlrParse ) where
 
+import Data.Foldable ( toList )
 import Data.List     ( intercalate )
 import Data.Maybe
 
@@ -57,7 +58,7 @@ cf2AntlrParse packageBase packageAbsyn cf _ env = unlines $ concat
     , ""
     -- Generate start rules [#272]
     -- _X returns [ dX result ] : x=X EOF { $result = $x.result; }
-    , prRules packageAbsyn $ map entrypoint $ allEntryPoints cf
+    , prRules packageAbsyn $ map entrypoint $ toList $ allEntryPoints cf
     -- Generate regular rules
     , prRules packageAbsyn $ rulesForAntlr4 packageAbsyn cf env
     ]

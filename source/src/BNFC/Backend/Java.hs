@@ -26,6 +26,7 @@ module BNFC.Backend.Java ( makeJava ) where
 import Prelude hiding ((<>))
 
 import System.FilePath (pathSeparator, isPathSeparator)
+import Data.Foldable (toList)
 import Data.List ( intersperse )
 
 import BNFC.Utils
@@ -637,7 +638,7 @@ javaTest (JavaTestParams
       px             = text parser
       dat            = text $ identCat $ normCat def  -- Use for AST types.
       absentity      = text $ identCat def            -- Use for parser/printer name.
-      eps            = allEntryPoints cf
+      eps            = toList $ allEntryPoints cf
       def            = head eps
 
 -- | Error handling in ANTLR.

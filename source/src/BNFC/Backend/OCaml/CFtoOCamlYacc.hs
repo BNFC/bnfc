@@ -15,6 +15,7 @@ module BNFC.Backend.OCaml.CFtoOCamlYacc
         where
 
 import Data.Char
+import Data.Foldable (toList)
 
 import BNFC.CF
 import BNFC.Utils ((+++))
@@ -130,7 +131,7 @@ entryPoints absName cf = unlines $
     ("%start" +++ unwords (map epName eps))
     :
     (map typing eps)
-    where eps = allEntryPoints cf
+    where eps = toList $ allEntryPoints cf
           typing :: Cat -> String
           typing c = "%type" +++ "<" ++ qualify (normCat c) ++ ">" +++ epName c
           qualify c = if c `elem` [ TokenCat "Integer", TokenCat "Double", TokenCat "Char",
@@ -148,7 +149,7 @@ epName c = "p" ++ capitalize (nonterminal c)
                     c:cs -> toUpper c : cs
 
 entryPointRules :: CF -> String
-entryPointRules cf = unlines $ map mkRule $ allEntryPoints cf
+entryPointRules cf = unlines $ map mkRule $ toList $ allEntryPoints cf
     where
         mkRule :: Cat -> String
         mkRule s = unlines [

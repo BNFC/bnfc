@@ -4,6 +4,7 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE PatternGuards #-}
+{-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TypeSynonymInstances #-}
 
@@ -101,6 +102,8 @@ import Data.Char
 import Data.Function (on)
 import Data.List (nub, intersperse, sort, group, intercalate, find)
 import qualified Data.List as List
+import Data.List.NonEmpty (pattern (:|), (<|))
+import qualified Data.List.NonEmpty as List1
 import Data.Maybe
 import Data.Map  (Map)
 import qualified Data.Map as Map
@@ -114,6 +117,8 @@ import LexBNF (tokens)
 import qualified AbsBNF as Abs
 
 import BNFC.Utils (spanEnd)
+
+type List1 = List1.NonEmpty
 
 -- | A context free grammar consists of a set of rules and some extended
 -- information (e.g. pragmas, literals, symbols, keywords).
@@ -514,14 +519,11 @@ isConcatFun = funNameSatisfies (== "(++)")
 -- | The abstract syntax of a grammar.
 type Data = (Cat, [(String, [Cat])])
 
--- | @firstEntry@ returns the first entrypoint
---   or (if none), the first @Cat@egory appearing in the grammar.
+-- | @firstEntry@ returns the first of the @entrypoints@,
+--   or (if none), the first parsable @Cat@egory appearing in the grammar.
 
 firstEntry :: CF -> Cat
-firstEntry cf =
-  case allEntryPoints cf of
-    (x:_) -> x
-    []    -> valCat . head . cfgRules $ cf
+firstEntry cf = List1.head $ allEntryPoints cf
 
 -- aggressively ban nonunique names (AR 31/5/2012)
 
@@ -788,9 +790,13 @@ isPositionCat :: CFG f -> TokenCat -> Bool
 isPositionCat cf cat = or [ b | TokenReg name b _ <- cfgPragmas cf, wpThing name == cat]
 
 
--- | Categories that are entry points to the parser
-allEntryPoints :: CFG f -> [Cat]
+-- | Categories that are entry points to the parser.
+--
+--   These are either the declared @entrypoints@ (in the original order),
+--   or, if no @entrypoints@ were declared explicitly,
+--   all parsable categories (in the order of declaration in the grammar file).
+allEntryPoints :: CFG f -> List1 Cat
 allEntryPoints cf =
   case concat [ cats | EntryPoints cats <- cfgPragmas cf ] of
-    [] -> allParserCats cf
-    cs -> map wpThing cs
+    []   -> List1.fromList $ allParserCats cf  -- assumed to be non-empty
+    c:cs -> fmap wpThing (c :| cs)
