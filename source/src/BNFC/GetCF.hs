@@ -370,9 +370,9 @@ separatorRules size c0 s
   | all isSpace s = terminatorRules size c0 s
   | otherwise     = do
       WithPosition pos c <- transCat c0
-      let wp = WithPosition pos
       let cs = ListCat c
-      let rule x rhs = Rule (wp x) (wp cs) rhs Parsable
+      let rule :: String -> SentForm -> Rule
+          rule x rhs = Rule (WithPosition pos x) (WithPosition pos cs) rhs Parsable
       return $ concat
         [ [ rule "[]"    []                         | size == Abs.MEmpty ]
         , [ rule "(:[])" [Left c]                   ]
