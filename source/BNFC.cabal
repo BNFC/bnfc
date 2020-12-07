@@ -81,9 +81,13 @@ Executable bnfc
   Main-is: Main.hs
   HS-source-dirs: src
   default-extensions:
+    -- Keep the list of language extensions in sync with test/doctests.hs!
+    -- Keep in alphabetical order.
     CPP
+    DefaultSignatures
     DoAndIfThenElse
     FlexibleContexts
+    FlexibleInstances
     LambdaCase
     OverloadedStrings
     PatternGuards
@@ -228,9 +232,13 @@ Test-suite unit-tests
   HS-source-dirs: src test
   ghc-options:     -W
   default-extensions:
+    -- Keep the list of language extensions in sync with test/doctests.hs!
+    -- Keep in alphabetical order.
     CPP
+    DefaultSignatures
     DoAndIfThenElse
     FlexibleContexts
+    FlexibleInstances
     LambdaCase
     OverloadedStrings
     PatternGuards
@@ -375,5 +383,5 @@ Test-suite bnfc-doctests
   ghc-options:        -threaded
   default-extensions: CPP
   main-is:            doctests.hs
-  build-depends:      base, doctest >= 0.8
+  build-depends:      base, doctest >= 0.8, filepath
   HS-source-dirs:     test
