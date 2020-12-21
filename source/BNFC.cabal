@@ -24,8 +24,9 @@ Description:
   an XML representation,
   a LaTeX file containing a readable specification of the language.
 
-tested-with: GHC == 7.10.3
-             GHC == 8.0.2
+tested-with:
+             -- GHC == 7.10.3
+             -- GHC == 8.0.2
              GHC == 8.2.2
              GHC == 8.4.4
              GHC == 8.6.5

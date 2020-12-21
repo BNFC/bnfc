@@ -49,6 +49,11 @@ build-type:          Simple
 -- Constraint on the version of Cabal needed to build this package.
 cabal-version:       >=1.10
 
+tested-with:         GHC == 8.2.2
+                     GHC == 8.4.4
+                     GHC == 8.6.5
+                     GHC == 8.8.4
+                     GHC == 8.10.2
 
 executable bnfc-system-tests
   -- .hs or .lhs file containing the Main module.
