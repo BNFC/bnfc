@@ -64,10 +64,12 @@ Source-repository this
   tag:      v2.9.0
 
 -- Setup using https://github.com/haskellari/cabal-doctest
+-- Regarding Cabal >= 1.24, see
+-- https://github.com/haskell-CI/haskell-ci/issues/81#issuecomment-304087288
 custom-setup
  setup-depends:
    base >= 4 && <5,
-   Cabal,
+   Cabal >= 1.24,
    cabal-doctest >= 1 && < 1.1
 
 executable bnfc
