@@ -1,6 +1,8 @@
 Name: BNFC
 Version: 2.9.0
 cabal-version: >= 1.10
+  -- ? set to >=1.24 for the custom-setup section?
+  -- ? set to >=2.0  for the build-tools: hspec-discover
 build-type: Custom
 category: Development
 Copyright: (c) Andreas Abel, Jonas Almström Duregård, Krasimir Angelov, Jean-Philippe Bernardy, Björn Bringert, Johan Broberg, Kyle Butt, Paul Callaghan, Grégoire Détrez, Markus Forsberg, Ola Frid, Peter Gammie, Thomas Hallgren, Pascal Hof, Simon Huber, Patrik Jansson, Kristofer Johannisson, Antti-Juhani Kaijanaho, Andreas Lööw, Justin Meiners, Kent Mein, Ulf Norell, Gabriele Paganelli, Michael Pellauer, Fabian Ruch, and Aarne Ranta 2002 - 2020. Free software under the BSD 3-clause license.
