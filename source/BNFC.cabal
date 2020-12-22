@@ -66,10 +66,11 @@ Source-repository this
 -- Setup using https://github.com/haskellari/cabal-doctest
 -- Regarding Cabal >= 1.24, see
 -- https://github.com/haskell-CI/haskell-ci/issues/81#issuecomment-304087288
+-- Cabal >= 2.0 is for build-tools: hspec-discover
 custom-setup
  setup-depends:
    base >= 4 && <5,
-   Cabal >= 1.24,
+   Cabal >= 2.0,
    cabal-doctest >= 1 && < 1.1
 
 executable bnfc
