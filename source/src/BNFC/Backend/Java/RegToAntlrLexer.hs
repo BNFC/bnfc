@@ -5,7 +5,7 @@ module BNFC.Backend.Java.RegToAntlrLexer (printRegJLex, escapeCharInSingleQuotes
 import Data.Char (ord, showLitChar)
 import Numeric (showHex)
 
-import AbsBNF
+import BNFC.Abs
 
 -- the top-level printing method
 printRegJLex :: Reg -> String

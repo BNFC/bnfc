@@ -12,7 +12,7 @@ import qualified Data.List as List
 import System.FilePath ((<.>),replaceExtension)
 import Text.Printf
 
-import AbsBNF (Reg (..))
+import BNFC.Abs (Reg (..))
 import BNFC.Options hiding (Backend)
 import BNFC.Backend.Base
 import BNFC.Backend.Common.Makefile as Makefile

@@ -6,7 +6,7 @@ import Test.Hspec
 import BNFC.GetCF
 
 import BNFC.CF
-import qualified AbsBNF as Abs
+import qualified BNFC.Abs as Abs
 
 spec :: Spec
 spec = do

@@ -7,7 +7,7 @@ module BNFC.Backend.C.RegToFlex (printRegFlex) where
 import Data.Char (ord, showLitChar)
 import qualified Data.List as List
 
-import AbsBNF
+import BNFC.Abs
 import BNFC.Backend.Common (flexEps)
 
 -- the top-level printing method

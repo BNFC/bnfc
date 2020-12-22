@@ -11,7 +11,7 @@ module BNFC.Backend.Pygments where
 
 import Prelude hiding ((<>))
 
-import AbsBNF (Reg(..))
+import BNFC.Abs (Reg(..))
 import BNFC.Backend.Base (mkfile, Backend)
 import BNFC.CF
 import BNFC.Lexing

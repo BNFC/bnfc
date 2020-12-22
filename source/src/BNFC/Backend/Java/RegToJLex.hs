@@ -2,7 +2,7 @@ module BNFC.Backend.Java.RegToJLex (printRegJLex, escapeChar) where
 
 import Data.Char           (ord, showLitChar)
 
-import AbsBNF              (Identifier(..), Reg(..))
+import BNFC.Abs            (Identifier(..), Reg(..))
 import BNFC.Options        (JavaLexerParser(..))
 import BNFC.Backend.Common (flexEps)
 

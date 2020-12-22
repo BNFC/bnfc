@@ -111,10 +111,10 @@ import Data.Set  (Set)
 import qualified Data.Set as Set
 import Data.String  (IsString(..))
 
-import AbsBNF (Reg())
-import ParBNF (pCat)
-import LexBNF (tokens)
-import qualified AbsBNF as Abs
+import BNFC.Abs (Reg())
+import BNFC.Par (pCat)
+import BNFC.Lex (tokens)
+import qualified BNFC.Abs as Abs
 
 import BNFC.Utils (spanEnd)
 

@@ -3,7 +3,7 @@
 {
 {-# OPTIONS -fno-warn-incomplete-patterns #-}
 {-# OPTIONS_GHC -w #-}
-module LexBNF where
+module BNFC.Lex where
 
 import qualified Data.Bits
 import Data.Word (Word8)

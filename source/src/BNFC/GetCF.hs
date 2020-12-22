@@ -46,8 +46,8 @@ import System.IO   (hPutStrLn, stderr)
 
 -- Local imports:
 
-import qualified AbsBNF as Abs
-import ParBNF
+import qualified BNFC.Abs as Abs
+import BNFC.Par
 
 import BNFC.CF
 import BNFC.Check.EmptyTypes
@@ -59,7 +59,7 @@ import BNFC.Utils
 type Err = Either String
 
 -- $setup
--- >>> import PrintBNF
+-- >>> import BNFC.Print
 
 -- | Entrypoint.
 

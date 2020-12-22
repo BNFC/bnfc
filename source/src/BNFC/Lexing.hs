@@ -8,8 +8,8 @@ import Prelude hiding ((<>))
 -- import Control.Arrow ( (&&&) )
 import Data.List     ( inits, tails )
 
-import AbsBNF        ( Reg(..)   )
-import PrintBNF      ( printTree )  -- for debug printing
+import BNFC.Abs      ( Reg(..)   )
+import BNFC.Print    ( printTree )  -- for debug printing
 import BNFC.CF
 import BNFC.Regex    ( simpReg )
 import BNFC.Utils    ( unless  )
