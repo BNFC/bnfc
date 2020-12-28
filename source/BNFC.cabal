@@ -37,7 +37,7 @@ tested-with:
 
 Extra-source-files:
   README.md
-  changelog
+  CHANGELOG.md
   -- LICENSE is automatically included
   Makefile
   src/BNFC.cf
