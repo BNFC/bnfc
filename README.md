@@ -1,7 +1,7 @@
 [![Hackage version](https://img.shields.io/hackage/v/BNFC.svg?label=Hackage)](http://hackage.haskell.org/package/BNFC)
 [![BNFC on Stackage Nightly](https://stackage.org/package/BNFC/badge/nightly)](https://stackage.org/nightly/package/BNFC)
 [![Stackage LTS version](https://www.stackage.org/package/BNFC/badge/lts?label=Stackage)](https://www.stackage.org/package/BNFC)
-[![Build status](https://github.com/andreasabel/agda2lagda/workflows/Haskell-CI/badge.svg)](https://github.com/andreasabel/agda2lagda/actions)
+[![Build status](https://github.com/BNFC/bnfc/workflows/Haskell-CI/badge.svg)](https://github.com/BNFC/bnfc/actions)
 [![Documentation status](https://readthedocs.org/projects/bnfc/badge/?version=latest)](http://bnfc.readthedocs.io/en/latest/?badge=latest)
 
 The BNF Converter
