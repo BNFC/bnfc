@@ -46,12 +46,13 @@ cabal.sandbox.config
 /source/src/TAGS
 
 # compiler-compiler generated files
-/source/src/LexBNF.hs
-/source/src/LexBNF.info
-/source/src/ParBNF.hs
-/source/src/ParBNF.info
-/source/src/SkelBNF.hs
-/source/src/TestBNF
+/source/src/BNFC/Doc.txt
+/source/src/BNFC/Lex.hs
+/source/src/BNFC/Par.hs
+/source/src/BNFC/Par.info
+/source/src/BNFC/Skel.hs
+/source/src/BNFC/Test.hs
+/source/src/BNFC/Test
 /source/src/layout/haskell
 
 # binaries
