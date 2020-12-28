@@ -127,6 +127,7 @@ type CF = CFG RFun
 
 -- | A rule consists of a function name, a main category and a sequence of
 -- terminals and non-terminals.
+--
 -- @
 --   function_name . Main_Cat ::= sequence
 -- @
@@ -172,8 +173,8 @@ data CFG function = CFG
     , cfgLiterals       :: [Literal]  -- ^ @Char, String, Ident, Integer, Double@.
                                       --   @String@s are quoted strings,
                                       --   and @Ident@s are unquoted.
-    , cfgSymbols        :: [Symbol]   -- ^ Symbols in the grammar, e.g. “*”, '->'.
-    , cfgKeywords       :: [KeyWord]  -- ^ Reserved words, e.g. 'if' 'while'.
+    , cfgSymbols        :: [Symbol]   -- ^ Symbols in the grammar, e.g. “*”, “->”.
+    , cfgKeywords       :: [KeyWord]  -- ^ Reserved words, e.g. @if@, @while@.
     , cfgReversibleCats :: [Cat]      -- ^ Categories that can be made left-recursive.
     , cfgRules          :: [Rul function]
     , cfgSignature      :: Signature  -- ^ Types of rule labels, computed from 'cfgRules'.
@@ -346,7 +347,7 @@ data Cat
   = Cat String               -- ^ Ordinary non-terminal.
   | TokenCat TokenCat        -- ^ Token types (like @Ident@, @Integer@, ..., user-defined).
   | ListCat Cat              -- ^ List non-terminals, e.g., @[Ident]@, @[Exp]@, @[Exp1]@.
-  | CoercCat String Integer  -- ^ E.g. @Exp1@, @Exp2.
+  | CoercCat String Integer  -- ^ E.g. @Exp1@, @Exp2@.
   deriving (Eq, Ord)
 
 type TokenCat = String

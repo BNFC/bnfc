@@ -1,6 +1,9 @@
 {-# LANGUAGE TypeSynonymInstances, FlexibleInstances #-}
-{- Backend base function. Defines the type of the backend and some usefull
- - functions -}
+
+-- | Backend base module.
+--
+-- Defines the type of the backend and some useful functions.
+
 module BNFC.Backend.Base
   ( Backend
   , MkFiles
@@ -28,8 +31,8 @@ import BNFC.Utils (writeFileRep)
 -- output dir or providing a diff instead of overwritting the files on a
 -- highter level and 3) more purity.
 --
--- The writer monad provide a more conveignent api to generate the list. Note
--- that we still use the IO monad for now because some backend insist on
+-- The writer monad provides a more convenient API to generate the list. Note
+-- that we still use the `IO` monad for now because some backends insist on
 -- printing stuff to the screen while generating the files.
 type MkFiles a = WriterT [(FilePath, String)] IO a
 type Backend = MkFiles ()
@@ -40,12 +43,12 @@ type Backend = MkFiles ()
 execBackend :: MkFiles () -> IO [(FilePath, String)]
 execBackend = execWriterT
 
--- | A specialized version of tell that adds a file and its content to the
--- list of generated files
+-- | A specialized version of `tell` that adds a file and its content to the
+-- list of generated files.
 mkfile :: (FileContent c) => FilePath -> c -> MkFiles ()
 mkfile path content = tell [(path, fileContentToString content)]
 
--- | While we are moving to generating Text.PrettyPrint.Doc instead of String,
+-- | While we are moving to generating `Text.PrettyPrint.Doc` instead of `String`,
 -- it is nice to be able to use both as argument to 'mkfile'.
 -- So we do some typeclass magic.
 class FileContent a where
@@ -63,15 +66,16 @@ deleteTrailingWhiteSpace = unlines . map (List.dropWhileEnd isSpace) . lines
 -- | Write a set of files to disk. the first argument is the root directory
 -- inside which all the generated files will be written. This root directory
 -- and sub-directories will be created as needed (ex: if the files contains a
--- a/b/file.txt, `writeFiles` will create the directories `$ROOT/a` and
--- `$ROOT/a/b`)
+-- @a\/b\/file.txt@, `writeFiles` will create the directories @$ROOT\/a@ and
+-- @$ROOT\/a\/b@)
 writeFiles :: FilePath -> MkFiles () -> IO ()
 writeFiles root fw = do
   -- First we check that the directory exists
   fb <- execBackend fw
   createDirectoryIfMissing True root
   mapM_ (uncurry writeFile') fb
-  where writeFile' :: FilePath -> String -> IO ()
-        writeFile' path content =
-          createDirectoryIfMissing True (root </> dropFileName path)
-          >> writeFileRep (root </> path) content
+  where
+  writeFile' :: FilePath -> String -> IO ()
+  writeFile' path content = do
+    createDirectoryIfMissing True (root </> dropFileName path)
+    writeFileRep (root </> path) content

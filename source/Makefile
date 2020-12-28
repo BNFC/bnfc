@@ -33,7 +33,7 @@ test:
 	$(CABAL_TEST)
 
 haddock doc:
-	$(CABAL) v1-haddock
+	$(CABAL) v1-haddock --hyperlink-source
 # --executables --internal
 
 # See https://hackage.haskell.org/package/weeder

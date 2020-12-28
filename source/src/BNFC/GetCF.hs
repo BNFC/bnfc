@@ -446,9 +446,13 @@ ebnfRules (Abs.Identifier ((line, col), c)) rhss = do
 -- It also sanitizes the terminals a bit by skipping empty terminals
 -- or splitting multiwords terminals.
 -- This means that the following rule
---   Foo. S ::= "foo bar" ""
+--
+-- >  Foo. S ::= "foo bar" ""
+--
 -- is equivalent to
---   Foo. S ::= "foo" "bar"
+--
+-- >  Foo. S ::= "foo" "bar"
+
 transItem :: Abs.Item -> [Either Cat String]
 transItem (Abs.Terminal str)  = [ Right w | w <- words str ]
 transItem (Abs.NTerminal cat) = [ Left (transCat' cat) ]
