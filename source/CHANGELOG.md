@@ -1,16 +1,21 @@
 # 2.9.0
 
-Andreas Abel <andreas.abel@gu.se>
+Andreas Abel <andreas.abel@gu.se>  December 2020
+
+## Major changes
 
 * New license: BSD 3-clause [#308]
 * LBNF: removed `delimiters` pragma [#308]
 * Haskell: removed options `--alex1`, `--alex2`, `--sharestrings`, `--profile`, and `--cnf` [#265]
 * C#: backend removed [#265]
-* C/C++: fixed buffer overrun in `String` literal lexer [#316]
-* C: `strdup` is not part of C89 standard, `_POSIX_C_SOURCE` required [#318]
-* C++: fixed regressions (one of them #310) introduced by #288
+
+## Bug fixes
+
 * LBNF: allow list categories in `entrypoints` pragma [#306]
 * LBNF: report clashes between token and ordinary categories [#323]
+* C: `strdup` is not part of C89 standard, `_POSIX_C_SOURCE` required [#318]
+* C/C++: fixed buffer overrun in `String` literal lexer [#316]
+* C++: fixed regressions (one of them #310) introduced by #288
 * C/C++/OCaml: allow unicode characters in token definitions [#324]
 * C/OCaml: sanitize grammar file names [#325]
 * Java/ANTLR: removed superfluous quotation in lexer character sets [#319]
