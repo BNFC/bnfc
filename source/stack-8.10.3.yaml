@@ -4,6 +4,7 @@ compiler: ghc-8.10.3
 
 extra-deps:
 - alex-3.2.5
+- cabal-doctest-1.0.8
 - happy-1.19.12
 - semigroups-0.19.1
 - string-qq-0.0.4
