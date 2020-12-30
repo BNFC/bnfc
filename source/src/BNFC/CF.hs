@@ -574,7 +574,7 @@ mapRhs f r = r { rhsRule = f $ rhsRule r }
 -- Exp1, Exp2... in case of coercion
 rulesForNormalizedCat :: CF -> Cat -> [Rule]
 rulesForNormalizedCat cf cat =
-    [r | r <- cfgRules cf, isParsable r, normCat (valCat r) == cat]
+    [r | r <- cfgRules cf, normCat (valCat r) == cat]
 
 -- | As rulesForCat, but this version doesn't exclude internal rules.
 rulesForCat' :: CF -> Cat -> [Rule]

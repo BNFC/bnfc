@@ -173,9 +173,10 @@ case_fun absMod cat xs = unlines [
 --   mkListRule rs = unlines $ ("and prt" ++ fixTypeUpper cat ++ "ListBNFC" +++ "_ es : doc = match es with"):rs
 
 ifList :: CF -> Cat -> String
-ifList cf cat = case cases of
-    []        -> ""
-    first:rest -> render $ vcat
+ifList cf cat = render $
+  case cases of
+    []         -> empty
+    first:rest -> vcat
         [ "and prt" <> text (fixTypeUpper cat)  <> "ListBNFC i es : doc = match (i, es) with"
         , nest 4 first
         , nest 2 $ vcat (map ("|" <+>) rest)
