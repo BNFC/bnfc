@@ -182,7 +182,7 @@ ifList cf cat = case cases of
         ]
   where
     rules = sortBy compareRules $ rulesForNormalizedCat cf (ListCat cat)
-    cases = [ mkPrtListCase r | r <- rules ]
+    cases = [ d | r <- rules, let d = mkPrtListCase r, not (isEmpty d) ]
 
 
 -- | Pattern match on the list constructor and the coercion level
