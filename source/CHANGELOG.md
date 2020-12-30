@@ -99,7 +99,9 @@ Grégoire Détrez <gregoire.detrez@gu.se>  February 2016
 * Fix compatibility with GHC 7.10.2 and Alex 3.14
 * Fixed #160
 
-# 2.8 Grégoire Détrez <gregoire.detrez@gu.se>  May 2015
+# 2.8
+
+Grégoire Détrez <gregoire.detrez@gu.se>  May 2015
 
 * Builds with ghc 7.10.1
 * Add support for JFlex (java)
