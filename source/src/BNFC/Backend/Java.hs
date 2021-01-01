@@ -490,10 +490,15 @@ antlrmakedetails l = MakeDetails
     , filename            = l
     , fileextension       = "g4"
     , toolname            = "ANTLRv4"
-    , toolversion         = "4.5.1"
+    , toolversion         = "4.9"
     , supportsEntryPoints = True
     , results             = [l]
-    , other_results       = map (l ++) [".tokens","BaseListener.java","Listener.java"]
+    , other_results       = map (l ++)
+        [ ".interp"              -- added after ANTLR 4.5
+        , ".tokens"
+        , "BaseListener.java"
+        ,"Listener.java"
+        ]
     , moveresults         = False
     }
 
