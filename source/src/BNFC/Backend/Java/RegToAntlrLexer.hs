@@ -34,14 +34,15 @@ class Print a where
   prt :: Int -> a -> [String]
 
 -- | Print char according to ANTLR regex format.
-escapeChar :: String -> Char -> String
+escapeChar :: [Char] -> Char -> String
 escapeChar reserved x
-  | x `elem` reserved = '\\' : [x]
-  | ord x >= 65536    = "\\u{" ++ h ++ "}"
-  | ord x >= 256      = "\\u" ++ replicate (4 - length h) '0' ++ h
-  | otherwise         = showLitChar x ""
+  | x `elem` reserved  = '\\' : [x]
+  | i >= 65536         = "\\u{" ++ h ++ "}"
+  | i >= 256 || i < 32 = "\\u" ++ replicate (4 - length h) '0' ++ h
+  | otherwise          = [x]  -- issue #329, don't escape in the usual way!
   where
-  h = showHex (ord x) ""
+  i = ord x
+  h = showHex i ""
 
 -- | Escape character for use inside single quotes.
 escapeCharInSingleQuotes :: Char -> String

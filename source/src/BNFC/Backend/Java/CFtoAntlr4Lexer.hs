@@ -132,7 +132,7 @@ restOfLexerGrammar cf = vcat
         , "STRINGTEXT : ~[\"\\\\] -> more;"
         ]
     charmodes     = [ "mode CHARMODE;"
-        , "CHARANY     :  ~[\\'\\\\] -> more, mode(CHAREND);"
+        , "CHARANY     :  ~['\\\\] -> more, mode(CHAREND);"
         , "CHARESC     :  '\\\\'  -> more, pushMode(CHAREND),pushMode(ESCAPE);"
         , "mode ESCAPE;"
         , "ESCAPED : (Escapable | '\\'')  -> more, popMode ;"
