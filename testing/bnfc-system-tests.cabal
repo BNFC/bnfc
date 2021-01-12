@@ -14,7 +14,7 @@ name:                bnfc-system-tests
 -- PVP summary:      +-+------- breaking API changes
 --                   | | +----- non-breaking API additions
 --                   | | | +--- code changes with no API change
-version:             2.9.0.0
+version:             2.9.1.0
 
 -- A short (one-line) description of the package.
 synopsis:            System tests for BNFC
@@ -49,6 +49,11 @@ build-type:          Simple
 -- Constraint on the version of Cabal needed to build this package.
 cabal-version:       >=1.10
 
+tested-with:         GHC == 8.2.2
+                     GHC == 8.4.4
+                     GHC == 8.6.5
+                     GHC == 8.8.4
+                     GHC == 8.10.3
 
 executable bnfc-system-tests
   -- .hs or .lhs file containing the Main module.

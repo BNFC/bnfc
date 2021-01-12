@@ -7,7 +7,7 @@
 module BNFC.Backend.Txt2Tag (cfToTxt)where
 
 import BNFC.CF
-import AbsBNF (Reg (..))
+import BNFC.Abs (Reg (..))
 import BNFC.Utils
 import Data.List
 

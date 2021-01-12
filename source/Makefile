@@ -30,11 +30,11 @@ install:
 	$(CABAL_INSTALL)
 
 test:
-	$(CABAL_CONFIGURE)
 	$(CABAL_TEST)
 
 haddock doc:
-	$(CABAL) v1-haddock --executables --internal
+	$(CABAL) v1-haddock --hyperlink-source
+# --executables --internal
 
 # See https://hackage.haskell.org/package/weeder
 # weeder can find dead code starting from the .hie files

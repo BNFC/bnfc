@@ -10,6 +10,7 @@
 module BNFC.Backend.CPP.STL (makeCppStl,) where
 
 import Data.Char
+import Data.Foldable (toList)
 import qualified Data.List as List
 import qualified Data.Map as Map
 
@@ -39,7 +40,7 @@ makeCppStl opts cf = do
     mkfile (name ++ ".l") flex
     let bison = cf2Bison (linenumbers opts) (inPackage opts) name cf env
     mkfile (name ++ ".y") bison
-    let header = mkHeaderFile (inPackage opts) cf (allParserCats cf) (allEntryPoints cf) (Map.elems env)
+    let header = mkHeaderFile (inPackage opts) cf (allParserCats cf) (toList $ allEntryPoints cf) (Map.elems env)
     mkfile "Parser.H" header
     mkfile "ParserError.H" $ printParseErrHeader (inPackage opts)
     let (skelH, skelC) = cf2CVisitSkel True (inPackage opts) cf
@@ -155,7 +156,7 @@ cpptest inPackage cf =
     ""
    ]
   where
-   cat = head $ allEntryPoints cf
+   cat = firstEntry cf
    dat = identCat $ normCat cat
    def = identCat cat
    scope = nsScope inPackage

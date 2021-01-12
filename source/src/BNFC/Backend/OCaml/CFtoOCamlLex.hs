@@ -18,7 +18,7 @@ import qualified Data.List as List
 import Text.PrettyPrint hiding (render)
 import qualified Text.PrettyPrint as PP
 
-import AbsBNF
+import BNFC.Abs
 import BNFC.CF
 import BNFC.Backend.Common (asciiKeywords, unicodeAndSymbols)
 import BNFC.Backend.OCaml.CFtoOCamlYacc (terminal)

@@ -5,11 +5,15 @@
 -}
 
 {-# LANGUAGE CPP #-}
+{-# LANGUAGE DefaultSignatures #-}
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TupleSections #-}
+{-# LANGUAGE TypeFamilies #-}  -- for type equality ~
+{-# LANGUAGE NoMonoLocalBinds #-} -- counteract TypeFamilies
 
 -- | Check LBNF input file and turn it into the 'CF' internal representation.
 
@@ -32,6 +36,7 @@ import qualified Data.List as List
 import qualified Data.List.NonEmpty as List1
 import Data.Maybe
 
+import Data.Set (Set)
 import qualified Data.Foldable as Fold
 import qualified Data.Set      as Set
 import qualified Data.Map      as Map
@@ -41,8 +46,8 @@ import System.IO   (hPutStrLn, stderr)
 
 -- Local imports:
 
-import qualified AbsBNF as Abs
-import ParBNF
+import qualified BNFC.Abs as Abs
+import BNFC.Par
 
 import BNFC.CF
 import BNFC.Check.EmptyTypes
@@ -54,7 +59,7 @@ import BNFC.Utils
 type Err = Either String
 
 -- $setup
--- >>> import PrintBNF
+-- >>> import BNFC.Print
 
 -- | Entrypoint.
 
@@ -218,6 +223,11 @@ parseCF opts target content = do
         "Aborting.  (Use option --force to continue despite errors.)"
       exitFailure
 
+  -- | All token categories used in the grammar.
+  --   Includes internal rules.
+  usedTokenCats :: CFG f -> [TokenCat]
+  usedTokenCats cf = [ c | Rule _ _ rhs _ <- cfgRules cf, Left (TokenCat c) <- rhs ]
+
 -- | Print vertical list of names with position sorted by position.
 printNames :: [RString] -> [String]
 printNames = map (("  " ++) . blendInPosition) . List.sortOn lexicoGraphic
@@ -246,6 +256,7 @@ getCF opts (Abs.Grammar defs) = do
     let
       cf = revs $ CFG
         { cfgPragmas        = pragma
+        , cfgUsedCats       = usedCats
         , cfgLiterals       = literals
         , cfgSymbols        = symbols
         , cfgKeywords       = keywords
@@ -266,27 +277,55 @@ getCF opts (Abs.Grammar defs) = do
 -- | This function goes through each rule of a grammar and replace Cat "X" with
 -- TokenCat "X" when "X" is a token type.
 markTokenCategories :: CF -> CF
-markTokenCategories cf@CFG{..} = cf { cfgRules = newRules }
+markTokenCategories cf = fixTokenCats tokenCatNames cf
   where
-    newRules = [ Rule f (fmap mark c) (map (left mark) rhs) internal | Rule f c rhs internal <- cfgRules ]
-    tokenCatNames = [ wpThing n | TokenReg n _ _ <- cfgPragmas ] ++ specialCatsP
-    mark = toTokenCat tokenCatNames
+  tokenCatNames = [ wpThing n | TokenReg n _ _ <- cfgPragmas cf ] ++ specialCatsP
 
+class FixTokenCats a where
+  fixTokenCats :: [TokenCat] -> a -> a
+
+  default fixTokenCats :: (Functor t, FixTokenCats b, t b ~ a) => [TokenCat] -> a -> a
+  fixTokenCats = fmap . fixTokenCats
+
+instance FixTokenCats a => FixTokenCats [a]
+instance FixTokenCats a => FixTokenCats (WithPosition a)
+
+instance (FixTokenCats a, Ord a) => FixTokenCats (Set a) where
+  fixTokenCats = Set.map . fixTokenCats
 
 -- | Change the constructor of categories with the given names from Cat to
 -- TokenCat
--- >>> toTokenCat ["A"] (Cat "A") == TokenCat "A"
+-- >>> fixTokenCats ["A"] (Cat "A") == TokenCat "A"
 -- True
--- >>> toTokenCat ["A"] (ListCat (Cat "A")) == ListCat (TokenCat "A")
+-- >>> fixTokenCats ["A"] (ListCat (Cat "A")) == ListCat (TokenCat "A")
 -- True
--- >>> toTokenCat ["A"] (Cat "B") == Cat "B"
+-- >>> fixTokenCats ["A"] (Cat "B") == Cat "B"
 -- True
-toTokenCat :: [String] -> Cat -> Cat
-toTokenCat ns (Cat a) | a `elem` ns = TokenCat a
-toTokenCat ns (ListCat c) = ListCat (toTokenCat ns c)
-toTokenCat _ c = c
 
+instance FixTokenCats Cat where
+  fixTokenCats ns = \case
+    Cat a | a `elem` ns -> TokenCat a
+    ListCat c           -> ListCat $ fixTokenCats ns c
+    c -> c
 
+instance FixTokenCats (Either Cat String) where
+  fixTokenCats = left . fixTokenCats
+
+instance FixTokenCats (Rul f) where
+  fixTokenCats ns (Rule f c rhs internal) =
+    Rule f (fixTokenCats ns c) (fixTokenCats ns rhs) internal
+
+instance FixTokenCats Pragma where
+  fixTokenCats ns = \case
+    EntryPoints eps -> EntryPoints $ fixTokenCats ns eps
+    p -> p
+
+instance FixTokenCats (CFG f) where
+  fixTokenCats ns cf@CFG{..} = cf
+    { cfgPragmas  = fixTokenCats ns cfgPragmas
+    , cfgUsedCats = fixTokenCats ns cfgUsedCats
+    , cfgRules    = fixTokenCats ns cfgRules
+    }
 
 -- | Translation monad.
 newtype Trans a = Trans { unTrans :: ReaderT SharedOptions Err a }
@@ -342,9 +381,9 @@ separatorRules size c0 s
   | all isSpace s = terminatorRules size c0 s
   | otherwise     = do
       WithPosition pos c <- transCat c0
-      let wp = WithPosition pos
       let cs = ListCat c
-      let rule x rhs = Rule (wp x) (wp cs) rhs Parsable
+      let rule :: String -> SentForm -> Rule
+          rule x rhs = Rule (WithPosition pos x) (WithPosition pos cs) rhs Parsable
       return $ concat
         [ [ rule "[]"    []                         | size == Abs.MEmpty ]
         , [ rule "(:[])" [Left c]                   ]
@@ -407,9 +446,13 @@ ebnfRules (Abs.Identifier ((line, col), c)) rhss = do
 -- It also sanitizes the terminals a bit by skipping empty terminals
 -- or splitting multiwords terminals.
 -- This means that the following rule
---   Foo. S ::= "foo bar" ""
+--
+-- >  Foo. S ::= "foo bar" ""
+--
 -- is equivalent to
---   Foo. S ::= "foo" "bar"
+--
+-- >  Foo. S ::= "foo" "bar"
+
 transItem :: Abs.Item -> [Either Cat String]
 transItem (Abs.Terminal str)  = [ Right w | w <- words str ]
 transItem (Abs.NTerminal cat) = [ Left (transCat' cat) ]

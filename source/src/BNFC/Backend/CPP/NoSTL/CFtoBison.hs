@@ -16,6 +16,7 @@
 module BNFC.Backend.CPP.NoSTL.CFtoBison (cf2Bison) where
 
 import Data.Char  ( toLower )
+import Data.Foldable ( toList )
 import Data.List  ( intersperse, nub )
 import Data.Maybe ( fromMaybe )
 import qualified Data.Map as Map
@@ -86,7 +87,7 @@ header name cf = unlines
     , "%}"
     ]
   where
-  eps  = allEntryPoints cf
+  eps  = toList $ allEntryPoints cf
   dats = nub $ map normCat eps
 
 

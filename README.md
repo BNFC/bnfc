@@ -1,8 +1,8 @@
 [![Hackage version](https://img.shields.io/hackage/v/BNFC.svg?label=Hackage)](http://hackage.haskell.org/package/BNFC)
 [![BNFC on Stackage Nightly](https://stackage.org/package/BNFC/badge/nightly)](https://stackage.org/nightly/package/BNFC)
 [![Stackage LTS version](https://www.stackage.org/package/BNFC/badge/lts?label=Stackage)](https://www.stackage.org/package/BNFC)
-[![Build Status](https://travis-ci.org/BNFC/bnfc.svg?branch=master)](https://travis-ci.org/BNFC/bnfc)
-[![Documentation Status](https://readthedocs.org/projects/bnfc/badge/?version=latest)](http://bnfc.readthedocs.io/en/latest/?badge=latest)
+[![Build status](https://github.com/BNFC/bnfc/workflows/Haskell-CI/badge.svg)](https://github.com/BNFC/bnfc/actions)
+[![Documentation status](https://readthedocs.org/projects/bnfc/badge/?version=latest)](http://bnfc.readthedocs.io/en/latest/?badge=latest)
 
 The BNF Converter
 =================
@@ -71,10 +71,10 @@ and then either
 ```
 or
 ```
-  stack install --stack-yaml stack-8.10.2.yaml
+  stack install --stack-yaml stack-8.10.3.yaml
 ```
-(replace `8.10.2` with your GHC version, if you want to build with
-your installed GHC---add flag `--system-ghc`).
+(replace `8.10.3` with your GHC version, and if you want to build with
+your installed GHC then add flag `--system-ghc`).
 
 Mini tutorial
 -------------
@@ -108,6 +108,7 @@ Mini tutorial
   ```
 
 - Try the other backends:
+
   | Option  | Backend  |
   | --- | --- |
   | `--java` | Requires Java, [JLex](https://www.cs.princeton.edu/~appel/modern/java/JLex/) or [JFlex](https://jflex.de/), and [CUP](http://www2.cs.tum.edu/projects/cup/).|
@@ -144,8 +145,7 @@ Contribute
 License
 -------
 
-The project is licensed under the BSD 3-clause [license](https://raw.githubusercontent.com/BNFC/bnfc/master/source/LICENSE).
+The project is licensed under the [BSD 3-clause license](https://raw.githubusercontent.com/BNFC/bnfc/master/source/LICENSE).
 
 BNFC versions until 2.8.4 released under the
-GNU General Public License
-(<a href="https://www.gnu.org/licenses/gpl-2.0.html">GPL</a>).
+[GNU General Public License](https://www.gnu.org/licenses/gpl-2.0.html).

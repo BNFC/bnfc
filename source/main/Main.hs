@@ -29,7 +29,7 @@ import BNFC.CF (CF)
 import BNFC.GetCF
 import BNFC.Options hiding (make, Backend)
 
-import License    ( license )
+import BNFC.License ( license )
 import Paths_BNFC ( version )
 
 import Data.Version ( showVersion )

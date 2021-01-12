@@ -1,6 +1,10 @@
 #!/usr/bin/env runghc
 
 > module Main where
-> import Distribution.Simple
+>
+> import Distribution.Extra.Doctest (defaultMainWithDoctests)
+>
 > main :: IO ()
-> main = defaultMain
+> main = defaultMainWithDoctests "doctests"
+
+This generates the module Build_doctests.

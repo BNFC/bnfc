@@ -4,6 +4,7 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE PatternGuards #-}
+{-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TypeSynonymInstances #-}
 
@@ -87,7 +88,7 @@ module BNFC.CF (
             tokenNames,     -- get the names of all user-defined tokens
             precCat,        -- get the precendence level of a Cat C1 => 1, C => 0
             precRule,       -- get the precendence level of the value category of a rule.
-            isUsedCat, usedTokenCats,
+            isUsedCat,
             isPositionCat,
             hasPositionTokens,
             hasIdent, hasIdentLikeTokens,
@@ -101,18 +102,23 @@ import Data.Char
 import Data.Function (on)
 import Data.List (nub, intersperse, sort, group, intercalate, find)
 import qualified Data.List as List
+import Data.List.NonEmpty (pattern (:|), (<|))
+import qualified Data.List.NonEmpty as List1
 import Data.Maybe
 import Data.Map  (Map)
 import qualified Data.Map as Map
+import Data.Set  (Set)
 import qualified Data.Set as Set
 import Data.String  (IsString(..))
 
-import AbsBNF (Reg())
-import ParBNF (pCat)
-import LexBNF (tokens)
-import qualified AbsBNF as Abs
+import BNFC.Abs (Reg())
+import BNFC.Par (pCat)
+import BNFC.Lex (tokens)
+import qualified BNFC.Abs as Abs
 
 import BNFC.Utils (spanEnd)
+
+type List1 = List1.NonEmpty
 
 -- | A context free grammar consists of a set of rules and some extended
 -- information (e.g. pragmas, literals, symbols, keywords).
@@ -121,6 +127,7 @@ type CF = CFG RFun
 
 -- | A rule consists of a function name, a main category and a sequence of
 -- terminals and non-terminals.
+--
 -- @
 --   function_name . Main_Cat ::= sequence
 -- @
@@ -162,11 +169,12 @@ type SentForm = [Either Cat String]
 
 data CFG function = CFG
     { cfgPragmas        :: [Pragma]
+    , cfgUsedCats       :: Set Cat    -- ^ Categories used by the parser.
     , cfgLiterals       :: [Literal]  -- ^ @Char, String, Ident, Integer, Double@.
                                       --   @String@s are quoted strings,
                                       --   and @Ident@s are unquoted.
-    , cfgSymbols        :: [Symbol]   -- ^ Symbols in the grammar, e.g. “*”, '->'.
-    , cfgKeywords       :: [KeyWord]  -- ^ Reserved words, e.g. 'if' 'while'.
+    , cfgSymbols        :: [Symbol]   -- ^ Symbols in the grammar, e.g. “*”, “->”.
+    , cfgKeywords       :: [KeyWord]  -- ^ Reserved words, e.g. @if@, @while@.
     , cfgReversibleCats :: [Cat]      -- ^ Categories that can be made left-recursive.
     , cfgRules          :: [Rul function]
     , cfgSignature      :: Signature  -- ^ Types of rule labels, computed from 'cfgRules'.
@@ -339,7 +347,7 @@ data Cat
   = Cat String               -- ^ Ordinary non-terminal.
   | TokenCat TokenCat        -- ^ Token types (like @Ident@, @Integer@, ..., user-defined).
   | ListCat Cat              -- ^ List non-terminals, e.g., @[Ident]@, @[Exp]@, @[Exp1]@.
-  | CoercCat String Integer  -- ^ E.g. @Exp1@, @Exp2.
+  | CoercCat String Integer  -- ^ E.g. @Exp1@, @Exp2@.
   deriving (Eq, Ord)
 
 type TokenCat = String
@@ -512,14 +520,11 @@ isConcatFun = funNameSatisfies (== "(++)")
 -- | The abstract syntax of a grammar.
 type Data = (Cat, [(String, [Cat])])
 
--- | @firstEntry@ returns the first entrypoint
---   or (if none), the first @Cat@egory appearing in the grammar.
+-- | @firstEntry@ returns the first of the @entrypoints@,
+--   or (if none), the first parsable @Cat@egory appearing in the grammar.
 
 firstEntry :: CF -> Cat
-firstEntry cf =
-  case allEntryPoints cf of
-    (x:_) -> x
-    []    -> valCat . head . cfgRules $ cf
+firstEntry cf = List1.head $ allEntryPoints cf
 
 -- aggressively ban nonunique names (AR 31/5/2012)
 
@@ -569,7 +574,7 @@ mapRhs f r = r { rhsRule = f $ rhsRule r }
 -- Exp1, Exp2... in case of coercion
 rulesForNormalizedCat :: CF -> Cat -> [Rule]
 rulesForNormalizedCat cf cat =
-    [r | r <- cfgRules cf, isParsable r, normCat (valCat r) == cat]
+    [r | r <- cfgRules cf, normCat (valCat r) == cat]
 
 -- | As rulesForCat, but this version doesn't exclude internal rules.
 rulesForCat' :: CF -> Cat -> [Rule]
@@ -603,13 +608,7 @@ allParserCatsNorm = nub . map normCat . allParserCats
 -- | Is the category is used on an rhs?
 --   Includes internal rules.
 isUsedCat :: CFG f -> Cat -> Bool
-isUsedCat cf = (`elem` [ c | Rule _ _ rhs _ <- cfgRules cf, Left c <- rhs ])
-  -- TODO: isUsedCat is used in some places where the internal rules should be ignored.
-
--- | All token categories used in the grammar.
---   Includes internal rules.
-usedTokenCats :: CFG f -> [TokenCat]
-usedTokenCats cf = [ c | Rule _ _ rhs _ <- cfgRules cf, Left (TokenCat c) <- rhs ]
+isUsedCat cf = (`Set.member` cfgUsedCats cf)
 
 -- | Group all parsable categories with their rules.
 --   Deletes whitespace separators, as they will not become part of the parsing rules.
@@ -792,9 +791,13 @@ isPositionCat :: CFG f -> TokenCat -> Bool
 isPositionCat cf cat = or [ b | TokenReg name b _ <- cfgPragmas cf, wpThing name == cat]
 
 
--- | Categories that are entry points to the parser
-allEntryPoints :: CFG f -> [Cat]
+-- | Categories that are entry points to the parser.
+--
+--   These are either the declared @entrypoints@ (in the original order),
+--   or, if no @entrypoints@ were declared explicitly,
+--   all parsable categories (in the order of declaration in the grammar file).
+allEntryPoints :: CFG f -> List1 Cat
 allEntryPoints cf =
   case concat [ cats | EntryPoints cats <- cfgPragmas cf ] of
-    [] -> allParserCats cf
-    cs -> map wpThing cs
+    []   -> List1.fromList $ allParserCats cf  -- assumed to be non-empty
+    c:cs -> fmap wpThing (c :| cs)

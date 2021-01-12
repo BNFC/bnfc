@@ -30,6 +30,7 @@ module BNFC.Backend.CPP.STL.CFtoBisonSTL
 import Prelude hiding ((<>))
 
 import Data.Char  ( isUpper )
+import Data.Foldable (toList)
 import Data.List  ( nub, intercalate )
 import Data.Maybe ( fromMaybe )
 import qualified Data.Map as Map
@@ -111,7 +112,7 @@ header inPackage name cf = unlines
     ]
   where
     ns   = nsString inPackage
-    eps  = allEntryPoints cf ++ map TokenCat (positionCats cf)
+    eps  = toList (allEntryPoints cf) ++ map TokenCat (positionCats cf)
     dats = nub $ map normCat eps
 
 definedRules :: CF -> String
@@ -311,7 +312,7 @@ constructRule rp inPackage cf env rules nt =
      ---- "(:[])" -> identCat nt
      z -> z
    revs = cfgReversibleCats cf
-   eps = allEntryPoints cf
+   eps = toList $ allEntryPoints cf
    isEntry nt = nt `elem` eps
    result = if isEntry nt then (nsScope inPackage ++ resultName (identCat (normCat nt))) ++ "= $$;" else ""
 

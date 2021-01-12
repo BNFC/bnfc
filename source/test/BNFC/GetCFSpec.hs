@@ -6,7 +6,7 @@ import Test.Hspec
 import BNFC.GetCF
 
 import BNFC.CF
-import qualified AbsBNF as Abs
+import qualified BNFC.Abs as Abs
 
 spec :: Spec
 spec = do
@@ -29,7 +29,7 @@ spec = do
 
     it "returns an error if the rule uses an unknown category" $ do
         let rule  = npRule "Foo"              (Cat "Bar")              [Left (Cat "Baz")] Parsable
-            cf = CFG [] [] [] [] [] [rule] mempty
+            cf = CFG [] mempty [] [] [] [] [rule] mempty
             expected =
                 "no production for Baz, appearing in rule\n    Foo. Bar ::= Baz"
         checkRule cf rule `shouldBe` Just expected

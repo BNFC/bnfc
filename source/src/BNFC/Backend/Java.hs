@@ -26,6 +26,7 @@ module BNFC.Backend.Java ( makeJava ) where
 import Prelude hiding ((<>))
 
 import System.FilePath (pathSeparator, isPathSeparator)
+import Data.Foldable (toList)
 import Data.List ( intersperse )
 
 import BNFC.Utils
@@ -489,10 +490,15 @@ antlrmakedetails l = MakeDetails
     , filename            = l
     , fileextension       = "g4"
     , toolname            = "ANTLRv4"
-    , toolversion         = "4.5.1"
+    , toolversion         = "4.9"
     , supportsEntryPoints = True
     , results             = [l]
-    , other_results       = map (l ++) [".tokens","BaseListener.java","Listener.java"]
+    , other_results       = map (l ++)
+        [ ".interp"              -- added after ANTLR 4.5
+        , ".tokens"
+        , "BaseListener.java"
+        ,"Listener.java"
+        ]
     , moveresults         = False
     }
 
@@ -637,7 +643,7 @@ javaTest (JavaTestParams
       px             = text parser
       dat            = text $ identCat $ normCat def  -- Use for AST types.
       absentity      = text $ identCat def            -- Use for parser/printer name.
-      eps            = allEntryPoints cf
+      eps            = toList $ allEntryPoints cf
       def            = head eps
 
 -- | Error handling in ANTLR.

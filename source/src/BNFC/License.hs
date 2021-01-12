@@ -2,7 +2,7 @@
 
 {-# LANGUAGE QuasiQuotes #-}
 
-module License where
+module BNFC.License where
 
 import Data.String.QQ
 

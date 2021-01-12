@@ -1,114 +1,112 @@
-{- |  Agda backend.
-Generate bindings to Haskell data types for use in Agda.
-
-Example for abstract syntax generated in Haskell backend:
-@@
-
-  module CPP.Abs where
-
-  import Prelude (Char, Double, Integer, String)
-  import qualified Prelude as C (Eq, Ord, Show, Read)
-
-  import qualified Data.Text
-
-  newtype Ident = Ident Data.Text.Text
-    deriving (C.Eq, C.Ord, C.Show, C.Read)
-
-  data Def = DFun Type Ident [Arg] [Stm]
-    deriving (C.Eq, C.Ord, C.Show, C.Read)
-
-  data Arg = ADecl Type Ident
-    deriving (C.Eq, C.Ord, C.Show, C.Read)
-
-  data Stm
-      = SExp Exp
-      | SInit Type Ident Exp
-      | SBlock [Stm]
-      | SIfElse Exp Stm Stm
-    deriving (C.Eq, C.Ord, C.Show, C.Read)
-
-  data Exp
-
-  data Type = Type_bool | Type_int | Type_double | Type_void
-    deriving (C.Eq, C.Ord, C.Show, C.Read)
-@@
-This should be accompanied by the following Agda code:
-@@
-  module CPP.AST where
-
-  open import Agda.Builtin.Char using () renaming (Char to Char)
-  open import Agda.Builtin.Float public using () renaming (Float to Double)
-  open import Agda.Builtin.Int   public using () renaming (Int to Integer)
-  open import Agda.Builtin.List using () renaming (List to #List)
-  open import Agda.Builtin.String using () renaming
-    ( String to #String
-    ; primStringFromList to #stringFromList
-    )
-
-  {-# FOREIGN GHC import Prelude (Char, Double, Integer, String) #-}
-  {-# FOREIGN GHC import qualified Data.Text #-}
-  {-# FOREIGN GHC import qualified CPP.Abs #-}
-  {-# FOREIGN GHC import CPP.Print (printTree) #-}
-
-  data Ident : Set where
-    ident : #String → Ident
-
-  {-# COMPILE GHC Ident = data CPP.Abs.Ident (CPP.Abs.Ident) #-}
-
-  data Def : Set where
-    dFun : (t : Type) (x : Ident) (as : List Arg) (ss : List Stm) → Def
-
-  {-# COMPILE GHC Def = data CPP.Abs.Def (CPP.Abs.DFun) #-}
-
-  data Arg : Set where
-    aDecl : (t : Type) (x : Ident) → Arg
-
-  {-# COMPILE GHC Arg = data CPP.Abs.Arg (CPP.Abs.ADecl) #-}
-
-  data Stm : Set where
-    sExp : (e : Exp) → Stm
-    sInit : (t : Type) (x : Ident) (e : Exp) → Stm
-    sBlock : (ss : List Stm) → Stm
-    sIfElse : (e : Exp) (s s' : Stm) → Stm
-
-  {-# COMPILE GHC Stm = data CPP.Abs.Stm
-    ( CPP.Abs.SExp
-    | CPP.Abs.SInit
-    | CPP.Abs.SBlock
-    | CPP.Abs.SIfElse
-    ) #-}
-
-  data Type : Set where
-    typeBool typeInt typeDouble typeVoid : Type
-
-  {-# COMPILE GHC Type = data CPP.Abs.Type
-    ( CPP.Abs.Type_bool
-    | CPP.Abs.Type_int
-    | CPP.Abs.Type_double
-    | CPP.Abs.Type_void
-    ) #-}
-
-  -- Binding the BNFC pretty printers.
-
-  printIdent  : Ident → String
-  printIdent (ident s) = String.fromList s
-
-  postulate
-    printType    : Type    → String
-    printExp     : Exp     → String
-    printStm     : Stm     → String
-    printArg     : Arg     → String
-    printDef     : Def     → String
-    printProgram : Program → String
-
-  {-# COMPILE GHC printType    = \ t -> Data.Text.pack (printTree (t :: CPP.Abs.Type)) #-}
-  {-# COMPILE GHC printExp     = \ e -> Data.Text.pack (printTree (e :: CPP.Abs.Exp))  #-}
-  {-# COMPILE GHC printStm     = \ s -> Data.Text.pack (printTree (s :: CPP.Abs.Stm))  #-}
-  {-# COMPILE GHC printArg     = \ a -> Data.Text.pack (printTree (a :: CPP.Abs.Arg))  #-}
-  {-# COMPILE GHC printDef     = \ d -> Data.Text.pack (printTree (d :: CPP.Abs.Def))  #-}
-  {-# COMPILE GHC printProgram = \ p -> Data.Text.pack (printTree (p :: CPP.Abs.Program)) #-}
-@@
--}
+-- | Agda backend.
+--
+-- Generate bindings to Haskell data types for use in Agda.
+--
+-- Example for abstract syntax generated in Haskell backend:
+--
+-- > module CPP.Abs where
+-- >
+-- > import Prelude (Char, Double, Integer, String)
+-- > import qualified Prelude as C (Eq, Ord, Show, Read)
+-- >
+-- > import qualified Data.Text
+-- >
+-- > newtype Ident = Ident Data.Text.Text
+-- >   deriving (C.Eq, C.Ord, C.Show, C.Read)
+-- >
+-- > data Def = DFun Type Ident [Arg] [Stm]
+-- >   deriving (C.Eq, C.Ord, C.Show, C.Read)
+-- >
+-- > data Arg = ADecl Type Ident
+-- >   deriving (C.Eq, C.Ord, C.Show, C.Read)
+-- >
+-- > data Stm
+-- >     = SExp Exp
+-- >     | SInit Type Ident Exp
+-- >     | SBlock [Stm]
+-- >     | SIfElse Exp Stm Stm
+-- >   deriving (C.Eq, C.Ord, C.Show, C.Read)
+-- >
+-- > data Exp
+-- >
+-- > data Type = Type_bool | Type_int | Type_double | Type_void
+-- >   deriving (C.Eq, C.Ord, C.Show, C.Read)
+--
+-- This should be accompanied by the following Agda code:
+--
+-- > module CPP.AST where
+-- >
+-- > open import Agda.Builtin.Char using () renaming (Char to Char)
+-- > open import Agda.Builtin.Float public using () renaming (Float to Double)
+-- > open import Agda.Builtin.Int   public using () renaming (Int to Integer)
+-- > open import Agda.Builtin.List using () renaming (List to #List)
+-- > open import Agda.Builtin.String using () renaming
+-- >   ( String to #String
+-- >   ; primStringFromList to #stringFromList
+-- >   )
+-- >
+-- > {-# FOREIGN GHC import Prelude (Char, Double, Integer, String) #-}
+-- > {-# FOREIGN GHC import qualified Data.Text #-}
+-- > {-# FOREIGN GHC import qualified CPP.Abs #-}
+-- > {-# FOREIGN GHC import CPP.Print (printTree) #-}
+-- >
+-- > data Ident : Set where
+-- >   ident : #String → Ident
+-- >
+-- > {-# COMPILE GHC Ident = data CPP.Abs.Ident (CPP.Abs.Ident) #-}
+-- >
+-- > data Def : Set where
+-- >   dFun : (t : Type) (x : Ident) (as : List Arg) (ss : List Stm) → Def
+-- >
+-- > {-# COMPILE GHC Def = data CPP.Abs.Def (CPP.Abs.DFun) #-}
+-- >
+-- > data Arg : Set where
+-- >   aDecl : (t : Type) (x : Ident) → Arg
+-- >
+-- > {-# COMPILE GHC Arg = data CPP.Abs.Arg (CPP.Abs.ADecl) #-}
+-- >
+-- > data Stm : Set where
+-- >   sExp : (e : Exp) → Stm
+-- >   sInit : (t : Type) (x : Ident) (e : Exp) → Stm
+-- >   sBlock : (ss : List Stm) → Stm
+-- >   sIfElse : (e : Exp) (s s' : Stm) → Stm
+-- >
+-- > {-# COMPILE GHC Stm = data CPP.Abs.Stm
+-- >   ( CPP.Abs.SExp
+-- >   | CPP.Abs.SInit
+-- >   | CPP.Abs.SBlock
+-- >   | CPP.Abs.SIfElse
+-- >   ) #-}
+-- >
+-- > data Type : Set where
+-- >   typeBool typeInt typeDouble typeVoid : Type
+-- >
+-- > {-# COMPILE GHC Type = data CPP.Abs.Type
+-- >   ( CPP.Abs.Type_bool
+-- >   | CPP.Abs.Type_int
+-- >   | CPP.Abs.Type_double
+-- >   | CPP.Abs.Type_void
+-- >   ) #-}
+-- >
+-- > -- Binding the BNFC pretty printers.
+-- >
+-- > printIdent  : Ident → String
+-- > printIdent (ident s) = String.fromList s
+-- >
+-- > postulate
+-- >   printType    : Type    → String
+-- >   printExp     : Exp     → String
+-- >   printStm     : Stm     → String
+-- >   printArg     : Arg     → String
+-- >   printDef     : Def     → String
+-- >   printProgram : Program → String
+-- >
+-- > {-# COMPILE GHC printType    = \ t -> Data.Text.pack (printTree (t :: CPP.Abs.Type)) #-}
+-- > {-# COMPILE GHC printExp     = \ e -> Data.Text.pack (printTree (e :: CPP.Abs.Exp))  #-}
+-- > {-# COMPILE GHC printStm     = \ s -> Data.Text.pack (printTree (s :: CPP.Abs.Stm))  #-}
+-- > {-# COMPILE GHC printArg     = \ a -> Data.Text.pack (printTree (a :: CPP.Abs.Arg))  #-}
+-- > {-# COMPILE GHC printDef     = \ d -> Data.Text.pack (printTree (d :: CPP.Abs.Def))  #-}
+-- > {-# COMPILE GHC printProgram = \ p -> Data.Text.pack (printTree (p :: CPP.Abs.Program)) #-}
 
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE LambdaCase #-}
@@ -129,7 +127,7 @@ import Data.Char
 import Data.Function (on)
 import qualified Data.List as List
 import Data.List.NonEmpty (NonEmpty((:|)))
-import qualified Data.List.NonEmpty as NEList
+import qualified Data.List.NonEmpty as List1
 import Data.Map (Map)
 import qualified Data.Map as Map
 import Data.Maybe
@@ -145,7 +143,7 @@ import BNFC.Options                (SharedOptions, TokenText(..), tokenText)
 import BNFC.PrettyPrint
 import BNFC.Utils                  (ModuleName, replace, when, table)
 
-type NEList = NEList.NonEmpty
+type List1 = List1.NonEmpty
 
 -- | How to print the types of constructors in Agda?
 
@@ -183,18 +181,12 @@ makeAgda time opts cf = do
   mkfile (agdaMainFile opts) $
     agdaMainContents (agdaMainFileM opts) (agdaLibFileM opts) (agdaASTFileM opts) (agdaParserFileM opts)
       (hasLayout cf)
-      entryPoint
+      (firstEntry cf)
   where
   -- | Generate parsers for the following non-terminals.
   --   This includes parsers for 'CoercCat' and 'ListCat'.
   parserCats :: [Cat]
-  parserCats =  allEntryPoints cf
-  -- | Entrypoint for test parser:
-  entryPoint :: Cat
-  entryPoint = case parserCats of
-    (c:_) -> c
-    _     -> error $ "impossible: makeAgda.entryPoint: allEntryPoints cannot be empty"
-    -- cannot be empty
+  parserCats = List1.toList $ allEntryPoints cf
   -- | In case the grammar makes use of layout, pass also the generated layout Haskell module.
   layoutMod :: Maybe String
   layoutMod = when (hasLayout cf) $ Just (layoutFileM opts)
@@ -594,11 +586,11 @@ prettyConstructorArgs style as =
   deltaSubscript = ord '₀' - ord '0' -- exploiting that '0' comes before '₀' in character table
   subscript (m, s) = maybe s (\ n -> s ++ map (chr . (deltaSubscript +) . ord) (show n)) m
   -- Aggregate consecutive arguments of the same type.
-  aggregateOn :: Eq c => ((a,b) -> c) -> [(a,b)] -> [(NEList a,b)]
+  aggregateOn :: Eq c => ((a,b) -> c) -> [(a,b)] -> [(List1 a,b)]
   aggregateOn f
-    = map (\ p -> (NEList.map fst p, snd (NEList.head p)))
-    . NEList.groupBy ((==) `on` f)
-    -- . NEList.groupWith f -- Too recent, fails stack-7.8 install
+    = map (\ p -> (List1.map fst p, snd (List1.head p)))
+    . List1.groupBy ((==) `on` f)
+    -- . List1.groupWith f -- Too recent, fails stack-7.8 install
 
 -- | Suggest the name of a bound variable of the given category.
 --

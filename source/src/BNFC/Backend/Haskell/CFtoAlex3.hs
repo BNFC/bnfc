@@ -11,7 +11,7 @@ module BNFC.Backend.Haskell.CFtoAlex3 (cf2alex3) where
 import Data.Char
 import qualified Data.List as List
 
-import AbsBNF
+import BNFC.Abs
 import BNFC.CF
 import BNFC.Lexing  (mkRegMultilineComment)
 import BNFC.Options (TokenText(..))

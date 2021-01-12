@@ -24,6 +24,7 @@ import Prelude hiding ((<>))
 import Data.Bifunctor ( second )
 import Data.Char      ( toLower )
 import Data.Either    ( lefts )
+import Data.Foldable  ( toList )
 import Data.List      ( nub )
 
 import BNFC.CF
@@ -56,7 +57,7 @@ mkHFile cf groups = unlines
   footer
  ]
  where
-  eps = nub . map normCat $ allEntryPoints cf
+  eps = nub . map normCat . toList $ allEntryPoints cf
   prPrints s | normCat s == s = "char *print" ++ s' ++ "(" ++ s' ++ " p);\n"
     where
       s' = identCat s
@@ -144,7 +145,7 @@ mkCFile cf groups = concat
     footer
    ]
   where
-    eps = nub . map normCat $ allEntryPoints cf
+    eps = nub . map normCat . toList $ allEntryPoints cf
     header = unlines
      [
       "/*** BNFC-Generated Pretty Printer and Abstract Syntax Viewer ***/",
