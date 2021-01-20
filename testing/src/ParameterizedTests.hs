@@ -305,6 +305,10 @@ haskellRunTestProg _lang args = do
 parameters :: [TestParameters]
 parameters = concat
   [ []
+    -- Haskell/Functor
+  , [ hsParams { tpName = "Haskell (with functor)"
+               , tpBnfcOptions = ["--haskell", "--functor"] }
+    ]
     -- C
   , [ cBase { tpName = "C"
             , tpBuild = tpMake ["CC_OPTS=-Wstrict-prototypes -Werror"]  -- additional flags
@@ -329,8 +333,6 @@ parameters = concat
     -- Haskell
   , [ hsParams { tpName = "Haskell (with generic)"
                , tpBnfcOptions = ["--haskell", "--generic"] }
-    , hsParams { tpName = "Haskell (with functor)"
-               , tpBnfcOptions = ["--haskell", "--functor"] }
     , hsParams { tpName = "Haskell (with namespace)"
                , tpBnfcOptions = ["--haskell", "-p", "Language", "-d"] }
     ]
