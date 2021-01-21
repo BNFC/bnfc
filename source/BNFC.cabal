@@ -1,8 +1,8 @@
 Name: BNFC
 Version: 2.9.1
-cabal-version: >= 1.10
-  -- ? set to >=1.24 for the custom-setup section?
-  -- ? set to >=2.0  for the build-tools: hspec-discover
+cabal-version: 2.0
+  -- >=1.24 for the custom-setup section
+  -- >=2.0  for the build-tools: hspec-discover
 build-type: Custom
 category: Development
 Copyright: (c) Andreas Abel, Jonas Almström Duregård, Krasimir Angelov, Jean-Philippe Bernardy, Björn Bringert, Johan Broberg, Kyle Butt, Paul Callaghan, Grégoire Détrez, Markus Forsberg, Ola Frid, Peter Gammie, Thomas Hallgren, Pascal Hof, Simon Huber, Patrik Jansson, Kristofer Johannisson, Antti-Juhani Kaijanaho, Andreas Lööw, Justin Meiners, Kent Mein, Ulf Norell, Gabriele Paganelli, Michael Pellauer, Fabian Ruch, and Aarne Ranta 2002 - 2021. Free software under the BSD 3-clause license.
@@ -66,13 +66,10 @@ Source-repository this
   tag:      v2.9.1
 
 -- Setup using https://github.com/haskellari/cabal-doctest
--- Regarding Cabal >= 1.24, see
--- https://github.com/haskell-CI/haskell-ci/issues/81#issuecomment-304087288
--- Cabal >= 2.0 is for build-tools: hspec-discover
 custom-setup
  setup-depends:
    base >= 4 && <5,
-   Cabal >= 2.0,
+   Cabal,
    cabal-doctest >= 1 && < 1.1
 
 executable bnfc
@@ -128,9 +125,9 @@ library
   if impl(ghc < 8.0)
     build-depends:
       semigroups
-  build-tools:
-    alex,
-    happy
+  build-tool-depends:
+    alex:alex,
+    happy:happy
   hs-source-dirs:
     src
   default-extensions:
@@ -286,10 +283,10 @@ test-suite unit-tests
   if impl(ghc < 8.0)
     build-depends:
       semigroups
-  build-tools:
-    alex,
-    happy,
-    hspec-discover
+  build-tool-depends:
+    alex:alex,
+    happy:happy,
+    hspec-discover:hspec-discover
   main-is:
     unit-tests.hs
   hs-source-dirs:
