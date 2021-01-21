@@ -2,6 +2,10 @@
 
 Andreas Abel <andreas.abel@gu.se>
 
+* Haskell: the `--functor` option now produces position-annotated ASTs [#176,#327,thanks Commelina]
+* Java/ANTLR: removed more superfluous quotation in lexer character sets [#329]
+* Ocaml: fix syntax error in generated printer [#330]
+
 # 2.9.0
 
 Andreas Abel <andreas.abel@gu.se>  December 2020

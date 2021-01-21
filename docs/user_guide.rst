@@ -187,6 +187,30 @@ This will leave the following files (and some more) in directory ``Calc``:
    and this is the recommended minimal migration of Haskell code
    written with BNFC 2.8.3.
 
+Option ``--functor``
+....................
+
+With the ``--functor`` option, the generated abstract syntax will
+consist of data types with one parameter.  The first field of each
+constructor holds a value typed by this parameter.  E.g. for ``Calc``
+the generated type is ``Exp' a`` with e.g. constructor
+``ETimes a (Exp' a) (Exp' a)``.
+Each parameterized type is a ``Foldable`` ``Traversable`` ``Functor``.
+Further, non-parameterized types, e.g.::
+
+    type Exp = Exp' (Maybe (Int, Int))
+
+are generated to characterize the syntax trees returned by the
+generated parser.  The extra values then hold line and column number
+of the starting position of the syntax tree node in the parsed file.
+If no position is available, e.g., for an empty list, the value is
+``Nothing``.
+
+In general, however, the extra values can be made to hold any kind of
+extra information attached to the abstract syntax.  E.g. one could
+store type information reconstructed during a type-checking phase
+there.
+
 
 Pygments Backend
 ================
