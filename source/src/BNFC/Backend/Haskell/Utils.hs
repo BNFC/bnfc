@@ -2,7 +2,8 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module BNFC.Backend.Haskell.Utils
-  ( parserName
+  ( posType, posConstr, noPosConstr, rowField, colField
+  , parserName
   , hsReservedWords, avoidReservedWords, mkDefName
   , typeToHaskell, typeToHaskell'
   , catToType
@@ -12,6 +13,7 @@ module BNFC.Backend.Haskell.Utils
   ) where
 
 import Data.Char
+import Data.String (IsString)
 
 import BNFC.PrettyPrint
 import qualified BNFC.PrettyPrint as P
@@ -19,6 +21,16 @@ import qualified BNFC.PrettyPrint as P
 import BNFC.CF      (Cat(..), catToStr, identCat, baseTokenCatNames, Base, Type(FunT), IsFun(..))
 import BNFC.Options (TokenText(..))
 import BNFC.Utils   (mkNames, NameStyle(..))
+
+-- * Names for position data type.
+
+posType, posConstr, noPosConstr, rowField, colField :: IsString a => a
+
+posType     = "BNFC'Position"
+posConstr   = "BNFC'Position"
+noPosConstr = "BNFC'NoPosition"
+rowField    = "bnfc'StartRow"
+colField    = "bnfc'StartColumn"
 
 -- * Parameterization by 'TokenText'.
 

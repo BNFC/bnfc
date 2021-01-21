@@ -149,28 +149,24 @@ rulesForHappy absM functor cf = for (ruleGroups cf) $ \ (cat, rules) ->
 -- Coercion are much simpler:
 --
 -- >>> constructRule "Foo" True (npRule "_" (Cat "Exp") [Right "(", Left (Cat "Exp"), Right ")"] Parsable)
--- ("'(' Exp ')'","(Just (tokenLineCol $1), (snd $2))")
+-- ("'(' Exp ')'","(uncurry Foo.BNFC'Position (tokenLineCol $1), (snd $2))")
 --
 constructRule :: IsFun f => String -> Bool -> Rul f -> (Pattern, Action)
 constructRule absName functor (Rule fun0 _cat rhs Parsable) = (pattern, action)
   where
     fun = funName fun0
-    (pattern, metavars) = generatePatterns rhs functor
+    (pattern, metavars) = generatePatterns functor rhs
     action
-      | functor   = let pos = actionPos
-                        val = actionValue
-                     in "(" ++ pos ++ ", " ++ val ++ ")"
+      | functor   = "(" ++ actionPos id ++ ", " ++ actionValue ++ ")"
       | otherwise = actionValue
-    -- Commelina, 2020-12-10:
-    -- replace the previous unimplemented "()"
-    actionPos = case rhs of
-      []          -> "Nothing"
-      (Left _:_)  -> "fst $1"
-      (Right _:_) -> "Just (tokenLineCol $1)"
+    actionPos paren = case rhs of
+      []          -> qualify noPosConstr
+      (Left _:_)  -> paren "fst $1"
+      (Right _:_) -> paren $ unwords [ "uncurry", qualify posConstr , "(tokenLineCol $1)" ]
     actionValue
       | isCoercion fun = unwords metavars
       | isNilCons  fun = unwords (qualify fun : metavars)
-      | functor        = unwords (qualify fun : ("(" ++ actionPos ++ ")") : metavars)
+      | functor        = unwords (qualify fun : actionPos (\ x -> "(" ++ x ++ ")") : metavars)
       | otherwise      = unwords (qualify fun : metavars)
     qualify f
       | isConsFun f || isNilCons f = f
@@ -182,15 +178,15 @@ constructRule _ _ (Rule _ _ _ Internal) = undefined -- impossible
 -- | Generate patterns and a set of metavariables (de Bruijn indices) indicating
 --   where in the pattern the non-terminal are locate.
 --
--- >>> generatePatterns [ Left (Cat "Exp"), Right "+", Left (Cat "Exp") ] False
+-- >>> generatePatterns False [ Left (Cat "Exp"), Right "+", Left (Cat "Exp") ]
 -- ("Exp '+' Exp",["$1","$3"])
 --
--- >>> generatePatterns [ Left (Cat "Exp"), Right "+", Left (Cat "Exp") ] True
+-- >>> generatePatterns True [ Left (Cat "Exp"), Right "+", Left (Cat "Exp") ]
 -- ("Exp '+' Exp",["(snd $1)","(snd $3)"])
 --
-generatePatterns :: SentForm -> Bool -> (Pattern, [MetaVar])
-generatePatterns [] _        = ("{- empty -}", [])
-generatePatterns its functor =
+generatePatterns :: Bool -> SentForm -> (Pattern, [MetaVar])
+generatePatterns _       []  = ("{- empty -}", [])
+generatePatterns functor its =
   ( unwords $ for its $ either {-non-term:-} identCat {-term:-} (render . convert)
   , [ if functor then "(snd $" ++ show i ++ ")" else ('$' : show i) | (i, Left{}) <- zip [1 :: Int ..] its ]
   )
@@ -217,14 +213,14 @@ generatePatterns its functor =
 --
 -- The functor case:
 -- >>> prRules "" True [(Cat "Expr", [("Integer", "EInt () $1"), ("Expr '+' Expr", "EPlus () $1 $3")])]
--- Expr :: { (Maybe (Int, Int),  (Expr (Maybe (Int, Int))) ) }
+-- Expr :: { (BNFC'Position, Expr) }
 -- Expr : Integer { EInt () $1 } | Expr '+' Expr { EPlus () $1 $3 }
 --
 -- A list with coercion: in the type signature we need to get rid of the
 -- coercion.
 --
 -- >>> prRules "" True [(ListCat (CoercCat "Exp" 2), [("Exp2", "(:[]) $1"), ("Exp2 ',' ListExp2","(:) $1 $3")])]
--- ListExp2 :: { (Maybe (Int, Int),  [Exp (Maybe (Int, Int))] ) }
+-- ListExp2 :: { (BNFC'Position, [Exp]) }
 -- ListExp2 : Exp2 { (:[]) $1 } | Exp2 ',' ListExp2 { (:) $1 $3 }
 --
 prRules :: ModuleName -> Bool -> Rules -> Doc
@@ -237,8 +233,8 @@ prRules absM functor = vsep . map prOne
       where
         nt' = text (identCat nt)
         pr pre (p,a) = hsep [pre, text p, "{", text a , "}"]
-    type' = catToType qualify $ if functor then "(Maybe (Int, Int))" else empty
-    functorType' nt = hsep ["(Maybe (Int, Int), ", type' nt, ")"]
+    type' = catToType qualify empty
+    functorType' nt = hcat ["(", qualify posType, ", ", type' nt, ")"]
     qualify
       | null absM = id
       | otherwise = ((text absM <> ".") <>)
@@ -297,11 +293,10 @@ specialRules absName functor tokenText cf = unlines . intersperse "" . (`map` li
     own       -> own ++ " :: { " ++ mkTypePart (qualify own) ++ " }"
             ++++ own ++ "  : L_" ++ own ++ " { " ++ mkBodyPart t ++ " }"
   where
-    mkTypePart tokenCat = if functor then "(Maybe (Int, Int), " ++ tokenCat ++ ")" else tokenCat
+    mkTypePart tokenCat = if functor then concat [ "(", qualify posType, ", ", tokenCat, ")" ] else tokenCat
     mkBodyPart tokenCat
-      | null mkPosPart = mkValPart tokenCat
-      | otherwise      = "(" ++ mkPosPart ++ ", " ++ mkValPart tokenCat ++ ")"
-    mkPosPart = if functor then "Just (tokenLineCol $1)" else ""
+      | functor   = "(" ++ unwords ["uncurry", qualify posConstr, "(tokenLineCol $1)"] ++ ", " ++ mkValPart tokenCat ++ ")"
+      | otherwise = mkValPart tokenCat
     mkValPart tokenCat =
       case tokenCat of
         "String"  -> if functor then stringUnpack "((\\(PT _ (TL s)) -> s) $1)"

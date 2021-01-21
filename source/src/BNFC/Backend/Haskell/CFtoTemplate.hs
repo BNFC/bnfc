@@ -39,7 +39,7 @@ cf2Template skelName absName functor cf = unlines
 --   M.EAdd expr1 expr2 -> failure x
 --
 -- >>> case_fun "" True (Cat "Expr") [("EInt", [TokenCat "Integer"]), ("EAdd", [Cat "Expr", Cat "Expr"])]
--- transExpr :: Show a => Expr a -> Result
+-- transExpr :: Show a => Expr' a -> Result
 -- transExpr x = case x of
 --   EInt _ integer -> failure x
 --   EAdd _ expr1 expr2 -> failure x
@@ -60,7 +60,7 @@ case_fun absName functor' cat xs = vcat
     -- then the type is a functor.
     iffunctor doc | functor' && not (isTokenCat cat) = doc
                   | otherwise = empty
-    type_ = qualify $ cat' <+> iffunctor "a"
+    type_ = qualify $ cat' <> iffunctor "' a"
     fname = "trans" <> cat'
     cat' =  text (show cat)
     mkOne (cons, args) =

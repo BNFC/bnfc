@@ -10,6 +10,7 @@
 module BNFC.Backend.Haskell.CFtoAbstract (cf2Abstract, definedRules) where
 
 import Prelude hiding ((<>))
+import Data.Either (isRight)
 import Data.Maybe
 import qualified Data.List as List
 
@@ -20,7 +21,9 @@ import BNFC.Utils                 ( when )
 
 import BNFC.Backend.Haskell.Utils
   ( avoidReservedWords, catToType, catvars, mkDefName
-  , tokenTextImport, tokenTextType, typeToHaskell )
+  , tokenTextImport, tokenTextType, typeToHaskell
+  , posType, posConstr, noPosConstr, rowField, colField
+  )
 
 -- | Create a Haskell module containing data type definitions for the abstract syntax.
 
@@ -49,7 +52,7 @@ cf2Abstract tokenText generic functor name cf = vsep . concat $
     , [ hsep [ "module", text name, "where" ] ]
     , [ vcat . concat $
         [ [ text $ "import Prelude (" ++ typeImports ++ ")" ]
-        , [ text $ "import qualified Prelude as C (Eq, Ord, Show, Read" ++ functorImportsQual ++ ")" ]
+        , [ text $ "import qualified Prelude as C (Eq, Ord, Show, Read" ++ functorImportsQual ++ intImport ++ ")" ]
         , [ "import qualified Data.String" | hasIdentLike ] -- for IsString
         ]
       ]
@@ -58,6 +61,16 @@ cf2Abstract tokenText generic functor name cf = vsep . concat $
         , [ "import qualified Data.Data    as C (Data, Typeable)" | gen ]
         , [ "import qualified GHC.Generics as C (Generic)"        | gen ]
         ]
+      ]
+    , [ vcat
+        [ "data" <+> posType
+        , nest 2 $ vcat
+          [ "=" <+> posConstr <+> "{" <+> rowField <+> ":: C.Int" <> "," <+> colField <+> ":: C.Int" <+> "}"
+          , "|" <+> noPosConstr
+          , "deriving (C.Eq, C.Ord, C.Show)"
+          ]
+        ]
+      | functor
       ]
     , (`map` specialCats cf) $ \ c ->
         let hasPos = isPositionCat cf c
@@ -80,14 +93,13 @@ cf2Abstract tokenText generic functor name cf = vsep . concat $
       [ derivingClasses False
       , [ "Data.String.IsString" | not hasPos ]
       ]
-    typeImports = List.intercalate ", " $ concat
-      [ [ "Char", "Double" ]
-      , [ "Int" | hasPositionTokens cf ]
-      , [ "Integer", "String" ]
-      ]
+    typeImports = List.intercalate ", " [ "Char", "Double", "Integer", "String" ]
     functorImportsQual
       | functor   = ", Functor, Foldable, Traversable"
       | otherwise = ""
+    intImport
+      | functor || hasPositionTokens cf = ", Int"
+      | otherwise                       = ""
 
 -- |
 --
@@ -107,24 +119,34 @@ cf2Abstract tokenText generic functor name cf = vsep . concat $
 --
 -- If the first argument is @True@, generate a functor:
 -- >>> prData True ["Show", "Functor"] (Cat "C", [("C1", [Cat "C"]), ("CIdent", [TokenCat "Ident"])])
--- data C a = C1 a (C a) | CIdent a Ident
+-- type C = C' BNFC'Position
+-- data C' a = C1 a (C' a) | CIdent a Ident
 --   deriving (Show, Functor)
 --
 -- The case for lists:
 -- >>> prData True ["Show", "Functor"] (Cat "ExpList", [("Exps", [ListCat (Cat "Exp")])])
--- data ExpList a = Exps a [Exp a]
+-- type ExpList = ExpList' BNFC'Position
+-- data ExpList' a = Exps a [Exp' a]
 --   deriving (Show, Functor)
 --
 prData :: Bool -> [String] -> Data -> Doc
-prData functor derivingClasses (cat,rules) = vcat
-    [ hang ("data" <+> dataType) 4 $
-        constructors rules
-    , nest 2 $ deriving_ derivingClasses
-    ]
+prData functor derivingClasses (cat,rules) = vcat $ concat
+  [ [ hsep [ "type", unprimedType, "=", primedType, posType ] | functor ]
+  , [ hang ("data" <+> dataType) 4 $
+        constructors rules ]
+  , [ nest 2 $ deriving_ derivingClasses ]
+  ]
   where
     prRule (fun, cats) = hsep $ concat [ [text fun], ["a" | functor], map prArg cats ]
-    dataType           = hsep $ concat [ [text (show cat)], ["a" | functor] ]
-    prArg              = catToType id $ if functor then "a" else empty
+    unprimedType       = text (show cat)
+    primedType         = prime unprimedType
+    prime              = (<> "'")
+    dataType | functor = primedType <+> "a"
+             |otherwise= unprimedType
+    prArg c
+      | functor && (not .isRight . baseCat) c
+                       = catToType prime "a" c
+      | otherwise      = catToType id empty c
     constructors []    = empty
     constructors (h:t) = sep $ ["=" <+> prRule h] ++ map (("|" <+>) . prRule) t
 
@@ -135,7 +157,7 @@ prData functor derivingClasses (cat,rules) = vcat
 --   deriving (Show, Data.String.IsString)
 --
 -- >>> prSpecialData StringToken True ["Show"] catIdent
--- newtype Ident = Ident ((Int, Int), String)
+-- newtype Ident = Ident ((C.Int, C.Int), String)
 --   deriving (Show)
 --
 -- >>> prSpecialData TextToken False ["Show"] catIdent
@@ -147,7 +169,7 @@ prData functor derivingClasses (cat,rules) = vcat
 --   deriving (Show)
 --
 -- >>> prSpecialData ByteStringToken True ["Show"] catIdent
--- newtype Ident = Ident ((Int, Int), BS.ByteString)
+-- newtype Ident = Ident ((C.Int, C.Int), BS.ByteString)
 --   deriving (Show)
 --
 prSpecialData
@@ -161,7 +183,7 @@ prSpecialData tokenText position classes cat = vcat
     , nest 2 $ deriving_ classes
     ]
   where
-    contentSpec | position    = parens ( "(Int, Int), " <> stringType)
+    contentSpec | position    = parens ( "(C.Int, C.Int), " <> stringType)
                 | otherwise   = stringType
     stringType = text $ tokenTextType tokenText
 

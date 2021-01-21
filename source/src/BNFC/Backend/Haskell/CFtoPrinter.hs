@@ -245,7 +245,7 @@ case_fun absMod functor cat xs =
     type' = \case
       ListCat c    -> "[" <> type' c <> "]"
       c@TokenCat{} -> text (qualifiedCat absMod c)
-      c            -> text (qualifiedCat absMod c) <+> "a"
+      c            -> text (qualifiedCat absMod c) <> "' a"
 
 -- | When writing the Print instance for a category (in case_fun), we have
 -- a different case for each constructor for this category.
