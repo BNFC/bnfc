@@ -22,7 +22,7 @@ import BNFC.Utils                 ( when )
 import BNFC.Backend.Haskell.Utils
   ( avoidReservedWords, catToType, catvars, mkDefName
   , tokenTextImport, tokenTextType, typeToHaskell
-  , posType, posConstr, noPosConstr, rowField, colField
+  , posType, posConstr, noPosConstr
   )
 
 -- | Create a Haskell module containing data type definitions for the abstract syntax.
@@ -47,12 +47,13 @@ cf2Abstract tokenText generic functor name cf = vsep . concat $
         , [ "{-# LANGUAGE DeriveGeneric #-}"              | gen ]
         , [ "{-# LANGUAGE DeriveTraversable #-}"          | fun ]
         , [ "{-# LANGUAGE GeneralizedNewtypeDeriving #-}" | hasIdentLike ] -- for IsString
+        , [ "{-# LANGUAGE PatternSynonyms #-}"            | fun ]
         ]
       ]
     , [ hsep [ "module", text name, "where" ] ]
     , [ vcat . concat $
         [ [ text $ "import Prelude (" ++ typeImports ++ ")" ]
-        , [ text $ "import qualified Prelude as C (Eq, Ord, Show, Read" ++ functorImportsQual ++ intImport ++ ")" ]
+        , [ text $ "import qualified Prelude as C (Eq, Ord, Show, Read" ++ functorImportsQual ++ intImport ++ maybeImports ++ ")" ]
         , [ "import qualified Data.String" | hasIdentLike ] -- for IsString
         ]
       ]
@@ -63,12 +64,13 @@ cf2Abstract tokenText generic functor name cf = vsep . concat $
         ]
       ]
     , [ vcat
-        [ "data" <+> posType
-        , nest 2 $ vcat
-          [ "=" <+> posConstr <+> "{" <+> rowField <+> ":: C.Int" <> "," <+> colField <+> ":: C.Int" <+> "}"
-          , "|" <+> noPosConstr
-          , "deriving (C.Eq, C.Ord, C.Show)"
-          ]
+        [ "type" <+> posType <+> "=" <+> "C.Maybe (C.Int, C.Int)"
+        , ""
+        , "pattern" <+> noPosConstr <+> "::" <+> posType
+        , "pattern" <+> noPosConstr <+> "=" <+> "C.Nothing"
+        , ""
+        , "pattern" <+> posConstr <+> ":: C.Int -> C.Int ->" <+> posType
+        , "pattern" <+> posConstr <+> "line col =" <+> "C.Just (line, col)"
         ]
       | functor
       ]
@@ -100,6 +102,9 @@ cf2Abstract tokenText generic functor name cf = vsep . concat $
     intImport
       | functor || hasPositionTokens cf = ", Int"
       | otherwise                       = ""
+    maybeImports
+      | functor   = ", Maybe(..)"
+      | otherwise = ""
 
 -- |
 --
