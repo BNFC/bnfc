@@ -50,7 +50,7 @@ cf2Happy name absName lexName mode tokenText functor cf = unlines
   , delimiter
   , specialRules absName functor tokenText cf
   , render $ prRules absName functor (rulesForHappy absName functor cf)
-  , footer functor eps cf
+  , footer absName functor eps cf
   ]
   where
   eps = toList $ allEntryPoints cf
@@ -71,7 +71,8 @@ header modName absName lexName tokenText eps = unlines $ concat
     , "import " ++ lexName
     ]
   , tokenTextImport tokenText
-  , [ "}"
+  , [ ""
+    , "}"
     ]
   ]
 
@@ -81,7 +82,7 @@ header modName absName lexName tokenText eps = unlines $ concat
 -- %name pB B
 -- %name pListB ListB
 -- -- no lexer declaration
--- %monad { Either String } { (>>=) } { return }
+-- %monad { Err } { (>>=) } { return }
 -- %tokentype {Token}
 --
 -- >>> declarations Standard True [Cat "A", Cat "B", ListCat (Cat "B")]
@@ -89,15 +90,15 @@ header modName absName lexName tokenText eps = unlines $ concat
 -- %name pB_internal B
 -- %name pListB_internal ListB
 -- -- no lexer declaration
--- %monad { Either String } { (>>=) } { return }
+-- %monad { Err } { (>>=) } { return }
 -- %tokentype {Token}
 declarations :: HappyMode -> Bool -> [Cat] -> Doc
 declarations mode functor ns = vcat
     [ vcat $ map generateP ns
     , case mode of
         Standard -> "-- no lexer declaration"
-        GLR      -> "%lexer { myLexer } { Either String _ }",
-      "%monad { Either String } { (>>=) } { return }",
+        GLR      -> "%lexer { myLexer } { Err _ }",
+      "%monad { Err } { (>>=) } { return }",
       "%tokentype" <+> braces (text tokenName)
     ]
   where
@@ -241,11 +242,13 @@ prRules absM functor = vsep . map prOne
 
 -- Finally, some haskell code.
 
-footer :: Bool -> [Cat] -> CF -> String
-footer functor eps cf = unlines $
-    [ "{"
+footer :: ModuleName -> Bool -> [Cat] -> CF -> String
+footer absName functor eps cf = unlines $ concat
+  [ [ "{"
     , ""
-    , "happyError :: [" ++ tokenName ++ "] -> Either String a"
+    , "type Err = Either String"
+    , ""
+    , "happyError :: [" ++ tokenName ++ "] -> Err a"
     , "happyError ts = Left $"
     , "  \"syntax error at \" ++ tokenPos ts ++ "
     , "  case ts of"
@@ -258,13 +261,25 @@ footer functor eps cf = unlines $
       , "++ \"'\""
       ]
     , ""
+    , "myLexer :: String -> [" ++ tokenName ++ "]"
     , "myLexer = tokens"
-    , if functor then render . vcat $ map mkParserFun eps else ""
-    , "}"
+    , ""
     ]
-    where
-      mkParserFun cat =
-          parserName cat <+> "=" <+>  "(>>= return . snd)" <+> "." <+> parserName cat <> "_internal"
+  , when functor
+    [ "-- Entrypoints"
+    , ""
+    , render . vsep $ map mkParserFun eps
+    ]
+  , [ "}" ]
+  ]
+  where
+    mkParserFun cat = vcat
+      [ parserName cat <+> "::" <+> brackets (text tokenName) <+> "-> Err" <+> catToType qualify empty cat
+      , parserName cat <+> "=" <+>  "fmap snd" <+> "." <+> parserName cat <> "_internal"
+      ]
+    qualify
+      | null absName = id
+      | otherwise    = ((text absName <> ".") <>)
 
 -- | GF literals.
 specialToks :: CF -> Bool -> [String]
