@@ -1,0 +1,18 @@
+
+-- 2021-01-22 if cabal-version is greater than shipped Cabal, allow newer Cabal version
+-- https://github.com/haskell-CI/haskell-ci/issues/468#issuecomment-761865807
+-- https://github.com/haskell-CI/haskell-ci/blob/c4f692a254727a11004da819d3bd53a1b5f514ec/cabal.haskell-ci#L43-L45
+--
+-- By default `installed` constraints are used for packages
+-- in global db. We can modify which constraints are used.
+installed: +all -Cabal
+
+-- Configure haskell-ci's behavior when presented multiple packages (e.g., a
+-- cabal.project file that specifies multiple .cabal files), each of which
+-- having its own range of GHC versions in its tested-with stanza.
+-- Possible values are:
+--   uniform: Every package must have the same range of versions in its
+--            tested-with stanza. (Default)
+--   any:     Take the union of all packages' version ranges. This implies
+--            that different packages' version ranges can be disjoint.
+jobs-selection: any
