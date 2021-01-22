@@ -50,7 +50,7 @@ cf2Happy name absName lexName mode tokenText functor cf = unlines
   , delimiter
   , specialRules absName functor tokenText cf
   , render $ prRules absName functor (rulesForHappy absName functor cf)
-  , footer absName functor eps cf
+  , footer absName tokenText functor eps cf
   ]
   where
   eps = toList $ allEntryPoints cf
@@ -242,8 +242,8 @@ prRules absM functor = vsep . map prOne
 
 -- Finally, some haskell code.
 
-footer :: ModuleName -> Bool -> [Cat] -> CF -> String
-footer absName functor eps cf = unlines $ concat
+footer :: ModuleName -> TokenText -> Bool -> [Cat] -> CF -> String
+footer absName tokenText functor eps cf = unlines $ concat
   [ [ "{"
     , ""
     , "type Err = Either String"
@@ -261,7 +261,7 @@ footer absName functor eps cf = unlines $ concat
       , "++ \"'\""
       ]
     , ""
-    , "myLexer :: String -> [" ++ tokenName ++ "]"
+    , "myLexer :: " ++ tokenTextType tokenText ++ " -> [" ++ tokenName ++ "]"
     , "myLexer = tokens"
     , ""
     ]
