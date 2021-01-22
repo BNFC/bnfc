@@ -1,4 +1,5 @@
 [![Hackage version](https://img.shields.io/hackage/v/BNFC.svg?label=Hackage)](http://hackage.haskell.org/package/BNFC)
+[![Hackage CI](https://matrix.hackage.haskell.org/api/v2/packages/BNFC/badge)](https://matrix.hackage.haskell.org/package/BNFC)
 [![BNFC on Stackage Nightly](https://stackage.org/package/BNFC/badge/nightly)](https://stackage.org/nightly/package/BNFC)
 [![Stackage LTS version](https://www.stackage.org/package/BNFC/badge/lts?label=Stackage)](https://www.stackage.org/package/BNFC)
 [![Build status](https://github.com/BNFC/bnfc/workflows/Haskell-CI/badge.svg)](https://github.com/BNFC/bnfc/actions)
