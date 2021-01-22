@@ -47,7 +47,7 @@ cf2Abstract tokenText generic functor name cf = vsep . concat $
         , [ "{-# LANGUAGE DeriveGeneric #-}"              | gen ]
         , [ "{-# LANGUAGE DeriveTraversable #-}"          | fun ]
         , [ "{-# LANGUAGE GeneralizedNewtypeDeriving #-}" | hasIdentLike ] -- for IsString
-        , [ "{-# LANGUAGE PatternSynonyms #-}"            | fun ]
+        , [ "{-# LANGUAGE PatternSynonyms #-}"            | functor ]
         ]
       ]
     , [ hsep [ "module", text name, "where" ] ]
@@ -63,6 +63,9 @@ cf2Abstract tokenText generic functor name cf = vsep . concat $
         , [ "import qualified GHC.Generics as C (Generic)"        | gen ]
         ]
       ]
+      -- We generate these synonyms for position info when --functor,
+      -- regardless whether it is used in the abstract syntax.
+      -- It may be used in the parser.
     , [ vcat
         [ "type" <+> posType <+> "=" <+> "C.Maybe (C.Int, C.Int)"
         , ""
