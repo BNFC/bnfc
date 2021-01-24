@@ -21,6 +21,7 @@ cf2Template skelName absName functor cf = unlines
     , ""
     , "module "++ skelName ++ " where"
     , ""
+    , "import Prelude (($), Either(..), String, (++), Show, show)"
     , "import qualified " ++ absName
     , ""
     , "type Err = Either String"

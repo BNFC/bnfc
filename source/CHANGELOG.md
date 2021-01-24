@@ -3,6 +3,7 @@
 Andreas Abel <andreas.abel@gu.se>
 
 * Haskell: the `--functor` option now produces position-annotated ASTs [#176,#327,thanks Commelina]
+* Haskell(/GADT): generated modules import Prelude explicitly, compatible with {-# LANGUAGE NoImplicitPrelude #-}
 * Java/ANTLR: removed more superfluous quotation in lexer character sets [#329]
 * Ocaml: fix syntax error in generated printer [#330]
 

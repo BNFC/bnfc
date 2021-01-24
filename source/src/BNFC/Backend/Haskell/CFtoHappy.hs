@@ -67,6 +67,9 @@ header modName absName lexName tokenText eps = unlines $ concat
     ]
   , map (("  , " ++) . render . parserName) eps
   , [ "  ) where"
+    , ""
+    , "import Prelude"
+    , ""
     , "import qualified " ++ absName
     , "import " ++ lexName
     ]

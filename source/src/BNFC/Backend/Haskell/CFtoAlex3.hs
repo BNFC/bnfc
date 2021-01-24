@@ -38,6 +38,8 @@ prelude name tokenText = concat
     , "{-# OPTIONS_GHC -w #-}"
     , "module " ++ name ++ " where"
     , ""
+    , "import Prelude"
+    , ""
     ]
   , tokenTextImport tokenText
   , [ "import qualified Data.Bits"

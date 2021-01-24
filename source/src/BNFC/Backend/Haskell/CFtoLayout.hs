@@ -20,6 +20,8 @@ cf2Layout :: TokenText -> String -> String -> CF -> String
 cf2Layout tokenText layName lexName cf = unlines $ [
   "module " ++ layName ++ " where",
   "",
+  "import Prelude",
+  "",
   "import " ++ lexName,
   "",
   if tokenText == TextToken then "import qualified Data.Text" else "",

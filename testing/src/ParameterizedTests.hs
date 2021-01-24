@@ -273,7 +273,7 @@ haskellParameters = baseParameters
         -- "-i" "Unused LANGUAGE pragma"
         "."
       tpMake
-      cmd "ghc" . (:[]) =<< findFileRegex "Skel.*\\.hs$"
+      cmd "ghc" "-XNoImplicitPrelude" . (:[]) =<< findFileRegex "Skel.*\\.hs$"
 
   , tpRunTestProg = haskellRunTestProg
   }

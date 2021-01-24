@@ -52,12 +52,15 @@ cf2Printer tokenText functor useGadt name absMod cf = unlines $ concat $
 prologue :: TokenText -> Bool -> String -> AbsMod -> [String]
 prologue tokenText useGadt name absMod = concat
   [ [ "{-# LANGUAGE CPP #-}"
-    , "#if __GLASGOW_HASKELL__ <= 708"
+    , "{-# LANGUAGE FlexibleInstances #-}"
+    ]
+  , [ "{-# LANGUAGE GADTs #-}"                | useGadt ]
+  , [ "#if __GLASGOW_HASKELL__ <= 708"
     , "{-# LANGUAGE OverlappingInstances #-}"
     , "#endif"
     ]
-  , [ "{-# LANGUAGE GADTs, TypeSynonymInstances #-}" | useGadt ]
-  , [ "{-# LANGUAGE FlexibleInstances #-}"
+  , [ "{-# LANGUAGE TypeSynonymInstances #-}" | useGadt ]
+  , [ ""
     , "{-# OPTIONS_GHC -fno-warn-incomplete-patterns #-}"
     , ""
     , "-- | Pretty-printer for " ++ takeWhile ('.' /=) name ++ "."
@@ -65,8 +68,15 @@ prologue tokenText useGadt name absMod = concat
     , ""
     , "module " ++ name +++ "where"
     , ""
+    , "import Prelude"
+    , "  ( ($), (.), id"
+    , "  , Bool(..), (==), (<)"
+    , "  , Int, Integer, Double, (+), (-), (*)"
+    , "  , String, (++), all, dropWhile, elem, foldr, map, null, replicate, span"
+    , "  , ShowS, shows, showChar, showString"
+    , "  )"
+    , "import Data.Char ( Char, isSpace )"
     , "import qualified " ++ absMod
-    , "import Data.Char"
     ]
   , tokenTextImport tokenText
   , [ ""

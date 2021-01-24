@@ -65,6 +65,8 @@ composOp composOpMod = unlines
      "module " ++ composOpMod ++ " (Compos(..),composOp,composOpM,composOpM_,composOpMonoid,",
      "                 composOpMPlus,composOpFold) where",
      "",
+     "import Prelude",
+     "",
      "import Control.Monad.Identity",
      "import Data.Monoid",
      "",
