@@ -13,6 +13,7 @@
 *.o
 
 # Cabal generated directories and files
+.ghc.environment.*
 build
 dist
 dist-newstyle

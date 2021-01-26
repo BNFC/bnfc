@@ -46,7 +46,7 @@ makeHaskell opts cf = do
       errMod = errFileM opts
   do
     -- Generate abstract syntax and pretty printer.
-    mkfile (absFile opts) $ cf2Abstract (tokenText opts) (generic opts) (functor opts) absMod cf
+    mkfile (absFile opts) $ cf2Abstract opts absMod cf
     mkfile (printerFile opts) $ cf2Printer (tokenText opts) (functor opts) False prMod absMod cf
 
     -- Generate Alex lexer.  Layout is resolved after lexing.

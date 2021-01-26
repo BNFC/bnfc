@@ -3,6 +3,7 @@
 
 module BNFC.Backend.Haskell.Utils
   ( posType, posConstr, noPosConstr
+  , hasPositionClass, hasPositionMethod
   , parserName
   , hsReservedWords, avoidReservedWords, mkDefName
   , typeToHaskell, typeToHaskell'
@@ -29,6 +30,13 @@ posType, posConstr, noPosConstr :: IsString a => a
 posType     = "BNFC'Position"
 posConstr   = "BNFC'Position"
 noPosConstr = "BNFC'NoPosition"
+
+-- * The @HasPosition@ class for position-carrying abstract syntax.
+
+hasPositionClass, hasPositionMethod :: IsString a => a
+
+hasPositionClass  = "HasPosition"
+hasPositionMethod = "hasPosition"
 
 -- * Parameterization by 'TokenText'.
 

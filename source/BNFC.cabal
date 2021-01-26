@@ -91,6 +91,7 @@ executable bnfc
     FlexibleContexts
     FlexibleInstances
     LambdaCase
+    NamedFieldPuns
     OverloadedStrings
     PatternGuards
     RecordWildCards
