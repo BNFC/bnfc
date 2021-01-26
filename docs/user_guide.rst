@@ -116,6 +116,15 @@ This will leave the following files (and some more) in directory ``Calc``:
 
        import Calc.Abs
 
+   *Since 2.9.1:* If some types of generated abstract syntax contain
+   `position information`_, which is the case with option
+   ``--functor`` or in the presence of ``position token`` s, then an
+   overloaded method is provided for these types that returns the
+   start position (line, column) of its argument::
+
+       class HasPosition a where
+         hasPosition :: a -> Maybe (Int, Int)
+
 2. ``Print.hs``
 
    The generated pretty printer in form of an overloaded function ``printTree``.
@@ -187,14 +196,16 @@ This will leave the following files (and some more) in directory ``Calc``:
    and this is the recommended minimal migration of Haskell code
    written with BNFC 2.8.3.
 
-Option ``--functor``
+Position Information
 ....................
 
+*Since 2.8:*
 With the ``--functor`` option, the generated abstract syntax will
 consist of data types with one parameter.  The first field of each
-constructor holds a value typed by this parameter.  E.g. for ``Calc``
-the generated type is ``Exp' a`` with e.g. constructor
-``ETimes a (Exp' a) (Exp' a)``.
+constructor holds a value typed by this parameter.
+*Since 2.9.1:*
+E.g. for ``Calc`` the generated type is ``Exp' a`` with e.g. constructor
+:code:`ETimes a (Exp' a) (Exp' a)`.
 Each parameterized type is a ``Foldable`` ``Traversable`` ``Functor``.
 Further, non-parameterized types, e.g.::
 
@@ -210,6 +221,8 @@ In general, however, the extra values can be made to hold any kind of
 extra information attached to the abstract syntax.  E.g. one could
 store type information reconstructed during a type-checking phase
 there.
+
+
 
 
 Pygments Backend
