@@ -76,7 +76,7 @@ endtagDef b = if b then endtagDefConstr else endtagDefNotyp
 -- flag -xmlt
 elemDataConstrs cf (cat,fcs) = elemc cat [(f,rhsCat cf f cs) | (f,cs) <- fcs]
 efunDefConstrs = "elemFun i t x = [replicate (i+i) ' ' ++ tag t ++ \" \" ++ etag x]"
-endtagDefConstrs = "endtag f c = tag (\"/\" ++ c)"
+endtagDefConstrs = "endtag _ c = tag (\"/\" ++ c)"
 
 -- coding 1:
 -- to show constructors as empty tags;
@@ -84,15 +84,15 @@ endtagDefConstrs = "endtag f c = tag (\"/\" ++ c)"
 -- flag -xmlt
 elemDataConstr cf (cat,fcs) = elemc cat [(f,rhsCat cf f cs) | (f,cs) <- fcs]
 efunDefConstr = "elemFun i t x = [replicate (i+i) ' ' ++ tag t ++ \" \" ++ etag x]"
-endtagDefConstr = "endtag f c = tag (\"/\" ++ c)"
+endtagDefConstr = "endtag _ c = tag (\"/\" ++ c)"
 
 -- coding 2:
 -- constructors as tags, no types.
 -- clumsy DTD, but nice trees. Validation guarantees type correctness
 -- flag -xml
 elemDataNotyp cf (_,fcs) = unlines [element f [rhsCatNot cf cs] | (f,cs) <- fcs]
-efunDefNotyp = "elemFun i t x = [replicate (i+i) ' ' ++ tag x]"
-endtagDefNotyp = "endtag f c = tag (\"/\" ++ f)"
+efunDefNotyp = "elemFun i _ x = [replicate (i+i) ' ' ++ tag x]"
+endtagDefNotyp = "endtag f _ = tag (\"/\" ++ f)"
 
 
 -- to show constructors as attributes;
@@ -145,12 +145,12 @@ prologue b opts _ = unlines [
   "module " ++ xmlFileM opts +++ "where\n",
   "import Prelude\n",
   "import " ++ absFileM opts,
-  "import Data.Char",
   "",
   "-- the top-level printing method",
   "printXML :: XPrint a => a -> String",
   "printXML = render . prt 0",
   "",
+  "render :: [String] -> String",
   "render = unlines",
   "",
   "-- the printer class does the job",
@@ -162,11 +162,18 @@ prologue b opts _ = unlines [
   "instance XPrint a => XPrint [a] where",
   "  prt = prtList",
   "",
+  "tag, etag :: String -> String",
   "tag t = \"<\" ++ t ++ \">\"",
   "etag t = \"<\" ++ t ++ \"/>\"",
+  "",
+  "elemTok, elemTokS :: Show a => Int -> String -> a -> [String]",
   "elemTok i t x = [replicate (i+i) ' ' ++ tag (t ++ \" value = \" ++ show x ++ \" /\")]",
   "elemTokS i t x = elemTok i t (show x)",
+  "",
+  "elemFun :: Int -> String -> String -> [String]",
   efunDef b,
+  "",
+  "endtag :: String -> String -> String",
   endtagDef b,
   ""
   ]
