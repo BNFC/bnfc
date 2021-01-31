@@ -284,7 +284,7 @@ testfile opts cf = unlines $ concat $
     , "import Prelude"
     , "  ( ($)"
     ]
-  , [ "  , (.), Bool(..)" | lay ]
+  , [ "  , Bool(..)" | lay ]
   , [ "  , Either(..)"
     , "  , Int, (>)"
     , "  , String, (++), unlines"
@@ -304,7 +304,7 @@ testfile opts cf = unlines $ concat $
         [ "import Data.ByteString.Char8 ( getContents, readFile )"
         , "import qualified Data.ByteString.Char8 as BS"
         ]
-  , [ "import System.Environment ( getArgs, getProgName )"
+  , [ "import System.Environment ( getArgs )"
     , "import System.Exit        ( exitFailure, exitSuccess )"
     , "import Control.Monad      ( when )"
     , ""
@@ -322,15 +322,11 @@ testfile opts cf = unlines $ concat $
   , [ "import qualified Data.Map ( Map, lookup, toList )" | use_glr ]
   , [ "import Data.Maybe ( fromJust )"                    | use_glr ]
   , [ ""
-    , "type Err = Either String"
+    , "type Err        = Either String"
     , if use_glr
       then "type ParseFun a = [[Token]] -> (GLRResult, GLR_Output (Err a))"
       else "type ParseFun a = [Token] -> Err a"
-    , ""
-    , "myLLexer = " ++ if lay then "resolveLayout True . myLexer"
-                              else "myLexer"
-    , ""
-    , "type Verbosity = Int"
+    , "type Verbosity  = Int"
     , ""
     , "putStrV :: Verbosity -> String -> IO ()"
     , "putStrV v s = when (v > 1) $ putStrLn s"
@@ -339,13 +335,11 @@ testfile opts cf = unlines $ concat $
     , "runFile v p f = putStrLn f >> readFile f >>= run v p"
     , ""
     , "run :: (" ++ xpr ++ if_glr "TreeDecode a, " ++ "Print a, Show a) => Verbosity -> ParseFun a -> " ++ tokenTextType (tokenText opts) ++ " -> IO ()"
-    , if use_glr then runGlr else runStd use_xml
-    , ""
+    , (if use_glr then runGlr else runStd use_xml) myLLexer
     , "showTree :: (Show a, Print a) => Int -> a -> IO ()"
-    , "showTree v tree"
-    , " = do"
-    , "      putStrV v $ \"\\n[Abstract Syntax]\\n\\n\" ++ show tree"
-    , "      putStrV v $ \"\\n[Linearized tree]\\n\\n\" ++ printTree tree"
+    , "showTree v tree = do"
+    , "  putStrV v $ \"\\n[Abstract Syntax]\\n\\n\" ++ show tree"
+    , "  putStrV v $ \"\\n[Linearized tree]\\n\\n\" ++ printTree tree"
     , ""
     , "usage :: IO ()"
     , "usage = do"
@@ -363,18 +357,17 @@ testfile opts cf = unlines $ concat $
     , "  args <- getArgs"
     , "  case args of"
     , "    [\"--help\"] -> usage"
-    , "    [] -> getContents >>= run 2 " ++ firstParser
-    , "    \"-s\":fs -> mapM_ (runFile 0 " ++ firstParser ++ ") fs"
-    , "    fs -> mapM_ (runFile 2 " ++ firstParser ++ ") fs"
+    , "    []         -> getContents >>= run 2 " ++ firstParser
+    , "    \"-s\":fs    -> mapM_ (runFile 0 " ++ firstParser ++ ") fs"
+    , "    fs         -> mapM_ (runFile 2 " ++ firstParser ++ ") fs"
     , ""
     ]
-  , if use_glr then
+  , when use_glr $
     [ "the_parser :: ParseFun " ++ show topType
     , "the_parser = lift_parser " ++ render (parserName topType)
     , ""
     , liftParser
     ]
-    else []
   ]
   where
     lay         = hasLayout cf
@@ -384,32 +377,35 @@ testfile opts cf = unlines $ concat $
     if_glr s    = if use_glr then s else ""
     firstParser = if use_glr then "the_parser" else render (parserName topType)
     topType     = firstEntry cf
+    myLLexer atom
+      | lay     = unwords [ "resolveLayout True $ myLexer", atom]
+      | True    = unwords [ "myLexer", atom]
 
 
-runStd xml
- = unlines
-   [ "run v p s = case p ts of"
-   , "    Left s -> do"
+runStd xml myLLexer = unlines $ concat
+ [ [ "run v p s ="
+   , "  case p ts of"
+   , "    Left err -> do"
    , "      putStrLn \"\\nParse              Failed...\\n\""
    , "      putStrV v \"Tokens:\""
    , "      putStrV v $ show ts"
-   , "      putStrLn s"
+   , "      putStrLn err"
    , "      exitFailure"
    , "    Right tree -> do"
    , "      putStrLn \"\\nParse Successful!\""
    , "      showTree v tree"
-   , if xml then
-     "      putStrV v $ \"\\n[XML]\\n\\n\" ++ printXML tree"
-     else ""
-   , "      exitSuccess"
-   , "  where"
-   , "  ts = myLLexer s"
    ]
+ , [ "      putStrV v $ \"\\n[XML]\\n\\n\" ++ printXML tree" | xml ]
+ , [ "      exitSuccess"
+   , "  where"
+   , "  ts = " ++ myLLexer "s"
+   ]
+ ]
 
-runGlr
+runGlr myLLexer
  = unlines
    [ "run v p s"
-   , " = let ts = map (:[]) $ myLLexer s"
+   , " = let ts = map (:[]) $ " ++ myLLexer "s"
    , "       (raw_output, simple_output) = p ts in"
    , "   case simple_output of"
    , "     GLR_Fail major minor -> do"
