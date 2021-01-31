@@ -21,6 +21,8 @@ define    iSg i = ISnoc INil i      ;
 
 CNil.     Chars ::=                 ;
 cSg.      Chars ::= Char            ;
-CSnoc.    Chars ::= Chars "," Char  ;
+CSnoc.    Chars ::= Chars Dot Char  ;
 
-define    cSg c = CSnoc CNil c      ;
+define    cSg c = CSnoc CNil (Dot ".") c;
+
+token     Dot '.'                   ;

@@ -304,7 +304,9 @@ definedRules functor cf = [ mkDef f xs e | FunDef f xs e <- cfgPragmas cf ]
       ]
       where xs' = addFunctorArg id $ map avoidReservedWords xs
     sanitize = \case
-      App x es      -> App x $ addFunctorArg (`App` []) $ map sanitize es
+      App x es
+        | tokTyp x  -> App x $ map sanitize es
+        | otherwise -> App x $ addFunctorArg (`App` []) $ map sanitize es
       Var x         -> Var $ avoidReservedWords x
       e@LitInt{}    -> e
       e@LitDouble{} -> e

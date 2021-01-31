@@ -1,7 +1,10 @@
+
+Parse Successful!
+
 [Abstract Syntax]
 
-Prg (ISnoc (ISnoc (ISnoc INil 1) 2) 3) (CSnoc (CSnoc CNil 'A') 'a') (EPower (EDouble 1.41421356237311) (EPower (EPower (EDouble 2.71828182845905) EHalf) (EDouble 3.14159265358979)))
+Prg (ISnoc (ISnoc (ISnoc INil 1) 2) 3) (CSnoc (CSnoc CNil (Dot ".") 'A') (Dot ".") 'a') (EPower (EDouble 1.41421356237311) (EPower (EPower (EDouble 2.71828182845905) EHalf) (EDouble 3.14159265358979)))
 
 [Linearized tree]
 
-integers, 1, 2, 3 chars, 'A', 'a' in 1.41421356237311 ** (2.71828182845905 ** 1/2) ** 3.14159265358979
+integers, 1, 2, 3 chars . 'A' . 'a' in 1.41421356237311 ** (2.71828182845905 ** 1/2) ** 3.14159265358979
