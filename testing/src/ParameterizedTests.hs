@@ -272,7 +272,8 @@ haskellParameters = baseParameters
         "-i" "Use fmap"
         -- "-i" "Unused LANGUAGE pragma"
         "."
-      tpMake
+      cmd "ghc" "-XNoImplicitPrelude" "-Wall" . (:[]) =<< findFileRegex "Abs.*\\.hs$"
+      tpMake [ "GHC_OPTS=-XNoImplicitPrelude" ]
       cmd "ghc" "-XNoImplicitPrelude" . (:[]) =<< findFileRegex "Skel.*\\.hs$"
 
   , tpRunTestProg = haskellRunTestProg

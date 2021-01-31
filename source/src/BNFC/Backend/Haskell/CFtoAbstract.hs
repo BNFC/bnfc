@@ -63,9 +63,12 @@ cf2Abstract Options{ lang, tokenText, generic, functor } name cf = vsep . concat
 
     -- Imports
     , [ vcat . concat $
-        [ [ text $ "import Prelude (" ++ typeImports ++ ")" ]
-        , [ text $ "import qualified Prelude as C (Eq, Ord, Show, Read" ++ functorImportsQual ++ intImport ++ maybeImports ++ ")" ]
-        , [ "import qualified Data.String" | hasIdentLike ] -- for IsString
+        [ [ text $ "import Prelude (" ++ List.intercalate ", " typeImports ++ ")"
+            | not $ null typeImports ]
+        , [ prettyList 2 "import qualified Prelude as C" "(" ")" "," $ qualifiedPreludeImports
+            | not $ null qualifiedPreludeImports ]
+        , [ "import qualified Data.String"
+            | hasIdentLike ] -- for IsString
         ]
       ]
     , [ vcat . concat $
@@ -133,25 +136,28 @@ cf2Abstract Options{ lang, tokenText, generic, functor } name cf = vsep . concat
     gen   = generic && hasData
     fun   = functor && hasData
 
+    stdClasses = [ "Eq", "Ord", "Show", "Read" ]
+    funClasses = [ "Functor", "Foldable", "Traversable" ]
+    genClasses = [ "Data", "Typeable", "Generic" ]
     derivingClasses functor = map ("C." ++) $ concat
-      [ [ "Eq", "Ord", "Show", "Read" ]
-      , when functor [ "Functor", "Foldable", "Traversable" ]
-      , when generic [ "Data", "Typeable", "Generic" ]
+      [ stdClasses
+      , when functor funClasses
+      , when generic genClasses
       ]
     derivingClassesTokenType hasPos = concat
       [ derivingClasses False
       , [ "Data.String.IsString" | not hasPos ]
       ]
-    typeImports = List.intercalate ", " [ "Char", "Double", "Integer", "String" ]
-    functorImportsQual
-      | fun       = ", Functor, Foldable, Traversable"
-      | otherwise = ""
-    intImport
-      | defPosition  = ", Int"
-      | otherwise    = ""
-    maybeImports
-      | defPosition  = ", Maybe(..)"
-      | otherwise    = ""
+    -- import Prelude (Char, Double, Integer, String)
+    typeImports =
+      filter (\ s -> hasData      && s `elem` cfgLiterals cf
+                  || hasIdentLike && tokenText == StringToken)
+        baseTokenCatNames
+    qualifiedPreludeImports = concat
+      [ [ text $ List.intercalate ", " stdClasses | hasIdentLike || hasData ]
+      , [ text $ List.intercalate ", " funClasses | fun ]
+      , [ text $ "Int, Maybe(..)" | defPosition ]
+      ]
 
 -- |
 --
