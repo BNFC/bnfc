@@ -22,12 +22,15 @@ cf2Abstract :: TokenText -> String -> CF -> String -> String
 cf2Abstract tokenText name cf composOpMod = unlines $ concat $
   [ [ "{-# LANGUAGE GADTs, KindSignatures, DataKinds #-}"
     , "{-# LANGUAGE EmptyCase #-}"
+    , "{-# LANGUAGE LambdaCase #-}"
+    , ""
+    , "{-# OPTIONS_GHC -Wno-unused-imports #-}"
+    , "{-# OPTIONS_GHC -Wno-overlapping-patterns #-}"
     , ""
     , "module" +++ name +++ "(" ++ List.intercalate ", " exports ++ ")" +++ "where"
     , ""
     , "import Prelude (" ++ typeImports ++ ", (.), (>), (&&), (==))"
     , "import qualified Prelude as P"
-    , "import qualified Data.Monoid as P"
     , ""
     , "import " ++ composOpMod
     ]
@@ -80,8 +83,11 @@ prDummyTypes cf = prDummyData : map prDummyType cats
     | otherwise = "data Tag =" +++ List.intercalate " | " (map mkRealType cats)
   prDummyType cat = "type" +++ cat +++ "= Tree" +++ mkRealType cat
 
+-- Promoted constructors should be preceded by a prime,
+-- otherwise we get GHC warning @unticked-promoted-constructors@.
 mkRealType :: String -> String
-mkRealType cat = cat ++ "_" -- FIXME: make sure that there is no such category already
+mkRealType cat = "'" ++ cat ++ "_"
+
 
 prTreeType :: TokenText -> CF -> [String]
 prTreeType tokenText cf =
@@ -98,9 +104,9 @@ prTreeType tokenText cf =
 prCompos :: CF -> [String]
 prCompos cf =
     ["instance Compos Tree where",
-     "  compos r a f t = case t of"]
+     "  compos r a f = \\case"]
     ++ map ("      "++) (concatMap prComposCons cs
-                         ++ ["_ -> r t" | not (all isRecursive cs)])
+                         ++ ["t -> r t" | not (all isRecursive cs)])
   where
     cs = cf2cons cf
     prComposCons c
@@ -116,15 +122,16 @@ prShow :: CF -> [String]
 prShow cf = ["instance P.Show (Tree c) where",
               "  showsPrec n t = case t of"]
               ++ map (("    "++) .prShowCons) cs
-              ++ ["   where opar n = if n > 0 then P.showChar '(' else P.id",
-                  "         cpar n = if n > 0 then P.showChar ')' else P.id"]
+              ++ ["   where",
+                  "   opar = if n > 0 then P.showChar '(' else P.id",
+                  "   cpar = if n > 0 then P.showChar ')' else P.id"]
   where
     cs = cf2cons cf
     prShowCons c | null vars = fun +++ "->" +++ "P.showString" +++ show fun
                  | otherwise = fun +++ unwords (map snd vars) +++ "->"
-                                   +++ "opar n . P.showString" +++ show fun
+                                   +++ "opar . P.showString" +++ show fun
                                    +++ unwords [". P.showChar ' ' . P.showsPrec 1 " ++ x | (_,x) <- vars]
-                                   +++ ". cpar n"
+                                   +++ ". cpar"
       where (fun, vars) = (consFun c, consVars c)
 
 prEq :: CF -> [String]
@@ -151,7 +158,8 @@ prOrd cf = concat
   , when (null cs) [ "index = P.undefined" ]
   , [ "", "compareSame :: Tree c -> Tree c -> P.Ordering" ]
   , map mkCompareSame cs
-  , [ "compareSame x y = P.error \"BNFC error:\" compareSame" ]
+  -- Case sometimes redundant, so we need to suppress the warning.
+  , [ "compareSame _ _ = P.error \"BNFC error: compareSame\"" ]
   ]
   where cs = cf2cons cf
         mkCompareSame c

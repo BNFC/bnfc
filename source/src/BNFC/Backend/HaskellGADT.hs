@@ -68,7 +68,6 @@ composOp composOpMod = unlines
      "import Prelude",
      "",
      "import Control.Monad.Identity",
-     "import Data.Monoid",
      "",
      "class Compos t where",
      "  compos :: (forall a. a -> m a) -> (forall a b. m (a -> b) -> m a -> m b)",
