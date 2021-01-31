@@ -224,13 +224,11 @@ makefile opts makeFile = vcat
   bnfcRule = Makefile.mkRule tgts [ lbnfFile opts ] [ recipe ]
     where
     recipe    = unwords [ "bnfc", printOptions opts{ make = Nothing } ]
-    tgts      = unwords . concat $
-      [ alexEtc
-      , [ happyFile opts, tFile opts ]
-      , when (agda opts) agdaFiles
+    tgts      = unwords . map ($ opts) . concat $
+      [ [ absFile, alexFile, happyFile, printerFile, tFile ]
+      , when (agda opts)
+        [ agdaASTFile, agdaParserFile, agdaLibFile, agdaMainFile ]
       ]
-    alexEtc   = map ($ opts) [ errFile, alexFile, printerFile ]
-    agdaFiles = map ($ opts) [ agdaASTFile, agdaParserFile, agdaLibFile, agdaMainFile ]
 
   -- | Rule to invoke @happy@.
   happyRule :: Doc
@@ -254,11 +252,11 @@ makefile opts makeFile = vcat
     tgt = tFileExe opts
     deps :: [String]
     deps = map ($ opts)
-      [ tFile {- must be first! -}
-      , errFile
+      [ absFile
       , alexFileHs
       , happyFileHs
       , printerFile
+      , tFile
       ]
 
   -- | Rule to build Agda parser.
