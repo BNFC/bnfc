@@ -20,7 +20,8 @@ import BNFC.Utils
 import Data.Char     (toLower)
 import Data.Either   (lefts)
 import Data.Function (on)
-import Data.List     (sortBy, intersperse)
+
+import qualified Data.List as List
 
 -- import Debug.Trace (trace)
 import Text.PrettyPrint
@@ -290,7 +291,7 @@ mkPrintCase absMod functor (Rule f cat rhs _internal) =
     pattern :: Doc
     pattern
       | isOneFun  f = text "[" <+> head variables <+> "]"
-      | isConsFun f = hsep $ intersperse (text ":") variables
+      | isConsFun f = hsep $ List.intersperse (text ":") variables
       | otherwise   = text (qualify absMod $ funName f) <+> (if functor then "_" else empty) <+> hsep variables
     -- Creating variables names used in pattern matching. In addition to
     -- haskell's reserved words, `e` and `i` are used in the printing function
@@ -317,7 +318,7 @@ ifList cf cat =
     -- trace "" $
     map (render . nest 2) cases
   where
-    rules = sortBy compareRules $ rulesForNormalizedCat cf (ListCat cat)
+    rules = List.sortBy compareRules $ rulesForNormalizedCat cf (ListCat cat)
     cases = [ mkPrtListCase r | r <- rules ]
 
 -- | Pattern match on the list constructor and the coercion level
