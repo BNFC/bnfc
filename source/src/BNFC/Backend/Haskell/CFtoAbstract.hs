@@ -296,13 +296,15 @@ definedRules :: Bool -> CF -> [Doc]
 definedRules functor cf = [ mkDef f xs e | FunDef f xs e <- cfgPragmas cf ]
   where
     mkDef f xs e = vcat $ map text $ concat
-      [ [ unwords [ mkDefName f, "::", typeToHaskell $ wpThing t ]
-        | not functor  -- TODO: make type signatures work with --functor
-        , t <- maybeToList $ sigLookup f cf
+      [ [ unwords [ mkDefName f, "::", typ $ wpThing t ]
+        | t <- maybeToList $ sigLookup f cf
         ]
       , [ unwords $ mkDefName f : xs' ++ [ "=", show $ sanitize e ] ]
       ]
-      where xs' = addFunctorArg id $ map avoidReservedWords xs
+      where
+      xs' = addFunctorArg id $ map avoidReservedWords xs
+      typ (FunT ts t) | functor = List.intercalate " -> " $ "a" : (map funBase $ ts ++ [t])
+      typ t = typeToHaskell t
     sanitize = \case
       App x es
         | tokTyp x  -> App x $ map sanitize es
@@ -316,3 +318,10 @@ definedRules functor cf = [ mkDef f xs e | FunDef f xs e <- cfgPragmas cf ]
     addFunctorArg g
       | functor = (g "_a" :)
       | otherwise = id
+    funBase :: Base -> String
+    funBase = \case
+      BaseT x
+        | tokTyp x  -> x
+        | otherwise -> x ++ "' a"
+      ListT b -> concat [ "[", funBase b, "]" ]
+    tokTyp = (`elem` literals cf)
