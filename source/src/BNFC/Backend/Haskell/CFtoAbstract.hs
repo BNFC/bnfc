@@ -151,7 +151,7 @@ cf2Abstract Options{ lang, tokenText, generic, functor } name cf = vsep . concat
     -- import Prelude (Char, Double, Integer, String)
     typeImports =
       filter (\ s -> hasData      && s `elem` cfgLiterals cf
-                  || hasIdentLike && tokenText == StringToken)
+                  || hasIdentLike && tokenText == StringToken && s == "String")
         baseTokenCatNames
     qualifiedPreludeImports = concat
       [ [ text $ List.intercalate ", " stdClasses | hasIdentLike || hasData ]
