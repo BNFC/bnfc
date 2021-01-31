@@ -55,6 +55,7 @@ cf2Abstract Options{ lang, tokenText, generic, functor } name cf = vsep . concat
         , [ "{-# LANGUAGE GeneralizedNewtypeDeriving #-}" | hasIdentLike ] -- for IsString
         , [ "{-# LANGUAGE LambdaCase #-}"                 | fun ]
         , [ "{-# LANGUAGE PatternSynonyms #-}"            | defPosition ]
+        , [ "{-# LANGUAGE OverloadedStrings #-}"          | tokenText /= StringToken ]
         , [ "{-# LANGUAGE TypeSynonymInstances #-}"       | fun ]
         ]
       ]
