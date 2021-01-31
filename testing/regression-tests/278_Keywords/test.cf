@@ -2,6 +2,7 @@
 -- A grammar of keywords of the C, C++, Haskell, Java, Ocaml backends
 
 -- Andreas, 2020-01-03: merge in testcase for issue #134
+-- Andreas, 2021-01-31: issue #337: Haskell/Print reserved: "prt" "doc"
 
 Prg. Program ::=
     Abstract
@@ -35,6 +36,7 @@ Prg. Program ::=
     Delete
     Deriving
     Do
+    Doc             -- issue #337
     Done
     Double_
     Downto
@@ -114,6 +116,7 @@ Prg. Program ::=
     Private
     Proc
     Protected
+    Prt             -- issue #337
     Public
     Qualified
     Rec
@@ -195,6 +198,7 @@ Default_Mk          .  Default              ::= "default"          ;
 Delete_Mk           .  Delete               ::= "delete"           ;
 Deriving_Mk         .  Deriving             ::= "deriving"         ;
 Do_Mk               .  Do                   ::= "do"               ;
+Doc_Mk              .  Doc                  ::= "doc"              ;
 Done_Mk             .  Done                 ::= "done"             ;
 Double__Mk          .  Double_              ::= "double"           ;
 Downto_Mk           .  Downto               ::= "downto"           ;
@@ -274,6 +278,7 @@ Pattern_Mk          .  Pattern              ::= "pattern"          ;
 Private_Mk          .  Private              ::= "private"          ;
 Proc_Mk             .  Proc                 ::= "proc"             ;
 Protected_Mk        .  Protected            ::= "protected"        ;
+Prt_Mk              .  Prt                  ::= "prt"              ;
 Public_Mk           .  Public               ::= "public"           ;
 Qualified_Mk        .  Qualified            ::= "qualified"        ;
 Rec_Mk              .  Rec                  ::= "rec"              ;
@@ -595,6 +600,12 @@ then
 type
 where
 
+-- Haskell printer reserved words
+
+doc
+i
+prt
+
 -- Java reserved words
 
 abstract
@@ -712,7 +723,7 @@ with
 
 
 
-{-
+{-  Outdated:
 
 -- Working material:
 

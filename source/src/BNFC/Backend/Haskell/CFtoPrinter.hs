@@ -294,10 +294,12 @@ mkPrintCase absMod functor (Rule f cat rhs _internal) =
       | otherwise   = text (qualify absMod $ funName f) <+> (if functor then "_" else empty) <+> hsep variables
     -- Creating variables names used in pattern matching. In addition to
     -- haskell's reserved words, `e` and `i` are used in the printing function
-    -- and should be avoided
+    -- and should be avoided.
+    -- #337: `prt` as well, and some more entirely lowercase ones.
+    avoid = [ "e", "i", "doc", "prt" ] -- mixed-case: "concatD", "prPrec", "showString"
     names = map var (lefts rhs)
     variables :: [Doc]
-    variables = map text $ mkNames ("e" : "i" : hsReservedWords) LowerCase names
+    variables = map text $ mkNames (avoid ++ hsReservedWords) LowerCase names
     var (ListCat c)  = var c ++ "s"
     var (TokenCat "Ident")   = "id"
     var (TokenCat "Integer") = "n"
