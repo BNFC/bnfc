@@ -74,18 +74,21 @@ executable bnfc-system-tests
   -- other-extensions:
 
   -- Other library packages from which modules are imported.
-  build-depends:       base >=4.5 && <5,
-                       containers,
-                       regex-posix >= 0.95.2,
-                       HUnit >= 1.2,
-                       shelly >= 1.9,
-                       filepath,
-                         -- filepath >= 1.4.2.1,
-                       text,
-                       HTF >= 0.14.0.1,
-                       -- HTF-0.14.0.3 does not build with random-1.2
-                       random < 1.2,
-                       string-qq
+  build-depends:
+      base        >= 4.10 && <5
+      -- base-4.10 is ghc-8.2 (required by HTF)
+    , containers
+    , regex-posix >= 0.95.2
+    , HUnit       >= 1.2
+    , shelly      >= 1.9
+    , filepath
+      -- filepath >= 1.4.2.1
+    , text
+    , HTF         >= 0.14.0.5
+      -- HTF-0.14.0.3 does not build with random-1.2
+    , random
+      -- random < 1.2
+    , string-qq
 
   -- Directories containing source files.
   hs-source-dirs: . src
