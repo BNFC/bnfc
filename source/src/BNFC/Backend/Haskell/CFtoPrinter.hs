@@ -53,6 +53,7 @@ prologue :: TokenText -> Bool -> String -> AbsMod -> [String]
 prologue tokenText useGadt name absMod = concat
   [ [ "{-# LANGUAGE CPP #-}"
     , "{-# LANGUAGE FlexibleInstances #-}"
+    , "{-# LANGUAGE LambdaCase #-}"
     ]
   , [ "{-# LANGUAGE GADTs #-}"                | useGadt ]
   , [ "#if __GLASGOW_HASKELL__ <= 708"
@@ -92,7 +93,7 @@ prologue tokenText useGadt name absMod = concat
     , ""
     , "render :: Doc -> String"
     , "render d = rend 0 (map ($ \"\") $ d []) \"\" where"
-    , "  rend i ss = case ss of"
+    , "  rend i = \\case"
     , "    \"[\"      :ts -> showChar '[' . rend i ts"
     , "    \"(\"      :ts -> showChar '(' . rend i ts"
     , "    \"{\"      :ts -> showChar '{' . new (i+1) . rend (i+1) ts"
@@ -144,16 +145,16 @@ prologue tokenText useGadt name absMod = concat
     , "  prt = prtList"
     , ""
     , "instance Print Char where"
-    , "  prt _ s = doc (showChar '\\'' . mkEsc '\\'' s . showChar '\\'')"
+    , "  prt     _ s = doc (showChar '\\'' . mkEsc '\\'' s . showChar '\\'')"
     , "  prtList _ s = doc (showChar '\"' . concatS (map (mkEsc '\"') s) . showChar '\"')"
     , ""
     , "mkEsc :: Char -> Char -> ShowS"
-    , "mkEsc q s = case s of"
-    , "  _ | s == q -> showChar '\\\\' . showChar s"
-    , "  '\\\\'-> showString \"\\\\\\\\\""
+    , "mkEsc q = \\case"
+    , "  s | s == q -> showChar '\\\\' . showChar s"
+    , "  '\\\\' -> showString \"\\\\\\\\\""
     , "  '\\n' -> showString \"\\\\n\""
     , "  '\\t' -> showString \"\\\\t\""
-    , "  _ -> showChar s"
+    , "  s -> showChar s"
     , ""
     , "prPrec :: Int -> Int -> Doc -> Doc"
     , "prPrec i j = if j < i then parenth else id"
@@ -233,7 +234,7 @@ rules absMod functor cf = do
 -- |
 -- >>> case_fun "Abs" False (Cat "A") [ (npRule "AA" (Cat "AB") [Right "xxx"]) Parsable ]
 -- instance Print Abs.A where
---   prt i e = case e of
+--   prt i = \case
 --     Abs.AA -> prPrec i 0 (concatD [doc (showString "xxx")])
 case_fun :: AbsMod -> Bool -> Cat -> [Rule] -> Doc
 case_fun absMod functor cat xs =
@@ -242,7 +243,7 @@ case_fun absMod functor cat xs =
   vcat
     [ "instance Print" <+> type_ <+> "where"
     , nest 2 $ if isList cat then "prt = prtList" else vcat
-        [ "prt i e = case e of"
+        [ "prt i = \\case"
         , nest 2 $ vcat (map (mkPrintCase absMod functor) xs)
         ]
     ]
