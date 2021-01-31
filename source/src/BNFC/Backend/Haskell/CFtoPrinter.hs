@@ -49,6 +49,10 @@ cf2Printer tokenText functor useGadt name absMod cf = unlines $ concat $
   [ rules absMod functor cf
   ]
 
+-- | Lowercase Haskell identifiers imported from ''Prelude''.
+lowerCaseImports :: [String]
+lowerCaseImports =
+  [ "all", "dropWhile", "elem", "foldr", "id", "map", "null", "replicate", "shows", "span" ]
 
 prologue :: TokenText -> Bool -> String -> AbsMod -> [String]
 prologue tokenText useGadt name absMod = concat
@@ -71,11 +75,12 @@ prologue tokenText useGadt name absMod = concat
     , "module " ++ name +++ "where"
     , ""
     , "import Prelude"
-    , "  ( ($), (.), id"
+    , "  ( ($), (.)"
     , "  , Bool(..), (==), (<)"
     , "  , Int, Integer, Double, (+), (-), (*)"
-    , "  , String, (++), all, dropWhile, elem, foldr, map, null, replicate, span"
-    , "  , ShowS, shows, showChar, showString"
+    , "  , String, (++)"
+    , "  , ShowS, showChar, showString"
+    , "  , " ++ List.intercalate ", " lowerCaseImports
     , "  )"
     , "import Data.Char ( Char, isSpace )"
     , "import qualified " ++ absMod
@@ -297,10 +302,14 @@ mkPrintCase absMod functor (Rule f cat rhs _internal) =
     -- haskell's reserved words, `e` and `i` are used in the printing function
     -- and should be avoided.
     -- #337: `prt` as well, and some more entirely lowercase ones.
-    avoid = [ "e", "i", "doc", "prt" ] -- mixed-case: "concatD", "prPrec", "showString"
+    avoid = concat
+      [ [ "e", "i", "doc", "prt" ]  -- don't need mixed-case ones: "concatD", "prPrec", "showString"
+      , lowerCaseImports
+      , hsReservedWords
+      ]
     names = map var (lefts rhs)
     variables :: [Doc]
-    variables = map text $ mkNames (avoid ++ hsReservedWords) LowerCase names
+    variables = map text $ mkNames avoid LowerCase names
     var (ListCat c)  = var c ++ "s"
     var (TokenCat "Ident")   = "id"
     var (TokenCat "Integer") = "n"
