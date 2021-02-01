@@ -41,20 +41,22 @@ cf2Printer
   -> String
 cf2Printer tokenText functor useGadt name absMod cf = unlines $ concat $
   -- Each of the following list entries is itself a list of lines
-  [ prologue tokenText useGadt name absMod
+  [ prologue tokenText useGadt name [ absMod | importAbsMod ]
   , integerRule absMod cf
   , doubleRule absMod cf
   , if hasIdent cf then identRule absMod tokenText cf else []
   ] ++ [ ownPrintRule absMod tokenText cf own | (own,_) <- tokenPragmas cf ] ++
   [ rules absMod functor cf
   ]
+  where
+  importAbsMod = not (null $ cf2data cf) || not (null $ specialCats cf)
 
 -- | Lowercase Haskell identifiers imported from ''Prelude''.
 lowerCaseImports :: [String]
 lowerCaseImports =
   [ "all", "dropWhile", "elem", "foldr", "id", "map", "null", "replicate", "shows", "span" ]
 
-prologue :: TokenText -> Bool -> String -> AbsMod -> [String]
+prologue :: TokenText -> Bool -> String -> [AbsMod] -> [String]
 prologue tokenText useGadt name absMod = concat
   [ [ "{-# LANGUAGE CPP #-}"
     , "{-# LANGUAGE FlexibleInstances #-}"
@@ -83,8 +85,8 @@ prologue tokenText useGadt name absMod = concat
     , "  , " ++ List.intercalate ", " lowerCaseImports
     , "  )"
     , "import Data.Char ( Char, isSpace )"
-    , "import qualified " ++ absMod
     ]
+  , fmap ("import qualified " ++) absMod  -- At most 1.  (Unnecessary if Abs module is empty.)
   , tokenTextImport tokenText
   , [ ""
     , "-- | The top-level printing method."
@@ -290,11 +292,11 @@ case_fun absMod functor cat xs =
 --
 mkPrintCase :: AbsMod -> Bool -> Rule -> Doc
 mkPrintCase absMod functor (Rule f cat rhs _internal) =
-    pattern <+> "->"
+    pat <+> "->"
     <+> "prPrec i" <+> integer (precCat $ wpThing cat) <+> parens (mkRhs (map render variables) rhs)
   where
-    pattern :: Doc
-    pattern
+    pat :: Doc
+    pat
       | isOneFun  f = text "[" <+> head variables <+> "]"
       | isConsFun f = hsep $ List.intersperse (text ":") variables
       | otherwise   = text (qualify absMod $ funName f) <+> (if functor then "_" else empty) <+> hsep variables
