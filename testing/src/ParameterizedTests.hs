@@ -258,7 +258,7 @@ baseParameters =  TP
   }
 
 haskellParameters :: TestParameters
-haskellParameters = baseParameters
+haskellParameters = TP
   { tpName = "Haskell"
   , tpBnfcOptions = ["--haskell"]
 
@@ -272,26 +272,30 @@ haskellParameters = baseParameters
         "-i" "Use fmap"
         -- "-i" "Unused LANGUAGE pragma"
         "."
-      cmd "ghc" "-XNoImplicitPrelude" "-Wall" . (:[]) =<< findFileRegex "Abs.*\\.hs$"
-      tpMake [ "GHC_OPTS=-XNoImplicitPrelude" ]
-      cmd "ghc" "-XNoImplicitPrelude" . (:[]) =<< findFileRegex "Skel.*\\.hs$"
+      -- cmd "ghc" "-XNoImplicitPrelude" "-Wall" "-Werror" . (:[]) =<< findFileRegex "Abs.*\\.hs$"
+      haskellBuild
+      -- cmd "ghc" "-XNoImplicitPrelude" "-Wall" "-Werror" . (:[]) =<< findFileRegex "Skel.*\\.hs$"
 
   , tpRunTestProg = haskellRunTestProg
   }
 
 haskellGADTParameters :: TestParameters
-haskellGADTParameters = baseParameters
+haskellGADTParameters = TP
   { tpName = "Haskell/GADT"
   , tpBnfcOptions = ["--haskell-gadt"]
+  , tpBuild       = tpMake             -- TODO: use haskellBuild
   , tpRunTestProg = haskellRunTestProg
   }
 
 haskellAgdaParameters :: TestParameters
-haskellAgdaParameters = haskellParameters
+haskellAgdaParameters = haskellGADTParameters  -- TODO: use haskellParameters
   { tpName = "Haskell & Agda"
   , tpBnfcOptions = ["--haskell", "--agda"]
   }
 
+-- | Invoke the Makefile with GHC-specific options.
+haskellBuild :: Sh ()
+haskellBuild = tpMake [ "GHC_OPTS=-XNoImplicitPrelude -Wall -Werror" ]
 
 -- | Haskell backend: default command for running the test executable with the given arguments.
 haskellRunTestProg :: FilePath -> [FilePath] -> Sh Text
