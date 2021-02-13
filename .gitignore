@@ -12,6 +12,9 @@
 *.log
 *.o
 
+# Haskell-mode hack
+/source/src/inferior-haskell-find-project-root.cabal
+
 # Cabal generated directories and files
 .ghc.environment.*
 build
@@ -57,8 +60,10 @@ cabal.sandbox.config
 /source/src/layout/haskell
 
 # binaries
+/bnfc
 /source/windows-dist/bnfc.exe
-
+/source/bnfc
+/testing/bnfc-system-tests
 /testing/data/JLex/*.class
 
 # bnfc generated files
@@ -84,9 +89,28 @@ cabal.sandbox.config
 /examples/*/profile/
 /examples/*/pygments/
 /examples/*/sharestrings/
-/examples/C/with-delimiters/
 /examples/*/xml/
 /examples/*/xmlt/
+/examples/C/with-delimiters/
+/examples/Calc/
+
+/source/src/agda/
+/source/src/c/
+/source/src/cpp/
+/source/src/cpp-nostl/
+/source/src/functor/
+/source/src/generic/
+/source/src/glr/
+/source/src/haskell/
+/source/src/haskell-gadt/
+/source/src/java/
+/source/src/java-antlr/
+/source/src/latex/
+/source/src/ocaml/
+/source/src/ocaml-*/
+/source/src/pygments/
+/source/src/xml/
+/source/src/xmlt/
 
 /testing/*/agda/
 /testing/*/c/
@@ -124,3 +148,5 @@ cabal.sandbox.config
 /testing/regression-tests/*_*/sharestrings/
 /testing/regression-tests/*_*/xml*/
 /testing/regression-tests/*_*/*-save/
+/testing/regression-tests/*_*/Makefile
+/testing/regression-tests/*_*/Test
