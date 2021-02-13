@@ -35,6 +35,10 @@ cabal.sandbox.config
 # local HTF files
 .HTF
 
+# Generated for licence-report
+/source/license-report/index.html
+/source/license-report/index.md
+
 # TeX-generated files
 # TODO: ignore *.dvi and *.ps in general?
 /document/CC-2004.dvi
