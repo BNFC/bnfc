@@ -8,6 +8,7 @@ Andreas Abel <andreas.abel@gu.se>
 * Java/ANTLR: removed more superfluous quotation in lexer character sets [#329]
 * Ocaml: fix syntax error in generated printer [#330]
 * Haskell/C: handle token constructors in `define` expressions [#338]
+* LBNF: more sanity checks [#339]
 
 # 2.9.0
 

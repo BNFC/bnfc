@@ -186,6 +186,10 @@ parseCF opts target content = do
             , printNames xs
             ]
 
+  -- Print errors for empty comment deliminters
+  unlessNull (checkComments cf) $ \ errs -> do
+    dieUnlessForce $ unlines errs
+
   -- Print warnings if user defined nullable tokens.
   Fold.mapM_ dieUnlessForce $ checkTokens cf
 
@@ -510,6 +514,16 @@ transExp xs = loop
   transIdent' (Abs.Identifier (_pos, x)) = x
 
 --------------------------------------------------------------------------------
+
+-- | Check if any comment delimiter is null.
+checkComments :: CFG f -> [String]  -- ^ List of errors.
+checkComments cf = concat
+  [ [ "Empty line comment delimiter."        | CommentS ""      <- prags ]
+  , [ "Empty block comment start delimiter." | CommentM ("", _) <- prags ]
+  , [ "Empty block comment end delimiter."   | CommentM (_, "") <- prags ]
+  ]
+  where
+  prags = cfgPragmas cf
 
 -- | Check if any of the user-defined terminal categories is nullable.
 checkTokens :: CFG f -> Maybe String

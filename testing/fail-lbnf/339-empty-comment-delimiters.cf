@@ -1,0 +1,8 @@
+-- Andreas, 2021-02-13
+-- Reject empty comment delimiters.
+
+separator Integer ",";  -- dummy
+
+comment "";
+comment "(*" "";
+comment "" "*)";
