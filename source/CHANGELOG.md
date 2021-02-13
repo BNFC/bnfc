@@ -2,13 +2,15 @@
 
 Andreas Abel <andreas.abel@gu.se>
 
-* Haskell: the `--functor` option now produces position-annotated ASTs [#176,#327]. Thanks Commelina!
+* Haskell: the `--functor` option now produces position-annotated ASTs [#176,#327]. Thanks @Commelina!
 * Haskell(/GADT): generated modules import `Prelude` explicitly, compatible with `{-# LANGUAGE NoImplicitPrelude #-}`
 * Haskell: generated code is warning free (and mostly that for `--xml[t]`) [#331]
+* Haskell: generated printer more robust wrt. identifier clashes [#337]
+* Haskell/C: handle token constructors in `define` expressions [#338]
 * Java/ANTLR: removed more superfluous quotation in lexer character sets [#329]
 * Ocaml: fix syntax error in generated printer [#330]
-* Haskell/C: handle token constructors in `define` expressions [#338]
 * LBNF: more sanity checks [#339]
+* Tested with GHC 9.0
 
 # 2.9.0
 
