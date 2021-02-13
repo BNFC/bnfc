@@ -85,10 +85,10 @@ mkHFile rp cf = unlines $ concat
 
 -- | For @define@d constructors, make a CPP definition.
 --
--- >>> prDefH "iSg" ["i"] (App "ICons" [Var "i", App "INil" []])
+-- >>> prDefH [] "iSg" ["i"] (App "ICons" [Var "i", App "INil" []])
 -- "#define make_iSg(i) make_ICons(i,make_INil())"
 --
--- >>> prDefH "snoc" ["xs","x"] (App "Cons" [Var "x", Var "xs"])
+-- >>> prDefH [] "snoc" ["xs","x"] (App "Cons" [Var "x", Var "xs"])
 -- "#define make_snoc(xs,x) make_Cons(x,xs)"
 --
 prDefH
