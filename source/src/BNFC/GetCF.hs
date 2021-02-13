@@ -370,7 +370,7 @@ transDef = \case
 -- | Translate @separator [nonempty] C "s"@.
 --   The position attached to the generated rules is taken from @C@.
 --
---   (Ideally, we would take them from the @terminator@ keyword.
+--   (Ideally, we would take them from the @separator@ keyword.
 --   But BNFC does not deliver position information there.)
 --
 --   If the user-provided separator consists of white space only,
@@ -413,6 +413,8 @@ terminatorRules size c0 s = do
   where
   term = if null s then id else (Right s :)
 
+-- | Expansion of the @coercion@ pragma.
+
 coercionRules :: Abs.Identifier -> Integer -> Trans [Rule]
 coercionRules c0 n = do
   WithPosition pos c <- transIdent c0
@@ -423,6 +425,8 @@ coercionRules c0 n = do
     , [ urule (CoercCat c (i-1)) [Left (CoercCat c i)]                | i <- [2..n] ]
     , [ urule (CoercCat c n)     [Right "(", Left (Cat c), Right ")"] ]
     ]
+
+-- | Expansion of the @rules@ pragma.
 
 ebnfRules :: Abs.Identifier -> [Abs.RHS] -> Trans [Rule]
 ebnfRules (Abs.Identifier ((line, col), c)) rhss = do
