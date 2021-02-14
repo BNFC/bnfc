@@ -156,10 +156,10 @@ rulesForHappy absM functor cf = for (ruleGroups cf) $ \ (cat, rules) ->
 -- ("'(' Exp ')'","(uncurry Foo.BNFC'Position (tokenLineCol $1), (snd $2))")
 --
 constructRule :: IsFun f => String -> Bool -> Rul f -> (Pattern, Action)
-constructRule absName functor (Rule fun0 _cat rhs Parsable) = (pattern, action)
+constructRule absName functor (Rule fun0 _cat rhs Parsable) = (pat, action)
   where
     fun = funName fun0
-    (pattern, metavars) = generatePatterns functor rhs
+    (pat, metavars) = generatePatterns functor rhs
     action
       | functor   = "(" ++ actionPos id ++ ", " ++ actionValue ++ ")"
       | otherwise = actionValue

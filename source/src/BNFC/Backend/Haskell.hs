@@ -4,6 +4,8 @@
 
 -}
 
+{-# LANGUAGE OverloadedStrings #-}
+
 module BNFC.Backend.Haskell (makeHaskell, AlexVersion(..), makefile, testfile) where
 
 import qualified Control.Monad as Ctrl
