@@ -3,6 +3,7 @@
 Andreas Abel <andreas.abel@gu.se>
 
 * Haskell: the `--functor` option now produces position-annotated ASTs [#176,#327]. Thanks @Commelina!
+* Haskell: fix generated `Makefile` and test parser for `--glr` mode [#340]
 * Haskell(/GADT): generated modules import `Prelude` explicitly, compatible with `{-# LANGUAGE NoImplicitPrelude #-}`
 * Haskell: generated code is warning free (and mostly that for `--xml[t]`) [#331]
 * Haskell: generated printer more robust wrt. identifier clashes [#337]
