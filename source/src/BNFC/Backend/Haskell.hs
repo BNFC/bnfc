@@ -317,7 +317,7 @@ testfile opts cf = unlines $ concat $
     [ [ [ "import " , absFileM      opts , " (" ++ if_glr impTopCat ++ ")" ] ]
     , [ [ "import " , layoutFileM   opts , " ( resolveLayout )"      ] | lay     ]
     , [ [ "import " , alexFileM     opts , " ( Token )"                          ]
-      , [ "import " , happyFileM    opts , " ( " ++ impParser ++ ", myLexer" ++ impParGLR ++ ")" ]
+      , [ "import " , happyFileM    opts , " ( " ++ impParser ++ ", myLexer" ++ impParGLR ++ " )" ]
       , [ "import " , printerFileM  opts , " ( Print, printTree )"               ]
       , [ "import " , templateFileM opts , " ()"                                 ]
       ]

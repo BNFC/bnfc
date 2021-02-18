@@ -4,6 +4,7 @@
 module BNFC.Backend.Haskell.Utils
   ( posType, posConstr, noPosConstr
   , hasPositionClass, hasPositionMethod
+  , noWarnUnusedMatches
   , parserName
   , hsReservedWords, avoidReservedWords, mkDefName
   , typeToHaskell, typeToHaskell'
@@ -22,6 +23,14 @@ import qualified BNFC.PrettyPrint as P
 import BNFC.CF      (Cat(..), catToStr, identCat, baseTokenCatNames, Base, Type(FunT), IsFun(..))
 import BNFC.Options (TokenText(..))
 import BNFC.Utils   (mkNames, NameStyle(..))
+
+-- * GHC pragmas
+
+noWarnUnusedMatches :: IsString a => a
+noWarnUnusedMatches =
+  "{-# OPTIONS_GHC -fno-warn-unused-matches #-}"
+  -- ALT: only from GHC 8
+  -- "{-# OPTIONS_GHC -Wno-unused-matches #-}"
 
 -- * Names for position data type.
 
