@@ -30,7 +30,6 @@ mkErrM errMod = vcat
     , ""
     , "{-# LANGUAGE PatternSynonyms #-}"
     , "{-# LANGUAGE FlexibleInstances #-}"
-    , "{-# LANGUAGE TypeSynonymInstances #-}"
     , ""
     , "module" <+> text errMod <+> "where"
     , ""

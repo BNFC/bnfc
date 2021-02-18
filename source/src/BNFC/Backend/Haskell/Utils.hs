@@ -76,10 +76,10 @@ tokenTextPackParens = \case
   parens s = "(" ++ s ++ ")"
 
 tokenTextUnpack :: TokenText -> String -> String
-tokenTextUnpack = \case
-  StringToken     -> id
-  ByteStringToken -> ("BS.unpack " ++)
-  TextToken       -> ("Data.Text.unpack " ++)
+tokenTextUnpack t s = case t of
+  StringToken     -> s
+  ByteStringToken -> "(BS.unpack " ++ s ++ ")"
+  TextToken       -> "(Data.Text.unpack " ++ s ++ ")"
 
 -- * Other Utililites
 

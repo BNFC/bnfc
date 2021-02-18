@@ -67,7 +67,6 @@ prologue tokenText useGadt name absMod = concat
     , "{-# LANGUAGE OverlappingInstances #-}"
     , "#endif"
     ]
-  , [ "{-# LANGUAGE TypeSynonymInstances #-}" | useGadt ]
   , [ ""
     , "{-# OPTIONS_GHC -fno-warn-incomplete-patterns #-}"
     , ""
@@ -212,7 +211,7 @@ identRule absMod tokenText cf = ownPrintRule absMod tokenText cf catIdent
 ownPrintRule :: AbsMod -> TokenText -> CF -> TokenCat -> [String]
 ownPrintRule absMod tokenText cf own = concat
   [ [ "instance Print " ++ q ++ " where"
-    , "  prt _ (" ++ q ++ posn ++ ") = doc $ showString $ " ++ tokenTextUnpack tokenText "i"
+    , "  prt _ (" ++ q ++ posn ++ ") = doc $ showString " ++ tokenTextUnpack tokenText "i"
     ]
   , ifList cf (TokenCat own)
   , [ ""

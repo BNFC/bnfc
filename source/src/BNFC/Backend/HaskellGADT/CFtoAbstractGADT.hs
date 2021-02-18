@@ -80,13 +80,19 @@ prDummyTypes cf = prDummyData : map prDummyType cats
   cats = getTreeCats cf
   prDummyData
     | null cats = "data Tag"
-    | otherwise = "data Tag =" +++ List.intercalate " | " (map mkRealType cats)
+    | otherwise = "data Tag =" +++ List.intercalate " | " (map mkRealType_ cats)
   prDummyType cat = "type" +++ cat +++ "= Tree" +++ mkRealType cat
 
+-- | Use in occurrences of promoted constructors.
+--
 -- Promoted constructors should be preceded by a prime,
 -- otherwise we get GHC warning @unticked-promoted-constructors@.
 mkRealType :: String -> String
-mkRealType cat = "'" ++ cat ++ "_"
+mkRealType cat = "'" ++ mkRealType_ cat
+
+-- | Use in @data@ definition (for the sake of GHC <= 8.6).
+mkRealType_ :: String -> String
+mkRealType_ cat = cat ++ "_"
 
 
 prTreeType :: TokenText -> CF -> [String]

@@ -1,12 +1,9 @@
-{-# LANGUAGE DeriveFunctor #-}
-{-# LANGUAGE DeriveFoldable #-}
-{-# LANGUAGE DeriveTraversable #-}
-{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE DeriveTraversable #-}  -- implies DeriveFunctor, DeriveFoldable
+{-# LANGUAGE FlexibleInstances #-}  -- implies TypeSynonymInstances
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE PatternGuards #-}
 {-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE TypeSynonymInstances #-}
 
 {-
     BNF Converter: Abstract syntax

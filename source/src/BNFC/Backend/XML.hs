@@ -137,7 +137,7 @@ cf2XMLPrinter typ opts absMod cf = unlines [
 pragmas :: SharedOptions -> String
 pragmas opts =
   if target opts == TargetHaskellGadt
-  then "{-# LANGUAGE TypeSynonymInstances, FlexibleInstances, GADTs #-}"
+  then "{-# LANGUAGE FlexibleInstances, GADTs #-}"
   else ""
 
 prologue :: Bool -> SharedOptions -> String -> String
@@ -152,7 +152,7 @@ prologue b opts _ = unlines [
   "  )",
   "import qualified Prelude as P",
   "  ( Show(..), Int",
-  "  , concat, map, replicate, unlines",
+  "  , concat, concatMap, replicate, unlines",
   "  )",
   "",
   "import " ++ absFileM opts,
@@ -168,7 +168,7 @@ prologue b opts _ = unlines [
   "class XPrint a where",
   "  prt :: P.Int -> a -> [String]",
   "  prtList :: P.Int -> [a] -> [String]",
-  "  prtList i = P.concat . P.map (prt i)",
+  "  prtList = P.concatMap . prt",
   "",
   "instance XPrint a => XPrint [a] where",
   "  prt = prtList",

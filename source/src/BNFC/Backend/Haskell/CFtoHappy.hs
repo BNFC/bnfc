@@ -319,12 +319,12 @@ specialRules absName functor tokenText cf = unlines . intersperse "" . (`map` li
       case tokenCat of
         "String"  -> if functor then stringUnpack "((\\(PT _ (TL s)) -> s) $1)"
                                 else stringUnpack "$1"                                 -- String never has pos
-        "Integer" -> if functor then "(read (" ++ stringUnpack "(tokenText $1)" ++ ")) :: Integer"
-                                else "(read (" ++ stringUnpack "$1" ++ ")) :: Integer" -- Integer never has pos
-        "Double"  -> if functor then "(read (" ++ stringUnpack "(tokenText $1)" ++ ")) :: Double"
-                                else "(read (" ++ stringUnpack "$1" ++ ")) :: Double"  -- Double never has pos
-        "Char"    -> if functor then "(read (" ++ stringUnpack "(tokenText $1)" ++ ")) :: Char"
-                                else "(read (" ++ stringUnpack "$1" ++ ")) :: Char"    -- Char never has pos
+        "Integer" -> if functor then "(read " ++ stringUnpack "(tokenText $1)" ++ ") :: Integer"
+                                else "(read " ++ stringUnpack "$1" ++ ") :: Integer" -- Integer never has pos
+        "Double"  -> if functor then "(read " ++ stringUnpack "(tokenText $1)" ++ ") :: Double"
+                                else "(read " ++ stringUnpack "$1" ++ ") :: Double"  -- Double never has pos
+        "Char"    -> if functor then "(read " ++ stringUnpack "(tokenText $1)" ++ ") :: Char"
+                                else "(read " ++ stringUnpack "$1" ++ ") :: Char"    -- Char never has pos
         own       ->
           case functor of
             False ->

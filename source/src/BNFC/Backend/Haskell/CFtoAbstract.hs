@@ -47,8 +47,6 @@ cf2Abstract Options{ lang, tokenText, generic, functor } name cf = vsep . concat
     -- Modules header
     , [ vcat . concat $
         [ [ "{-# LANGUAGE DeriveDataTypeable #-}"         | gen ]
-        , [ "{-# LANGUAGE DeriveFoldable #-}"             | fun ]
-        , [ "{-# LANGUAGE DeriveFunctor #-}"              | fun ]
         , [ "{-# LANGUAGE DeriveGeneric #-}"              | gen ]
         , [ "{-# LANGUAGE DeriveTraversable #-}"          | fun ]
         , [ "{-# LANGUAGE FlexibleInstances #-}"          | fun ]
@@ -56,7 +54,6 @@ cf2Abstract Options{ lang, tokenText, generic, functor } name cf = vsep . concat
         , [ "{-# LANGUAGE LambdaCase #-}"                 | fun ]
         , [ "{-# LANGUAGE PatternSynonyms #-}"            | defPosition ]
         , [ "{-# LANGUAGE OverloadedStrings #-}"          | tokenText /= StringToken ]
-        , [ "{-# LANGUAGE TypeSynonymInstances #-}"       | fun ]
         ]
       ]
     , [ "-- | The abstract syntax of language" <+> text lang <> "." ]
