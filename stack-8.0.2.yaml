@@ -2,3 +2,14 @@ resolver: lts-9.21
 packages:
 - source
 # - testing
+
+extra-deps:
+  - Cabal-2.0.0.2
+
+# Andreas, 2020-04-14, 2021-02-27
+# "testing" does not build with ghc <= 8.0
+#
+# In the dependencies for bnfc-system-tests-2.9.1.0:
+#     HTF-0.13.2.2 from stack configuration does not match >=0.14.0.5
+#     base-4.9.1.0 from stack configuration does not match >=4.10 && <5
+#     shelly-1.6.8.3 from stack configuration does not match >=1.9

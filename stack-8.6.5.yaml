@@ -1,7 +1,12 @@
 resolver: lts-14.27
 packages:
 - source
-# - testing
+- testing
+
+# `testing` depends on more recent `HTF` and `shelly`
+extra-deps:
+- HTF-0.14.0.5
+- shelly-1.9.0
 
 # Andreas, 2020-04-14
 # "testing" does not build with stack:
