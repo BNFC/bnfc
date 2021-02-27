@@ -1,3 +1,5 @@
+-- -- The name of GitHub Action
+-- github-action-name:
 
 -- 2021-01-22 if cabal-version is greater than shipped Cabal, allow newer Cabal version
 -- https://github.com/haskell-CI/haskell-ci/issues/468#issuecomment-761865807
@@ -16,3 +18,22 @@ installed: +all -Cabal
 --   any:     Take the union of all packages' version ranges. This implies
 --            that different packages' version ranges can be disjoint.
 jobs-selection: any
+
+---------------------------------------------------------------------------
+-- begin-no-effect
+-- As of 2021-02-27, these settings are ignored by github
+
+-- Additional jobs
+ghc-head: True
+osx: 8.10.4
+
+no-tests-no-benchmarks: >= 9.0.1
+-- end
+---------------------------------------------------------------------------
+
+-- Switch of tests for 9.0.1 (doctest not yet supported)
+tests: < 9
+
+-- Allowing failures is not necessary if we skip the tests
+-- allow-failures: >= 9.0.1
+
