@@ -31,8 +31,8 @@ no-tests-no-benchmarks: >= 9.0.1
 -- end
 ---------------------------------------------------------------------------
 
--- Switch of tests for 9.0.1 (doctest not yet supported)
-tests: < 9
+-- -- Switch of tests for 9.0.1 (doctest not yet supported)
+-- tests: < 9
 
 -- Allowing failures is not necessary if we skip the tests
 -- allow-failures: >= 9.0.1
