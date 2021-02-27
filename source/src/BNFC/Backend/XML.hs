@@ -212,7 +212,7 @@ rules :: CF -> String
 rules cf = unlines $
   map (\ (s, xs) -> case_fun s (map (second toArgs) xs)) $ cf2data cf
  where
-   toArgs args = names (map catToVar args) (0 :: Int)
+   toArgs args = names (map (catToVar ["prt"]) args) (0 :: Int)
    names [] _ = []
    names (x:xs) n
      | x `elem` xs = (x ++ show n) : names xs (n+1)

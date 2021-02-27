@@ -30,7 +30,7 @@ cf2cons cf =
         , consVars = [(Cat "String","str")], consRhs = [Left (Cat "String")]
         } | cat <- specialCats cf]
   where
-    mkVars cats = mkUnique (map catToVar cats) (0 :: Int)
+    mkVars cats = mkUnique (map (catToVar []) cats) (0 :: Int)
     mkUnique [] _ = []
     mkUnique (x:xs) n | x `elem` xs || n > 0 = (x ++ show n) : mkUnique xs (n+1)
                       | otherwise = x : mkUnique xs n

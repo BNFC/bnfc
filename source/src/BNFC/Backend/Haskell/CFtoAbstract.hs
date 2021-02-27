@@ -21,7 +21,7 @@ import BNFC.PrettyPrint
 import BNFC.Utils                 ( when )
 
 import BNFC.Backend.Haskell.Utils
-  ( avoidReservedWords, catToType, catvars, mkDefName
+  ( avoidReservedWords, catToType, mkDefName
   , tokenTextImport, tokenTextType, typeToHaskell
   , posType, posConstr, noPosConstr
   , hasPositionClass, hasPositionMethod
@@ -293,21 +293,23 @@ instanceHasPositionTokenType cat = vcat
 definedRules :: Bool -> CF -> [Doc]
 definedRules functor cf = [ mkDef f xs e | FunDef f xs e <- cfgPragmas cf ]
   where
-    mkDef f xs e = vcat $ map text $ concat
-      [ [ unwords [ mkDefName f, "::", typ $ wpThing t ]
-        | t <- maybeToList $ sigLookup f cf
-        ]
-      , [ unwords $ mkDefName f : xs' ++ [ "=", show $ sanitize e ] ]
+  mkDef f xs e = vcat $ map text $ concat
+    [ [ unwords [ fName, "::", typ $ wpThing t ]
+      | t <- maybeToList $ sigLookup f cf
       ]
-      where
-      xs' = addFunctorArg id $ map avoidReservedWords xs
-      typ (FunT ts t) | functor = List.intercalate " -> " $ "a" : (map funBase $ ts ++ [t])
-      typ t = typeToHaskell t
+    , [ unwords $ fName : xs' ++ [ "=", show $ sanitize e ] ]
+    ]
+    where
+    fName = mkDefName f
+    avoidReserved = avoidReservedWords [fName]
+    xs' = addFunctorArg id $ map avoidReserved xs
+    typ (FunT ts t) | functor = List.intercalate " -> " $ "a" : (map funBase $ ts ++ [t])
+    typ t = typeToHaskell t
     sanitize = \case
       App x es
         | tokTyp x  -> App x $ map sanitize es
         | otherwise -> App x $ addFunctorArg (`App` []) $ map sanitize es
-      Var x         -> Var $ avoidReservedWords x
+      Var x         -> Var $ avoidReserved x
       e@LitInt{}    -> e
       e@LitDouble{} -> e
       e@LitChar{}   -> e

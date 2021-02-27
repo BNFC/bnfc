@@ -74,7 +74,7 @@ case_fun absName functor' cat xs = vcat
     fname = "trans" <> cat'
     cat' =  text (show cat)
     mkOne (cons, args) =
-        let ns = catvars args -- names False (map (checkRes .var) args) 1
+        let ns = catvars [render fname] args -- names False (map (checkRes .var) args) 1
         in  qualify (text cons) <+> iffunctor "_" <+> hsep ns <+> "-> failure x"
     qualify :: Doc -> Doc
     qualify

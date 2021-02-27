@@ -73,6 +73,7 @@ tokenTextPackParens = \case
   ByteStringToken -> parens . ("BS.pack " ++)
   TextToken       -> parens . ("Data.Text.pack " ++)
   where
+  parens :: String -> String
   parens s = "(" ++ s ++ ")"
 
 tokenTextUnpack :: TokenText -> String -> String
@@ -131,14 +132,18 @@ hsReservedWords =
     , "where"
     ]
 
-avoidReservedWords :: String -> String
-avoidReservedWords  x
-  | x `elem` hsReservedWords = x ++ "'"
-  | otherwise                = x
+-- | Avoid Haskell keywords plus additional reserved words.
+
+avoidReservedWords :: [String] -> String -> String
+avoidReservedWords additionalReserved x
+  | x `elem` reserved = x ++ "'"
+  | otherwise         = x
+  where
+  reserved = additionalReserved ++ hsReservedWords
 
 -- | Modifier to avoid clashes in definition.
 mkDefName :: IsFun f => f -> String
-mkDefName = avoidReservedWords . funName
+mkDefName = avoidReservedWords [] . funName
 
 -- | Render a category from the grammar to a Haskell type.
 --
@@ -202,8 +207,8 @@ typeToHaskell' arr (FunT ts t) =
   where f a b = unwords [a, arr, b]
 
 -- | Make a variable name for a category.
-catToVar :: Cat -> String
-catToVar = avoidReservedWords . var
+catToVar :: [String] -> Cat -> String
+catToVar rs = avoidReservedWords rs . var
   where
   var (ListCat cat)   = var cat ++ "s"
   var (Cat "Ident")   = "x"
@@ -227,19 +232,19 @@ catToVar = avoidReservedWords . var
 --     ...
 -- @
 --
--- >>> catvars [Cat "A", Cat "B", Cat "A"]
+-- >>> catvars [] [Cat "A", Cat "B", Cat "A"]
 -- [a1,b,a2]
 --
 -- It should avoid reserved words:
--- >>> catvars [Cat "IF", Cat "Case", Cat "Type", Cat "If"]
--- [if_1,case_,type_,if_2]
+-- >>> catvars ["foo"] [Cat "Foo", Cat "IF", Cat "Case", Cat "Type", Cat "If"]
+-- [foo_,if_1,case_,type_,if_2]
 --
 -- It uses a suffix -s to mark lists:
--- >>> catvars [Cat "A", ListCat (Cat "A"), ListCat (ListCat (Cat "A"))]
+-- >>> catvars [] [Cat "A", ListCat (Cat "A"), ListCat (ListCat (Cat "A"))]
 -- [a,as_,ass]
 --
-catvars :: [Cat] -> [Doc]
-catvars = map text . mkNames hsReservedWords LowerCase . map var
+catvars :: [String] -> [Cat] -> [Doc]
+catvars rs = map text . mkNames (rs ++ hsReservedWords) LowerCase . map var
   where
     var (ListCat c) = var c ++ "s"
     var xs          = show xs
