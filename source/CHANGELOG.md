@@ -1,11 +1,16 @@
-# 2.9.1 (unreleased)
+# 2.9.1
 
-Andreas Abel <andreas.abel@gu.se>
+Andreas Abel <andreas.abel@gu.se>  March 2021
+
+## Main new feature
 
 * Haskell: the `--functor` option now produces position-annotated ASTs [#176,#327]. Thanks @Commelina!
+
+## Bug fixes and small improvements
+
 * Haskell: fix generated `Makefile` and test parser for `--glr` mode [#340]
 * Haskell(/GADT): generated modules import `Prelude` explicitly, compatible with `{-# LANGUAGE NoImplicitPrelude #-}`
-* Haskell: generated code is warning free (and mostly that for `--xml[t]`) [#331]
+* Haskell: generated code is warning free [#331]
 * Haskell: generated printer more robust wrt. identifier clashes [#337]
 * Haskell/C: handle token constructors in `define` expressions [#338]
 * Java/ANTLR: removed more superfluous quotation in lexer character sets [#329]
