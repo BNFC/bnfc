@@ -336,7 +336,7 @@ specificOptions =
   --         "Use Alex 3 as Haskell lexer tool (default)"
   --   , haskellTargets )
   , ( Option []    ["bytestrings"] (NoArg (\o -> o { tokenText = ByteStringToken }))
-          "Use ByteString in Alex lexer"
+          "Use ByteString in Alex lexer [deprecated, use --text-token]"
     , haskellTargets )
   , ( Option []    ["text-token"] (NoArg (\o -> o { tokenText = TextToken }))
           "Use Text in Alex lexer"
@@ -620,8 +620,8 @@ translateOldOptions = mapM $ \ o -> do
     , ("-alex1"        , "--alex1")
     , ("-alex2"        , "--alex2")
     , ("-alex3"        , "--alex3")
-    , ("-sharestrings" , "--sharestring")
-    , ("-bytestrings"  , "--bytestring")
+    , ("-sharestrings" , "--sharestrings")
+    , ("-bytestrings"  , "--bytestrings")
     , ("-glr"          , "--glr")
     , ("-xml"          , "--xml")
     , ("-xmlt"         , "--xmlt")
