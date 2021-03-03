@@ -53,7 +53,7 @@ cf2Abstract Options{ lang, tokenText, generic, functor } name cf = vsep . concat
         , [ "{-# LANGUAGE GeneralizedNewtypeDeriving #-}" | hasIdentLike ] -- for IsString
         , [ "{-# LANGUAGE LambdaCase #-}"                 | fun ]
         , [ "{-# LANGUAGE PatternSynonyms #-}"            | defPosition ]
-        , [ "{-# LANGUAGE OverloadedStrings #-}"          | tokenText /= StringToken ]
+        , [ "{-# LANGUAGE OverloadedStrings #-}"          | not (null definitions), tokenText /= StringToken ]
         ]
       ]
     , [ "-- | The abstract syntax of language" <+> text lang <> "." ]
@@ -70,7 +70,7 @@ cf2Abstract Options{ lang, tokenText, generic, functor } name cf = vsep . concat
         ]
       ]
     , [ vcat . concat $
-        [ map text $ tokenTextImport tokenText
+        [ when hasIdentLike $ map text $ tokenTextImport tokenText
         , [ "import qualified Data.Data    as C (Data, Typeable)" | gen ]
         , [ "import qualified GHC.Generics as C (Generic)"        | gen ]
         ]
@@ -80,7 +80,7 @@ cf2Abstract Options{ lang, tokenText, generic, functor } name cf = vsep . concat
     , map (prData functor (derivingClasses functor)) datas
 
     -- Smart constructors
-    , definedRules functor cf
+    , definitions
 
     -- Token definition types
     , (`map` specialCats cf) $ \ c ->
@@ -122,6 +122,8 @@ cf2Abstract Options{ lang, tokenText, generic, functor } name cf = vsep . concat
     , [ "" ] -- ensure final newline
     ]
   where
+    definitions  = definedRules functor cf
+
     datas        = cf2data cf
     positionCats = filter (isPositionCat cf) $ specialCats cf
 

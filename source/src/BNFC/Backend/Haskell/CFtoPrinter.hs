@@ -41,7 +41,7 @@ cf2Printer
   -> String
 cf2Printer tokenText functor useGadt name absMod cf = unlines $ concat $
   -- Each of the following list entries is itself a list of lines
-  [ prologue tokenText useGadt name [ absMod | importAbsMod ]
+  [ prologue tokenText useGadt name [ absMod | importAbsMod ] cf
   , integerRule absMod cf
   , doubleRule absMod cf
   , if hasIdent cf then identRule absMod tokenText cf else []
@@ -56,8 +56,8 @@ lowerCaseImports :: [String]
 lowerCaseImports =
   [ "all", "dropWhile", "elem", "foldr", "id", "map", "null", "replicate", "shows", "span" ]
 
-prologue :: TokenText -> Bool -> String -> [AbsMod] -> [String]
-prologue tokenText useGadt name absMod = concat
+prologue :: TokenText -> Bool -> String -> [AbsMod] -> CF -> [String]
+prologue tokenText useGadt name absMod cf = concat
   [ [ "{-# LANGUAGE CPP #-}"
     , "{-# LANGUAGE FlexibleInstances #-}"
     , "{-# LANGUAGE LambdaCase #-}"
@@ -86,7 +86,7 @@ prologue tokenText useGadt name absMod = concat
     , "import Data.Char ( Char, isSpace )"
     ]
   , fmap ("import qualified " ++) absMod  -- At most 1.  (Unnecessary if Abs module is empty.)
-  , tokenTextImport tokenText
+  , when (hasIdentLikeTokens cf) $ tokenTextImport tokenText
   , [ ""
     , "-- | The top-level printing method."
     , ""
