@@ -14,7 +14,7 @@ module DA where {}; module DB where
     module DB2A where
  ;
  module DC where {}
-}
+      }
   module E where
     module EA where {}; module EB where
       module EB1 where
@@ -22,6 +22,5 @@ module DA where {}; module DB where
     module EC where {
 module EC1 where {};
 module EC2 where
-  module EC2A where
-}
+  module EC2A where }
   module F where
