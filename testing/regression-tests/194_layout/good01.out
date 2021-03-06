@@ -4,7 +4,7 @@ Parse Successful!
 
 [Abstract Syntax]
 
-Modl (Ident "Top") [Modl (Ident "A") [],Modl (Ident "B") [Modl (Ident "B1") [Modl (Ident "B1A") []],Modl (Ident "B2") []],Modl (Ident "C") [Modl (Ident "C1") []]]
+Modl (Ident "Top") [Modl (Ident "A") [],Modl (Ident "B") [Modl (Ident "B1") [Modl (Ident "B1A") [],Modl (Ident "B1B") []],Modl (Ident "B2") []],Modl (Ident "C") [Modl (Ident "C1") []]]
 
 [Linearized tree]
 
@@ -14,6 +14,8 @@ module Top where {
   module B where {
     module B1 where {
       module B1A where {
+        } ;
+      module B1B where {
         }
       } ;
     module B2 where {
