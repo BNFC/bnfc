@@ -3,9 +3,10 @@ module Top where
   module B where
     module B1 where
   module C where
-    module CA where
+    module CA where {
       module CA1 where
       module CA2 where
+}
     module CB where
   module D where {
 module DA where {}; module DB where
