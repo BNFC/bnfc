@@ -283,7 +283,7 @@ haskellGADTParameters :: TestParameters
 haskellGADTParameters = TP
   { tpName = "Haskell/GADT"
   , tpBnfcOptions = ["--haskell-gadt"]
-  , tpBuild       = tpMake             -- TODO: use haskellBuild
+  , tpBuild       = haskellBuild
   , tpRunTestProg = haskellRunTestProg
   }
 

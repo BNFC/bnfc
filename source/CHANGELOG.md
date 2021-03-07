@@ -1,6 +1,8 @@
 # 2.9.2
 
 Andreas Abel <andreas.abel@gu.se>  (unreleased)
+* Haskell-GADT: generated code is warning free [#346]
+* Haskell: fixes in layout preprocessor [#344,#345]
 
 # 2.9.1
 
