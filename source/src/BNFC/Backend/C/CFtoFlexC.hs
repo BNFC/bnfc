@@ -185,7 +185,7 @@ restOfFlex cf env = unlines $ concat
     [
      "void init_lexer(FILE *inp)",
      "{",
-     "  yyrestart(inp);",
+     "  if (inp) yyrestart(inp);",
      "  yylloc.first_line   = 1;",
      "  yylloc.first_column = 1;",
      "  yylloc.last_line    = 1;",
