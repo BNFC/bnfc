@@ -47,23 +47,8 @@ header _ absName _ cf = unlines
           "open " ++ absName,
           "open Lexing",
           "",
-          definedRules cf,
           "%}"
          ]
-
-definedRules :: CF -> String
-definedRules cf = unlines [ mkDef f xs e | FunDef f xs e <- cfgPragmas cf ]
-  where
-    mkDef f xs e = "let " ++ funName f ++ " " ++ mkTuple xs ++ " = " ++ ocamlExp e
-
-    ocamlExp :: Exp -> String
-    ocamlExp = \case
-      Var s       -> s
-      App s es    -> s ++ ' ' : mkTuple (map ocamlExp es)
-      LitInt i    -> show i
-      LitDouble d -> show d
-      LitChar c   -> "\'" ++ c : "\'"
-      LitString s -> "\"" ++ s ++ "\""
 
 declarations :: String -> CF -> String
 declarations absName cf =
