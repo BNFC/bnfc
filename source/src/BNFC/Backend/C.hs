@@ -187,6 +187,7 @@ ctest cf =
     "      printf(\"[Linearized Tree]\\n\");",
     "      printf(\"%s\\n\\n\", print" ++ dat ++ "(parse_tree));",
     "    }",
+    "    free" ++ dat ++ "(parse_tree);",
     "    return 0;",
     "  }",
     "  return 1;",

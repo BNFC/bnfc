@@ -18,14 +18,16 @@
 module BNFC.Backend.C.CFtoCAbs (cf2CAbs) where
 
 import Prelude hiding ((<>))
-import Data.Char     (toLower)
-import Data.Function (on)
-import Data.List     (groupBy, intercalate, nub, sort)
+import Data.Char     ( toLower )
+import Data.Either   ( lefts )
+import Data.Function ( on )
+import Data.List     ( groupBy, intercalate, nub, sort )
+import Data.Maybe    ( mapMaybe )
 
 import BNFC.CF
 import BNFC.PrettyPrint
-import BNFC.Options (RecordPositions(..))
-import BNFC.Utils   ((+++), uncurry3, unless)
+import BNFC.Options  ( RecordPositions(..) )
+import BNFC.Utils    ( (+++), uncurry3, unless )
 import BNFC.Backend.Common.NamedVariables
 
 
@@ -35,14 +37,19 @@ cf2CAbs
   -> String -- ^ Ignored.
   -> CF     -- ^ Grammar.
   -> (String, String) -- ^ @.H@ file, @.C@ file.
-cf2CAbs rp _ cf = (mkHFile rp cf, mkCFile cf)
+cf2CAbs rp _ cf = (mkHFile rp classes datas cf, mkCFile datas cf)
+  where
+  datas :: [Data]
+  datas = getAbstractSyntax cf
+  classes :: [String]
+  classes = nub $ map (identCat . fst) datas
 
 {- **** Header (.H) File Functions **** -}
 
 -- | Makes the Header file.
 
-mkHFile :: RecordPositions -> CF -> String
-mkHFile rp cf = unlines $ concat
+mkHFile :: RecordPositions -> [String] -> [Data] -> CF -> String
+mkHFile rp classes datas cf = unlines $ concat
   [ [ "#ifndef ABSYN_HEADER"
     , "#define ABSYN_HEADER"
     , ""
@@ -52,15 +59,24 @@ mkHFile rp cf = unlines $ concat
     , "/********************   Forward Declarations    ***********************/"
     ]
   , map prForward classes
+
   , [ "/********************   Abstract Syntax Classes    ********************/"
     , ""
     ]
-  , map (prDataH rp) $ getAbstractSyntax cf
+  , map (prDataH rp) datas
+
+  , unless (null classes) $ concat
+    [ destructorComment
+    , map prFreeH classes
+    , [ "" ]
+    ]
+
   , unless (null definedConstructors)
     [ "/********************   Defined Constructors    ***********************/"
     , ""
     ]
   , map (uncurry3 (prDefH user)) definedConstructors
+
   , [ ""
     , "#endif"
     ]
@@ -68,20 +84,24 @@ mkHFile rp cf = unlines $ concat
   where
   user  :: [TokenCat]
   user   = tokenNames cf
-  rules :: [String]
-  rules = getRules cf
-  classes = nub (rules ++ getClasses (allCatsNorm cf))
-  prForward s | not (isCoercion s) = unlines
+  prForward :: String -> String
+  prForward s = unlines
     [ "struct " ++ s ++ "_;"
     , "typedef struct " ++ s ++ "_ *" ++ s ++ ";"
     ]
-  prForward _ = ""
-  getRules cf = map testRule (cfgRules cf)
-  getClasses = map show . filter isDataCat
-  testRule (Rule f (WithPosition _ c) _ _)
-    | isList c && isConsFun f = identCat (normCat c)
-    | otherwise = "_"
+  prFreeH :: String -> String
+  prFreeH s = "void free" ++ s ++ "(" ++ s ++ " p);"
   definedConstructors = [ (funName f, xs, e) | FunDef f xs e <- cfgPragmas cf ]
+
+destructorComment :: [String]
+destructorComment =
+  [ "/********************   Recursive Destructors    **********************/"
+  , ""
+  , "/* These free an entire abstract syntax tree"
+  , " * including all subtrees and strings."
+  , " */"
+  , ""
+  ]
 
 -- | For @define@d constructors, make a CPP definition.
 --
@@ -110,7 +130,7 @@ prDefH tokenCats f xs e = concat [ "#define make_", f, "(", intercalate "," xs, 
     LitInt    i -> show i
     LitDouble d -> show d
     LitChar   c -> show c
-    LitString s -> show s
+    LitString s -> concat [ "strdup(", show s, ")" ]  -- so that free() does not crash!
 
 -- | Prints struct definitions for all categories.
 prDataH :: RecordPositions -> Data -> String
@@ -191,10 +211,13 @@ prInstVars =
 {- **** Implementation (.C) File Functions **** -}
 
 -- | Makes the .C file
-mkCFile :: CF -> String
-mkCFile cf = concat
+mkCFile :: [Data] -> CF -> String
+mkCFile datas cf = concat
   [ header
-  , render $ vsep $ concatMap prDataC $ getAbstractSyntax cf
+  , render $ vsep $ concatMap prDataC datas
+  , unlines [ "", "" ]
+  , unlines destructorComment
+  , unlines $ concatMap prDestructorC datas
   ]
   where
   header = unlines
@@ -205,6 +228,104 @@ mkCFile cf = concat
     , "#include \"Absyn.h\""
     , ""
     ]
+
+-- |
+-- >>> text $ unlines $ prDestructorC (Cat "Exp", [("EInt", [TokenCat "Integer"]), ("EAdd", [Cat "Exp", Cat "Exp"])])
+-- void freeExp(Exp p)
+-- {
+--   switch(p->kind)
+--   {
+--   case is_EInt:
+--     break;
+-- <BLANKLINE>
+--   case is_EAdd:
+--     freeExp(p->u.eadd_.exp_1);
+--     freeExp(p->u.eadd_.exp_2);
+--     break;
+-- <BLANKLINE>
+--   default:
+--     fprintf(stderr, "Error: bad kind field when freeing Exp!\n");
+--     exit(1);
+--   }
+--   free(p);
+-- }
+-- <BLANKLINE>
+-- <BLANKLINE>
+prDestructorC :: Data -> [String]
+prDestructorC (cat, rules)
+  | isList cat = concat
+    [ [ "void free" ++ cl ++ "("++ cl +++ vname ++ ")"
+      , "{"
+      , "  if (" ++ vname +++ "!= 0)"
+      , "  {"
+      ]
+    , map ("    " ++) visitMember
+    , [ "    free" ++ cl ++ "(" ++ vname ++ "->" ++ vname ++ "_);"
+      , "    free(" ++ vname ++ ");"
+      , "  }"
+      , "}"
+      , ""
+      ]
+    ]
+  | otherwise = concat
+    [ [ "void free" ++ cl ++ "(" ++ cl ++ " p)"
+      , "{"
+      , "  switch(p->kind)"
+      , "  {"
+      ]
+    , concatMap prFreeRule rules
+    , [ "  default:"
+      , "    fprintf(stderr, \"Error: bad kind field when freeing " ++ cl ++ "!\\n\");"
+      , "    exit(1);"
+      , "  }"
+      , "  free(p);"
+      , "}"
+      , ""
+      ]
+    ]
+  where
+  cl          = identCat cat
+  vname       = map toLower cl
+  visitMember =
+    case ecat of
+      TokenCat c
+        | c `elem` ["Char", "Double", "Integer"] -> []
+        | otherwise -> [ "free" ++ rest ]
+      _             -> [ "free" ++ ecl ++ rest ]
+    where
+    rest   = "(" ++ vname ++ "->" ++ member ++ "_);"
+    member = map toLower ecl
+    ecl    = identCat ecat
+    ecat   = normCatOfList cat
+
+  prFreeRule :: (String, [Cat]) -> [String]
+  prFreeRule (fun, cats) | not (isCoercion fun) = concat
+    [ [ "  case is_" ++ fnm ++ ":"
+      ]
+    , map ("    " ++) $ mapMaybe (prFreeCat fnm) $ lefts $ numVars $ map Left cats
+    , [ "    break;"
+      , ""
+      ]
+    ]
+    where
+    fnm = funName fun
+  prFreeRule _ = []
+
+  -- | This goes on to recurse to the instance variables.
+
+  prFreeCat :: String -> (Cat, Doc) -> Maybe String
+  prFreeCat fnm (TokenCat c, nt)
+    | c `elem` ["Char", "Double", "Integer"] = Nothing
+      -- Only pointer need to be freed.
+  prFreeCat fnm (cat, nt) = Just $ concat
+      [ "free"
+      , maybe (identCat $ normCat cat) (const "") $ maybeTokenCat cat
+      , "(p->u."
+      , map toLower fnm
+      , "_.", render nt, ");"
+      ]
+
+
 
 prDataC :: Data -> [Doc]
 prDataC (cat, rules) = map (prRuleC cat) rules
