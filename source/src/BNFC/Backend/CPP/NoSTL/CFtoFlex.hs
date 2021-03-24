@@ -62,7 +62,7 @@ lexSymbols :: SymEnv -> String
 lexSymbols ss = concatMap transSym ss
   where
     transSym (s,r) =
-      "<YYINITIAL>\"" ++ s' ++ "\"      \t return " ++ r ++ ";\n"
+      "<INITIAL>\"" ++ s' ++ "\"      \t return " ++ r ++ ";\n"
         where
          s' = escapeChars s
 
@@ -74,12 +74,12 @@ restOfFlex inPackage cf env = unlines $ concat
   , userDefTokens
   , ifC catString  $ lexStrings (ns ++ "yylval") (nsDefine inPackage "_STRING_") (nsDefine inPackage "_ERROR_")
   , ifC catChar    $ lexChars   (ns ++ "yylval") (nsDefine inPackage "_CHAR_")
-  , ifC catDouble  [ "<YYINITIAL>{DIGIT}+\".\"{DIGIT}+(\"e\"(\\-)?{DIGIT}+)?      \t " ++ ns ++ "yylval._double = atof(yytext); return " ++ nsDefine inPackage "_DOUBLE_" ++ ";" ]
-  , ifC catInteger [ "<YYINITIAL>{DIGIT}+      \t " ++ ns ++ "yylval._int = atoi(yytext); return " ++ nsDefine inPackage "_INTEGER_" ++ ";" ]
-  , ifC catIdent   [ "<YYINITIAL>{LETTER}{IDENT}*      \t " ++ ns ++ "yylval._string = strdup(yytext); return " ++ nsDefine inPackage "_IDENT_" ++ ";" ]
+  , ifC catDouble  [ "<INITIAL>{DIGIT}+\".\"{DIGIT}+(\"e\"(\\-)?{DIGIT}+)?      \t " ++ ns ++ "yylval._double = atof(yytext); return " ++ nsDefine inPackage "_DOUBLE_" ++ ";" ]
+  , ifC catInteger [ "<INITIAL>{DIGIT}+      \t " ++ ns ++ "yylval._int = atoi(yytext); return " ++ nsDefine inPackage "_INTEGER_" ++ ";" ]
+  , ifC catIdent   [ "<INITIAL>{LETTER}{IDENT}*      \t " ++ ns ++ "yylval._string = strdup(yytext); return " ++ nsDefine inPackage "_IDENT_" ++ ";" ]
   , [ "\\n  ++" ++ ns ++ "yy_mylinenumber ;"
-    , "<YYINITIAL>[ \\t\\r\\n\\f]      \t /* ignore white space. */;"
-    , "<YYINITIAL>.      \t return " ++ nsDefine inPackage "_ERROR_" ++ ";"
+    , "<INITIAL>[ \\t\\r\\n\\f]      \t /* ignore white space. */;"
+    , "<INITIAL>.      \t return " ++ nsDefine inPackage "_ERROR_" ++ ";"
     , "%%"
     ]
   , footer
@@ -88,13 +88,13 @@ restOfFlex inPackage cf env = unlines $ concat
    ifC cat s = if isUsedCat cf (TokenCat cat) then s else []
    ns = nsString inPackage
    userDefTokens =
-     [ "<YYINITIAL>" ++ printRegFlex exp ++
+     [ "<INITIAL>" ++ printRegFlex exp ++
          "     \t " ++ ns ++ "yylval._string = strdup(yytext); return " ++ sName name ++ ";"
      | (name, exp) <- tokenPragmas cf
      ]
      where sName n = fromMaybe n $ Map.lookup (Tokentype n) env
    footer =
-     [ "void " ++ ns ++ "initialize_lexer(FILE *inp) { yyrestart(inp); BEGIN YYINITIAL; }"
+     [ "void " ++ ns ++ "initialize_lexer(FILE *inp) { yyrestart(inp); }"
      , "int yywrap(void) { return 1; }"
      ]
 
@@ -111,9 +111,9 @@ restOfFlex inPackage cf env = unlines $ concat
 -- delimiters.
 --
 -- >>> lexComments (Just "myns.") ([("{-","-}")],["--"])
--- <YYINITIAL>"--"[^\n]* ; // BNFC: comment "--";
--- <YYINITIAL>"{-" BEGIN COMMENT; // BNFC: block comment "{-" "-}";
--- <COMMENT>"-}" BEGIN YYINITIAL;
+-- <INITIAL>"--"[^\n]* ; // BNFC: comment "--";
+-- <INITIAL>"{-" BEGIN COMMENT; // BNFC: block comment "{-" "-}";
+-- <COMMENT>"-}" BEGIN INITIAL;
 -- <COMMENT>.    /* skip */;
 -- <COMMENT>[\n] ++myns.yy_mylinenumber;
 lexComments :: Maybe String -> ([(String, String)], [String]) -> Doc
@@ -128,37 +128,18 @@ lexComments ns (m,s) = vcat $ concat
 -- comment.
 --
 -- >>> lexSingleComment (Just "mypackage.") "--"
--- <YYINITIAL>"--"[^\n]* ; // BNFC: comment "--";
+-- <INITIAL>"--"[^\n]* ; // BNFC: comment "--";
 --
 -- >>> lexSingleComment Nothing "--"
--- <YYINITIAL>"--"[^\n]* ; // BNFC: comment "--";
+-- <INITIAL>"--"[^\n]* ; // BNFC: comment "--";
 --
 -- >>> lexSingleComment Nothing "\""
--- <YYINITIAL>"\""[^\n]* ; // BNFC: comment "\"";
+-- <INITIAL>"\""[^\n]* ; // BNFC: comment "\"";
 lexSingleComment :: Maybe String -> String -> Doc
 lexSingleComment _ c =
-    "<YYINITIAL>" <> cstring c <> "[^\\n]*"
+    "<INITIAL>" <> cstring c <> "[^\\n]*"
     <+> ";"
     <+> "// BNFC: comment" <+> cstring c <> ";"
-
--- -- | Create a lexer rule for single-line comments.
--- -- The first argument is -- an optional c++ namespace
--- -- The second argument is the delimiter that marks the beginning of the
--- -- comment.
--- --
--- -- >>> lexSingleComment (Just "mypackage.") "--"
--- -- <YYINITIAL>"--"[^\n]*\n ++mypackage.yy_mylinenumber; // BNFC: comment "--";
--- --
--- -- >>> lexSingleComment Nothing "--"
--- -- <YYINITIAL>"--"[^\n]*\n ++yy_mylinenumber; // BNFC: comment "--";
--- --
--- -- >>> lexSingleComment Nothing "\""
--- -- <YYINITIAL>"\""[^\n]*\n ++yy_mylinenumber; // BNFC: comment "\"";
--- lexSingleComment :: Maybe String -> String -> Doc
--- lexSingleComment ns c =
---     "<YYINITIAL>" <> cstring c <> "[^\\n]*\\n"
---     <+> "++"<> text (fromMaybe "" ns)<>"yy_mylinenumber;"
---     <+> "// BNFC: comment" <+> cstring c <> ";"
 
 -- | Create a lexer rule for multi-lines comments.
 -- The first argument is -- an optional c++ namespace
@@ -169,27 +150,27 @@ lexSingleComment _ c =
 -- with another.  However this seems rare.
 --
 -- >>> lexMultiComment Nothing ("{-", "-}") "COMMENT"
--- <YYINITIAL>"{-" BEGIN COMMENT; // BNFC: block comment "{-" "-}";
--- <COMMENT>"-}" BEGIN YYINITIAL;
+-- <INITIAL>"{-" BEGIN COMMENT; // BNFC: block comment "{-" "-}";
+-- <COMMENT>"-}" BEGIN INITIAL;
 -- <COMMENT>.    /* skip */;
 -- <COMMENT>[\n] ++yy_mylinenumber;
 --
 -- >>> lexMultiComment (Just "foo.") ("{-", "-}") "COMMENT"
--- <YYINITIAL>"{-" BEGIN COMMENT; // BNFC: block comment "{-" "-}";
--- <COMMENT>"-}" BEGIN YYINITIAL;
+-- <INITIAL>"{-" BEGIN COMMENT; // BNFC: block comment "{-" "-}";
+-- <COMMENT>"-}" BEGIN INITIAL;
 -- <COMMENT>.    /* skip */;
 -- <COMMENT>[\n] ++foo.yy_mylinenumber;
 --
 -- >>> lexMultiComment Nothing ("\"'", "'\"") "COMMENT"
--- <YYINITIAL>"\"'" BEGIN COMMENT; // BNFC: block comment "\"'" "'\"";
--- <COMMENT>"'\"" BEGIN YYINITIAL;
+-- <INITIAL>"\"'" BEGIN COMMENT; // BNFC: block comment "\"'" "'\"";
+-- <COMMENT>"'\"" BEGIN INITIAL;
 -- <COMMENT>.    /* skip */;
 -- <COMMENT>[\n] ++yy_mylinenumber;
 lexMultiComment :: Maybe String -> (String, String) -> String -> Doc
 lexMultiComment ns (b,e) comment = vcat
-    [ "<YYINITIAL>" <> cstring b <+> "BEGIN" <+> text comment <> ";"
+    [ "<INITIAL>" <> cstring b <+> "BEGIN" <+> text comment <> ";"
         <+> "// BNFC: block comment" <+> cstring b <+> cstring e <> ";"
-    , commentTag <> cstring e <+> "BEGIN YYINITIAL;"
+    , commentTag <> cstring e <+> "BEGIN INITIAL;"
     , commentTag <> ".    /* skip */;"
     , commentTag <> "[\\n] ++" <> text (fromMaybe "" ns) <> "yy_mylinenumber;"
     ]

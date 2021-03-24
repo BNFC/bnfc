@@ -139,7 +139,7 @@ cMacros cf = unlines
   , "DIGIT [0-9]"
   , "IDENT [a-zA-Z0-9'_]"
   , unwords $ concat
-      [ [ "%START YYINITIAL CHAR CHARESC CHAREND STRING ESCAPED" ]
+      [ [ "%START CHAR CHARESC CHAREND STRING ESCAPED" ]
       , take (numberOfBlockCommentForms cf) commentStates
       ]
   , ""
@@ -150,7 +150,7 @@ lexSymbols :: KeywordEnv -> String
 lexSymbols ss = concatMap transSym ss
   where
     transSym (s,r) =
-      "<YYINITIAL>\"" ++ s' ++ "\"      \t return " ++ r ++ ";\n"
+      "<INITIAL>\"" ++ s' ++ "\"      \t return " ++ r ++ ";\n"
         where
          s' = escapeChars s
 
@@ -162,11 +162,11 @@ restOfFlex cf env = unlines $ concat
   , userDefTokens
   , ifC catString  $ lexStrings "yylval" "_STRING_" "_ERROR_"
   , ifC catChar    $ lexChars   "yylval" "_CHAR_"
-  , ifC catDouble  [ "<YYINITIAL>{DIGIT}+\".\"{DIGIT}+(\"e\"(\\-)?{DIGIT}+)?      \t yylval._double = atof(yytext); return _DOUBLE_;" ]
-  , ifC catInteger [ "<YYINITIAL>{DIGIT}+      \t yylval._int = atoi(yytext); return _INTEGER_;" ]
-  , ifC catIdent   [ "<YYINITIAL>{LETTER}{IDENT}*      \t yylval._string = strdup(yytext); return _IDENT_;" ]
-  , [ "<YYINITIAL>[ \\t\\r\\n\\f]      \t /* ignore white space. */;"
-    , "<YYINITIAL>.      \t return _ERROR_;"
+  , ifC catDouble  [ "<INITIAL>{DIGIT}+\".\"{DIGIT}+(\"e\"(\\-)?{DIGIT}+)?      \t yylval._double = atof(yytext); return _DOUBLE_;" ]
+  , ifC catInteger [ "<INITIAL>{DIGIT}+      \t yylval._int = atoi(yytext); return _INTEGER_;" ]
+  , ifC catIdent   [ "<INITIAL>{LETTER}{IDENT}*      \t yylval._string = strdup(yytext); return _IDENT_;" ]
+  , [ "<INITIAL>[ \\t\\r\\n\\f]      \t /* ignore white space. */;"
+    , "<INITIAL>.      \t return _ERROR_;"
     , ""
     , "%%  /* Initialization code. */"
     , ""
@@ -176,7 +176,7 @@ restOfFlex cf env = unlines $ concat
   where
   ifC cat s = if isUsedCat cf (TokenCat cat) then s else []
   userDefTokens =
-    [ "<YYINITIAL>" ++ printRegFlex exp ++
+    [ "<INITIAL>" ++ printRegFlex exp ++
        "    \t yylval._string = strdup(yytext); return " ++ sName name ++ ";"
     | (name, exp) <- tokenPragmas cf
     ]
@@ -190,16 +190,15 @@ restOfFlex cf env = unlines $ concat
      "  yylloc.first_column = 1;",
      "  yylloc.last_line    = 1;",
      "  yylloc.last_column  = 1;",
-     "  BEGIN YYINITIAL;",
      "}"
     ]
 
 -- | Lexing of strings, converting escaped characters.
 lexStrings :: String -> String -> String -> [String]
 lexStrings yylval stringToken errorToken =
-    [ "<YYINITIAL>\"\\\"\"        \t LITERAL_BUFFER_CREATE(); BEGIN STRING;"
+    [ "<INITIAL>\"\\\"\"        \t LITERAL_BUFFER_CREATE(); BEGIN STRING;"
     , "<STRING>\\\\             \t BEGIN ESCAPED;"
-    , "<STRING>\\\"             \t " ++ yylval ++ "._string = LITERAL_BUFFER_HARVEST(); BEGIN YYINITIAL; return " ++ stringToken ++ ";"
+    , "<STRING>\\\"             \t " ++ yylval ++ "._string = LITERAL_BUFFER_HARVEST(); BEGIN INITIAL; return " ++ stringToken ++ ";"
     , "<STRING>.              \t LITERAL_BUFFER_APPEND_CHAR(yytext[0]);"
     , "<ESCAPED>n             \t LITERAL_BUFFER_APPEND_CHAR('\\n'); BEGIN STRING;"
     , "<ESCAPED>\\\"            \t LITERAL_BUFFER_APPEND_CHAR('\"');  BEGIN STRING;"
@@ -212,13 +211,13 @@ lexStrings yylval stringToken errorToken =
 -- | Lexing of characters, converting escaped characters.
 lexChars :: String -> String -> [String]
 lexChars yylval charToken =
-    [ "<YYINITIAL>\"'\" \tBEGIN CHAR;"
+    [ "<INITIAL>\"'\" \tBEGIN CHAR;"
     , "<CHAR>\\\\      \t BEGIN CHARESC;"
     , "<CHAR>[^']      \t BEGIN CHAREND; " ++ yylval ++ "._char = yytext[0]; return " ++ charToken ++ ";"
     , "<CHARESC>n      \t BEGIN CHAREND; " ++ yylval ++ "._char = '\\n';     return " ++ charToken ++ ";"
     , "<CHARESC>t      \t BEGIN CHAREND; " ++ yylval ++ "._char = '\\t';     return " ++ charToken ++ ";"
     , "<CHARESC>.      \t BEGIN CHAREND; " ++ yylval ++ "._char = yytext[0]; return " ++ charToken ++ ";"
-    , "<CHAREND>\"'\"      \t BEGIN YYINITIAL;"
+    , "<CHAREND>\"'\"      \t BEGIN INITIAL;"
     ]
 
 -- ---------------------------------------------------------------------------
@@ -233,9 +232,9 @@ lexChars yylval charToken =
 -- delimiters.
 --
 -- >>> lexComments (Just "myns.") ([("{-","-}")],["--"])
--- <YYINITIAL>"--"[^\n]* /* skip */; /* BNFC: comment "--" */
--- <YYINITIAL>"{-" BEGIN COMMENT; /* BNFC: block comment "{-" "-}" */
--- <COMMENT>"-}" BEGIN YYINITIAL;
+-- <INITIAL>"--"[^\n]* /* skip */; /* BNFC: comment "--" */
+-- <INITIAL>"{-" BEGIN COMMENT; /* BNFC: block comment "{-" "-}" */
+-- <COMMENT>"-}" BEGIN INITIAL;
 -- <COMMENT>.    /* skip */;
 -- <COMMENT>[\n] /* skip */;
 lexComments :: Maybe String -> ([(String, String)], [String]) -> Doc
@@ -254,13 +253,13 @@ commentStates = map ("COMMENT" ++) $ "" : map show [1..]
 -- comment.
 --
 -- >>> lexSingleComment "--"
--- <YYINITIAL>"--"[^\n]* /* skip */; /* BNFC: comment "--" */
+-- <INITIAL>"--"[^\n]* /* skip */; /* BNFC: comment "--" */
 --
 -- >>> lexSingleComment "\""
--- <YYINITIAL>"\""[^\n]* /* skip */; /* BNFC: comment "\"" */
+-- <INITIAL>"\""[^\n]* /* skip */; /* BNFC: comment "\"" */
 lexSingleComment :: String -> Doc
 lexSingleComment c =
-    "<YYINITIAL>" <> cstring c <> "[^\\n]*"
+    "<INITIAL>" <> cstring c <> "[^\\n]*"
     <+> "/* skip */;"
     <+> unless (containsCCommentMarker c) ("/* BNFC: comment" <+> cstring c <+> "*/")
 
@@ -276,22 +275,22 @@ containsCCommentMarker s = "/*" `isInfixOf` s || "*/" `isInfixOf` s
 -- with another.  However this seems rare.
 --
 -- >>> lexMultiComment ("{-", "-}") "COMMENT"
--- <YYINITIAL>"{-" BEGIN COMMENT; /* BNFC: block comment "{-" "-}" */
--- <COMMENT>"-}" BEGIN YYINITIAL;
+-- <INITIAL>"{-" BEGIN COMMENT; /* BNFC: block comment "{-" "-}" */
+-- <COMMENT>"-}" BEGIN INITIAL;
 -- <COMMENT>.    /* skip */;
 -- <COMMENT>[\n] /* skip */;
 --
 -- >>> lexMultiComment ("\"'", "'\"") "COMMENT"
--- <YYINITIAL>"\"'" BEGIN COMMENT; /* BNFC: block comment "\"'" "'\"" */
--- <COMMENT>"'\"" BEGIN YYINITIAL;
+-- <INITIAL>"\"'" BEGIN COMMENT; /* BNFC: block comment "\"'" "'\"" */
+-- <COMMENT>"'\"" BEGIN INITIAL;
 -- <COMMENT>.    /* skip */;
 -- <COMMENT>[\n] /* skip */;
 lexMultiComment :: (String, String) -> String -> Doc
 lexMultiComment (b,e) comment = vcat
-    [ "<YYINITIAL>" <> cstring b <+> "BEGIN" <+> text comment <> ";"
+    [ "<INITIAL>" <> cstring b <+> "BEGIN" <+> text comment <> ";"
       <+> unless (containsCCommentMarker b || containsCCommentMarker e)
           ("/* BNFC: block comment" <+> cstring b <+> cstring e <+> "*/")
-    , commentTag <> cstring e <+> "BEGIN YYINITIAL;"
+    , commentTag <> cstring e <+> "BEGIN INITIAL;"
     , commentTag <> ".    /* skip */;"
     , commentTag <> "[\\n] /* skip */;"
     ]
