@@ -70,6 +70,9 @@ header name cf = unlines
     , concat [ "/* Turn on line/column tracking in the ", name, "lloc structure: */" ]
     , "%locations"
     , ""
+    , "/* Argument to the parser to be filled with the parsed tree. */"
+    , "%parse-param { YYSTYPE *result }"
+    , ""
     , "%{"
     , "/* Begin C preamble code */"
     , ""
@@ -86,9 +89,8 @@ header name cf = unlines
     , "extern int yylex(void);"
     , "extern int " ++ name ++ "_init_lexer(FILE * inp);"
     , ""
+    , "/* List reversal functions. */"
     , concatMap reverseList $ filter isList $ allParserCatsNorm cf
-    , "/* Global variables holding parse results for entrypoints. */"
-    , unlines $ map parseResult $ nub $ map normCat eps
     , "/* End C preamble code */"
     , "%}"
     ]
@@ -105,25 +107,13 @@ unionDependentCode :: String -> String
 unionDependentCode name = unlines
   [ "%{"
   , errorHandler name
-  , "int yyparse(void);"
+  , "int yyparse(YYSTYPE *result);"
   , "%}"
   ]
 
--- | Generates declaration and initialization of the @YY_RESULT@ for a parser.
---
---   Different parsers (for different precedences of the same category)
---   share such a declaration.
---
---   Expects a normalized category.
-parseResult :: Cat -> String
-parseResult cat =
-  dat +++ resultName dat +++ "= 0;"
-  where
-  dat = identCat cat
-
 errorHandler :: String -> String
 errorHandler name = unlines
-  [ "void yyerror(const char *str)"
+  [ "void yyerror(YYSTYPE *result, const char *str)"
   , "{"
   , "  extern char *" ++ name ++ "text;"
   , "  fprintf(stderr,\"error: %d,%d: %s at %s\\n\","
@@ -140,44 +130,44 @@ entryCode name cf = unlines $ map (parseMethod cf name) eps
 
 --This generates a parser method for each entry point.
 parseMethod :: CF -> String -> Cat -> String
-parseMethod cf name cat = unlines $
-  [ unwords [ "/* Entrypoint: parse", dat, "from file. */" ]
-  , dat ++ " p" ++ parser ++ "(FILE *inp)"
-  , "{"
-  , "  " ++ name ++ "_init_lexer(inp);"
-  , "  int result = yyparse();"
-  , "  if (result)"
-  , "  { /* Failure */"
-  , "    return 0;"
-  , "  }"
-  , "  else"
-  , "  { /* Success */"
-  , "    return" +++ res ++ ";"
-  , "  }"
-  , "}"
-  , ""
-  , unwords [ "/* Entrypoint: parse", dat, "from string. */" ]
-  , dat ++ " ps" ++ parser ++ "(const char *str)"
-  , "{"
-  , "  YY_BUFFER_STATE buf;"
-  , "  " ++ name ++ "_init_lexer(0);"
-  , "  buf = " ++ name ++ "_scan_string(str);"
-  , "  int result = yyparse();"
-  , "  " ++ name ++ "_delete_buffer(buf);"
-  , "  if (result)"
-  , "  { /* Failure */"
-  , "    return 0;"
-  , "  }"
-  , "  else"
-  , "  { /* Success */"
-  , "    return" +++ res ++ ";"
-  , "  }"
-  , "}"
+parseMethod cf name cat = unlines $ concat
+  [ [ unwords [ "/* Entrypoint: parse", dat, "from file. */" ]
+    , dat ++ " p" ++ parser ++ "(FILE *inp)"
+    ]
+  , body False
+  , [ ""
+    , unwords [ "/* Entrypoint: parse", dat, "from string. */" ]
+    , dat ++ " ps" ++ parser ++ "(const char *str)"
+    ]
+  , body True
   ]
   where
-  dat    = identCat (normCat cat)
+  body stringParser = concat
+    [ [ "{"
+      , concat [ "  ", name, "_init_lexer(", file, ");" ]
+      , "  YYSTYPE result;"
+      ]
+    , [ "  YY_BUFFER_STATE  buf = " ++ name ++ "_scan_string(str);" | stringParser ]
+    , [ "  int error = yyparse(&result);" ]
+    , [ "  " ++ name ++ "_delete_buffer(buf);" | stringParser ]
+    , [ "  if (error)"
+      , "  { /* Failure */"
+      , "    return 0;"
+      , "  }"
+      , "  else"
+      , "  { /* Success */"
+      , "    return" +++ res ++ ";"
+      , "  }"
+      , "}"
+      ]
+    ]
+    where
+    file | stringParser = "0"
+         | otherwise    = "inp"
+  ncat   = normCat cat
+  dat    = identCat ncat
   parser = identCat cat
-  res0   = resultName dat
+  res0   = concat [ "result.", varName ncat ]
   revRes = "reverse" ++ dat ++ "(" ++ res0 ++ ")"
   res    = if cat `elem` cfgReversibleCats cf then revRes else res0
 
@@ -300,7 +290,8 @@ constructRule rp cf env rules nt = (nt,) $
       if nt `elem` toList (allEntryPoints cf)
       -- Note: Bison has only a single entrypoint,
       -- but BNFC works around this by adding dedicated parse methods for all entrypoints.
-        then a +++ resultName (identCat (normCat nt)) ++ "= $$;"
+      -- Andreas, 2021-03-24: But see #350: bison still uses only the @%start@ non-terminal.
+        then concat [ a, " result->", varName (normCat nt), " = $$;" ]
         else a
 
 -- | Generates a string containing the semantic action.
