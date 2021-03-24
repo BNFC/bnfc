@@ -48,6 +48,7 @@ cf2Bison :: RecordPositions -> String -> CF -> SymMap -> String
 cf2Bison rp name cf env = unlines
     [ header name cf
     , union (allParserCatsNorm cf)
+    , unionDependentCode name
     , "%token _ERROR_"
     , tokens (map fst $ tokenPragmas cf) env
     , declarations cf
@@ -59,7 +60,7 @@ cf2Bison rp name cf env = unlines
     , prRules (rulesForBison rp cf env)
     , "%%"
     , ""
-    , errorHandler name
+    , entryCode name cf
     ]
 
 header :: String -> CF -> String
@@ -82,16 +83,12 @@ header name cf = unlines
     , "typedef struct " ++ name ++ "_buffer_state *YY_BUFFER_STATE;"
     , "YY_BUFFER_STATE " ++ name ++ "_scan_string(const char *str);"
     , "void " ++ name ++ "_delete_buffer(YY_BUFFER_STATE buf);"
-    , "extern int yyparse(void);"
     , "extern int yylex(void);"
     , "extern int " ++ name ++ "_init_lexer(FILE * inp);"
-      -- this must be deferred until yylloc is defined
-    , "extern void yyerror(const char *str);"
     , ""
     , concatMap reverseList $ filter isList $ allParserCatsNorm cf
     , "/* Global variables holding parse results for entrypoints. */"
     , unlines $ map parseResult $ nub $ map normCat eps
-    , unlines $ map (parseMethod cf name) eps
     , "/* End C preamble code */"
     , "%}"
     ]
@@ -101,6 +98,16 @@ header name cf = unlines
      -- WAS:  (allCatsNorm cf)
      -- Found old comment:
      -- -- M.F. 2004-09-17 changed allEntryPoints to allCatsIdNorm. Seems to fix the [Ty2] bug.
+
+-- | Code that needs the @YYSTYPE@ defined by the @%union@ pragma.
+--
+unionDependentCode :: String -> String
+unionDependentCode name = unlines
+  [ "%{"
+  , errorHandler name
+  , "int yyparse(void);"
+  , "%}"
+  ]
 
 -- | Generates declaration and initialization of the @YY_RESULT@ for a parser.
 --
@@ -123,6 +130,13 @@ errorHandler name = unlines
   , "  " ++ name ++ "lloc.first_line, " ++ name ++ "lloc.first_column, str, " ++ name ++ "text);"
   , "}"
   ]
+
+-- | Parser entry point code.
+--
+entryCode :: String -> CF -> String
+entryCode name cf = unlines $ map (parseMethod cf name) eps
+  where
+  eps = toList (allEntryPoints cf)
 
 --This generates a parser method for each entry point.
 parseMethod :: CF -> String -> Cat -> String
