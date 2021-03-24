@@ -70,6 +70,13 @@ header name cf = unlines
     , "/* Generate header file for lexer. */"
     , "%defines \"Bison.h\""
     , ""
+    , "/* Reentrant parser */"
+    , "%pure_parser"
+         -- This flag is deprecated in Bison 3.7, but older Bisons don't recognize
+         -- %define api.pure full
+    , "%lex-param   { yyscan_t scanner }"
+    , "%parse-param { yyscan_t scanner }"
+    , ""
     , concat [ "/* Turn on line/column tracking in the ", name, "lloc structure: */" ]
     , "%locations"
     , ""
@@ -86,11 +93,20 @@ header name cf = unlines
     , ""
     , "#define YYMAXDEPTH 10000000"  -- default maximum stack size is 10000, but right-recursion needs O(n) stack
     , ""
+    , "/* The type yyscan_t is defined by flex, but we need it in the parser already. */"
+    , "#ifndef YY_TYPEDEF_YY_SCANNER_T"
+    , "#define YY_TYPEDEF_YY_SCANNER_T"
+    , "typedef void* yyscan_t;"
+    , "#endif"
+    , ""
     , "typedef struct " ++ name ++ "_buffer_state *YY_BUFFER_STATE;"
-    , "YY_BUFFER_STATE " ++ name ++ "_scan_string(const char *str);"
-    , "void " ++ name ++ "_delete_buffer(YY_BUFFER_STATE buf);"
-    , "extern int yylex(void);"
-    , "extern int " ++ name ++ "_init_lexer(FILE * inp);"
+    , "YY_BUFFER_STATE " ++ name ++ "_scan_string(const char *str, yyscan_t scanner);"
+    , "void " ++ name ++ "_delete_buffer(YY_BUFFER_STATE buf, yyscan_t scanner);"
+    , ""
+    , "extern void " ++ name ++ "lex_destroy(yyscan_t scanner);"
+    , "extern char* " ++ name ++ "get_text(yyscan_t scanner);"
+    , ""
+    , "extern yyscan_t " ++ name ++ "_init_lexer(FILE * inp);"
     , ""
     , "/* List reversal functions. */"
     , concatMap reverseList $ filter isList $ allParserCatsNorm cf
@@ -110,17 +126,18 @@ unionDependentCode :: String -> String
 unionDependentCode name = unlines
   [ "%{"
   , errorHandler name
-  , "int yyparse(YYSTYPE *result);"
+  , "int yyparse(yyscan_t scanner, YYSTYPE *result);"
+  , ""
+  , "extern int yylex(YYSTYPE *lvalp, YYLTYPE *llocp, yyscan_t scanner);"
   , "%}"
   ]
 
 errorHandler :: String -> String
 errorHandler name = unlines
-  [ "void yyerror(YYSTYPE *result, const char *str)"
+  [ "void yyerror(YYLTYPE *loc, yyscan_t scanner, YYSTYPE *result, const char *msg)"
   , "{"
-  , "  extern char *" ++ name ++ "text;"
-  , "  fprintf(stderr,\"error: %d,%d: %s at %s\\n\","
-  , "  " ++ name ++ "lloc.first_line, " ++ name ++ "lloc.first_column, str, " ++ name ++ "text);"
+  , "  fprintf(stderr, \"error: %d,%d: %s at %s\\n\","
+  , "    loc->first_line, loc->first_column, msg, " ++ name ++ "get_text(scanner));"
   , "}"
   ]
 
@@ -147,13 +164,18 @@ parseMethod cf name cat = unlines $ concat
   where
   body stringParser = concat
     [ [ "{"
-      , concat [ "  ", name, "_init_lexer(", file, ");" ]
       , "  YYSTYPE result;"
+      , "  yyscan_t scanner = " ++ name ++ "_init_lexer(", file, ");"
+      , "  if (!scanner) {"
+      , "    fprintf(stderr, \"Failed to initialize lexer.\\n\");"
+      , "    return 0;"
+      , "  }"
       ]
-    , [ "  YY_BUFFER_STATE  buf = " ++ name ++ "_scan_string(str);" | stringParser ]
-    , [ "  int error = yyparse(&result);" ]
-    , [ "  " ++ name ++ "_delete_buffer(buf);" | stringParser ]
-    , [ "  if (error)"
+    , [ "  YY_BUFFER_STATE buf = " ++ name ++ "_scan_string(str, scanner);" | stringParser ]
+    , [ "  int error = yyparse(scanner, &result);" ]
+    , [ "  " ++ name ++ "_delete_buffer(buf, scanner);" | stringParser ]
+    , [ "  " ++ name ++ "lex_destroy(scanner);"
+      , "  if (error)"
       , "  { /* Failure */"
       , "    return 0;"
       , "  }"
