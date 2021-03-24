@@ -86,6 +86,7 @@ makefile name prefix basename = vcat
     , Makefile.mkRule "distclean" ["clean"]
       [ "rm -f " ++ unwords
         [ "Absyn.h", "Absyn.c"
+        , "Bison.h"
         , "Buffer.h", "Buffer.c"
         , name ++ ".l", "Lexer.c"
         , name ++ ".y", "Parser.h", "Parser.c"
@@ -104,11 +105,11 @@ makefile name prefix basename = vcat
       [ "${CC} ${CCFLAGS} -c Buffer.c" ]
     , Makefile.mkRule "Lexer.c" [ name ++ ".l" ]
       [ "${FLEX} ${FLEX_OPTS} -oLexer.c " ++ name ++ ".l" ]
-    , Makefile.mkRule "Parser.c" [ name ++ ".y" ]
+    , Makefile.mkRule "Parser.c Bison.h" [ name ++ ".y" ]
       [ "${BISON} ${BISON_OPTS} " ++ name ++ ".y -o Parser.c" ]
-    , Makefile.mkRule "Lexer.o" [ "Lexer.c", "Parser.h" ]
+    , Makefile.mkRule "Lexer.o" [ "Lexer.c", "Bison.h" ]
       [ "${CC} ${CCFLAGS} -c Lexer.c " ]
-    , Makefile.mkRule "Parser.o" ["Parser.c", "Absyn.h" ]
+    , Makefile.mkRule "Parser.o" ["Parser.c", "Absyn.h", "Bison.h" ]
       [ "${CC} ${CCFLAGS} -c Parser.c" ]
     , Makefile.mkRule "Printer.o" [ "Printer.c", "Printer.h", "Absyn.h" ]
       [ "${CC} ${CCFLAGS} -c Printer.c" ]
@@ -209,52 +210,15 @@ mkHeaderFile _ cf env = unlines $ concat
     , ""
     , "#include \"Absyn.h\""
     , ""
-    , "typedef union"
-    , "{"
     ]
-  , map ("  " ++) unionBuiltinTokens
-  , concatMap mkPointer $ allParserCatsNorm cf
-  , [ "} YYSTYPE;"
-    , ""
-      -- https://www.gnu.org/software/bison/manual/html_node/Location-Type.html#Location-Type
-    , "typedef struct YYLTYPE"
-    , "{"
-    , "  int first_line;"
-    , "  int first_column;"
-    , "  int last_line;"
-    , "  int last_column;"
-    , "} YYLTYPE;"
-    , ""
-    , "#define _ERROR_ 258"
-    , mkDefines (259::Int) env
-    , ""
-    , "extern YYLTYPE yylloc;"
-    , "extern YYSTYPE yylval;"
-    , ""
-    ]
+  -- Andreas, 2021-03-24
+  -- Removed stuff that is now generated in Bison.h using the %defines pragma in the .y file.
   , concatMap mkFunc $ toList $ allEntryPoints cf
   , [ ""
     , "#endif"
     ]
   ]
   where
-  mkDefines n [] = mkString n
-  mkDefines n (s:ss) = ("#define " ++ s +++ (show n) ++ "\n") ++ (mkDefines (n+1) ss)
-  mkString n =  if isUsedCat cf (TokenCat catString)
-   then ("#define _STRING_ " ++ show n ++ "\n") ++ mkChar (n+1)
-   else mkChar n
-  mkChar n =  if isUsedCat cf (TokenCat catChar)
-   then ("#define _CHAR_ " ++ show n ++ "\n") ++ mkInteger (n+1)
-   else mkInteger n
-  mkInteger n =  if isUsedCat cf (TokenCat catInteger)
-   then ("#define _INTEGER_ " ++ show n ++ "\n") ++ mkDouble (n+1)
-   else mkDouble n
-  mkDouble n =  if isUsedCat cf (TokenCat catDouble)
-   then ("#define _DOUBLE_ " ++ show n ++ "\n") ++ mkIdent(n+1)
-   else mkIdent n
-  mkIdent n =  if isUsedCat cf (TokenCat catIdent)
-   then ("#define _IDENT_ " ++ show n ++ "\n")
-   else ""
   -- Andreas, 2019-04-29, issue #210: generate parsers also for coercions
   mkFunc c =
     [ identCat (normCat c) ++ "  p" ++ identCat c ++ "(FILE *inp);"

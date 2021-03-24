@@ -65,10 +65,12 @@ prelude stringLiterals name = unlines $ concat
     , "#define _POSIX_C_SOURCE 200809L"
     , "}"
     , "%{"
+    , "#include \"Absyn.h\""
+    , "#include \"Bison.h\""
+    , ""
     , "#define yylval " ++ name ++ "lval"
     , "#define yylloc " ++ name ++ "lloc"
     , "#define init_lexer " ++ name ++ "_init_lexer"
-    , "#include \"Parser.h\""
     , ""
     ]
   , when stringLiterals $ preludeForBuffer "Buffer.h"
