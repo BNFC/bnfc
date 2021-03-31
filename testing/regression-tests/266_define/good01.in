@@ -1,3 +1,9 @@
-integers  1, 2, 3
-chars     'A'. 'a'
-in        1.41421356237311 ** sqrt 2.71828182845905 ** 3.14159265358979
+integers   1, 2, 3
+integers   4
+integers   5
+
+chars      'A' . 'a'
+chars      'B'
+chars      'C'
+
+expression 1.41421356237311 ** sqrt 2.71828182845905 ** 3.14159265358979

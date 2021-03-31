@@ -1,6 +1,10 @@
 -- #266 "define" pragma
 
-Prg.      Program ::= "integers" Ints "chars" Chars "in" Exp ;
+terminator Stm "";
+
+SInts.    Stm   ::= "integers"   Ints;
+SChars.   Stm   ::= "chars"      Chars;
+SExp.     Stm   ::= "expression" Exp ;
 
 EHalf.    Exp2  ::= "1/2"           ;
 EDouble.  Exp2  ::= Double          ;
