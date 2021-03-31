@@ -11,6 +11,7 @@ module BNFC.Options
   , defaultOptions, isDefault, printOptions
   , AlexVersion(..), HappyMode(..), OCamlParser(..), JavaLexerParser(..)
   , RecordPositions(..), TokenText(..)
+  , InPackage
   , removedIn290
   , translateOldOptions
   )
@@ -95,6 +96,9 @@ data JavaLexerParser = JLexCup | JFlexCup | Antlr4
 data RecordPositions = RecordPositions | NoRecordPositions
     deriving (Eq,Show,Ord)
 
+-- | Package name (C++ and Java backends).
+type InPackage = Maybe String
+
 -- | How to represent token content in the Haskell backend?
 
 data TokenText
@@ -112,7 +116,7 @@ data SharedOptions = Options
   , force       :: Bool            -- ^ Ignore errors as much as possible?
   , target      :: Target          -- ^ E.g. @--haskell@.
   , make        :: Maybe String    -- ^ The name of the Makefile to generate or Nothing for no Makefile.
-  , inPackage   :: Maybe String    -- ^ The hierarchical package to put the modules in, or Nothing.
+  , inPackage   :: InPackage       -- ^ The hierarchical package to put the modules in, or Nothing.
   , linenumbers :: RecordPositions -- ^ Add and set line_number field for syntax classes
   --- Haskell specific:
   , inDir         :: Bool        -- ^ Option @-d@.
