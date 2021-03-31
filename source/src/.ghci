@@ -1,0 +1,38 @@
+-- keep in sync with default-extensions in .cabal file
+
+:set -XDefaultSignatures
+:set -XDeriveTraversable
+:set -XDoAndIfThenElse
+:set -XFlexibleContexts
+:set -XFlexibleInstances
+:set -XFunctionalDependencies
+:set -XGeneralizedNewtypeDeriving
+:set -XInstanceSigs
+:set -XLambdaCase
+:set -XMultiParamTypeClasses
+:set -XMultiWayIf
+:set -XNamedFieldPuns
+:set -XOverloadedStrings
+:set -XPatternGuards
+:set -XPatternSynonyms
+:set -XRankNTypes
+:set -XRecordWildCards
+:set -XScopedTypeVariables
+:set -XTupleSections
+
+-- keep in sync with the dependencies in .cabal file
+
+:set -package array
+:set -package containers
+:set -package deepseq
+:set -package directory
+:set -package filepath
+:set -package mtl
+:set -package pretty
+:set -package process
+:set -package string-qq
+:set -package time
+
+-- include paths
+
+:set -i.:../dist-newstyle/build/x86_64-osx/ghc-9.0.1/BNFC-2.9.2/build/BNFC/autogen
