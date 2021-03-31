@@ -15,11 +15,10 @@ import BNFC.CF
 import BNFC.Options
 import BNFC.Backend.Base
 import BNFC.Backend.C            (bufferH, bufferC)
-import BNFC.Backend.C.CFtoBisonC (unionBuiltinTokens)
+import BNFC.Backend.C.CFtoBisonC (cf2Bison)
+import BNFC.Backend.C.CFtoFlexC  (cf2flex, ParserMode(..))
 import BNFC.Backend.CPP.Makefile
 import BNFC.Backend.CPP.NoSTL.CFtoCPPAbs
-import BNFC.Backend.CPP.NoSTL.CFtoFlex
-import BNFC.Backend.CPP.NoSTL.CFtoBison
 import BNFC.Backend.CPP.STL.CFtoCVisitSkelSTL
 import BNFC.Backend.CPP.PrettyPrinter
 import qualified BNFC.Backend.Common.Makefile as Makefile
@@ -31,9 +30,9 @@ makeCppNoStl opts cf = do
     mkfile "Absyn.C" cfile
     mkfile "Buffer.H" bufferH
     mkfile "Buffer.C" $ bufferC "Buffer.H"
-    let (flex, env) = cf2flex Nothing name cf
+    let (flex, env) = cf2flex parserMode cf
     mkfile (name ++ ".l") flex
-    let bison = cf2Bison name cf env
+    let bison = cf2Bison(linenumbers opts) parserMode cf env
     mkfile (name ++ ".y") bison
     let header = mkHeaderFile cf (allParserCats cf) (toList $ allEntryPoints cf) (Map.elems env)
     mkfile "Parser.H" header
@@ -44,9 +43,17 @@ makeCppNoStl opts cf = do
     mkfile "Printer.H" prinH
     mkfile "Printer.C" prinC
     mkfile "Test.C" (cpptest cf)
-    Makefile.mkMakefile opts $ makefile name
-  where name = lang opts
-
+    Makefile.mkMakefile opts $ makefile prefix name
+  where
+    name :: String
+    name = lang opts
+    -- The prefix is a string used by flex and bison
+    -- that is prepended to generated function names.
+    -- It should be a valid C identifier.
+    prefix :: String
+    prefix = snakeCase_ name ++ "_"
+    parserMode :: ParserMode
+    parserMode = CParser True prefix
 
 cpptest :: CF -> String
 cpptest cf =
@@ -129,18 +136,7 @@ mkHeaderFile cf cats eps env = unlines $ concat
   [ [ "#ifndef PARSER_HEADER_FILE"
     , "#define PARSER_HEADER_FILE"
     , ""
-    ]
-  , map mkForwardDec $ nub $ map normCat cats
-  , [ "typedef union"
-    , "{"
-    ]
-  , map ("  " ++) unionBuiltinTokens
-  , concatMap mkVar cats
-  , [ "} YYSTYPE;"
-    , ""
-    , "#define _ERROR_ 258"
-    , mkDefines (259 :: Int) env
-    , "extern YYSTYPE yylval;"
+    , "#include \"Absyn.H\""
     , ""
     ]
   , map mkFunc eps
@@ -149,24 +145,4 @@ mkHeaderFile cf cats eps env = unlines $ concat
     ]
   ]
   where
-  mkForwardDec s = "class " ++ identCat s ++ ";"
-  mkVar s | normCat s == s = [ "  " ++ identCat s ++"*" +++ map toLower (identCat s) ++ "_;" ]
-  mkVar _ = []
-  mkDefines n [] = mkString n
-  mkDefines n (s:ss) = "#define " ++ s +++ show n ++ "\n" ++ mkDefines (n+1) ss
-  mkString n =  if isUsedCat cf (TokenCat catString)
-   then ("#define _STRING_ " ++ show n ++ "\n") ++ mkChar (n+1)
-   else mkChar n
-  mkChar n =  if isUsedCat cf (TokenCat catChar)
-   then ("#define _CHAR_ " ++ show n ++ "\n") ++ mkInteger (n+1)
-   else mkInteger n
-  mkInteger n =  if isUsedCat cf (TokenCat catInteger)
-   then ("#define _INTEGER_ " ++ show n ++ "\n") ++ mkDouble (n+1)
-   else mkDouble n
-  mkDouble n =  if isUsedCat cf (TokenCat catDouble)
-   then ("#define _DOUBLE_ " ++ show n ++ "\n") ++ mkIdent(n+1)
-   else mkIdent n
-  mkIdent n =  if isUsedCat cf (TokenCat catIdent)
-   then "#define _IDENT_ " ++ show n ++ "\n"
-   else ""
   mkFunc s = identCat (normCat s) ++ "*" +++ "p" ++ identCat s ++ "(FILE *inp);"

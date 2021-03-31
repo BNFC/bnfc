@@ -20,9 +20,10 @@ import BNFC.Options
 import BNFC.Backend.Base
 import BNFC.Backend.C            (bufferH, bufferC)
 import BNFC.Backend.C.CFtoBisonC (unionBuiltinTokens)
+import BNFC.Backend.C.CFtoFlexC  (cf2flex, ParserMode(..))
 import BNFC.Backend.CPP.Makefile
 import BNFC.Backend.CPP.STL.CFtoSTLAbs
-import BNFC.Backend.CPP.NoSTL.CFtoFlex
+-- import BNFC.Backend.CPP.NoSTL.CFtoFlex
 import BNFC.Backend.CPP.STL.CFtoBisonSTL
 import BNFC.Backend.CPP.STL.CFtoCVisitSkelSTL
 import BNFC.Backend.CPP.PrettyPrinter
@@ -36,9 +37,9 @@ makeCppStl opts cf = do
     mkfile "Absyn.C" cfile
     mkfile "Buffer.H" bufferH
     mkfile "Buffer.C" $ bufferC "Buffer.H"
-    let (flex, env) = cf2flex (inPackage opts) name cf
+    let (flex, env) = cf2flex (CppParser $ inPackage opts) cf
     mkfile (name ++ ".l") flex
-    let bison = cf2Bison (linenumbers opts) (inPackage opts) name cf env
+    let bison = cf2Bison (linenumbers opts) (inPackage opts) cf env
     mkfile (name ++ ".y") bison
     let header = mkHeaderFile (inPackage opts) cf (allParserCats cf) (toList $ allEntryPoints cf) (Map.elems env)
     mkfile "Parser.H" header
@@ -50,8 +51,17 @@ makeCppStl opts cf = do
     mkfile "Printer.H" prinH
     mkfile "Printer.C" prinC
     mkfile "Test.C" (cpptest (inPackage opts) cf)
-    Makefile.mkMakefile opts $ makefile name
-  where name = lang opts
+    Makefile.mkMakefile opts $ makefile prefix name
+  where
+    name :: String
+    name = lang opts
+    -- The prefix is a string used by flex and bison
+    -- that is prepended to generated function names.
+    -- It should be a valid C identifier.
+    prefix :: String
+    prefix = snakeCase_ name ++ "_"
+    parserMode :: ParserMode
+    parserMode = CppParser (inPackage opts)
 
 printParseErrHeader :: Maybe String -> String
 printParseErrHeader inPackage =

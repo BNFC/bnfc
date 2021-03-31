@@ -3,16 +3,16 @@ module BNFC.Backend.CPP.Makefile (makefile) where
 import BNFC.Backend.Common.Makefile
 import BNFC.PrettyPrint
 
-makefile :: String -> String -> Doc
-makefile name basename = vcat
+makefile :: String -> String -> String -> Doc
+makefile prefix name basename = vcat
     [ mkVar "CC" "g++ -g"
     , mkVar "CCFLAGS" "--ansi -W -Wall -Wno-unused-parameter -Wno-unused-function -Wno-unneeded-internal-declaration"
     , ""
     , mkVar "FLEX" "flex"
-    , mkVar "FLEX_OPTS" ("-P" ++ name)
+    , mkVar "FLEX_OPTS" ("-P" ++ prefix)
     , ""
     , mkVar "BISON" "bison"
-    , mkVar "BISON_OPTS" ("-t -p" ++ name)
+    , mkVar "BISON_OPTS" ("-t -p" ++ prefix)
     , ""
     , mkVar "OBJS" "Absyn.o Buffer.o Lexer.o Parser.o Printer.o"
     , ""
@@ -29,7 +29,7 @@ makefile name basename = vcat
             [ "Absyn.C", "Absyn.H"
             , "Buffer.C", "Buffer.H"
             , "Test.C"
-            , "Parser.C", "Parser.H", "ParserError.H", name ++ ".y"
+            , "Bison.H", "Parser.C", "Parser.H", "ParserError.H", name ++ ".y"
             , "Lexer.C", name ++ ".l"
             , "Skeleton.C", "Skeleton.H"
             , "Printer.C", "Printer.H"
@@ -45,12 +45,12 @@ makefile name basename = vcat
     , mkRule "Buffer.o" [ "Buffer.C", "Buffer.H" ]
         [ "${CC} ${CCFLAGS} -c Buffer.C " ]
     , mkRule "Lexer.C" [ name ++ ".l" ]
-        [ "${FLEX} -oLexer.C " ++ name ++ ".l" ]
-    , mkRule "Parser.C" [ name ++ ".y" ]
-      [ "${BISON} " ++ name ++ ".y -o Parser.C" ]
-    , mkRule "Lexer.o" [ "Lexer.C", "Parser.H" ]
+        [ "${FLEX} ${FLEX_OPTS} -oLexer.C " ++ name ++ ".l" ]
+    , mkRule "Parser.C Bison.H" [ name ++ ".y" ]
+      [ "${BISON} ${BISON_OPTS} " ++ name ++ ".y -o Parser.C" ]
+    , mkRule "Lexer.o" [ "Lexer.C", "Bison.H" ]
         [ "${CC} ${CCFLAGS} -c Lexer.C " ]
-    , mkRule "Parser.o" [ "Parser.C", "Absyn.H" ]
+    , mkRule "Parser.o" [ "Parser.C", "Absyn.H", "Bison.H" ]
         [ "${CC} ${CCFLAGS} -c Parser.C" ]
     , mkRule "Printer.o" [ "Printer.C", "Printer.H", "Absyn.H" ]
         [ "${CC} ${CCFLAGS} -c Printer.C" ]

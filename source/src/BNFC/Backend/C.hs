@@ -32,9 +32,9 @@ makeC opts cf = do
     mkfile "Absyn.c" cfile
     mkfile "Buffer.h" bufferH
     mkfile "Buffer.c" $ bufferC "Buffer.h"
-    let (flex, env) = cf2flex prefix cf
+    let (flex, env) = cf2flex parserMode cf
     mkfile (name ++ ".l") flex
-    let bison = cf2Bison (linenumbers opts) prefix cf env
+    let bison = cf2Bison (linenumbers opts) parserMode cf env
     mkfile (name ++ ".y") bison
     let header = mkHeaderFile (linenumbers opts) cf (Map.elems env)
     mkfile "Parser.h" header
@@ -54,6 +54,8 @@ makeC opts cf = do
     -- It should be a valid C identifier.
     prefix :: String
     prefix = snakeCase_ name ++ "_"
+    parserMode :: ParserMode
+    parserMode = CParser False prefix
 
 
 makefile :: String -> String -> String -> Doc
