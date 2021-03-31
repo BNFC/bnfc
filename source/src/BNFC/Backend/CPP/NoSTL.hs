@@ -113,6 +113,7 @@ cpptest cf =
     "      PrintAbsyn *p = new PrintAbsyn();",
     "      printf(\"%s\\n\\n\", p->print(parse_tree));",
     "    }",
+    "    delete(parse_tree);",
     "    return 0;",
     "  }",
     "  return 1;",
