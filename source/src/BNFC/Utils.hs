@@ -13,7 +13,7 @@ module BNFC.Utils
     ( ModuleName
     , when, unless, unlessNull, unlessNull'
     , applyWhen, applyUnless
-    , for
+    , for, whenJust
     , curry3, uncurry3
     , singleton, mapHead, spanEnd
     , duplicatesOn
@@ -103,6 +103,10 @@ unlessNull' l k = case l of
 -- | Non-monadic 'forM'.
 for :: [a] -> (a -> b) -> [b]
 for = flip map
+
+-- | Generalization of 'forM' to 'Monoid'.
+whenJust :: Monoid m => Maybe a -> (a -> m) -> m
+whenJust = flip foldMap
 
 -- * Tuple utilities.
 
