@@ -1,32 +1,34 @@
 -- #266 "define" pragma
 
-terminator Stm "";
+terminator Stm ""                        ;
 
-SInts.    Stm   ::= "integers"   Ints;
-SChars.   Stm   ::= "chars"      Chars;
-SExp.     Stm   ::= "expression" Exp ;
+SInts.    Stm   ::= "integers"   Ints    ;
+SChars.   Stm   ::= "chars"      Chars   ;
+SExp.     Stm   ::= "expression" Exp     ;
 
-EHalf.    Exp2  ::= "1/2"           ;
-EDouble.  Exp2  ::= Double          ;
-eSqrt.    Exp1  ::= "sqrt" Exp1     ;
-EPower.   Exp   ::= Exp1 "**" Exp   ;
+EHalf.    Exp2  ::= "1/2"                ;
+EDouble.  Exp2  ::= Double               ;
+eSqrt.    Exp1  ::= "sqrt" Exp1          ;
+eSqrt4.   Exp1  ::= "sqrt4" Exp1         ;
+EPower.   Exp   ::= Exp1 "**" Exp        ;
 
-coercions Exp 2                     ;
+coercions Exp 2                          ;
 
-define    eSqrt e = EPower e EHalf  ;
+define    eSqrt  e = EPower e EHalf      ;
+define    eSqrt4 e = eSqrt (eSqrt e)     ;
 
 -- #285 "define" pragma involving token categories
 
-INil.     Ints ::=                  ;
-iSg.      Ints ::= Integer          ;
-ISnoc.    Ints ::= Ints "," Integer ;
+INil.     Ints ::=                       ;
+iSg.      Ints ::= Integer               ;
+ISnoc.    Ints ::= Ints "," Integer      ;
 
-define    iSg i = ISnoc INil i      ;
+define    iSg i = ISnoc INil i           ;
 
-CNil.     Chars ::=                 ;
-cSg.      Chars ::= Char            ;
-CSnoc.    Chars ::= Chars Dot Char  ;
+CNil.     Chars ::=                      ;
+cSg.      Chars ::= Char                 ;
+CSnoc.    Chars ::= Chars Dot Char       ;
 
-define    cSg c = CSnoc CNil (Dot ".") c;
+define    cSg c = CSnoc CNil (Dot ".") c ;
 
-token     Dot '.'                   ;
+token     Dot '.'                        ;

@@ -3,8 +3,8 @@ Parse Successful!
 
 [Abstract Syntax]
 
-[SInts (ISnoc (ISnoc (ISnoc INil 1) 2) 3),SInts (ISnoc INil 4),SInts (ISnoc INil 5),SChars (CSnoc (CSnoc CNil (Dot ".") 'A') (Dot ".") 'a'),SChars (CSnoc CNil (Dot ".") 'B'),SChars (CSnoc CNil (Dot ".") 'C'),SExp (EPower (EDouble 1.41421356237311) (EPower (EPower (EDouble 2.71828182845905) EHalf) (EDouble 3.14159265358979)))]
+[SInts (ISnoc (ISnoc (ISnoc INil 1) 2) 3),SInts (ISnoc INil 4),SInts (ISnoc INil 5),SChars (CSnoc (CSnoc CNil (Dot ".") 'A') (Dot ".") 'a'),SChars (CSnoc CNil (Dot ".") 'B'),SChars (CSnoc CNil (Dot ".") 'C'),SExp (EPower (EDouble 1.41421356237311) (EPower (EPower (EDouble 2.71828182845905) EHalf) (EPower (EPower (EDouble 3.14159265358979) EHalf) EHalf)))]
 
 [Linearized tree]
 
-integers, 1, 2, 3 integers, 4 integers, 5 chars . 'A' . 'a' chars . 'B' chars . 'C' expression 1.41421356237311 ** (2.71828182845905 ** 1/2) ** 3.14159265358979
+integers, 1, 2, 3 integers, 4 integers, 5 chars . 'A' . 'a' chars . 'B' chars . 'C' expression 1.41421356237311 ** (2.71828182845905 ** 1/2) ** (3.14159265358979 ** 1/2) ** 1/2

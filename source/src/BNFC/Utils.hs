@@ -18,7 +18,7 @@ module BNFC.Utils
     , singleton, mapHead, spanEnd
     , duplicatesOn
     , hasNumericSuffix
-    , (+++), (++++), (+-+), (+.+)
+    , (+++), (++++), (+-+), (+.+), parensIf
     , pad, table
     , mkName, mkNames, NameStyle(..)
     , lowerCase, upperCase, mixedCase
@@ -47,7 +47,7 @@ import qualified Data.List.NonEmpty as List1
 import System.IO       (IOMode(ReadMode),hClose,hGetContents,openFile)
 import System.IO.Error (tryIOError)
 
-import BNFC.PrettyPrint hiding ((<>))
+import BNFC.PrettyPrint (Doc, text)
 
 type List1 = List1.NonEmpty
 
@@ -139,6 +139,12 @@ a +-+ b   = a ++ "_"    ++ b
 -- | Concatenate strings by a dot.
 (+.+) :: String -> String -> String
 a +.+ b   = a ++ "."    ++ b
+
+-- | Wrap in parentheses if condition holds.
+parensIf :: Bool -> String -> String
+parensIf = \case
+  True  -> ("(" ++) . (++ ")")
+  False -> id
 
 -- | Pad a string on the right by spaces to reach the desired length.
 pad :: Int -> String -> String

@@ -11,7 +11,7 @@ module BNFC.Backend.OCaml.CFtoOCamlAbs (cf2Abstract) where
 import Text.PrettyPrint
 
 import BNFC.CF
-import BNFC.Utils ( (+++), unless )
+import BNFC.Utils ( (+++), unless, parensIf )
 import Data.List  ( intersperse )
 import BNFC.Backend.OCaml.OCamlUtil
 
@@ -38,12 +38,14 @@ cf2Abstract _ cf = unlines $ concat
 definedRules :: CF -> [String]
 definedRules cf = [ mkDef f xs e | FunDef f xs e <- cfgPragmas cf ]
   where
-    mkDef f xs e = "let " ++ funName f ++ " " ++ mkTuple xs ++ " = " ++ ocamlExp e
+    mkDef f xs e = "let " ++ funName f ++ " " ++ mkTuple xs ++ " = " ++ ocamlExp False e
 
-    ocamlExp :: Exp -> String
-    ocamlExp = \case
+    ocamlExp :: Bool -> Exp -> String
+    ocamlExp p = \case
       Var s       -> s
-      App s es    -> s ++ ' ' : mkTuple (map ocamlExp es)
+      App s []    -> s
+      App s [e]   -> parensIf p $ s ++ ' ' : ocamlExp True e
+      App s es    -> parensIf p $ s ++ ' ' : mkTuple (map (ocamlExp False) es)
       LitInt i    -> show i
       LitDouble d -> show d
       LitChar c   -> "\'" ++ c : "\'"
