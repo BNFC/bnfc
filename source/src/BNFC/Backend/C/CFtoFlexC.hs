@@ -15,7 +15,7 @@
 
 module BNFC.Backend.C.CFtoFlexC
   ( cf2flex
-  , ParserMode(..), parserName, parserPackage, cParser, parserHExt
+  , ParserMode(..), parserName, parserPackage, cParser, stlParser, parserHExt
   , preludeForBuffer  -- C code defining a buffer for lexing string literals.
   , cMacros           -- Lexer definitions.
   , commentStates     -- Stream of names for lexer states for comments.
@@ -41,27 +41,32 @@ import BNFC.Utils (cstring, unless, when, whenJust)
 
 data ParserMode
   = CParser Bool String    -- ^ @C@ (@False@) or @C++ no STL@ (@True@) mode, with @name@ to use as prefix.
-  | CppParser InPackage    -- ^ @C++@ mode, with optional package name
+  | CppParser InPackage String    -- ^ @C++@ mode, with optional package name
 
-parserName :: ParserMode -> Maybe String
+parserName :: ParserMode -> String
 parserName = \case
-  CParser _ n -> Just n
-  CppParser _ -> Nothing
+  CParser   _ n -> n
+  CppParser p n -> fromMaybe n p
 
 parserPackage :: ParserMode -> InPackage
 parserPackage = \case
-  CParser _ _ -> Nothing
-  CppParser p -> p
+  CParser   _ _ -> Nothing
+  CppParser p _ -> p
 
 cParser :: ParserMode -> Bool
 cParser = \case
-  CParser b _ -> not b
-  CppParser _ -> False
+  CParser   b _ -> not b
+  CppParser _ _ -> False
+
+stlParser :: ParserMode -> Bool
+stlParser = \case
+  CParser   _ _ -> False
+  CppParser _ _ -> True
 
 parserHExt :: ParserMode -> String
 parserHExt = \case
-  CParser b _ -> if b then "H" else "h"
-  CppParser _ -> "H"
+  CParser   b _ -> if b then "H" else "h"
+  CppParser _ _ -> "H"
 
 -- | Entrypoint.
 cf2flex :: ParserMode -> CF -> (String, SymMap) -- The environment is reused by the parser.
@@ -94,7 +99,7 @@ prelude stringLiterals mode = unlines $ concat
     , "%option extra-type=\"Buffer\""
     , ""
     ]
-  , maybeToList $ ("%option prefix=\"" ++) . (++ "yy\"" ) <$> parserPackage mode
+  , maybeToList $ ("%option prefix=\"" ++) . (++ "\"" ) <$> parserPackage mode
   , when (cParser mode)
     [ "%top{"
     , "/* strdup was not in the ISO C standard before 6/2019 (C2x), but in POSIX 1003.1."
@@ -110,8 +115,7 @@ prelude stringLiterals mode = unlines $ concat
     , "#include \"" ++ ("Bison" <.> h) ++ "\""
     , ""
     ]
-  , whenJust (parserName mode) $ \ name ->
-    [ "#define initialize_lexer " ++ name ++ "_initialize_lexer"
+  , [ "#define initialize_lexer " ++ parserName mode ++ "_initialize_lexer"
     , ""
     ]
   , when stringLiterals $ preludeForBuffer $ "Buffer" <.> h

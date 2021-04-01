@@ -19,12 +19,10 @@ import BNFC.CF
 import BNFC.Options
 import BNFC.Backend.Base
 import BNFC.Backend.C            (bufferH, bufferC)
-import BNFC.Backend.C.CFtoBisonC (unionBuiltinTokens)
+import BNFC.Backend.C.CFtoBisonC (cf2Bison)
 import BNFC.Backend.C.CFtoFlexC  (cf2flex, ParserMode(..))
 import BNFC.Backend.CPP.Makefile
 import BNFC.Backend.CPP.STL.CFtoSTLAbs
--- import BNFC.Backend.CPP.NoSTL.CFtoFlex
-import BNFC.Backend.CPP.STL.CFtoBisonSTL
 import BNFC.Backend.CPP.STL.CFtoCVisitSkelSTL
 import BNFC.Backend.CPP.PrettyPrinter
 import BNFC.Backend.CPP.STL.STLUtils
@@ -37,9 +35,9 @@ makeCppStl opts cf = do
     mkfile "Absyn.C" cfile
     mkfile "Buffer.H" bufferH
     mkfile "Buffer.C" $ bufferC "Buffer.H"
-    let (flex, env) = cf2flex (CppParser $ inPackage opts) cf
+    let (flex, env) = cf2flex parserMode cf
     mkfile (name ++ ".l") flex
-    let bison = cf2Bison (linenumbers opts) (inPackage opts) cf env
+    let bison = cf2Bison (linenumbers opts) parserMode cf env
     mkfile (name ++ ".y") bison
     let header = mkHeaderFile (inPackage opts) cf (allParserCats cf) (toList $ allEntryPoints cf) (Map.elems env)
     mkfile "Parser.H" header
@@ -61,7 +59,7 @@ makeCppStl opts cf = do
     prefix :: String
     prefix = snakeCase_ name ++ "_"
     parserMode :: ParserMode
-    parserMode = CppParser (inPackage opts)
+    parserMode = CppParser (inPackage opts) prefix
 
 printParseErrHeader :: Maybe String -> String
 printParseErrHeader inPackage =
@@ -178,50 +176,18 @@ mkHeaderFile inPackage cf cats eps env = unlines $ concat
     , ""
     , "#include<vector>"
     , "#include<string>"
+    , "#include \"Absyn.H\""
     , ""
     , nsStart inPackage
     ]
-  , map mkForwardDec $ List.nub $ map normCat cats
-  , [ "typedef union"
-    , "{"
-    ]
-  , map ("  " ++) unionBuiltinTokens
-  , concatMap mkVar cats
-  , [ "} YYSTYPE;"
-    , ""
-    ]
   , concatMap mkFuncs eps
   , [ nsEnd inPackage
-    , ""
-    , "#define " ++ nsDefine inPackage "_ERROR_" ++ " 258"
-    , mkDefines (259 :: Int) env
-    , "extern " ++ nsScope inPackage ++ "YYSTYPE " ++ nsString inPackage ++ "yylval;"
     , ""
     , "#endif"
     ]
   ]
   where
   hdef = nsDefine inPackage "PARSER_HEADER_FILE"
-  mkForwardDec s = "class " ++ identCat s ++ ";"
-  mkVar s | normCat s == s = [ "  " ++ identCat s ++"*" +++ map toLower (identCat s) ++ "_;" ]
-  mkVar _ = []
-  mkDefines n [] = mkString n
-  mkDefines n (s:ss) = "#define " ++ s +++ show n ++ "\n" ++ mkDefines (n+1) ss -- "nsDefine inPackage s" not needed (see cf2flex::makeSymEnv)
-  mkString n =  if isUsedCat cf (TokenCat catString)
-   then ("#define " ++ nsDefine inPackage "_STRING_ " ++ show n ++ "\n") ++ mkChar (n+1)
-   else mkChar n
-  mkChar n =  if isUsedCat cf (TokenCat catChar)
-   then ("#define " ++ nsDefine inPackage "_CHAR_ " ++ show n ++ "\n") ++ mkInteger (n+1)
-   else mkInteger n
-  mkInteger n =  if isUsedCat cf (TokenCat catInteger)
-   then ("#define " ++ nsDefine inPackage "_INTEGER_ " ++ show n ++ "\n") ++ mkDouble (n+1)
-   else mkDouble n
-  mkDouble n =  if isUsedCat cf (TokenCat catDouble)
-   then ("#define " ++ nsDefine inPackage "_DOUBLE_ " ++ show n ++ "\n") ++ mkIdent(n+1)
-   else mkIdent n
-  mkIdent n =  if isUsedCat cf (TokenCat catIdent)
-   then "#define " ++ nsDefine inPackage "_IDENT_ " ++ show n ++ "\n"
-   else ""
   mkFuncs s =
     [ identCat (normCat s) ++ "*" +++ "p" ++ identCat s ++ "(FILE *inp);"
     , identCat (normCat s) ++ "*" +++ "p" ++ identCat s ++ "(const char *str);"

@@ -26,20 +26,20 @@ module BNFC.Backend.C.CFtoBisonC
 
 import Prelude hiding ((<>))
 
-import Data.Char (toLower)
-import Data.Foldable (toList)
-import Data.List (intercalate, nub)
-import Data.Maybe (fromMaybe)
+import Data.Char       ( toLower, isUpper )
+import Data.Foldable   ( toList )
+import Data.List       ( intercalate, nub )
+import Data.Maybe      ( fromMaybe )
 import qualified Data.Map as Map
-import System.FilePath ((<.>))
+import System.FilePath ( (<.>) )
 
 import BNFC.CF
 import BNFC.Backend.Common.NamedVariables hiding (varName)
-import BNFC.Backend.C.CFtoFlexC (ParserMode(..), cParser, parserHExt, parserName, parserPackage)
+import BNFC.Backend.C.CFtoFlexC (ParserMode(..), cParser, stlParser, parserHExt, parserName, parserPackage)
 import BNFC.Backend.CPP.STL.STLUtils
-import BNFC.Options (RecordPositions(..))
+import BNFC.Options (RecordPositions(..), InPackage)
 import BNFC.PrettyPrint
-import BNFC.Utils ((+++), whenJust)
+import BNFC.Utils ((+++), for, unless, when, whenJust)
 
 --This follows the basic structure of CFtoHappy.
 
@@ -53,11 +53,11 @@ type MetaVar     = String
 cf2Bison :: RecordPositions -> ParserMode -> CF -> SymMap -> String
 cf2Bison rp mode cf env = unlines
     [ header mode cf
-    , render $ union mode $ allParserCatsNorm cf
+    , render $ union mode $ posCats ++ allParserCatsNorm cf
     , unionDependentCode mode
     , "%token _ERROR_"
     , tokens (map fst $ tokenPragmas cf) env
-    , declarations cf
+    , declarations mode cf
     , specialToks cf
     , startSymbol cf
     , ""
@@ -66,11 +66,19 @@ cf2Bison rp mode cf env = unlines
     , prRules $ rulesForBison rp mode cf env
     , "%%"
     , ""
+    , nsStart inPackage
     , entryCode mode cf
+    , nsEnd inPackage
     ]
   where
-  name = fromMaybe undefined $ parserName mode
+  name = parserName mode
+  inPackage = parserPackage mode
+  posCats
+    | stlParser mode = map TokenCat $ positionCats cf
+    | otherwise      = []
 
+positionCats :: CF -> [String]
+positionCats cf = [ wpThing name | TokenReg name True _ <- cfgPragmas cf ]
 
 header :: ParserMode -> CF -> String
 header mode cf = unlines $ concat
@@ -80,8 +88,8 @@ header mode cf = unlines $ concat
     , "%defines \"" ++ ("Bison" <.> h) ++ "\""
     ]
   , whenJust (parserPackage mode) $ \ ns ->
-    [ "%name-prefix = \"" ++ ns ++ "yy\""
-    , "  /* From Bison 2.6: %define api.prefix {" ++ ns ++ "yy} */"
+    [ "%name-prefix = \"" ++ ns ++ "\""
+    , "  /* From Bison 2.6: %define api.prefix {" ++ ns ++ "} */"
     ]
   , [ ""
     , "/* Reentrant parser */"
@@ -125,9 +133,12 @@ header mode cf = unlines $ concat
     , ""
     , "extern yyscan_t " ++ name ++ "_initialize_lexer(FILE * inp);"
     , ""
-    , "/* List reversal functions. */"
+    ]
+  , unless (stlParser mode)
+    [ "/* List reversal functions. */"
     , concatMap (reverseList mode) $ filter isList $ allParserCatsNorm cf
-    , "/* End C preamble code */"
+    ]
+  , [ "/* End C preamble code */"
     , "%}"
     ]
   ]
@@ -138,7 +149,7 @@ header mode cf = unlines $ concat
      -- Found old comment:
      -- -- M.F. 2004-09-17 changed allEntryPoints to allCatsIdNorm. Seems to fix the [Ty2] bug.
   h = parserHExt mode
-  name = fromMaybe undefined $ parserName mode
+  name = parserName mode
 
 -- | Code that needs the @YYSTYPE@ defined by the @%union@ pragma.
 --
@@ -152,7 +163,7 @@ unionDependentCode mode = unlines
   , "%}"
   ]
   where
-  name = fromMaybe undefined $ parserName mode  -- TODO
+  name = parserName mode
 
 errorHandler :: String -> String
 errorHandler name = unlines
@@ -184,11 +195,11 @@ parseMethod mode cf cat = unlines $ concat
   , body True
   ]
   where
-  name = fromMaybe undefined $ parserName mode
+  name = parserName mode
   body stringParser = concat
     [ [ "{"
       , "  YYSTYPE result;"
-      , "  yyscan_t scanner = " ++ name ++ "_initialize_lexer(", file, ");"
+      , "  yyscan_t scanner = " ++ name ++ "_initialize_lexer(" ++ file ++ ");"
       , "  if (!scanner) {"
       , "    fprintf(stderr, \"Failed to initialize lexer.\\n\");"
       , "    return 0;"
@@ -204,7 +215,9 @@ parseMethod mode cf cat = unlines $ concat
       , "  }"
       , "  else"
       , "  { /* Success */"
-      , "    return" +++ res ++ ";"
+      ]
+    , revOpt
+    , [ "    return" +++ res ++ ";"
       , "  }"
       , "}"
       ]
@@ -212,13 +225,22 @@ parseMethod mode cf cat = unlines $ concat
     where
     file | stringParser = "0"
          | otherwise    = "inp"
+  stl    = stlParser mode
   ncat   = normCat cat
   dat0   = identCat ncat
   dat    = if cParser mode then dat0 else dat0 ++ "*"
   parser = identCat cat
   res0   = concat [ "result.", varName ncat ]
-  revRes = "reverse" ++ dat0 ++ "(" ++ res0 ++ ")"
-  res    = if cat `elem` cfgReversibleCats cf then revRes else res0
+  -- Reversing the result
+  isReversible  = cat `elem` cfgReversibleCats cf
+  -- C and NoSTL
+  res
+    | not stl, isReversible
+                = "reverse" ++ dat0 ++ "(" ++ res0 ++ ")"
+    | otherwise = res0
+  -- STL: Vectors are snoc lists
+  revOpt = when (stl && isList cat && not isReversible)
+             [ "std::reverse(" ++ res ++ "->begin(), " ++ res ++"->end());" ]
 
 --This method generates list reversal functions for each list type.
 reverseList :: ParserMode -> Cat -> String
@@ -247,7 +269,7 @@ reverseList mode c0 = unlines
 -- yylval.  For efficiency, we may want to only include used categories here.
 --
 -- >>> let foo = Cat "Foo"
--- >>> union Nothing [foo, ListCat foo]
+-- >>> union (CParser True "") [foo, ListCat foo]
 -- %union
 -- {
 --   int    _int;
@@ -264,7 +286,7 @@ reverseList mode c0 = unlines
 --    ListFoo* listfoo_;
 --
 -- >>> let foo2 = CoercCat "Foo" 2
--- >>> union (CppParser Nothing) [foo, ListCat foo, foo2, ListCat foo2]
+-- >>> union (CppParser Nothing "") [foo, ListCat foo, foo2, ListCat foo2]
 -- %union
 -- {
 --   int    _int;
@@ -301,12 +323,16 @@ unionBuiltinTokens =
   , "char*  _string;"
   ]
 
---declares non-terminal types.
-declarations :: CF -> String
-declarations cf = concatMap (typeNT cf) (allParserCats cf)
- where --don't define internal rules
-   typeNT cf nt | rulesForCat cf nt /= [] = "%type <" ++ varName (normCat nt) ++ "> " ++ identCat nt ++ "\n"
-   typeNT _ _ = ""
+-- | @%type@ declarations for non-terminal types.
+declarations :: ParserMode -> CF -> String
+declarations mode cf = unlines $ map typeNT $
+  posCats ++
+  filter (not . null . rulesForCat cf) (allParserCats cf) -- don't define internal rules
+  where
+  typeNT nt = "%type <" ++ varName nt ++ "> " ++ identCat nt
+  posCats
+    | stlParser mode = map TokenCat $ positionCats cf
+    | otherwise      = []
 
 --declares terminal types.
 -- token name "literal"
@@ -345,8 +371,17 @@ startSymbol cf = "%start" +++ identCat (firstEntry cf)
 --The following functions are a (relatively) straightforward translation
 --of the ones in CFtoHappy.hs
 rulesForBison :: RecordPositions -> ParserMode -> CF -> SymMap -> Rules
-rulesForBison rp mode cf env = map mkOne $ ruleGroups cf where
+rulesForBison rp mode cf env = map mkOne (ruleGroups cf) ++ posRules
+  where
   mkOne (cat,rules) = constructRule rp mode cf env rules cat
+  posRules :: Rules
+  posRules
+    | CppParser inPackage _ <- mode = for (positionCats cf) $ \ n -> (TokenCat n,
+      [( Map.findWithDefault n (Tokentype n) env
+       , addResult cf (TokenCat n) $ concat
+         [ "$$ = new ", nsScope inPackage, n, "($1, @$.first_line);" ]
+       )])
+    | otherwise = []
 
 -- For every non-terminal, we construct a set of rules.
 constructRule
@@ -355,65 +390,108 @@ constructRule
   -> NonTerminal                      -- ^ ... this non-terminal.
   -> (NonTerminal,[(Pattern,Action)])
 constructRule rp mode cf env rules nt = (nt,) $
-    [ (p,) $ addResult $ generateAction rp mode (identCat (normCat nt)) (funRule r) b m
+    [ (p,) $ addResult cf nt $ generateAction rp mode (identCat (normCat nt)) (funRule r) b m
     | r0 <- rules
     , let (b,r) = if isConsFun (funRule r0) && valCat r0 `elem` cfgReversibleCats cf
                   then (True, revSepListRule r0)
                   else (False, r0)
-    , let (p,m) = generatePatterns cf env r
+    , let (p,m) = generatePatterns mode cf env r
     ]
-  where
-    -- Add action if we parse an entrypoint non-terminal:
-    -- Set field in result record to current parse.
-    addResult a =
-      if nt `elem` toList (allEntryPoints cf)
-      -- Note: Bison has only a single entrypoint,
-      -- but BNFC works around this by adding dedicated parse methods for all entrypoints.
-      -- Andreas, 2021-03-24: But see #350: bison still uses only the @%start@ non-terminal.
-        then concat [ a, " result->", varName (normCat nt), " = $$;" ]
-        else a
+
+-- | Add action if we parse an entrypoint non-terminal:
+-- Set field in result record to current parse.
+addResult :: CF -> NonTerminal -> Action -> Action
+addResult cf nt a =
+  if nt `elem` toList (allEntryPoints cf)
+  -- Note: Bison has only a single entrypoint,
+  -- but BNFC works around this by adding dedicated parse methods for all entrypoints.
+  -- Andreas, 2021-03-24: But see #350: bison still uses only the @%start@ non-terminal.
+    then concat [ a, " result->", varName (normCat nt), " = $$;" ]
+    else a
+
+-- | Switch between STL or not.
+generateAction :: IsFun a => RecordPositions -> ParserMode -> String -> a -> Bool -> [(MetaVar, Bool)] -> Action
+generateAction rp = \case
+  CppParser ns _ -> generateActionSTL rp ns
+  CParser   b  _ -> \ nt f r -> generateActionC rp (not b) nt f r . map fst
 
 -- | Generates a string containing the semantic action.
--- >>> generateAction NoRecordPositions (CParser False "") "Foo" "Bar" False ["$1"]
--- "make_Bar($1);"
--- >>> generateAction NoRecordPositions (CParser False "") "Foo" "_" False ["$1"]
--- "$1;"
--- >>> generateAction NoRecordPositions (CParser False "") "ListFoo" "[]" False []
--- "0;"
--- >>> generateAction NoRecordPositions (CParser False "") "ListFoo" "(:[])" False ["$1"]
--- "make_ListFoo($1, 0);"
--- >>> generateAction NoRecordPositions (CParser False "") "ListFoo" "(:)" False ["$1","$2"]
--- "make_ListFoo($1, $2);"
--- >>> generateAction NoRecordPositions (CParser False "") "ListFoo" "(:)" True ["$1","$2"]
--- "make_ListFoo($2, $1);"
-generateAction :: IsFun a => RecordPositions -> ParserMode -> String -> a -> Bool -> [MetaVar] -> Action
-generateAction rp mode nt f b ms
-  | isCoercion f = unwords ms ++ ";" ++ loc
-  | isNilFun f   = "0;"
-  | isOneFun f   = concat [new, nt, "(", intercalate ", " ms', ", 0);"]
-  | isConsFun f  = concat [new, nt, "(", intercalate ", " ms', ");"]
-  | otherwise    = concat [new, funName f, "(", intercalate ", " ms', ");", loc]
+-- >>> generateActionC NoRecordPositions False "Foo" "Bar" False ["$1"]
+-- "$$ = new Bar($1);"
+-- >>> generateActionC NoRecordPositions True "Foo" "Bar" False ["$1"]
+-- "$$ = make_Bar($1);"
+-- >>> generateActionC NoRecordPositions True "Foo" "_" False ["$1"]
+-- "$$ = $1;"
+-- >>> generateActionC NoRecordPositions True "ListFoo" "[]" False []
+-- "$$ = 0;"
+-- >>> generateActionC NoRecordPositions True "ListFoo" "(:[])" False ["$1"]
+-- "$$ = make_ListFoo($1, 0);"
+-- >>> generateActionC NoRecordPositions True "ListFoo" "(:)" False ["$1","$2"]
+-- "$$ = make_ListFoo($1, $2);"
+-- >>> generateActionC NoRecordPositions True "ListFoo" "(:)" True ["$1","$2"]
+-- "$$ = make_ListFoo($2, $1);"
+generateActionC :: IsFun a => RecordPositions -> Bool -> String -> a -> Bool -> [MetaVar] -> Action
+generateActionC rp cParser nt f b ms
+  | isCoercion f = "$$ = " ++ unwords ms ++ ";" ++ loc
+  | isNilFun f   = "$$ = 0;"
+  | isOneFun f   = concat ["$$ = ", new nt, "(", intercalate ", " ms', ", 0);"]
+  | isConsFun f  = concat ["$$ = ", new nt, "(", intercalate ", " ms', ");"]
+  | otherwise    = concat ["$$ = ", new (funName f), "(", intercalate ", " ms', ");", loc]
  where
   ms' = if b then reverse ms else ms
-  loc = if rp == RecordPositions then " $$->line_number = @$.first_line; $$->char_number = @$.first_column;" else ""
-  new = if cParser mode then "make_" else "new "
+  loc | RecordPositions <- rp
+          = " $$->line_number = @$.first_line; $$->char_number = @$.first_column;"
+      | otherwise
+          = ""
+  new :: String -> String
+  new | cParser   = ("make_" ++)
+      | otherwise = \ s -> if isUpper (head s) then "new " ++ s else s
+
+generateActionSTL :: IsFun a => RecordPositions -> InPackage -> String -> a -> Bool -> [(MetaVar,Bool)] -> Action
+generateActionSTL rp inPackage nt f b mbs = reverses ++
+  if | isCoercion f    -> concat ["$$ = ", unwords ms, ";", loc]
+     | isNilFun f      -> concat ["$$ = ", "new ", scope, nt, "();"]
+     | isOneFun f      -> concat ["$$ = ", "new ", scope, nt, "(); $$->push_back($1);"]
+     | isConsFun f, b  -> "$1->push_back("++ lastms ++ "); $$ = $1;"
+     | isConsFun f     -> lastms ++ "->push_back(" ++ head ms ++ "); $$ = " ++ lastms ++ ";" ---- not left rec
+     | isDefinedRule f -> concat ["$$ = ", scope, funName f, "(", intercalate ", " ms, ");" ]
+     | otherwise       -> concat ["$$ = ", "new ", scope, funName f, "(", intercalate ", " ms, ");", loc]
+ where
+  ms        = map fst mbs
+  lastms    = last ms
+  loc | RecordPositions <- rp
+            = " $$->line_number = @$.first_line; $$->char_number = @$.first_column;"
+      | otherwise
+            = ""
+  reverses  = unwords ["std::reverse(" ++ m ++"->begin(),"++m++"->end()) ;" | (m, True) <- mbs]
+  scope     = nsScope inPackage
 
 -- Generate patterns and a set of metavariables indicating
 -- where in the pattern the non-terminal
-generatePatterns :: CF -> SymMap -> Rule -> (Pattern,[MetaVar])
-generatePatterns cf env r = case rhsRule r of
+generatePatterns :: ParserMode -> CF -> SymMap -> Rule -> (Pattern,[(MetaVar,Bool)])
+generatePatterns mode cf env r = case rhsRule r of
   []  -> ("/* empty */",[])
   its -> (unwords (map mkIt its), metas its)
  where
-   mkIt i = case i of
-     Left (TokenCat s) -> fromMaybe (typeName s) $ Map.lookup (Tokentype s) env
+   stl  = stlParser mode
+   mkIt = \case
+     Left (TokenCat s)
+       | stl && isPositionCat cf s
+                   -> typeName s
+       | otherwise -> Map.findWithDefault (typeName s) (Tokentype s) env
      Left c  -> identCat c
-     Right s -> fromMaybe s $ Map.lookup (Keyword s) env
-   metas its = [revIf c ('$': show i) | (i,Left c) <- zip [1 :: Int ..] its]
-   revIf c m = if not (isConsFun (funRule r)) && elem c revs
+     Right s -> Map.findWithDefault s (Keyword s) env
+   metas its = [(revIf c ('$': show i), revert c) | (i, Left c) <- zip [1 :: Int ..] its]
+   -- C and C++/NoSTL: call reverse function
+   revIf c m = if not stl && isntCons && elem c revs
                  then "reverse" ++ identCat (normCat c) ++ "(" ++ m ++ ")"
                else m  -- no reversal in the left-recursive Cons rule itself
-   revs = cfgReversibleCats cf
+   -- C++/STL: flag if reversal is necessary
+   -- notice: reversibility with push_back vectors is the opposite
+   -- of right-recursive lists!
+   revert c = isntCons && isList c && notElem c revs
+   revs     = cfgReversibleCats cf
+   isntCons = not $ isConsFun $ funRule r
 
 -- We have now constructed the patterns and actions,
 -- so the only thing left is to merge them into one string.
@@ -422,11 +500,11 @@ prRules :: Rules -> String
 prRules [] = []
 prRules ((_, []):rs) = prRules rs --internal rule
 prRules ((nt, (p,a) : ls):rs) =
-  unwords [nt', ":" , p, "{ $$ =", a, "}", '\n' : pr ls] ++ ";\n" ++ prRules rs
+  unwords [nt', ":" , p, "{", a, "}", '\n' : pr ls] ++ ";\n" ++ prRules rs
  where
   nt' = identCat nt
   pr []           = []
-  pr ((p,a):ls)   = unlines [unwords ["  |", p, "{ $$ =", a , "}"]] ++ pr ls
+  pr ((p,a):ls)   = unlines [unwords ["  |", p, "{", a , "}"]] ++ pr ls
 
 --Some helper functions.
 resultName :: String -> String

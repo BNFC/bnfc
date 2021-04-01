@@ -131,6 +131,7 @@ library
     FlexibleContexts
     FlexibleInstances
     LambdaCase
+    MultiWayIf
     NamedFieldPuns
     OverloadedStrings
     PatternGuards
