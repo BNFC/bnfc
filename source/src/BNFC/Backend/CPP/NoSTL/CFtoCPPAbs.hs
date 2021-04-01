@@ -18,13 +18,15 @@ module BNFC.Backend.CPP.NoSTL.CFtoCPPAbs (cf2CPPAbs) where
 
 import Prelude hiding ((<>))
 
+import Data.List  ( findIndices, intersperse )
+import Data.Char  ( toLower )
+import Text.PrettyPrint
+
 import BNFC.CF
-import BNFC.Utils((+++),(++++))
+import BNFC.Utils ( (+++), (++++) )
 import BNFC.Backend.Common.NamedVariables
 import BNFC.Backend.Common.OOAbstract
-import Data.List
-import Data.Char(toLower)
-import Text.PrettyPrint
+import BNFC.Backend.CPP.Common
 
 
 --The result is two files (.H file, .C file)
@@ -51,6 +53,9 @@ mkHFile cf = unlines
   "",
   "/********************   Abstract Syntax Classes    ********************/\n",
   concatMap (prDataH user) (getAbstractSyntax cf),
+  "",
+  definedRules True cf
+  "/********************   Defined Constructors    ********************/",
   "",
   "#endif"
  ]
@@ -218,7 +223,9 @@ mkCFile :: CF -> String
 mkCFile cf = unlines
  [
   header,
-  concatMap (prDataC user) (getAbstractSyntax cf)
+  concatMap (prDataC user) (getAbstractSyntax cf),
+  definedRules False cf
+  "/********************   Defined Constructors    ********************/"
  ]
  where
   user = fst (unzip (tokenPragmas cf))

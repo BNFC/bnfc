@@ -25,7 +25,7 @@ import BNFC.CF
 import BNFC.Backend.Common.NamedVariables hiding (varName)
 import BNFC.Backend.C.CFtoBisonC
   ( resultName, specialToks, startSymbol, typeName, varName )
-import BNFC.Backend.CPP.STL.CFtoBisonSTL ( tokens, union, definedRules )
+import BNFC.Backend.CPP.STL.CFtoBisonSTL ( tokens, union )
 import BNFC.PrettyPrint
 import BNFC.Utils ( (+++) )
 
@@ -80,7 +80,6 @@ header name cf = unlines
     , "    yy_mylinenumber + 1, str, yytext);"
     , "}"
     , ""
-    , definedRules cf
     , concatMap reverseList $ filter isList $ allParserCatsNorm cf
     , unlines $ map parseResult dats
     , unlines $ map (parseMethod cf name) eps
@@ -190,7 +189,7 @@ generateAction f b ms =
   else if f == "[]"
   then "0;"
   else if isDefinedRule f
-  then concat [ f, "_", "(", concat $ intersperse ", " ms', ");" ]
+  then concat [ f, "(", concat $ intersperse ", " ms', ");" ]
   else concat ["new ", f, "(", (concat (intersperse ", " ms')), ");"]
  where
   ms' = if b then reverse ms else ms

@@ -216,6 +216,7 @@ library
     BNFC.Backend.C.RegToFlex
 
     -- C++ backend
+    BNFC.Backend.CPP.Common
     BNFC.Backend.CPP.PrettyPrinter
     BNFC.Backend.CPP.Makefile
     BNFC.Backend.CPP.Naming

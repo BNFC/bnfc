@@ -24,7 +24,6 @@
 module BNFC.Backend.CPP.STL.CFtoBisonSTL
   ( cf2Bison
   , tokens, union
-  , definedRules
   ) where
 
 import Prelude hiding ((<>))
@@ -42,7 +41,6 @@ import BNFC.Backend.Common.NamedVariables hiding (varName)
 import BNFC.CF
 import BNFC.Options (RecordPositions(..))
 import BNFC.PrettyPrint
-import BNFC.TypeChecker
 import BNFC.Utils ((+++), when)
 
 --This follows the basic structure of CFtoHappy.
@@ -104,7 +102,6 @@ header inPackage name cf = unlines
     , "}"
     , ""
     , nsStart inPackage
-    , definedRules cf
     , unlines $ map parseResult dats
     , unlines $ map (parseMethod cf inPackage name) eps
     , nsEnd inPackage
@@ -114,53 +111,6 @@ header inPackage name cf = unlines
     ns   = nsString inPackage
     eps  = toList (allEntryPoints cf) ++ map TokenCat (positionCats cf)
     dats = nub $ map normCat eps
-
-definedRules :: CF -> String
-definedRules cf =
-    unlines [ rule f xs e | FunDef f xs e <- cfgPragmas cf ]
-  where
-    ctx = buildContext cf
-
-    list = LC (const "[]") (\ t -> "List" ++ unBase t)
-      where
-        unBase (ListT t) = unBase t
-        unBase (BaseT x) = show $ normCat $ strToCat x
-
-    rule f xs e =
-        case runTypeChecker $ checkDefinition' list ctx f xs e of
-        Left err -> error $ "Panic! This should have been caught already:\n" ++ err
-        Right (args,(e',t)) -> unlines
-            [ cppType t ++ " " ++ funName f ++ "_ (" ++
-                intercalate ", " (map cppArg args) ++ ") {"
-            , "  return " ++ cppExp e' ++ ";"
-            , "}"
-            ]
-      where
-        cppType :: Base -> String
-        cppType (ListT (BaseT x)) = "List" ++ show (normCat $ strToCat x) ++ " *"
-        cppType (ListT t)         = cppType t ++ " *"
-        cppType (BaseT x)
-            | x `elem` baseTokenCatNames = x
-            | isToken x ctx = "String"
-            | otherwise     = show (normCat $ strToCat x) ++ " *"
-
-        cppArg :: (String, Base) -> String
-        cppArg (x,t) = cppType t ++ " " ++ x ++ "_"
-
-        cppExp :: Exp -> String
-        cppExp (App "[]" [])    = "0"
-        cppExp (Var x)          = x ++ "_"  -- argument
-        cppExp (App t [e])
-            | isToken t ctx     = cppExp e
-        cppExp (App x es)
-            | isUpper (head x)  = call ("new " ++ x) es
-            | otherwise         = call (x ++ "_") es
-        cppExp (LitInt n)       = show n
-        cppExp (LitDouble x)    = show x
-        cppExp (LitChar c)      = show c
-        cppExp (LitString s)    = show s
-
-        call x es = x ++ "(" ++ intercalate ", " (map cppExp es) ++ ")"
 
 
 -- | Generates declaration and initialization of the @YY_RESULT@ for a parser.
@@ -331,7 +281,7 @@ generateAction rp inPackage cat f b mbs =
   else if f == "(:)"
   then lastms ++ "->push_back(" ++ head ms ++ ") ; $$ = " ++ lastms ++ " ;" ---- not left rec
   else if isDefinedRule f
-  then concat ["$$ = ", scope, f, "_", "(", intercalate ", " ms, ");" ]
+  then concat ["$$ = ", scope, f, "(", intercalate ", " ms, ");" ]
   else concat
     ["$$ = ", "new ", scope, f, "(", intercalate ", " ms, ");" ++ addLn rp]
  where
