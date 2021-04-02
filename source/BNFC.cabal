@@ -222,13 +222,10 @@ library
     BNFC.Backend.CPP.Makefile
     BNFC.Backend.CPP.Naming
     BNFC.Backend.CPP.NoSTL
-    BNFC.Backend.CPP.NoSTL.CFtoFlex
-    BNFC.Backend.CPP.NoSTL.CFtoBison
     BNFC.Backend.CPP.NoSTL.CFtoCPPAbs
 
     -- C++ STL backend
     BNFC.Backend.CPP.STL
-    BNFC.Backend.CPP.STL.CFtoBisonSTL
     BNFC.Backend.CPP.STL.CFtoSTLAbs
     BNFC.Backend.CPP.STL.STLUtils
     BNFC.Backend.CPP.STL.CFtoCVisitSkelSTL
