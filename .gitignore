@@ -9,11 +9,17 @@
 *.fdb_latexmk
 *.fls
 *.hi
+*.hidden
 *.log
 *.o
 
 # Haskell-mode hack
 /source/src/inferior-haskell-find-project-root.cabal
+
+# Trash files
+tmp
+old-*
+trash-*
 
 # Cabal generated directories and files
 .ghc.environment.*
@@ -74,6 +80,7 @@ cabal.sandbox.config
 /docs/Calc/
 
 /examples/*/agda/
+/examples/*/bytestrings/
 /examples/*/c/
 /examples/*/c-*/
 /examples/*/cnf*/
@@ -93,10 +100,13 @@ cabal.sandbox.config
 /examples/*/profile/
 /examples/*/pygments/
 /examples/*/sharestrings/
+/examples/*/text-token/
 /examples/*/xml/
 /examples/*/xmlt/
 /examples/C/with-delimiters/
 /examples/Calc/
+
+/examples/cubicaltt/Cubicaltt/
 
 /source/src/agda/
 /source/src/c/
@@ -135,8 +145,10 @@ cabal.sandbox.config
 /testing/*/xmlt/
 
 /testing/regression-tests/*_*/agda/
+/testing/regression-tests/*_*/bytestring/
 /testing/regression-tests/*_*/C/
 /testing/regression-tests/*_*/c/
+/testing/regression-tests/*_*/c-*/
 /testing/regression-tests/*_*/cnf/
 /testing/regression-tests/*_*/cpp*/
 /testing/regression-tests/*_*/csharp/
@@ -150,7 +162,11 @@ cabal.sandbox.config
 /testing/regression-tests/*_*/profile/
 /testing/regression-tests/*_*/pygments/
 /testing/regression-tests/*_*/sharestrings/
+/testing/regression-tests/*_*/text-token/
 /testing/regression-tests/*_*/xml*/
 /testing/regression-tests/*_*/*-save/
 /testing/regression-tests/*_*/Makefile
 /testing/regression-tests/*_*/Test
+
+/testing/regression-tests/266_define/nostl-2.9.0/
+
