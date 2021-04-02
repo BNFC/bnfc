@@ -11,6 +11,7 @@ license: build
 
 build:
 	make -C src
-	cabal v1-install --allow-newer
+	cabal v1-install
+#--allow-newer
 
 # EOF

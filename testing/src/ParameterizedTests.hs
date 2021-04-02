@@ -253,9 +253,13 @@ baseParameters =  TP
   , tpBnfcOptions = undefined
   , tpBuild       = tpMake
   , tpRunTestProg = \ lang args -> do
-      bin <- canonicalize ("." </> ("Test" <> Text.pack lang))
+      bin <- baseTestProg lang
       cmd bin args
   }
+
+-- | Get the test binary.
+baseTestProg :: FilePath -> Sh FilePath
+baseTestProg lang = canonicalize ("." </> ("Test" <> Text.pack lang))
 
 haskellParameters :: TestParameters
 haskellParameters = TP
@@ -315,9 +319,24 @@ parameters = concat
                , tpBnfcOptions = ["--haskell", "--functor"] }
     ]
     -- C
-  , [ cBase { tpName = "C"
-            , tpBuild = tpMake ["CC_OPTS=-Wstrict-prototypes -Werror"]  -- additional flags
-            , tpBnfcOptions = ["--c"] }
+  , [ TP { tpName = "C"
+         , tpBnfcOptions = ["--c"]
+         , tpBuild = do
+             let flags = "CC_OPTS=-Wstrict-prototypes -Werror"
+             tpMake [flags]
+             tpMake [flags, "Skeleton.o"]
+         , tpRunTestProg = \ lang args -> do
+             bin <- baseTestProg lang
+             cmd bin args
+             -- Facility to check for memory leaks
+             -- cmd "valgrind" $
+             --     "--leak-check=full"  :
+             --     "--error-exitcode=1" :
+             --     "--errors-for-leak-kinds=definite" :
+             --     "--show-leak-kinds=definite" :
+             --     bin :
+             --     args
+         }
     ]
     -- OCaml
   , [ ocaml ]
