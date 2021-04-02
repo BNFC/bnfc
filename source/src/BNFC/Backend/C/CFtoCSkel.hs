@@ -165,32 +165,33 @@ prData (cat, rules)
           member = map toLower ecl
 
 -- | Visits all the instance variables of a category.
--- >>> let ab = Cat "ab"
--- >>> prPrintRule (Rule "abc" undefined [Left ab, Left ab] Parsable)
---   case is_abc:
---     /* Code for abc Goes Here */
---     visitab(p->u.abc_.ab_1);
---     visitab(p->u.abc_.ab_2);
+-- >>> let ab = Cat "Ab"
+-- >>> prPrintRule (Rule "Abc" undefined [Left ab, Left ab] Parsable)
+--   case is_Abc:
+--     /* Code for Abc Goes Here */
+--     visitAb(p->u.abc_.ab_1);
+--     visitAb(p->u.abc_.ab_2);
 --     break;
 -- <BLANKLINE>
--- >>> let ab = TokenCat "ab"
--- >>> prPrintRule (Rule "abc" undefined [Left ab] Parsable)
---   case is_abc:
---     /* Code for abc Goes Here */
+-- >>> let ab = TokenCat "Ab"
+-- >>> prPrintRule (Rule "Abc" undefined [Left ab] Parsable)
+--   case is_Abc:
+--     /* Code for Abc Goes Here */
 --     visitAb(p->u.abc_.ab_);
 --     break;
 -- <BLANKLINE>
--- >>> prPrintRule (Rule "abc" undefined [Left ab, Left ab] Parsable)
---   case is_abc:
---     /* Code for abc Goes Here */
+-- >>> prPrintRule (Rule "Abc" undefined [Left ab, Left ab] Parsable)
+--   case is_Abc:
+--     /* Code for Abc Goes Here */
 --     visitAb(p->u.abc_.ab_1);
 --     visitAb(p->u.abc_.ab_2);
 --     break;
 -- <BLANKLINE>
 prPrintRule :: Rule -> Doc
 prPrintRule (Rule f _c cats _)
-  | isCoercion f   = ""
-  | otherwise      = nest 2 $ vcat
+  | isCoercion f    = empty
+  | isDefinedRule f = empty
+  | otherwise       = nest 2 $ vcat
     [ text $ "case is_" ++ fun ++ ":"
     , nest 2 (vcat
         [ "/* Code for " <> text fun <> " Goes Here */"
