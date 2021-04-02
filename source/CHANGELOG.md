@@ -2,6 +2,8 @@
 
 Andreas Abel <andreas.abel@gu.se>  (unreleased)
 
+* C/C++ backends now create reentrant parsers [#349]
+
 * Haskell-GADT: generated code is warning free [#346]
 * Haskell: fixes in layout preprocessor [#343,#344,#345]
 * C: fixed a space leak when parsing from a string in memory [#347]
