@@ -25,7 +25,7 @@ module BNFC.Backend.Java ( makeJava ) where
 
 import Prelude hiding ((<>))
 
-import System.FilePath (pathSeparator, isPathSeparator)
+import System.FilePath ((</>), (<.>), pathSeparator, isPathSeparator)
 import Data.Foldable (toList)
 import Data.List ( intersperse )
 
@@ -66,7 +66,7 @@ makeJava' options@Options{..} cf = do
         packageAbsyn = packageBase +.+ "Absyn"
         dirBase      = pkgToDir packageBase
         dirAbsyn     = pkgToDir packageAbsyn
-        javaex str   = dirBase ++ str +.+ "java"
+        javaex str   = dirBase </> str <.> "java"
         bnfcfiles    =
           bnfcVisitorsAndTests
             packageBase
@@ -85,12 +85,9 @@ makeJava' options@Options{..} cf = do
         makebnfcfile x = mkfile (javaex (fst $ x bnfcfiles))
                                         (snd $ x bnfcfiles)
 
-    let absynFiles = remDups $ cf2JavaAbs packageBase packageAbsyn cf rp
-        absynBaseNames = map fst absynFiles
-        absynFileNames = map (dirAbsyn ++) absynBaseNames
-    let writeAbsyn (filename, contents) =
-          mkfile (dirAbsyn ++ filename ++ ".java") contents
-    mapM_ writeAbsyn absynFiles
+    let absynFiles = remDups $ cf2JavaAbs dirAbsyn packageBase packageAbsyn cf rp
+        absynFileNames = map fst absynFiles
+    mapM_ (\ (n, s) -> mkfile (n <.> "java") s) absynFiles
     makebnfcfile bprettyprinter
     makebnfcfile bskel
     makebnfcfile bcompos
@@ -100,11 +97,11 @@ makeJava' options@Options{..} cf = do
     makebnfcfile btest
     let (lex, env) = lexfun packageBase cf
     -- Where the lexer file is created. lex is the content!
-    mkfile (dirBase ++ inputfile lexmake ) lex
+    mkfile (dirBase </> inputfile lexmake ) lex
     liftIO $ putStrLn $ "   (Tested with" +++ toolname lexmake
                                           +++ toolversion lexmake  ++ ")"
     -- where the parser file is created.
-    mkfile (dirBase ++ inputfile parmake)
+    mkfile (dirBase </> inputfile parmake)
           $ parsefun packageBase packageAbsyn cf rp env
     liftIO $ putStrLn $
       if supportsEntryPoints parmake
@@ -120,7 +117,7 @@ makeJava' options@Options{..} cf = do
                            Just {} -> remDups as
                            Nothing -> (a, b) : remDups as
     pkgToDir :: String -> FilePath
-    pkgToDir s = replace '.' pathSeparator s ++ [pathSeparator]
+    pkgToDir = replace '.' pathSeparator
 
     parselexspec = parserLexerSelector lang javaLexerParser rp
     lexfun       = cf2lex $ lexer parselexspec
@@ -152,41 +149,41 @@ makefile  dirBase dirAbsyn absynFileNames jlexpar basename = vcat $
                 ]++
     [-- running the lexergen: output of lexer -> input of lexer : calls lexer
     let ff = filename lexmake -- name of input file without extension
-        dirBaseff = dirBase ++ ff -- prepend directory
-        inp = dirBase ++ inputfile lexmake in
-        Makefile.mkRule (dirBaseff +.+ "java") [ inp ]
+        dirBaseff = dirBase </> ff -- prepend directory
+        inp = dirBase </> inputfile lexmake in
+        Makefile.mkRule (dirBaseff <.> "java") [ inp ]
         [ "${LEXER} ${LEXER_FLAGS} "++ inp ]
 
     -- running the parsergen, these there are its outputs
     -- output of parser -> input of parser : calls parser
-  , let inp = dirBase ++ inputfile parmake in
-        Makefile.mkRule (unwords (map (dirBase++) (dotJava $ results parmake)))
+  , let inp = dirBase </> inputfile parmake in
+        Makefile.mkRule (unwords (map (dirBase </>) (dotJava $ results parmake)))
           [ inp ] $
           ("${PARSER} ${PARSER_FLAGS} " ++ inp) :
-          ["mv " ++ unwords (dotJava $ results parmake) +++ dirBase
+          ["mv " ++ unwords (dotJava $ results parmake) +++ dirBase ++ [pathSeparator]
               | moveresults parmake]
   -- Class of the output of lexer generator wants java of :
   -- output of lexer and parser generator
-  , let lexerOutClass = dirBase ++ filename lexmake +.+ "class"
-        outname x = dirBase ++ x +.+ "java"
+  , let lexerOutClass = dirBase </> filename lexmake <.> "class"
+        outname x = dirBase </> x <.> "java"
         deps = map outname (results lexmake ++ results parmake) in
         Makefile.mkRule lexerOutClass deps []
     ]++
   reverse [Makefile.mkRule tar dep [] |
     (tar,dep) <- partialParserGoals dirBase (results parmake)]
-  ++[ Makefile.mkRule (dirBase ++ "PrettyPrinter.class")
-        [ dirBase ++ "PrettyPrinter.java" ] []
+  ++[ Makefile.mkRule (dirBase </> "PrettyPrinter.class")
+        [ dirBase </> "PrettyPrinter.java" ] []
     -- Removes all the class files created anywhere
-    , Makefile.mkRule "clean" [] [ "rm -f " ++ dirAbsyn ++ "*.class" ++ " "
-                                            ++ dirBase ++ "*.class" ]
+    , Makefile.mkRule "clean" [] [ "rm -f " ++ dirAbsyn </> "*.class" ++ " "
+                                            ++ dirBase </> "*.class" ]
     -- Remains the same
     , Makefile.mkRule "distclean" [ "vclean" ] []
     -- removes everything
     , Makefile.mkRule "vclean" []
         [ " rm -f " ++ absynJavaSrc ++ " " ++ absynJavaClass
-        , " rm -f " ++ dirAbsyn ++ "*.class"
+        , " rm -f " ++ dirAbsyn </> "*.class"
         , " rmdir " ++ dirAbsyn
-        , " rm -f " ++ unwords (map (dirBase ++) $
+        , " rm -f " ++ unwords (map (dirBase </>) $
                     [ inputfile lexmake
                     , inputfile parmake
                     ]
@@ -215,7 +212,7 @@ makefile  dirBase dirAbsyn absynFileNames jlexpar basename = vcat $
       lexmake           = makelexerdetails (lexer jlexpar)
       absynJavaSrc      = unwords (dotJava absynFileNames)
       absynJavaClass    = unwords (dotClass absynFileNames)
-      classes = prependPath dirBase lst
+      classes = map (dirBase </>) lst
       lst = dotClass (results lexmake) ++ [ "PrettyPrinter.class", "Test.class"
           , "VisitSkel.class"
           , "ComposVisitor.class", "AbstractVisitor.class"
@@ -479,9 +476,8 @@ cupmakedetails rp = MakeDetails
 antlrmakedetails :: String -> MakeFileDetails
 antlrmakedetails l = MakeDetails
     { executable = runJava "org.antlr.v4.Tool"
-    , flags               = \x -> unwords $
-                                    let path    = take (length x - 1) x
-                                        pointed = map cnv path
+    , flags               = \ path -> unwords $
+                                    let pointed = map cnv path
                                         cnv y   = if isPathSeparator y
                                                         then '.'
                                                         else y
@@ -502,13 +498,9 @@ antlrmakedetails l = MakeDetails
     , moveresults         = False
     }
 
-prependPath , appendExtension :: String -> [String] -> [String]
-prependPath s fi     = [ s ++ x  | x <- fi ]
-appendExtension s fi = [ x +.+ s | x <- fi ]
-
-dotJava,dotClass :: [String] -> [String]
-dotJava  = appendExtension "java"
-dotClass = appendExtension "class"
+dotJava, dotClass :: [String] -> [String]
+dotJava  = map (<.> "java")
+dotClass = map (<.> "class")
 
 type CFToJava = String -> String -> CF -> String
 
@@ -540,16 +532,16 @@ bnfcVisitorsAndTests pbase pabsyn cf cf0 cf1 cf2 cf3 cf4 cf5 cf6 =
     }
   where app x = x pbase pabsyn cf
 
-inputfile x = filename x ++ case fileextension x of
-                                "" -> ""
-                                a -> '.':a
+inputfile x
+  | null (fileextension x) = filename x
+  | otherwise              = filename x <.> fileextension x
 
 -- |  constructs the rules regarding the parser in the makefile
 partialParserGoals :: String -> [String] -> [(String, [String])]
 partialParserGoals _ []          = []
-partialParserGoals dbas (x:rest) =
-    (dbas ++ x +.+ "class", map (\ y -> dbas ++ y +.+ "java") (x:rest))
-        : partialParserGoals dbas rest
+partialParserGoals dirBase (x:rest) =
+    (dirBase </> x <.> "class", map (\ y -> dirBase </> y <.> "java") (x:rest))
+        : partialParserGoals dirBase rest
 
 -- | Creates the Test.java class.
 javaTest :: JavaTestParams -> TestClass

@@ -14,17 +14,16 @@
 
 -}
 
-module BNFC.Backend.Java.CFtoCup15 ( cf2Cup, definedRules ) where
+module BNFC.Backend.Java.CFtoCup15 ( cf2Cup ) where
+
+import Data.Char
+import Data.List (intercalate)
 
 import BNFC.CF
-import Data.List
 import BNFC.Backend.Common.NamedVariables
 import BNFC.Backend.Java.CFtoJavaAbs15 (typename)
 import BNFC.Options (RecordPositions(..))
 import BNFC.Utils ( (+++) )
-import BNFC.TypeChecker  -- We need to (re-)typecheck to figure out list instances in
-                    -- defined rules.
-import Data.Char
 
 type Rules   = [(NonTerminal,[(Pattern,Action)])]
 type Pattern = String
@@ -63,7 +62,6 @@ cf2Cup packageBase packageAbsyn cf rp env = unlines
       , parseMethod packageAbsyn (firstEntry cf)
       , "public <B,A extends java.util.LinkedList<? super B>> "
         ++ "A cons_(B x, A xs) { xs.addFirst(x); return xs; }"
-      , unlines $ definedRules packageAbsyn cf
       , "public void syntax_error(java_cup.runtime.Symbol cur_token)"
       , "{"
       , "  report_error(\"Syntax Error, trying to recover and continue"
@@ -78,55 +76,6 @@ cf2Cup packageBase packageAbsyn cf rp env = unlines
       , ""
       , ":}"
       ]
-
-definedRules :: String -> CF -> [String]
-definedRules packageAbsyn cf =
-    concat [ rule f xs e | FunDef f xs e <- cfgPragmas cf ]
-  where
-    ctx = buildContext cf
-
-    list = LC (\ t -> "List" ++ unBase t) (const "cons")
-      where
-         unBase (ListT t) = unBase t
-         unBase (BaseT x) = show $ normCat $ strToCat x
-
-    rule f xs e =
-        case runTypeChecker $ checkDefinition' list ctx f xs e of
-            Left err ->
-                error $ "Panic! This should have been caught already:\n"
-                    ++ err
-            Right (args,(e',t)) ->
-                [ "public " ++ javaType t ++ " " ++ funName f ++ "_ (" ++
-                    intercalate ", " (map javaArg args) ++ ") {"
-                , "  return " ++ javaExp e' ++ ";"
-                , "}"
-                ]
-     where
-
-       javaType :: Base -> String
-       javaType (ListT (BaseT x)) = packageAbsyn ++ ".List"
-                                   ++ catToStr (normCat $ strToCat x)
-       javaType (ListT t)         = javaType t
-       javaType (BaseT x)         = typename packageAbsyn (ctxTokens ctx) $
-                                      catToStr $ normCat $ strToCat x
-
-       javaArg :: (String, Base) -> String
-       javaArg (x,t) = javaType t ++ " " ++ x ++ "_"
-
-       javaExp :: Exp -> String
-       javaExp (App "null" []) = "null"
-       javaExp (Var x)         = x ++ "_"      -- argument
-       javaExp (App t [e])
-           | isToken t ctx     = call "new String" [e]
-       javaExp (App x es)
-           | isUpper (head x)  = call ("new " ++ packageAbsyn ++ "." ++ x) es
-           | otherwise         = call (x ++ "_") es
-       javaExp (LitInt n)      = "new Integer(" ++ show n ++ ")"
-       javaExp (LitDouble x)   = "new Double(" ++ show x ++ ")"
-       javaExp (LitChar c)     = "new Character(" ++ show c ++ ")"
-       javaExp (LitString s)   = "new String(" ++ show s ++ ")"
-
-       call x es = x ++ "(" ++ intercalate ", " (map javaExp es) ++ ")"
 
 
 -- peteg: FIXME JavaCUP can only cope with one entry point AFAIK.
@@ -212,7 +161,7 @@ generateAction packageAbsyn nt fun ms rev rp
     | isConsFun f     = "RESULT = " ++ p_2 ++ "; "
                            ++ p_2 ++ "." ++ add ++ "(" ++ p_1 ++ ");"
     | isCoercion f    = "RESULT = " ++ p_1 ++ ";"
-    | isDefinedRule f = "RESULT = parser." ++ f ++ "_"
+    | isDefinedRule f = "RESULT = " ++ packageAbsyn ++ "Def." ++ f
                         ++ "(" ++ intercalate "," ms ++ ");"
     | otherwise       = "RESULT = new " ++ c
                   ++ "(" ++ intercalate "," ms ++ ");" ++ lineInfo

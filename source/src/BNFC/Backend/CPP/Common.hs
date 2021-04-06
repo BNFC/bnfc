@@ -22,7 +22,9 @@ definedRules onlyHeader cf banner
     list = LC (const "[]") (\ t -> "List" ++ unBase t)
       where
         unBase (ListT t) = unBase t
-        unBase (BaseT x) = show $ normCat $ strToCat x
+        unBase (BaseT x) = norm x
+
+    norm = catToStr . normCat . strToCat
 
     rule f xs e =
       case runTypeChecker $ checkDefinition' list ctx f xs e of
@@ -39,12 +41,12 @@ definedRules onlyHeader cf banner
                   intercalate ", " (map cppArg args) ++ ")"
       where
         cppType :: Base -> String
-        cppType (ListT (BaseT x)) = "List" ++ show (normCat $ strToCat x) ++ "*"
+        cppType (ListT (BaseT x)) = "List" ++ norm x ++ "*"
         cppType (ListT t)         = cppType t ++ "*"
         cppType (BaseT x)
             | x `elem` baseTokenCatNames = x
             | isToken x ctx = "String"
-            | otherwise     = show (normCat $ strToCat x) ++ "*"
+            | otherwise     = norm x ++ "*"
 
         cppArg :: (String, Base) -> String
         cppArg (x,t) = cppType t ++ " " ++ x ++ "_"

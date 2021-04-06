@@ -10,6 +10,7 @@ Andreas Abel <andreas.abel@gu.se>  (unreleased)
 * C: new methods `free*` to deallocate syntax trees [#348]
 * C: removed errorneous `define`d constructors from `Skeleton.c`
 * C++: `define`d constructors now reside in `Absyn` [#287]
+* Java: `define`d constructor now reside in `AbsynDef.java` [#287]
 * Ocaml: fixed translation of nested `define`d constructors
 
 # 2.9.1

@@ -25,7 +25,6 @@ import BNFC.Utils   ( (+++), (+.+), applyWhen )
 
 import BNFC.Backend.Java.Utils
 import BNFC.Backend.Common.NamedVariables
-import BNFC.Backend.Java.CFtoCup15 ( definedRules )
 
 -- Type declarations
 
@@ -51,10 +50,6 @@ cf2AntlrParse :: String -> String -> CF -> RecordPositions -> KeywordEnv -> Stri
 cf2AntlrParse packageBase packageAbsyn cf _ env = unlines $ concat
   [ [ header
     , tokens
-    , "@members {"
-    ]
-  , map ("  " ++) $ definedRules packageAbsyn cf
-  , [ "}"
     , ""
     -- Generate start rules [#272]
     -- _X returns [ dX result ] : x=X EOF { $result = $x.result; }
@@ -131,7 +126,7 @@ generateAction packageAbsyn nt f ms rev
     | isConsFun f = "$result = " ++ p_2 ++ "; "
                            ++ "$result." ++ add ++ "(" ++ p_1 ++ ");"
     | isCoercion f = "$result = " ++  p_1 ++ ";"
-    | isDefinedRule f = "$result = " ++ funName f ++ "_"
+    | isDefinedRule f = "$result = " ++ packageAbsyn ++ "Def." ++ funName f
                         ++ "(" ++ intercalate "," (map resultvalue ms) ++ ");"
     | otherwise = "$result = new " ++ c
                   ++ "(" ++ intercalate "," (map resultvalue ms) ++ ");"
