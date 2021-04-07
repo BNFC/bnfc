@@ -15,7 +15,7 @@ import BNFC.Abs
 import BNFC.CF
 import BNFC.Lexing  (mkRegMultilineComment)
 import BNFC.Options (TokenText(..))
--- import BNFC.Utils   (unless)
+import BNFC.Utils   (when, unless)
 
 import BNFC.Backend.Common (unicodeAndSymbols)
 import BNFC.Backend.Haskell.Utils
@@ -36,6 +36,7 @@ prelude name tokenText = concat
     , "{"
     , "{-# OPTIONS -fno-warn-incomplete-patterns #-}"
     , "{-# OPTIONS_GHC -w #-}"
+    , ""
     , "module " ++ name ++ " where"
     , ""
     , "import Prelude"
@@ -46,13 +47,16 @@ prelude name tokenText = concat
     , "import Data.Word (Word8)"
     , "import Data.Char (ord)"
     , "}"
-    , ""
     ]
   ]
 
+-- | Character class definitions.
+
 cMacros :: [String]
 cMacros =
-  [ "$c = [A-Z\\192-\\221] # [\\215]  -- capital isolatin1 letter (215 = \\times) FIXME"
+  [ "-- Predefined character classes"
+  , ""
+  , "$c = [A-Z\\192-\\221] # [\\215]  -- capital isolatin1 letter (215 = \\times) FIXME"
   , "$s = [a-z\\222-\\255] # [\\247]  -- small   isolatin1 letter (247 = \\div  ) FIXME"
   , "$l = [$c $s]         -- letter"
   , "$d = [0-9]           -- digit"
@@ -60,261 +64,304 @@ cMacros =
   , "$u = [. \\n]          -- universal: any character"
   ]
 
+-- | Regular expressions and lex actions.
+
 rMacros :: CF -> [String]
-rMacros cf = if null symbs then [] else
-  [ "@rsyms =    -- symbols and non-identifier-like reserved words"
-  , "   " ++ List.intercalate " | " (map mkEsc symbs)
+rMacros cf = unless (null symbs)
+  [ "-- Symbols and non-identifier-like reserved words"
+  , ""
+  , "@rsyms = " ++ List.intercalate " | " (map (unwords . esc) symbs)
   ]
   where
   symbs = unicodeAndSymbols cf
-  mkEsc = unwords . esc
+  esc :: String -> [String]
   esc s = if null a then rest else show a : rest
-      where (a,r) = span (\ c -> isAscii c && isAlphaNum c) s
-            rest = case r of
-                       [] -> []
-                       (c:xs) -> s : esc xs
-                         where s = if isPrint c then ['\\',c]
-                                                else '\\':show (ord c)
+    where
+    (a, r) = span (\ c -> isAscii c && isAlphaNum c) s
+    rest = case r of
+      []     -> []
+      c : xs -> (if isPrint c then ['\\',c] else '\\' : show (ord c)) : esc xs
 
 restOfAlex :: TokenText -> CF -> [String]
-restOfAlex tokenText cf = [
-  ":-",
-  "",
-  lexComments (comments cf),
-  "$white+ ;",
-  pTSpec (unicodeAndSymbols cf),
-
-  userDefTokenTypes,
-  ident,
-
-  ifC catString ("\\\" ([$u # [\\\" \\\\ \\n]] | (\\\\ (\\\" | \\\\ | \\' | n | t | r | f)))* \\\"" ++
-                  "\n    { tok (\\p s -> PT p (TL $ unescapeInitTail s)) }"),
-  ifC catChar    "\\\' ($u # [\\\' \\\\] | \\\\ [\\\\ \\\' n t r f]) \\'\n    { tok (\\p s -> PT p (TC s))  }",
-  ifC catInteger "$d+\n    { tok (\\p s -> PT p (TI s))    }",
-  ifC catDouble  "$d+ \\. $d+ (e (\\-)? $d+)?\n    { tok (\\p s -> PT p (TD s)) }",
-  "",
-  "{",
-  "",
-  "tok :: (Posn -> " ++ stringType ++ " -> Token) -> (Posn -> " ++ stringType ++ " -> Token)",
-  "tok f p s = f p s",
-  "",
-  "data Tok =",
-  "   TS !"++stringType++" !Int    -- reserved words and symbols",
-  " | TL !"++stringType++"         -- string literals",
-  " | TI !"++stringType++"         -- integer literals",
-  " | TV !"++stringType++"         -- identifiers",
-  " | TD !"++stringType++"         -- double precision float literals",
-  " | TC !"++stringType++"         -- character literals",
-  userDefTokenConstrs,
-  " deriving (Eq,Show,Ord)",
-  "",
-  "data Token =",
-  "   PT  Posn Tok",
-  " | Err Posn",
-  "  deriving (Eq,Show,Ord)",
-  "",
-  "printPosn :: Posn -> String",
-  "printPosn (Pn _ l c) = \"line \" ++ show l ++ \", column \" ++ show c",
-  "",
-  "tokenPos :: [Token] -> String",
-  "tokenPos (t:_) = printPosn (tokenPosn t)",
-  "tokenPos [] = \"end of file\"",
-  "",
-  "tokenPosn :: Token -> Posn",
-  "tokenPosn (PT p _) = p",
-  "tokenPosn (Err p) = p",
-  "",
-  "tokenLineCol :: Token -> (Int, Int)",
-  "tokenLineCol = posLineCol . tokenPosn",
-  "",
-  "posLineCol :: Posn -> (Int, Int)",
-  "posLineCol (Pn _ l c) = (l,c)",
-  "",
-  "mkPosToken :: Token -> ((Int, Int), " ++ stringType ++ ")",
-  "mkPosToken t@(PT p _) = (posLineCol p, tokenText t)",
-  "",
-  "tokenText :: Token -> " ++ stringType,
-  "tokenText t = case t of",
-  "  PT _ (TS s _) -> s",
-  "  PT _ (TL s)   -> " ++ applyP stringPack "show s",
-  "  PT _ (TI s)   -> s",
-  "  PT _ (TV s)   -> s",
-  "  PT _ (TD s)   -> s",
-  "  PT _ (TC s)   -> s",
-  "  Err _         -> " ++ apply stringPack "\"#error\"",
-  userDefTokenPrint,
-  "prToken :: Token -> String",
-  "prToken t = " ++ applyP stringUnpack "tokenText t",
-  "",
-  "data BTree = N | B "++stringType++" Tok BTree BTree deriving (Show)",
-  "",
-  "eitherResIdent :: ("++stringType++" -> Tok) -> "++stringType++" -> Tok",
-  "eitherResIdent tv s = treeFind resWords",
-  "  where",
-  "  treeFind N = tv s",
-  "  treeFind (B a t left right) =",
-  "    case compare s a of",
-  "      LT -> treeFind left",
-  "      GT -> treeFind right",
-  "      EQ -> t",
-  "",
-  "resWords :: BTree",
-  "resWords = " ++ show (sorted2tree $ cfTokens cf),
-  "   where",
-  "   b s n = B bs (TS bs n)",
-  "     where",
-  "       bs = "++ apply stringPack "s",
-  "",
-  "unescapeInitTail :: "++stringType++" -> "++stringType++"",
-  "unescapeInitTail = "++stringPack++" . unesc . tail . "++stringUnpack,
-  "  where",
-  "  unesc s = case s of",
-  "    '\\\\':c:cs | elem c ['\\\"', '\\\\', '\\\''] -> c : unesc cs",
-  "    '\\\\':'n':cs  -> '\\n' : unesc cs",
-  "    '\\\\':'t':cs  -> '\\t' : unesc cs",
-  "    '\\\\':'r':cs  -> '\\r' : unesc cs",
-  "    '\\\\':'f':cs  -> '\\f' : unesc cs",
-  "    '\"':[]    -> []",
-  "    c:cs      -> c : unesc cs",
-  "    _         -> []",
-  "",
-  "-------------------------------------------------------------------",
-  "-- Alex wrapper code.",
-  "-- A modified \"posn\" wrapper.",
-  "-------------------------------------------------------------------",
-  "",
-  "data Posn = Pn !Int !Int !Int",
-  "      deriving (Eq, Show,Ord)",
-  "",
-  "alexStartPos :: Posn",
-  "alexStartPos = Pn 0 1 1",
-  "",
-  "alexMove :: Posn -> Char -> Posn",
-  "alexMove (Pn a l c) '\\t' = Pn (a+1)  l     (((c+7) `div` 8)*8+1)",
-  "alexMove (Pn a l c) '\\n' = Pn (a+1) (l+1)   1",
-  "alexMove (Pn a l c) _    = Pn (a+1)  l     (c+1)",
-  "",
-  "type Byte = Word8",
-  "",
-  "type AlexInput = (Posn,     -- current position,",
-  "                  Char,     -- previous char",
-  "                  [Byte],   -- pending bytes on the current char",
-  "                  "++stringType++")   -- current input string",
-  "",
-  "tokens :: "++stringType++" -> [Token]",
-  "tokens str = go (alexStartPos, '\\n', [], str)",
-  "    where",
-  "      go :: AlexInput -> [Token]",
-  "      go inp@(pos, _, _, str) =",
-  "               case alexScan inp 0 of",
-  "                AlexEOF                   -> []",
-  "                AlexError (pos, _, _, _)  -> [Err pos]",
-  "                AlexSkip  inp' len        -> go inp'",
-  "                AlexToken inp' len act    -> act pos ("++stringTake++" len str) : (go inp')",
-  "",
-  "alexGetByte :: AlexInput -> Maybe (Byte,AlexInput)",
-  "alexGetByte (p, c, (b:bs), s) = Just (b, (p, c, bs, s))",
-  "alexGetByte (p, _, [], s) =",
-  "  case " ++ apply stringUncons "s" ++ " of",
-  "    "++stringNilP++"  -> Nothing",
-  "    "++stringConsP++" ->",
-  "             let p'     = alexMove p c",
-  "                 (b:bs) = utf8Encode c",
-  "              in p' `seq` Just (b, (p', c, bs, s))",
-  "",
-  "alexInputPrevChar :: AlexInput -> Char",
-  "alexInputPrevChar (p, c, bs, s) = c",
-  "",
-  "-- | Encode a Haskell String to a list of Word8 values, in UTF8 format.",
-  "utf8Encode :: Char -> [Word8]",
-  "utf8Encode = map fromIntegral . go . ord",
-  " where",
-  "  go oc",
-  "   | oc <= 0x7f       = [oc]",
-  "",
-  "   | oc <= 0x7ff      = [ 0xc0 + (oc `Data.Bits.shiftR` 6)",
-  "                        , 0x80 + oc Data.Bits..&. 0x3f",
-  "                        ]",
-  "",
-  "   | oc <= 0xffff     = [ 0xe0 + (oc `Data.Bits.shiftR` 12)",
-  "                        , 0x80 + ((oc `Data.Bits.shiftR` 6) Data.Bits..&. 0x3f)",
-  "                        , 0x80 + oc Data.Bits..&. 0x3f",
-  "                        ]",
-  "   | otherwise        = [ 0xf0 + (oc `Data.Bits.shiftR` 18)",
-  "                        , 0x80 + ((oc `Data.Bits.shiftR` 12) Data.Bits..&. 0x3f)",
-  "                        , 0x80 + ((oc `Data.Bits.shiftR` 6) Data.Bits..&. 0x3f)",
-  "                        , 0x80 + oc Data.Bits..&. 0x3f",
-  "                        ]",
-  "}"
+restOfAlex tokenText cf = concat
+  [ [ ":-"
+    , ""
+    ]
+  , lexComments $ comments cf
+  , [ "-- Whitespace (skipped)"
+    ,  "$white+ ;"
+    , ""
+    ]
+  , unless (null $ unicodeAndSymbols cf)
+    [ "-- Symbols"
+    , "@rsyms"
+    , "    { tok (\\p s -> PT p (eitherResIdent TV s)) }"
+    , ""
+    ]
+  , userDefTokenTypes
+  , [ "-- Keywords and Ident"
+    , "$l $i*"
+    , "    { tok (\\p s -> PT p (eitherResIdent TV s)) }"
+    , ""
+    ]
+  , ifC catString
+    [ "-- String"
+    , "\\\" ([$u # [\\\" \\\\ \\n]] | (\\\\ (\\\" | \\\\ | \\' | n | t | r | f)))* \\\""
+    , "    { tok (\\p s -> PT p (TL $ unescapeInitTail s)) }"
+    , ""
+    ]
+  , ifC catChar
+    [ "-- Char"
+    , "\\\' ($u # [\\\' \\\\] | \\\\ [\\\\ \\\' n t r f]) \\'"
+    , "    { tok (\\p s -> PT p (TC s))  }"
+    , ""
+    ]
+  , ifC catInteger
+    [ "-- Integer"
+    , "$d+"
+    , "    { tok (\\p s -> PT p (TI s))    }"
+    , ""
+    ]
+  , ifC catDouble
+    [ "-- Double"
+    , "$d+ \\. $d+ (e (\\-)? $d+)?"
+    , "    { tok (\\p s -> PT p (TD s)) }"
+    , ""
+    ]
+  , [ "{"
+    , ""
+    , "tok :: (Posn -> " ++ stringType ++ " -> Token) -> (Posn -> " ++ stringType ++ " -> Token)"
+    , "tok f p s = f p s"
+    , ""
+    , "-- | Token without position."
+    , "data Tok"
+    , "  = TS !" ++ stringType ++ " !Int    -- ^ Reserved word or symbol."
+    , "  | TL !" ++ stringType ++ "         -- ^ String literal."
+    , "  | TI !" ++ stringType ++ "         -- ^ Integer literal."
+    , "  | TV !" ++ stringType ++ "         -- ^ Identifier."
+    , "  | TD !" ++ stringType ++ "         -- ^ Float literal."
+    , "  | TC !" ++ stringType ++ "         -- ^ Character literal."
+    ]
+  , [ "  | T_" ++ name ++ " !" ++ stringType | name <- tokenNames cf ]
+  , [ "  deriving (Eq, Show, Ord)"
+    , ""
+    , "-- | Token with position."
+    , "data Token"
+    , "  = PT  Posn Tok"
+    , "  | Err Posn"
+    , "  deriving (Eq, Show, Ord)"
+    , ""
+    , "-- | Pretty print a position."
+    , "printPosn :: Posn -> String"
+    , "printPosn (Pn _ l c) = \"line \" ++ show l ++ \", column \" ++ show c"
+    , ""
+    , "-- | Pretty print the position of the first token in the list."
+    , "tokenPos :: [Token] -> String"
+    , "tokenPos (t:_) = printPosn (tokenPosn t)"
+    , "tokenPos []    = \"end of file\""
+    , ""
+    , "-- | Get the position of a token."
+    , "tokenPosn :: Token -> Posn"
+    , "tokenPosn (PT p _) = p"
+    , "tokenPosn (Err p)  = p"
+    , ""
+    , "-- | Get line and column of a token."
+    , "tokenLineCol :: Token -> (Int, Int)"
+    , "tokenLineCol = posLineCol . tokenPosn"
+    , ""
+    , "-- | Get line and column of a position."
+    , "posLineCol :: Posn -> (Int, Int)"
+    , "posLineCol (Pn _ l c) = (l,c)"
+    , ""
+    , "-- | Convert a token into \"position token\" form."
+    , "mkPosToken :: Token -> ((Int, Int), " ++ stringType ++ ")"
+    , "mkPosToken t@(PT p _) = (posLineCol p, tokenText t)"
+    , ""
+    , "-- | Convert a token to its text."
+    , "tokenText :: Token -> " ++ stringType
+    , "tokenText t = case t of"
+    , "  PT _ (TS s _) -> s"
+    , "  PT _ (TL s)   -> " ++ applyP stringPack "show s"
+    , "  PT _ (TI s)   -> s"
+    , "  PT _ (TV s)   -> s"
+    , "  PT _ (TD s)   -> s"
+    , "  PT _ (TC s)   -> s"
+    , "  Err _         -> " ++ apply stringPack "\"#error\""
+    ]
+  , [ "  PT _ (T_" ++ name ++ " s) -> s" | name <- tokenNames cf ]
+  , [ ""
+    , "-- | Convert a token to a string."
+    , "prToken :: Token -> String"
+    , "prToken t = " ++ applyP stringUnpack "tokenText t"
+    , ""
+    , "-- | Finite map from text to token organized as binary search tree."
+    , "data BTree"
+    , "  = N -- ^ Nil (leaf)."
+    , "  | B " ++ stringType ++ " Tok BTree BTree"
+    , "      -- ^ Binary node."
+    , "  deriving (Show)"
+    , ""
+    , "-- | Convert potential keyword into token or use fallback conversion."
+    , "eitherResIdent :: (" ++ stringType ++ " -> Tok) -> " ++ stringType ++ " -> Tok"
+    , "eitherResIdent tv s = treeFind resWords"
+    , "  where"
+    , "  treeFind N = tv s"
+    , "  treeFind (B a t left right) ="
+    , "    case compare s a of"
+    , "      LT -> treeFind left"
+    , "      GT -> treeFind right"
+    , "      EQ -> t"
+    , ""
+    , "-- | The keywords and symbols of the language organized as binary search tree."
+    , "resWords :: BTree"
+    , "resWords = " ++ show (sorted2tree $ cfTokens cf)
+    , "   where"
+    , "   b s n = B bs (TS bs n)"
+    , "     where"
+    , "     bs = "++ apply stringPack "s"
+    , ""
+    , "-- | Unquote string literal."
+    , "unescapeInitTail :: " ++ stringType ++ " -> " ++ stringType ++ ""
+    , "unescapeInitTail = " ++ stringPack ++ " . unesc . tail . " ++ stringUnpack
+    , "  where"
+    , "  unesc s = case s of"
+    , "    '\\\\':c:cs | elem c ['\\\"', '\\\\', '\\\''] -> c : unesc cs"
+    , "    '\\\\':'n':cs  -> '\\n' : unesc cs"
+    , "    '\\\\':'t':cs  -> '\\t' : unesc cs"
+    , "    '\\\\':'r':cs  -> '\\r' : unesc cs"
+    , "    '\\\\':'f':cs  -> '\\f' : unesc cs"
+    , "    '\"':[]       -> []"
+    , "    c:cs         -> c : unesc cs"
+    , "    _            -> []"
+    , ""
+    , "-------------------------------------------------------------------"
+    , "-- Alex wrapper code."
+    , "-- A modified \"posn\" wrapper."
+    , "-------------------------------------------------------------------"
+    , ""
+    , "data Posn = Pn !Int !Int !Int"
+    , "  deriving (Eq, Show, Ord)"
+    , ""
+    , "alexStartPos :: Posn"
+    , "alexStartPos = Pn 0 1 1"
+    , ""
+    , "alexMove :: Posn -> Char -> Posn"
+    , "alexMove (Pn a l c) '\\t' = Pn (a+1)  l     (((c+7) `div` 8)*8+1)"
+    , "alexMove (Pn a l c) '\\n' = Pn (a+1) (l+1)   1"
+    , "alexMove (Pn a l c) _    = Pn (a+1)  l     (c+1)"
+    , ""
+    , "type Byte = Word8"
+    , ""
+    , "type AlexInput = (Posn,     -- current position,"
+    , "                  Char,     -- previous char"
+    , "                  [Byte],   -- pending bytes on the current char"
+    , "                  " ++ stringType ++ ")   -- current input string"
+    , ""
+    , "tokens :: " ++ stringType ++ " -> [Token]"
+    , "tokens str = go (alexStartPos, '\\n', [], str)"
+    , "    where"
+    , "      go :: AlexInput -> [Token]"
+    , "      go inp@(pos, _, _, str) ="
+    , "               case alexScan inp 0 of"
+    , "                AlexEOF                   -> []"
+    , "                AlexError (pos, _, _, _)  -> [Err pos]"
+    , "                AlexSkip  inp' len        -> go inp'"
+    , "                AlexToken inp' len act    -> act pos (" ++ stringTake ++ " len str) : (go inp')"
+    , ""
+    , "alexGetByte :: AlexInput -> Maybe (Byte,AlexInput)"
+    , "alexGetByte (p, c, (b:bs), s) = Just (b, (p, c, bs, s))"
+    , "alexGetByte (p, _, [], s) ="
+    , "  case " ++ apply stringUncons "s" ++ " of"
+    , "    " ++ stringNilP ++ "  -> Nothing"
+    , "    " ++ stringConsP ++ " ->"
+    , "             let p'     = alexMove p c"
+    , "                 (b:bs) = utf8Encode c"
+    , "              in p' `seq` Just (b, (p', c, bs, s))"
+    , ""
+    , "alexInputPrevChar :: AlexInput -> Char"
+    , "alexInputPrevChar (p, c, bs, s) = c"
+    , ""
+    , "-- | Encode a Haskell String to a list of Word8 values, in UTF8 format."
+    , "utf8Encode :: Char -> [Word8]"
+    , "utf8Encode = map fromIntegral . go . ord"
+    , "  where"
+    , "  go oc"
+    , "   | oc <= 0x7f       = [oc]"
+    , ""
+    , "   | oc <= 0x7ff      = [ 0xc0 + (oc `Data.Bits.shiftR` 6)"
+    , "                        , 0x80 + oc Data.Bits..&. 0x3f"
+    , "                        ]"
+    , ""
+    , "   | oc <= 0xffff     = [ 0xe0 + (oc `Data.Bits.shiftR` 12)"
+    , "                        , 0x80 + ((oc `Data.Bits.shiftR` 6) Data.Bits..&. 0x3f)"
+    , "                        , 0x80 + oc Data.Bits..&. 0x3f"
+    , "                        ]"
+    , "   | otherwise        = [ 0xf0 + (oc `Data.Bits.shiftR` 18)"
+    , "                        , 0x80 + ((oc `Data.Bits.shiftR` 12) Data.Bits..&. 0x3f)"
+    , "                        , 0x80 + ((oc `Data.Bits.shiftR` 6) Data.Bits..&. 0x3f)"
+    , "                        , 0x80 + oc Data.Bits..&. 0x3f"
+    , "                        ]"
+    , "}"
+    ]
   ]
- where
-   (stringType,stringTake,stringUncons,stringPack,stringUnpack,stringNilP,stringConsP) = case tokenText of
-     StringToken     -> ("String",        "take",    "",          "id",      "id",        "[]",      "(c:s)"     )
-     ByteStringToken -> ("BS.ByteString", "BS.take", "BS.uncons", "BS.pack", "BS.unpack", "Nothing", "Just (c,s)")
-     TextToken       -> ("Data.Text.Text", "Data.Text.take", "Data.Text.uncons", "Data.Text.pack", "Data.Text.unpack", "Nothing", "Just (c,s)")
+  where
+  (stringType, stringTake, stringUncons, stringPack, stringUnpack, stringNilP, stringConsP) =
+    case tokenText of
+      StringToken     -> ("String",        "take",    "",          "id",      "id",        "[]",      "(c:s)"     )
+      ByteStringToken -> ("BS.ByteString", "BS.take", "BS.uncons", "BS.pack", "BS.unpack", "Nothing", "Just (c,s)")
+      TextToken       -> ("Data.Text.Text", "Data.Text.take", "Data.Text.uncons", "Data.Text.pack", "Data.Text.unpack", "Nothing", "Just (c,s)")
 
-   apply :: String -> String -> String
-   apply ""   s = s
-   apply "id" s = s
-   apply f    s = f ++ " " ++ s
+  apply :: String -> String -> String
+  apply ""   s = s
+  apply "id" s = s
+  apply f    s = f ++ " " ++ s
 
-   applyP :: String -> String -> String
-   applyP ""   s = s
-   applyP "id" s = s
-   applyP f    s = f ++ " (" ++ s ++ ")"
+  applyP :: String -> String -> String
+  applyP ""   s = s
+  applyP "id" s = s
+  applyP f    s = f ++ " (" ++ s ++ ")"
 
-   ifC :: TokenCat -> String -> String
-   ifC cat s = if isUsedCat cf (TokenCat cat) then s else ""
+  ifC :: Monoid m => TokenCat -> m -> m
+  ifC = when . isUsedCat cf . TokenCat
 
-   lexComments
-     :: ( [(String, String)]  -- block comment delimiters
-        , [String]            -- line  comment initiators
-        ) -> String           -- Alex declarations
-   lexComments (block, line) = unlines $ concat $
-     [ [ "-- Line comments"  | not (null line)               ]
-     , map lexLineComment line
-     , [ ""                  | not (null line || null block) ]
-     , [ "-- Block comments" | not (null block)              ]
-     , map (uncurry lexBlockComment) block
-     ]
+  lexComments
+    :: ( [(String, String)]  -- block comment delimiters
+       , [String]            -- line  comment initiators
+       ) -> [String]         -- Alex declarations
+  lexComments (block, line) = concat $
+    [ [ "-- Line comments"  | not (null line)               ]
+    , map lexLineComment line
+    , [ ""                  | not (null line || null block) ]
+    , [ "-- Block comments" | not (null block)              ]
+    , map (uncurry lexBlockComment) block
+    , [ ""                  | not (null line && null block) ]
+    ]
 
-   lexLineComment
-     :: String   -- ^ Line comment start.
-     -> String   -- ^ Alex declaration.
-   lexLineComment s = concat [ "\"", s, "\" [.]* ;" ]
+  lexLineComment
+    :: String   -- ^ Line comment start.
+    -> String   -- ^ Alex declaration.
+  lexLineComment s = concat [ "\"", s, "\" [.]* ;" ]
 
-   lexBlockComment
-     :: String   -- ^ Start of block comment.
-     -> String   -- ^ End of block comment.
-     -> String   -- ^ Alex declaration.
-   lexBlockComment start end = printRegAlex (mkRegMultilineComment start end) ++ " ;"
+  lexBlockComment
+    :: String   -- ^ Start of block comment.
+    -> String   -- ^ End of block comment.
+    -> String   -- ^ Alex declaration.
+  lexBlockComment start end = printRegAlex (mkRegMultilineComment start end) ++ " ;"
 
-   -- tokens consisting of special symbols
-   pTSpec [] = ""
-   pTSpec _ = "@rsyms\n    { tok (\\p s -> PT p (eitherResIdent TV s)) }"
+  userDefTokenTypes :: [String]
+  userDefTokenTypes = concat
+    [ [ "-- token " ++ name
+      , printRegAlex exp
+      , "    { tok (\\p s -> PT p (eitherResIdent T_"  ++ name ++ " s)) }"
+      , ""
+      ]
+    | (name, exp) <- tokenPragmas cf
+    ]
 
-   userDefTokenTypes = unlines
-     [ printRegAlex exp ++
-       "\n    { tok (\\p s -> PT p (eitherResIdent T_"  ++ name ++ " s)) }"
-     | (name,exp) <- tokenPragmas cf
-     ]
-
-   userDefTokenConstrs = unlines
-     [ " | T_" ++ name ++ " !"++stringType
-     | name <- tokenNames cf
-     ]
-
-   userDefTokenPrint = unlines
-     [ "  PT _ (T_" ++ name ++ " s) -> s"
-     | name <- tokenNames cf
-     ]
-
-   ident =
-     "$l $i*\n    { tok (\\p s -> PT p (eitherResIdent TV s)) }"
-     --ifC "Ident"  "<ident>   ::= ^l ^i*   { ident  p = PT p . eitherResIdent TV }"
-
-
-data BTree = N | B String Int BTree BTree
+-- | Binary search tree.
+data BTree
+  = N
+  | B String Int BTree BTree
 
 instance Show BTree where
   showsPrec _  N          = showString "N"
@@ -326,6 +373,7 @@ instance Show BTree where
     where
     mparens f = if n > 0 then showChar '(' . f . showChar ')' else f
 
+-- | Create a balanced search tree from a sorted list.
 sorted2tree :: [(String,Int)] -> BTree
 sorted2tree [] = N
 sorted2tree xs = B x n (sorted2tree t1) (sorted2tree t2)
