@@ -329,24 +329,28 @@ restOfAlex tokenText cf = concat
        , [String]            -- line  comment initiators
        ) -> [String]         -- Alex declarations
   lexComments (block, line) = concat $
-    [ [ "-- Line comments"  | not (null line)               ]
-    , map lexLineComment line
-    , [ ""                  | not (null line || null block) ]
-    , [ "-- Block comments" | not (null block)              ]
-    , map (uncurry lexBlockComment) block
-    , [ ""                  | not (null line && null block) ]
+    [ concatMap lexLineComment line
+    , concatMap (uncurry lexBlockComment) block
     ]
 
   lexLineComment
     :: String   -- ^ Line comment start.
-    -> String   -- ^ Alex declaration.
-  lexLineComment s = concat [ "\"", s, "\" [.]* ;" ]
+    -> [String] -- ^ Alex declaration.
+  lexLineComment s =
+    [ unwords [ "-- Line comment", show s ]
+    , concat [ "\"", s, "\" [.]* ;" ]
+    , ""
+    ]
 
   lexBlockComment
     :: String   -- ^ Start of block comment.
     -> String   -- ^ End of block comment.
-    -> String   -- ^ Alex declaration.
-  lexBlockComment start end = printRegAlex (mkRegMultilineComment start end) ++ " ;"
+    -> [String] -- ^ Alex declaration.
+  lexBlockComment start end =
+    [ unwords [ "-- Block comment", show start, show end ]
+    , printRegAlex (mkRegMultilineComment start end) ++ " ;"
+    , ""
+    ]
 
   userDefTokenTypes :: [String]
   userDefTokenTypes = concat
