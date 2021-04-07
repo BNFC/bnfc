@@ -1,0 +1,2 @@
+ERROR: the grammar uses layout, but does not mention "{" "}"
+Aborting.  (Use option --force to continue despite errors.)

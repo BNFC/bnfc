@@ -1,0 +1,7 @@
+-- Andreas, 2021-04-07, issue #352
+-- Layout keywords require mention of { } ;
+
+layout "where"                                   ;
+separator Module ";"                             ;
+
+Modl. Module ::= "module" Ident "where" [Module] ;  -- missing braces around list

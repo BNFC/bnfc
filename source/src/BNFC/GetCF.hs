@@ -90,12 +90,22 @@ parseCF opts target content = do
           ]
 
   -- Some (most) backends do not support layout.
-  when (hasLayout cf && target `notElem`
+  let lay = hasLayout cf
+  when (lay && target `notElem`
     [ TargetHaskell, TargetHaskellGadt, TargetLatex, TargetPygments, TargetCheck ]) $
       dieUnlessForce $ unwords
         [ "ERROR: the grammar uses layout, which is not supported by backend"
         , show target ++ "."
         ]
+
+  -- A grammar that uses layout needs to contain symbols { } ;
+  let symbols = cfgSymbols cf
+      layoutSymbols = [";", "{", "}"]
+      missingLayoutSymbols = filter (`notElem` symbols) layoutSymbols
+  when (lay && not (null missingLayoutSymbols)) $
+      dieUnlessForce $ unwords $
+        "ERROR: the grammar uses layout, but does not mention"
+        : map show missingLayoutSymbols
 
   -- Token types that end in a numeral confuse BNFC, because of CoerceCat.
   let userTokenTypes = [ rx | TokenReg rx _ _ <- cfgPragmas cf ]
