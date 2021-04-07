@@ -7,7 +7,8 @@
 
 module BNFC.Backend.Haskell.CFtoLayout where
 
-import Data.List (sort)
+import Data.List                  ( sort )
+
 import BNFC.CF
 import BNFC.Options               ( TokenText )
 import BNFC.PrettyPrint
@@ -61,7 +62,7 @@ cf2Layout tokenText layName lexName cf = unlines $ concat
     , "  -- The stack should never be empty."
     , "  res _ [] ts = error $ \"Layout error: stack empty. Tokens: \" ++ show ts"
     , ""
-    , "  res _ st (t0:ts)"
+    , "  res _ st (t0 : ts)"
     , "    -- We found an open brace in the input,"
     , "    -- put an explicit layout block on the stack."
     , "    -- This is done even if there was no layout word,"
@@ -69,13 +70,13 @@ cf2Layout tokenText layName lexName cf = unlines $ concat
     , "    | isLayoutOpen t0 = t0 : res (Just t0) (Explicit : st) ts"
     , ""
     , "  -- We are in an implicit layout block"
-    , "  res pt (Implicit n:ns) (t0:ts)"
+    , "  res pt (Implicit n : ns) (t0 : ts)"
     , ""
     , "      -- End of implicit block by a layout stop word"
     , "    | isStop t0 ="
     , "           -- Exit the current block and all implicit blocks"
     , "           -- more indented than the current token."
-    , "       let (ebs,ns') = span ((column t0 <) . indentation) ns"
+    , "       let (ebs, ns') = span ((column t0 <) . indentation) ns"
     , "           -- The number of blocks exited:"
     , "           k  = 1 + length ebs"
     , "           -- Insert closing braces after the previous token."
@@ -87,15 +88,15 @@ cf2Layout tokenText layName lexName cf = unlines $ concat
     , "           -- Insert a closing brace after the previous token."
     , "           -- Repeat, with the current block removed from the stack."
     , "       let b = sToken (afterPrev pt) layoutClose"
-    , "       in  b : res (Just b) ns (t0:ts)"
+    , "       in  b : res (Just b) ns (t0 : ts)"
     , ""
-    , "  res pt st (t0:ts)"
+    , "  res pt st (t0 : ts)"
     , "    -- Start a new layout block if the first token is a layout word"
     , "    | isLayout t0 ="
     , "        case ts of"
     , "            -- Explicit layout, just move on. The case above"
     , "            -- will push an explicit layout block."
-    , "            t1:_ | isLayoutOpen t1 -> t0 : res (Just t0) st ts"
+    , "            t1 : _ | isLayoutOpen t1 -> t0 : res (Just t0) st ts"
     , "                 -- The column of the next token determines the starting column"
     , "                 -- of the implicit layout block."
     , "                 -- However, the next block needs to be strictly more indented"
@@ -106,13 +107,13 @@ cf2Layout tokenText layName lexName cf = unlines $ concat
     , "                     -- insert an open brace after the layout word"
     , "                     b   = sToken (nextPos t0) layoutOpen"
     , "                     -- save the start column"
-    , "                     st' = Implicit col:st"
+    , "                     st' = Implicit col : st"
     , "                     ctd = t0 : b : res (Just b) st' ts"
     , "                 in -- Do we have to insert an extra layoutSep?"
     , "                case st of"
-    , "                  Implicit n:_"
+    , "                  Implicit n : _"
     , "                    | newLine pt t0 && column t0 == n"
-    , "                      && maybe False (not . isTokenIn [layoutSep,layoutOpen]) pt ->"
+    , "                      && maybe False (not . isTokenIn [layoutSep, layoutOpen]) pt ->"
     , "                       sToken (afterPrev pt) layoutSep : ctd"
     , "                  _ -> ctd"
     , ""
@@ -127,24 +128,24 @@ cf2Layout tokenText layName lexName cf = unlines $ concat
     , "                 else map (const t0) imps ++ t0 : res (Just t0) st' ts"
     , ""
     , "  -- Insert separator if necessary."
-    , "  res pt st@(Implicit n : _) (t0:ts)"
+    , "  res pt st@(Implicit n : _) (t0 : ts)"
     , "    -- Encountered a new line in an implicit layout block."
     , "    | newLine pt t0 && column t0 == n ="
     , "       -- Insert a semicolon after the previous token"
     , "       -- unless we are the beginning of the file,"
     , "       -- or the previous token is a semicolon or open brace."
-    , "       if maybe True (isTokenIn [layoutSep,layoutOpen]) pt"
+    , "       if maybe True (isTokenIn [layoutSep, layoutOpen]) pt"
     , "          then ctd"
     , "          else sToken (afterPrev pt) layoutSep : ctd"
     , "       where"
     , "       ctd = t0 : res (Just t0) st ts"
     , ""
     , "  -- Nothing to see here, move along."
-    , "  res _ st (t:ts)  = t : res (Just t) st ts"
+    , "  res _ st (t : ts)  = t : res (Just t) st ts"
     , ""
     , "  -- At EOF: skip explicit blocks."
-    , "  res (Just _) [Explicit]    [] = []"
-    , "  res (Just t) (Explicit:bs) [] = res (Just t) bs []"
+    , "  res (Just _) [Explicit]      [] = []"
+    , "  res (Just t) (Explicit : bs) [] = res (Just t) bs []"
     , ""
     , "  -- If we are using top-level layout, insert a semicolon after"
     , "  -- the last token, if there isn't one already"
@@ -248,4 +249,4 @@ cf2Layout tokenText layName lexName cf = unlines $ concat
   ]
   where
     resws = sort $ reservedWords cf ++ cfgSymbols cf
-    (top,lay,stop) = layoutPragmas cf
+    (top, lay, stop) = layoutPragmas cf
