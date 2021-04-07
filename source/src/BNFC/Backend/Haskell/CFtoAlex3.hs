@@ -95,43 +95,43 @@ restOfAlex tokenText cf = concat
   , unless (null $ unicodeAndSymbols cf)
     [ "-- Symbols"
     , "@rsyms"
-    , "    { tok (\\p s -> PT p (eitherResIdent TV s)) }"
+    , "    { tok (eitherResIdent TV) }"
     , ""
     ]
   , userDefTokenTypes
   , [ "-- Keywords and Ident"
     , "$l $i*"
-    , "    { tok (\\p s -> PT p (eitherResIdent TV s)) }"
+    , "    { tok (eitherResIdent TV) }"
     , ""
     ]
   , ifC catString
     [ "-- String"
     , "\\\" ([$u # [\\\" \\\\ \\n]] | (\\\\ (\\\" | \\\\ | \\' | n | t | r | f)))* \\\""
-    , "    { tok (\\p s -> PT p (TL $ unescapeInitTail s)) }"
+    , "    { tok (TL . unescapeInitTail) }"
     , ""
     ]
   , ifC catChar
     [ "-- Char"
     , "\\\' ($u # [\\\' \\\\] | \\\\ [\\\\ \\\' n t r f]) \\'"
-    , "    { tok (\\p s -> PT p (TC s))  }"
+    , "    { tok TC }"
     , ""
     ]
   , ifC catInteger
     [ "-- Integer"
     , "$d+"
-    , "    { tok (\\p s -> PT p (TI s))    }"
+    , "    { tok TI }"
     , ""
     ]
   , ifC catDouble
     [ "-- Double"
     , "$d+ \\. $d+ (e (\\-)? $d+)?"
-    , "    { tok (\\p s -> PT p (TD s)) }"
+    , "    { tok TD }"
     , ""
     ]
   , [ "{"
-    , ""
-    , "tok :: (Posn -> " ++ stringType ++ " -> Token) -> (Posn -> " ++ stringType ++ " -> Token)"
-    , "tok f p s = f p s"
+    , "-- | Create a token with position."
+    , "tok :: (" ++ stringType ++ " -> Tok) -> (Posn -> " ++ stringType ++ " -> Token)"
+    , "tok f p = PT p . f"
     , ""
     , "-- | Token without position."
     , "data Tok"
@@ -356,7 +356,7 @@ restOfAlex tokenText cf = concat
   userDefTokenTypes = concat
     [ [ "-- token " ++ name
       , printRegAlex exp
-      , "    { tok (\\p s -> PT p (eitherResIdent T_"  ++ name ++ " s)) }"
+      , "    { tok (eitherResIdent T_"  ++ name ++ ") }"
       , ""
       ]
     | (name, exp) <- tokenPragmas cf
