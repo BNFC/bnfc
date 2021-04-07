@@ -52,7 +52,7 @@ makeHaskellGadt opts cf = do
       cf2Layout (tokenText opts) layMod lexMod cf
     mkfile (tFile opts)        $ Haskell.testfile opts cf
     mkfile (errFile opts) $ mkErrM errMod
-    Makefile.mkMakefile opts $ Haskell.makefile opts
+    Makefile.mkMakefile opts $ Haskell.makefile opts cf
     case xml opts of
       2 -> makeXML opts True cf
       1 -> makeXML opts False cf

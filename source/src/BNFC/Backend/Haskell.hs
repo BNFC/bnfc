@@ -84,7 +84,7 @@ makeHaskell opts cf = do
     Ctrl.when (agda opts) $ makeAgda time opts cf
 
     -- Generate Makefile.
-    Makefile.mkMakefile opts $ makefile opts
+    Makefile.mkMakefile opts $ makefile opts cf
 
 
 -- | Generate the makefile (old version, with just one "all" target).
@@ -186,9 +186,10 @@ makefileHeader Options{ glr } = vcat
 -- | Generate the makefile.
 makefile
   :: Options
+  -> CF
   -> String    -- ^ Filename of the makefile.
   -> Doc       -- ^ Content of the makefile.
-makefile opts makeFile = vcat
+makefile opts cf makeFile = vcat
   [ makefileHeader opts
   , phonyRule
   , defaultRule
@@ -234,10 +235,15 @@ makefile opts makeFile = vcat
     where
     recipe    = unwords [ "bnfc", printOptions opts{ make = Nothing } ]
     tgts      = unwords . map ($ opts) . concat $
-      [ [ absFile, alexFile, happyFile, printerFile, tFile ]
+      [ [ absFile ]
+      , [ layoutFile | lay ]
+      , [ alexFile, happyFile, printerFile, tFile ]
       , when (agda opts)
         [ agdaASTFile, agdaParserFile, agdaLibFile, agdaMainFile ]
       ]
+
+  lay :: Bool
+  lay = hasLayout cf
 
   -- | Rule to invoke @happy@.
   happyRule :: Doc
@@ -254,28 +260,33 @@ makefile opts makeFile = vcat
     tgt :: String
     tgt = tFileExe opts
     deps :: [String]
-    deps = map ($ opts)
-      [ absFile
-      , alexFileHs
-      , happyFileHs
-      , printerFile
-      , tFile
+    deps = map ($ opts) $ concat
+      [ [ absFile ]
+      , [ layoutFile | lay ]
+      , [ alexFileHs
+        , happyFileHs
+        , printerFile
+        , tFile
+        ]
       ]
 
   -- | Rule to build Agda parser.
   agdaRule :: Doc
   agdaRule = Makefile.mkRule "Main" deps [ "agda --no-libraries --ghc --ghc-flag=-Wwarn $<" ]
     where
-    deps = map ($ opts)
-      [ agdaMainFile  -- must be first!
-      , agdaASTFile
-      , agdaParserFile
-      , agdaLibFile
-      -- Haskell modules bound by Agda modules:
-      , errFile
-      , alexFileHs
-      , happyFileHs
-      , printerFile
+    deps = map ($ opts) $ concat
+      [ [ agdaMainFile  -- must be first!
+        , agdaASTFile
+        , agdaParserFile
+        , agdaLibFile
+        -- Haskell modules bound by Agda modules:
+        , errFile
+        ]
+      , [ layoutFile | lay ]
+      , [ alexFileHs
+        , happyFileHs
+        , printerFile
+        ]
       ]
 
 testfile :: Options -> CF -> String
