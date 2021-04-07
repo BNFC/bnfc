@@ -37,6 +37,8 @@ Prg. Program ::=
     Double_
     Downto
     Dynamic_Cast
+    ERROR
+    ERROR_
     Else
     End
     Enum
@@ -193,6 +195,8 @@ token  Done                { "done"             } ;
 token  Double_             { "double"           } ;
 token  Downto              { "downto"           } ;
 token  Dynamic_Cast        { "dynamic_cast"     } ;
+token  ERROR               { "error"            } ;  -- try to provoke clash with _ERROR_ token
+token  ERROR_              { "error_"           } ;
 token  Else                { "else"             } ;
 token  End                 { "end"              } ;
 token  Enum                { "enum"             } ;

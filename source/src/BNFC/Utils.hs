@@ -28,6 +28,7 @@ module BNFC.Utils
     , writeFileRep
     , cstring
     , getZonedTimeTruncatedToSeconds
+    , symbolToName
     ) where
 
 import Control.Arrow   ((&&&))
@@ -36,6 +37,7 @@ import Control.DeepSeq (rnf)
 import Data.Char
 import Data.List          (intercalate)
 import Data.List.NonEmpty (pattern (:|), (<|))
+import Data.Map           (Map)
 import Data.Semigroup     (Semigroup(..))
 import Data.Time
 
@@ -474,7 +476,7 @@ snakeCase_ = mkName [] SnakeCase
 
 -- ESCAPING
 
--- | a function that renders a c-like string with escaped characters.
+-- | A function that renders a c-like string with escaped characters.
 -- Note that although it's called cstring, this can be used with most (all)
 -- backend as they seem to mostly share escaping conventions.
 -- The c in the name is barely an homage for C being the oldest language in
@@ -487,3 +489,113 @@ snakeCase_ = mkName [] SnakeCase
 -- "foobar\""
 cstring :: String -> Doc
 cstring = text . show
+
+-- * Symbols
+
+-- | Print a symbol as typical token name, like "(" as "LPAREN".
+
+symbolToName :: String -> Maybe String
+symbolToName = (`Map.lookup` symbolTokenMap)
+
+-- | Map from symbol to token name.
+
+symbolTokenMap :: Map String String
+symbolTokenMap = Map.fromList symbolTokenList
+
+-- | Association list from symbol to token name.
+
+symbolTokenList :: [(String, String)]
+symbolTokenList =
+  [ ("{"  , "LBRACE")
+  , ("}"  , "RBRACE")
+  , ("("  , "LPAREN")
+  , (")"  , "RPAREN")
+  , ("["  , "LBRACK")
+  , ("]"  , "RBRACK")
+  , ("[]" , "EMPTYBRACK")
+  , ("."  , "DOT")
+  , (".." , "DDOT")
+  , ("...", "ELLIPSIS")
+  , (","  , "COMMA")
+  , (",," , "DCOMMA")
+  , (";"  , "SEMI")
+  , (";;" , "DSEMI")
+  , (":"  , "COLON")
+  , ("::" , "DCOLON")
+  , (":=" , "COLONEQ")
+  , ("::=", "DCOLONEQ")
+  , (":-" , "COLONMINUS")
+  , ("::-", "DCOLONMINUS")
+  , (":--", "COLONDMINUS")
+  , ("+"  , "PLUS")
+  , ("++" , "DPLUS")
+  , ("+=" , "PLUSEQ")
+  , ("+-" , "PLUSMINUS")
+  , ("-"  , "MINUS")
+  , ("--" , "DMINUS")
+  , ("-=" , "MINUSEQ")
+  , ("-+" , "MINUSPLUS")
+  , ("-*" , "MINUSSTAR")
+  , ("*"  , "STAR")
+  , ("**" , "DSTAR")
+  , ("*=" , "STAREQ")
+  , ("*-" , "STARMINUS")
+  , ("/"  , "SLASH")
+  , ("//" , "DSLASH")
+  , ("/=" , "SLASHEQ")
+  , ("\\" , "BACKSLASH")
+  , ("\\\\","DBACKSLASH")
+  , ("/\\", "WEDGE")
+  , ("\\/", "VEE")
+  , ("&"  , "AMP")
+  , ("&&" , "DAMP")
+  , ("&=" , "AMPEQ")
+  , ("|"  , "BAR")
+  , ("||" , "DBAR")
+  , ("|=" , "BAREQ")
+  , ("<"  , "LT")
+  , ("<<" , "DLT")
+  , ("<<<", "TLT")
+  , ("<=" , "LTEQ")
+  , ("<<=", "DLTEQ")
+  , ("<<<=","TLTEQ")
+  , (">"  , "GT")
+  , (">>" , "DGT")
+  , (">>>", "TGT")
+  , (">=" , "GTEQ")
+  , (">>=", "DGTEQ")
+  , (">>>=","TGTEQ")
+  , ("<>" , "LTGT")
+  , ("="  , "EQ")
+  , ("==" , "DEQ")
+  , ("_"  , "UNDERSCORE")
+  , ("!"  , "BANG")
+  , ("!=" , "BANGEQ")
+  , ("?"  , "QUESTION")
+  , ("?=" , "QUESTIONEQ")
+  , ("#"  , "HASH")
+  , ("##" , "DHASH")
+  , ("###", "THASH")
+  , ("@"  , "AT")
+  , ("@@" , "DAT")
+  , ("@=" , "ATEQ")
+  , ("$"  , "DOLLAR")
+  , ("$$" , "DDOLLAR")
+  , ("%"  , "PERCENT")
+  , ("%%" , "DPERCENT")
+  , ("%=" , "PERCENTEQ")
+  , ("^"  , "CARET")
+  , ("^^" , "DCARET")
+  , ("^=" , "CARETEQ")
+  , ("~"  , "TILDE")
+  , ("~~" , "DTILDE")
+  , ("~=" , "TILDEEQ")
+  , ("'"  , "APOSTROPHE")
+  , ("''" , "DAPOSTROPHE")
+  , ("'''", "TAPOSTROPHE")
+  , ("<-" , "LARROW")
+  , ("->" , "RARROW")
+  , ("<=" , "LDARROW")
+  , ("=>" , "RDARROW")
+  , ("|->", "MAPSTO")
+  ]

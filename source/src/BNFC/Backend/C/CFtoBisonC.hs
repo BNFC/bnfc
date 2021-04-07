@@ -39,7 +39,7 @@ import BNFC.Backend.C.CFtoFlexC (ParserMode(..), cParser, stlParser, parserHExt,
 import BNFC.Backend.CPP.STL.STLUtils
 import BNFC.Options (RecordPositions(..), InPackage)
 import BNFC.PrettyPrint
-import BNFC.Utils ((+++), for, unless, when, whenJust)
+import BNFC.Utils ((+++), table, for, unless, when, whenJust)
 
 --This follows the basic structure of CFtoHappy.
 
@@ -54,11 +54,14 @@ cf2Bison :: RecordPositions -> ParserMode -> CF -> SymMap -> String
 cf2Bison rp mode cf env = unlines
     [ header mode cf
     , render $ union mode $ posCats ++ allParserCatsNorm cf
+    , ""
     , unionDependentCode mode
-    , "%token _ERROR_"
-    , tokens (map fst $ tokenPragmas cf) env
+    , unlines $ table " " $ concat
+      [ [ ["%token", "_ERROR_" ] ]
+      , tokens (map fst $ tokenPragmas cf) env
+      , specialToks cf
+      ]
     , declarations mode cf
-    , specialToks cf
     , startSymbol cf
     , ""
     , "%%"
@@ -338,12 +341,12 @@ declarations mode cf = unlines $ map typeNT $
 -- token name "literal"
 -- "Syntax error messages passed to yyerror from the parser will reference the literal string instead of the token name."
 -- https://www.gnu.org/software/bison/manual/html_node/Token-Decl.html
-tokens :: [UserDef] -> SymMap -> String
-tokens user env = unlines $ map declTok $ Map.toList env
- where
+tokens :: [UserDef] -> SymMap -> [[String]]
+tokens user env = map declTok $ Map.toList env
+  where
   declTok (Keyword   s, r) = tok "" s r
   declTok (Tokentype s, r) = tok (if s `elem` user then "<_string>" else "") s r
-  tok t s r = "%token" ++ t ++ " " ++ r ++ "    /*   " ++ cStringEscape s ++ "   */"
+  tok t s r = [ "%token" ++ t, r, " /* " ++ cStringEscape s ++ " */" ]
 
 -- | Escape characters inside a C string.
 cStringEscape :: String -> String
@@ -353,13 +356,14 @@ cStringEscape = concatMap escChar
       | c `elem` ("\"\\" :: String) = '\\':[c]
       | otherwise = [c]
 
-specialToks :: CF -> String
-specialToks cf = unlines $ concat
-  [ ifC catString  "%token<_string> _STRING_"
-  , ifC catChar    "%token<_char>   _CHAR_"
-  , ifC catInteger "%token<_int>    _INTEGER_"
-  , ifC catDouble  "%token<_double> _DOUBLE_"
-  , ifC catIdent   "%token<_string> _IDENT_"
+-- | Produces a table with the built-in token types.
+specialToks :: CF -> [[String]]
+specialToks cf = concat
+  [ ifC catString  [ "%token<_string>", "_STRING_"  ]
+  , ifC catChar    [ "%token<_char>  ", "_CHAR_"    ]
+  , ifC catInteger [ "%token<_int>   ", "_INTEGER_" ]
+  , ifC catDouble  [ "%token<_double>", "_DOUBLE_"  ]
+  , ifC catIdent   [ "%token<_string>", "_IDENT_"   ]
   ]
   where
     ifC cat s = if isUsedCat cf (TokenCat cat) then [s] else []

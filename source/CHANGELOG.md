@@ -13,6 +13,8 @@ Andreas Abel <andreas.abel@gu.se>  (unreleased)
 * Java: `define`d constructor now reside in `AbsynDef.java` [#287]
 * Ocaml: fixed translation of nested `define`d constructors
 
+* C/C++: instead of `_SYMB_nnn`, more readable token names in lexer & parser
+
 # 2.9.1
 
 Andreas Abel <andreas.abel@gu.se>  March 2021

@@ -24,20 +24,21 @@ module BNFC.Backend.C.CFtoFlexC
   , lexChars          -- Lexing rules for character literals.
   ) where
 
-import Prelude hiding ((<>))
-import Data.Bifunctor (first)
-import Data.List  (isInfixOf)
-import Data.Maybe (fromMaybe, maybeToList)
+import Prelude hiding                ( (<>) )
+import Data.Bifunctor                ( first )
+import Data.Char                     ( isAlphaNum, isAscii )
+import Data.List                     ( isInfixOf )
+import Data.Maybe                    ( fromMaybe, maybeToList )
 import qualified Data.Map as Map
-import System.FilePath ((<.>))
+import System.FilePath               ( (<.>) )
 
 import BNFC.CF
 import BNFC.Backend.C.RegToFlex
 import BNFC.Backend.Common.NamedVariables
-import BNFC.Backend.CPP.STL.STLUtils (nsDefine, nsString)
-import BNFC.Options (InPackage)
+import BNFC.Backend.CPP.STL.STLUtils ( nsDefine, nsString )
+import BNFC.Options                  ( InPackage )
 import BNFC.PrettyPrint
-import BNFC.Utils (cstring, unless, when, whenJust)
+import BNFC.Utils                    ( cstring, symbolToName, unless, when, whenJust )
 
 data ParserMode
   = CParser Bool String    -- ^ @C@ (@False@) or @C++ no STL@ (@True@) mode, with @name@ to use as prefix.
@@ -73,15 +74,17 @@ cf2flex :: ParserMode -> CF -> (String, SymMap) -- The environment is reused by 
 cf2flex mode cf = (, env) $ unlines
     [ prelude stringLiterals mode
     , cMacros cf
-    , lexSymbols env0
+    , lexSymbols env1
     , restOfFlex (parserPackage mode) cf env
     , footer -- mode
     ]
   where
-    env  = Map.fromList env1
-    env0 = makeSymEnv (cfgSymbols cf ++ reservedWords cf) [0 :: Int ..]
-    env1 = map (first Keyword )env0 ++ makeSymEnv (map Tokentype $ tokenNames cf) [length env0 ..]
-    makeSymEnv = zipWith $ \ s n -> (s, "_SYMB_" ++ show n)
+    env  = Map.fromList env2
+    env0 = makeSymEnv (cfgSymbols cf) [0 :: Int ..]
+    env1 = env0 ++ makeKwEnv (reservedWords cf) [length env0 ..]
+    env2 = map (first Keyword) env1 ++ map (\ x -> (Tokentype x, "T_" ++ x)) (tokenNames cf)
+    makeSymEnv     = zipWith $ \ s n -> (s, '_' : fromMaybe ("SYMB_" ++ show n) (symbolToName s))
+    makeKwEnv      = zipWith $ \ s n -> (s, "_KW_" ++ if all (\ c -> isAlphaNum c && isAscii c) s then s else show n)
     stringLiterals = isUsedCat cf (TokenCat catString)
 
 prelude :: Bool -> ParserMode -> String
