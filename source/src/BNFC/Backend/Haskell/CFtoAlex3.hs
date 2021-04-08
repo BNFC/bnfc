@@ -16,7 +16,7 @@ import BNFC.CF
 import BNFC.Lexing         ( mkRegMultilineComment )
 import BNFC.Options        ( TokenText(..) )
 import BNFC.PrettyPrint
-import BNFC.Utils          ( when, unless )
+import BNFC.Utils          ( table, when, unless )
 
 import BNFC.Backend.Common ( unicodeAndSymbols )
 import BNFC.Backend.Haskell.Utils
@@ -38,6 +38,8 @@ prelude name tokenText = concat
     , "{-# OPTIONS -fno-warn-incomplete-patterns #-}"
     , "{-# OPTIONS_GHC -w #-}"
     , ""
+    , "{-# LANGUAGE PatternSynonyms #-}"
+    , ""
     , "module " ++ name ++ " where"
     , ""
     , "import Prelude"
@@ -45,8 +47,9 @@ prelude name tokenText = concat
     ]
   , tokenTextImport tokenText
   , [ "import qualified Data.Bits"
-    , "import Data.Word (Word8)"
-    , "import Data.Char (ord)"
+    , "import Data.Char     (ord)"
+    , "import Data.Function (on)"
+    , "import Data.Word     (Word8)"
     , "}"
     ]
   ]
@@ -136,15 +139,35 @@ restOfAlex tokenText cf = concat
     , ""
     , "-- | Token without position."
     , "data Tok"
-    , "  = TS !" ++ stringType ++ " !Int    -- ^ Reserved word or symbol."
-    , "  | TL !" ++ stringType ++ "         -- ^ String literal."
-    , "  | TI !" ++ stringType ++ "         -- ^ Integer literal."
-    , "  | TV !" ++ stringType ++ "         -- ^ Identifier."
-    , "  | TD !" ++ stringType ++ "         -- ^ Float literal."
-    , "  | TC !" ++ stringType ++ "         -- ^ Character literal."
+    ]
+  , map ("  " ++) $ table "  " $
+    [ [ "= TK {-# UNPACK #-} !TokSymbol", "-- ^ Reserved word or symbol." ]
+    , [ "| TL !" ++ stringType          , "-- ^ String literal."          ]
+    , [ "| TI !" ++ stringType          , "-- ^ Integer literal."         ]
+    , [ "| TV !" ++ stringType          , "-- ^ Identifier."              ]
+    , [ "| TD !" ++ stringType          , "-- ^ Float literal."           ]
+    , [ "| TC !" ++ stringType          , "-- ^ Character literal."       ]
     ]
   , [ "  | T_" ++ name ++ " !" ++ stringType | name <- tokenNames cf ]
   , [ "  deriving (Eq, Show, Ord)"
+    , ""
+    , "-- | Smart constructor for 'Tok' for the sake of backwards compatibility."
+    , "pattern TS :: " ++ stringType ++ " -> Int -> Tok"
+    , "pattern TS t i = TK (TokSymbol t i)"
+    , ""
+    , "-- | Keyword or symbol tokens have a unique ID."
+    , "data TokSymbol = TokSymbol"
+    , "  { tsText :: " ++ stringType
+    , "      -- ^ Keyword or symbol text."
+    , "  , tsID   :: !Int"
+    , "      -- ^ Unique ID."
+    , "  } deriving (Show)"
+    , ""
+    , "-- | Keyword/symbol equality is determined by the unique ID."
+    , "instance Eq  TokSymbol where (==)    = (==)    `on` tsID"
+    , ""
+    , "-- | Keyword/symbol ordering is determined by the unique ID."
+    , "instance Ord TokSymbol where compare = compare `on` tsID"
     , ""
     , "-- | Token with position."
     , "data Token"
