@@ -50,6 +50,7 @@ cf2Happy name absName lexName mode tokenText functor cf = unlines
   , delimiter
   , specialRules absName functor tokenText cf
   , render $ prRules absName functor (rulesForHappy absName functor cf)
+  , ""
   , footer absName tokenText functor eps cf
   ]
   where
@@ -204,13 +205,18 @@ generatePatterns functor its =
 -- Expr : Integer { Foo.EInt $1 } | Expr '+' Expr { Foo.EPlus $1 $3 }
 --
 -- if there's a lot of cases, print on several lines:
--- >>> prRules "" False [(Cat "Expr", [("Abcd", "Action"), ("P2", "A2"), ("P3", "A3"), ("P4", "A4"), ("P5","A5")])]
+-- >>> prRules "" False [(Cat "Expr", [("Abcd", "Action"), ("P2", "A2"), ("P3", "A3"), ("P4", "A4"), ("P5","A5"), ("P6", "A6"), ("P7", "A7"), ("P8", "A8"), ("P9","A9")])]
 -- Expr :: { Expr }
--- Expr : Abcd { Action }
---      | P2 { A2 }
---      | P3 { A3 }
---      | P4 { A4 }
---      | P5 { A5 }
+-- Expr
+--   : Abcd { Action }
+--   | P2 { A2 }
+--   | P3 { A3 }
+--   | P4 { A4 }
+--   | P5 { A5 }
+--   | P6 { A6 }
+--   | P7 { A7 }
+--   | P8 { A8 }
+--   | P9 { A9 }
 --
 -- >>> prRules "" False [(Cat "Internal", [])] -- nt has only internal use
 -- <BLANKLINE>
@@ -231,14 +237,15 @@ prRules :: ModuleName -> Bool -> Rules -> Doc
 prRules absM functor = vsep . map prOne
   where
     prOne (_ , []      ) = empty -- nt has only internal use
-    prOne (nt, (p,a):ls) =
-        hsep [ nt', "::", "{", if functor then functorType' nt else type' nt, "}" ]
-        $$ nt' <+> sep (pr ":" (p, a) : map (pr "|") ls)
+    prOne (nt, (p,a):ls) = vcat
+        [ hsep [ nt', "::", "{", if functor then functorType' nt else type' nt, "}" ]
+        , hang nt' 2 $ sep (pr ":" (p, a) : map (pr "|") ls)
+        ]
       where
-        nt' = text (identCat nt)
+        nt'          = text (identCat nt)
         pr pre (p,a) = hsep [pre, text p, "{", text a , "}"]
-    type' = catToType qualify empty
-    functorType' nt = hcat ["(", qualify posType, ", ", type' nt, ")"]
+    type'            = catToType qualify empty
+    functorType' nt  = hcat ["(", qualify posType, ", ", type' nt, ")"]
     qualify
       | null absM = id
       | otherwise = ((text absM <> ".") <>)
