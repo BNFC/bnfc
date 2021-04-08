@@ -13,11 +13,12 @@ import qualified Data.List as List
 
 import BNFC.Abs
 import BNFC.CF
-import BNFC.Lexing  (mkRegMultilineComment)
-import BNFC.Options (TokenText(..))
-import BNFC.Utils   (when, unless)
+import BNFC.Lexing         ( mkRegMultilineComment )
+import BNFC.Options        ( TokenText(..) )
+import BNFC.PrettyPrint
+import BNFC.Utils          ( when, unless )
 
-import BNFC.Backend.Common (unicodeAndSymbols)
+import BNFC.Backend.Common ( unicodeAndSymbols )
 import BNFC.Backend.Haskell.Utils
 
 cf2alex3 :: String -> TokenText -> CF -> String
@@ -214,12 +215,15 @@ restOfAlex tokenText cf = concat
     , ""
     , "-- | The keywords and symbols of the language organized as binary search tree."
     , "resWords :: BTree"
-    , "resWords = " ++ show (sorted2tree $ cfTokens cf)
-    , "   where"
-    , "   b s n = B bs (TS bs n)"
-    , "     where"
-    , "     bs = "++ apply stringPack "s"
-    , ""
+    , render $ hang "resWords =" 2 $ pretty $ sorted2tree tokens
+    ]
+  , unless (null tokens)
+    [ "  where"
+    , "  b s n = B bs (TS bs n)"
+    , "    where"
+    , "    bs = "++ apply stringPack "s"
+    ]
+  , [ ""
     , "-- | Unquote string literal."
     , "unescapeInitTail :: " ++ stringType ++ " -> " ++ stringType ++ ""
     , "unescapeInitTail = " ++ stringPack ++ " . unesc . tail . " ++ stringUnpack
@@ -362,23 +366,23 @@ restOfAlex tokenText cf = concat
     | (name, exp) <- tokenPragmas cf
     ]
 
--- | Binary search tree.
-data BTree
-  = N
-  | B String Int BTree BTree
+  tokens = cfTokens cf
 
-instance Show BTree where
-  showsPrec _  N          = showString "N"
-  showsPrec n (B s k l r) = mparens
-      $ showString "b " . shows s
-      . showChar ' ' . shows k
-      . showChar ' ' . showsPrec 1 l
-      . showChar ' ' . showsPrec 1 r
-    where
-    mparens f = if n > 0 then showChar '(' . f . showChar ')' else f
+-- | Binary search tree.
+data BTree a
+  = N
+  | B String a (BTree a) (BTree a)
+
+instance Pretty a => Pretty (BTree a) where
+  prettyPrec _  N          = text "N"
+  prettyPrec n (B k v l r) = parensIf (n > 0) $
+    hang ("b" <+> text (show k) <+> pretty v) 2 $ sep
+      [ prettyPrec 1 l
+      , prettyPrec 1 r
+      ]
 
 -- | Create a balanced search tree from a sorted list.
-sorted2tree :: [(String,Int)] -> BTree
+sorted2tree :: [(String,a)] -> BTree a
 sorted2tree [] = N
 sorted2tree xs = B x n (sorted2tree t1) (sorted2tree t2)
   where
@@ -394,16 +398,16 @@ sorted2tree xs = B x n (sorted2tree t1) (sorted2tree t2)
 
 -- the top-level printing method
 printRegAlex :: Reg -> String
-printRegAlex = render . prt 0
+printRegAlex = render' . prt 0
 
-render :: [String] -> String
-render = \case
-    "["      : ts -> cons "["  $ render ts
-    "("      : ts -> cons "("  $ render ts
-    t  : "," : ts -> cons t    $ space "," $ render ts
-    t  : ")" : ts -> cons t    $ cons ")"  $ render ts
-    t  : "]" : ts -> cons t    $ cons "]"  $ render ts
-    t        : ts -> space t   $ render ts
+render' :: [String] -> String
+render' = \case
+    "["      : ts -> cons "["  $ render' ts
+    "("      : ts -> cons "("  $ render' ts
+    t  : "," : ts -> cons t    $ space "," $ render' ts
+    t  : ")" : ts -> cons t    $ cons ")"  $ render' ts
+    t  : "]" : ts -> cons t    $ cons "]"  $ render' ts
+    t        : ts -> space t   $ render' ts
     _             -> ""
   where
   cons s t  = s ++ t

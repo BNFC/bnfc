@@ -1,5 +1,6 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE DefaultSignatures #-}
 
 -- | Extends ''Text.PrettyPrint''.
 
@@ -9,6 +10,20 @@ module BNFC.PrettyPrint
   ) where
 
 import Text.PrettyPrint
+
+-- | Overloaded function 'pretty'.
+
+class Pretty a where
+  pretty     :: a -> Doc
+  prettyPrec :: Int -> a -> Doc
+
+  pretty = prettyPrec 0
+
+  default prettyPrec :: Show a => Int -> a -> Doc
+  prettyPrec n x = text $ showsPrec n x ""
+
+instance Pretty Int
+instance Pretty Integer
 
 -- | Put 'parens' around document if given condition is true.
 --
