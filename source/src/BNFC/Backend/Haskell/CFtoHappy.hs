@@ -117,10 +117,10 @@ tokens cf functor
   -- Andreas, 2019-01-02: "%token" followed by nothing is a Happy parse error.
   -- Thus, if we have no tokens, do not output anything.
   | null ts   = empty
-  | otherwise = "%token" $$ (nest 2 $ vcat ts)
+  | otherwise = "%token" $$ (nest 2 $ vcat $ map text $ table " " ts)
   where
-    ts            = map prToken (cfTokens cf) ++ map text (specialToks cf functor)
-    prToken (t,k) = hsep [ convert t, lbrace, text ("PT _ (TS _ " ++ show k ++ ")"), rbrace ]
+    ts            = map prToken (cfTokens cf) ++ specialToks cf functor
+    prToken (t,k) = [ render (convert t), "{ PT _ (TS _ " ++ show k ++ ")", "}" ]
 
 -- Happy doesn't allow characters such as åäö to occur in the happy file. This
 -- is however not a restriction, just a naming paradigm in the happy source file.
@@ -285,14 +285,14 @@ footer absName tokenText functor eps cf = unlines $ concat
       | otherwise    = ((text absName <> ".") <>)
 
 -- | GF literals.
-specialToks :: CF -> Bool -> [String]
+specialToks :: CF -> Bool -> [[String]]  -- ^ A table with three columns (last is "}").
 specialToks cf functor = (`map` literals cf) $ \t -> case t of
-  "Ident"   -> "L_Ident  { PT _ (TV " ++ posn t ++ ") }"
-  "String"  -> "L_quoted { PT _ (TL " ++ posn t ++ ") }"
-  "Integer" -> "L_integ  { PT _ (TI " ++ posn t ++ ") }"
-  "Double"  -> "L_doubl  { PT _ (TD " ++ posn t ++ ") }"
-  "Char"    -> "L_charac { PT _ (TC " ++ posn t ++ ") }"
-  own       -> "L_" ++ own ++ " { PT _ (T_" ++ own ++ " " ++ posn own ++ ") }"
+  "Ident"   -> [ "L_Ident" , "{ PT _ (TV " ++ posn t ++ ")", "}" ]
+  "String"  -> [ "L_quoted", "{ PT _ (TL " ++ posn t ++ ")", "}" ]
+  "Integer" -> [ "L_integ ", "{ PT _ (TI " ++ posn t ++ ")", "}" ]
+  "Double"  -> [ "L_doubl ", "{ PT _ (TD " ++ posn t ++ ")", "}" ]
+  "Char"    -> [ "L_charac", "{ PT _ (TC " ++ posn t ++ ")", "}" ]
+  own       -> [ "L_" ++ own,"{ PT _ (T_" ++ own ++ " " ++ posn own ++ ")", "}" ]
   where
     posn tokenCat = if isPositionCat cf tokenCat || functor then "_" else "$$"
 
