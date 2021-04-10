@@ -296,18 +296,18 @@ testfile opts cf = unlines $ concat $
     , "module Main where"
     , ""
     , "import Prelude"
-    , "  ( ($)"
+    , "  ( ($), (.)"
     ]
   , [ "  , Bool(..)" | lay ]
   , [ "  , Either(..)"
     , "  , Int, (>)"
-    , "  , String, (++), unlines"
+    , "  , String, (++), concat, unlines"
     , "  , Show, show"
     , "  , IO, (>>), (>>=), mapM_, putStrLn"
     , "  , FilePath"
     ]
   , [ "  , getContents, readFile" | tokenText opts == StringToken ]
-  , [ "  , (.), error, flip, map, replicate, sequence_, zip" | use_glr ]
+  , [ "  , error, flip, map, replicate, sequence_, zip" | use_glr ]
   , [ "  )" ]
   , case tokenText opts of
       StringToken -> []
@@ -327,7 +327,7 @@ testfile opts cf = unlines $ concat $
   , table "" $ concat
     [ [ [ "import " , absFileM      opts , " (" ++ if_glr impTopCat ++ ")" ] ]
     , [ [ "import " , layoutFileM   opts , " ( resolveLayout )"      ] | lay     ]
-    , [ [ "import " , alexFileM     opts , " ( Token )"                          ]
+    , [ [ "import " , alexFileM     opts , " ( Token, mkPosToken )"              ]
       , [ "import " , happyFileM    opts , " ( " ++ impParser ++ ", myLexer" ++ impParGLR ++ " )" ]
       , [ "import " , printerFileM  opts , " ( Print, printTree )"               ]
       , [ "import " , templateFileM opts , " ()"                                 ]
@@ -407,7 +407,8 @@ runStd xml myLLexer = unlines $ concat
    , "    Left err -> do"
    , "      putStrLn \"\\nParse              Failed...\\n\""
    , "      putStrV v \"Tokens:\""
-   , "      putStrV v $ show ts"
+   , "      mapM_ (putStrV v . showPosToken . mkPosToken) ts"
+   -- , "      putStrV v $ show ts"
    , "      putStrLn err"
    , "      exitFailure"
    , "    Right tree -> do"
@@ -418,6 +419,7 @@ runStd xml myLLexer = unlines $ concat
  , [ "      exitSuccess"
    , "  where"
    , "  ts = " ++ myLLexer "s"
+   , "  showPosToken ((l,c),t) = concat [ show l, \":\", show c, \"\\t\", show t ]"
    ]
  ]
 
