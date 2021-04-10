@@ -1,0 +1,26 @@
+-- Andreas, 2021-04-10, issue #354.
+-- Allow stacking of layout keywords on the same line.
+
+private module PM where              -- stack
+  module PMM where
+  private module PMPM1 where
+          module PMPM2 where private -- stack
+            module PMPM2M where
+  module PMM2 where
+
+  private private private              -- stack
+    private
+    private private
+            private private            -- stack
+              private
+              private
+            private private
+                    private private    -- stack
+                      private
+    private private                    -- stack
+      private
+      private private                  -- stack
+        private
+      private
+    private
+  private private

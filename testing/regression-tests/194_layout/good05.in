@@ -1,0 +1,11 @@
+-- Andreas, 2021-10-04.
+-- The first layout block does not need indentation.
+
+module T where  -- this introduces a layout block stretching to eof
+
+module TA where
+module TB where
+  module TB1 where
+  module TBC where module TBCD where
+    module TBCDE where
+module TC where

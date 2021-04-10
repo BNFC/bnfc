@@ -1,0 +1,79 @@
+good04.in
+
+Parse Successful!
+
+[Abstract Syntax]
+
+Priv [Modl (Ident "PM") [Modl (Ident "PMM") [],Priv [Modl (Ident "PMPM1") [],Modl (Ident "PMPM2") [Priv [Modl (Ident "PMPM2M") []]]],Modl (Ident "PMM2") [],Priv [Priv [Priv [Priv [],Priv [Priv [],Priv [Priv [Priv [],Priv []]],Priv [Priv [],Priv [Priv [Priv []]]]],Priv [Priv [Priv [],Priv [Priv [Priv []]],Priv []]],Priv []]]],Priv [Priv []]]]
+
+[Linearized tree]
+
+private {
+  module PM where {
+    module PMM where {
+      } ;
+    private {
+      module PMPM1 where {
+        } ;
+      module PMPM2 where {
+        private {
+          module PMPM2M where {
+            }
+          }
+        }
+      } ;
+    module PMM2 where {
+      } ;
+    private {
+      private {
+        private {
+          private {
+            } ;
+          private {
+            private {
+              } ;
+            private {
+              private {
+                private {
+                  } ;
+                private {
+                  }
+                }
+              } ;
+            private {
+              private {
+                } ;
+              private {
+                private {
+                  private {
+                    }
+                  }
+                }
+              }
+            } ;
+          private {
+            private {
+              private {
+                } ;
+              private {
+                private {
+                  private {
+                    }
+                  }
+                } ;
+              private {
+                }
+              }
+            } ;
+          private {
+            }
+          }
+        }
+      } ;
+    private {
+      private {
+        }
+      }
+    }
+  }
+

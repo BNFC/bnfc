@@ -2,7 +2,12 @@
 
 Andreas Abel <andreas.abel@gu.se>  (unreleased)
 
+## Major improvements
+
+* Haskell: layout keywords can now be stacked on the same line [#354]
 * C/C++ backends now create reentrant parsers [#349]
+
+## Bug fixes and small improvements
 
 * Haskell-GADT: generated code is warning free [#346]
 * Haskell: fixes in layout preprocessor [#343,#344,#345,#352,#353]
@@ -13,7 +18,10 @@ Andreas Abel <andreas.abel@gu.se>  (unreleased)
 * Java: `define`d constructor now reside in `AbsynDef.java` [#287]
 * Ocaml: fixed translation of nested `define`d constructors
 
+## Cosmetical changes
+
 * C/C++: instead of `_SYMB_nnn`, more readable token names in lexer & parser
+
 
 # 2.9.1
 

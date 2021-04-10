@@ -1,0 +1,27 @@
+good05.in
+
+Parse Successful!
+
+[Abstract Syntax]
+
+Modl (Ident "T") [Modl (Ident "TA") [],Modl (Ident "TB") [Modl (Ident "TB1") [],Modl (Ident "TBC") [Modl (Ident "TBCD") [Modl (Ident "TBCDE") []]]],Modl (Ident "TC") []]
+
+[Linearized tree]
+
+module T where {
+  module TA where {
+    } ;
+  module TB where {
+    module TB1 where {
+      } ;
+    module TBC where {
+      module TBCD where {
+        module TBCDE where {
+          }
+        }
+      }
+    } ;
+  module TC where {
+    }
+  }
+

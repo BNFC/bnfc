@@ -3,11 +3,13 @@
 
 -- Andreas, 2021-04-09, issue #353: Added private blocks.
 
-Modl. Decl ::= "module" Ident "where" "{" [Decl] "}" ;
-Priv. Decl ::= "private" "{" [Decl] "}"              ;
+Modl.     Decl ::= "module" Ident "where" "{" [Decl] "}" ;
+Priv.     Decl ::= "private" "{" [Decl] "}"              ;
+TySig.    Decl ::= Ident ":" Ident                       ;
 
-separator Decl ";"                                   ;
+separator Decl ";"        ;
 
-layout "where", "private"                            ;
+layout "where", "private" ;
 
-comment "--" ;
+comment "--"              ;
+comment "{-" "-}"         ;
