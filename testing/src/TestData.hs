@@ -1,7 +1,7 @@
 {-# LANGUAGE DeriveFunctor #-}
 {-# LANGUAGE PatternSynonyms #-}
 
-module TestData (exampleGrammars, Example, Example'(..), LimitTests(..)) where
+module TestData (exampleGrammars, layoutExamples, Example, Example'(..), LimitTests(..)) where
 
 import Shelly ((</>), FilePath)
 import Prelude hiding (FilePath)
@@ -61,3 +61,6 @@ exampleGrammars = map (fmap prefix) $
   -- Regular expressions to exclude certain parameterized tests:
   noJava = "^Java"    -- begins with "Java"
   noCPP  = "^C\\+\\+" -- begins with "C++"
+
+layoutExamples :: [Example]
+layoutExamples = take 2 exampleGrammars

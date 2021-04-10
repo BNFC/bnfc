@@ -83,10 +83,13 @@ currentRegressionTest = makeTestSuite "Current parameterized test" $
 
 -- | Layout currently only works for Haskell (even Agda) and Haskell/GADT.
 layoutTest :: Test
-layoutTest = makeTestSuite "Layout parsing test" $
-  map (`makeTestCase` ("regression-tests" </> "194_layout")) $
-  [ haskellAgdaParameters
-  , haskellGADTParameters
+layoutTest = makeTestSuite "Layout parsing test" $ concat
+  [ map (`makeTestCase` ("regression-tests" </> "194_layout")) $
+    [ haskellAgdaParameters
+    , haskellGADTParameters
+    ]
+  , let p = haskellFunctorParameters
+    in  [ makeTestSuite (tpName p) $ mapMaybe (exampleTest p) layoutExamples ]
   ]
 
 -- #254 is now covered by fail-lbnf/254-empty-input
@@ -283,6 +286,12 @@ haskellParameters = TP
   , tpRunTestProg = haskellRunTestProg
   }
 
+haskellFunctorParameters :: TestParameters
+haskellFunctorParameters = haskellParameters
+  { tpName        = "Haskell (with functor)"
+  , tpBnfcOptions = ["--haskell", "--functor"]
+  }
+
 haskellGADTParameters :: TestParameters
 haskellGADTParameters = TP
   { tpName = "Haskell/GADT"
@@ -314,10 +323,6 @@ haskellRunTestProg _lang args = do
 parameters :: [TestParameters]
 parameters = concat
   [ []
-    -- Haskell/Functor
-  , [ hsParams { tpName = "Haskell (with functor)"
-               , tpBnfcOptions = ["--haskell", "--functor"] }
-    ]
     -- C
   , [ TP { tpName = "C"
          , tpBnfcOptions = ["--c"]
@@ -346,13 +351,15 @@ parameters = concat
     , cBase { tpName = "C++"
             , tpBnfcOptions = ["--cpp"] }
     ]
-    -- Java/ANTLR
-  , [ javaParams { tpName = "Java (with antlr)"
-                 , tpBnfcOptions = ["--java", "--antlr"] }
-    ]
     -- C++ (extras)
   , [ cBase { tpName = "C++ (with namespace)"
             , tpBnfcOptions = ["--cpp", "-p foobar"] }
+    ]
+    -- Haskell/Functor
+  , [ haskellFunctorParameters ]
+    -- Java/ANTLR
+  , [ javaParams { tpName = "Java (with antlr)"
+                 , tpBnfcOptions = ["--java", "--antlr"] }
     ]
     -- Haskell
   , [ hsParams { tpName = "Haskell (with generic)"
