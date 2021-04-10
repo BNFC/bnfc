@@ -1,6 +1,13 @@
--- Andreas, 2019-05-12, issue #194, layout parsing
+-- Andreas, 2019-05-12, issue #194, layout parsing.
 -- A language of nested modules like in Agda.
 
-Modl. Module ::= "module" Ident "where" "{" [Module] "}" ;
-separator Module ";"                                     ;
-layout "where"                                           ;
+-- Andreas, 2021-04-09, issue #353: Added private blocks.
+
+Modl. Decl ::= "module" Ident "where" "{" [Decl] "}" ;
+Priv. Decl ::= "private" "{" [Decl] "}"              ;
+
+separator Decl ";"                                   ;
+
+layout "where", "private"                            ;
+
+comment "--" ;

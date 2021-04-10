@@ -1,0 +1,6 @@
+-- Andreas, 2021-04-09, issue #353.
+-- Missing separator if layout keyword on new line is followed by {.
+
+private
+  private
+  private {}  -- should work

@@ -1,0 +1,17 @@
+../good03.in
+
+Parse Successful!
+
+[Abstract Syntax]
+
+Priv [Priv [],Priv []]
+
+[Linearized tree]
+
+private {
+  private {
+    } ;
+  private {
+    }
+  }
+
