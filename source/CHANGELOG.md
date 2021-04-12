@@ -5,6 +5,7 @@ Andreas Abel <andreas.abel@gu.se>  (unreleased)
 ## Major improvements
 
 * Haskell: layout keywords can now be stacked on the same line [#354]
+  See https://bnfc.readthedocs.io/en/latest/lbnf.html#stacking-layout-keywords
 * C/C++ backends now create reentrant parsers [#349]
 
 ## Bug fixes and small improvements
