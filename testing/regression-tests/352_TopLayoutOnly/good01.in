@@ -1,0 +1,19 @@
+-- Andreas, 2021-04-17, only top-level layout
+
+module M where
+module N where module N1 where; module N2 where
+module N3 where module O where module P1 where
+module P2 where
+
+{- These
+
+[ Modl (Ident "M") []        -- closed by layout semicolon
+, Modl (Ident "N")
+  [ Modl (Ident "N1") []     -- closed by user semicolon
+  , Modl (Ident "N2") []     -- closed by layout semicolon
+  , Modl (Ident "N3")
+    [ Modl (Ident "O")
+      [ Modl (Ident "P1") [] -- closed by layout semicolon
+      , Modl (Ident "P2") []]]]]
+
+-}

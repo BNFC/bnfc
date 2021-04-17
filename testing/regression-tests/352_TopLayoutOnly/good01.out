@@ -1,0 +1,15 @@
+good01.in
+
+Parse Successful!
+
+[Abstract Syntax]
+
+[Modl (Ident "M") [],Modl (Ident "N") [Modl (Ident "N1") [],Modl (Ident "N2") [],Modl (Ident "N3") [Modl (Ident "O") [Modl (Ident "P1") [],Modl (Ident "P2") []]]]]
+
+[Linearized tree]
+
+module M where;
+module N where module N1 where;
+module N2 where;
+module N3 where module O where module P1 where;
+module P2 where

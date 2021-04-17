@@ -88,6 +88,9 @@ layoutTest = makeTestSuite "Layout parsing test" $ concat
     [ haskellAgdaParameters
     , haskellGADTParameters
     ]
+  , map (`makeTestCase` ("regression-tests" </> "352_TopLayoutOnly")) $
+    [ haskellParameters
+    ]
   , let p = haskellFunctorParameters
     in  [ makeTestSuite (tpName p) $ mapMaybe (exampleTest p) layoutExamples ]
   ]

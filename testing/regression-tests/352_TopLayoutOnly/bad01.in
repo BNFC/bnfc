@@ -1,0 +1,7 @@
+-- Andreas, 2021-04-17, only top-level layout
+
+module
+Top
+where
+
+-- Should fail because of top-level layout inserting semicolons

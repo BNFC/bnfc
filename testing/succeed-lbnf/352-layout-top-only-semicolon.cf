@@ -1,0 +1,7 @@
+-- Andreas, 2021-04-17, issue #352
+-- Top layout requires only semicolon
+
+layout toplevel                                  ;
+separator Module ";"                             ;
+
+Modl. Module ::= "module" Ident "where" [Module] ;  -- missing braces around list

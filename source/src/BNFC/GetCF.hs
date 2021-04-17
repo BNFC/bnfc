@@ -90,7 +90,8 @@ parseCF opts target content = do
           ]
 
   -- Some (most) backends do not support layout.
-  let lay = hasLayout cf
+  let (layoutTop, layoutKeywords, _) = layoutPragmas cf
+  let lay = layoutTop || not (null layoutKeywords)
   when (lay && target `notElem`
     [ TargetHaskell, TargetHaskellGadt, TargetLatex, TargetPygments, TargetCheck ]) $
       dieUnlessForce $ unwords
@@ -100,7 +101,7 @@ parseCF opts target content = do
 
   -- A grammar that uses layout needs to contain symbols { } ;
   let symbols = cfgSymbols cf
-      layoutSymbols = [";", "{", "}"]
+      layoutSymbols = concat [ [";"], unless (null layoutKeywords) ["{", "}"] ]
       missingLayoutSymbols = filter (`notElem` symbols) layoutSymbols
   when (lay && not (null missingLayoutSymbols)) $
       dieUnlessForce $ unwords $

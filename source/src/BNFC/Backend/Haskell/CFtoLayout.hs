@@ -297,7 +297,7 @@ cf2Layout tokenText layName lexName cf = unlines $ concat
   mkTokSymbol :: String -> TokSymbol
   mkTokSymbol x = TokSymbol x n
     where
-    n = fromMaybe undefined $ lookup x tokens
+    n = fromMaybe (-1) $ lookup x tokens
   tokens = cfTokens cf
 
 data TokSymbol = TokSymbol String Int
