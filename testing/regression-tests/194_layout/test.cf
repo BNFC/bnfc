@@ -10,6 +10,7 @@ TySig.    Decl ::= Ident ":" Ident                       ;
 separator Decl ";"        ;
 
 layout "where", "private" ;
+layout toplevel           ;  -- this should have no effect since the entrypoint is not a list
 
 comment "--"              ;
 comment "{-" "-}"         ;

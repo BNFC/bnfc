@@ -85,8 +85,8 @@ currentRegressionTest = makeTestSuite "Current parameterized test" $
 layoutTest :: Test
 layoutTest = makeTestSuite "Layout parsing test" $ concat
   [ map (`makeTestCase` ("regression-tests" </> "194_layout")) $
-    [ haskellGADTParameters
-    , haskellAgdaParameters
+    [ haskellAgdaParameters
+    , haskellGADTParameters
     ]
   , let p = haskellFunctorParameters
     in  [ makeTestSuite (tpName p) $ mapMaybe (exampleTest p) layoutExamples ]

@@ -40,9 +40,6 @@ cf2Layout tokenText layName lexName cf = unlines $ concat
     , ""
     , "-- local parameters"
     , ""
-    , "topLayout :: Bool"
-    , "topLayout = " ++ show top
-    , ""
     , "layoutWords, layoutStopWords :: [TokSymbol]"
     , render $ prettyList 2 "layoutWords     =" "[" "]" "," $ map (text . show) lay
     , render $ prettyList 2 "layoutStopWords =" "[" "]" "," $ map (text . show) stop
@@ -57,10 +54,9 @@ cf2Layout tokenText layName lexName cf = unlines $ concat
     , "-- | Replace layout syntax with explicit layout tokens."
     , "resolveLayout :: Bool    -- ^ Whether to use top-level layout."
     , "              -> [Token] -> [Token]"
-    , "resolveLayout tp = res Nothing [if tl then Implicit Definitive 1 else Explicit]"
+    , "resolveLayout topLayout ="
+    , "  res Nothing [if topLayout then Implicit Definitive 1 else Explicit]"
     , "  where"
-    , "  -- Do top-level layout if the function parameter and the grammar say so."
-    , "  tl = tp && topLayout"
     , ""
     , "  res :: Maybe Token -- ^ The previous token, if any."
     , "      -> [Block]     -- ^ A stack of layout blocks."

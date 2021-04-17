@@ -385,7 +385,7 @@ testfile opts cf = unlines $ concat $
     ]
   ]
   where
-    lay         = hasLayout cf
+    lay         = hasTopLevelLayout || not (null layoutKeywords)
     use_xml     = xml opts > 0
     xpr         = if use_xml then "XPrint a, "     else ""
     use_glr     = glr opts == GLR
@@ -397,8 +397,10 @@ testfile opts cf = unlines $ concat $
     impTopCat   = unwords [ "", identCat topType, "" ]
     impParGLR   = if_glr ", GLRResult(..), Branch, ForestId, TreeDecode(..), decode"
     myLLexer atom
-      | lay     = unwords [ "resolveLayout True $ myLexer", atom]
+      | lay     = unwords [ "resolveLayout", show useTopLevelLayout, "$ myLexer", atom]
       | True    = unwords [ "myLexer", atom]
+    (hasTopLevelLayout, layoutKeywords, _) = layoutPragmas cf
+    useTopLevelLayout = hasTopLevelLayout && isList topType
 
 
 runStd xml myLLexer = unlines $ concat

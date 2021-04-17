@@ -1,4 +1,10 @@
-module Top where
+-- 2019-05-12, issue #194: only strict increase in indentation starts inner layout block
+-- 2021-03-06, issue #345: do not manipulate token positions when inserting tokens
+-- 2021-04-17, issue #356: use top-level layout only for list entrypoints
+
+module  -- line break intended, ensure that top-level layout is off
+Top
+where
   module A where
   module B where module B1 where module B1A where
                                  module B1B where
