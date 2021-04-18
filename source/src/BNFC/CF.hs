@@ -22,6 +22,7 @@ module BNFC.CF (
             Literal,
             Symbol,
             KeyWord,
+            LayoutKeyWords, Delimiters(..),
             Position(..), noPosition, prettyPosition, npIdentifier,
             WithPosition(..), blendInPosition,
             RString, RCat,
@@ -89,7 +90,7 @@ module BNFC.CF (
             isPositionCat,
             hasPositionTokens,
             hasIdent, hasIdentLikeTokens,
-            hasLayout,
+            hasLayout, hasLayout_,
             layoutPragmas,
             sigLookup      -- Get the type of a rule label.
            ) where
@@ -247,11 +248,21 @@ data Pragma
   | CommentM (String, String)     -- ^  for multiple-line comments.
   | TokenReg RString Bool Reg     -- ^ for tokens
   | EntryPoints [RCat]
-  | Layout [String]
-  | LayoutStop [String]
-  | LayoutTop
+  | Layout LayoutKeyWords
+  | LayoutStop [KeyWord]
+  | LayoutTop Symbol              -- ^ Separator for top-level layout.
   | FunDef RFun [String] Exp
   deriving (Show)
+
+type LayoutKeyWords = [(KeyWord, Delimiters)]
+
+-- | List delimiters.
+
+data Delimiters = Delimiters
+  { listSep   :: Symbol           -- ^ List separator.
+  , listOpen  :: Symbol           -- ^ List opening delimiter.
+  , listClose :: Symbol           -- ^ List closing delimiter.
+  } deriving Show
 
 -- | User-defined regular expression tokens
 tokenPragmas :: CFG f -> [(TokenCat,Reg)]
@@ -261,16 +272,21 @@ tokenPragmas cf = [ (wpThing name, e) | TokenReg name _ e <- cfgPragmas cf ]
 tokenNames :: CFG f -> [String]
 tokenNames cf = map fst (tokenPragmas cf)
 
-layoutPragmas :: CF -> (Bool,[String],[String])
-layoutPragmas cf = let ps = cfgPragmas cf in (
-  not (null [() | LayoutTop  <- ps]),   -- if there's layout betw top-level
-  concat [ss | Layout ss     <- ps],    -- layout-block starting words
-  concat [ss | LayoutStop ss <- ps]     -- layout-block ending words
+layoutPragmas :: CF -> (Maybe Symbol, LayoutKeyWords, [KeyWord])
+layoutPragmas cf =
+  ( listToMaybe [ sep | LayoutTop  sep <- ps ]   -- if there's top-level layout
+  , concat      [ kws | Layout     kws <- ps ]   -- layout-block inducing words
+  , concat      [ kws | LayoutStop kws <- ps ]   -- layout-block aborting words
   )
+  where
+  ps = cfgPragmas cf
+
+hasLayout_ :: (Maybe Symbol, LayoutKeyWords, [KeyWord]) -> Bool
+hasLayout_ (top, kws, _) = isJust top || not (null kws)   -- (True,[],_) means: top-level layout only
 
 hasLayout :: CF -> Bool
-hasLayout cf = case layoutPragmas cf of
-  (t,ws,_) -> t || not (null ws)   -- (True,[],_) means: top-level layout only
+hasLayout = hasLayout_ . layoutPragmas
+
 
 -- | Literal: builtin-token types Char, String, Ident, Integer, Double.
 type Literal = String

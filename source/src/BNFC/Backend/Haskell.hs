@@ -9,6 +9,7 @@
 module BNFC.Backend.Haskell (makeHaskell, AlexVersion(..), makefile, testfile) where
 
 import qualified Control.Monad as Ctrl
+import Data.Maybe      (isJust)
 import System.FilePath ((<.>), (</>), pathSeparator)
 import Text.Printf     (printf)
 import Text.PrettyPrint
@@ -385,7 +386,7 @@ testfile opts cf = unlines $ concat $
     ]
   ]
   where
-    lay         = hasTopLevelLayout || not (null layoutKeywords)
+    lay         = isJust hasTopLevelLayout || not (null layoutKeywords)
     use_xml     = xml opts > 0
     xpr         = if use_xml then "XPrint a, "     else ""
     use_glr     = glr opts == GLR
@@ -400,7 +401,7 @@ testfile opts cf = unlines $ concat $
       | lay     = unwords [ "resolveLayout", show useTopLevelLayout, "$ myLexer", atom]
       | True    = unwords [ "myLexer", atom]
     (hasTopLevelLayout, layoutKeywords, _) = layoutPragmas cf
-    useTopLevelLayout = hasTopLevelLayout && isList topType
+    useTopLevelLayout = isJust hasTopLevelLayout && isList topType
 
 
 runStd xml myLLexer = unlines $ concat

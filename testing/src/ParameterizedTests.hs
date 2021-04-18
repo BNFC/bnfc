@@ -85,8 +85,8 @@ currentRegressionTest = makeTestSuite "Current parameterized test" $
 layoutTest :: Test
 layoutTest = makeTestSuite "Layout parsing test" $ concat
   [ map (`makeTestCase` ("regression-tests" </> "194_layout")) $
-    [ haskellAgdaParameters
-    , haskellGADTParameters
+    [ haskellGADTParameters
+    , haskellAgdaParameters
     ]
   , map (`makeTestCase` ("regression-tests" </> "352_TopLayoutOnly")) $
     [ haskellParameters

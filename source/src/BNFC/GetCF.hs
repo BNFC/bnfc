@@ -91,7 +91,7 @@ parseCF opts target content = do
 
   -- Some (most) backends do not support layout.
   let (layoutTop, layoutKeywords, _) = layoutPragmas cf
-  let lay = layoutTop || not (null layoutKeywords)
+  let lay = isJust layoutTop || not (null layoutKeywords)
   when (lay && target `notElem`
     [ TargetHaskell, TargetHaskellGadt, TargetLatex, TargetPygments, TargetCheck ]) $
       dieUnlessForce $ unwords
@@ -374,9 +374,9 @@ transDef = \case
         "The delimiters pragma " ++ removedIn290
     Abs.Coercions ident int       -> map Right <$> coercionRules ident int
     Abs.Rules ident strs          -> map Right <$> ebnfRules ident strs
-    Abs.Layout ss                 -> return [ Left $ Layout ss ]
+    Abs.Layout ss                 -> return [ Left $ Layout $ map (,Delimiters ";" "{" "}") ss ]
     Abs.LayoutStop ss             -> return [ Left $ LayoutStop ss]
-    Abs.LayoutTop                 -> return [ Left $ LayoutTop ]
+    Abs.LayoutTop                 -> return [ Left $ LayoutTop ";" ]
     Abs.Function ident xs e       -> do
       f <- transIdent ident
       let xs' = map transArg xs
