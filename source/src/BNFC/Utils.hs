@@ -14,6 +14,7 @@ module BNFC.Utils
     , when, unless, unlessNull, unlessNull'
     , applyWhen, applyUnless
     , for, whenJust
+    , caseMaybe
     , curry3, uncurry3
     , singleton, mapHead, spanEnd
     , duplicatesOn
@@ -109,6 +110,10 @@ for = flip map
 -- | Generalization of 'forM' to 'Monoid'.
 whenJust :: Monoid m => Maybe a -> (a -> m) -> m
 whenJust = flip foldMap
+
+-- | Rotation of 'maybe'.
+caseMaybe :: Maybe a -> b -> (a -> b) -> b
+caseMaybe ma b f = maybe b f ma
 
 -- * Tuple utilities.
 

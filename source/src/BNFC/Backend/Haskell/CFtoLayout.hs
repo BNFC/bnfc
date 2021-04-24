@@ -13,8 +13,8 @@ import Data.Maybe                 ( fromMaybe )
 import BNFC.CF
 import BNFC.Options               ( TokenText )
 import BNFC.PrettyPrint
-import BNFC.Utils                 ( table, for )
 import BNFC.Backend.Haskell.Utils ( tokenTextImport, tokenTextPackParens, tokenTextUnpack )
+import BNFC.Utils                 ( caseMaybe, for, whenJust )
 
 data TokSymbol = TokSymbol String Int
   deriving Show
@@ -63,23 +63,33 @@ cf2Layout tokenText layName lexName cf = unlines $ concat
     , ""
     , "-- layout separators"
     , ""
-    , "layoutTopSep :: TokSymbol"
-    , "layoutTopSep = " ++ maybe "undefined" show top
-    , ""
     , "layoutOpen, layoutClose, layoutSep :: [TokSymbol]"
     , "layoutOpen  = List.nub $ mapMaybe (delimOpen  . snd) layoutWords"
     , "layoutClose = List.nub $ mapMaybe (delimClose . snd) layoutWords"
-    , "layoutSep   = List.nub $ layoutTopSep : map (delimSep . snd) layoutWords"
+    , unwords $ concat
+      [ [ "layoutSep   = List.nub $" ]
+      , whenJust top $ \ sep -> [ show sep, ":" ]
+      , [ "map (delimSep . snd) layoutWords" ]
+      ]
     , ""
     , "-- | Replace layout syntax with explicit layout tokens."
     , "resolveLayout :: Bool    -- ^ Whether to use top-level layout."
     , "              -> [Token] -> [Token]"
-    , "resolveLayout topLayout ="
+    ]
+  , caseMaybe topDelim
+    -- No top-level layout
+    [ "resolveLayout _topLayout = res Nothing [Explicit]"
+    , "  where"
+    ]
+    -- Can have top-level layout
+    (\ delim ->
+    [ "resolveLayout topLayout ="
     , "  res Nothing [if topLayout then Implicit topDelim Definitive 1 else Explicit]"
     , "  where"
     , "  topDelim :: LayoutDelimiters"
-    , "  topDelim = " ++ maybe "undefined" show topDelim
-    , ""
+    , "  topDelim = " ++ show delim
+    ])
+  , [ ""
     , "  res :: Maybe Token -- ^ The previous token, if any."
     , "      -> [Block]     -- ^ A stack of layout blocks."
     , "      -> [Token] -> [Token]"
