@@ -49,7 +49,7 @@ makeHaskellGadt opts cf = do
     mkfile (templateFile opts) $ cf2Template (templateFileM opts) absMod cf
     mkfile (printerFile opts)  $ cf2Printer StringToken False True prMod absMod cf
     when (hasLayout cf) $ mkfile (layoutFile opts) $
-      cf2Layout (tokenText opts) layMod lexMod cf
+      cf2Layout layMod lexMod cf
     mkfile (tFile opts)        $ Haskell.testfile opts cf
     mkfile (errFile opts) $ mkErrM errMod
     Makefile.mkMakefile opts $ Haskell.makefile opts cf

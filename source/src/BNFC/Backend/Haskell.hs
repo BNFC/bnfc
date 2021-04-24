@@ -59,7 +59,7 @@ makeHaskell opts cf = do
         liftIO $ printf "Use Alex 3 to compile %s.\n" (alexFile opts)
 
     Ctrl.when (hasLayout cf) $ mkfile (layoutFile opts) $
-      cf2Layout (tokenText opts) layMod lexMod cf
+      cf2Layout layMod lexMod cf
 
     -- Generate Happy parser and matching test program.
     do
