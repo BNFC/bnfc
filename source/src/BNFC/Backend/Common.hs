@@ -1,3 +1,4 @@
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 -- | Functions common to different backends.
@@ -6,9 +7,11 @@ module BNFC.Backend.Common where
 
 import Prelude hiding ((<>))
 
+import Data.Bifunctor   ( second )
 import Data.Char
 
 import BNFC.CF
+import BNFC.Utils       ( (>.>) )
 import BNFC.PrettyPrint
 
 -- Andreas, 2020-10-08, issue #292:
@@ -40,16 +43,31 @@ flexEps = "[^.\\n]?"
 -- switch(x)
 -- {
 --   case 3: my_render(";"); break;
---   default: my_render("--");
+--   case 1: my_render("--"); break;
 -- }
-renderListSepByPrecedence :: Doc                 -- ^ Name of the coercion level variable
-                         -> (String -> Doc)     -- ^ render function
-                         -> [(Integer, String)] -- ^ separators by precedence
-                         -> Doc
-renderListSepByPrecedence _ _ [] = empty
-renderListSepByPrecedence _ render [(_,sep)] = render sep <> ";"
-renderListSepByPrecedence var render ss = "switch(" <> var <> ")" $$ codeblock 2
-    ( ["case" <+> integer i <:> render sep <>"; break;" | (i, sep) <- init ss]
-    ++ ["default" <:> render sep <>";" | let (_,sep) = last ss])
-  where
+renderListSepByPrecedence
+  :: Doc                 -- ^ Name of the coercion level variable
+  -> (String -> Doc)     -- ^ render function
+  -> [(Integer, String)] -- ^ separators by precedence
+  -> Doc
+renderListSepByPrecedence var render =
+  vcat . switchByPrecedence var . map (second $ render >.> (<> ";"))
+
+switchByPrecedence
+  :: Doc              -- ^ Name of the coercion level variable/
+  -> [(Integer, Doc)] -- ^ Content by precedence.
+  -> [Doc]
+switchByPrecedence var = filter (not . isEmpty . snd) >.> \case
+  []        -> []
+  [(_,doc)] -> [ doc  ]
+  ds        ->
+    [ "switch(" <> var <> ")"
+    , codeblock 2
+      [ "case" <+> integer i <:> doc <+> "break;" | (i, doc) <- ds ]
+    -- , codeblock 2 $ concat
+    --   [ [ "case" <+> integer i <:> doc <+> "break;" |     (i, doc) <- init ds ]
+    --   , [ "default" <:> doc                         | let (i, doc) =  last ds ]
+    --   ]
+    ]
+    where
     a <:> b = a <> ":" <+> b

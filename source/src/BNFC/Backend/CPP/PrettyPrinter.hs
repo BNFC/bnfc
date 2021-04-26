@@ -23,7 +23,8 @@ module BNFC.Backend.CPP.PrettyPrinter (cf2CPPPrinter, prRender) where
 
 import Prelude hiding ((<>))
 
-import Data.Char(toLower)
+import Data.Char  (toLower)
+import Data.Maybe (isJust)
 
 import BNFC.CF
 import BNFC.Utils ((+++), when)
@@ -423,7 +424,7 @@ prPrintData _ inPackage _cf (cat, rules) = -- Not a list
 --     switch(_i_)
 --     {
 --       case 2: render('+'); break;
---       default: render('-');
+--       case 0: render('-'); break;
 --     }
 --   }
 -- }
@@ -436,7 +437,7 @@ genPrintVisitorList (cat@(ListCat c), rules) =
           [ if isTokenCat c
               then "visit" <> text (baseName cl) <> "(*i) ;"
               else "(*i)->accept(this);"
-          , (if hasOneFunc rules
+          , (if isJust $ hasSingletonRule rules
               then "if (i != " <> vname <> "->end() - 1)"
               else empty)
             <+> renderListSepByPrecedence "_i_" renderSep separators
@@ -486,7 +487,7 @@ genPrintVisitorListNoStl (cat@(ListCat c), rules) = unlines $ concat
     ecl    = identCat (normCatOfList cat)
     vname  = map toLower cl
     member = map toLower ecl ++ "_"
-    optsep = if hasOneFunc rules || null sep' then []
+    optsep = if isJust (hasSingletonRule rules) || null sep' then []
              else [ "      render(" ++ sep' ++ ");" ]
     sep' = snd $ renderCharOrString $ getCons rules
     renderSep s = "render(" <> text (snd $ renderCharOrString s) <> ")"

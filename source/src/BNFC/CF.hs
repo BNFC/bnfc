@@ -69,9 +69,10 @@ module BNFC.CF (
             -- Information functions for list functions.
             isNilFun,       -- empty list function? ([])
             isOneFun,       -- one element list function? (:[])
-            hasOneFunc,
+            hasNilRule, hasSingletonRule,
             getCons,
             getSeparatorByPrecedence,
+            sortRulesByPrecedence,
             isConsFun,      -- constructor function? (:)
             isNilCons,      -- either three of above?
             isEmptyListCat, -- checks if the list permits []
@@ -95,10 +96,13 @@ module BNFC.CF (
             sigLookup      -- Get the type of a rule label.
            ) where
 
-import Control.Monad (guard)
+import Control.Arrow ( (&&&) )
+import Control.Monad ( guard )
 import Data.Char
-import Data.Function (on)
-import Data.List (nub, intersperse, sort, group, intercalate, find)
+import Data.Ord      ( Down(..) )
+import qualified Data.Either as Either
+import Data.Function ( on )
+import Data.List     ( nub, intersperse, sort, group, intercalate, find )
 import qualified Data.List as List
 import Data.List.NonEmpty (pattern (:|), (<|))
 import qualified Data.List.NonEmpty as List1
@@ -114,7 +118,7 @@ import BNFC.Par (pCat)
 import BNFC.Lex (tokens)
 import qualified BNFC.Abs as Abs
 
-import BNFC.Utils (spanEnd)
+import BNFC.Utils (headWithDefault, spanEnd)
 
 type List1 = List1.NonEmpty
 
@@ -501,6 +505,12 @@ instance IsFun String where
 instance IsFun a => IsFun (WithPosition a) where
   funName = funName . wpThing
 
+instance IsFun a => IsFun (Rul a) where
+  funName = funName . funRule
+
+instance IsFun a => IsFun (k, a) where
+  funName = funName . snd
+
 funNameSatisfies :: IsFun a => (String -> Bool) -> a -> Bool
 funNameSatisfies f = f . funName
 
@@ -727,35 +737,44 @@ sigLookup f = Map.lookup (funName f) . cfgSignature
 isParsable :: Rul f -> Bool
 isParsable = (Parsable ==) . internal
 
+hasNilRule :: [Rule] -> Maybe Rule
+hasNilRule = List.find isNilFun
 
--- | Checks if the list has a non-empty rule.
-hasOneFunc :: [Rule] -> Bool
-hasOneFunc = any (isOneFun . funRule)
+-- | Gets the singleton rule out of the rules for a list.
+hasSingletonRule :: [Rule] -> Maybe Rule
+hasSingletonRule = List.find isOneFun
+
+-- | Sort rules by descending precedence.
+
+sortRulesByPrecedence :: [Rule] -> [(Integer,Rule)]
+sortRulesByPrecedence = List.sortOn (Down . fst) . map (precRule &&& id)
 
 -- | Gets the separator for a list.
+--   Picks the first terminal in the first 'isConsFun' rule.
+--   This is correct for type-checked grammars.
 getCons :: [Rule] -> String
-getCons rs = case find (isConsFun . funRule) rs of
-    Just (Rule _ _ cats _) -> seper cats
-    Nothing              -> error $ "getCons: no construction function found in "
-                                  ++ intercalate ", " (map (show . funRule) rs)
-  where
-    seper [] = []
-    seper (Right x:_) = x
-    seper (Left _:xs) = seper xs
+getCons rs =
+  case find isConsFun rs of
+    Just (Rule _ _ items _) -> headWithDefault "" $ Either.rights items
+    Nothing -> error $ concat
+      [ "getCons: no list construction function found in "
+      , intercalate ", " (map (show . funRule) rs)
+      ]
 
--- | Helper function that gets the list separator by precedence level
+-- | Helper function that gets the list separator by precedence level.
+-- Should only be called on the rules for a 'ListCat'.
 getSeparatorByPrecedence :: [Rule] -> [(Integer,String)]
 getSeparatorByPrecedence rules = [ (p, getCons (getRulesFor p)) | p <- precedences ]
   where
     precedences = Set.toDescList . Set.fromList $ map precRule rules
     getRulesFor p = [ r | r <- rules, precRule r == p ]
 
+-- | Is the given category a list category parsing also empty lists?
 isEmptyListCat :: CF -> Cat -> Bool
-isEmptyListCat cf c = elem "[]" $ map (wpThing . funRule) $ rulesForCat' cf c
+isEmptyListCat cf = any isNilFun . rulesForCat' cf
 
 isNonterm :: Either Cat String -> Bool
-isNonterm (Left _) = True
-isNonterm (Right _) = False
+isNonterm = Either.isLeft
 
 -- used in Happy to parse lists of form 'C t [C]' in reverse order
 -- applies only if the [] rule has no terminals
@@ -765,10 +784,10 @@ revSepListRule (Rule f c ts internal) = Rule f c (xs : x : sep) internal where
 -- invariant: test in findAllReversibleCats have been performed
 
 findAllReversibleCats :: CF -> [Cat]
-findAllReversibleCats cf = [c | (c,r) <- ruleGroups cf, isRev c r] where
-  isRev c rs = case rs of
-     [r1,r2] | isList c -> if isConsFun (funRule r2)
-                             then tryRev r2 r1
+findAllReversibleCats cf = [c | (c,r) <- ruleGroups cf, isRev c r]
+  where
+  isRev c = \case
+     [r1,r2] | isList c -> if isConsFun (funRule r2) then tryRev r2 r1
                            else isConsFun (funRule r1) && tryRev r1 r2
      _ -> False
   tryRev (Rule f _ ts@(x:_:_) _) r = isEmptyNilRule r &&

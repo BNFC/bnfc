@@ -14,9 +14,9 @@ module BNFC.Utils
     , when, unless, unlessNull, unlessNull'
     , applyWhen, applyUnless
     , for, whenJust
-    , caseMaybe
+    , caseMaybe, (>.>)
     , curry3, uncurry3
-    , singleton, mapHead, spanEnd
+    , singleton, headWithDefault, mapHead, spanEnd
     , duplicatesOn
     , hasNumericSuffix
     , (+++), (++++), (+-+), (+.+), parensIf
@@ -103,6 +103,14 @@ unlessNull' l k = case l of
   []     -> mempty
   (a:as) -> k a as
 
+-- * Flipped versions of standard functions.
+
+infixr 8 >.>
+
+-- | Diagrammatic composition.
+(>.>) :: (a -> b) -> (b -> c) -> a -> c
+g >.> f = f . g
+
 -- | Non-monadic 'forM'.
 for :: [a] -> (a -> b) -> [b]
 for = flip map
@@ -179,6 +187,11 @@ table sep m = map (intercalate sep . zipWith pad widths) m
 -- | Give a telling name to the electric monkey.
 singleton :: a -> [a]
 singleton = (:[])
+
+-- | Get the first element of a list, fallback for empty list.
+headWithDefault :: a -> [a] -> a
+headWithDefault a []    = a
+headWithDefault _ (a:_) = a
 
 -- | Apply a function to the head of a list.
 mapHead :: (a -> a) -> [a] -> [a]

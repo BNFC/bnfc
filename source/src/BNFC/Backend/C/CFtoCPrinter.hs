@@ -26,11 +26,13 @@ import Data.Char      ( toLower )
 import Data.Either    ( lefts )
 import Data.Foldable  ( toList )
 import Data.List      ( nub )
+import Data.Maybe     ( isJust )
 
 import BNFC.CF
 import BNFC.PrettyPrint
-import BNFC.Utils ((+++), unless)
-import BNFC.Backend.Common (renderListSepByPrecedence)
+import BNFC.Utils     ( (+++), whenJust, unless, unlessNull )
+
+import BNFC.Backend.Common
 import BNFC.Backend.Common.NamedVariables
 import BNFC.Backend.Common.StrUtils (renderCharOrString)
 
@@ -347,7 +349,7 @@ prPrintData (cat, rules)
       , "    {"
       , visitMember
       ]
-    , unless (hasOneFunc rules)
+    , whenJust (hasSingletonRule rules) $ \ rule ->
       [ "      " ++ render (renderX $ getCons rules) ++ ";" ]
     , [ "      " ++ vname +++ "= 0;"
       , "    }"
@@ -359,7 +361,12 @@ prPrintData (cat, rules)
       , "      " ++ vname +++ "=" +++ vname ++ "->" ++ vname ++ "_;"
       , "    }"
       , "  }"
-      , "}"
+      ]
+    -- , whenJust (hasNilRule rules) $ \rule -> [ concat $ prPrintRule_ rule ]
+    , unlessNull (switchByPrecedence "i" $
+          map (second $ sep . map text . prPrintRule_) $ filter isNilFun prules) $ \ docs ->
+      [ render $ nest 2 $ vcat docs ]
+    , [ "}"
       , ""
       ]
     ]
@@ -384,6 +391,7 @@ prPrintData (cat, rules)
    vname       = map toLower cl
    member      = map toLower ecl
    visitMember = "      pp" ++ ecl ++ "(" ++ vname ++ "->" ++ member ++ "_, i);"
+   prules      = sortRulesByPrecedence rules
 
 -- | Helper function that call the right c function (renderC or renderS) to
 -- render a literal string.
@@ -402,28 +410,31 @@ renderX sep' = "render" <> char sc <> parens (text sep)
 -- | Pretty Printer methods for a rule.
 
 prPrintRule :: Rule -> [String]
-prPrintRule r@(Rule fun _ cats _) | not (isCoercion fun) = concat
-  [ [ "  case is_" ++ f ++ ":"
+prPrintRule r@(Rule fun _ _ _) = unless (isCoercion fun) $ concat
+  [ [ "  case is_" ++ funName fun ++ ":"
     , "    if (_i_ > " ++ show p ++ ") renderC(_L_PAREN);"
     ]
-  , map (prPrintCat f) $ numVars cats
+  , map ("    " ++) $ prPrintRule_ r
   , [ "    if (_i_ > " ++ show p ++ ") renderC(_R_PAREN);"
     , "    break;"
     , ""
     ]
   ]
   where
-    f = funName fun
     p = precRule r
-prPrintRule _ = []
+
+-- | Only render the rhs (items) of a rule.
+
+prPrintRule_ :: Rule -> [String]
+prPrintRule_ (Rule fun _ items _) = map (prPrintItem $ funName fun) $ numVars items
 
 -- | This goes on to recurse to the instance variables.
 
-prPrintCat :: String -> Either (Cat, Doc) String -> String
-prPrintCat fnm = \case
-  Right t -> "    " ++ render (renderX t) ++ ";"
+prPrintItem :: String -> Either (Cat, Doc) String -> String
+prPrintItem fnm = \case
+  Right t -> render (renderX t) ++ ";"
   Left (cat, nt) -> concat
-    [ "    pp"
+    [ "pp"
     , maybe (identCat $ normCat cat) basicFunName $ maybeTokenCat cat
     , "(p->u."
     , map toLower fnm

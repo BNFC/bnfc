@@ -29,16 +29,18 @@ module BNFC.Backend.Java.CFtoJavaPrinter15 ( cf2JavaPrinter ) where
 
 import Prelude hiding ((<>))
 
-import BNFC.Backend.Java.CFtoJavaAbs15
+import Data.Char   ( toLower, isSpace )
+import Data.Either ( lefts )
+import Data.List   ( intersperse )
+import Data.Maybe  ( isJust )
 
 import BNFC.CF
+import BNFC.PrettyPrint
+import BNFC.Utils ( (+++) )
+
 import BNFC.Backend.Common (renderListSepByPrecedence)
 import BNFC.Backend.Common.NamedVariables
-import BNFC.Utils ( (+++) )
-import Data.List
-import Data.Char ( toLower, isSpace )
-import Data.Either (lefts)
-import BNFC.PrettyPrint
+import BNFC.Backend.Java.CFtoJavaAbs15
 
 --Produces the PrettyPrinter class.
 --It will generate two methods "print" and "show"
@@ -279,7 +281,7 @@ prList packageAbsyn user c rules =
    where
     et = text $ typename packageAbsyn user $ identCat $ normCatOfList c
     sep = escapeChars $ getCons rules
-    optsep = if hasOneFunc rules then "" else sep
+    optsep = if isJust $ hasSingletonRule rules then "" else sep
     renderSep x = "render(\"" <> text x <>"\")"
 
 -- |
