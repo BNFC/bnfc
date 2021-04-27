@@ -39,7 +39,7 @@ import BNFC.Backend.C.CFtoFlexC (ParserMode(..), cParser, stlParser, parserHExt,
 import BNFC.Backend.CPP.STL.STLUtils
 import BNFC.Options (RecordPositions(..), InPackage)
 import BNFC.PrettyPrint
-import BNFC.Utils ((+++), table, for, unless, when, whenJust)
+import BNFC.Utils ((+++), table, applyWhen, for, unless, when, whenJust)
 
 --This follows the basic structure of CFtoHappy.
 
@@ -414,7 +414,14 @@ addResult cf nt a =
     else a
 
 -- | Switch between STL or not.
-generateAction :: IsFun a => RecordPositions -> ParserMode -> String -> a -> Bool -> [(MetaVar, Bool)] -> Action
+generateAction :: IsFun a
+  => RecordPositions     -- ^ Remember position information?
+  -> ParserMode          -- ^ For C or C++?
+  -> String              -- ^ List type.
+  -> a                   -- ^ Rule name.
+  -> Bool                -- ^ Reverse list?
+  -> [(MetaVar, Bool)]   -- ^ Meta-vars; should the list referenced by the var be reversed?
+  -> Action
 generateAction rp = \case
   CppParser ns _ -> generateActionSTL rp ns
   CParser   b  _ -> \ nt f r -> generateActionC rp (not b) nt f r . map fst
@@ -455,14 +462,15 @@ generateActionSTL :: IsFun a => RecordPositions -> InPackage -> String -> a -> B
 generateActionSTL rp inPackage nt f b mbs = reverses ++
   if | isCoercion f    -> concat ["$$ = ", unwords ms, ";", loc]
      | isNilFun f      -> concat ["$$ = ", "new ", scope, nt, "();"]
-     | isOneFun f      -> concat ["$$ = ", "new ", scope, nt, "(); $$->push_back($1);"]
-     | isConsFun f, b  -> "$1->push_back("++ lastms ++ "); $$ = $1;"
-     | isConsFun f     -> lastms ++ "->push_back(" ++ head ms ++ "); $$ = " ++ lastms ++ ";" ---- not left rec
+     | isOneFun f      -> concat ["$$ = ", "new ", scope, nt, "(); $$->push_back(", head ms, ");"]
+     | isConsFun f     -> concat [lst, "->push_back(", el, "); $$ = ", lst, ";"]
      | isDefinedRule f -> concat ["$$ = ", scope, funName f, "(", intercalate ", " ms, ");" ]
      | otherwise       -> concat ["$$ = ", "new ", scope, funName f, "(", intercalate ", " ms, ");", loc]
  where
   ms        = map fst mbs
-  lastms    = last ms
+  -- The following match only happens in the cons case:
+  [el, lst] = applyWhen b reverse ms  -- b: left-recursion transformed?
+
   loc | RecordPositions <- rp
             = " $$->line_number = @$.first_line; $$->char_number = @$.first_column;"
       | otherwise
