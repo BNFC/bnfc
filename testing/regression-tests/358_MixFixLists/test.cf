@@ -1,0 +1,30 @@
+-- Issue #358, C/C++ backends misprint mixfix lists.
+-- Issue #361, C++ list parsing
+-- Issue #366, render } on new line
+
+Top.   S ::= "{" [Integer] [FooBar] [String] "semi-exprs:" [Exp] "comma-exprs:" [Exp1];
+
+[].    [Integer] ::= "}";
+(:).   [Integer] ::= "-" Integer ";" [Integer];  -- Issue #358
+
+(:[]). [FooBar]  ::= "finally" FooBar;           -- Issue #361
+(:).   [FooBar]  ::= FooBar "{" [FooBar] "}";    -- Issue #358, #366
+
+[].    [String]  ::= ;
+(:).   [String]  ::= String "." [String];        -- This is reversed in the parser.
+
+Foo.   FooBar    ::= "foo";
+Bar.   FooBar    ::= "bar";
+Baz.   FooBar    ::= "baz";
+
+
+[].     [Exp]  ::= "";
+(:).    [Exp]  ::= Exp ";" [Exp];
+
+[].     [Exp1] ::= "";
+(:).    [Exp1] ::= Exp1 "," [Exp1];
+
+EInt.   Exp1   ::= Integer;
+EPlus.  Exp    ::= Exp "+" Exp1;
+
+coercions Exp 1;
