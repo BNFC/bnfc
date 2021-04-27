@@ -30,7 +30,7 @@ import Data.Maybe     ( isJust )
 
 import BNFC.CF
 import BNFC.PrettyPrint
-import BNFC.Utils     ( (+++), whenJust, unless, unlessNull )
+import BNFC.Utils     ( (+++), uniqOn, whenJust, unless, unlessNull )
 
 import BNFC.Backend.Common
 import BNFC.Backend.Common.NamedVariables
@@ -343,29 +343,24 @@ prPrintData (cat, rules)
   | isList cat = unlines $ concat
     [ [ "void pp" ++ cl ++ "("++ cl +++ vname ++ ", int i)"
       , "{"
-      , "  while(" ++ vname +++ "!= 0)"
-      , "  {"
-      , "    if (" ++ vname ++ "->" ++ vname ++ "_ == 0)"
-      , "    {"
-      , visitMember
+      , "  if (" ++ vname +++ "== 0)"
+      , "  { /* nil */"
       ]
-    , whenJust (hasSingletonRule rules) $ \ rule ->
-      [ "      " ++ render (renderX $ getCons rules) ++ ";" ]
-    , [ "      " ++ vname +++ "= 0;"
-      , "    }"
-      , "    else"
-      , "    {"
-      , visitMember
-      , render (nest 6 (renderListSepByPrecedence "i" renderX
-          (getSeparatorByPrecedence rules)))
-      , "      " ++ vname +++ "=" +++ vname ++ "->" ++ vname ++ "_;"
-      , "    }"
+    , unlessNull (swRules isNilFun) $ \ docs ->
+      [ render $ nest 4 $ vcat docs ]
+    , [ "  }" ]
+    , unlessNull (swRules isOneFun) $ \ docs ->
+      [ "  else if (" ++ pre ++ vname ++ "_ == 0)"
+      , "  { /* last */"
+      , render $ nest 4 $ vcat docs
       , "  }"
       ]
-    -- , whenJust (hasNilRule rules) $ \rule -> [ concat $ prPrintRule_ rule ]
-    , unlessNull (switchByPrecedence "i" $
-          map (second $ sep . map text . prPrintRule_) $ filter isNilFun prules) $ \ docs ->
-      [ render $ nest 2 $ vcat docs ]
+    , unlessNull (swRules isConsFun) $ \ docs ->
+      [ "  else"
+      , "  { /* cons */"
+      , render $ nest 4 $ vcat docs
+      , "  }"
+      ]
     , [ "}"
       , ""
       ]
@@ -387,11 +382,13 @@ prPrintData (cat, rules)
     ]
  where
    cl          = identCat (normCat cat)
-   ecl         = identCat (normCatOfList cat)
    vname       = map toLower cl
-   member      = map toLower ecl
-   visitMember = "      pp" ++ ecl ++ "(" ++ vname ++ "->" ++ member ++ "_, i);"
+   pre         = vname ++ "->"
    prules      = sortRulesByPrecedence rules
+   swRules f   = switchByPrecedence "i" $
+                   map (second $ sep . map text . prPrintRule_ pre) $
+                     uniqOn fst $ filter f prules
+                     -- Discard duplicates, can only handle one rule per precedence.
 
 -- | Helper function that call the right c function (renderC or renderS) to
 -- render a literal string.
@@ -411,34 +408,34 @@ renderX sep' = "render" <> char sc <> parens (text sep)
 
 prPrintRule :: Rule -> [String]
 prPrintRule r@(Rule fun _ _ _) = unless (isCoercion fun) $ concat
-  [ [ "  case is_" ++ funName fun ++ ":"
+  [ [ "  case is_" ++ fnm ++ ":"
     , "    if (_i_ > " ++ show p ++ ") renderC(_L_PAREN);"
     ]
-  , map ("    " ++) $ prPrintRule_ r
+  , map ("    " ++) $ prPrintRule_ pre r
   , [ "    if (_i_ > " ++ show p ++ ") renderC(_R_PAREN);"
     , "    break;"
     , ""
     ]
   ]
   where
-    p = precRule r
+    p   = precRule r
+    fnm = funName fun
+    pre = concat [ "p->u.", map toLower fnm, "_." ]
 
 -- | Only render the rhs (items) of a rule.
 
-prPrintRule_ :: Rule -> [String]
-prPrintRule_ (Rule fun _ items _) = map (prPrintItem $ funName fun) $ numVars items
+prPrintRule_ :: IsFun a => String -> Rul a -> [String]
+prPrintRule_ pre (Rule _ _ items _) = map (prPrintItem pre) $ numVars items
 
 -- | This goes on to recurse to the instance variables.
 
 prPrintItem :: String -> Either (Cat, Doc) String -> String
-prPrintItem fnm = \case
+prPrintItem pre = \case
   Right t -> render (renderX t) ++ ";"
   Left (cat, nt) -> concat
     [ "pp"
     , maybe (identCat $ normCat cat) basicFunName $ maybeTokenCat cat
-    , "(p->u."
-    , map toLower fnm
-    , "_.", render nt, ", ", show (precCat cat), ");"
+    , "(", pre, render nt, ", ", show (precCat cat), ");"
     ]
 
 {- **** Abstract Syntax Tree Printer **** -}

@@ -17,7 +17,7 @@ module BNFC.Utils
     , caseMaybe, (>.>)
     , curry3, uncurry3
     , singleton, headWithDefault, mapHead, spanEnd
-    , duplicatesOn
+    , duplicatesOn, groupOn, uniqOn
     , hasNumericSuffix
     , (+++), (++++), (+-+), (+.+), parensIf
     , pad, table
@@ -234,6 +234,19 @@ duplicatesOn nf
   . Map.elems
     -- Partition elements by their normal form.
   . Fold.foldr (\ a -> Map.insertWith (<>) (nf a) (a :| [])) Map.empty
+
+-- | Group consecutive elements that have the same normalform.
+groupOn :: Eq b => (a -> b) -> [a] -> [List1 a]
+groupOn nf = loop
+  where
+  loop = \case
+    []   -> []
+    a:xs | let (as, rest) = span ((nf a ==) . nf) xs
+         -> (a :| as) : loop rest
+
+-- | Keep only the first of consecutive elements that have the same normalform.
+uniqOn :: Eq b => (a -> b) -> [a] -> [a]
+uniqOn nf = map List1.head . groupOn nf
 
 -- | Get a numeric suffix if it exists.
 --
