@@ -23,11 +23,12 @@ module BNFC.Backend.CPP.PrettyPrinter (cf2CPPPrinter, prRender) where
 
 import Prelude hiding ((<>))
 
+import Data.Bifunctor (second)
 import Data.Char  (toLower)
 import Data.Maybe (isJust)
 
 import BNFC.CF
-import BNFC.Utils ((+++), when)
+import BNFC.Utils
 import BNFC.Backend.Common
 import BNFC.Backend.Common.NamedVariables
 import BNFC.Backend.Common.StrUtils (renderCharOrString)
@@ -451,84 +452,84 @@ genPrintVisitorList (cat@(ListCat c), rules) =
 
 genPrintVisitorList _ = error "genPrintVisitorList expects a ListCat"
 
--- | This is the only part of the pretty printer that differs significantly
+-- This is the only part of the pretty printer that differs significantly
 -- between the versions with and without STL.
+-- The present version has been adapted from CFtoCPrinter.
 genPrintVisitorListNoStl :: (Cat, [Rule]) -> String
 genPrintVisitorListNoStl (cat@(ListCat c), rules) = unlines $ concat
   [ [ "void PrintAbsyn::visit" ++ cl ++ "("++ cl ++ " *" ++ vname ++ ")"
     , "{"
-    , "  while(" ++ vname +++ "!= 0)"
-    , "  {"
-    , "    if (" ++ vname ++ "->" ++ vname ++ "_ == 0)"
-    , "    {"
-    , visitMember
+      , "  if (" ++ vname +++ "== 0)"
+      , "  { /* nil */"
+      ]
+    , unlessNull (swRules isNilFun) $ \ docs ->
+      [ render $ nest 4 $ vcat docs ]
+    , [ "  }" ]
+    , unlessNull (swRules isOneFun) $ \ docs ->
+      [ "  else if (" ++ pre ++ vname ++ "_ == 0)"
+      , "  { /* last */"
+      , render $ nest 4 $ vcat docs
+      , "  }"
+      ]
+    , unlessNull (swRules isConsFun) $ \ docs ->
+      [ "  else"
+      , "  { /* cons */"
+      , render $ nest 4 $ vcat docs
+      , "  }"
+      ]
+    , [ "}"
+      , ""
+      ]
     ]
-  , optsep
-  , [ "      " ++ vname +++ "= 0;"
-    , "    }"
-    , "    else"
-    , "    {"
-    , visitMember
-    , render $ nest 6 $ renderListSepByPrecedence "_i_" renderSep separators
-    , "      " ++ vname +++ "=" +++ vname ++ "->" ++ vname ++ "_;"
-    , "    }"
-    , "  }"
+  where
+  cl          = identCat (normCat cat)
+  vname       = map toLower cl
+  pre         = vname ++ "->"
+  prules      = sortRulesByPrecedence rules
+  swRules f   = switchByPrecedence "_i_" $
+                  map (second $ sep . map text . prPrintRule_ pre) $
+                    uniqOn fst $ filter f prules
+                    -- Discard duplicates, can only handle one rule per precedence.
+genPrintVisitorListNoStl _ = error "genPrintVisitorListNoStl expects a ListCat"
+
+--Pretty Printer methods for a rule.
+prPrintRule :: Maybe String -> Rule -> String
+prPrintRule inPackage r@(Rule fun _ items _) | isProperLabel fun = unlines $ concat
+  [ [ "void PrintAbsyn::visit" ++ funName fun ++ "(" ++ funName fun +++ "*" ++ fnm ++ ")"
+    , "{"
+    , "  int oldi = _i_;"
+    , parenCode "_L_PAREN"
+    , ""
+    ]
+  , prPrintRule_ (fnm ++ "->") r
+  , [ ""
+    , parenCode "_R_PAREN"
+    , "  _i_ = oldi;"
     , "}"
     , ""
     ]
   ]
   where
-    visitMember
-      | Just t <- maybeTokenCat c =
-          "      visit" ++ t ++ "(" ++ vname ++ "->" ++ member ++ ");"
-      | otherwise =
-          "      " ++ vname ++ "->" ++ member ++ "->accept(this);"
-    cl     = identCat (normCat cat)
-    ecl    = identCat (normCatOfList cat)
-    vname  = map toLower cl
-    member = map toLower ecl ++ "_"
-    optsep = if isJust (hasSingletonRule rules) || null sep' then []
-             else [ "      render(" ++ sep' ++ ");" ]
-    sep' = snd $ renderCharOrString $ getCons rules
-    renderSep s = "render(" <> text (snd $ renderCharOrString s) <> ")"
-    separators = getSeparatorByPrecedence rules
-genPrintVisitorListNoStl _ = error "genPrintVisitorListNoStl expects a ListCat"
-
---Pretty Printer methods for a rule.
-prPrintRule :: Maybe String -> Rule -> String
-prPrintRule inPackage r@(Rule fun _ cats _) | isProperLabel fun = unlines
-  [
-   "void PrintAbsyn::visit" ++ funName fun ++ "(" ++ funName fun +++ "*" ++ fnm ++ ")",
-   "{",
-   "  int oldi = _i_;",
-   lparen,
-   cats',
-   rparen,
-   "  _i_ = oldi;",
-   "}",
-   ""
-  ]
-   where
-    p = precRule r
-    (lparen, rparen) =
-      ("  if (oldi > " ++ show p ++ ") render(" ++ nsDefine inPackage "_L_PAREN" ++ ");\n",
-       "  if (oldi > " ++ show p ++ ") render(" ++ nsDefine inPackage "_R_PAREN" ++ ");\n")
-    cats' = concatMap (prPrintCat fnm) (numVars cats)
-    fnm = "p" --old names could cause conflicts
+  p = precRule r
+  parenCode x = "  if (oldi > " ++ show p ++ ") render(" ++ nsDefine inPackage x ++ ");"
+  fnm = "p" --old names could cause conflicts
 prPrintRule _ _ = ""
 
+prPrintRule_ :: IsFun a => String -> Rul a -> [String]
+prPrintRule_ pre (Rule _ _ items _) = map (prPrintItem pre) $ numVars items
+
 --This goes on to recurse to the instance variables.
-prPrintCat :: String -> Either (Cat, Doc) String -> String
-prPrintCat _ (Right t) = "  render(" ++ t' ++ ");\n"
-  where t' = snd (renderCharOrString t)
-prPrintCat fnm (Left (c, nt))
+prPrintItem :: String -> Either (Cat, Doc) String -> String
+prPrintItem _   (Right t) = "  render(" ++ snd (renderCharOrString t) ++ ");"
+prPrintItem pre (Left (c, nt))
   | Just t <- maybeTokenCat c
-              = "  visit" ++ t ++ "(" ++ fnm ++ "->" ++ s ++ ");\n"
-  | isList c  = "  if(" ++ fnm ++ "->" ++ s ++ ") {" ++ accept ++ "}\n"
-  | otherwise = "  " ++ accept ++ "\n"
+              = "  visit" ++ t   ++ "(" ++ pre ++ s ++ ");"
+  | isList c  = "  " ++ setI (precCat c) ++
+                  "visit" ++ elt ++ "(" ++ pre ++ s ++ ");"
+  | otherwise = "  " ++ setI (precCat c) ++ pre ++ s ++ "->accept(this);"
   where
-    s = render nt
-    accept = setI (precCat c) ++ fnm ++ "->" ++ s ++ "->accept(this);"
+  s   = render nt
+  elt = identCat $ normCat c
 
 {- **** Abstract Syntax Tree Printer **** -}
 
