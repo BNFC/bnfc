@@ -5,6 +5,10 @@ terminator Stm ""                        ;
 SInts.    Stm   ::= "integers"   Ints    ;
 SChars.   Stm   ::= "chars"      Chars   ;
 SExp.     Stm   ::= "expression" Exp     ;
+SList.    Stm   ::= "list" [Exp]         ;
+nilSlist. Stm   ::= "nil"                ;
+
+define    nilSlist = SList []            ;
 
 EHalf.    Exp2  ::= "1/2"                ;
 EDouble.  Exp2  ::= Double               ;
@@ -13,6 +17,7 @@ eSqrt4.   Exp1  ::= "sqrt4" Exp1         ;
 EPower.   Exp   ::= Exp1 "**" Exp        ;
 
 coercions Exp 2                          ;
+separator Exp ","                        ;
 
 define    eSqrt  e = EPower e EHalf      ;
 define    eSqrt4 e = eSqrt (eSqrt e)     ;

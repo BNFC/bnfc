@@ -126,6 +126,8 @@ prDefH tokenCats f xs e = concat [ "#define make_", f, "(", intercalate "," xs, 
     -- Token categories are just @typedef@s in C, so no constructor needed.
     App g [e] | g `elem` tokenCats
                 -> prExp e
+    App "[]"  [] -> "NULL"
+    App "(:)" [hd, tl] -> error "nonempty lists in defined rules not supported in C" -- How do we get the type of list at this point?
     App g es    -> concat [ "make_", g, "(", intercalate "," (map prExp es), ")" ]
     LitInt    i -> show i
     LitDouble d -> show d
