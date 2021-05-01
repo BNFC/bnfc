@@ -1,0 +1,10 @@
+// Andreas, 2021-04-28
+// Random text, not wellscoped/typed.
+
+eq = x + 5 == y - 2 + (z - 4);
+if (eq)
+  for (i=0; i < 100; i++) {
+    if (i == 5) {} else { j = i;} endif;
+    while (0) j++;
+  }
+endif;

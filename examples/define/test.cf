@@ -1,6 +1,7 @@
-
 -- Example of defined rules in bnfc.
 -- Ulf Norell, 2006
+
+entrypoints [Stm];
 
 -- The core statement language. Nothing funny here.
 Assign. Stm ::= Ident "=" Exp ;
@@ -47,3 +48,6 @@ internal EOp. Exp ::= Exp1 Op Exp1 ;
 define op e1 o e2 = EOp e1 o e2 ;
 
 coercions Exp 2;
+
+comment "//";
+comment "/*" "*/";
