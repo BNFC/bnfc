@@ -29,16 +29,17 @@ module BNFC.Backend.Java.CFtoJavaPrinter15 ( cf2JavaPrinter ) where
 
 import Prelude hiding ((<>))
 
-import Data.Char   ( toLower, isSpace )
-import Data.Either ( lefts )
-import Data.List   ( intersperse )
-import Data.Maybe  ( isJust )
+import Data.Bifunctor ( second )
+import Data.Char      ( toLower, isSpace )
+import Data.Either    ( lefts )
+import Data.List      ( intersperse )
+import Data.Maybe     ( isJust )
 
 import BNFC.CF
 import BNFC.PrettyPrint
-import BNFC.Utils ( (+++) )
+import BNFC.Utils     ( (+++), for, unless, unlessNull, uniqOn )
 
-import BNFC.Backend.Common (renderListSepByPrecedence)
+import BNFC.Backend.Common ( switchByPrecedence )
 import BNFC.Backend.Common.NamedVariables
 import BNFC.Backend.Java.CFtoJavaAbs15
 
@@ -208,24 +209,33 @@ prEntryPoints packageAbsyn cf =
     cat' = identCat cat
 
 prData :: String ->  [UserDef] -> (Cat, [Rule]) -> String
-prData packageAbsyn user (cat, rules) = unlines k
-    where
-      k = if isList cat
-           then
-           ["  private static void pp(" ++ packageAbsyn ++ "."
-                ++ identCat (normCat cat) +++ "foo, int _i_)"
-            , "  {"
-            , render $ nest 5 $ prList packageAbsyn user cat rules <> "  }"
-           ]
-           else --not a list
-           [
-            "  private static void pp(" ++ packageAbsyn ++ "."
-                ++ identCat (normCat cat) +++ "foo, int _i_)",
-            "  {",
-            concat (addElse $ map (prRule packageAbsyn) rules) ++ "  }"
-           ]
-      addElse = map ("    "++). intersperse "else " . filter (not . null)
-        . map (dropWhile isSpace)
+prData packageAbsyn user (cat, rules)
+  | isList cat = unlines $ concat
+      [ [ "  private static void pp(" ++ packageAbsyn ++ "." ++ dat ++ " foo, int _i_)"
+        , "  {"
+        , "    pp" ++ dat ++ "(foo.iterator(), _i_);"
+        , "  }"
+        , ""
+        , "  private static void pp" ++ dat ++ "(java.util.Iterator<" ++ et ++ "> it, int _i_)"
+        , "  {"
+        ]
+      , map ("    " ++) $ prList dat et rules
+      , [ "  }"
+        , ""
+        ]
+      ]
+  | otherwise = unlines $
+      [ "  private static void pp(" ++ packageAbsyn ++ "."
+           ++ dat +++ "foo, int _i_)"
+      , "  {"
+      , concat (addElse $ map (prRule packageAbsyn) rules)
+      , "  }"
+      ]
+  where
+  dat = identCat (normCat cat)
+  et  = typename packageAbsyn user $ identCat $ normCatOfList cat
+  addElse = map ("    " ++) . intersperse "else " . filter (not . null)
+    . map (dropWhile isSpace)
 
 
 prRule :: String -> Rule -> String
@@ -247,58 +257,75 @@ prRule packageAbsyn r@(Rule f _c cats _) | not (isCoercion f || isDefinedRule f)
         "       if (_i_ > " ++ show p ++ ") render(_R_PAREN);\n")
     cats' = case cats of
         [] -> ""
-        _  -> concatMap (render . prCat (text fnm)) (numVars cats)
+        _  -> concatMap (render . prItem (text fnm)) (numVars cats)
     fnm = '_' : map toLower fun
 
 prRule _nm _ = ""
 
--- |
---
--- >>> let lfoo = ListCat (Cat "Foo")
--- >>> prList "absyn" [] lfoo [npRule "[]" lfoo [] Parsable, npRule "(:)" lfoo [Left (Cat "Foo"), Right ".", Left lfoo] Parsable]
--- for (java.util.Iterator<absyn.Foo> it = foo.iterator(); it.hasNext();)
--- {
---   pp(it.next(), _i_);
---   if (it.hasNext()) {
---     render(".");
---   } else {
---     render(".");
---   }
--- }
+prList :: String -> String -> [Rule] -> [String]
+prList dat et rules = concat
+    [ if null docs0 then
+      [ "if (it.hasNext())" ]
+      else
+      [ "if (!it.hasNext())"
+      , "{ /* nil */"
+      , render $ nest 4 $ vcat docs0
+      , "}"
+      , "else"
+      ]
+    , if null docs1 then
+      [ "{ /* cons */"
+      , "  " ++ et ++ " el = it.next();"
+      ]
+      else
+      [ "{"
+      , "  " ++ et ++ " el = it.next();"
+      , "  if (!it.hasNext())"
+      , "  { /* last */"
+      , render $ nest 4 $ vcat docs1
+      , "  }"
+      , "  else"
+      , "  { /* cons */"
+      ]
+    , unlessNull (swRules isConsFun) $ \ docs ->
+      [ render $ nest (if null docs1 then 2 else 4) $ vcat docs
+      ]
+    , unless (null docs1) [ "  }" ]
+    , [ "}" ]
+    ]
+  where
+  prules      = sortRulesByPrecedence rules
+  swRules f   = switchByPrecedence "_i_" $
+                  map (second $ sep . map text . prListRule_ dat) $
+                    uniqOn fst $ filter f prules
+                    -- Discard duplicates, can only handle one rule per precedence.
+  docs0       = swRules isNilFun
+  docs1       = swRules isOneFun
 
-prList :: String -> [UserDef] -> Cat -> [Rule] -> Doc
-prList packageAbsyn user c rules =
-    "for (java.util.Iterator<" <> et <> "> it = foo.iterator(); it.hasNext();)"
-    $$ codeblock 2
-        [ "pp(it.next(), _i_);"
-        , "if (it.hasNext()) {"
-        , nest 2 (renderListSepByPrecedence "_i_" renderSep
-            (getSeparatorByPrecedence rules))
-        , "} else {"
-        , nest 2 (renderSep optsep <> ";")
-        , "}"
-        ]
-   where
-    et = text $ typename packageAbsyn user $ identCat $ normCatOfList c
-    sep = escapeChars $ getCons rules
-    optsep = if isJust $ hasSingletonRule rules then "" else sep
-    renderSep x = "render(\"" <> text x <>"\")"
+-- | Only render the rhs (items) of a list rule.
+
+prListRule_ :: IsFun a => String -> Rul a -> [String]
+prListRule_ dat (Rule _ _ items _) = for items $ \case
+  Right t                  -> "render(\"" ++ escapeChars t ++ "\");"
+  Left (TokenCat "String") -> "printQuoted(el);"
+  Left (ListCat _)         -> "pp" ++ dat ++ "(it, _i_);"
+  Left _                   -> "pp(el, _i_);"
 
 -- |
--- >>> prCat "F" (Right "++")
+-- >>> prItem "F" (Right "++")
 --        render("++");
 -- <BLANKLINE>
--- >>> prCat "F" (Left (TokenCat "String", "string_"))
+-- >>> prItem "F" (Left (TokenCat "String", "string_"))
 --        printQuoted(F.string_);
 -- <BLANKLINE>
--- >>> prCat "F" (Left (Cat "Abc", "abc_"))
+-- >>> prItem "F" (Left (Cat "Abc", "abc_"))
 --        pp(F.abc_, 0);
 -- <BLANKLINE>
-prCat :: Doc -> Either (Cat, Doc) String -> Doc
-prCat _ (Right t) = nest 7 ("render(\"" <> text(escapeChars t) <> "\");\n")
-prCat fnm (Left (TokenCat "String", nt))
+prItem :: Doc -> Either (Cat, Doc) String -> Doc
+prItem _ (Right t) = nest 7 ("render(\"" <> text(escapeChars t) <> "\");\n")
+prItem fnm (Left (TokenCat "String", nt))
     = nest 7 ("printQuoted(" <> fnm <> "." <> nt <> ");\n")
-prCat fnm (Left (cat, nt))
+prItem fnm (Left (cat, nt))
     = nest 7 ("pp(" <> fnm <> "." <> nt <> ", " <> integer (precCat cat) <> ");\n")
 
 --The following methods generate the Show function.
