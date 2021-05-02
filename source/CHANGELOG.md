@@ -18,6 +18,7 @@ Andreas Abel <andreas.abel@gu.se>  (unreleased)
 * C++: `define`d constructors now reside in `Absyn` [#287]
 * Java: `define`d constructor now reside in `AbsynDef.java` [#287]
 * Ocaml: fixed translation of nested `define`d constructors
+* C/C++/Java: Pre/post/mixfix lists are now printed correctly [#358]
 
 ## Cosmetical changes
 
