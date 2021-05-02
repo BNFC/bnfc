@@ -17,8 +17,13 @@
 
 module BNFC.ErrM where
 
+import Prelude             (id, const, Either(..), String)
+
 import Control.Monad       (MonadPlus(..))
 import Control.Applicative (Alternative(..))
+#if __GLASGOW_HASKELL__ >= 808
+import Control.Monad       (MonadFail(..))
+#endif
 
 -- | Error monad with 'String' error messages.
 type Err = Either String

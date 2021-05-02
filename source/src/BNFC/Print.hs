@@ -1,8 +1,10 @@
 {-# LANGUAGE CPP #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE LambdaCase #-}
 #if __GLASGOW_HASKELL__ <= 708
 {-# LANGUAGE OverlappingInstances #-}
 #endif
-{-# LANGUAGE FlexibleInstances #-}
+
 {-# OPTIONS_GHC -fno-warn-incomplete-patterns #-}
 
 -- | Pretty-printer for BNFC.
@@ -10,8 +12,16 @@
 
 module BNFC.Print where
 
+import Prelude
+  ( ($), (.)
+  , Bool(..), (==), (<)
+  , Int, Integer, Double, (+), (-), (*)
+  , String, (++)
+  , ShowS, showChar, showString
+  , all, elem, foldr, id, map, null, replicate, shows, span
+  )
+import Data.Char ( Char, isSpace )
 import qualified BNFC.Abs
-import Data.Char
 
 -- | The top-level printing method.
 
@@ -24,19 +34,47 @@ doc :: ShowS -> Doc
 doc = (:)
 
 render :: Doc -> String
-render d = rend 0 (map ($ "") $ d []) "" where
-  rend i ss = case ss of
-    "["      :ts -> showChar '[' . rend i ts
-    "("      :ts -> showChar '(' . rend i ts
-    "{"      :ts -> showChar '{' . new (i+1) . rend (i+1) ts
-    "}" : ";":ts -> new (i-1) . space "}" . showChar ';' . new (i-1) . rend (i-1) ts
-    "}"      :ts -> new (i-1) . showChar '}' . new (i-1) . rend (i-1) ts
-    [";"]        -> showChar ';'
-    ";"      :ts -> showChar ';' . new i . rend i ts
-    t  : ts@(p:_) | closingOrPunctuation p -> showString t . rend i ts
-    t        :ts -> space t . rend i ts
-    _            -> id
-  new i     = showChar '\n' . replicateS (2*i) (showChar ' ') . dropWhile isSpace
+render d = rend 0 False (map ($ "") $ d []) ""
+  where
+  rend
+    :: Int        -- ^ Indentation level.
+    -> Bool       -- ^ Pending indentation to be output before next character?
+    -> [String]
+    -> ShowS
+  rend i p = \case
+      "["      :ts -> char '[' . rend i False ts
+      "("      :ts -> char '(' . rend i False ts
+      "{"      :ts -> onNewLine i     p . showChar '{'    . new (i+1) ts
+      "}" : ";":ts -> onNewLine (i-1) p . showString "};" . new (i-1) ts
+      "}"      :ts -> onNewLine (i-1) p . showChar '}'    . new (i-1) ts
+      [";"]        -> char ';'
+      ";"      :ts -> char ';' . new i ts
+      t  : ts@(s:_) | closingOrPunctuation s -> showString t . rend i False ts
+      t        :ts -> pending . space t . rend i False ts
+      []           -> id
+    where
+    -- Output character after pending indentation.
+    char :: Char -> ShowS
+    char c = pending . showChar c
+
+    -- Output pending indentation.
+    pending :: ShowS
+    pending = if p then indent i else id
+
+  -- Indentation (spaces) for given indentation level.
+  indent :: Int -> ShowS
+  indent i = replicateS (2*i) (showChar ' ')
+
+  -- Continue rendering in new line with new indentation.
+  new :: Int -> [String] -> ShowS
+  new j ts = showChar '\n' . rend j True ts
+
+  -- Make sure we are on a fresh line.
+  onNewLine :: Int -> Bool -> ShowS
+  onNewLine i p = (if p then id else showChar '\n') . indent i
+
+  -- Separate given string from following text by a space (if needed).
+  space :: String -> ShowS
   space t s =
     case (all isSpace t', null spc, null rest) of
       (True , _   , True ) -> []              -- remove trailing space
@@ -70,23 +108,26 @@ replicateS n f = concatS (replicate n f)
 
 class Print a where
   prt :: Int -> a -> Doc
-  prtList :: Int -> [a] -> Doc
-  prtList i = concatD . map (prt i)
 
 instance {-# OVERLAPPABLE #-} Print a => Print [a] where
-  prt = prtList
+  prt i = concatD . map (prt i)
 
 instance Print Char where
-  prt _ s = doc (showChar '\'' . mkEsc '\'' s . showChar '\'')
-  prtList _ s = doc (showChar '"' . concatS (map (mkEsc '"') s) . showChar '"')
+  prt _ c = doc (showChar '\'' . mkEsc '\'' c . showChar '\'')
+
+instance Print String where
+  prt _ = printString
+
+printString :: String -> Doc
+printString s = doc (showChar '"' . concatS (map (mkEsc '"') s) . showChar '"')
 
 mkEsc :: Char -> Char -> ShowS
-mkEsc q s = case s of
-  _ | s == q -> showChar '\\' . showChar s
-  '\\'-> showString "\\\\"
+mkEsc q = \case
+  s | s == q -> showChar '\\' . showChar s
+  '\\' -> showString "\\\\"
   '\n' -> showString "\\n"
   '\t' -> showString "\\t"
-  _ -> showChar s
+  s -> showChar s
 
 prPrec :: Int -> Int -> Doc -> Doc
 prPrec i j = if j < i then parenth else id
@@ -98,61 +139,56 @@ instance Print Double where
   prt _ x = doc (shows x)
 
 instance Print BNFC.Abs.Identifier where
-  prt _ (BNFC.Abs.Identifier (_,i)) = doc $ showString $ i
-
+  prt _ (BNFC.Abs.Identifier (_,i)) = doc $ showString i
 instance Print BNFC.Abs.Grammar where
-  prt i e = case e of
+  prt i = \case
     BNFC.Abs.Grammar defs -> prPrec i 0 (concatD [prt 0 defs])
 
 instance Print [BNFC.Abs.Def] where
-  prt = prtList
+  prt _ [] = concatD []
+  prt _ [x] = concatD [prt 0 x]
+  prt _ (x:xs) = concatD [prt 0 x, doc (showString ";"), prt 0 xs]
 
 instance Print BNFC.Abs.Def where
-  prt i e = case e of
+  prt i = \case
     BNFC.Abs.Rule label cat items -> prPrec i 0 (concatD [prt 0 label, doc (showString "."), prt 0 cat, doc (showString "::="), prt 0 items])
-    BNFC.Abs.Comment str -> prPrec i 0 (concatD [doc (showString "comment"), prt 0 str])
-    BNFC.Abs.Comments str1 str2 -> prPrec i 0 (concatD [doc (showString "comment"), prt 0 str1, prt 0 str2])
+    BNFC.Abs.Comment str -> prPrec i 0 (concatD [doc (showString "comment"), printString str])
+    BNFC.Abs.Comments str1 str2 -> prPrec i 0 (concatD [doc (showString "comment"), printString str1, printString str2])
     BNFC.Abs.Internal label cat items -> prPrec i 0 (concatD [doc (showString "internal"), prt 0 label, doc (showString "."), prt 0 cat, doc (showString "::="), prt 0 items])
     BNFC.Abs.Token identifier reg -> prPrec i 0 (concatD [doc (showString "token"), prt 0 identifier, prt 0 reg])
     BNFC.Abs.PosToken identifier reg -> prPrec i 0 (concatD [doc (showString "position"), doc (showString "token"), prt 0 identifier, prt 0 reg])
     BNFC.Abs.Entryp cats -> prPrec i 0 (concatD [doc (showString "entrypoints"), prt 0 cats])
-    BNFC.Abs.Separator minimumsize cat str -> prPrec i 0 (concatD [doc (showString "separator"), prt 0 minimumsize, prt 0 cat, prt 0 str])
-    BNFC.Abs.Terminator minimumsize cat str -> prPrec i 0 (concatD [doc (showString "terminator"), prt 0 minimumsize, prt 0 cat, prt 0 str])
-    BNFC.Abs.Delimiters cat str1 str2 separation minimumsize -> prPrec i 0 (concatD [doc (showString "delimiters"), prt 0 cat, prt 0 str1, prt 0 str2, prt 0 separation, prt 0 minimumsize])
+    BNFC.Abs.Separator minimumsize cat str -> prPrec i 0 (concatD [doc (showString "separator"), prt 0 minimumsize, prt 0 cat, printString str])
+    BNFC.Abs.Terminator minimumsize cat str -> prPrec i 0 (concatD [doc (showString "terminator"), prt 0 minimumsize, prt 0 cat, printString str])
+    BNFC.Abs.Delimiters cat str1 str2 separation minimumsize -> prPrec i 0 (concatD [doc (showString "delimiters"), prt 0 cat, printString str1, printString str2, prt 0 separation, prt 0 minimumsize])
     BNFC.Abs.Coercions identifier n -> prPrec i 0 (concatD [doc (showString "coercions"), prt 0 identifier, prt 0 n])
     BNFC.Abs.Rules identifier rhss -> prPrec i 0 (concatD [doc (showString "rules"), prt 0 identifier, doc (showString "::="), prt 0 rhss])
     BNFC.Abs.Function identifier args exp -> prPrec i 0 (concatD [doc (showString "define"), prt 0 identifier, prt 0 args, doc (showString "="), prt 0 exp])
     BNFC.Abs.Layout strs -> prPrec i 0 (concatD [doc (showString "layout"), prt 0 strs])
     BNFC.Abs.LayoutStop strs -> prPrec i 0 (concatD [doc (showString "layout"), doc (showString "stop"), prt 0 strs])
     BNFC.Abs.LayoutTop -> prPrec i 0 (concatD [doc (showString "layout"), doc (showString "toplevel")])
-  prtList _ [] = concatD []
-  prtList _ [x] = concatD [prt 0 x]
-
-  prtList _ (x:xs) = concatD [prt 0 x, doc (showString ";"), prt 0 xs]
 
 instance Print BNFC.Abs.Item where
-  prt i e = case e of
-    BNFC.Abs.Terminal str -> prPrec i 0 (concatD [prt 0 str])
+  prt i = \case
+    BNFC.Abs.Terminal str -> prPrec i 0 (concatD [printString str])
     BNFC.Abs.NTerminal cat -> prPrec i 0 (concatD [prt 0 cat])
-  prtList _ [] = concatD []
-  prtList _ (x:xs) = concatD [prt 0 x, prt 0 xs]
 
 instance Print [BNFC.Abs.Item] where
-  prt = prtList
+  prt _ [] = concatD []
+  prt _ (x:xs) = concatD [prt 0 x, prt 0 xs]
 
 instance Print BNFC.Abs.Cat where
-  prt i e = case e of
+  prt i = \case
     BNFC.Abs.ListCat cat -> prPrec i 0 (concatD [doc (showString "["), prt 0 cat, doc (showString "]")])
     BNFC.Abs.IdCat identifier -> prPrec i 0 (concatD [prt 0 identifier])
-  prtList _ [] = concatD []
-  prtList _ [x] = concatD [prt 0 x]
-  prtList _ (x:xs) = concatD [prt 0 x, doc (showString ","), prt 0 xs]
 
 instance Print [BNFC.Abs.Cat] where
-  prt = prtList
+  prt _ [] = concatD []
+  prt _ [x] = concatD [prt 0 x]
+  prt _ (x:xs) = concatD [prt 0 x, doc (showString ","), prt 0 xs]
 
 instance Print BNFC.Abs.Label where
-  prt i e = case e of
+  prt i = \case
     BNFC.Abs.Id identifier -> prPrec i 0 (concatD [prt 0 identifier])
     BNFC.Abs.Wild -> prPrec i 0 (concatD [doc (showString "_")])
     BNFC.Abs.ListE -> prPrec i 0 (concatD [doc (showString "["), doc (showString "]")])
@@ -160,58 +196,56 @@ instance Print BNFC.Abs.Label where
     BNFC.Abs.ListOne -> prPrec i 0 (concatD [doc (showString "("), doc (showString ":"), doc (showString "["), doc (showString "]"), doc (showString ")")])
 
 instance Print BNFC.Abs.Arg where
-  prt i e = case e of
+  prt i = \case
     BNFC.Abs.Arg identifier -> prPrec i 0 (concatD [prt 0 identifier])
-  prtList _ [] = concatD []
-  prtList _ (x:xs) = concatD [prt 0 x, prt 0 xs]
 
 instance Print [BNFC.Abs.Arg] where
-  prt = prtList
+  prt _ [] = concatD []
+  prt _ (x:xs) = concatD [prt 0 x, prt 0 xs]
 
 instance Print BNFC.Abs.Separation where
-  prt i e = case e of
+  prt i = \case
     BNFC.Abs.SepNone -> prPrec i 0 (concatD [])
-    BNFC.Abs.SepTerm str -> prPrec i 0 (concatD [doc (showString "terminator"), prt 0 str])
-    BNFC.Abs.SepSepar str -> prPrec i 0 (concatD [doc (showString "separator"), prt 0 str])
+    BNFC.Abs.SepTerm str -> prPrec i 0 (concatD [doc (showString "terminator"), printString str])
+    BNFC.Abs.SepSepar str -> prPrec i 0 (concatD [doc (showString "separator"), printString str])
 
 instance Print [String] where
-  prt = prtList
+  prt _ [x] = concatD [printString x]
+  prt _ (x:xs) = concatD [printString x, doc (showString ","), prt 0 xs]
 
 instance Print BNFC.Abs.Exp where
-  prt i e = case e of
+  prt i = \case
     BNFC.Abs.Cons exp1 exp2 -> prPrec i 0 (concatD [prt 1 exp1, doc (showString ":"), prt 0 exp2])
     BNFC.Abs.App identifier exps -> prPrec i 1 (concatD [prt 0 identifier, prt 2 exps])
     BNFC.Abs.Var identifier -> prPrec i 2 (concatD [prt 0 identifier])
     BNFC.Abs.LitInt n -> prPrec i 2 (concatD [prt 0 n])
     BNFC.Abs.LitChar c -> prPrec i 2 (concatD [prt 0 c])
-    BNFC.Abs.LitString str -> prPrec i 2 (concatD [prt 0 str])
+    BNFC.Abs.LitString str -> prPrec i 2 (concatD [printString str])
     BNFC.Abs.LitDouble d -> prPrec i 2 (concatD [prt 0 d])
     BNFC.Abs.List exps -> prPrec i 2 (concatD [doc (showString "["), prt 0 exps, doc (showString "]")])
-  prtList 2 [x] = concatD [prt 2 x]
-  prtList 2 (x:xs) = concatD [prt 2 x, prt 2 xs]
-  prtList _ [] = concatD []
-  prtList _ [x] = concatD [prt 0 x]
-  prtList _ (x:xs) = concatD [prt 0 x, doc (showString ","), prt 0 xs]
 
 instance Print [BNFC.Abs.Exp] where
-  prt = prtList
+  prt 2 [x] = concatD [prt 2 x]
+  prt 2 (x:xs) = concatD [prt 2 x, prt 2 xs]
+  prt _ [] = concatD []
+  prt _ [x] = concatD [prt 0 x]
+  prt _ (x:xs) = concatD [prt 0 x, doc (showString ","), prt 0 xs]
 
 instance Print BNFC.Abs.RHS where
-  prt i e = case e of
+  prt i = \case
     BNFC.Abs.RHS items -> prPrec i 0 (concatD [prt 0 items])
-  prtList _ [x] = concatD [prt 0 x]
-  prtList _ (x:xs) = concatD [prt 0 x, doc (showString "|"), prt 0 xs]
 
 instance Print [BNFC.Abs.RHS] where
-  prt = prtList
+  prt _ [x] = concatD [prt 0 x]
+  prt _ (x:xs) = concatD [prt 0 x, doc (showString "|"), prt 0 xs]
 
 instance Print BNFC.Abs.MinimumSize where
-  prt i e = case e of
+  prt i = \case
     BNFC.Abs.MNonempty -> prPrec i 0 (concatD [doc (showString "nonempty")])
     BNFC.Abs.MEmpty -> prPrec i 0 (concatD [])
 
 instance Print BNFC.Abs.Reg where
-  prt i e = case e of
+  prt i = \case
     BNFC.Abs.RAlt reg1 reg2 -> prPrec i 0 (concatD [prt 0 reg1, doc (showString "|"), prt 1 reg2])
     BNFC.Abs.RMinus reg1 reg2 -> prPrec i 1 (concatD [prt 1 reg1, doc (showString "-"), prt 2 reg2])
     BNFC.Abs.RSeq reg1 reg2 -> prPrec i 2 (concatD [prt 2 reg1, prt 3 reg2])
@@ -220,11 +254,10 @@ instance Print BNFC.Abs.Reg where
     BNFC.Abs.ROpt reg -> prPrec i 3 (concatD [prt 3 reg, doc (showString "?")])
     BNFC.Abs.REps -> prPrec i 3 (concatD [doc (showString "eps")])
     BNFC.Abs.RChar c -> prPrec i 3 (concatD [prt 0 c])
-    BNFC.Abs.RAlts str -> prPrec i 3 (concatD [doc (showString "["), prt 0 str, doc (showString "]")])
-    BNFC.Abs.RSeqs str -> prPrec i 3 (concatD [doc (showString "{"), prt 0 str, doc (showString "}")])
+    BNFC.Abs.RAlts str -> prPrec i 3 (concatD [doc (showString "["), printString str, doc (showString "]")])
+    BNFC.Abs.RSeqs str -> prPrec i 3 (concatD [doc (showString "{"), printString str, doc (showString "}")])
     BNFC.Abs.RDigit -> prPrec i 3 (concatD [doc (showString "digit")])
     BNFC.Abs.RLetter -> prPrec i 3 (concatD [doc (showString "letter")])
     BNFC.Abs.RUpper -> prPrec i 3 (concatD [doc (showString "upper")])
     BNFC.Abs.RLower -> prPrec i 3 (concatD [doc (showString "lower")])
     BNFC.Abs.RAny -> prPrec i 3 (concatD [doc (showString "char")])
-

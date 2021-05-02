@@ -3,13 +3,20 @@
 {
 {-# OPTIONS -fno-warn-incomplete-patterns #-}
 {-# OPTIONS_GHC -w #-}
+
+{-# LANGUAGE PatternSynonyms #-}
+
 module BNFC.Lex where
 
+import Prelude
+
 import qualified Data.Bits
-import Data.Word (Word8)
-import Data.Char (ord)
+import Data.Char     (ord)
+import Data.Function (on)
+import Data.Word     (Word8)
 }
 
+-- Predefined character classes
 
 $c = [A-Z\192-\221] # [\215]  -- capital isolatin1 letter (215 = \times) FIXME
 $s = [a-z\222-\255] # [\247]  -- small   isolatin1 letter (247 = \div  ) FIXME
@@ -18,75 +25,116 @@ $d = [0-9]           -- digit
 $i = [$l $d _ ']     -- identifier character
 $u = [. \n]          -- universal: any character
 
-@rsyms =    -- symbols and non-identifier-like reserved words
-   \; | \. | \: \: \= | \[ | \] | \, | \_ | \( | \: | \) | \= | \| | \- | \* | \+ | \? | \{ | \}
+-- Symbols and non-identifier-like reserved words
+
+@rsyms = \; | \. | \: \: \= | \[ | \] | \, | \_ | \( | \: | \) | \= | \| | \- | \* | \+ | \? | \{ | \}
 
 :-
 
--- Line comments
+-- Line comment "--"
 "--" [.]* ;
 
--- Block comments
+-- Block comment "{-" "-}"
 \{ \- [$u # \-]* \- ([$u # [\- \}]] [$u # \-]* \- | \-)* \} ;
 
+-- Whitespace (skipped)
 $white+ ;
-@rsyms
-    { tok (\p s -> PT p (eitherResIdent TV s)) }
-$l (\_ | ($d | $l)) *
-    { tok (\p s -> PT p (eitherResIdent T_Identifier s)) }
 
+-- Symbols
+@rsyms
+    { tok (eitherResIdent TV) }
+
+-- token Identifier
+$l (\_ | ($d | $l)) *
+    { tok (eitherResIdent T_Identifier) }
+
+-- Keywords and Ident
 $l $i*
-    { tok (\p s -> PT p (eitherResIdent TV s)) }
+    { tok (eitherResIdent TV) }
+
+-- String
 \" ([$u # [\" \\ \n]] | (\\ (\" | \\ | \' | n | t | r | f)))* \"
-    { tok (\p s -> PT p (TL $ unescapeInitTail s)) }
+    { tok (TL . unescapeInitTail) }
+
+-- Char
 \' ($u # [\' \\] | \\ [\\ \' n t r f]) \'
-    { tok (\p s -> PT p (TC s))  }
+    { tok TC }
+
+-- Integer
 $d+
-    { tok (\p s -> PT p (TI s))    }
+    { tok TI }
+
+-- Double
 $d+ \. $d+ (e (\-)? $d+)?
-    { tok (\p s -> PT p (TD s)) }
+    { tok TD }
 
 {
+-- | Create a token with position.
+tok :: (String -> Tok) -> (Posn -> String -> Token)
+tok f p = PT p . f
 
-tok :: (Posn -> String -> Token) -> (Posn -> String -> Token)
-tok f p s = f p s
+-- | Token without position.
+data Tok
+  = TK {-# UNPACK #-} !TokSymbol  -- ^ Reserved word or symbol.
+  | TL !String                    -- ^ String literal.
+  | TI !String                    -- ^ Integer literal.
+  | TV !String                    -- ^ Identifier.
+  | TD !String                    -- ^ Float literal.
+  | TC !String                    -- ^ Character literal.
+  | T_Identifier !String
+  deriving (Eq, Show, Ord)
 
-data Tok =
-   TS !String !Int    -- reserved words and symbols
- | TL !String         -- string literals
- | TI !String         -- integer literals
- | TV !String         -- identifiers
- | TD !String         -- double precision float literals
- | TC !String         -- character literals
- | T_Identifier !String
+-- | Smart constructor for 'Tok' for the sake of backwards compatibility.
+pattern TS :: String -> Int -> Tok
+pattern TS t i = TK (TokSymbol t i)
 
- deriving (Eq,Show,Ord)
+-- | Keyword or symbol tokens have a unique ID.
+data TokSymbol = TokSymbol
+  { tsText :: String
+      -- ^ Keyword or symbol text.
+  , tsID   :: !Int
+      -- ^ Unique ID.
+  } deriving (Show)
 
-data Token =
-   PT  Posn Tok
- | Err Posn
-  deriving (Eq,Show,Ord)
+-- | Keyword/symbol equality is determined by the unique ID.
+instance Eq  TokSymbol where (==)    = (==)    `on` tsID
 
+-- | Keyword/symbol ordering is determined by the unique ID.
+instance Ord TokSymbol where compare = compare `on` tsID
+
+-- | Token with position.
+data Token
+  = PT  Posn Tok
+  | Err Posn
+  deriving (Eq, Show, Ord)
+
+-- | Pretty print a position.
 printPosn :: Posn -> String
 printPosn (Pn _ l c) = "line " ++ show l ++ ", column " ++ show c
 
+-- | Pretty print the position of the first token in the list.
 tokenPos :: [Token] -> String
 tokenPos (t:_) = printPosn (tokenPosn t)
-tokenPos [] = "end of file"
+tokenPos []    = "end of file"
 
+-- | Get the position of a token.
 tokenPosn :: Token -> Posn
 tokenPosn (PT p _) = p
-tokenPosn (Err p) = p
+tokenPosn (Err p)  = p
 
+-- | Get line and column of a token.
 tokenLineCol :: Token -> (Int, Int)
 tokenLineCol = posLineCol . tokenPosn
 
+-- | Get line and column of a position.
 posLineCol :: Posn -> (Int, Int)
 posLineCol (Pn _ l c) = (l,c)
 
+-- | Convert a token into "position token" form.
 mkPosToken :: Token -> ((Int, Int), String)
-mkPosToken t@(PT p _) = (posLineCol p, tokenText t)
+mkPosToken t = (tokenLineCol t, tokenText t)
 
+-- | Convert a token to its text.
 tokenText :: Token -> String
 tokenText t = case t of
   PT _ (TS s _) -> s
@@ -98,24 +146,56 @@ tokenText t = case t of
   Err _         -> "#error"
   PT _ (T_Identifier s) -> s
 
+-- | Convert a token to a string.
 prToken :: Token -> String
 prToken t = tokenText t
 
-data BTree = N | B String Tok BTree BTree deriving (Show)
+-- | Finite map from text to token organized as binary search tree.
+data BTree
+  = N -- ^ Nil (leaf).
+  | B String Tok BTree BTree
+      -- ^ Binary node.
+  deriving (Show)
 
+-- | Convert potential keyword into token or use fallback conversion.
 eitherResIdent :: (String -> Tok) -> String -> Tok
 eitherResIdent tv s = treeFind resWords
   where
   treeFind N = tv s
-  treeFind (B a t left right) | s < a  = treeFind left
-                              | s > a  = treeFind right
-                              | s == a = t
+  treeFind (B a t left right) =
+    case compare s a of
+      LT -> treeFind left
+      GT -> treeFind right
+      EQ -> t
 
+-- | The keywords and symbols of the language organized as binary search tree.
 resWords :: BTree
-resWords = b "delimiters" 20 (b ";" 10 (b "," 5 (b "*" 3 (b ")" 2 (b "(" 1 N N) N) (b "+" 4 N N)) (b ":" 8 (b "." 7 (b "-" 6 N N) N) (b "::=" 9 N N))) (b "_" 15 (b "[" 13 (b "?" 12 (b "=" 11 N N) N) (b "]" 14 N N)) (b "comment" 18 (b "coercions" 17 (b "char" 16 N N) N) (b "define" 19 N N)))) (b "rules" 30 (b "layout" 25 (b "eps" 23 (b "entrypoints" 22 (b "digit" 21 N N) N) (b "internal" 24 N N)) (b "nonempty" 28 (b "lower" 27 (b "letter" 26 N N) N) (b "position" 29 N N))) (b "toplevel" 35 (b "terminator" 33 (b "stop" 32 (b "separator" 31 N N) N) (b "token" 34 N N)) (b "|" 38 (b "{" 37 (b "upper" 36 N N) N) (b "}" 39 N N))))
-   where b s n = let bs = s
-                 in  B bs (TS bs n)
+resWords =
+  b "delimiters" 20
+    (b ";" 10
+       (b "," 5
+          (b "*" 3 (b ")" 2 (b "(" 1 N N) N) (b "+" 4 N N))
+          (b ":" 8 (b "." 7 (b "-" 6 N N) N) (b "::=" 9 N N)))
+       (b "_" 15
+          (b "[" 13 (b "?" 12 (b "=" 11 N N) N) (b "]" 14 N N))
+          (b "comment" 18
+             (b "coercions" 17 (b "char" 16 N N) N) (b "define" 19 N N))))
+    (b "rules" 30
+       (b "layout" 25
+          (b "eps" 23
+             (b "entrypoints" 22 (b "digit" 21 N N) N) (b "internal" 24 N N))
+          (b "nonempty" 28
+             (b "lower" 27 (b "letter" 26 N N) N) (b "position" 29 N N)))
+       (b "toplevel" 35
+          (b "terminator" 33
+             (b "stop" 32 (b "separator" 31 N N) N) (b "token" 34 N N))
+          (b "|" 38 (b "{" 37 (b "upper" 36 N N) N) (b "}" 39 N N))))
+  where
+  b s n = B bs (TS bs n)
+    where
+    bs = s
 
+-- | Unquote string literal.
 unescapeInitTail :: String -> String
 unescapeInitTail = id . unesc . tail . id
   where
@@ -125,9 +205,9 @@ unescapeInitTail = id . unesc . tail . id
     '\\':'t':cs  -> '\t' : unesc cs
     '\\':'r':cs  -> '\r' : unesc cs
     '\\':'f':cs  -> '\f' : unesc cs
-    '"':[]    -> []
-    c:cs      -> c : unesc cs
-    _         -> []
+    '"':[]       -> []
+    c:cs         -> c : unesc cs
+    _            -> []
 
 -------------------------------------------------------------------
 -- Alex wrapper code.
@@ -135,7 +215,7 @@ unescapeInitTail = id . unesc . tail . id
 -------------------------------------------------------------------
 
 data Posn = Pn !Int !Int !Int
-      deriving (Eq, Show,Ord)
+  deriving (Eq, Show, Ord)
 
 alexStartPos :: Posn
 alexStartPos = Pn 0 1 1
@@ -179,7 +259,7 @@ alexInputPrevChar (p, c, bs, s) = c
 -- | Encode a Haskell String to a list of Word8 values, in UTF8 format.
 utf8Encode :: Char -> [Word8]
 utf8Encode = map fromIntegral . go . ord
- where
+  where
   go oc
    | oc <= 0x7f       = [oc]
 
