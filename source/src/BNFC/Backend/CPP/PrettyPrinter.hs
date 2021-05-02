@@ -97,7 +97,7 @@ mkHFile useStl inPackage cf groups = unlines
     "  char *print(Visitable *v);"
    ]
   hdef = nsDefine inPackage "PRINTER_HEADER"
-  content = concatMap prDataH groups
+  content = concatMap (prDataH useStl) groups
   classFooter = unlines $
    [
     "  void visitInteger(Integer i);",
@@ -191,13 +191,17 @@ mkHFile useStl inPackage cf groups = unlines
    ]
 
 --Prints all the required method names and their parameters.
-prDataH :: (Cat, [Rule]) -> String
-prDataH (cat, rules) =
- if isList cat
- then concat ["  void visit", cl, "(", cl, " *p);\n"]
- else abstract ++ concatMap prRuleH rules
+prDataH :: Bool -> (Cat, [Rule]) -> String
+prDataH useSTL (cat, rules)
+ | isList cat = unlines $ concat
+     [ [ concat [ "  void visit", cl, "(", cl, " *p);"          ] ]
+     , when useSTL
+       [ concat [ "  void iter", cl, "(", itty, " i, ", itty, " j);" ] ]
+     ]
+ | otherwise  = abstract ++ concatMap prRuleH rules
  where
-   cl = identCat (normCat cat)
+   cl       = identCat (normCat cat)
+   itty     = concat [ cl, "::", "const_iterator" ]
    abstract = case lookupRule (noPosition $ show cat) rules of
     Just _ -> ""
     Nothing ->  "  void visit" ++ cl ++ "(" ++ cl ++ " *p); /* abstract class */\n"
@@ -400,57 +404,68 @@ prPrintData _ inPackage _cf (cat, rules) = -- Not a list
     Just _ -> ""
     Nothing ->  "void PrintAbsyn::visit" ++ cl ++ "(" ++ cl +++ "*p) {} //abstract class\n\n"
 
--- | Generate pretty printer visitor for a list category:
+-- | Generate pretty printer visitor for a list category (STL version).
 --
--- >>> let c = Cat "C" ; lc = ListCat c
--- >>> let rules = [npRule "[]" lc [] Parsable, npRule "(:)" lc [Left c, Right "-", Left lc] Parsable]
--- >>> genPrintVisitorList (lc, rules)
--- void PrintAbsyn::visitListC(ListC *listc)
--- {
---   for (ListC::const_iterator i = listc->begin() ; i != listc->end() ; ++i)
---   {
---     (*i)->accept(this);
---     render('-');
---   }
--- }
---
--- >>> let c2 = CoercCat "C" 2 ; lc2 = ListCat c2
--- >>> let rules2 = rules ++ [npRule "[]" lc2 [] Parsable, npRule "(:)" lc2 [Left c2, Right "+", Left lc2] Parsable]
--- >>> genPrintVisitorList (lc, rules2)
--- void PrintAbsyn::visitListC(ListC *listc)
--- {
---   for (ListC::const_iterator i = listc->begin() ; i != listc->end() ; ++i)
---   {
---     (*i)->accept(this);
---     switch(_i_)
---     {
---       case 2: render('+'); break;
---       case 0: render('-'); break;
---     }
---   }
--- }
 genPrintVisitorList :: (Cat, [Rule]) -> Doc
-genPrintVisitorList (cat@(ListCat c), rules) =
-    "void PrintAbsyn::visit" <> text cl <> "(" <> text cl <> " *" <> vname <> ")"
-    $$ codeblock 2
-      [ "for ("<> text cl <> "::const_iterator i = " <> vname <> "->begin() ; i != " <> vname <> "->end() ; ++i)"
-      , codeblock 2
-          [ if isTokenCat c
-              then "visit" <> text (baseName cl) <> "(*i) ;"
-              else "(*i)->accept(this);"
-          , (if isJust $ hasSingletonRule rules
-              then "if (i != " <> vname <> "->end() - 1)"
-              else empty)
-            <+> renderListSepByPrecedence "_i_" renderSep separators
-          ]
+genPrintVisitorList (cat@(ListCat c), rules) = vcat
+  [ "void PrintAbsyn::visit" <> lty <> parens (lty <+> "*" <> vname)
+  , codeblock 2
+    [ "iter" <> lty <> parens (vname <> "->begin()" <> comma <+> vname <> "->end()") <> semi ]
+  , ""
+  , "void PrintAbsyn::iter" <> lty <> parens (itty <+> "i" <> comma <+> itty <+> "j")
+  , codeblock 2 $ concat
+    [ if null docs0 then
+      [ "if (i == j) return;" ]
+      else
+      [ "if (i == j)"
+      , "{ /* nil */"
+      , nest 2 $ vcat docs0
+      , "}"
+      , "else"
       ]
+    , unless (null docs1)
+      [ "if (i == j-1)"
+      , "{ /* last */"
+      , nest 2 $ vcat docs1
+      , "}"
+      , "else"
+      ]
+    , [ "{ /* cons */"
+      ,  nest 2 $ vcat docs2
+      , "}"
+      ]
+    ]
+  , ""
+  , ""
+  ]
   where
-   separators  = getSeparatorByPrecedence rules
-   cl          = identCat (normCat cat)
-   vname       = text $ map toLower cl
-   renderSep s = "render(" <> text (snd (renderCharOrString s)) <> ")"
+  cl        = identCat (normCat cat)
+  lty       = text cl                   -- List type
+  itty      = lty <> "::const_iterator" -- Iterator type
+  vname     = text $ map toLower cl
+  prules    = sortRulesByPrecedence rules
+  swRules f = switchByPrecedence "_i_" $
+                map (second $ sep . prListRule_) $
+                  uniqOn fst $ filter f prules
+                  -- Discard duplicates, can only handle one rule per precedence.
+  docs0     = swRules isNilFun
+  docs1     = swRules isOneFun
+  docs2     = swRules isConsFun
 
 genPrintVisitorList _ = error "genPrintVisitorList expects a ListCat"
+
+-- | Only render the rhs (items) of a list rule.
+
+prListRule_ :: IsFun a => Rul a -> [Doc]
+prListRule_ (Rule _ _ items _) = for items $ \case
+  Right t       -> "render(" <> text (snd (renderCharOrString t)) <> ");"
+  Left c
+    | Just t <- maybeTokenCat c
+                -> "visit" <> dat <> "(*i);"
+    | isList c  -> "iter" <> dat <> "(i+1, j);"
+    | otherwise -> "(*i)->accept(this);"
+    where
+    dat = text $ identCat $ normCat c
 
 -- This is the only part of the pretty printer that differs significantly
 -- between the versions with and without STL.

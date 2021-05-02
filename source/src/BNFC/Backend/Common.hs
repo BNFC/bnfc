@@ -3,7 +3,13 @@
 
 -- | Functions common to different backends.
 
-module BNFC.Backend.Common where
+module BNFC.Backend.Common
+  ( unicodeAndSymbols
+  , asciiKeywords
+  , flexEps
+  , switchByPrecedence
+  )
+  where
 
 import Prelude hiding ((<>))
 
@@ -52,6 +58,10 @@ renderListSepByPrecedence
   -> Doc
 renderListSepByPrecedence var render =
   vcat . switchByPrecedence var . map (second $ render >.> (<> ";"))
+
+-- Note (Andreas, 2021-05-02):
+-- @renderListSepByPrecedence@ did not account for mixfix lists (issue #358)
+-- and has been replaced by the more general @switchByPrecedence@.
 
 switchByPrecedence
   :: Doc              -- ^ Name of the coercion level variable/
