@@ -15,3 +15,4 @@ semi-exprs:
 1+1;
 2+2;
 comma-exprs: 3, (4+4),
+chars: 'A' !, 'B'! , 'C'.

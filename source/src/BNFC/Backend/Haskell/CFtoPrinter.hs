@@ -180,8 +180,18 @@ prologue tokenText useGadt name absMod cf = map text $ concat
     , "instance Print Char where"
     , "  prt _ c = doc (showChar '\\'' . mkEsc '\\'' c . showChar '\\'')"
     , ""
-    , "instance Print String where"
-    , "  prt _ s = doc (showChar '\"' . concatS (map (mkEsc '\"') s) . showChar '\"')"
+    ]
+  , if haveListChar then
+    [ "-- | No @instance 'Print' String@ because it would clash with the instance"
+    , "--   for @[Char]@."
+    ]
+    else
+    [ "instance Print String where"
+    , "  prt _ = printString"
+    , ""
+    ]
+  , [ "printString :: String -> Doc"
+    , "printString s = doc (showChar '\"' . concatS (map (mkEsc '\"') s) . showChar '\"')"
     , ""
     , "mkEsc :: Char -> Char -> ShowS"
     , "mkEsc q = \\case"
@@ -196,6 +206,8 @@ prologue tokenText useGadt name absMod cf = map text $ concat
     , ""
     ]
   ]
+  where
+  haveListChar = not $ null $ rulesForCat cf $ ListCat $ TokenCat "Char"
 
 -- | Printing instance for @Integer@, and possibly @[Integer]@.
 integerRule :: AbsMod -> CF -> [Doc]
@@ -447,4 +459,5 @@ mkRhs args its =
   mk (arg:args) (Left c  : items)    = (prt c <+> text arg) : mk args items
   mk args       (Right s : items)    = ("doc (showString" <+> text (show s) <> ")") : mk args items
   mk _          _                    = []
+  prt (TokenCat "String") = "printString"
   prt c = "prt" <+> integer (precCat c)

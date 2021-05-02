@@ -1,8 +1,14 @@
 -- Issue #358, C/C++ backends misprint mixfix lists.
--- Issue #361, C++ list parsing
--- Issue #366, render } on new line
+-- Issue #361, C++ list parsing.
+-- Issue #366, render } on new line.
+-- Issue #359, Haskell: print Char lists.
 
-Top.   S ::= "{" [Integer] [FooBar] [String] "semi-exprs:" [Exp] "comma-exprs:" [Exp1];
+Top.   S ::= "{" [Integer]
+             [FooBar]
+             [String]
+             "semi-exprs:" [Exp]
+             "comma-exprs:" [Exp1]
+             "chars:" [Char] ;
 
 [].    [Integer] ::= "}";
 (:).   [Integer] ::= "-" Integer ";" [Integer];  -- Issue #358
@@ -17,14 +23,16 @@ Foo.   FooBar    ::= "foo";
 Bar.   FooBar    ::= "bar";
 Baz.   FooBar    ::= "baz";
 
+[].    [Exp]     ::= "";
+(:).   [Exp]     ::= Exp ";" [Exp];
 
-[].     [Exp]  ::= "";
-(:).    [Exp]  ::= Exp ";" [Exp];
+[].    [Exp1]    ::= "";
+(:).   [Exp1]    ::= Exp1 "," [Exp1];
 
-[].     [Exp1] ::= "";
-(:).    [Exp1] ::= Exp1 "," [Exp1];
+EInt.  Exp1      ::= Integer;
+EPlus. Exp       ::= Exp "+" Exp1;
 
-EInt.   Exp1   ::= Integer;
-EPlus.  Exp    ::= Exp "+" Exp1;
+(:[]). [Char]    ::= Char ".";                   -- Issue #359
+(:).   [Char]    ::= Char "!" "," [Char];
 
 coercions Exp 1;
