@@ -70,8 +70,6 @@ module BNFC.CF (
             isNilFun,       -- empty list function? ([])
             isOneFun,       -- one element list function? (:[])
             hasNilRule, hasSingletonRule,
-            getCons,
-            getSeparatorByPrecedence,
             sortRulesByPrecedence,
             isConsFun,      -- constructor function? (:)
             isNilCons,      -- either three of above?
@@ -748,26 +746,6 @@ hasSingletonRule = List.find isOneFun
 
 sortRulesByPrecedence :: [Rule] -> [(Integer,Rule)]
 sortRulesByPrecedence = List.sortOn (Down . fst) . map (precRule &&& id)
-
--- | Gets the separator for a list.
---   Picks the first terminal in the first 'isConsFun' rule.
---   This is correct for type-checked grammars.
-getCons :: [Rule] -> String
-getCons rs =
-  case find isConsFun rs of
-    Just (Rule _ _ items _) -> headWithDefault "" $ Either.rights items
-    Nothing -> error $ concat
-      [ "getCons: no list construction function found in "
-      , intercalate ", " (map (show . funRule) rs)
-      ]
-
--- | Helper function that gets the list separator by precedence level.
--- Should only be called on the rules for a 'ListCat'.
-getSeparatorByPrecedence :: [Rule] -> [(Integer,String)]
-getSeparatorByPrecedence rules = [ (p, getCons (getRulesFor p)) | p <- precedences ]
-  where
-    precedences = Set.toDescList . Set.fromList $ map precRule rules
-    getRulesFor p = [ r | r <- rules, precRule r == p ]
 
 -- | Is the given category a list category parsing also empty lists?
 isEmptyListCat :: CF -> Cat -> Bool

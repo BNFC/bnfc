@@ -56,18 +56,3 @@ spec = do
         sameCat (Cat "Abc") (CoercCat "Abc" 44) `shouldBe` True
     it "considers Foo and Bar to not be the same" $
         sameCat (Cat "Foo") (Cat "Bar") `shouldBe` False
-
-  describe "getSeparatorByPrecedence" $ do
-    let c0 = CoercCat "C" 0
-        c1 = CoercCat "C" 1
-        rule0 = Rule (noPosition "(:)") (noPosition $ ListCat c0) [Left c0, Right ",", Left (ListCat c0)] Parsable
-        rule1 = Rule (noPosition "(:)") (noPosition $ ListCat c1) [Left c1, Right ";", Left (ListCat c1)] Parsable
-
-    it "returns a single value for a simple list" $
-      getSeparatorByPrecedence [rule0] `shouldBe` [(0,",")]
-
-    it "returns as many separators as there are list constructors" $
-      getSeparatorByPrecedence [rule0, rule1] `shouldBe` [(1,";"),(0,",")]
-
-    it "ignores additional rules with the same precedence" $
-      getSeparatorByPrecedence [rule0, rule1, rule0] `shouldBe` [(1,";"),(0,",")]
