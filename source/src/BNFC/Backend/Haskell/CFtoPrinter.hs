@@ -38,15 +38,15 @@ cf2Printer
   -> String  -- ^ Name of created Haskell module.
   -> AbsMod  -- ^ Name of Haskell module for abstract syntax.
   -> CF      -- ^ Grammar.
-  -> String
-cf2Printer tokenText functor useGadt name absMod cf = unlines $ concat $
-  -- Each of the following list entries is itself a list of lines
+  -> Doc
+cf2Printer tokenText functor useGadt name absMod cf = vcat $ concat $
+  -- Each of the following list entries is itself a list of Docs
   [ prologue tokenText useGadt name [ absMod | importAbsMod ] cf
   , integerRule absMod cf
   , doubleRule absMod cf
-  , if hasIdent cf then identRule absMod tokenText cf else []
-  ] ++ [ ownPrintRule absMod tokenText cf own | (own,_) <- tokenPragmas cf ] ++
-  [ rules absMod functor cf
+  , when (hasIdent cf) $ identRule absMod tokenText cf
+  , concat [ ownPrintRule absMod tokenText cf own | (own,_) <- tokenPragmas cf ]
+  , rules absMod functor cf
   ]
   where
   importAbsMod = not (null $ cf2data cf) || not (null $ specialCats cf)
@@ -56,8 +56,8 @@ lowerCaseImports :: [String]
 lowerCaseImports =
   [ "all", "elem", "foldr", "id", "map", "null", "replicate", "shows", "span" ]
 
-prologue :: TokenText -> Bool -> String -> [AbsMod] -> CF -> [String]
-prologue tokenText useGadt name absMod cf = concat
+prologue :: TokenText -> Bool -> String -> [AbsMod] -> CF -> [Doc]
+prologue tokenText useGadt name absMod cf = map text $ concat
   [ [ "{-# LANGUAGE CPP #-}"
     , "{-# LANGUAGE FlexibleInstances #-}"
     , "{-# LANGUAGE LambdaCase #-}"
@@ -173,15 +173,15 @@ prologue tokenText useGadt name absMod cf = concat
     , ""
     , "class Print a where"
     , "  prt :: Int -> a -> Doc"
-    , "  prtList :: Int -> [a] -> Doc"
-    , "  prtList i = concatD . map (prt i)"
     , ""
     , "instance {-# OVERLAPPABLE #-} Print a => Print [a] where"
-    , "  prt = prtList"
+    , "  prt i = concatD . map (prt i)"
     , ""
     , "instance Print Char where"
-    , "  prt     _ s = doc (showChar '\\'' . mkEsc '\\'' s . showChar '\\'')"
-    , "  prtList _ s = doc (showChar '\"' . concatS (map (mkEsc '\"') s) . showChar '\"')"
+    , "  prt _ c = doc (showChar '\\'' . mkEsc '\\'' c . showChar '\\'')"
+    , ""
+    , "instance Print String where"
+    , "  prt _ s = doc (showChar '\"' . concatS (map (mkEsc '\"') s) . showChar '\"')"
     , ""
     , "mkEsc :: Char -> Char -> ShowS"
     , "mkEsc q = \\case"
@@ -198,19 +198,18 @@ prologue tokenText useGadt name absMod cf = concat
   ]
 
 -- | Printing instance for @Integer@, and possibly @[Integer]@.
-integerRule :: AbsMod -> CF -> [String]
+integerRule :: AbsMod -> CF -> [Doc]
 integerRule absMod cf = showsPrintRule absMod cf $ TokenCat catInteger
 
 -- | Printing instance for @Double@, and possibly @[Double]@.
-doubleRule :: AbsMod -> CF -> [String]
+doubleRule :: AbsMod -> CF -> [Doc]
 doubleRule absMod cf = showsPrintRule absMod cf $ TokenCat catDouble
 
-showsPrintRule :: AbsMod -> CF -> Cat -> [String]
+showsPrintRule :: AbsMod -> CF -> Cat -> [Doc]
 showsPrintRule absMod cf t =
-  [ unwords [ "instance Print" , qualifiedCat absMod t , "where" ]
+  [ hsep [ "instance Print" , text (qualifiedCat absMod t) , "where" ]
   , "  prt _ x = doc (shows x)"
-  ] ++ ifList cf t ++
-  [ ""
+  , ""
   ]
 
 -- | Print category (data type name) qualified if user-defined.
@@ -232,32 +231,33 @@ qualify :: AbsMod -> String -> String
 qualify absMod s = concat [ absMod, "." , s ]
 
 -- | Printing instance for @Ident@, and possibly @[Ident]@.
-identRule :: AbsMod -> TokenText -> CF -> [String]
+identRule :: AbsMod -> TokenText -> CF -> [Doc]
 identRule absMod tokenText cf = ownPrintRule absMod tokenText cf catIdent
 
 -- | Printing identifiers and terminals.
-ownPrintRule :: AbsMod -> TokenText -> CF -> TokenCat -> [String]
-ownPrintRule absMod tokenText cf own = concat
-  [ [ "instance Print " ++ q ++ " where"
-    , "  prt _ (" ++ q ++ posn ++ ") = doc $ showString " ++ tokenTextUnpack tokenText "i"
-    ]
-  , ifList cf (TokenCat own)
-  , [ ""
-    ]
+ownPrintRule :: AbsMod -> TokenText -> CF -> TokenCat -> [Doc]
+ownPrintRule absMod tokenText cf own =
+  [ "instance Print" <+> q <+> "where"
+  , "  prt _ (" <> q <+> posn <> ") = doc $ showString" <+> text (tokenTextUnpack tokenText "i")
   ]
  where
-   q    = qualifiedCat absMod $ TokenCat own
-   posn = if isPositionCat cf own then " (_,i)" else " i"
+   q    = text $ qualifiedCat absMod $ TokenCat own
+   posn = if isPositionCat cf own then "(_,i)" else "i"
 
 -- | Printing rules for the AST nodes.
-rules :: AbsMod -> Bool -> CF -> [String]
+rules :: AbsMod -> Bool -> CF -> [Doc]
 rules absMod functor cf = do
-    (cat, xs :: [(Fun, [Cat])]) <- cf2dataLists cf
-    [ render (case_fun absMod functor cat (map (toArgs cat) xs)) ] ++ ifList cf cat ++ [ "" ]
+  (cat, xs :: [ (Fun, [Cat]) ]) <- cf2dataLists cf
+  concat $
+    [ case_fun absMod functor cf cat $ map (toArgs cat) xs
+    , [ "" ]
+    ]
   where
     toArgs :: Cat -> (Fun, [Cat]) -> Rule
     toArgs cat (cons, _) =
-      case filter (\ (Rule f c _rhs _internal) -> cons == funName f && cat == normCat (wpThing c)) (cfgRules cf)
+      case filter (\ (Rule f c _rhs _internal) ->
+                        cons == funName f && cat == normCat (wpThing c))
+                  (cfgRules cf)
       of
         (r : _) -> r
         -- 2018-01-14:  Currently, there can be overlapping rules like
@@ -267,21 +267,27 @@ rules absMod functor cf = do
         [] -> error $ "CFToPrinter.rules: no rhs found for: " ++ cons ++ ". " ++ show cat ++ " ::= ?"
 
 -- |
--- >>> case_fun "Abs" False (Cat "A") [ (npRule "AA" (Cat "AB") [Right "xxx"]) Parsable ]
+-- >>> vcat $ case_fun "Abs" False undefined (Cat "A") [ (npRule "AA" (Cat "AB") [Right "xxx"]) Parsable ]
 -- instance Print Abs.A where
 --   prt i = \case
 --     Abs.AA -> prPrec i 0 (concatD [doc (showString "xxx")])
-case_fun :: AbsMod -> Bool -> Cat -> [Rule] -> Doc
-case_fun absMod functor cat xs =
-  -- trace ("case_fun: cat = " ++ show cat) $
-  -- trace ("case_fun: xs  = " ++ show xs ) $
-  vcat
-    [ "instance Print" <+> type_ <+> "where"
-    , nest 2 $ if isList cat then "prt = prtList" else vcat
+case_fun :: AbsMod -> Bool -> CF -> Cat -> [Rule] -> [Doc]
+case_fun absMod functor cf cat rules =
+  -- trace ("case_fun: cat   = " ++ show cat) $
+  -- trace ("case_fun: rules = " ++ show rules ) $
+  [ "instance Print" <+> type_ <+> "where"
+  , nest 2 $ vcat $
+
+      -- Special printing of lists (precedence changes concrete syntax!)
+      if isList cat then
+        map mkPrtListCase $ List.sortBy compareRules $ rulesForNormalizedCat cf cat
+
+      -- Ordinary category
+      else
         [ "prt i = \\case"
-        , nest 2 $ vcat (map (mkPrintCase absMod functor) xs)
+        , nest 2 $ vcat $ map (mkPrintCase absMod functor) rules
         ]
-    ]
+  ]
   where
     type_
      | functor   = case cat of
@@ -324,6 +330,7 @@ mkPrintCase absMod functor (Rule f cat rhs _internal) =
   where
     pat :: Doc
     pat
+      | isNilFun  f = text "[]"
       | isOneFun  f = text "[" <+> head variables <+> "]"
       | isConsFun f = hsep $ List.intersperse (text ":") variables
       | otherwise   = text (qualify absMod $ funName f) <+> (if functor then "_" else empty) <+> hsep variables
@@ -347,43 +354,31 @@ mkPrintCase absMod functor (Rule f cat rhs _internal) =
     var (TokenCat "Double")  = "d"
     var xs = map toLower $ show xs
 
-ifList :: CF -> Cat -> [String]
-ifList cf cat =
-    -- trace ("ifList cf    = " ++ show cf   ) $
-    -- trace ("ifList cat   = " ++ show cat  ) $
-    -- trace ("ifList rules = " ++ show rules) $
-    -- trace ("ifList rulesForCat' cf (ListCat cat) = " ++ show (rulesForCat' cf (ListCat cat))) $
-    -- trace "" $
-    map (render . nest 2) cases
-  where
-    rules = List.sortBy compareRules $ rulesForNormalizedCat cf (ListCat cat)
-    cases = [ mkPrtListCase r | r <- rules ]
-
 -- | Pattern match on the list constructor and the coercion level
 --
 -- >>> mkPrtListCase (npRule "[]" (ListCat (Cat "Foo")) [] Parsable)
--- prtList _ [] = concatD []
+-- prt _ [] = concatD []
 --
 -- >>> mkPrtListCase (npRule "(:[])" (ListCat (Cat "Foo")) [Left (Cat "FOO")] Parsable)
--- prtList _ [x] = concatD [prt 0 x]
+-- prt _ [x] = concatD [prt 0 x]
 --
 -- >>> mkPrtListCase (npRule "(:)" (ListCat (Cat "Foo")) [Left (Cat "Foo"), Left (ListCat (Cat "Foo"))] Parsable)
--- prtList _ (x:xs) = concatD [prt 0 x, prt 0 xs]
+-- prt _ (x:xs) = concatD [prt 0 x, prt 0 xs]
 --
 -- >>> mkPrtListCase (npRule "[]" (ListCat (CoercCat "Foo" 2)) [] Parsable)
--- prtList 2 [] = concatD []
+-- prt 2 [] = concatD []
 --
 -- >>> mkPrtListCase (npRule "(:[])" (ListCat (CoercCat "Foo" 2)) [Left (CoercCat "Foo" 2)] Parsable)
--- prtList 2 [x] = concatD [prt 2 x]
+-- prt 2 [x] = concatD [prt 2 x]
 --
 -- >>> mkPrtListCase (npRule "(:)" (ListCat (CoercCat "Foo" 2)) [Left (CoercCat "Foo" 2), Left (ListCat (CoercCat "Foo" 2))] Parsable)
--- prtList 2 (x:xs) = concatD [prt 2 x, prt 2 xs]
+-- prt 2 (x:xs) = concatD [prt 2 x, prt 2 xs]
 --
 mkPrtListCase :: Rule -> Doc
 mkPrtListCase (Rule f (WithPosition _ (ListCat c)) rhs _internal)
-  | isNilFun f = "prtList" <+> precPattern <+> "[]" <+> "=" <+> body
-  | isOneFun f = "prtList" <+> precPattern <+> "[x]" <+> "=" <+> body
-  | isConsFun f = "prtList" <+> precPattern <+> "(x:xs)" <+> "=" <+> body
+  | isNilFun f = "prt" <+> precPattern <+> "[]" <+> "=" <+> body
+  | isOneFun f = "prt" <+> precPattern <+> "[x]" <+> "=" <+> body
+  | isConsFun f = "prt" <+> precPattern <+> "(x:xs)" <+> "=" <+> body
   | otherwise = empty -- (++) constructor
   where
     precPattern = case precCat c of 0 -> "_" ; p -> integer p
@@ -399,7 +394,7 @@ mkPrtListCase _ = error "mkPrtListCase undefined for non-list categories"
 --
 -- - [] < [_] < _:_
 --
--- This is desiged to correctly order the rules in the prtList function so that
+-- This is desiged to correctly order the rules in the prt function for lists so that
 -- the pattern matching works as expectd.
 --
 -- >>> compareRules (npRule "[]" (ListCat (CoercCat "Foo" 3)) [] Parsable) (npRule "[]" (ListCat (CoercCat "Foo" 1)) [] Parsable)
