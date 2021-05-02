@@ -8,72 +8,106 @@ Priv [Modl (Ident "PM") [Modl (Ident "PMM") [],Priv [Modl (Ident "PMPM1") [],Mod
 
 [Linearized tree]
 
-private {
-  module PM where {
-    module PMM where {
-      } ;
-    private {
-      module PMPM1 where {
-        } ;
-      module PMPM2 where {
-        private {
-          module PMPM2M where {
-            }
+private
+{
+  module PM where
+  {
+    module PMM where
+    {
+    };
+    private
+    {
+      module PMPM1 where
+      {
+      };
+      module PMPM2 where
+      {
+        private
+        {
+          module PMPM2M where
+          {
           }
         }
-      } ;
-    module PMM2 where {
-      } ;
-    private {
-      private {
-        private {
-          private {
-            } ;
-          private {
-            private {
-              } ;
-            private {
-              private {
-                private {
-                  } ;
-                private {
-                  }
+      }
+    };
+    module PMM2 where
+    {
+    };
+    private
+    {
+      private
+      {
+        private
+        {
+          private
+          {
+          };
+          private
+          {
+            private
+            {
+            };
+            private
+            {
+              private
+              {
+                private
+                {
+                };
+                private
+                {
                 }
-              } ;
-            private {
-              private {
-                } ;
-              private {
-                private {
-                  private {
-                    }
+              }
+            };
+            private
+            {
+              private
+              {
+              };
+              private
+              {
+                private
+                {
+                  private
+                  {
                   }
                 }
               }
-            } ;
-          private {
-            private {
-              private {
-                } ;
-              private {
-                private {
-                  private {
-                    }
-                  }
-                } ;
-              private {
-                }
-              }
-            } ;
-          private {
             }
+          };
+          private
+          {
+            private
+            {
+              private
+              {
+              };
+              private
+              {
+                private
+                {
+                  private
+                  {
+                  }
+                }
+              };
+              private
+              {
+              }
+            }
+          };
+          private
+          {
           }
         }
-      } ;
-    private {
-      private {
-        }
+      }
+    };
+    private
+    {
+      private
+      {
       }
     }
   }
+}
 

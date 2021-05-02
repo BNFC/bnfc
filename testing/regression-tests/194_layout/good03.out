@@ -1,4 +1,4 @@
-../good03.in
+good03.in
 
 Parse Successful!
 
@@ -8,10 +8,13 @@ Priv [Priv [],Priv []]
 
 [Linearized tree]
 
-private {
-  private {
-    } ;
-  private {
-    }
+private
+{
+  private
+  {
+  };
+  private
+  {
   }
+}
 

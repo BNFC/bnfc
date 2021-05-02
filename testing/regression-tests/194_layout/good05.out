@@ -8,20 +8,28 @@ Modl (Ident "T") [Modl (Ident "TA") [],Modl (Ident "TB") [Modl (Ident "TB1") [],
 
 [Linearized tree]
 
-module T where {
-  module TA where {
-    } ;
-  module TB where {
-    module TB1 where {
-      } ;
-    module TBC where {
-      module TBCD where {
-        module TBCDE where {
-          }
+module T where
+{
+  module TA where
+  {
+  };
+  module TB where
+  {
+    module TB1 where
+    {
+    };
+    module TBC where
+    {
+      module TBCD where
+      {
+        module TBCDE where
+        {
         }
       }
-    } ;
-  module TC where {
     }
+  };
+  module TC where
+  {
   }
+}
 
