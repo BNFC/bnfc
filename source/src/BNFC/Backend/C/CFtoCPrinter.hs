@@ -87,6 +87,8 @@ mkHFile cf groups = unlines
     "void renderCS(String s);",
     "void indent(void);",
     "void backup(void);",
+    "void onEmptyLine(void);",
+    "void removeTrailingSpaces(void);",
     ""
    ]
   footer = unlines $
@@ -559,15 +561,14 @@ basicFunName k
 -- | An extremely simple @renderC@ for terminals.
 
 prRender :: String
-prRender = unlines
-  [
+prRender = unlines $ concat
+  [ [
       "/* You may wish to change the renderC functions */",
       "void renderC(Char c)",
       "{",
       "  if (c == '{')",
       "  {",
-      "     bufAppendC('\\n');",
-      "     indent();",
+      "     onEmptyLine();",
       "     bufAppendC(c);",
       "     _n_ = _n_ + INDENT_WIDTH;",
       "     bufAppendC('\\n');",
@@ -583,11 +584,8 @@ prRender = unlines
       "  }",
       "  else if (c == '}')",
       "  {",
-      "     int t;",
       "     _n_ = _n_ - INDENT_WIDTH;",
-      "     for(t=0; t<INDENT_WIDTH; t++) {",
-      "       backup();",
-      "     }",
+      "     onEmptyLine();",
       "     bufAppendC(c);",
       "     bufAppendC('\\n\');",
       "     indent();",
@@ -635,15 +633,32 @@ prRender = unlines
       "    }",
       "  }",
       "}",
+      "",
       "void indent(void)",
       "{",
       "  int n = _n_;",
       "  while (--n >= 0)",
       "    bufAppendC(' ');",
       "}",
+      "",
       "void backup(void)",
       "{",
       "  if (cur_ && buf_[cur_ - 1] == ' ')",
       "    buf_[--cur_] = 0;",
-      "}"
+      "}",
+      ""
+    ]
+  , [ "void removeTrailingSpaces()"
+    , "{"
+    , "  while (cur_ && buf_[cur_ - 1] == ' ') --cur_;"
+    , "  buf_[cur_] = 0;"
+    , "}"
+    , ""
+    , "void onEmptyLine()"
+    , "{"
+    , "  removeTrailingSpaces();"
+    , "  if (cur_ && buf_[cur_ - 1 ] != '\\n') bufAppendC('\\n');"
+    , "  indent();"
+    , "}"
+    ]
   ]

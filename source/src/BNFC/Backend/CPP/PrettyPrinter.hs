@@ -91,6 +91,8 @@ mkHFile useStl inPackage cf groups = unlines
     "  void render(const char *s);",
     "  void indent(void);",
     "  void backup(void);",
+    "  void onEmptyLine(void);",
+    "  void removeTrailingSpaces(void);",
     " public:",
     "  PrintAbsyn(void);",
     "  ~PrintAbsyn(void);",
@@ -677,8 +679,7 @@ prRender useStl = unlines $ concat
       "{",
       "  if (c == '{')",
       "  {",
-      "     bufAppend('\\n');",
-      "     indent();",
+      "     onEmptyLine();",
       "     bufAppend(c);",
       "     _n_ = _n_ + INDENT_WIDTH;",
       "     bufAppend('\\n');",
@@ -694,11 +695,8 @@ prRender useStl = unlines $ concat
       "  }",
       "  else if (c == '}')",
       "  {",
-      "     int t;",
       "     _n_ = _n_ - INDENT_WIDTH;",
-      "     for (t=0; t<INDENT_WIDTH; t++) {",
-      "       backup();",
-      "     }",
+      "     onEmptyLine();",
       "     bufAppend(c);",
       "     bufAppend('\\n\');",
       "     indent();",
@@ -767,8 +765,21 @@ prRender useStl = unlines $ concat
     , ""
     , "void PrintAbsyn::backup()"
     , "{"
-    , "  if (buf_[cur_ - 1] == ' ')"
+    , "  if (cur_ && buf_[cur_ - 1] == ' ')"
     , "    buf_[--cur_] = 0;"
+    , "}"
+    , ""
+    , "void PrintAbsyn::removeTrailingSpaces()"
+    , "{"
+    , "  while (cur_ && buf_[cur_ - 1] == ' ') --cur_;"
+    , "  buf_[cur_] = 0;"
+    , "}"
+    , ""
+    , "void PrintAbsyn::onEmptyLine()"
+    , "{"
+    , "  removeTrailingSpaces();"
+    , "  if (cur_ && buf_[cur_ - 1 ] != '\\n') bufAppend('\\n');"
+    , "  indent();"
     , "}"
     , ""
     ]
