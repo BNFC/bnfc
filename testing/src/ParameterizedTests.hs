@@ -56,8 +56,8 @@ allWithParams params = makeTestSuite (tpName params) $ concat $
 -- | This parameterized test is called first.
 --   Use it while working in connection with a certain test case. (For quicker response.)
 current :: Test
-current = currentExampleTest
--- current = currentRegressionTest
+-- current = currentExampleTest
+current = currentRegressionTest
 -- current = layoutTest
 
 currentExampleTest :: Test
@@ -68,10 +68,11 @@ currentRegressionTest :: Test
 currentRegressionTest = makeTestSuite "Current parameterized test" $
   map (`makeTestCase` ("regression-tests" </> cur)) parameters
   where
+  -- cur = "358_MixFixLists"
   -- cur = "289_LexerKeywords"
   -- cur = "249_unicode"
-  -- cur = "266_define"
-  cur = "235_SymbolsOverlapTokens"
+  cur = "266_define"
+  -- cur = "235_SymbolsOverlapTokens"
   -- cur = "202_comments"
   -- cur = "278_Keywords"
   -- cur = "256_Regex"
@@ -181,6 +182,7 @@ testCases params =
     map (makeTestCase params) $
       map ("regression-tests/" ++) $
         [ "266_define"
+        , "358_MixFixLists"
         , "235_SymbolsOverlapTokens"
         , "278_Keywords"
         , "256_Regex"

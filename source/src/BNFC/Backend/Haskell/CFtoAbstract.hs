@@ -295,11 +295,11 @@ instanceHasPositionTokenType cat = vcat
 definedRules :: Bool -> CF -> [Doc]
 definedRules functor cf = [ mkDef f xs e | FunDef f xs e <- cfgPragmas cf ]
   where
-  mkDef f xs e = vcat $ map text $ concat
-    [ [ unwords [ fName, "::", typ $ wpThing t ]
+  mkDef f xs e = vcat $ concat
+    [ [ text $ unwords [ fName, "::", typ $ wpThing t ]
       | t <- maybeToList $ sigLookup f cf
       ]
-    , [ unwords $ fName : xs' ++ [ "=", show $ sanitize e ] ]
+    , [ sep $ map text (fName : xs') ++ [ "=", pretty $ sanitize e ] ]
     ]
     where
     fName = mkDefName f

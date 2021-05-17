@@ -1,3 +1,14 @@
+{-# LANGUAGE CPP #-}
+{-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE NoImplicitPrelude #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TupleSections #-}
+
+#if __GLASGOW_HASKELL__ >= 800
+{-# OPTIONS_GHC -fno-warn-unused-top-binds #-}
+#endif
+
 -- | Agda backend.
 --
 -- Generate bindings to Haskell data types for use in Agda.
@@ -107,17 +118,6 @@
 -- > {-# COMPILE GHC printArg     = \ a -> Data.Text.pack (printTree (a :: CPP.Abs.Arg))  #-}
 -- > {-# COMPILE GHC printDef     = \ d -> Data.Text.pack (printTree (d :: CPP.Abs.Def))  #-}
 -- > {-# COMPILE GHC printProgram = \ p -> Data.Text.pack (printTree (p :: CPP.Abs.Program)) #-}
-
-{-# LANGUAGE CPP #-}
-{-# LANGUAGE LambdaCase #-}
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE NoImplicitPrelude #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TupleSections #-}
-
-#if __GLASGOW_HASKELL__ >= 800
-{-# OPTIONS_GHC -fno-warn-unused-top-binds #-}
-#endif
 
 module BNFC.Backend.Agda (makeAgda) where
 
@@ -651,14 +651,14 @@ incr = Map.alter $ maybe (Just 1) (Just . succ)
 definedRules :: CF -> Doc
 definedRules cf = vsep [ mkDef f xs e | FunDef f xs e <- cfgPragmas cf ]
   where
-    mkDef f xs e = vcat $ map text $ concat
-      [ [ unwords [ mkDefName f, ":", typeToHaskell' "→" $ wpThing t ]
+    mkDef f xs e = vcat $ concat
+      [ [ text $ unwords [ mkDefName f, ":", typeToHaskell' "→" $ wpThing t ]
         | t <- maybeToList $ sigLookup f cf
         ]
-      , [ unwords $ concat
-          [ [ mkDefName f, "=", "λ" ]
-          , map agdaLower xs
-          , [ "→", show $ sanitize e ]
+      , [ sep $ concat
+          [ [ text (mkDefName f), "=", "λ" ]
+          , map (text . agdaLower) xs
+          , [ "→", pretty $ sanitize e ]
           ]
         ]
       ]

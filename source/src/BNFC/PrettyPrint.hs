@@ -1,6 +1,7 @@
+{-# LANGUAGE DefaultSignatures #-}
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE DefaultSignatures #-}
 
 -- | Extends ''Text.PrettyPrint''.
 
@@ -17,13 +18,19 @@ class Pretty a where
   pretty     :: a -> Doc
   prettyPrec :: Int -> a -> Doc
 
+  {-# MINIMAL pretty | prettyPrec #-}
   pretty = prettyPrec 0
+  prettyPrec _ = pretty
 
-  default prettyPrec :: Show a => Int -> a -> Doc
-  prettyPrec n x = text $ showsPrec n x ""
+instance Pretty Int     where pretty = text . show
+instance Pretty Integer where pretty = text . show
 
-instance Pretty Int
-instance Pretty Integer
+instance Pretty String  where pretty = text
+
+-- | Render as 'String'.
+
+prettyShow :: Pretty a => a -> String
+prettyShow = render . pretty
 
 -- | Put 'parens' around document if given condition is true.
 --

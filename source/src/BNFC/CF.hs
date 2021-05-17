@@ -1,6 +1,7 @@
 {-# LANGUAGE DeriveTraversable #-}  -- implies DeriveFunctor, DeriveFoldable
 {-# LANGUAGE FlexibleInstances #-}  -- implies TypeSynonymInstances
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PatternGuards #-}
 {-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE RecordWildCards #-}
@@ -17,7 +18,7 @@ module BNFC.CF (
             CFG(..),
             Rule, Rul(..), npRule, valCat, lookupRule, InternalRule(..),
             Pragma(..),
-            Exp(..),
+            Exp, Exp'(..),
             Base(..), Type(..), Signature,
             Literal,
             Symbol,
@@ -116,6 +117,7 @@ import BNFC.Par (pCat)
 import BNFC.Lex (tokens)
 import qualified BNFC.Abs as Abs
 
+import BNFC.PrettyPrint
 import BNFC.Utils (headWithDefault, spanEnd)
 
 type List1 = List1.NonEmpty
@@ -205,43 +207,37 @@ instance Show Type where
 
 -- | Expressions for function definitions.
 
-data Exp
-  = App String [Exp]  -- ^ (Possibly defined) label applied to expressions.
-  | Var String        -- ^ Function parameter.
-  | LitInt Integer
+data Exp' f
+  = App       f [Exp' f]     -- ^ (Possibly defined) label applied to expressions.
+  | Var       String         -- ^ Function parameter.
+  | LitInt    Integer
   | LitDouble Double
-  | LitChar Char
+  | LitChar   Char
   | LitString String
   deriving (Eq)
 
-instance Show Exp where
-    showsPrec p e =
-        case listView e of
-            Right es    ->
-                showString "["
-                . foldr (.) id (intersperse (showString ", ") $ map shows es)
-                . showString "]"
-            Left (Var x)    -> showString x
-            Left (App x []) -> showString x
-            Left (App  "(:)" [e1,e2]) ->
-                showParen (p>0)
-                $ showsPrec 1 e1
-                . showString " : "
-                . shows e2
-            Left (App x es) ->
-                showParen (p>1)
-                $ foldr (.) id
-                $ intersperse (showString " ")
-                $ showString x : map (showsPrec 2) es
-            Left (LitInt n)     -> shows n
-            Left (LitDouble x)  -> shows x
-            Left (LitChar c)    -> shows c
-            Left (LitString s)  -> shows s
-        where
-            listView (App "[]" []) = Right []
-            listView (App "(:)" [e1,e2])
-                | Right es <- listView e2   = Right $ e1:es
-            listView x = Left x
+type Exp = Exp' String
+
+instance (IsFun f, Pretty f) => Pretty (Exp' f) where
+  prettyPrec p e =
+    case listView e of
+      Right es           -> brackets $ hcat $ punctuate ", " $ map (prettyPrec 0) es
+      Left (Var x)       -> text x
+      Left (App f [])    -> prettyPrec p f
+      Left (App f [e1,e2])
+        | isConsFun f    -> parensIf (p > 0) $ hsep [ prettyPrec 1 e1, ":", prettyPrec 0 e2 ]
+      Left (App f es)    -> parensIf (p > 1) $ hsep $ prettyPrec 1 f : map (prettyPrec 2) es
+      Left (LitInt n)    -> (text . show) n
+      Left (LitDouble x) -> (text . show) x
+      Left (LitChar c)   -> (text . show) c
+      Left (LitString s) -> (text . show) s
+    where
+      listView (App f [])
+        | isNilFun f              = Right []
+      listView (App f [e1,e2])
+        | isConsFun f
+        , Right es <- listView e2 = Right $ e1:es
+      listView e0                 = Left e0
 
 -- | Pragmas.
 
@@ -254,7 +250,6 @@ data Pragma
   | LayoutStop [KeyWord]
   | LayoutTop Symbol              -- ^ Separator for top-level layout.
   | FunDef RFun [String] Exp
-  deriving (Show)
 
 type LayoutKeyWords = [(KeyWord, Delimiters)]
 

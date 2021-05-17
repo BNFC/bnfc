@@ -30,6 +30,7 @@ import qualified Data.Map as Map
 import qualified Data.Set as Set
 
 import BNFC.CF
+import BNFC.PrettyPrint
 
 -- * Error monad
 
@@ -106,7 +107,7 @@ checkDefinition' list ctx ident xs e =
         e' <- checkExp list (setLocals ctx $ zip xs ts) e t'
         return (zip xs ts, (e', t'))
     `catchError` \ err -> throwError $
-      "In the definition " ++ unwords (f : xs ++ ["=",show e,";"]) ++ "\n  " ++ err
+      "In the definition " ++ unwords (f : xs ++ ["=", prettyShow e, ";"]) ++ "\n  " ++ err
     where
         f = wpThing ident
         plural 1 = ""
@@ -133,12 +134,12 @@ checkExp list ctx = curry $ \case
   (e@LitChar{}     , BaseT "Char"   ) -> return e
   (e@LitString{}   , BaseT "String" ) -> return e
   (e               , t              ) -> throwError $
-    show e ++ " does not have type " ++ show t ++ "."
+    prettyShow e ++ " does not have type " ++ show t ++ "."
   where
   checkApp e x es t = do
     FunT ts t' <- lookupCtx x ctx
     es' <- matchArgs ts
-    unless (t == t') $ throwError $ show e ++ " has type " ++ show t' ++ ", but something of type " ++ show t ++ " was expected."
+    unless (t == t') $ throwError $ prettyShow e ++ " has type " ++ show t' ++ ", but something of type " ++ show t ++ " was expected."
     return $ App x es'
     where
     matchArgs ts
