@@ -132,15 +132,16 @@ numVars cats =
 --This fixes the problem with coercions.
 fixCoercions :: [(Cat, [Rule])] -> [(Cat, [Rule])]
 fixCoercions rs = nub (fixAll rs rs)
- where
+  where
   fixCoercion :: Cat -> [(Cat, [Rule])] -> [Rule]
   fixCoercion _ [] = []
   fixCoercion cat ((c,rules):cats) = if normCat c == normCat cat
     then rules ++ fixCoercion cat cats
     else fixCoercion cat cats
+
   fixAll :: [(Cat, [Rule])] -> [(Cat, [Rule])] -> [(Cat, [Rule])]
   fixAll _ [] = []
-  fixAll top ((cat,_):cats) = if isCoercion (noPosition $ show cat) -- This is weird: isCoercion is supposed to be applied to functions!!!!
+  fixAll top ((cat,_):cats) = if isCoercion (noPosition $ catToStr cat) -- This is weird: isCoercion is supposed to be applied to functions!!!!
     then fixAll top cats
     else (normCat cat, fixCoercion cat top) : fixAll top cats
 
@@ -148,7 +149,7 @@ fixCoercions rs = nub (fixAll rs rs)
 varName c = map toLower c ++ "_"
 
 --this makes var names a little cleaner.
-showNum n = if n == 0 then [] else show n
+showNum n = if n == 0 then "" else show n
 
 -- Makes the first letter a lowercase.
 firstLowerCase :: String -> String

@@ -1,3 +1,5 @@
+{-# LANGUAGE LambdaCase #-}
+
 {-
     BNF Converter: Datastructure for object-oriented abstract syntax generators
     Copyright (C) 2006  Author:  Aarne Ranta
@@ -15,9 +17,11 @@
 
 module BNFC.Backend.Common.OOAbstract where
 
+import Data.Char  (toLower)
+import qualified Data.List as List
+import Data.Maybe
+
 import BNFC.CF
-import Data.List
-import Data.Char(toLower)
 
 -- A datastructure more appropriate than CF
 
@@ -45,19 +49,19 @@ allNonClasses ca =
   map fst basetypes ++ tokentypes ca
 
 cf2cabs :: CF -> CAbs
-cf2cabs cf = CAbs {
-  tokentypes = toks,
-  listtypes  = [(c, snd (status (drop 4 c))) | -- remove "List" from "ListC"
-                  c <- map (identCat . normCat) lists],
-  absclasses = nub $ map (show.normCat) cats,
-  conclasses = [f | Just f <- map testRule (cfgRules cf)],
-  signatures = posdata ++ map normSig (cf2data cf),
-  postokens  = pos,
-  defineds   = defs
+cf2cabs cf = CAbs
+  { tokentypes = toks
+  , listtypes  = [(c, snd (status (drop 4 c))) | -- remove "List" from "ListC"
+                  c <- map (identCat . normCat) lists]
+  , absclasses = List.nub $ map (identCat . normCat) cats -- NB: does not include list categories
+  , conclasses = mapMaybe testRule $ cfgRules cf
+  , signatures = posdata ++ map normSig (cf2data cf)
+  , postokens  = pos
+  , defineds   = defs
   }
  where
-  (pos,  toks) = partition (isPositionCat cf) $ map fst $ tokenPragmas cf
-  (lists,cats) = partition isList $ allCatsNorm cf
+  (pos,  toks) = List.partition (isPositionCat cf) $ map fst $ tokenPragmas cf
+  (lists,cats) = List.partition isList $ allCatsNorm cf
   testRule (Rule f c _ _)
    | isList (wpThing c)  = Nothing
    | funName f == "_"  = Nothing
@@ -75,8 +79,8 @@ cf2cabs cf = CAbs {
     [(c,b,s) | ((c,b),s) <- zip cs (vars [] (map (classVar . fst) cs))]
   --- creating new names is quadratic, but parameter lists are short
   --- this should conform with Michael's naming
-  vars seen vv = case vv of
-    []   -> vv
+  vars seen = \case
+    []   -> []
     v:vs -> case length (filter (==v) seen) of
       0 | elem v vs -> (v ++ "1"): vars (v:seen) vs
       0             -> v         : vars (v:seen) vs

@@ -106,7 +106,7 @@ makeJava' options@Options{..} cf = do
     liftIO $ putStrLn $
       if supportsEntryPoints parmake
        then "(Parser created for all categories)"
-       else "   (Parser created only for category " ++ show (firstEntry cf) ++ ")"
+       else "   (Parser created only for category " ++ prettyShow (firstEntry cf) ++ ")"
     liftIO $ putStrLn $ "   (Tested with"  +++ toolname parmake
                                            +++ toolversion parmake ++ ")"
     Makefile.mkMakefile options $

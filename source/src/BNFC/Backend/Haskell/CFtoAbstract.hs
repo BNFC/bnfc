@@ -196,7 +196,7 @@ prData functor derivingClasses (cat,rules) = vcat $ concat
   ]
   where
     prRule (fun, cats) = hsep $ concat [ [text fun], ["a" | functor], map prArg cats ]
-    unprimedType       = text (show cat)
+    unprimedType       = pretty cat
     primedType         = prime unprimedType
     prime              = (<> "'")
     dataType | functor = primedType <+> "a"

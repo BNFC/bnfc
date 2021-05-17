@@ -79,7 +79,7 @@ cf2Abstract tokenText name cf composOpMod = unlines $ concat $
       ]
 
 getTreeCats :: CF -> [String]
-getTreeCats cf = List.nub $ map show $ filter (not . isList) $ map consCat $ cf2cons cf
+getTreeCats cf = List.nub $ map catToStr $ filter (not . isList) $ map consCat $ cf2cons cf
 
 getDefinitions :: CF -> [String]
 getDefinitions cf = [ funName f | FunDef f _ _ <- cfgPragmas cf ]
@@ -113,7 +113,7 @@ prTreeType tokenText cf =
       | TokenCat tok <- cat, isPositionCat cf tok =
           fun +++ ":: ((Int,Int),"++ tokenTextType tokenText ++") -> Tree" +++ mkRealType tok
       | otherwise =
-          fun +++ "::" +++ concat [show c +++ "-> " | (c,_) <- consVars c] ++ "Tree" +++ mkRealType (show cat)
+          fun +++ "::" +++ concat [catToStr c +++ "-> " | (c,_) <- consVars c] ++ "Tree" +++ mkRealType (catToStr cat)
     where
     (cat,fun) = (consCat c, consFun c)
 

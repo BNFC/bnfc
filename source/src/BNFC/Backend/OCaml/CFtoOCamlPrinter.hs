@@ -152,7 +152,7 @@ rules absMod cf = unlines $ mutualDefs $
    var (Cat "String")  = "str"
    var (Cat "Char")    = "c"
    var (Cat "Double")  = "d"
-   var xs        = map toLower (show xs)
+   var xs   = map toLower (catToStr xs)
    ruleOf s = fromJust $ lookupRule (noPosition s) (cfgRules cf)
 
 --- case_fun :: Cat -> [(Constructor,Rule)] -> String

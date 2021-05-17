@@ -72,7 +72,7 @@ case_fun absName functor' cat xs = vcat
                   | otherwise = empty
     type_ = qualify $ cat' <> iffunctor "' a"
     fname = "trans" <> cat'
-    cat' =  text (show cat)
+    cat' = pretty cat
     mkOne (cons, args) =
         let ns = catvars [render fname] args -- names False (map (checkRes .var) args) 1
         in  qualify (text cons) <+> iffunctor "_" <+> hsep ns <+> "-> failure x"

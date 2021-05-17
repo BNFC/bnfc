@@ -6,10 +6,12 @@
 
 module BNFC.Backend.Txt2Tag (cfToTxt)where
 
-import BNFC.CF
+import qualified Data.List as List
+
 import BNFC.Abs (Reg (..))
+import BNFC.CF
+import BNFC.PrettyPrint
 import BNFC.Utils
-import Data.List
 
 cfToTxt :: String -> CF -> String
 cfToTxt name cf = unlines [
@@ -103,8 +105,8 @@ prtComments (xs,ys) = concat
                    "Multiple-line comments are  enclosed with " ++ mult ++"."
                    ]
  where
- sing = intercalate ", " $ map (symbol.prt) ys
- mult = intercalate ", " $
+ sing = List.intercalate ", " $ map (symbol.prt) ys
+ mult = List.intercalate ", " $
          map (\(x,y) -> symbol (prt x) ++ " and " ++ symbol (prt y)) xs
 
 prtSymb :: String -> CF -> String
@@ -147,7 +149,7 @@ prtBNF name cf = unlines [
                      "Non-terminals are enclosed between < and >. ",
                      "The symbols " ++ arrow ++ " (production), " ++
                       delimiter ++" (union) ",
-                     "and " ++ empty ++ " (empty rule) belong to the BNF notation. ",
+                     "and " ++ eps ++ " (empty rule) belong to the BNF notation. ",
                      "All other symbols are terminals.",
                      "",
                      prtRules (ruleGroups cf)
@@ -164,7 +166,7 @@ prtRules ((c, r : rs) : xs)
       prtRules xs
 
 prtSymbols :: [Either Cat String] -> String
-prtSymbols [] = empty
+prtSymbols [] = eps
 prtSymbols xs = foldr ((+++) . p) [] xs
  where p (Left  r) = nonterminal r
        p (Right r) = terminal r
@@ -172,20 +174,20 @@ prtSymbols xs = foldr ((+++) . p) [] xs
 prt :: String -> String
 prt s = s
 
-empty :: String
-empty = "**eps**"
+eps :: String
+eps = "**eps**"
 
 symbol :: String -> String
 symbol s = s
 
 tabular :: Int -> [[String]] -> String
-tabular _ xs = unlines [unwords (intersperse "|" (" " : x)) | x <- xs]
+tabular _ xs = unlines [unwords (List.intersperse "|" (" " : x)) | x <- xs]
 
 terminal :: String -> String
 terminal s = "``" ++ s ++ "``"
 
 nonterminal :: Cat -> String
-nonterminal s = "//" ++ show s ++ "//"
+nonterminal cat = "//" ++ prettyShow cat ++ "//"
 
 arrow :: String
 arrow = "->"

@@ -137,7 +137,7 @@ prData rp header packageAbsyn user (cat, rules) =
       where
       funs = map fst rules
       categoryClass
-          | show cat `elem` funs = [] -- the catgory is also a function, skip abstract class
+          | catToStr cat `elem` funs = [] -- the catgory is also a function, skip abstract class
           | otherwise = [(cls, header ++++
                          unlines [
                                   "public abstract class" +++ cls
@@ -189,14 +189,14 @@ prRule rp h packageAbsyn funs user c (fun, cats)
    where
      vs = getVars cats user
      fun' = identCat (normCat c)
-     isAlsoCategory = fun == show c
+     isAlsoCategory = fun == catToStr c
      --This handles the case where a LBNF label is the same as the category.
      ext = if isAlsoCategory then "" else " extends" +++ identCat c
 
 -- | The standard accept function for the Visitor pattern.
 
 prAccept :: String -> Cat -> String -> String
-prAccept pack cat _ = "\n  public <R,A> R accept(" ++ pack ++ "." ++ show cat
+prAccept pack cat _ = "\n  public <R,A> R accept(" ++ pack ++ "." ++ catToStr cat
                       ++ ".Visitor<R,A> v, A arg) { return v.visit(this, arg); }\n"
 
 -- | Creates the equals() method.

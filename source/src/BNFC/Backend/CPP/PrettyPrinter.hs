@@ -204,7 +204,7 @@ prDataH useSTL (cat, rules)
  where
    cl       = identCat (normCat cat)
    itty     = concat [ cl, "::", "const_iterator" ]
-   abstract = case lookupRule (noPosition $ show cat) rules of
+   abstract = case lookupRule (noPosition $ catToStr cat) rules of
     Just _ -> ""
     Nothing ->  "  void visit" ++ cl ++ "(" ++ cl ++ " *p); /* abstract class */\n"
 
@@ -402,7 +402,7 @@ prPrintData _ inPackage _cf (cat, rules) = -- Not a list
     abstract ++ concatMap (prPrintRule inPackage) rules
   where
   cl = identCat (normCat cat)
-  abstract = case lookupRule (noPosition $ show cat) rules of
+  abstract = case lookupRule (noPosition $ catToStr cat) rules of
     Just _ -> ""
     Nothing ->  "void PrintAbsyn::visit" ++ cl ++ "(" ++ cl +++ "*p) {} //abstract class\n\n"
 
@@ -606,7 +606,7 @@ prShowData _ (cat, rules) =  --Not a list:
   abstract ++ concatMap prShowRule rules
   where
     cl = identCat (normCat cat)
-    abstract = case lookupRule (noPosition $ show cat) rules of
+    abstract = case lookupRule (noPosition $ catToStr cat) rules of
       Just _ -> ""
       Nothing ->  "void ShowAbsyn::visit" ++ cl ++ "(" ++ cl ++ " *p) {} //abstract class\n\n"
 

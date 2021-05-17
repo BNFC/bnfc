@@ -17,7 +17,6 @@
 
 module BNFC.Backend.C.CFtoBisonC
   ( cf2Bison
-  , mkPointer
   , resultName, typeName, varName
   , specialToks, startSymbol
   , unionBuiltinTokens
@@ -29,7 +28,7 @@ import Prelude hiding ((<>))
 import Data.Char       ( toLower, isUpper )
 import Data.Foldable   ( toList )
 import Data.List       ( intercalate, nub )
-import Data.Maybe      ( fromMaybe )
+import Data.Maybe
 import qualified Data.Map as Map
 import System.FilePath ( (<.>) )
 
@@ -309,14 +308,6 @@ union mode cats = vcat
   mkPointer s = scope <> text (identCat s) <> star <+> text (varName s) <> ";"
   scope = text $ nsScope $ parserPackage mode
   star = if cParser mode then empty else text "*"
-
---This is a little weird because people can make [Exp2] etc.
-mkPointer :: Cat -> [String]
-mkPointer c
-  | identCat c /= show c  --list. add it even if it refers to a coercion.
-    || normCat c == c     --normal cat
-    = [ "  " ++ identCat (normCat c) +++ varName (normCat c) ++ ";" ]
-  | otherwise = []
 
 unionBuiltinTokens :: [String]
 unionBuiltinTokens =

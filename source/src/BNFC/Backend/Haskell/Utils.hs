@@ -247,4 +247,4 @@ catvars :: [String] -> [Cat] -> [Doc]
 catvars rs = map text . mkNames (rs ++ hsReservedWords) LowerCase . map var
   where
     var (ListCat c) = var c ++ "s"
-    var xs          = show xs
+    var c           = catToStr c

@@ -237,7 +237,7 @@ qualifiedCat absMod t = case t of
   where
   unqualified = catToStr t
   qualified   = qualify absMod unqualified
-  impossible  = error $ "impossible in Backend.Haskell.CFtoPrinter.qualifiedCat: " ++ show t
+  impossible  = error $ "impossible in Backend.Haskell.CFtoPrinter.qualifiedCat: " ++ catToStr t
 
 qualify :: AbsMod -> String -> String
 qualify absMod s = concat [ absMod, "." , s ]
@@ -276,7 +276,7 @@ rules absMod functor cf = do
         --   Foo. Bar ::= "foo" ;
         --   Foo. Bar ::= "bar" ;
         -- Of course, this will generate an arbitary printer for @Foo@.
-        [] -> error $ "CFToPrinter.rules: no rhs found for: " ++ cons ++ ". " ++ show cat ++ " ::= ?"
+        [] -> error $ "CFToPrinter.rules: no rhs found for: " ++ cons ++ ". " ++ catToStr cat ++ " ::= ?"
 
 -- |
 -- >>> vcat $ case_fun "Abs" False undefined (Cat "A") [ (npRule "AA" (Cat "AB") [Right "xxx"]) Parsable ]
@@ -285,7 +285,7 @@ rules absMod functor cf = do
 --     Abs.AA -> prPrec i 0 (concatD [doc (showString "xxx")])
 case_fun :: AbsMod -> Bool -> CF -> Cat -> [Rule] -> [Doc]
 case_fun absMod functor cf cat rules =
-  -- trace ("case_fun: cat   = " ++ show cat) $
+  -- trace ("case_fun: cat   = " ++ catToStr cat) $
   -- trace ("case_fun: rules = " ++ show rules ) $
   [ "instance Print" <+> type_ <+> "where"
   , nest 2 $ vcat $
@@ -364,7 +364,7 @@ mkPrintCase absMod functor (Rule f cat rhs _internal) =
     var (TokenCat "String")  = "str"
     var (TokenCat "Char")    = "c"
     var (TokenCat "Double")  = "d"
-    var xs = map toLower $ show xs
+    var xs = map toLower $ catToStr xs
 
 -- | Pattern match on the list constructor and the coercion level
 --

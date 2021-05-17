@@ -375,7 +375,7 @@ prPrintData (cat, rules)
       ]
     , concatMap prPrintRule rules
     , [ "  default:"
-      , "    fprintf(stderr, \"Error: bad kind field when printing " ++ show cat ++ "!\\n\");"
+      , "    fprintf(stderr, \"Error: bad kind field when printing " ++ catToStr cat ++ "!\\n\");"
       , "    exit(1);"
       , "  }"
       , "}"
@@ -495,7 +495,7 @@ prShowData (cat, rules) = unlines $
    "  {",
    concatMap prShowRule rules,
    "  default:",
-   "    fprintf(stderr, \"Error: bad kind field when showing " ++ show cat ++ "!\\n\");",
+   "    fprintf(stderr, \"Error: bad kind field when showing " ++ catToStr cat ++ "!\\n\");",
    "    exit(1);",
    "  }",
    "}\n"

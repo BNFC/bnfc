@@ -145,7 +145,7 @@ prDataH rp (cat, rules)
       , c' ++ " make_" ++ c' ++ "(" ++ mem ++ " p1, " ++ c' ++ " p2);"
       ]
   | otherwise = unlines $ concat
-    [ [ "struct " ++ show cat ++ "_"
+    [ [ "struct " ++ identCat cat ++ "_"
       , "{"
       ]
     , [ "  int line_number, char_number;" | rp == RecordPositions ]

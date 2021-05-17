@@ -462,7 +462,7 @@ absyn  amod  style ds = vsep . ("mutual" :) . concatMap (map (nest 2) . prData a
 --
 prData :: ModuleName -> ConstructorStyle -> Data -> [Doc]
 prData amod style (Cat d, cs) = prData' amod style d cs
-prData _    _     (c    , _ ) = error $ "prData: unexpected category " ++ show c
+prData _    _     (c    , _ ) = error $ "prData: unexpected category " ++ prettyShow c
 
 -- | Pretty-print Agda data types and pragmas.
 --

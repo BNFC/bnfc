@@ -379,7 +379,7 @@ testfile opts cf = unlines $ concat $
     , ""
     ]
   , if_glr $
-    [ "the_parser :: ParseFun " ++ show topType
+    [ "the_parser :: ParseFun " ++ catToStr topType
     , "the_parser = lift_parser " ++ render (parserName topType)
     , ""
     , liftParser

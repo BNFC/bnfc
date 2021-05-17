@@ -100,7 +100,7 @@ rules absMod cf = unlines $ mutualDefs $
    var (Cat "String")   = "str"
    var (Cat "Char")     = "c"
    var (Cat "Double")   = "d"
-   var cat              = map toLower (show cat)
+   var cat              = map toLower (catToStr cat)
    checkRes s
         | elem s reservedOCaml = s ++ "'"
         | otherwise              = s

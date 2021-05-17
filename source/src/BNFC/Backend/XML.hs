@@ -7,10 +7,13 @@
 module BNFC.Backend.XML ---- (cf2DTD, cf2XML)
   where
 
+import Prelude hiding ((<>))
+
 import Data.Bifunctor ( second )
 import Data.List      ( intercalate )
 
 import BNFC.CF
+import BNFC.PrettyPrint
 import BNFC.Utils
 import BNFC.Backend.Base
 import BNFC.Options hiding ( Backend )
@@ -56,7 +59,7 @@ elemAtt t a ts = element t ts ++++ attlist t a
 elemt t = elemAtt t "name"
 
 elemc :: Cat -> [(Fun, String)] -> String
-elemc cat fs = unlines $ element (show cat) (map snd fs) : [element f [] | (f,_) <- fs]
+elemc cat fs = unlines $ element (prettyShow cat) (map snd fs) : [element f [] | (f,_) <- fs]
 
 elemEmp :: String -> String
 elemEmp t = elemAtt t "value" []
@@ -102,21 +105,24 @@ endtagDefNotyp = "endtag f _ = tag (\"/\" ++ f)"
 -- efunDefAttr =  "elemFun i t x = [replicate (i+i) ' ' ++ tag (t ++ \" name = \" ++ x)]"
 
 rhsCat :: CF -> Fun -> [Cat] -> String
-rhsCat cf fun cs = parenth (intercalate ", " (fun:map (symbCat cf) cs))
-rhsCatNot cf cs = if null cs then "EMPTY" else intercalate", " (map (symbCatNot cf) cs)
+rhsCat cf fun cs = parenth (intercalate ", " (fun : map (render . symbCat cf) cs))
+rhsCatNot cf cs = if null cs then "EMPTY" else intercalate ", " (map (render . symbCatNot cf) cs)
 
+symbCat :: CF -> Cat -> Doc
 symbCat cf c
-  | isList c  = show (normCatOfList c) ++ if isEmptyListCat cf c then "*" else "+"
-  | otherwise = show c
+  | isList c  = pretty (normCatOfList c) <> if isEmptyListCat cf c then "*" else "+"
+  | otherwise = pretty c
 
+symbCatNot :: CF -> Cat -> Doc
 symbCatNot cf c
-  | isList c  = funs (normCatOfList c) ++ if isEmptyListCat cf c then "*" else "+"
+  | isList c  = funs (normCatOfList c) <> if isEmptyListCat cf c then "*" else "+"
   | otherwise = funs c
  where
-   funs k = case lookup k (cf2data cf) of
-     Just []  -> "EMPTY"
-     Just fcs -> parenth $ intercalate " | " $ map fst fcs
-     _ -> parenth (show k) ----
+   funs k =
+     case lookup k (cf2data cf) of
+       Just []  -> "EMPTY"
+       Just fcs -> parens $ sep $ punctuate "|" $ map (text . fst) fcs
+       _        -> parens $ pretty k
 
 parenth s = "(" ++ s ++ ")"
 
@@ -220,12 +226,14 @@ rules cf = unlines $
 
 case_fun :: Cat -> [(String, [String])] -> String
 case_fun cat xs = unlines $ concat
-  [ [ "instance XPrint" +++ show cat +++ "where"
+  [ [ "instance XPrint" +++ s +++ "where"
     , "  prt i'" +++ "= \\case"
     ]
   , (`map` xs) $ \ (c, xx) ->
     "   " ++ c +++ unwords xx +++ "-> P.concat $ " +++
-    "elemFun i' \"" ++ show cat ++ "\" \"" ++ c ++ "\"" +++
+    "elemFun i' \"" ++ s ++ "\" \"" ++ c ++ "\"" +++
     unwords [": prt (i'+1)" +++ x | x <- xx] +++ ":" +++
-    "[[P.replicate (i'+i') ' ' ++ endtag \"" ++ c ++ "\" \"" ++ show cat ++ "\"]]"
+    "[[P.replicate (i'+i') ' ' ++ endtag \"" ++ c ++ "\" \"" ++ s ++ "\"]]"
   ]
+  where
+  s = prettyShow cat

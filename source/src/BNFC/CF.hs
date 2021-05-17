@@ -91,8 +91,11 @@ module BNFC.CF (
             sigLookup      -- Get the type of a rule label.
            ) where
 
+import Prelude hiding ((<>))
+
 import Control.Arrow ( (&&&) )
 import Control.Monad ( guard )
+
 import Data.Char
 import Data.Ord      ( Down(..) )
 import qualified Data.Either as Either
@@ -155,10 +158,10 @@ data InternalRule
   | Parsable  -- ^ ordinary rule (also for parser)
   deriving (Eq)
 
-instance (Show function) => Show (Rul function) where
-  show (Rule f cat rhs internal) = unwords $
-    (if internal == Internal then ("internal" :) else id) $
-    show f : "." : show cat : "::=" : map (either show id) rhs
+instance Pretty function => Pretty (Rul function) where
+  pretty (Rule f cat rhs internal) =
+    (if internal == Internal then ("internal" <+>) else id) $
+    pretty f <> "." <+> pretty cat <+> "::=" <+> sep (map (either pretty (text . show)) rhs)
 
 -- | A sentential form is a sequence of non-terminals or terminals.
 type SentForm = [Either Cat String]
@@ -179,8 +182,8 @@ data CFG function = CFG
     } deriving (Functor)
 
 
-instance (Show function) => Show (CFG function) where
-  show CFG{..} = unlines $ map show cfgRules
+-- instance (Show function) => Show (CFG function) where
+--   show CFG{..} = unlines $ map show cfgRules
 
 -- | Types of the rule labels, together with the position of the rule label.
 type Signature = Map String (WithPosition Type)
@@ -313,6 +316,8 @@ data WithPosition a = WithPosition
 instance Eq  a => Eq  (WithPosition a) where (==)    = (==)    `on` wpThing
 instance Ord a => Ord (WithPosition a) where compare = compare `on` wpThing
 
+instance Pretty a => Pretty (WithPosition a) where pretty = pretty . wpThing
+
 noPosition :: a -> WithPosition a
 noPosition = WithPosition NoPosition
 
@@ -370,8 +375,17 @@ catToStr = \case
   ListCat c    -> "[" ++ catToStr c ++ "]"
   CoercCat s i -> s ++ show i
 
+-- | This instance is for the Hspec test suite.
 instance Show Cat where
   show = catToStr
+
+instance Pretty Cat where
+  pretty = \case
+    Cat s        -> text s
+    TokenCat s   -> text s
+    ListCat c    -> brackets $ pretty c
+    CoercCat s i -> text s <> pretty i
+
 
 -- | Reads a string into a category. This should only need to handle
 -- the case of simple categories (with or without coercion) since list

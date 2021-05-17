@@ -11,8 +11,8 @@ module BNFC.Backend.OCaml.CFtoOCamlTemplate (
                     cf2Template
                     ) where
 
-import BNFC.CF
 import Data.Char
+import BNFC.CF
 import BNFC.Backend.OCaml.OCamlUtil
 
 
@@ -44,7 +44,7 @@ cf2Template skelName absName cf = unlines
        var (Cat "String")   = "str"
        var (Cat "Char")     = "c"
        var (Cat "Double")   = "d"
-       var cat              = map toLower (show cat)
+       var cat              = map toLower (catToStr cat)
        checkRes s
         | elem s reservedOCaml = s ++ "'"
         | otherwise              = s
@@ -53,5 +53,5 @@ cf2Template skelName absName cf = unlines
 case_fun :: Cat -> [Constructor] -> String
 case_fun cat xs =
  unlines $
-         ["trans" ++ show cat ++ " (x : " ++ fixType cat ++ ") : result = match x with",
+         ["trans" ++ catToStr cat ++ " (x : " ++ fixType cat ++ ") : result = match x with",
           unlines $ insertBar $ map (\s -> s ++ " -> " ++ "failure x") xs]

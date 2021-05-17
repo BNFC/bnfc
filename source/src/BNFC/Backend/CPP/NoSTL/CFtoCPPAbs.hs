@@ -72,7 +72,7 @@ mkHFile cf = unlines
 --Prints interface classes for all categories.
 prDataH :: [UserDef] -> Data -> String
 prDataH  user (cat, rules) =
-    case lookup (show cat) rules of
+    case lookup (catToStr cat) rules of
         Just _ -> concatMap (prRuleH user cat) rules
         Nothing -> if isList cat
             then concatMap (prRuleH user cat) rules
@@ -130,7 +130,7 @@ prRuleH user c (fun, cats) =
      c' = identCat (normCat c);
      mem = drop 4 c'
      memstar = if isBasic user mem then "" else "*"
-     super = if show c == fun then "Visitable" else identCat c
+     super = if catToStr c == fun then "Visitable" else identCat c
      prConstructorH :: Int -> [(String, b)] -> String
      prConstructorH _ [] = ""
      prConstructorH n [(t,_)] = t +++ optstar t ++ "p" ++ show n

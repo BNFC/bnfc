@@ -46,11 +46,13 @@ cf2Template skelName absName cf = unlines $ concat
   where
   prCatTrans :: Cat -> [Constructor] -> [String]
   prCatTrans cat cs = concat
-    [ [ "trans" ++ show cat +++ "::" +++ qualify (show cat) +++ "-> Result"
-      , "trans" ++ show cat +++ "t = case t of"
+    [ [ "trans" ++ s +++ "::" +++ qualify s +++ "-> Result"
+      , "trans" ++ s +++ "t = case t of"
       ]
     , map prConsCase cs
     ]
+    where
+    s = catToStr cat
 
   prConsCase :: Constructor -> String
   prConsCase c =
