@@ -42,7 +42,6 @@ module BNFC.CF (
             specialCats,    -- ident
             specialCatsP,   -- all literals
             specialData,    -- special data
-            isCoercion,     -- wildcards in grammar (avoid syntactic clutter)
             isDefinedRule,  -- defined rules (allows syntactic sugar)
             isProperLabel,  -- not coercion or defined rule
             allCats,        -- all categories of a grammar
@@ -68,11 +67,8 @@ module BNFC.CF (
             baseCat,
             sameCat,
             -- Information functions for list functions.
-            isNilFun,       -- empty list function? ([])
-            isOneFun,       -- one element list function? (:[])
             hasNilRule, hasSingletonRule,
             sortRulesByPrecedence,
-            isConsFun,      -- constructor function? (:)
             isNilCons,      -- either three of above?
             isEmptyListCat, -- checks if the list permits []
             revSepListRule, -- reverse a rule, if it is of form C t [C].
@@ -492,6 +488,20 @@ instance IsString RFun where
 class IsFun a where
   funName :: a -> String
 
+  isNilFun    :: a -> Bool   -- ^ Is this the constructor for empty lists?
+  isOneFun    :: a -> Bool   -- ^ Is this the constructor for singleton lists?
+  isConsFun   :: a -> Bool   -- ^ Is this the list constructor?
+  isConcatFun :: a -> Bool   -- ^ Is this list concatenation?
+
+  -- | Is this function just a coercion? (I.e. the identity)
+  isCoercion :: a -> Bool
+
+  isNilFun    = funNameSatisfies (== "[]")
+  isOneFun    = funNameSatisfies (== "(:[])")
+  isConsFun   = funNameSatisfies (== "(:)")
+  isConcatFun = funNameSatisfies (== "(++)")
+  isCoercion  = funNameSatisfies (== "_")
+
 instance IsFun String where
   funName = id
 
@@ -507,29 +517,16 @@ instance IsFun a => IsFun (k, a) where
 funNameSatisfies :: IsFun a => (String -> Bool) -> a -> Bool
 funNameSatisfies f = f . funName
 
--- | Is this function just a coercion? (I.e. the identity)
-isCoercion :: IsFun a => a -> Bool
-isCoercion = funNameSatisfies (== "_") -- perhaps this should be changed to "id"?
-
 isDefinedRule :: IsFun a => a -> Bool
 isDefinedRule = funNameSatisfies $ \case
   (x:_) -> isLower x
   []    -> error "isDefinedRule: empty function name"
 
--- isDefinedRule :: Fun -> Bool
--- isDefinedRule (WithPosition _ (x:_)) = isLower x
--- isDefinedRule (WithPosition pos []) = error $
---   unwords [ prettyPosition pos, "isDefinedRule: empty function name" ]
-
 isProperLabel :: IsFun a => a -> Bool
 isProperLabel f = not (isCoercion f || isDefinedRule f)
 
-isNilFun, isOneFun, isConsFun, isNilCons,isConcatFun :: IsFun a => a -> Bool
+isNilCons :: IsFun a => a -> Bool
 isNilCons f = isNilFun f || isOneFun f || isConsFun f || isConcatFun f
-isNilFun    = funNameSatisfies (== "[]")
-isOneFun    = funNameSatisfies (== "(:[])")
-isConsFun   = funNameSatisfies (== "(:)")
-isConcatFun = funNameSatisfies (== "(++)")
 
 ------------------------------------------------------------------------------
 
