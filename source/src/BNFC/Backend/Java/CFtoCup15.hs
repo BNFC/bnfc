@@ -20,10 +20,12 @@ import Data.Char
 import Data.List (intercalate)
 
 import BNFC.CF
-import BNFC.Backend.Common.NamedVariables
-import BNFC.Backend.Java.CFtoJavaAbs15 (typename)
 import BNFC.Options (RecordPositions(..))
 import BNFC.Utils ( (+++) )
+
+import BNFC.Backend.Common.NamedVariables
+import BNFC.Backend.Java.CFtoJavaAbs15    ( typename )
+import BNFC.Backend.Java.Utils            ( getRuleName )
 
 type Rules   = [(NonTerminal,[(Pattern,Action)])]
 type Pattern = String
@@ -60,8 +62,6 @@ cf2Cup packageBase packageAbsyn cf rp env = unlines
       , ":}"
       , "parser code {:"
       , parseMethod packageAbsyn (firstEntry cf)
-      , "public <B,A extends java.util.LinkedList<? super B>> "
-        ++ "A cons_(B x, A xs) { xs.addFirst(x); return xs; }"
       , "public void syntax_error(java_cup.runtime.Symbol cur_token)"
       , "{"
       , "  report_error(\"Syntax Error, trying to recover and continue"
@@ -161,11 +161,12 @@ generateAction packageAbsyn nt fun ms rev rp
     | isConsFun f     = "RESULT = " ++ p_2 ++ "; "
                            ++ p_2 ++ "." ++ add ++ "(" ++ p_1 ++ ");"
     | isCoercion f    = "RESULT = " ++ p_1 ++ ";"
-    | isDefinedRule f = "RESULT = " ++ packageAbsyn ++ "Def." ++ f
+    | isDefinedRule f = "RESULT = " ++ packageAbsyn ++ "Def." ++ sanitize f
                         ++ "(" ++ intercalate "," ms ++ ");"
     | otherwise       = "RESULT = new " ++ c
                   ++ "(" ++ intercalate "," ms ++ ");" ++ lineInfo
    where
+     sanitize = getRuleName
      f   = funName fun
      c   = packageAbsyn ++ "." ++
            if isNilFun f || isOneFun f || isConsFun f

@@ -33,10 +33,12 @@ import System.FilePath ( (<.>), (</>) )
 import Text.PrettyPrint as P
 
 import BNFC.CF
-import BNFC.Backend.Common.NamedVariables hiding (IVar, getVars, varName)
-import BNFC.Options (RecordPositions(..))
-import BNFC.TypeChecker  -- We need to (re-)typecheck to figure out list instances in defined rules.
-import BNFC.Utils   ((+++), (++++), uncurry3, unless)
+import BNFC.Options     ( RecordPositions(..) )
+import BNFC.TypeChecker ( buildContext, ctxTokens, isToken )
+import BNFC.Utils       ( (+++), (++++), uncurry3, unless )
+
+import BNFC.Backend.Common.NamedVariables ( UserDef, showNum )
+import BNFC.Backend.Java.Utils            ( getRuleName )
 
 --Produces abstract data types in Java.
 --These follow Appel's "non-object oriented" version.
@@ -68,6 +70,11 @@ cf2JavaAbs dirAbsyn packageBase packageAbsyn cf rp = concat
      , ""
      , "public class AbsynDef {"
      , ""
+     , "  public static <B,A extends java.util.LinkedList<? super B>> A cons(B x, A xs) {"
+     , "    xs.addFirst(x);"
+     , "    return xs;"
+     , "  }"
+     , ""
      ]
    , definedRules defs packageAbsyn cf
    , [ "}"]
@@ -80,56 +87,45 @@ definedRules defs packageAbsyn cf = map rule defs
   where
     ctx = buildContext cf
 
-    list = LC
-      { nil  = \ t -> ("List" ++ unBase t, FunT [] (ListT t))
-      , cons = \ t -> ("cons", FunT [t, ListT t] (ListT t))
-      }
-      where
-         unBase (ListT t) = unBase t
-         unBase (BaseT x) = norm x
-
-    norm = catToStr . normCat . strToCat
-
     rule (Define f args e t) =
-        case runTypeChecker $ checkDefinition' list ctx f (map fst args) e of
-            Left err ->
-                error $ "Panic! This should have been caught already:\n"
-                    ++ err
-            Right (args,(e',t)) -> unlines $ map ("  " ++) $
-                [ "public static " ++ javaType t ++ " " ++ funName f ++ "(" ++
+        unlines $ map ("  " ++) $
+                [ "public static " ++ javaType t ++ " " ++ sanitize (funName f) ++ "(" ++
                     intercalate ", " (map javaArg args) ++ ") {"
-                , "  return " ++ javaExp (map fst args) e' ++ ";"
+                , "  return " ++ javaExp (map fst args) e ++ ";"
                 , "}"
                 ]
      where
+       sanitize = getRuleName
 
        javaType :: Base -> String
        javaType = \case
-           ListT (BaseT x) -> concat [ packageAbsyn, ".List", norm x ]
-           BaseT x         -> typename packageAbsyn (ctxTokens ctx) $ norm x
+           ListT (BaseT x) -> concat [ packageAbsyn, ".List", x ]
+           BaseT x         -> typename packageAbsyn (ctxTokens ctx) x
            -- ListT t         -> javaType t -- undefined
-         where
 
        javaArg :: (String, Base) -> String
        javaArg (x,t) = javaType t ++ " " ++ x
 
        javaExp :: [String] -> Exp -> String
        javaExp args = \case
-           App "null" _ []        -> "null"
            Var x                -> x      -- argument
+           App "[]" (FunT _ t) []
+                                -> callQ (identType t) []
+           App "(:)" _ es       -> call "cons" es
            App t _ [e]
              | isToken t ctx    -> javaExp args e     -- wraps new String
            App x _ es
-             | isUpper (head x) -> call ("new " ++ packageAbsyn ++ "." ++ x) es
-             | otherwise        -> call x es
-             -- -- | x `elem` args    -> call x es
-             -- -- | otherwise        -> call (packageAbsyn ++ "Def." ++ x) es
+             | isUpper (head x) -> callQ x es
+             | otherwise        -> call (sanitize x) es
+            -- -- | x `elem` args    -> call x es
            LitInt n             -> "new Integer(" ++ show n ++ ")"
            LitDouble x          -> "new Double(" ++ show x ++ ")"
            LitChar c            -> "new Character(" ++ show c ++ ")"
            LitString s          -> "new String(" ++ show s ++ ")"
          where
          call x es = x ++ "(" ++ intercalate ", " (map (javaExp args) es) ++ ")"
+         callQ     = call . qualify
+         qualify x = "new " ++ packageAbsyn ++ "." ++ x
 
 
 -- | Generates a (possibly abstract) category class, and classes for all its rules.

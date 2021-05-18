@@ -126,11 +126,12 @@ generateAction packageAbsyn nt f ms rev
     | isConsFun f = "$result = " ++ p_2 ++ "; "
                            ++ "$result." ++ add ++ "(" ++ p_1 ++ ");"
     | isCoercion f = "$result = " ++  p_1 ++ ";"
-    | isDefinedRule f = "$result = " ++ packageAbsyn ++ "Def." ++ funName f
+    | isDefinedRule f = "$result = " ++ packageAbsyn ++ "Def." ++ sanitize (funName f)
                         ++ "(" ++ intercalate "," (map resultvalue ms) ++ ");"
     | otherwise = "$result = new " ++ c
                   ++ "(" ++ intercalate "," (map resultvalue ms) ++ ");"
    where
+     sanitize          = getRuleName
      c                 = packageAbsyn ++ "." ++
                             if isNilFun f || isOneFun f || isConsFun f
                             then identCat (normCat nt) else funName f
