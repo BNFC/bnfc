@@ -75,7 +75,7 @@ mkHFile rp classes datas cf = unlines $ concat
     [ "/********************   Defined Constructors    ***********************/"
     , ""
     ]
-  , map (uncurry3 (prDefH user)) definedConstructors
+  , map (prDefH user) definedConstructors
 
   , [ ""
     , "#endif"
@@ -91,7 +91,7 @@ mkHFile rp classes datas cf = unlines $ concat
     ]
   prFreeH :: String -> String
   prFreeH s = "void free" ++ s ++ "(" ++ s ++ " p);"
-  definedConstructors = [ (funName f, xs, e) | FunDef f xs e <- cfgPragmas cf ]
+  definedConstructors = definitions cf
 
 destructorComment :: [String]
 destructorComment =
@@ -113,20 +113,21 @@ destructorComment =
 --
 prDefH
   :: [TokenCat] -- ^ Names of the token constructors (silent in C backend).
-  -> String     -- ^ Name of the defined constructor.
-  -> [String]   -- ^ Names of the arguments.
-  -> Exp        -- ^ Definition (referring to arguments and rule labels).
+  -> Define
   -> String
-prDefH tokenCats f xs e = concat [ "#define make_", f, "(", intercalate "," xs, ") ", prExp e ]
+prDefH tokenCats (Define fun args e t) =
+  concat [ "#define make_", f, "(", intercalate "," xs, ") ", prExp e ]
   where
+  f  = funName fun
+  xs = map fst args
   prExp :: Exp -> String
   prExp = \case
     Var x       -> x
     -- Andreas, 2021-02-13, issue #338
     -- Token categories are just @typedef@s in C, so no constructor needed.
-    App g [e] | g `elem` tokenCats
+    App g _ [e] | g `elem` tokenCats
                 -> prExp e
-    App g es    -> concat [ "make_", g, "(", intercalate "," (map prExp es), ")" ]
+    App g _ es  -> concat [ "make_", g, "(", intercalate "," (map prExp es), ")" ]
     LitInt    i -> show i
     LitDouble d -> show d
     LitChar   c -> show c

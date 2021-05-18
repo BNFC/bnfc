@@ -16,7 +16,7 @@ module BNFC.TypeChecker
     -- * Backdoor for rechecking defined syntax constructors for list types
   , checkDefinition'
   , buildSignature, buildContext, ctxTokens, isToken
-  , ListConstructors(LC)
+  , ListConstructors(..)
   ) where
 
 import Control.Monad
@@ -25,6 +25,7 @@ import Control.Monad.Reader
 
 import Data.Bifunctor
 import Data.Char
+import Data.Either (partitionEithers)
 
 import qualified Data.Map as Map
 import qualified Data.Set as Set
@@ -55,9 +56,6 @@ runTypeChecker m = first blendInPosition $ unErr m `runReaderT` NoPosition
 
 -- * Types and context
 
--- | Function arguments with type.
-type Telescope = [(String, Base)]
-
 data Context = Ctx
   { ctxLabels :: Signature         -- ^ Types of labels, extracted from rules.
   , ctxTokens :: [String]          -- ^ User-defined token types.
@@ -65,25 +63,31 @@ data Context = Ctx
   }
 
 data ListConstructors = LC
-        { nil   :: Base -> String
-        , cons  :: Base -> String
-        }
+  { nil   :: Base -> (String, Type)  -- ^ 'Base' is the element type. 'Type' the list type.
+  , cons  :: Base -> (String, Type)
+  }
 
 dummyConstructors :: ListConstructors
-dummyConstructors = LC (const "[]") (const "(:)")
-
+dummyConstructors = LC
+  { nil  = \ b -> ("[]" , FunT [] (ListT b))
+  , cons = \ b -> ("(:)", FunT [b, ListT b] (ListT b))
+  }
 
 -- * Type checker for definitions and expressions
 
 -- | Entry point.
-checkDefinitions :: CF -> Err ()
+checkDefinitions :: CF -> Err CF
 checkDefinitions cf = do
   let ctx = buildContext cf
-  sequence_ [ checkDefinition ctx f xs e | FunDef f xs e <- cfgPragmas cf ]
+  let (pragmas, defs0) = partitionEithers $ map isFunDef $ cfgPragmas cf
+  defs <- mapM (checkDefinition ctx) defs0
+  return cf { cfgPragmas = pragmas ++ map FunDef defs }
 
-checkDefinition :: Context -> RFun -> [String] -> Exp -> Err ()
-checkDefinition ctx f xs e =
-    void $ checkDefinition' dummyConstructors ctx f xs e
+checkDefinition :: Context -> Define -> Err Define
+checkDefinition ctx (Define f args e0 _) = do
+  let xs = map fst args  -- Throw away dummy types.
+  (tel, (e, b)) <- checkDefinition' dummyConstructors ctx f xs e0
+  return $ Define f tel e b
 
 checkDefinition'
   :: ListConstructors  -- ^ Translation of the list constructors.
@@ -115,19 +119,19 @@ checkDefinition' list ctx ident xs e =
 
 checkExp :: ListConstructors -> Context -> Exp -> Base -> Err Exp
 checkExp list ctx = curry $ \case
-  (App "[]" []     , ListT t        ) -> return (App (nil list t) [])
-  (App "[]" _      , _              ) -> throwError $
+  (App "[]" _ []     , ListT t      ) -> return (uncurry App (nil list t) [])
+  (App "[]" _ _      , _            ) -> throwError $
     "[] is applied to too many arguments."
 
-  (App "(:)" [e,es], ListT t        ) -> do
+  (App "(:)" _ [e,es], ListT t      ) -> do
     e'  <- checkExp list ctx e t
     es' <- checkExp list ctx es (ListT t)
-    return $ App (cons list t) [e',es']
+    return $ uncurry App (cons list t) [e',es']
 
-  (App "(:)" es    , _              ) -> throwError $
+  (App "(:)" _ es  , _              ) -> throwError $
     "(:) takes 2 arguments, but has been given " ++ show (length es) ++ "."
 
-  (e@(App x es)    , t              ) -> checkApp e x es t
+  (e@(App x _ es)  , t              ) -> checkApp e x es t
   (e@(Var x)       , t              ) -> e <$ checkApp e x [] t
   (e@LitInt{}      , BaseT "Integer") -> return e
   (e@LitDouble{}   , BaseT "Double" ) -> return e
@@ -137,10 +141,10 @@ checkExp list ctx = curry $ \case
     prettyShow e ++ " does not have type " ++ show t ++ "."
   where
   checkApp e x es t = do
-    FunT ts t' <- lookupCtx x ctx
+    ft@(FunT ts t') <- lookupCtx x ctx
     es' <- matchArgs ts
     unless (t == t') $ throwError $ prettyShow e ++ " has type " ++ show t' ++ ", but something of type " ++ show t ++ " was expected."
-    return $ App x es'
+    return $ App x ft es'
     where
     matchArgs ts
       | expect /= given   = throwError $ "'" ++ x ++ "' takes " ++ show expect ++ " arguments, but has been given " ++ show given ++ "."

@@ -72,7 +72,7 @@ cf2cabs cf = CAbs
     [("Visitable",  -- to give superclass
      [(c,[("String",False,"string_"),("Integer",False,"integer_")])]) | c<-pos]
   status cat = (cat, notElem cat (map fst basetypes ++ toks))
-  defs = [ funName f | FunDef f _ _ <- cfgPragmas cf]
+  defs = [ funName f | FunDef (Define f _ _ _) <- cfgPragmas cf]
 
   classVars :: [(String,Bool)] -> [(String,Bool,String)]
   classVars cs =

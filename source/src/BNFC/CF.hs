@@ -9,87 +9,10 @@
 {-
     BNF Converter: Abstract syntax
     Copyright (C) 2004  Author:  Markus Forsberg, Michael Pellauer, Aarne Ranta
-
+    Copyright (C) 2017-2021 Andreas Abel
 -}
 
-module BNFC.CF (
-            -- Types.
-            CF,
-            CFG(..),
-            Rule, Rul(..), npRule, valCat, lookupRule, InternalRule(..),
-            Pragma(..),
-            Exp, Exp'(..),
-            Base(..), Type(..), Signature,
-            Literal,
-            Symbol,
-            KeyWord,
-            LayoutKeyWords, Delimiters(..),
-            Position(..), noPosition, prettyPosition, npIdentifier,
-            WithPosition(..), blendInPosition,
-            RString, RCat,
-            Cat(..), strToCat, catToStr,
-            BaseCat, TokenCat,
-            catString, catInteger, catDouble, catChar, catIdent,
-            NonTerminal, SentForm,
-            Fun, RFun, IsFun(..),
-            Data,           -- describes the abstract syntax of a grammar
-            cf2data,        -- translates a grammar to a Data object.
-            cf2dataLists,   -- translates to a Data with List categories included.
-            getAbstractSyntax,
-            -- Literal categories, constants,
-            firstEntry,     -- the first entry or the first value category
-            baseTokenCatNames,  -- "Char", "Double", "Integer", "String"
-            specialCats,    -- ident
-            specialCatsP,   -- all literals
-            specialData,    -- special data
-            isDefinedRule,  -- defined rules (allows syntactic sugar)
-            isProperLabel,  -- not coercion or defined rule
-            allCats,        -- all categories of a grammar
-            allParserCats, allParserCatsNorm,
-            reallyAllCats,
-            allCatsNorm,
-            allCatsIdNorm,
-            allEntryPoints,
-            reservedWords,
-            cfTokens,
-            literals,
-            findAllReversibleCats, -- find all reversible categories
-            identCat,       -- transforms '[C]' to ListC (others, unchanged).
-            isParsable,
-            rulesForCat,    -- rules for a given category
-            rulesForNormalizedCat,    -- rules for a given category
-            ruleGroups,     -- Categories are grouped with their rules.
-            ruleGroupsInternals, --As above, but includes internal cats.
-            allNames,        -- Checking for non-unique names, like @Name. Name ::= Ident;@.
-            filterNonUnique,
-            isList,         -- Checks if a category is a list category.
-            isTokenCat, maybeTokenCat,
-            baseCat,
-            sameCat,
-            -- Information functions for list functions.
-            hasNilRule, hasSingletonRule,
-            sortRulesByPrecedence,
-            isNilCons,      -- either three of above?
-            isEmptyListCat, -- checks if the list permits []
-            revSepListRule, -- reverse a rule, if it is of form C t [C].
-            normCat,
-            isDataCat, isDataOrListCat,
-            normCatOfList,  -- Removes precendence information and enclosed List. C1 => C, C2 => C
-            catOfList,
-            comments,       -- translates the pragmas into two list containing the s./m. comments
-            numberOfBlockCommentForms,
-            tokenPragmas,   -- get the user-defined regular expression tokens
-            tokenNames,     -- get the names of all user-defined tokens
-            precCat,        -- get the precendence level of a Cat C1 => 1, C => 0
-            precRule,       -- get the precendence level of the value category of a rule.
-            isUsedCat,
-            isPositionCat,
-            hasPositionTokens,
-            hasIdent, hasIdentLikeTokens,
-            hasLayout, hasLayout_,
-            layoutPragmas,
-            sigLookup      -- Get the type of a rule label.
-           ) where
+module BNFC.CF where
 
 import Prelude hiding ((<>))
 
@@ -197,6 +120,14 @@ data Base = BaseT String
 data Type = FunT [Base] Base
     deriving (Eq, Ord)
 
+-- | Placeholder for a type.
+dummyBase :: Base
+dummyBase = BaseT "<DUMMY>"
+
+-- | Placeholder for a function type.
+dummyType :: Type
+dummyType = FunT [] dummyBase
+
 instance Show Base where
     show (BaseT x) = x
     show (ListT t) = "[" ++ show t ++ "]"
@@ -207,8 +138,9 @@ instance Show Type where
 -- | Expressions for function definitions.
 
 data Exp' f
-  = App       f [Exp' f]     -- ^ (Possibly defined) label applied to expressions.
-  | Var       String         -- ^ Function parameter.
+  = App f Type [Exp' f]     -- ^ (Possibly defined) label applied to expressions.
+                            --   The function 'Type' is inferred by the type checker.
+  | Var       String        -- ^ Function parameter.
   | LitInt    Integer
   | LitDouble Double
   | LitChar   Char
@@ -222,18 +154,18 @@ instance (IsFun f, Pretty f) => Pretty (Exp' f) where
     case listView e of
       Right es           -> brackets $ hcat $ punctuate ", " $ map (prettyPrec 0) es
       Left (Var x)       -> text x
-      Left (App f [])    -> prettyPrec p f
-      Left (App f [e1,e2])
+      Left (App f _ [])  -> prettyPrec p f
+      Left (App f _ [e1,e2])
         | isConsFun f    -> parensIf (p > 0) $ hsep [ prettyPrec 1 e1, ":", prettyPrec 0 e2 ]
-      Left (App f es)    -> parensIf (p > 1) $ hsep $ prettyPrec 1 f : map (prettyPrec 2) es
+      Left (App f _ es)  -> parensIf (p > 1) $ hsep $ prettyPrec 1 f : map (prettyPrec 2) es
       Left (LitInt n)    -> (text . show) n
       Left (LitDouble x) -> (text . show) x
       Left (LitChar c)   -> (text . show) c
       Left (LitString s) -> (text . show) s
     where
-      listView (App f [])
+      listView (App f _ [])
         | isNilFun f              = Right []
-      listView (App f [e1,e2])
+      listView (App f _ [e1,e2])
         | isConsFun f
         , Right es <- listView e2 = Right $ e1:es
       listView e0                 = Left e0
@@ -248,7 +180,31 @@ data Pragma
   | Layout LayoutKeyWords
   | LayoutStop [KeyWord]
   | LayoutTop Symbol              -- ^ Separator for top-level layout.
-  | FunDef RFun [String] Exp
+  | FunDef Define
+
+data Define = Define
+  { defName :: RFun
+  , defArgs :: Telescope  -- ^ Argument types inferred by the type checker.
+  , defBody :: Exp
+  , defType :: Base       -- ^ Type of the body, inferred by the type checker.
+  }
+
+-- | Function arguments with type.
+type Telescope = [(String, Base)]
+
+-- | For use with 'partitionEithers'.
+isFunDef :: Pragma -> Either Pragma Define
+isFunDef = \case
+  FunDef d -> Right d
+  p        -> Left  p
+
+-- | All 'define' pragmas of the grammar.
+definitions :: CFG f -> [Define]
+definitions cf = [ def | FunDef def <- cfgPragmas cf ]
+
+------------------------------------------------------------------------------
+-- Layout
+------------------------------------------------------------------------------
 
 type LayoutKeyWords = [(KeyWord, Delimiters)]
 
@@ -418,6 +374,7 @@ catIdent   = "Ident"
 baseTokenCatNames :: [TokenCat]
 baseTokenCatNames = [ catChar, catDouble, catInteger, catString ]
 
+-- all literals
 -- the parser needs these
 specialCatsP :: [TokenCat]
 specialCatsP = catIdent : baseTokenCatNames
@@ -440,10 +397,7 @@ isDataOrListCat _               = True
 -- True
 
 sameCat :: Cat -> Cat -> Bool
-sameCat (CoercCat c1 _) (CoercCat c2 _) = c1 == c2
-sameCat (Cat c1)        (CoercCat c2 _) = c1 == c2
-sameCat (CoercCat c1 _) (Cat c2)        = c1 == c2
-sameCat c1              c2              = c1 == c2
+sameCat = (==) `on` normCat
 
 -- | Removes precedence information. C1 => C, [C2] => [C]
 normCat :: Cat -> Cat
@@ -536,6 +490,7 @@ isDefinedRule = funNameSatisfies $ \case
   (x:_) -> isLower x
   []    -> error "isDefinedRule: empty function name"
 
+-- not coercion or defined rule
 isProperLabel :: IsFun a => a -> Bool
 isProperLabel f = not (isCoercion f || isDefinedRule f)
 
@@ -718,14 +673,16 @@ cf2data' predicate cf =
   [(cat, nub (map mkData [r | r <- cfgRules cf,
                               let f = funRule r,
                               not (isDefinedRule f),
-                              not (isCoercion f), sameCat cat (valCat r)]))
+                              not (isCoercion f), cat == normCat (valCat r)]))
       | cat <- nub $ map normCat $ filter predicate $ reallyAllCats cf ]
- where
+  where
   mkData (Rule f _ its _) = (wpThing f, [normCat c | Left c <- its ])
 
+-- translates a grammar to a Data object.
 cf2data :: CF -> [Data]
 cf2data = cf2data' $ isDataCat . normCat
 
+-- translates to a Data with List categories included.
 cf2dataLists :: CF -> [Data]
 cf2dataLists = cf2data' $ isDataOrListCat . normCat
 

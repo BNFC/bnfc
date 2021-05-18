@@ -293,9 +293,9 @@ instanceHasPositionTokenType cat = vcat
 
 -- | Generate Haskell code for the @define@d constructors.
 definedRules :: Bool -> CF -> [Doc]
-definedRules functor cf = [ mkDef f xs e | FunDef f xs e <- cfgPragmas cf ]
+definedRules functor cf = map mkDef $ definitions cf
   where
-  mkDef f xs e = vcat $ concat
+  mkDef (Define f args e t) = vcat $ concat
     [ [ text $ unwords [ fName, "::", typ $ wpThing t ]
       | t <- maybeToList $ sigLookup f cf
       ]
@@ -303,14 +303,15 @@ definedRules functor cf = [ mkDef f xs e | FunDef f xs e <- cfgPragmas cf ]
     ]
     where
     fName = mkDefName f
+    xs    = map fst args
     avoidReserved = avoidReservedWords [fName]
     xs' = addFunctorArg id $ map avoidReserved xs
     typ (FunT ts t) | functor = List.intercalate " -> " $ "a" : (map funBase $ ts ++ [t])
     typ t = typeToHaskell t
     sanitize = \case
-      App x es
-        | tokTyp x  -> App x $ map sanitize es
-        | otherwise -> App x $ addFunctorArg (`App` []) $ map sanitize es
+      App x t es
+        | tokTyp x  -> App x t $ map sanitize es
+        | otherwise -> App x t $ addFunctorArg (\ e -> App e dummyType []) $ map sanitize es
       Var x         -> Var $ avoidReserved x
       e@LitInt{}    -> e
       e@LitDouble{} -> e

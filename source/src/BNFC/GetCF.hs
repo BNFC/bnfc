@@ -71,7 +71,9 @@ parseCF opts target content = do
                     >>= return . expandRules
                     >>= getCF opts
                     >>= return . markTokenCategories
-  either dieUnlessForce return $ runTypeChecker $ checkDefinitions cf
+
+  -- Construct the typing information in 'define' expressions.
+  cf <- either die return $ runTypeChecker $ checkDefinitions cf
 
   -- Some backends do not allow the grammar name to coincide with
   -- one of the category or constructor names.
@@ -184,10 +186,7 @@ parseCF opts target content = do
         ]
 
   -- Fail if the grammar uses defined constructors which are not actually defined.
-  let definedConstructor = \case
-        FunDef x _ _ -> Just x
-        _ -> Nothing
-  let definedConstructors = Set.fromList $ mapMaybe definedConstructor $ cfgPragmas cf
+  let definedConstructors = Set.fromList $ map defName $ definitions cf
   let undefinedConstructor x = isDefinedRule x && x `Set.notMember` definedConstructors
   case filter undefinedConstructor $ map funRule $ cfgRules cf of
     [] -> return ()
@@ -381,7 +380,7 @@ transDef = \case
     Abs.Function ident xs e       -> do
       f <- transIdent ident
       let xs' = map transArg xs
-      return [ Left $ FunDef f xs' $ transExp xs' e ]
+      return [ Left $ FunDef $ Define f xs' (transExp (map fst xs') e) dummyBase ]
 
 -- | Translate @separator [nonempty] C "s"@.
 --   The position attached to the generated rules is taken from @C@.
@@ -502,8 +501,8 @@ transIdent (Abs.Identifier ((line, col), str)) = do
   file <- asks lbnfFile
   return $ WithPosition (Position file line col) str
 
-transArg :: Abs.Arg -> String
-transArg (Abs.Arg (Abs.Identifier (_pos, x))) = x
+transArg :: Abs.Arg -> (String, Base)
+transArg (Abs.Arg (Abs.Identifier (_pos, x))) = (x, dummyBase)
 
 transExp
   :: [String] -- ^ Arguments of definition (in scope in expression).
@@ -512,17 +511,17 @@ transExp
 transExp xs = loop
   where
   loop = \case
-    Abs.App x es    -> App (transIdent' x) (map loop es)
+    Abs.App x es    -> App (transIdent' x) dummyType (map loop es)
     Abs.Var x       -> let x' = transIdent' x in
-                       if x' `elem` xs then Var x' else App x' []
+                       if x' `elem` xs then Var x' else App x' dummyType []
     Abs.Cons e1 e2  -> cons e1 (loop e2)
     Abs.List es     -> foldr cons nil es
     Abs.LitInt x    -> LitInt x
     Abs.LitDouble x -> LitDouble x
     Abs.LitChar x   -> LitChar x
     Abs.LitString x -> LitString x
-  cons e1 e2 = App "(:)" [loop e1, e2]
-  nil        = App "[]" []
+  cons e1 e2 = App "(:)" dummyType [loop e1, e2]
+  nil        = App "[]"  dummyType []
   transIdent' (Abs.Identifier (_pos, x)) = x
 
 --------------------------------------------------------------------------------

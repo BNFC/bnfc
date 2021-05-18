@@ -27,12 +27,13 @@ import BNFC.Lexing (mkRegMultilineComment)
 import BNFC.Utils (cstring, unless)
 
 cf2ocamllex :: String -> String -> CF -> String
-cf2ocamllex _ parserMod cf =
-  unlines $ List.intercalate [""] [
-    header parserMod cf,
-    definitions cf,
-    [PP.render (rules cf)]
-   ]
+cf2ocamllex _ parserMod cf = unlines $ List.intercalate [""]
+  [ header parserMod cf
+  , cMacros
+  , rMacros cf
+  , uMacros cf
+  , [ PP.render $ rules cf ]
+  ]
 
 header :: String -> CF -> [String]
 header parserMod cf = List.intercalate [""] . filter (not . null) $ concat
@@ -93,14 +94,6 @@ hashtables cf =
     where
     keyvals = map (\ s -> concat [ "(", mkEsc s, ", ", terminal cf s, ")" ]) syms
 
-
-definitions :: CF -> [String]
-definitions cf = concat $
-  [ cMacros
-  , rMacros cf
-  , uMacros cf
-  ]
-
 cMacros :: [String]
 cMacros =
   [ "(* BNFC character classes *)"
@@ -110,7 +103,6 @@ cMacros =
   , "let _digit  = ['0'-'9']                             (*  _digit *)"
   , "let _idchar = _letter | _digit | ['_' '\\'']         (*  identifier character *)"
   , "let _universal = _                                  (* universal: any character *)"
-  , ""
   ]
 
 rMacros :: CF -> [String]

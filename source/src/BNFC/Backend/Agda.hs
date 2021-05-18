@@ -143,8 +143,6 @@ import BNFC.Options                (SharedOptions, TokenText(..), tokenText)
 import BNFC.PrettyPrint
 import BNFC.Utils                  (ModuleName, replace, when, table)
 
-type List1 = List1.NonEmpty
-
 -- | How to print the types of constructors in Agda?
 
 data ConstructorStyle
@@ -649,21 +647,21 @@ incr = Map.alter $ maybe (Just 1) (Just . succ)
 
 -- | Generate Haskell code for the @define@d constructors.
 definedRules :: CF -> Doc
-definedRules cf = vsep [ mkDef f xs e | FunDef f xs e <- cfgPragmas cf ]
+definedRules cf = vsep $ map mkDef $ definitions cf
   where
-    mkDef f xs e = vcat $ concat
+    mkDef (Define f args e t) = vcat $ concat
       [ [ text $ unwords [ mkDefName f, ":", typeToHaskell' "→" $ wpThing t ]
         | t <- maybeToList $ sigLookup f cf
         ]
       , [ sep $ concat
           [ [ text (mkDefName f), "=", "λ" ]
-          , map (text . agdaLower) xs
+          , map (text . agdaLower . fst) args
           , [ "→", pretty $ sanitize e ]
           ]
         ]
       ]
     sanitize = \case
-      App x es      -> App (agdaLower x) $ map sanitize es
+      App x t es    -> App (agdaLower x) t $ map sanitize es
       Var x         -> Var $ agdaLower x
       e@LitInt{}    -> e
       e@LitDouble{} -> e

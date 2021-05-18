@@ -1,3 +1,5 @@
+{-# LANGUAGE LambdaCase #-}
+
 {-
     BNF Converter: OCaml Abstract Syntax Generator
     Copyright (C) 2005  Author:  Kristofer Johannisson
@@ -36,16 +38,17 @@ cf2Abstract _ cf = unlines $ concat
   defs = definedRules cf
 
 definedRules :: CF -> [String]
-definedRules cf = [ mkDef f xs e | FunDef f xs e <- cfgPragmas cf ]
+definedRules cf = map mkDef $ definitions cf
   where
-    mkDef f xs e = "let " ++ funName f ++ " " ++ mkTuple xs ++ " = " ++ ocamlExp False e
+    mkDef (Define f args e t) =
+      "let " ++ funName f ++ " " ++ mkTuple (map fst args) ++ " = " ++ ocamlExp False e
 
     ocamlExp :: Bool -> Exp -> String
     ocamlExp p = \case
       Var s       -> s
-      App s []    -> s
-      App s [e]   -> parensIf p $ s ++ ' ' : ocamlExp True e
-      App s es    -> parensIf p $ s ++ ' ' : mkTuple (map (ocamlExp False) es)
+      App s _ []  -> s
+      App s _ [e] -> parensIf p $ s ++ ' ' : ocamlExp True e
+      App s _ es  -> parensIf p $ s ++ ' ' : mkTuple (map (ocamlExp False) es)
       LitInt i    -> show i
       LitDouble d -> show d
       LitChar c   -> "\'" ++ c : "\'"
