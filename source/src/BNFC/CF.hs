@@ -415,6 +415,10 @@ identCat :: Cat -> String
 identCat (ListCat c) = "List" ++ identCat c
 identCat c = catToStr c
 
+identType :: Base -> String
+identType (ListT t) = "List" ++ identType t
+identType (BaseT s) = s
+
 isList :: Cat -> Bool
 isList (ListCat _) = True
 isList _           = False
