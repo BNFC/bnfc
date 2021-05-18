@@ -93,6 +93,7 @@ mkHFile useStl inPackage cf groups = unlines
     "  void backup(void);",
     "  void onEmptyLine(void);",
     "  void removeTrailingSpaces(void);",
+    "  void removeTrailingWhitespace(void);",
     " public:",
     "  PrintAbsyn(void);",
     "  ~PrintAbsyn(void);",
@@ -689,7 +690,7 @@ prRender useStl = unlines $ concat
       "     bufAppend(c);",
       "  else if (c == ')' || c == ']')",
       "  {",
-      "     backup();",
+      "     removeTrailingWhitespace();",
       "     bufAppend(c);",
       "     bufAppend(' ');",
       "  }",
@@ -703,13 +704,13 @@ prRender useStl = unlines $ concat
       "  }",
       "  else if (c == ',')",
       "  {",
-      "     backup();",
+      "     removeTrailingWhitespace();",
       "     bufAppend(c);",
       "     bufAppend(' ');",
       "  }",
       "  else if (c == ';')",
       "  {",
-      "     backup();",
+      "     removeTrailingWhitespace();",
       "     bufAppend(c);",
       "     bufAppend('\\n');",
       "     indent();",
@@ -772,6 +773,12 @@ prRender useStl = unlines $ concat
     , "void PrintAbsyn::removeTrailingSpaces()"
     , "{"
     , "  while (cur_ && buf_[cur_ - 1] == ' ') --cur_;"
+    , "  buf_[cur_] = 0;"
+    , "}"
+    , ""
+    , "void PrintAbsyn::removeTrailingWhitespace()"
+    , "{"
+    , "  while (cur_ && (buf_[cur_ - 1] == ' ' || buf_[cur_ - 1] == '\\n')) --cur_;"
     , "  buf_[cur_] = 0;"
     , "}"
     , ""

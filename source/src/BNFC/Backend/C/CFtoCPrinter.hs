@@ -89,6 +89,7 @@ mkHFile cf groups = unlines
     "void backup(void);",
     "void onEmptyLine(void);",
     "void removeTrailingSpaces(void);",
+    "void removeTrailingWhitespace(void);",
     ""
    ]
   footer = unlines $
@@ -578,7 +579,7 @@ prRender = unlines $ concat
       "     bufAppendC(c);",
       "  else if (c == ')' || c == ']')",
       "  {",
-      "     backup();",
+      "     removeTrailingWhitespace();",
       "     bufAppendC(c);",
       "     bufAppendC(' ');",
       "  }",
@@ -592,13 +593,13 @@ prRender = unlines $ concat
       "  }",
       "  else if (c == ',')",
       "  {",
-      "     backup();",
+      "     removeTrailingWhitespace();",
       "     bufAppendC(c);",
       "     bufAppendC(' ');",
       "  }",
       "  else if (c == ';')",
       "  {",
-      "     backup();",
+      "     removeTrailingWhitespace();",
       "     bufAppendC(c);",
       "     bufAppendC('\\n');",
       "     indent();",
@@ -651,6 +652,12 @@ prRender = unlines $ concat
   , [ "void removeTrailingSpaces()"
     , "{"
     , "  while (cur_ && buf_[cur_ - 1] == ' ') --cur_;"
+    , "  buf_[cur_] = 0;"
+    , "}"
+    , ""
+    , "void removeTrailingWhitespace()"
+    , "{"
+    , "  while (cur_ && (buf_[cur_ - 1] == ' ' || buf_[cur_ - 1] == '\\n')) --cur_;"
     , "  buf_[cur_] = 0;"
     , "}"
     , ""
