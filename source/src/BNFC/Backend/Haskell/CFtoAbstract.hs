@@ -299,7 +299,7 @@ definedRules functor cf = map mkDef $ definitions cf
     [ [ text $ unwords [ fName, "::", typ $ wpThing t ]
       | t <- maybeToList $ sigLookup f cf
       ]
-    , [ sep $ map text (fName : xs') ++ [ "=", pretty $ sanitize e ] ]
+    , [ hsep $ map text (fName : xs') ++ [ "=", pretty $ sanitize e ] ]
     ]
     where
     fName = mkDefName f
@@ -310,8 +310,9 @@ definedRules functor cf = map mkDef $ definitions cf
     typ t = typeToHaskell t
     sanitize = \case
       App x t es
-        | tokTyp x  -> App x t $ map sanitize es
-        | otherwise -> App x t $ addFunctorArg (\ e -> App e dummyType []) $ map sanitize es
+        | isNilCons x -> App x t $ map sanitize es
+        | tokTyp x    -> App x t $ map sanitize es
+        | otherwise   -> App x t $ addFunctorArg (\ e -> App e dummyType []) $ map sanitize es
       Var x         -> Var $ avoidReserved x
       e@LitInt{}    -> e
       e@LitDouble{} -> e
