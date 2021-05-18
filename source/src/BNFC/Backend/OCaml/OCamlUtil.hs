@@ -52,6 +52,12 @@ reservedOCaml = [
     "true","try","type","val","virtual","when",
     "while","with"]
 
+-- | Avoid clashes with keywords.
+sanitizeOcaml :: String -> String
+sanitizeOcaml s
+  | s `elem` reservedOCaml = s ++ "_"
+  | otherwise = s
+
 -- | Keywords of @ocamllex@.
 reservedOCamlLex :: [String]
 reservedOCamlLex =

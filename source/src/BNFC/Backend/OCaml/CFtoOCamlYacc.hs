@@ -181,7 +181,7 @@ generateAction _ f ms = (if isCoercion f then "" else f') +++ mkTuple ms
     f' = case funName f of -- ocaml cons is somehow not a standard infix oper, right?
            "(:[])" -> "(fun x -> [x])"
            "(:)"   -> "(fun (x,xs) -> x::xs)"
-           x       -> x
+           x       -> sanitizeOcaml x
 
 
 generatePatterns :: (String -> String) -> Rule -> (Pattern,[MetaVar])
