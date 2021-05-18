@@ -1,3 +1,9 @@
+{-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE MultiWayIf #-}
+{-# LANGUAGE PatternGuards #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TupleSections #-}
+
 {-
     BNF Converter: C Bison generator
     Copyright (C) 2004  Author:  Michael Pellauer
@@ -10,10 +16,6 @@
     Author        : Michael Pellauer
     Created       : 6 August, 2003
 -}
-
-{-# LANGUAGE LambdaCase #-}
-{-# LANGUAGE PatternGuards #-}
-{-# LANGUAGE TupleSections #-}
 
 module BNFC.Backend.C.CFtoBisonC
   ( cf2Bison
@@ -35,6 +37,7 @@ import System.FilePath ( (<.>) )
 import BNFC.CF
 import BNFC.Backend.Common.NamedVariables hiding (varName)
 import BNFC.Backend.C.CFtoFlexC (ParserMode(..), cParser, stlParser, parserHExt, parserName, parserPackage)
+import BNFC.Backend.CPP.Naming
 import BNFC.Backend.CPP.STL.STLUtils
 import BNFC.Options (RecordPositions(..), InPackage)
 import BNFC.PrettyPrint
@@ -447,7 +450,7 @@ generateActionC rp cParser nt f b ms
           = ""
   new :: String -> String
   new | cParser   = ("make_" ++)
-      | otherwise = \ s -> if isUpper (head s) then "new " ++ s else s
+      | otherwise = \ s -> if isUpper (head s) then "new " ++ s else sanitizeCpp s
 
 generateActionSTL :: IsFun a => RecordPositions -> InPackage -> String -> a -> Bool -> [(MetaVar,Bool)] -> Action
 generateActionSTL rp inPackage nt f b mbs = reverses ++
@@ -455,7 +458,7 @@ generateActionSTL rp inPackage nt f b mbs = reverses ++
      | isNilFun f      -> concat ["$$ = ", "new ", scope, nt, "();"]
      | isOneFun f      -> concat ["$$ = ", "new ", scope, nt, "(); $$->push_back(", head ms, ");"]
      | isConsFun f     -> concat [lst, "->push_back(", el, "); $$ = ", lst, ";"]
-     | isDefinedRule f -> concat ["$$ = ", scope, funName f, "(", intercalate ", " ms, ");" ]
+     | isDefinedRule f -> concat ["$$ = ", scope, sanitizeCpp (funName f), "(", intercalate ", " ms, ");" ]
      | otherwise       -> concat ["$$ = ", "new ", scope, funName f, "(", intercalate ", " ms, ");", loc]
  where
   ms        = map fst mbs

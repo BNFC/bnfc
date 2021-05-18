@@ -326,6 +326,7 @@ data NameStyle
   | SnakeCase  -- ^ e.g. @snake_case@
   | CamelCase  -- ^ e.g. @CamelCase@
   | MixedCase  -- ^ e.g. @mixedCase@
+  | OrigCase   -- ^ Keep original capitalization and form.
   deriving (Show, Eq)
 
 -- | Generate a name in the given case style taking into account the reserved
@@ -375,6 +376,7 @@ mkName reserved style s = notReserved name'
                          "" -> ""
                          c:cs -> toLower c:cs
         SnakeCase -> map toLower (intercalate "_" tokens)
+        OrigCase  -> s
     capitalize [] = []
     capitalize (c:cs) = toUpper c:cs
 

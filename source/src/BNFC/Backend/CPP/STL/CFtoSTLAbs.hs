@@ -1,3 +1,5 @@
+{-# LANGUAGE TupleSections #-}
+
 {-
     BNF Converter: C++ abstract syntax generator
     Copyright (C) 2004  Author:  Michael Pellauer
@@ -16,11 +18,14 @@
 
 module BNFC.Backend.CPP.STL.CFtoSTLAbs (cf2CPPAbs) where
 
+import Data.List        ( intercalate, intersperse )
+
 import BNFC.Backend.Common.OOAbstract
 import BNFC.CF
-import BNFC.Options (RecordPositions(..))
-import BNFC.Utils((+++))
-import Data.List
+import BNFC.Options     ( RecordPositions(..) )
+import BNFC.TypeChecker ( ListConstructors(..) )
+import BNFC.Utils       ( (+++), applyWhen )
+
 import BNFC.Backend.CPP.Common
 import BNFC.Backend.CPP.STL.STLUtils
 
@@ -69,7 +74,7 @@ mkHFile rp inPackage cabs cf = unlines
   "",
   unlines [prList c | c <- listtypes cabs],
   "",
-  definedRules True cf
+  definedRules Nothing cf
   "/********************   Defined Constructors    ********************/",
   nsEnd inPackage,
   "#endif"
@@ -137,17 +142,20 @@ prCon (c,(f,cs)) = unlines [
    conargs = concat $ intersperse ", "
      [x +++ pointerIf st ("p" ++ show i) | ((x,st,_),i) <- zip cs [1..]]
 
-prList :: (String,Bool) -> String
-prList (c,b) = unlines [
-  "class " ++c++ " : public Visitable, public std::vector<" ++bas++ ">",
-  "{",
-  "public:",
-  "  virtual void accept(Visitor *v);",
-  "  virtual " ++ c ++ " *clone() const;",
-  "};"
+prList :: (String, Bool) -> String
+prList (c, b) = unlines
+  [ "class " ++c++ " : public Visitable, public std::vector<" ++bas++ ">"
+  , "{"
+  , "public:"
+  , "  virtual void accept(Visitor *v);"
+  , "  virtual " ++ c ++ " *clone() const;"
+  , "};"
+  , ""
+    -- cons for this list type
+  , concat [ c, "* ", "cons", c, "(", bas, " x, ", c, "* xs);" ]
   ]
- where
-   bas = drop 4 c {- drop "List" -} ++ if b then "*" else ""
+  where
+  bas = applyWhen b (++ "*") $ drop 4 c {- drop "List" -}
 
 
 -- **** Implementation (.C) File Functions **** --
@@ -161,11 +169,15 @@ mkCFile inPackage cabs cf = unlines $ [
   "#include \"Absyn.H\"",
   nsStart inPackage,
   unlines [prConC  r | (_,rs) <- signatures cabs, r <- rs],
-  unlines [prListC c | (c,_) <- listtypes cabs],
-  definedRules False cf
+  unlines [prListC l | l <- listtypes cabs],
+  definedRules (Just $ LC nil cons) cf
   "/********************   Defined Constructors    ********************/",
   nsEnd inPackage
   ]
+  where
+  nil  t = (,dummyType) $ concat [ "new List", identType t, "()" ]
+  cons t = (,dummyType) $ concat [ "consList", identType t ]
+
 
 prConC :: CAbsRule -> String
 prConC fcs@(f,_) = unlines [
@@ -178,14 +190,14 @@ prConC fcs@(f,_) = unlines [
   ""
  ]
 
-prListC :: String -> String
-prListC c = unlines [
-  "/********************   " ++ c ++ "    ********************/",
-  "",
-  prAcceptC c,
-  "",
-  prCloneC c
- ]
+prListC :: (String,Bool) -> String
+prListC (c,b) = unlines
+  [ "/********************   " ++ c ++ "    ********************/"
+  , ""
+  , prAcceptC c
+  , prCloneC c
+  , prConsC c b
+  ]
 
 
 --The standard accept function for the Visitor pattern
@@ -205,6 +217,17 @@ prCloneC c = unlines [
   "  return new" +++ c ++ "(*this);",
   "}"
   ]
+
+-- | Make a list constructor definition.
+prConsC :: String -> Bool -> String
+prConsC c b = unlines
+  [ concat [ c, "* ", "cons", c, "(", bas, " x, ", c, "* xs) {" ]
+  , "  xs->insert(xs->begin(), x);"
+  , "  return xs;"
+  , "}"
+  ]
+  where
+  bas = applyWhen b (++ "*") $ drop 4 c {- drop "List" -}
 
 --The constructor assigns the parameters to the corresponding instance variables.
 prConstructorC :: CAbsRule -> String

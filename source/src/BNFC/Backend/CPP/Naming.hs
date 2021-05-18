@@ -19,3 +19,9 @@ cppReservedWords = cReservedWords ++ [ "asm", "dynamic_cast", "namespace"
 
 mkVariable :: String -> String
 mkVariable = mkName cppReservedWords SnakeCase
+
+sanitizeC :: String -> String
+sanitizeC = mkName cReservedWords OrigCase
+
+sanitizeCpp :: String -> String
+sanitizeCpp = mkName cppReservedWords OrigCase
