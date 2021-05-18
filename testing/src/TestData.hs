@@ -42,6 +42,7 @@ exampleGrammars = map (fmap prefix) $
   [ fmap ("Alfa"      </>) $ Example' needsLayout "Alfa.cf"      [ "Sorting.alfa" ]
   , fmap ("cubicaltt" </>) $ Example' needsLayout "cubicaltt.cf" [ "prelude.ctt" ]
   , fmap ("cpp"       </>) $ Example "cpp.cf"    [ "example.cpp" ]
+  , fmap ("define"    </>) $ Example "test.cf"   [ "good01.in"   ]
   , fmap ("GF"        </>) $ Example "gf.cf"     [ "example.gf"  ]
   , fmap ("OCL"       </>) $ Example "OCL.cf"    [ "example.ocl" ]
   , fmap ("prolog"    </>) $ Example "Prolog.cf" [ "small.pl", "simpsons.pl" ]

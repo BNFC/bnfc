@@ -56,13 +56,13 @@ allWithParams params = makeTestSuite (tpName params) $ concat $
 -- | This parameterized test is called first.
 --   Use it while working in connection with a certain test case. (For quicker response.)
 current :: Test
--- current = currentExampleTest
-current = currentRegressionTest
+current = currentExampleTest
+-- current = currentRegressionTest
 -- current = layoutTest
 
 currentExampleTest :: Test
 currentExampleTest = makeTestSuite "Current parameterized test" $
-  mapMaybe (`exampleTest` (exampleGrammars !! 0)) parameters
+  mapMaybe (`exampleTest` (exampleGrammars !! 3)) parameters
 
 currentRegressionTest :: Test
 currentRegressionTest = makeTestSuite "Current parameterized test" $

@@ -161,7 +161,8 @@ parseCF opts target content = do
             ]
 
   -- Warn or fail if the grammar uses names not unique modulo upper/lowercase.
-  case nub $ filter (`notElem` nonUniqueNames) $ filter (not . isDefinedRule) $
+  when False $
+   case nub $ filter (`notElem` nonUniqueNames) $ filter (not . isDefinedRule) $
        concatMap List1.toList $ duplicatesOn (map toLower . wpThing) names of
     [] -> return ()
     ns | target `elem` [ TargetJava ]
