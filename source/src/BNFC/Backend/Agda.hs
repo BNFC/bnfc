@@ -329,25 +329,32 @@ imports
   -> Doc
 imports numeric layout pos = vcat . map prettyImport . concat $
   [ when layout
-    [ ("Agda.Builtin.Bool",   [("Bool", boolT)]) ]
-  , [ ("Agda.Builtin.Char",   [("Char", charT)]) ]
+    [ ("Agda.Builtin.Bool",   [],            [("Bool", boolT)]) ]
+  , [ ("Agda.Builtin.Char",   [charT],       []               ) ]
   , when (numeric == YesImportNumeric) importNumeric
-  , [ ("Agda.Builtin.List",   [("List", listT)]) ]
+  , [ ("Agda.Builtin.List",   ["[]", "_∷_"], [("List", listT)]) ]
   , when pos
-    [ ("Agda.Builtin.Nat",    [("Nat" , natT )]) ]
-  , [ ("Agda.Builtin.String", [("String", stringT), ("primStringFromList", stringFromListT) ]) ]
+    [ ("Agda.Builtin.Nat",    [],            [("Nat" , natT )]) ]
+  , [ ("Agda.Builtin.String", [], [("String", stringT), ("primStringFromList", stringFromListT) ]) ]
   ]
   where
-  importNumeric :: [(String, [(String, Doc)])]
+  importNumeric :: [(String, [Doc], [(String, Doc)])]
   importNumeric =
-    [ ("Agda.Builtin.Float public", [("Float", doubleT)])
-    , ("Agda.Builtin.Int   public", [("Int", integerT)])
+    [ ("Agda.Builtin.Float public", [], [("Float", doubleT)])
+    , ("Agda.Builtin.Int   public", [], [("Int", integerT)])
+    , ("Agda.Builtin.Int"         , [], [("pos", "#pos")])
     ]
-  prettyImport :: (String, [(String, Doc)]) -> Doc
-  prettyImport (m, ren) = prettyList 2 pre lparen rparen semi $
-    map (\ (x, d) -> hsep [text x, "to", d ]) ren
+  prettyImport :: (String, [Doc], [(String, Doc)]) -> Doc
+  prettyImport (m, use, ren)
+    | null ren  = pre
+    | otherwise = prettyList 2 pre lparen rparen semi $
+        map (\ (x, d) -> hsep [text x, "to", d ]) ren
     where
-    pre = hsep [ "open", "import", text m, "using", "()", "renaming" ]
+    pre = hsep $ concat
+      [ [ "open", "import", text m ]
+      , [ "using", parens $ hcat $ punctuate "; " use ]
+      , [ "renaming" | not (null ren) ]
+      ]
 
 -- | Import Agda AST.
 --
@@ -653,7 +660,7 @@ definedRules cf = vsep $ map mkDef $ definitions cf
       [ [ text $ unwords [ mkDefName f, ":", typeToHaskell' "→" $ wpThing t ]
         | t <- maybeToList $ sigLookup f cf
         ]
-      , [ sep $ concat
+      , [ hsep $ concat
           [ [ text (mkDefName f), "=", "λ" ]
           , map (text . agdaLower . fst) args
           , [ "→", pretty $ sanitize e ]
@@ -661,9 +668,10 @@ definedRules cf = vsep $ map mkDef $ definitions cf
         ]
       ]
     sanitize = \case
+      App "(:)" t es-> App "_∷_" t $ map sanitize es
       App x t es    -> App (agdaLower x) t $ map sanitize es
       Var x         -> Var $ agdaLower x
-      e@LitInt{}    -> e
+      e@LitInt{}    -> App "#pos" dummyType [e]
       e@LitDouble{} -> e
       e@LitChar{}   -> e
       e@LitString{} -> e
