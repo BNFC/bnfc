@@ -107,17 +107,17 @@ destructorComment =
 
 -- | For @define@d constructors, make a CPP definition.
 --
--- >>> prDefH [] "iSg" ["i"] (App "ICons" [Var "i", App "INil" []])
--- "#define make_iSg(i) make_ICons(i,make_INil())"
+-- >>> prDefH [] (Define "iSg" [("i",undefined)] (App "ICons" undefined [Var "i", App "INil" undefined []]) undefined)
+-- "#define make_iSg(i) \\\n  make_ICons (i, make_INil())"
 --
--- >>> prDefH [] "snoc" ["xs","x"] (App "Cons" [Var "x", Var "xs"])
--- "#define make_snoc(xs,x) make_Cons(x,xs)"
+-- >>> prDefH [] (Define "snoc" (map (,undefined) ["xs","x"]) (App "Cons" undefined [Var "x", Var "xs"]) undefined)
+-- "#define make_snoc(xs,x) \\\n  make_Cons (x, xs)"
 --
 prDefH
   :: [TokenCat] -- ^ Names of the token constructors (silent in C backend).
   -> Define
   -> String
-prDefH tokenCats (Define fun args e t) =
+prDefH tokenCats (Define fun args e _t) =
   concat [ "#define make_", f, "(", intercalate "," xs, ") \\\n  ", prExp e ]
   where
   f  = funName fun
@@ -268,7 +268,7 @@ prDestructorC (cat, rules)
   | isList cat = concat
     [ [ "void free" ++ cl ++ "("++ cl +++ vname ++ ")"
       , "{"
-      , "  if (" ++ vname +++ "!= 0)"
+      , "  if (" ++ vname ++ ")"
       , "  {"
       ]
     , map ("    " ++) visitMember
