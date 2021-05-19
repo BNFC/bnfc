@@ -56,6 +56,9 @@ release = '2.9.2'
 # for a list of supported languages.
 #language = None
 
+# Default pygments highligher (replaces default, 'python').
+highlight_language = 'bnf'
+
 # There are two options for replacing |today|: either, you set today to some
 # non-false value, then it is used:
 #today = ''
