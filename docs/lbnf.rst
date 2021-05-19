@@ -384,6 +384,85 @@ that all regular rule labels be unique: this is needed to guarantee
 error-free pretty-printing. Violating this strengthened rule currently
 generates only a warning, not a type error.
 
+.. _define:
+
+Defined labels
+--------------
+
+LBNF gives support for syntax tree constructors that are eliminated
+during parsing, by following **semantic definitions**. Here is an
+example: a core statement language::
+
+     Assign. Stm ::= Ident "=" Exp ;
+     Block.  Stm ::= "{" [Stm] "}" ;
+     While.  Stm ::= "while" "(" Exp ")" Stm ;
+     If.     Stm ::= "if" "(" Exp ")" Stm "else" Stm ;
+
+We now want to have some syntactic sugar. Note that the labels for these
+rules all start with a lowercase letter, indicating that they correspond
+to *defined functions* rather than nodes in the abstract syntax tree.
+
+::
+
+     if.   Stm ::= "if" "(" Exp ")" Stm "endif" ;
+     for.  Stm ::= "for" "(" Stm ";" Exp ";" Stm ")" Stm ;
+     inc.  Stm ::= Ident "++" ;
+
+Functions are defined using the ``define`` keyword. Definitions have the
+form::
+
+     define f x1 .. xn = e
+
+where ``e`` is an expression in applicative form using rule labels,
+other defined functions, lists and literals.
+
+::
+
+     define if e s       = If e s (Block []) ;
+     define for i c s b  = Block [i, While c (Block [b, s])] ;
+     define inc x        = Assign x (EOp (EVar x) Plus (EInt 1)) ;
+     terminator Stm ";" ;
+
+Another use of defined functions is to simplify the abstract syntax for
+binary operators. Instead of one node for each operator we want to have
+a general node (EOp) for all binary operator applications.
+
+::
+
+     _.     Op   ::= Op1 ;
+     _.     Op   ::= Op2 ;
+
+     Less.  Op1  ::= "<"  ;
+     Equal. Op1  ::= "==" ;
+     Plus.  Op2  ::= "+"  ;
+     Minus. Op2  ::= "-"  ;
+
+     op.    Exp  ::= Exp1 Op1 Exp1 ;
+     op.    Exp1 ::= Exp1 Op2 Exp2 ;
+     EInt.  Exp2 ::= Integer ;
+     EVar.  Exp2 ::= Ident ;
+
+     coercions Exp 2;
+
+Care has to be taken to make sure that the pretty printer outputs enough
+parentheses.
+
+::
+
+     internal EOp. Exp ::= Exp1 Op Exp1 ;
+
+     define op e1 o e2 = EOp e1 o e2 ;
+
+.. note::
+   Implementing syntactic sugar via ``define`` maybe be good for rapid
+   prototyping, but has some drawbacks for more serious programming
+   language implementation:  Since the parser already expands the
+   syntactic sugar, subsequent parts of the front end, like scope or
+   type checkers, do not report errors in sugar in terms of what the
+   user may have written, but what arrives at the checker.  For
+   instance, ``xs++`` for an array variable ``xs`` will not report a
+   problem in ``xs++``, but rather in its expansion ``x = x + 1``.
+
 
 .. _lexer:
 
