@@ -1,9 +1,15 @@
 -- Andreas, 2019-04-22, issue #204.
 -- Tokens from internal rules ended up in lexer.
+
 -- Andreas, 2019-11-24, issue #264.
 -- Internal non-terminals ended up as entrypoints.
 
+-- Andreas, 2021-05-22, issue #368
+-- Haskell: import String even if we only have position tokens.
+
 internal Internal. Foo ::= "Internal";
-Main.              Prg ::= Ident;
+Main.              Prg ::= Id;
+
+position token Id letter+;
 
 -- Should accept input "Internal".

@@ -86,7 +86,7 @@ prologue tokenText useGadt name absMod cf = map text $ concat
     , "import Data.Char ( Char, isSpace )"
     ]
   , fmap ("import qualified " ++) absMod  -- At most 1.  (Unnecessary if Abs module is empty.)
-  , when (hasIdentLikeTokens cf) $ tokenTextImport tokenText
+  , when (hasTextualTokens cf) $ tokenTextImport tokenText
   , [ ""
     , "-- | The top-level printing method."
     , ""

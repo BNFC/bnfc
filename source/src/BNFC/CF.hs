@@ -759,6 +759,10 @@ precRule = precCat . valCat
 hasIdentLikeTokens :: CFG g -> Bool
 hasIdentLikeTokens cf = hasIdent cf || or [ not b | TokenReg _ b _ <- cfgPragmas cf ]
 
+-- | Defines or uses the grammar @token@ types or @Ident@?
+hasTextualTokens :: CFG g -> Bool
+hasTextualTokens cf = hasIdent cf || or [ True | TokenReg{} <- cfgPragmas cf ]
+
 -- | Is there a @position token@ declaration in the grammar?
 hasPositionTokens :: CFG g -> Bool
 hasPositionTokens cf = or [ b | TokenReg _ b _ <- cfgPragmas cf ]

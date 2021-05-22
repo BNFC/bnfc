@@ -50,7 +50,7 @@ cf2Abstract Options{ lang, tokenText, generic, functor } name cf = vsep . concat
         , [ "{-# LANGUAGE DeriveGeneric #-}"              | gen ]
         , [ "{-# LANGUAGE DeriveTraversable #-}"          | fun ]
         , [ "{-# LANGUAGE FlexibleInstances #-}"          | fun ]
-        , [ "{-# LANGUAGE GeneralizedNewtypeDeriving #-}" | hasIdentLike ] -- for IsString
+        , [ "{-# LANGUAGE GeneralizedNewtypeDeriving #-}" | hasIdentLikeNoPos ] -- for IsString
         , [ "{-# LANGUAGE LambdaCase #-}"                 | fun ]
         , [ "{-# LANGUAGE PatternSynonyms #-}"            | defPosition ]
         , [ "{-# LANGUAGE OverloadedStrings #-}"          | not (null definitions), tokenText /= StringToken ]
@@ -66,11 +66,11 @@ cf2Abstract Options{ lang, tokenText, generic, functor } name cf = vsep . concat
         , [ prettyList 2 "import qualified Prelude as C" "(" ")" "," $ qualifiedPreludeImports
             | not $ null qualifiedPreludeImports ]
         , [ "import qualified Data.String"
-            | hasIdentLike ] -- for IsString
+            | hasIdentLikeNoPos ] -- for IsString
         ]
       ]
     , [ vcat . concat $
-        [ when hasIdentLike $ map text $ tokenTextImport tokenText
+        [ when hasTextualToks $ map text $ tokenTextImport tokenText
         , [ "import qualified Data.Data    as C (Data, Typeable)" | gen ]
         , [ "import qualified GHC.Generics as C (Generic)"        | gen ]
         ]
@@ -105,7 +105,7 @@ cf2Abstract Options{ lang, tokenText, generic, functor } name cf = vsep . concat
       | defPosition
       ]
 
-    -- HasPosition class if either @fun@ or @hasIdentLikeTokens@
+    -- HasPosition class
     , [ vcat
         [ "-- | Get the start position of something."
         , ""
@@ -127,12 +127,14 @@ cf2Abstract Options{ lang, tokenText, generic, functor } name cf = vsep . concat
     datas        = cf2data cf
     positionCats = filter (isPositionCat cf) $ specialCats cf
 
-    hasIdentLike = hasIdentLikeTokens cf
+    hasIdentLikeNoPos = hasIdentLikeTokens cf
+    hasTextualToks    = hasTextualTokens cf
+    hasPosToks   = hasPositionTokens cf
     hasData      = not (null datas)
     -- @defPosition@: should the @BNCF'Position@ type be defined?
-    defPosition  = hasPositionTokens cf || functor
+    defPosition  = hasPosToks || functor
     -- @hasPosition@: should the @HasPosition@ class be defined?
-    hasPosition  = hasPositionTokens cf || fun
+    hasPosition  = hasPosToks || fun
     gen   = generic && hasData
     fun   = functor && hasData
 
@@ -150,11 +152,11 @@ cf2Abstract Options{ lang, tokenText, generic, functor } name cf = vsep . concat
       ]
     -- import Prelude (Char, Double, Integer, String)
     typeImports =
-      filter (\ s -> hasData      && s `elem` cfgLiterals cf
-                  || hasIdentLike && tokenText == StringToken && s == "String")
+      filter (\ s -> hasData        && s `elem` cfgLiterals cf
+                  || hasTextualToks && tokenText == StringToken && s == "String")
         baseTokenCatNames
     qualifiedPreludeImports = concat
-      [ [ text $ List.intercalate ", " stdClasses | hasIdentLike || hasData ]
+      [ [ text $ List.intercalate ", " stdClasses | hasTextualToks || hasData ]
       , [ text $ List.intercalate ", " funClasses | fun ]
       , [ text $ "Int, Maybe(..)" | defPosition ]
       ]
