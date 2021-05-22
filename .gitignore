@@ -145,6 +145,7 @@ cabal.sandbox.config
 /testing/*/xmlt/
 
 /testing/regression-tests/*_*/agda/
+/testing/regression-tests/*_*/bytestring/
 /testing/regression-tests/*_*/bytestrings/
 /testing/regression-tests/*_*/C/
 /testing/regression-tests/*_*/c/

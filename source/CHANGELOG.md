@@ -13,6 +13,7 @@ Andreas Abel <andreas.abel@gu.se>  (unreleased)
 * Haskell-GADT: generated code is warning free [#346]
 * Haskell: fixes in layout preprocessor [#343,#344,#345,#352,#353,#356]
 * Haskell: print `[Char]` correctly, removed method `prtList` [#359]
+* Haskell: added missing import [#368], regression introduced in 2.9.1 by [#331]
 * C: fixed a space leak when parsing from a string in memory [#347]
 * C: new methods `free*` to deallocate syntax trees [#348]
 * C: removed errorneous `define`d constructors from `Skeleton.c`
