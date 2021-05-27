@@ -1,12 +1,7 @@
-resolver: lts-17.4
+resolver: lts-17.13
 compiler: ghc-8.10.4
 compiler-check: match-exact
 
 packages:
 - source
 - testing
-
-# These are not in LTS 17.4, but could still enter into a GHC 8.10.4 LTS
-extra-deps:
-- haskell-src-1.0.3.1
-- HTF-0.14.0.5

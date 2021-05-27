@@ -8,4 +8,4 @@ packages:
 
 extra-deps:
 - haskell-src-1.0.3.1
-- HTF-0.14.0.5
+- HTF-0.14.0.6
