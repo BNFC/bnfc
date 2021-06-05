@@ -419,6 +419,15 @@ identType :: Base -> String
 identType (ListT t) = "List" ++ identType t
 identType (BaseT s) = s
 
+-- | Reconstruct (non-coercion) category from a type, given a list of
+-- what should be the token categories.
+catOfType :: [TokenCat] -> Base -> Cat
+catOfType tk = \case
+  ListT t -> ListCat $ catOfType tk t
+  BaseT s
+   | s `elem` tk -> TokenCat s
+   | otherwise   -> Cat s
+
 isList :: Cat -> Bool
 isList (ListCat _) = True
 isList _           = False

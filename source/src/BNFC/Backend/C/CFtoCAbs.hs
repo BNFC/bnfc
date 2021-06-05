@@ -18,11 +18,17 @@
 module BNFC.Backend.C.CFtoCAbs (cf2CAbs) where
 
 import Prelude hiding ((<>))
+
+import Control.Monad.State (State, gets, modify, evalState)
+
 import Data.Char     ( toLower )
 import Data.Either   ( lefts )
 import Data.Function ( on )
 import Data.List     ( groupBy, intercalate, intersperse, nub, sort )
 import Data.Maybe    ( mapMaybe )
+import Data.Set      ( Set )
+
+import qualified Data.Set as Set
 
 import BNFC.CF
 import BNFC.PrettyPrint
@@ -143,23 +149,43 @@ prDefH
   -> Define
   -> String
 prDefH tokenCats (Define fun args e _t) =
-  concat [ "#define make_", f, "(", intercalate "," xs, ") \\\n  ", prExp e ]
+  concat [ "#define make_", f, "(", intercalate "," xs, ") \\\n  ", prExp e `evalState` mempty ]
   where
   f  = funName fun
   xs = map fst args
-  prExp :: Exp -> String
+
+  toCat :: Base -> Cat
+  toCat = catOfType $ specialCatsP ++ tokenCats
+
+  -- Issue #363, #348.
+  -- Duplicate occurrences of variables in expression need to be cloned,
+  -- because deallocation assumes that the AST is in fact a tree.
+  -- Duplicate occurrences introduce sharing and thus turn it into a DAG
+  -- (directed acyclic graph).
+  -- We maintain a set of variables we have already encountered.
+  prExp :: Exp -> State (Set String) String
   prExp = \case
-    Var x       -> x
+
+    Var x -> gets (Set.member x) >>= \case
+      -- The first use is not cloned.
+      False -> x <$ modify (Set.insert x)
+      -- Subsequent uses are cloned.
+      True  -> case lookup x args of
+        Just t -> return $ cloner (toCat t) x
+        -- pattern match left incomplete on purpose
+
     -- Andreas, 2021-02-13, issue #338
     -- Token categories are just @typedef@s in C, so no constructor needed.
     App g _ [e] | g `elem` tokenCats
                 -> prExp e
-    App "[]" _ [] -> "NULL"
-    App g t es  -> concat [ "make_", con g t, lparen es, intercalate ", " (map prExp es), ")" ]
-    LitInt    i -> show i
-    LitDouble d -> show d
-    LitChar   c -> show c
-    LitString s -> concat [ "strdup(", show s, ")" ]  -- so that free() does not crash!
+    App "[]" _ [] -> return "NULL"
+    App g t es  -> do
+      es' <- mapM prExp es
+      return $ concat [ "make_", con g t, lparen es, intercalate ", " es', ")" ]
+    LitInt    i -> return $ show i
+    LitDouble d -> return $ show d
+    LitChar   c -> return $ show c
+    LitString s -> return $ concat [ "strdup(", show s, ")" ]  -- so that free() does not crash!
   con g ~(FunT ts t)
     | isConsFun g = identType t
     | otherwise   = g
