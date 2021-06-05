@@ -92,7 +92,7 @@ mkHFile rp classes datas cf = unlines $ concat
     , "typedef struct " ++ s ++ "_ *" ++ s ++ ";"
     ]
   prFreeH :: String -> String
-  prFreeH s = "void free" ++ s ++ "(" ++ s ++ " p);"
+  prFreeH s = "void free_" ++ s ++ "(" ++ s ++ " p);"
   definedConstructors = definitions cf
 
 destructorComment :: [String]
@@ -101,6 +101,10 @@ destructorComment =
   , ""
   , "/* These free an entire abstract syntax tree"
   , " * including all subtrees and strings."
+  , " *"
+  , " * Will not work properly if there is sharing in the tree,"
+  , " * i.e., when some pointers are aliased.  In this case"
+  , " * it will attempt to free the same memory twice."
   , " */"
   , ""
   ]
@@ -243,7 +247,7 @@ mkCFile datas cf = concat
 
 -- |
 -- >>> text $ unlines $ prDestructorC (Cat "Exp", [("EInt", [TokenCat "Integer"]), ("EAdd", [Cat "Exp", Cat "Exp"])])
--- void freeExp(Exp p)
+-- void free_Exp(Exp p)
 -- {
 --   switch(p->kind)
 --   {
@@ -251,8 +255,8 @@ mkCFile datas cf = concat
 --     break;
 -- <BLANKLINE>
 --   case is_EAdd:
---     freeExp(p->u.eadd_.exp_1);
---     freeExp(p->u.eadd_.exp_2);
+--     free_Exp(p->u.eadd_.exp_1);
+--     free_Exp(p->u.eadd_.exp_2);
 --     break;
 -- <BLANKLINE>
 --   default:
@@ -266,13 +270,13 @@ mkCFile datas cf = concat
 prDestructorC :: Data -> [String]
 prDestructorC (cat, rules)
   | isList cat = concat
-    [ [ "void free" ++ cl ++ "("++ cl +++ vname ++ ")"
+    [ [ "void free_" ++ cl ++ "("++ cl +++ vname ++ ")"
       , "{"
       , "  if (" ++ vname ++ ")"
       , "  {"
       ]
     , map ("    " ++) visitMember
-    , [ "    free" ++ cl ++ "(" ++ vname ++ "->" ++ vname ++ "_);"
+    , [ "    free_" ++ cl ++ "(" ++ vname ++ "->" ++ vname ++ "_);"
       , "    free(" ++ vname ++ ");"
       , "  }"
       , "}"
@@ -280,7 +284,7 @@ prDestructorC (cat, rules)
       ]
     ]
   | otherwise = concat
-    [ [ "void free" ++ cl ++ "(" ++ cl ++ " p)"
+    [ [ "void free_" ++ cl ++ "(" ++ cl ++ " p)"
       , "{"
       , "  switch(p->kind)"
       , "  {"
@@ -303,7 +307,7 @@ prDestructorC (cat, rules)
       TokenCat c
         | c `elem` ["Char", "Double", "Integer"] -> []
         | otherwise -> [ "free" ++ rest ]
-      _             -> [ "free" ++ ecl ++ rest ]
+      _             -> [ "free_" ++ ecl ++ rest ]
     where
     rest   = "(" ++ vname ++ "->" ++ member ++ "_);"
     member = map toLower ecl
@@ -330,8 +334,7 @@ prDestructorC (cat, rules)
     | c `elem` ["Char", "Double", "Integer"] = Nothing
       -- Only pointer need to be freed.
   prFreeCat fnm (cat, nt) = Just $ concat
-      [ "free"
-      , maybe (identCat $ normCat cat) (const "") $ maybeTokenCat cat
+      [ maybe ("free_" ++ identCat (normCat cat)) (const "free") $ maybeTokenCat cat
       , "(p->u."
       , map toLower fnm
       , "_.", render nt, ");"
