@@ -209,6 +209,7 @@ library
 
     -- C backend
     BNFC.Backend.C
+    BNFC.Backend.C.Common
     BNFC.Backend.C.CFtoCPrinter
     BNFC.Backend.C.CFtoCSkel
     BNFC.Backend.C.CFtoBisonC

@@ -35,6 +35,7 @@ import qualified Data.Map as Map
 import System.FilePath               ( (<.>) )
 
 import BNFC.CF
+import BNFC.Backend.C.Common         ( posixC )
 import BNFC.Backend.C.RegToFlex
 import BNFC.Backend.Common.NamedVariables
 import BNFC.Backend.CPP.STL.STLUtils ( nsDefine, nsString )
@@ -105,15 +106,11 @@ prelude stringLiterals mode = unlines $ concat
     , ""
     ]
   , maybeToList $ ("%option prefix=\"" ++) . (++ "\"" ) <$> parserPackage mode
-  , when (cParser mode)
-    [ "%top{"
-    , "/* strdup was not in the ISO C standard before 6/2019 (C2x), but in POSIX 1003.1."
-    , " * See: https://en.cppreference.com/w/c/experimental/dynamic/strdup"
-    , " * Setting _POSIX_C_SOURCE to 200809L activates strdup in string.h."
-    , " */"
+  , when (cParser mode) $ concat
     -- The following #define needs to be at the top before the automatic #include <stdlib.h>
-    , "#define _POSIX_C_SOURCE 200809L"
-    , "}"
+    [ [ "%top{" ]
+    , posixC
+    , [ "}" ]
     ]
   , [ "%{"
     , "#include \"" ++ ("Absyn" <.> h) ++ "\""
