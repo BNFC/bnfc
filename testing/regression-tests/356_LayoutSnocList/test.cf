@@ -1,0 +1,7 @@
+-- Andreas, 2021-06-05, issue #356.
+-- Layout should also with snoc-lists, in particular top-level layout.
+
+layout toplevel;
+
+Nil.  Ints ::= ;
+Snoc. Ints ::= Ints Integer ";" ;

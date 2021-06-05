@@ -85,7 +85,10 @@ currentRegressionTest = makeTestSuite "Current parameterized test" $
 -- | Layout currently only works for Haskell (even Agda) and Haskell/GADT.
 layoutTest :: Test
 layoutTest = makeTestSuite "Layout parsing test" $ concat
-  [ map (`makeTestCase` ("regression-tests" </> "194_layout")) $
+  [ map (`makeTestCase` ("regression-tests" </> "356_LayoutSnocList")) $
+    [ haskellParameters
+    ]
+  , map (`makeTestCase` ("regression-tests" </> "194_layout")) $
     [ haskellGADTParameters
     , haskellAgdaParameters
     ]

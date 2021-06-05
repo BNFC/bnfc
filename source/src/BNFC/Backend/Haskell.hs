@@ -401,7 +401,7 @@ testfile opts cf = unlines $ concat $
       | lay     = unwords [ "resolveLayout", show useTopLevelLayout, "$ myLexer", atom]
       | True    = unwords [ "myLexer", atom]
     (hasTopLevelLayout, layoutKeywords, _) = layoutPragmas cf
-    useTopLevelLayout = isJust hasTopLevelLayout && isList topType
+    useTopLevelLayout = isJust hasTopLevelLayout
 
 
 runStd xml myLLexer = unlines $ concat
