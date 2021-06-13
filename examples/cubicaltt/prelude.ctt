@@ -280,9 +280,9 @@ propOr (A B : U) (hA : prop A) (hB : prop B) (h : A -> neg B) : prop (or A B) = 
     inl a' -> split@((b : or A B) -> Path (or A B) (inl a') b) with
         inl b' -> <i> inl (hA a' b' @ i)
         inr b' -> efq (Path (or A B) (inl a') (inr b')) (h a' b')
-    inr a' -> split@((b : or A B) -> Path (or A B) (inr a') b) with
+    inr a' -> (split@((b : or A B) -> Path (or A B) (inr a') b) with
         inl b' -> efq (Path (or A B) (inr a') (inl b')) (h b' a')
-        inr b' -> <i> inr (hB a' b' @ i)
+        inr b' -> <i> inr (hB a' b' @ i))  -- extra parentheses to test layout issue #370
 
 -- Direct proof that or A B is a set if A and B are:
 invOr (A B : U) : (u v : or A B) (p : Path (or A B) u v) -> U = split

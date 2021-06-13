@@ -7,7 +7,7 @@
 
 module BNFC.Backend.Haskell.CFtoLayout where
 
-import Data.Maybe                 ( fromMaybe )
+import Data.Maybe                 ( fromMaybe, mapMaybe )
 
 import BNFC.CF
 import BNFC.Options               ( TokenText )
@@ -70,6 +70,10 @@ cf2Layout layName lexName cf = unlines $ concat
       , [ "map (delimSep . snd) layoutWords" ]
       ]
     , ""
+    , "parenOpen, parenClose :: [TokSymbol]"
+    , render $ prettyList 2 "parenOpen  =" "[" "]" "," $ map (text . show) parenOpen
+    , render $ prettyList 2 "parenClose =" "[" "]" "," $ map (text . show) parenClose
+    , ""
     , "-- | Replace layout syntax with explicit layout tokens."
     , "resolveLayout :: Bool    -- ^ Whether to use top-level layout."
     , "              -> [Token] -> [Token]"
@@ -101,11 +105,11 @@ cf2Layout layName lexName cf = unlines $ concat
     , "    -- put an explicit layout block on the stack."
     , "    -- This is done even if there was no layout word,"
     , "    -- to keep opening and closing braces."
-    , "    | isLayoutOpen t0"
+    , "    | isLayoutOpen t0 || isParenOpen t0"
     , "      = t0 : res (Just t0) (Explicit : st) ts"
     , ""
     , "    -- If we encounter a closing brace, exit the first explicit layout block."
-    , "    | isLayoutClose t0"
+    , "    | isLayoutClose t0 || isParenClose t0"
     , "      , let (imps, rest) = span isImplicit st"
     , "      , let st' = drop 1 rest"
     , "      = if null st'"
@@ -332,19 +336,28 @@ cf2Layout layName lexName cf = unlines $ concat
     , "-- | Check if a token is the layout close token."
     , "isLayoutClose :: Token -> Bool"
     , "isLayoutClose = isTokenIn layoutClose"
+    , ""
+    , "-- | Check if a token is an opening parenthesis."
+    , "isParenOpen :: Token -> Bool"
+    , "isParenOpen = isTokenIn parenOpen"
+    , ""
+    , "-- | Check if a token is a closing parenthesis."
+    , "isParenClose :: Token -> Bool"
+    , "isParenClose = isTokenIn parenClose"
     ]
   ]
   where
   (top0, lay0, stop0) = layoutPragmas cf
-  top      = fmap mkTokSymbol top0
+  top      = mkTokSymbol =<< top0
   topDelim = fmap (\ sep -> LayoutDelimiters sep Nothing Nothing) top
   lay      = for lay0 $ \ (kw, Delimiters sep open close) ->
-    ( mkTokSymbol kw
-    , LayoutDelimiters (mkTokSymbol sep) (Just $ mkTokSymbol open) (Just $ mkTokSymbol close)
+    ( fromMaybe undefined $ mkTokSymbol kw
+    , LayoutDelimiters (fromMaybe undefined $ mkTokSymbol sep) (mkTokSymbol open) (mkTokSymbol close)
     )
-  stop = map mkTokSymbol stop0
-  mkTokSymbol :: String -> TokSymbol
-  mkTokSymbol x = TokSymbol x n
-    where
-    n = fromMaybe (-1) $ lookup x tokens
+  stop = mapMaybe mkTokSymbol stop0
+  mkTokSymbol :: String -> Maybe TokSymbol
+  mkTokSymbol x = TokSymbol x <$> lookup x tokens
   tokens = cfTokens cf
+  -- Extra parentheses to keep track of (#370).
+  parenOpen  = mapMaybe mkTokSymbol [ "(", "[" ]
+  parenClose = mapMaybe mkTokSymbol [ ")", "]" ]
