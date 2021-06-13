@@ -14,7 +14,7 @@ name:                bnfc-system-tests
 -- PVP summary:      +-+------- breaking API changes
 --                   | | +----- non-breaking API additions
 --                   | | | +--- code changes with no API change
-version:             2.9.2.0
+version:             2.9.3.0
 
 -- A short (one-line) description of the package.
 synopsis:            System tests for BNFC

@@ -1,3 +1,7 @@
+# 2.9.3
+
+Andreas Abel <andreas.abel@gu.se>
+
 # 2.9.2
 
 Andreas Abel <andreas.abel@gu.se>  June 2021
