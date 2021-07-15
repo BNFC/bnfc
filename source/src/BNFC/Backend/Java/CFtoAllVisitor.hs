@@ -7,7 +7,7 @@
 
 module BNFC.Backend.Java.CFtoAllVisitor (cf2AllVisitor) where
 
-import Data.List
+import Data.List (intercalate)
 import BNFC.CF
 import BNFC.Utils ((+++))
 import BNFC.Backend.Common.NamedVariables
