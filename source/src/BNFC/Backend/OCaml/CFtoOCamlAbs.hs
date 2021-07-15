@@ -40,7 +40,7 @@ cf2Abstract _ cf = unlines $ concat
 definedRules :: CF -> [String]
 definedRules cf = map mkDef $ definitions cf
   where
-    mkDef (Define f args e t) =
+    mkDef (Define f args e _) =
       "let " ++ sanitizeOcaml (funName f) ++ " " ++ mkTuple (map fst args) ++ " = " ++ ocamlExp False e
 
     ocamlExp :: Bool -> Exp -> String

@@ -2,7 +2,7 @@ module BNFC.Backend.Java.RegToAntlrLexer (printRegJLex, escapeCharInSingleQuotes
 
 -- modified from RegToJLex.hs
 
-import Data.Char (ord, showLitChar)
+import Data.Char (ord)
 import Numeric (showHex)
 
 import BNFC.Abs

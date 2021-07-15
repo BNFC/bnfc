@@ -297,7 +297,7 @@ instanceHasPositionTokenType cat = vcat
 definedRules :: Bool -> CF -> [Doc]
 definedRules functor cf = map mkDef $ definitions cf
   where
-  mkDef (Define f args e t) = vcat $ concat
+  mkDef (Define f args e _) = vcat $ concat
     [ [ text $ unwords [ fName, "::", typ $ wpThing t ]
       | t <- maybeToList $ sigLookup f cf
       ]

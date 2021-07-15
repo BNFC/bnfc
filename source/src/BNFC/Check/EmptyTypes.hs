@@ -12,11 +12,9 @@ module BNFC.Check.EmptyTypes (emptyData) where
 
 import Data.Maybe
 import Data.Map (Map)
-import Data.Set (Set)
 
 import qualified Data.List as List
 import qualified Data.Map as Map
-import qualified Data.Set as Set
 
 import BNFC.CF
 

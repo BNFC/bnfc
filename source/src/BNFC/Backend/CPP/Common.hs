@@ -5,7 +5,7 @@
 module BNFC.Backend.CPP.Common where
 
 import Data.Char  ( isUpper )
-import Data.List  ( nub, intercalate )
+import Data.List  ( intercalate )
 
 import BNFC.CF
 import BNFC.TypeChecker
@@ -23,14 +23,6 @@ definedRules mlc cf banner
     theLines = map rule $ definitions cf
 
     ctx = buildContext cf
-
-    list = LC
-      { nil  =  const ("[]", dummyType)
-      , cons = \ t -> ("List" ++ unBase t, dummyType)
-      }
-      where
-        unBase (ListT t) = unBase t
-        unBase (BaseT x) = x
 
     rule (Define f args e t) =
       case mlc of

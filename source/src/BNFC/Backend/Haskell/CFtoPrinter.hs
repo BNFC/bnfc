@@ -219,7 +219,7 @@ doubleRule :: AbsMod -> CF -> [Doc]
 doubleRule absMod cf = showsPrintRule absMod cf $ TokenCat catDouble
 
 showsPrintRule :: AbsMod -> CF -> Cat -> [Doc]
-showsPrintRule absMod cf t =
+showsPrintRule absMod _cf t =
   [ hsep [ "instance Print" , text (qualifiedCat absMod t) , "where" ]
   , "  prt _ x = doc (shows x)"
   , ""

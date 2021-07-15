@@ -23,9 +23,9 @@ import Data.Char
 import Data.Ord      ( Down(..) )
 import qualified Data.Either as Either
 import Data.Function ( on )
-import Data.List     ( nub, intersperse, sort, group, intercalate, find )
+import Data.List     ( nub, sort, group )
 import qualified Data.List as List
-import Data.List.NonEmpty (pattern (:|), (<|))
+import Data.List.NonEmpty (pattern (:|))
 import qualified Data.List.NonEmpty as List1
 import Data.Maybe
 import Data.Map  (Map)
@@ -40,7 +40,7 @@ import BNFC.Lex (tokens)
 import qualified BNFC.Abs as Abs
 
 import BNFC.PrettyPrint
-import BNFC.Utils (headWithDefault, spanEnd)
+import BNFC.Utils (spanEnd)
 
 type List1 = List1.NonEmpty
 

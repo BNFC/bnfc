@@ -20,7 +20,7 @@ module BNFC.Backend.CPP.NoSTL.CFtoCPPAbs (cf2CPPAbs) where
 
 import Prelude hiding ((<>))
 
-import Data.List  ( findIndices, intersperse )
+import Data.List  ( findIndices )
 import Data.Char  ( toLower )
 import Text.PrettyPrint
 

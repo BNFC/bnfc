@@ -30,7 +30,6 @@ import Prelude hiding ((<>))
 import Data.Char       ( toLower, isUpper )
 import Data.Foldable   ( toList )
 import Data.List       ( intercalate, nub )
-import Data.Maybe
 import qualified Data.Map as Map
 import System.FilePath ( (<.>) )
 
@@ -76,7 +75,6 @@ cf2Bison rp mode cf env = unlines
     , nsEnd inPackage
     ]
   where
-  name = parserName mode
   inPackage = parserPackage mode
   posCats
     | stlParser mode = map TokenCat $ positionCats cf
@@ -148,12 +146,7 @@ header mode cf = unlines $ concat
     ]
   ]
   where
-  eps = toList (allEntryPoints cf)
-     -- Andreas, 2019-04-29, #210: Generate also parsers for CoercCat.
-     -- WAS:  (allCatsNorm cf)
-     -- Found old comment:
-     -- -- M.F. 2004-09-17 changed allEntryPoints to allCatsIdNorm. Seems to fix the [Ty2] bug.
-  h = parserHExt mode
+  h    = parserHExt mode
   name = parserName mode
 
 -- | Code that needs the @YYSTYPE@ defined by the @%union@ pragma.

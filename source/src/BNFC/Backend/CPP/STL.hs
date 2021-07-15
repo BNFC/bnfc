@@ -9,9 +9,7 @@
 
 module BNFC.Backend.CPP.STL (makeCppStl,) where
 
-import Data.Char
 import Data.Foldable (toList)
-import qualified Data.List as List
 import qualified Data.Map as Map
 
 import BNFC.Utils
@@ -170,7 +168,7 @@ cpptest inPackage cf =
    def = identCat cat
    scope = nsScope inPackage
 
-mkHeaderFile inPackage cf cats eps env = unlines $ concat
+mkHeaderFile inPackage _cf _cats eps _env = unlines $ concat
   [ [ "#ifndef " ++ hdef
     , "#define " ++ hdef
     , ""

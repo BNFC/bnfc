@@ -25,7 +25,6 @@ import Prelude hiding ((<>))
 
 import Data.Bifunctor (second)
 import Data.Char  (toLower)
-import Data.Maybe (isJust)
 
 import BNFC.CF
 import BNFC.Utils
@@ -410,7 +409,7 @@ prPrintData _ inPackage _cf (cat, rules) = -- Not a list
 -- | Generate pretty printer visitor for a list category (STL version).
 --
 genPrintVisitorList :: (Cat, [Rule]) -> Doc
-genPrintVisitorList (cat@(ListCat c), rules) = vcat
+genPrintVisitorList (cat@(ListCat _), rules) = vcat
   [ "void PrintAbsyn::visit" <> lty <> parens (lty <+> "*" <> vname)
   , codeblock 2
     [ "iter" <> lty <> parens (vname <> "->begin()" <> comma <+> vname <> "->end()") <> semi ]
@@ -463,7 +462,7 @@ prListRule_ :: IsFun a => Rul a -> [Doc]
 prListRule_ (Rule _ _ items _) = for items $ \case
   Right t       -> "render(" <> text (snd (renderCharOrString t)) <> ");"
   Left c
-    | Just t <- maybeTokenCat c
+    | Just{} <- maybeTokenCat c
                 -> "visit" <> dat <> "(*i);"
     | isList c  -> "iter" <> dat <> "(i+1, j);"
     | otherwise -> "(*i)->accept(this);"
@@ -474,7 +473,7 @@ prListRule_ (Rule _ _ items _) = for items $ \case
 -- between the versions with and without STL.
 -- The present version has been adapted from CFtoCPrinter.
 genPrintVisitorListNoStl :: (Cat, [Rule]) -> String
-genPrintVisitorListNoStl (cat@(ListCat c), rules) = unlines $ concat
+genPrintVisitorListNoStl (cat@(ListCat _), rules) = unlines $ concat
   [ [ "void PrintAbsyn::visit" ++ cl ++ "("++ cl ++ " *" ++ vname ++ ")"
     , "{"
       , "  if (" ++ vname +++ "== 0)"
@@ -512,7 +511,7 @@ genPrintVisitorListNoStl _ = error "genPrintVisitorListNoStl expects a ListCat"
 
 --Pretty Printer methods for a rule.
 prPrintRule :: Maybe String -> Rule -> String
-prPrintRule inPackage r@(Rule fun _ items _) | isProperLabel fun = unlines $ concat
+prPrintRule inPackage r@(Rule fun _ _ _) | isProperLabel fun = unlines $ concat
   [ [ "void PrintAbsyn::visit" ++ funName fun ++ "(" ++ funName fun +++ "*" ++ fnm ++ ")"
     , "{"
     , "  int oldi = _i_;"

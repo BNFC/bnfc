@@ -33,7 +33,7 @@ import qualified Data.Set as Set
 import BNFC.CF
 import BNFC.PrettyPrint
 import BNFC.Options  ( RecordPositions(..) )
-import BNFC.Utils    ( (+++), uncurry3, unless )
+import BNFC.Utils    ( (+++), unless )
 import BNFC.Backend.Common.NamedVariables
 import BNFC.Backend.C.Common ( posixC )
 
@@ -186,7 +186,7 @@ prDefH tokenCats (Define fun args e _t) =
     LitDouble d -> return $ show d
     LitChar   c -> return $ show c
     LitString s -> return $ concat [ "strdup(", show s, ")" ]  -- so that free() does not crash!
-  con g ~(FunT ts t)
+  con g ~(FunT _ts t)
     | isConsFun g = identType t
     | otherwise   = g
   -- If more than one argument, or complex argument, put space before opening parenthesis.
@@ -275,7 +275,7 @@ prInstVars =
 
 -- | Makes the .C file
 mkCFile :: [Data] -> CF -> String
-mkCFile datas cf = concat
+mkCFile datas _cf = concat
   [ header
   , render $ vsep $ concatMap prDataC datas
   , unlines [ "", "" ]
@@ -475,7 +475,7 @@ prDestructorC (cat, rules)
   -- | This goes on to recurse to the instance variables.
 
   prFreeCat :: String -> (Cat, Doc) -> Maybe String
-  prFreeCat fnm (TokenCat c, nt)
+  prFreeCat _fnm (TokenCat c, _nt)
     | c `elem` ["Char", "Double", "Integer"] = Nothing
       -- Only pointer need to be freed.
   prFreeCat fnm (cat, nt) = Just $ concat

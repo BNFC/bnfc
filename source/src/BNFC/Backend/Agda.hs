@@ -656,7 +656,7 @@ incr = Map.alter $ maybe (Just 1) (Just . succ)
 definedRules :: CF -> Doc
 definedRules cf = vsep $ map mkDef $ definitions cf
   where
-    mkDef (Define f args e t) = vcat $ concat
+    mkDef (Define f args e _) = vcat $ concat
       [ [ text $ unwords [ mkDefName f, ":", typeToHaskell' "→" $ wpThing t ]
         | t <- maybeToList $ sigLookup f cf
         ]

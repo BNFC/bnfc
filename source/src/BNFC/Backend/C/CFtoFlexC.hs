@@ -38,10 +38,9 @@ import BNFC.CF
 import BNFC.Backend.C.Common         ( posixC )
 import BNFC.Backend.C.RegToFlex
 import BNFC.Backend.Common.NamedVariables
-import BNFC.Backend.CPP.STL.STLUtils ( nsDefine, nsString )
 import BNFC.Options                  ( InPackage )
 import BNFC.PrettyPrint
-import BNFC.Utils                    ( cstring, symbolToName, unless, when, whenJust )
+import BNFC.Utils                    ( cstring, symbolToName, unless, when )
 
 data ParserMode
   = CParser Bool String    -- ^ @C@ (@False@) or @C++ no STL@ (@True@) mode, with @name@ to use as prefix.
@@ -206,7 +205,7 @@ lexSymbols ss = concatMap transSym ss
          s' = escapeChars s
 
 restOfFlex :: InPackage -> CF -> SymMap -> String
-restOfFlex inPackage cf env = unlines $ concat
+restOfFlex _inPackage cf env = unlines $ concat
   [ [ render $ lexComments $ comments cf
     , ""
     ]

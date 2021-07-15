@@ -10,7 +10,6 @@ module BNFC.Backend.Haskell.CFtoLayout where
 import Data.Maybe                 ( fromMaybe, mapMaybe )
 
 import BNFC.CF
-import BNFC.Options               ( TokenText )
 import BNFC.PrettyPrint
 import BNFC.Utils                 ( caseMaybe, for, whenJust )
 

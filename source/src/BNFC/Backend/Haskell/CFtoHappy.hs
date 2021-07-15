@@ -255,7 +255,7 @@ prRules absM functor = vsep . map prOne
 -- Finally, some haskell code.
 
 footer :: ModuleName -> TokenText -> Bool -> [Cat] -> CF -> String
-footer absName tokenText functor eps cf = unlines $ concat
+footer absName tokenText functor eps _cf = unlines $ concat
   [ [ "{"
     , ""
     , "type Err = Either String"

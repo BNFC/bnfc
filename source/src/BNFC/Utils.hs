@@ -37,14 +37,13 @@ import Control.DeepSeq (rnf)
 
 import Data.Char
 import Data.List          (intercalate)
-import Data.List.NonEmpty (pattern (:|), (<|))
+import Data.List.NonEmpty (pattern (:|))
 import Data.Map           (Map)
 import Data.Semigroup     (Semigroup(..))
 import Data.Time
 
 import qualified Data.Foldable      as Fold
 import qualified Data.Map           as Map
-import qualified Data.Set           as Set
 import qualified Data.List.NonEmpty as List1
 
 import System.IO       (IOMode(ReadMode),hClose,hGetContents,openFile)

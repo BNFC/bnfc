@@ -16,7 +16,6 @@
 
 module BNFC.Backend.Java.CFtoCup15 ( cf2Cup ) where
 
-import Data.Char
 import Data.List (intercalate)
 
 import BNFC.CF
@@ -24,7 +23,6 @@ import BNFC.Options (RecordPositions(..))
 import BNFC.Utils ( (+++) )
 
 import BNFC.Backend.Common.NamedVariables
-import BNFC.Backend.Java.CFtoJavaAbs15    ( typename )
 import BNFC.Backend.Java.Utils            ( getRuleName )
 
 type Rules   = [(NonTerminal,[(Pattern,Action)])]

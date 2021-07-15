@@ -29,13 +29,13 @@ import Data.Char       ( isUpper, toLower )
 import Data.Function   ( on )
 import Data.List       ( findIndices, intercalate )
 import Data.Maybe      ( mapMaybe )
-import System.FilePath ( (<.>), (</>) )
+import System.FilePath ( (</>) )
 import Text.PrettyPrint as P
 
 import BNFC.CF
 import BNFC.Options     ( RecordPositions(..) )
 import BNFC.TypeChecker ( buildContext, ctxTokens, isToken )
-import BNFC.Utils       ( (+++), (++++), uncurry3, unless )
+import BNFC.Utils       ( (+++), (++++), unless )
 
 import BNFC.Backend.Common.NamedVariables ( UserDef, showNum )
 import BNFC.Backend.Java.Utils            ( getRuleName )

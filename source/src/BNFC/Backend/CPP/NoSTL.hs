@@ -5,9 +5,7 @@
 
 module BNFC.Backend.CPP.NoSTL (makeCppNoStl) where
 
-import Data.Char
 import Data.Foldable (toList)
-import Data.List (nub)
 import qualified Data.Map as Map
 
 import BNFC.Utils
@@ -132,7 +130,7 @@ cpptest cf =
    dat = identCat $ normCat cat
    def = identCat cat
 
-mkHeaderFile cf cats eps env = unlines $ concat
+mkHeaderFile _cf _cats eps _env = unlines $ concat
   [ [ "#ifndef PARSER_HEADER_FILE"
     , "#define PARSER_HEADER_FILE"
     , ""

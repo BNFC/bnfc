@@ -206,7 +206,7 @@ ctest cf =
   dat = identCat . normCat $ cat
 
 mkHeaderFile :: RecordPositions -> CF -> [String] -> String
-mkHeaderFile _ cf env = unlines $ concat
+mkHeaderFile _ cf _env = unlines $ concat
   [ [ "#ifndef PARSER_HEADER_FILE"
     , "#define PARSER_HEADER_FILE"
     , ""

@@ -26,11 +26,10 @@ import Data.Char      ( toLower )
 import Data.Either    ( lefts )
 import Data.Foldable  ( toList )
 import Data.List      ( nub )
-import Data.Maybe     ( isJust )
 
 import BNFC.CF
 import BNFC.PrettyPrint
-import BNFC.Utils     ( (+++), uniqOn, whenJust, unless, unlessNull )
+import BNFC.Utils     ( (+++), uniqOn, unless, unlessNull )
 
 import BNFC.Backend.Common
 import BNFC.Backend.Common.NamedVariables

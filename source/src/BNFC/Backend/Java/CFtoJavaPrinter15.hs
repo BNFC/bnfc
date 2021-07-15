@@ -33,7 +33,6 @@ import Data.Bifunctor ( second )
 import Data.Char      ( toLower, isSpace )
 import Data.Either    ( lefts )
 import Data.List      ( intersperse )
-import Data.Maybe     ( isJust )
 
 import BNFC.CF
 import BNFC.PrettyPrint

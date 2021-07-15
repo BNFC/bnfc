@@ -31,7 +31,7 @@ import qualified BNFC.Backend.Common.Makefile as Makefile
 
 import BNFC.CF
 import BNFC.Options hiding (Backend)
-import BNFC.Utils (when, unless, table, getZonedTimeTruncatedToSeconds)
+import BNFC.Utils (when, table, getZonedTimeTruncatedToSeconds)
 
 
 -- | Entrypoint for the Haskell backend.
