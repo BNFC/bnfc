@@ -2,6 +2,8 @@
 
 Andreas Abel <andreas.abel@gu.se>
 
+* BNFC now uniformly signs generated files with its version number [#373]
+
 # 2.9.2
 
 Andreas Abel <andreas.abel@gu.se>  June 2021

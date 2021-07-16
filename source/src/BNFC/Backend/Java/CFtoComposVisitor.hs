@@ -36,7 +36,7 @@ cf2ComposVisitor packageBase packageAbsyn cf = concat
     is     = map (prInterface packageAbsyn) groups
     header = unlines $ concat
       [ [ "package" +++ packageBase ++ ";"
-        , "/** BNFC-Generated Composition Visitor"
+        , "/** Composition Visitor"
         , "*/"
         , ""
         , "public class ComposVisitor<A>" ++ if null is then "" else " implements"

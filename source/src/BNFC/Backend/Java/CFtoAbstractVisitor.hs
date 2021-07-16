@@ -15,7 +15,7 @@ cf2AbstractVisitor :: String -> String -> CF -> String
 cf2AbstractVisitor packageBase packageAbsyn cf = unlines
     [ "package" +++ packageBase ++ ";"
     , ""
-    , "/** BNFC-Generated Abstract Visitor */"
+    , "/** Abstract Visitor */"
     , ""
     , "public class AbstractVisitor<R,A> implements AllVisitor<R,A> {"
     , concatMap (prData packageAbsyn user) groups

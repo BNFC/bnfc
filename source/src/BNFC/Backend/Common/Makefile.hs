@@ -60,5 +60,5 @@ refVar m = "${" ++ m ++ "}"
 -- | Create the Makefile file using the name specified in the option record.
 --
 mkMakefile :: SharedOptions -> (String -> Doc) -> Backend
-mkMakefile Options{make = Just m } mkContent = mkfile m (mkContent m)
+mkMakefile Options{make = Just m } mkContent = mkfile m ("## " ++) (mkContent m)
 mkMakefile Options{make = Nothing} _         = return ()

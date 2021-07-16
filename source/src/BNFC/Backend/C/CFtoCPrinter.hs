@@ -152,7 +152,7 @@ mkCFile cf groups = concat
     eps = nub . map normCat . toList $ allEntryPoints cf
     header = unlines
      [
-      "/*** BNFC-Generated Pretty Printer and Abstract Syntax Viewer ***/",
+      "/*** Pretty Printer and Abstract Syntax Viewer ***/",
       "",
       "#include <ctype.h>   /* isspace */",
       "#include <stdio.h>",

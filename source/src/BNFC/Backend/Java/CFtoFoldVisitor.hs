@@ -23,7 +23,7 @@ cf2FoldVisitor packageBase packageAbsyn cf =
   unlines
     ["package" +++ packageBase ++ ";",
      "",
-     "/** BNFC-Generated Fold Visitor */",
+     "/** Fold Visitor */",
      "public abstract class FoldVisitor<R,A> implements AllVisitor<R,A> {",
      "    public abstract R leaf(A arg);",
      "    public abstract R combine(R x, R y, A arg);",

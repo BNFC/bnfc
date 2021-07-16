@@ -1,3 +1,5 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 module BNFC.Backend.CPP.Makefile (makefile) where
 
 import BNFC.Backend.Common.Makefile

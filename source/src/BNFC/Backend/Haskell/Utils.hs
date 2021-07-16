@@ -2,7 +2,8 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module BNFC.Backend.Haskell.Utils
-  ( posType, posConstr, noPosConstr
+  ( comment
+  , posType, posConstr, noPosConstr
   , hasPositionClass, hasPositionMethod
   , noWarnUnusedMatches
   , parserName
@@ -23,6 +24,11 @@ import qualified BNFC.PrettyPrint as P
 import BNFC.CF      (Cat(..), catToStr, identCat, baseTokenCatNames, Base, Type(FunT), IsFun(..))
 import BNFC.Options (TokenText(..))
 import BNFC.Utils   (mkNames, NameStyle(..))
+
+-- | Haskell line comments.
+
+comment :: String -> String
+comment = ("-- " ++)
 
 -- * GHC pragmas
 

@@ -103,7 +103,7 @@ mkCFile useSTL inPackage cf = unlines [
        where field = v ++ "->" ++ var
 
 headerC = unlines [
-      "/*** BNFC-Generated Visitor Design Pattern Skeleton. ***/",
+      "/*** Visitor Design Pattern Skeleton. ***/",
       "/* This implements the common visitor design pattern.",
       "   Note that this method uses Visitor-traversal of lists, so",
       "   List->accept() does NOT traverse the list. This allows different",

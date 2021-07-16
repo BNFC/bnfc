@@ -12,6 +12,7 @@ module BNFC.Backend.HaskellGADT (makeHaskellGadt) where
 import BNFC.Options
 import BNFC.Backend.Base hiding (Backend)
 import BNFC.Backend.Haskell.HsOpts
+import BNFC.Backend.Haskell.Utils (comment)
 import BNFC.CF
 import BNFC.Backend.Haskell.CFtoHappy
 import BNFC.Backend.Haskell.CFtoAlex3
@@ -19,7 +20,7 @@ import BNFC.Backend.HaskellGADT.CFtoAbstractGADT
 import BNFC.Backend.HaskellGADT.CFtoTemplateGADT
 import BNFC.Backend.Haskell.CFtoPrinter
 import BNFC.Backend.Haskell.CFtoLayout
-import BNFC.Backend.XML
+import BNFC.Backend.XML (makeXML)
 import BNFC.Backend.Haskell.MkErrM
 import qualified BNFC.Backend.Common.Makefile as Makefile
 import qualified BNFC.Backend.Haskell as Haskell
@@ -37,26 +38,28 @@ makeHaskellGadt opts cf = do
       layMod = layoutFileM opts
       errMod = errFileM opts
   do
-    mkfile (absFile opts) $ cf2Abstract (tokenText opts) absMod cf composOpMod
-    mkfile (composOpFile opts) $ composOp composOpMod
+    mkHsFile (absFile opts) $ cf2Abstract (tokenText opts) absMod cf composOpMod
+    mkHsFile (composOpFile opts) $ composOp composOpMod
     case alexMode opts of
       Alex3 -> do
-        mkfile (alexFile opts) $ cf2alex3 lexMod (tokenText opts) cf
+        mkHsFile (alexFile opts) $ cf2alex3 lexMod (tokenText opts) cf
         liftIO $ putStrLn "   (Use Alex 3 to compile.)"
-    mkfile (happyFile opts) $
+    mkHsFile (happyFile opts) $
       cf2Happy parMod absMod lexMod (glr opts) (tokenText opts) False cf
     liftIO $ putStrLn "   (Tested with Happy 1.15 - 1.20)"
-    mkfile (templateFile opts) $ cf2Template (templateFileM opts) absMod cf
-    mkfile (printerFile opts)  $ cf2Printer StringToken False True prMod absMod cf
-    when (hasLayout cf) $ mkfile (layoutFile opts) $
+    mkHsFile (templateFile opts) $ cf2Template (templateFileM opts) absMod cf
+    mkHsFile (printerFile opts)  $ cf2Printer StringToken False True prMod absMod cf
+    when (hasLayout cf) $ mkHsFile (layoutFile opts) $
       cf2Layout layMod lexMod cf
-    mkfile (tFile opts)        $ Haskell.testfile opts cf
-    mkfile (errFile opts) $ mkErrM errMod
+    mkHsFile (tFile opts)        $ Haskell.testfile opts cf
+    mkHsFile (errFile opts) $ mkErrM errMod
     Makefile.mkMakefile opts $ Haskell.makefile opts cf
     case xml opts of
       2 -> makeXML opts True cf
       1 -> makeXML opts False cf
       _ -> return ()
+  where
+  mkHsFile x = mkfile x comment
 
 composOp :: String -> String
 composOp composOpMod = unlines

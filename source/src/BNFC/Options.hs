@@ -6,7 +6,7 @@
 
 module BNFC.Options
   ( Mode(..), Target(..), Backend
-  , parseMode, usage, help
+  , parseMode, usage, help, versionString
   , SharedOptions(..)
   , defaultOptions, isDefault, printOptions
   , AlexVersion(..), HappyMode(..), OCamlParser(..), JavaLexerParser(..)
@@ -394,9 +394,12 @@ allOptions' t = targetOptions ++ commonOptions ++ specificOptions' t
 
 -- ~~~ Help strings ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+versionString :: String
+versionString = showVersion version
+
 title :: [String]
 title =
-  [ "The BNF Converter, " ++ showVersion version ++ " (c) 2002-today BNFC development team."
+  [ "The BNF Converter, " ++ versionString ++ " (c) 2002-today BNFC development team."
   , "Free software under the BSD 3-clause license."
   , "List of recent contributors at https://github.com/BNFC/bnfc/graphs/contributors."
   , "Report bugs at https://github.com/BNFC/bnfc/issues."
