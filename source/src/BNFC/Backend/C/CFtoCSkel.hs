@@ -86,7 +86,7 @@ mkCFile cf groups = concat
   where
     user = map fst $ tokenPragmas cf
     header = unlines [
-      "/*** BNFC-Generated Visitor Traversal Skeleton. ***/",
+      "/*** Visitor Traversal Skeleton. ***/",
       "/* This traverses the abstract syntax tree.",
       "   To use, copy Skeleton.h and Skeleton.c to",
       "   new files. */",

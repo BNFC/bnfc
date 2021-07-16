@@ -17,7 +17,7 @@ cf2AllVisitor :: String -> String -> CF -> String
 cf2AllVisitor packageBase packageAbsyn cf = unlines $ concat
   [ [ "package" +++ packageBase ++ ";"
     , ""
-    , "/** BNFC-Generated All Visitor */"
+    , "/** All Visitor */"
     , ""
     , "public interface AllVisitor<R,A>" ++ if null is then "" else " extends"
     ]

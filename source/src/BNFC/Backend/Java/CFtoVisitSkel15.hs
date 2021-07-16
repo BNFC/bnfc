@@ -45,7 +45,7 @@ cf2VisitSkel packageBase packageAbsyn cf =
     header = unlines [
       "package" +++ packageBase ++ ";",
       "",
-      "/*** BNFC-Generated Visitor Design Pattern Skeleton. ***/",
+      "/*** Visitor Design Pattern Skeleton. ***/",
       "",
       "/* This implements the common visitor design pattern.",
       "   Tests show it to be slightly less efficient than the",

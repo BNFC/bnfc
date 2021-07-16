@@ -1,4 +1,6 @@
 {-# LANGUAGE NoImplicitPrelude #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards #-}
 
 {-
     BNF Converter: Java Top File
@@ -82,12 +84,12 @@ makeJava' options@Options{..} cf = do
                 (head $ results lexmake) -- lexer class
                 (head $ results parmake) -- parser class
             )
-        makebnfcfile x = mkfile (javaex (fst $ x bnfcfiles))
+        makebnfcfile x = mkfile (javaex (fst $ x bnfcfiles)) comment
                                         (snd $ x bnfcfiles)
 
     let absynFiles = remDups $ cf2JavaAbs dirAbsyn packageBase packageAbsyn cf rp
         absynFileNames = map fst absynFiles
-    mapM_ (\ (n, s) -> mkfile (n <.> "java") s) absynFiles
+    mapM_ (\ (n, s) -> mkfile (n <.> "java") comment s) absynFiles
     makebnfcfile bprettyprinter
     makebnfcfile bskel
     makebnfcfile bcompos
@@ -97,11 +99,11 @@ makeJava' options@Options{..} cf = do
     makebnfcfile btest
     let (lex, env) = lexfun packageBase cf
     -- Where the lexer file is created. lex is the content!
-    mkfile (dirBase </> inputfile lexmake ) lex
+    mkfile (dirBase </> inputfile lexmake ) comment lex
     liftIO $ putStrLn $ "   (Tested with" +++ toolname lexmake
                                           +++ toolversion lexmake  ++ ")"
     -- where the parser file is created.
-    mkfile (dirBase </> inputfile parmake)
+    mkfile (dirBase </> inputfile parmake) comment
           $ parsefun packageBase packageAbsyn cf rp env
     liftIO $ putStrLn $
       if supportsEntryPoints parmake

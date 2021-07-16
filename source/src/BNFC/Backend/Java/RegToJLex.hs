@@ -1,3 +1,5 @@
+{-# LANGUAGE LambdaCase #-}
+
 module BNFC.Backend.Java.RegToJLex (printRegJLex, escapeChar) where
 
 import Data.Char           (ord, showLitChar)

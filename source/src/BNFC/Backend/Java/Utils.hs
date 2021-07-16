@@ -4,6 +4,11 @@ import BNFC.CF
 import BNFC.Utils ( mkName, NameStyle(..))
 import BNFC.Backend.Common.NamedVariables
 
+-- | Make a Java line comment
+
+comment :: String -> String
+comment = ("// " ++)
+
 javaReserved =
   [ "abstract"
   , "assert"

@@ -18,6 +18,6 @@ shouldGenerate
   -> Expectation
 backend `shouldGenerate` file = do
   files <- execBackend backend
-  let filenames = map fst files
+  let filenames = map fileName files
   file `elem` filenames
     @? printf "file %s not found in %s" file (show filenames)

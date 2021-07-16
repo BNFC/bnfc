@@ -23,12 +23,12 @@ spec = do
     it "generates a file called AbsCalc.hs" $ do
       calc <- getCalc
       files <- execBackend (makeHaskell calcOptions calc)
-      map fst files `shouldSatisfy` elem "AbsCalc.hs"
+      map fileName files `shouldSatisfy` elem "AbsCalc.hs"
 
     it "generates a file called LexCalc.x" $ do
       calc <- getCalc
       files <- execBackend (makeHaskell calcOptions calc)
-      map fst files `shouldSatisfy` elem "LexCalc.x"
+      map fileName files `shouldSatisfy` elem "LexCalc.x"
 
     it "generates a file called ParCalc.y" $ do
       calc <- getCalc

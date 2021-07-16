@@ -1,4 +1,5 @@
 {-# LANGUAGE NoImplicitPrelude #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 {- Generates a Pygments lexer from a BNF grammar.
  -
@@ -23,9 +24,12 @@ makePygments :: SharedOptions -> CF -> Backend
 makePygments opts cf = do
     let lexerfile = render (lowerCase name <> "/__init__.py")
         setupfile = "setup.py"
-    mkfile lexerfile (lexer name cf)
-    mkfile setupfile (setup name)
+    mkfile lexerfile comment (lexer name cf)
+    mkfile setupfile comment (setup name)
   where name = lang opts
+
+comment :: String -> String
+comment = ("# " ++)
 
 setup :: String -> Doc
 setup name = vcat

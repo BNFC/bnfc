@@ -236,7 +236,7 @@ mkCFile useStl inPackage cf groups = concat
   where
     header = unlines
      [
-      "/*** BNFC-Generated Pretty Printer and Abstract Syntax Viewer ***/",
+      "/*** Pretty Printer and Abstract Syntax Viewer ***/",
       "",
       "#include <string>",
       "#include \"Printer.H\"",
