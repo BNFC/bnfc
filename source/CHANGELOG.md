@@ -3,6 +3,7 @@
 Andreas Abel <andreas.abel@gu.se>
 
 * BNFC now uniformly signs generated files with its version number [#373]
+* C++: fixed parser regression in 2.9.2: missing `#include <algorithm>` [#377]
 
 # 2.9.2
 

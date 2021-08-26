@@ -113,8 +113,14 @@ header mode cf = unlines $ concat
     , "%{"
     , "/* Begin C preamble code */"
     , ""
+    ]
+    -- Andreas, 2021-08-26, issue #377:  Some C++ compilers want "algorithm".
+    -- Fixing regression introduced in 2.9.2.
+  , when (stlParser mode)
+    [ "#include <algorithm> /* for std::reverse */"  -- mandatory e.g. with GNU C++ 11
+    ]
+  , [ "#include <stdio.h>"
     , "#include <stdlib.h>"
-    , "#include <stdio.h>"
     , "#include <string.h>"
     , "#include \"" ++ ("Absyn" <.> h) ++ "\""
     , ""
