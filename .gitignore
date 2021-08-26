@@ -171,3 +171,4 @@ cabal.sandbox.config
 
 /testing/regression-tests/266_define/nostl-2.9.0/
 
+/testing/regression-tests/comments/ocaml/

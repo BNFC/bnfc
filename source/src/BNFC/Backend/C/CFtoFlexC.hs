@@ -130,7 +130,7 @@ prelude stringLiterals mode = unlines $ concat
     , "  loc->first_column = loc->last_column;"
     , "  int i = 0;"  -- put this here as @for (int i...)@ is only allowed in C99
     , "  for (; text[i] != '\\0'; ++i) {"
-    , "      if (text[i] == '\\n') {"
+    , "      if (text[i] == '\\n') {"        -- Checking for \n is good enough to also support \r\n (but not \r)
     , "          ++loc->last_line;"
     , "          loc->last_column = 0; "
     , "      } else {"
@@ -248,10 +248,12 @@ lexStrings yylval stringToken errorToken =
     , "<STRING>\\\\             \t BEGIN ESCAPED;"
     , "<STRING>\\\"             \t " ++ yylval ++ "->_string = LITERAL_BUFFER_HARVEST(); BEGIN INITIAL; return " ++ stringToken ++ ";"
     , "<STRING>.              \t LITERAL_BUFFER_APPEND_CHAR(yytext[0]);"
+    , "<ESCAPED>f             \t LITERAL_BUFFER_APPEND_CHAR('\\f'); BEGIN STRING;"
     , "<ESCAPED>n             \t LITERAL_BUFFER_APPEND_CHAR('\\n'); BEGIN STRING;"
+    , "<ESCAPED>r             \t LITERAL_BUFFER_APPEND_CHAR('\\r'); BEGIN STRING;"
+    , "<ESCAPED>t             \t LITERAL_BUFFER_APPEND_CHAR('\\t'); BEGIN STRING;"
     , "<ESCAPED>\\\"            \t LITERAL_BUFFER_APPEND_CHAR('\"');  BEGIN STRING;"
     , "<ESCAPED>\\\\            \t LITERAL_BUFFER_APPEND_CHAR('\\\\'); BEGIN STRING;"
-    , "<ESCAPED>t             \t LITERAL_BUFFER_APPEND_CHAR('\\t'); BEGIN STRING;"
     , "<ESCAPED>.             \t LITERAL_BUFFER_APPEND(yytext);    BEGIN STRING;"
     , "<STRING,ESCAPED><<EOF>>\t LITERAL_BUFFER_FREE(); return " ++ errorToken ++ ";"
     ]
@@ -262,7 +264,9 @@ lexChars yylval charToken =
     [ "<INITIAL>\"'\" \tBEGIN CHAR;"
     , "<CHAR>\\\\      \t BEGIN CHARESC;"
     , "<CHAR>[^']      \t BEGIN CHAREND; " ++ yylval ++ "->_char = yytext[0]; return " ++ charToken ++ ";"
+    , "<CHARESC>f      \t BEGIN CHAREND; " ++ yylval ++ "->_char = '\\f';     return " ++ charToken ++ ";"
     , "<CHARESC>n      \t BEGIN CHAREND; " ++ yylval ++ "->_char = '\\n';     return " ++ charToken ++ ";"
+    , "<CHARESC>r      \t BEGIN CHAREND; " ++ yylval ++ "->_char = '\\r';     return " ++ charToken ++ ";"
     , "<CHARESC>t      \t BEGIN CHAREND; " ++ yylval ++ "->_char = '\\t';     return " ++ charToken ++ ";"
     , "<CHARESC>.      \t BEGIN CHAREND; " ++ yylval ++ "->_char = yytext[0]; return " ++ charToken ++ ";"
     , "<CHAREND>\"'\"      \t BEGIN INITIAL;"

@@ -1,0 +1,6 @@
+// Andreas, 2021-08-26, issue #376, line comment termination in DOS.
+
+// This is a DOS file.
+" This tests whether single-line comments ...
+foo
+' ... are correctly recognized also in the CR LF coding.

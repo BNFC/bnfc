@@ -199,7 +199,7 @@ rules cf = mkRule "token" $
     , ( "'\\'' (([^ '\\\'' '\\\\']) | ('\\\\' ('\\\\' | '\\\'' | 'n' | 't' | 'r'))) '\\\''"
       , "TOK_Char (lexeme lexbuf).[1]")
     -- spaces
-    , ( "[' ' '\\t']", "token lexbuf")
+    , ( "[' ' '\\t' '\\r']", "token lexbuf")
     -- new lines
     , ( "'\\n'", "incr_lineno lexbuf; token lexbuf" )
     -- end of file
