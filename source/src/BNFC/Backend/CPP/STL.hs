@@ -46,7 +46,7 @@ makeCppStl opts cf = do
     mkCppFile "Printer.H" prinH
     mkCppFile "Printer.C" prinC
     mkCppFile "Test.C" (cpptest (inPackage opts) cf)
-    Makefile.mkMakefile opts $ makefile prefix name
+    Makefile.mkMakefile opts $ makefile prefix name compileOpt
   where
     name :: String
     name = lang opts
@@ -55,6 +55,8 @@ makeCppStl opts cf = do
     -- It should be a valid C identifier.
     prefix :: String
     prefix = snakeCase_ name ++ "_"
+    compileOpt :: String
+    compileOpt = "--ansi"
     parserMode :: ParserMode
     parserMode = CppParser (inPackage opts) prefix
     mkCppFile         x = mkfile x comment
@@ -91,6 +93,7 @@ cpptest inPackage cf = unlines $ concat
     "#include <cstdio>",
     "#include <string>",
     "#include <iostream>",
+    "#include <memory>",
     "#include \"Parser.H\"",
     "#include \"Printer.H\"",
     "#include \"Absyn.H\"",
@@ -144,10 +147,10 @@ cpptest inPackage cf = unlines $ concat
     "    printf(\"\\nParse Successful!\\n\");",
     "    if (!quiet) {",
     "      printf(\"\\n[Abstract Syntax]\\n\");",
-    "      " ++ scope ++ "ShowAbsyn *s = new " ++ scope ++ "ShowAbsyn();",
+    "      " ++ scope ++ "std::unique_ptr<ShowAbsyn> " ++ scope ++ "s(new ShowAbsyn());",
     "      printf(\"%s\\n\\n\", s->show(parse_tree));",
     "      printf(\"[Linearized Tree]\\n\");",
-    "      " ++ scope ++ "PrintAbsyn *p = new " ++ scope ++ "PrintAbsyn();",
+    "      " ++ scope ++ "std::unique_ptr<PrintAbsyn> " ++ scope ++ "p(new PrintAbsyn());",
     "      printf(\"%s\\n\\n\", p->print(parse_tree));",
     "    }",
     "    delete(parse_tree);",
@@ -186,5 +189,5 @@ mkHeaderFile inPackage eps = unlines $ concat
   hdef = nsDefine inPackage "PARSER_HEADER_FILE"
   mkFuncs s =
     [ identCat (normCat s) ++ "*" +++ "p" ++ identCat s ++ "(FILE *inp);"
-    , identCat (normCat s) ++ "*" +++ "p" ++ identCat s ++ "(const char *str);"
+    , identCat (normCat s) ++ "*" +++ "ps" ++ identCat s ++ "(const char *str);"
     ]
