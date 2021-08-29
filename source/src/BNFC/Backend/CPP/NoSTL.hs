@@ -40,7 +40,7 @@ makeCppNoStl opts cf = do
     mkCppFile "Printer.H" prinH
     mkCppFile "Printer.C" prinC
     mkCppFile "Test.C" (cpptest cf)
-    Makefile.mkMakefile opts $ makefile prefix name
+    Makefile.mkMakefile opts $ makefile prefix name compileOpt
   where
     name :: String
     name = lang opts
@@ -49,6 +49,8 @@ makeCppNoStl opts cf = do
     -- It should be a valid C identifier.
     prefix :: String
     prefix = snakeCase_ name ++ "_"
+    compileOpt :: String
+    compileOpt = "--ansi"
     parserMode :: ParserMode
     parserMode = CParser True prefix
     mkCppFile         x = mkfile x comment

@@ -5,10 +5,10 @@ module BNFC.Backend.CPP.Makefile (makefile) where
 import BNFC.Backend.Common.Makefile
 import BNFC.PrettyPrint
 
-makefile :: String -> String -> String -> Doc
-makefile prefix name basename = vcat
+makefile :: String -> String -> String -> String -> Doc
+makefile prefix name compileOpt basename = vcat
     [ mkVar "CC" "g++ -g"
-    , mkVar "CCFLAGS" "--ansi -W -Wall -Wsign-conversion -Wno-unused-parameter -Wno-unused-function -Wno-unneeded-internal-declaration"
+    , mkVar "CCFLAGS" (compileOpt ++ " -W -Wall -Wno-unused-parameter -Wno-unused-function -Wno-unneeded-internal-declaration")
     , ""
     , mkVar "FLEX" "flex"
     , mkVar "FLEX_OPTS" ("-P" ++ prefix)
@@ -51,7 +51,6 @@ makefile prefix name basename = vcat
     , mkRule "Parser.C Bison.H" [ name ++ ".y" ]
       [ "${BISON} ${BISON_OPTS} " ++ name ++ ".y -o Parser.C" ]
     , mkRule "Lexer.o" [ "CCFLAGS+=-Wno-sign-conversion" ]
-        []
     , mkRule "Lexer.o" [ "Lexer.C", "Bison.H" ]
         [ "${CC} ${CCFLAGS} -c Lexer.C " ]
     , mkRule "Parser.o" [ "Parser.C", "Absyn.H", "Bison.H" ]
