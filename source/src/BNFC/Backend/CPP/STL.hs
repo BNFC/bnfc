@@ -170,6 +170,7 @@ mkHeaderFile inPackage _cf _cats eps _env = unlines $ concat
     , ""
     , "#include<vector>"
     , "#include<string>"
+    , "#include<cstdio>"
     , "#include \"Absyn.H\""
     , ""
     , nsStart inPackage
