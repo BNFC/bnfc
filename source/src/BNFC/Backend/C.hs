@@ -220,6 +220,7 @@ mkHeaderFile _ cf _env = unlines $ concat
   [ [ "#ifndef PARSER_HEADER_FILE"
     , "#define PARSER_HEADER_FILE"
     , ""
+    , "#include <stdio.h>"
     , "#include \"Absyn.h\""
     , ""
     ]
