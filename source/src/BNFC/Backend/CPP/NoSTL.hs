@@ -130,6 +130,7 @@ mkHeaderFile _cf _cats eps _env = unlines $ concat
   [ [ "#ifndef PARSER_HEADER_FILE"
     , "#define PARSER_HEADER_FILE"
     , ""
+    , "#include <stdio.h>"
     , "#include \"Absyn.H\""
     , ""
     ]

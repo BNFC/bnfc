@@ -3,6 +3,7 @@
 Andreas Abel <andreas.abel@gu.se>
 
 * BNFC now uniformly signs generated files with its version number [#373]
+* C/C++: include `stdio.h` in parser header files [#381]
 * C++: fixed parser regression in 2.9.2: missing `#include <algorithm>` [#377]
 * Ocaml: lex CR as whitespace [see also #376]
 
