@@ -73,8 +73,13 @@ ocamlTestfile absM lexM parM printM showM cf =
             , nest 4 $ vcat
                 [ "Printf.printf \"Parse error at %d.%d-%d.%d\\n\""
                 , nest 4 $ vcat
-                    [ "start_pos.pos_lnum (start_pos.pos_cnum - start_pos.pos_bol)"
-                    , "end_pos.pos_lnum (end_pos.pos_cnum - end_pos.pos_bol);" ]
+                    -- Andreas, 2021-09-16, issue #380:
+                    -- To have column counting start with 1 (and not with 0), we have to
+                    -- add 1 to the difference between current offset and the offset of the
+                    -- beginning of the line.
+                    -- See e.g. https://github.com/let-def/ocamllex/blob/e5c8421f8fe56017e9b4e58c3496356631843802/lexer.mll#L54
+                    [ "start_pos.pos_lnum (start_pos.pos_cnum - start_pos.pos_bol + 1)"
+                    , "end_pos.pos_lnum (end_pos.pos_cnum - end_pos.pos_bol + 1);" ]
                 , "exit 1" ]]
         , ";;"
         , ""
