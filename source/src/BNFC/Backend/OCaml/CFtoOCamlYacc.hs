@@ -18,7 +18,8 @@ import Data.Char
 import Data.Foldable (toList)
 
 import BNFC.CF
-import BNFC.Utils ((+++))
+import BNFC.Options ( OCamlParser(..) )
+import BNFC.Utils   ( (+++) )
 import BNFC.Backend.Common
 import BNFC.Backend.OCaml.OCamlUtil
 
@@ -30,13 +31,13 @@ type MetaVar     = String
 
 -- The main function, that given a CF
 -- generates a ocamlyacc module.
-cf2ocamlyacc :: String -> String -> String -> CF -> String
-cf2ocamlyacc name absName lexName cf
+cf2ocamlyacc :: OCamlParser -> String -> String -> String -> CF -> String
+cf2ocamlyacc ocamlParser name absName lexName cf
  = unlines
     [header name absName lexName cf,
     declarations absName cf,
     "%%",
-    rules cf
+    rules ocamlParser cf
     ]
 
 
@@ -133,18 +134,33 @@ epName c = "p" ++ capitalize (nonterminal c)
                     [] -> []
                     c:cs -> toUpper c : cs
 
-entryPointRules :: CF -> String
-entryPointRules cf = unlines $ map mkRule $ toList $ allEntryPoints cf
-    where
-        mkRule :: Cat -> String
-        mkRule s = unlines [
-            epName s ++ " : " ++ nonterminal s ++ " TOK_EOF { $1 }",
-            "  | error { raise (BNFC_Util.Parse_error (Parsing.symbol_start_pos (), Parsing.symbol_end_pos ())) };"
-            ]
+entryPointRules :: OCamlParser -> CF -> String
+entryPointRules ocamlParser cf =
+  unlines $ map mkRule $ toList $ allEntryPoints cf
+  where
+  mkRule :: Cat -> String
+  mkRule s = unlines
+    [ epName s ++ " : " ++ nonterminal s ++ " TOK_EOF { $1 }"
+    , concat
+      [ "  | error { raise (BNFC_Util.Parse_error ("
+        -- Andreas, 2021-09-16, issue #380
+        -- menhir has dedicated macros for position info,
+        -- the use of the @Parsing@ structure is deprecated
+        -- (and does not seem to work).
+      , case ocamlParser of
+          OCamlYacc -> "Parsing.symbol_start_pos ()"
+          Menhir    -> "$symbolstartpos"
+      , ", "
+      , case ocamlParser of
+          OCamlYacc -> "Parsing.symbol_end_pos ()"
+          Menhir    -> "$endpos"
+      , ")) };"
+      ]
+    ]
 
-rules :: CF -> String
-rules cf = unlines [
-    entryPointRules cf,
+rules :: OCamlParser -> CF -> String
+rules ocamlParser cf = unlines [
+    entryPointRules ocamlParser cf,
     (unlines $ map (prOne . mkOne) (ruleGroups cf)),
     specialRules cf
     ]

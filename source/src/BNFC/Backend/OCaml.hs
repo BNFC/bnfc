@@ -83,7 +83,7 @@ makeOCaml opts cf = do
     mkfile (absFile opts)       comment $ cf2Abstract absMod cf
     mkfile (ocamllexFile opts)  comment $ cf2ocamllex lexMod parMod cf
     mkfile (ocamlyaccFile opts) C.comment $
-                 cf2ocamlyacc parMod absMod lexMod  cf
+      cf2ocamlyacc (ocamlParser opts) parMod absMod lexMod  cf
     mkfile (templateFile opts)  comment $ cf2Template (templateFileM opts) absMod cf
     mkfile (printerFile opts)   comment $ cf2Printer prMod absMod cf
     mkfile (showFile opts)      comment $ cf2show showMod absMod cf

@@ -6,6 +6,7 @@ Andreas Abel <andreas.abel@gu.se>
 * C/C++: include `stdio.h` in parser header files [#381]
 * C++: fixed parser regression in 2.9.2: missing `#include <algorithm>` [#377]
 * Ocaml: lex CR as whitespace [see also #376]
+* Ocaml/Menhir: correct position in parse errors [#380]
 
 # 2.9.2
 
