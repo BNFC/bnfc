@@ -33,8 +33,9 @@ tested-with:
   GHC == 8.4.4
   GHC == 8.6.5
   GHC == 8.8.4
-  GHC == 8.10.5
+  GHC == 8.10.7
   GHC == 9.0.1
+  GHC == 9.2.0.20210821
 
 Extra-source-files:
   README.md
@@ -44,6 +45,7 @@ Extra-source-files:
   src/BNFC.cf
   src/Makefile
   stack-9.0.1.yaml
+  stack-8.10.7.yaml
   stack-8.10.4.yaml
   stack-8.10.3.yaml
   stack-8.10.2.yaml

@@ -25,15 +25,18 @@ jobs-selection: any
 
 -- Additional jobs
 ghc-head: True
-osx: 8.10.4
+macos-jobs: == 8.10.7
 
 no-tests-no-benchmarks: >= 9.0.1
 -- end
 ---------------------------------------------------------------------------
 
--- -- Switch of tests for 9.0.1 (doctest not yet supported)
--- tests: < 9
+-- on Linux we can use ghcup to setup (some) of jobs
+-- hvr-ppa latest are 9.0.1 and 8.10.4
+ghcup-jobs: >= 9.2 || > 8.10.4 && < 9.0
 
--- Allowing failures is not necessary if we skip the tests
--- allow-failures: >= 9.0.1
+-- Switch of tests for 9.2 (doctest not yet supported)
+tests: < 9.2
+
+allow-failures: >= 9.2
 
