@@ -59,7 +59,7 @@ makeHaskell opts cf = do
     -- Generate Alex lexer.  Layout is resolved after lexing.
     case alexMode opts of
       Alex3 -> do
-        mkfile (alexFile opts) comment $ cf2alex3 lexMod (tokenText opts) cf
+        mkfile (alexFile opts) commentWithEmacsModeHint $ cf2alex3 lexMod (tokenText opts) cf
         liftIO $ printf "Use Alex 3 to compile %s.\n" (alexFile opts)
 
     Ctrl.when (hasLayout cf) $ mkfile (layoutFile opts) comment $
@@ -67,7 +67,7 @@ makeHaskell opts cf = do
 
     -- Generate Happy parser and matching test program.
     do
-      mkfile (happyFile opts) comment $
+      mkfile (happyFile opts) commentWithEmacsModeHint $
         cf2Happy parMod absMod lexMod (glr opts) (tokenText opts) (functor opts) cf
       -- liftIO $ printf "%s Tested with Happy 1.15\n" (happyFile opts)
       mkfile (tFile opts) comment $ testfile opts cf

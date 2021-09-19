@@ -10,7 +10,13 @@ import Data.List  ( intercalate )
 import BNFC.CF
 import BNFC.TypeChecker
 
+import BNFC.Backend.C          ( comment )
 import BNFC.Backend.CPP.Naming
+
+-- | C++ line comment including mode hint for emacs.
+
+commentWithEmacsModeHint :: String -> String
+commentWithEmacsModeHint = comment . ("-*- c++ -*- " ++)
 
 -- | C++ code for the @define@d constructors.
 --

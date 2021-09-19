@@ -99,11 +99,11 @@ makeJava' options@Options{..} cf = do
     makebnfcfile btest
     let (lex, env) = lexfun packageBase cf
     -- Where the lexer file is created. lex is the content!
-    mkfile (dirBase </> inputfile lexmake ) comment lex
+    mkfile (dirBase </> inputfile lexmake ) commentWithEmacsModeHint lex
     liftIO $ putStrLn $ "   (Tested with" +++ toolname lexmake
                                           +++ toolversion lexmake  ++ ")"
     -- where the parser file is created.
-    mkfile (dirBase </> inputfile parmake) comment
+    mkfile (dirBase </> inputfile parmake) commentWithEmacsModeHint
           $ parsefun packageBase packageAbsyn cf rp env
     liftIO $ putStrLn $
       if supportsEntryPoints parmake
@@ -127,6 +127,7 @@ makeJava' options@Options{..} cf = do
     parmake      = makeparserdetails (parser parselexspec)
     lexmake      = makelexerdetails  (lexer parselexspec)
     rp           = (Options.linenumbers options)
+    commentWithEmacsModeHint = comment . ("-*- Java -*- " ++)
 
 makefile ::  FilePath -> FilePath -> [String] -> ParserLexerSpecification -> String -> Doc
 makefile  dirBase dirAbsyn absynFileNames jlexpar basename = vcat $

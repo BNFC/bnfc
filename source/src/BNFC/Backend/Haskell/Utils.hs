@@ -2,7 +2,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module BNFC.Backend.Haskell.Utils
-  ( comment
+  ( comment, commentWithEmacsModeHint
   , posType, posConstr, noPosConstr
   , hasPositionClass, hasPositionMethod
   , noWarnUnusedMatches
@@ -29,6 +29,11 @@ import BNFC.Utils   (mkNames, NameStyle(..))
 
 comment :: String -> String
 comment = ("-- " ++)
+
+-- | Haskell line comment including mode hint for emacs.
+
+commentWithEmacsModeHint :: String -> String
+commentWithEmacsModeHint = comment . ("-*- haskell -*- " ++)
 
 -- * GHC pragmas
 

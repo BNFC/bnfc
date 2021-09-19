@@ -34,11 +34,10 @@ makeC opts cf = do
     mkCFile "Buffer.h" bufferH
     mkCFile "Buffer.c" $ bufferC "Buffer.h"
     let (flex, env) = cf2flex parserMode cf
-    mkCFile (name ++ ".l") flex
-    let bison = cf2Bison (linenumbers opts) parserMode cf env
-    mkCFile (name ++ ".y") bison
-    let header = mkHeaderFile (linenumbers opts) cf (Map.elems env)
-    mkCFile "Parser.h" header
+    mkfile (name ++ ".l") commentWithEmacsModeHint flex
+    mkfile (name ++ ".y") commentWithEmacsModeHint $
+      cf2Bison (linenumbers opts) parserMode cf env
+    mkCFile "Parser.h" $ mkHeaderFile (linenumbers opts) cf (Map.elems env)
     let (skelH, skelC) = cf2CSkel cf
     mkCFile "Skeleton.h" skelH
     mkCFile "Skeleton.c" skelC
@@ -46,7 +45,7 @@ makeC opts cf = do
     mkCFile "Printer.h" prinH
     mkCFile "Printer.c" prinC
     mkCFile "Test.c" (ctest cf)
-    Makefile.mkMakefile opts (makefile name prefix)
+    Makefile.mkMakefile opts $ makefile name prefix
   where
     name :: String
     name = lang opts
@@ -125,6 +124,10 @@ makefile name prefix basename = vcat
 -- | Put string into a block comment.
 comment :: String -> String
 comment x = unwords ["/*", x, "*/"]
+
+-- | C line comment including mode hint for emacs.
+commentWithEmacsModeHint :: String -> String
+commentWithEmacsModeHint = comment . ("-*- c -*- " ++)
 
 -- | A heading comment for the generated parser test.
 testfileHeader :: [String]

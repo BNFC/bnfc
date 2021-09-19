@@ -110,7 +110,6 @@ writeFiles root fw = do
       -- TODO: the following is a hack, make this more systematic:
       if takeExtension path == ".txt" then
         -- Sign at the end since e.g. txt2tags cannot handle comments at beginning of file.
-        -- TODO: and emacs hints like @-*- c -*_@ also need to be in the first line.
         unlines [ content, mkComment msgGenerated ]
       else
         -- Sign at the beginning (JFlex cannot handle comments in general, only at beginning).

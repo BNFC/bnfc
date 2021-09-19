@@ -91,7 +91,7 @@ cf2flex mode cf = (, env) $ unlines
 
 prelude :: Bool -> ParserMode -> String
 prelude stringLiterals mode = unlines $ concat
-  [ [ "/* -*- c -*- Lexer definition for use with FLex */"
+  [ [ "/* Lexer definition for use with FLex */"
     , ""
     -- noinput and nounput are most often unused
     -- https://stackoverflow.com/questions/39075510/option-noinput-nounput-what-are-they-for

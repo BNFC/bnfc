@@ -35,8 +35,7 @@ cf2alex3 name tokenText cf =
 
 prelude :: String -> TokenText -> [String]
 prelude name tokenText = concat
-  [ [ "-- -*- haskell -*-"
-    , "-- Lexer definition for use with Alex 3"
+  [ [ "-- Lexer definition for use with Alex 3"
     , "{"
     , "{-# OPTIONS -fno-warn-incomplete-patterns #-}"
     , "{-# OPTIONS_GHC -w #-}"

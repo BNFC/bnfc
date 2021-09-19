@@ -85,7 +85,7 @@ positionCats cf = [ wpThing name | TokenReg name True _ <- cfgPragmas cf ]
 
 header :: ParserMode -> CF -> String
 header mode cf = unlines $ concat
-  [ [ "/* -*- c -*- Parser definition to be used with Bison. */"
+  [ [ "/* Parser definition to be used with Bison. */"
     , ""
     , "/* Generate header file for lexer. */"
     , "%defines \"" ++ ("Bison" <.> h) ++ "\""

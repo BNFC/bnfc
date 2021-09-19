@@ -12,9 +12,10 @@ import BNFC.Utils
 import BNFC.CF
 import BNFC.Options
 import BNFC.Backend.Base
-import BNFC.Backend.C            (bufferH, bufferC, comment, testfileHeader)
-import BNFC.Backend.C.CFtoBisonC (cf2Bison)
-import BNFC.Backend.C.CFtoFlexC  (cf2flex, ParserMode(..))
+import BNFC.Backend.C            ( bufferH, bufferC, comment, testfileHeader )
+import BNFC.Backend.C.CFtoBisonC ( cf2Bison )
+import BNFC.Backend.C.CFtoFlexC  ( cf2flex, ParserMode(..) )
+import BNFC.Backend.CPP.Common   ( commentWithEmacsModeHint )
 import BNFC.Backend.CPP.Makefile
 import BNFC.Backend.CPP.NoSTL.CFtoCPPAbs
 import BNFC.Backend.CPP.STL.CFtoCVisitSkelSTL
@@ -29,11 +30,10 @@ makeCppNoStl opts cf = do
     mkCppFile "Buffer.H" bufferH
     mkCppFile "Buffer.C" $ bufferC "Buffer.H"
     let (flex, env) = cf2flex parserMode cf
-    mkCppFile (name ++ ".l") flex
-    let bison = cf2Bison(linenumbers opts) parserMode cf env
-    mkCppFile (name ++ ".y") bison
-    let header = mkHeaderFile cf (allParserCats cf) (toList $ allEntryPoints cf) (Map.elems env)
-    mkCppFile "Parser.H" header
+    mkCppFileWithHint (name ++ ".l") flex
+    mkCppFileWithHint (name ++ ".y") $ cf2Bison (linenumbers opts) parserMode cf env
+    mkCppFile "Parser.H" $
+      mkHeaderFile cf (allParserCats cf) (toList $ allEntryPoints cf) (Map.elems env)
     let (skelH, skelC) = cf2CVisitSkel False Nothing cf
     mkCppFile "Skeleton.H" skelH
     mkCppFile "Skeleton.C" skelC
@@ -52,7 +52,8 @@ makeCppNoStl opts cf = do
     prefix = snakeCase_ name ++ "_"
     parserMode :: ParserMode
     parserMode = CParser True prefix
-    mkCppFile x = mkfile x comment
+    mkCppFile         x = mkfile x comment
+    mkCppFileWithHint x = mkfile x commentWithEmacsModeHint
 
 cpptest :: CF -> String
 cpptest cf = unlines $ concat

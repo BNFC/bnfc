@@ -44,7 +44,7 @@ cf2Cup packageBase packageAbsyn cf rp env = unlines
   where
     header :: String
     header = unlines
-      [ "// -*- Java -*- Parser definition for use with Java Cup"
+      [ "// Parser definition for use with Java Cup"
       , "package" +++ packageBase ++ ";"
       , ""
       , "action code {:"

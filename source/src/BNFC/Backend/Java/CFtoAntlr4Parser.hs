@@ -61,7 +61,7 @@ cf2AntlrParse packageBase packageAbsyn cf _ env = unlines $ concat
   where
     header :: String
     header = unlines
-        [ "// -*- Java -*- Parser definition for use with ANTLRv4"
+        [ "// Parser definition for use with ANTLRv4"
         , "parser grammar" +++ identifier ++ "Parser;"
         ]
     tokens :: String

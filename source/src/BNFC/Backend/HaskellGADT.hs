@@ -12,7 +12,7 @@ module BNFC.Backend.HaskellGADT (makeHaskellGadt) where
 import BNFC.Options
 import BNFC.Backend.Base hiding (Backend)
 import BNFC.Backend.Haskell.HsOpts
-import BNFC.Backend.Haskell.Utils (comment)
+import BNFC.Backend.Haskell.Utils (comment, commentWithEmacsModeHint)
 import BNFC.CF
 import BNFC.Backend.Haskell.CFtoHappy
 import BNFC.Backend.Haskell.CFtoAlex3
@@ -40,11 +40,9 @@ makeHaskellGadt opts cf = do
   do
     mkHsFile (absFile opts) $ cf2Abstract (tokenText opts) absMod cf composOpMod
     mkHsFile (composOpFile opts) $ composOp composOpMod
-    case alexMode opts of
-      Alex3 -> do
-        mkHsFile (alexFile opts) $ cf2alex3 lexMod (tokenText opts) cf
-        liftIO $ putStrLn "   (Use Alex 3 to compile.)"
-    mkHsFile (happyFile opts) $
+    mkHsFileHint (alexFile opts) $ cf2alex3 lexMod (tokenText opts) cf
+    liftIO $ putStrLn "   (Use Alex 3 to compile.)"
+    mkHsFileHint (happyFile opts) $
       cf2Happy parMod absMod lexMod (glr opts) (tokenText opts) False cf
     liftIO $ putStrLn "   (Tested with Happy 1.15 - 1.20)"
     mkHsFile (templateFile opts) $ cf2Template (templateFileM opts) absMod cf
@@ -60,6 +58,7 @@ makeHaskellGadt opts cf = do
       _ -> return ()
   where
   mkHsFile x = mkfile x comment
+  mkHsFileHint x = mkfile x commentWithEmacsModeHint
 
 composOp :: String -> String
 composOp composOpMod = unlines
