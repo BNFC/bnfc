@@ -187,5 +187,5 @@ mkHeaderFile inPackage _cf _cats eps _env = unlines $ concat
   hdef = nsDefine inPackage "PARSER_HEADER_FILE"
   mkFuncs s =
     [ identCat (normCat s) ++ "*" +++ "p" ++ identCat s ++ "(FILE *inp);"
-    , identCat (normCat s) ++ "*" +++ "p" ++ identCat s ++ "(const char *str);"
+    , identCat (normCat s) ++ "*" +++ "ps" ++ identCat s ++ "(const char *str);"
     ]
