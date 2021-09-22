@@ -191,39 +191,47 @@ ifList cf cat
             -- If the list is @nonempty@ according to the grammar, still add a nil case.
             -- In the AST it is simply a list, and the AST could be created
             -- by other means than by parsing.
-      , [ d | r <- rules, let d = mkPrtListCase r, not (isEmpty d) ]
+      , [ d | r <- rules, let d = mkPrtListCase minPrec r, not (isEmpty d) ]
       ]
+    -- Andreas, 2021-09-22, issue #384:
+    -- The minimum precedence of a rule lhs category in the rules set.
+    -- This is considered the default precedence; used to make the printing function total.
+    minPrec = minimum $ map precRule rules
 
 -- | Pattern match on the list constructor and the coercion level
 --
--- >>> mkPrtListCase (npRule "[]" (ListCat (Cat "Foo")) [] Parsable)
+-- >>> mkPrtListCase 0 (npRule "[]" (ListCat (Cat "Foo")) [] Parsable)
 -- (_,[]) -> (concatD [])
 --
--- >>> mkPrtListCase (npRule "(:[])" (ListCat (Cat "Foo")) [Left (Cat "Foo")] Parsable)
+-- >>> mkPrtListCase 0 (npRule "(:[])" (ListCat (Cat "Foo")) [Left (Cat "Foo")] Parsable)
 -- (_,[x]) -> (concatD [prtFoo 0 x])
 --
--- >>> mkPrtListCase (npRule "(:)" (ListCat (Cat "Foo")) [Left (Cat "Foo"), Left (ListCat (Cat "Foo"))] Parsable)
+-- >>> mkPrtListCase 0 (npRule "(:)" (ListCat (Cat "Foo")) [Left (Cat "Foo"), Left (ListCat (Cat "Foo"))] Parsable)
 -- (_,x::xs) -> (concatD [prtFoo 0 x ; prtFooListBNFC 0 xs])
 --
--- >>> mkPrtListCase (npRule "[]" (ListCat (CoercCat "Foo" 2)) [] Parsable)
+-- >>> mkPrtListCase 0 (npRule "[]" (ListCat (CoercCat "Foo" 2)) [] Parsable)
 -- (2,[]) -> (concatD [])
 --
--- >>> mkPrtListCase (npRule "(:[])" (ListCat (CoercCat "Foo" 2)) [Left (CoercCat "Foo" 2)] Parsable)
+-- >>> mkPrtListCase 0 (npRule "(:[])" (ListCat (CoercCat "Foo" 2)) [Left (CoercCat "Foo" 2)] Parsable)
 -- (2,[x]) -> (concatD [prtFoo 2 x])
 --
--- >>> mkPrtListCase (npRule "(:)" (ListCat (CoercCat "Foo" 2)) [Left (CoercCat "Foo" 2), Left (ListCat (CoercCat "Foo" 2))] Parsable)
--- (2,x::xs) -> (concatD [prtFoo 2 x ; prtFooListBNFC 2 xs])
+-- >>> mkPrtListCase 2 (npRule "(:)" (ListCat (CoercCat "Foo" 2)) [Left (CoercCat "Foo" 2), Left (ListCat (CoercCat "Foo" 2))] Parsable)
+-- (_,x::xs) -> (concatD [prtFoo 2 x ; prtFooListBNFC 2 xs])
 --
-mkPrtListCase :: Rule -> Doc
-mkPrtListCase (Rule f (WithPosition _ (ListCat c)) rhs _)
+mkPrtListCase
+  :: Integer -- ^ The lowest precedence of a lhs in a list rule.  Default: 0.
+  -> Rule    -- ^ The list rule.
+  -> Doc
+mkPrtListCase minPrec (Rule f (WithPosition _ (ListCat c)) rhs _)
   | isNilFun f  = parens (precPattern <> "," <> "[]") <+> "->" <+> body
   | isOneFun f  = parens (precPattern <> "," <> "[x]") <+> "->" <+> body
   | isConsFun f = parens (precPattern <> "," <>"x::xs") <+> "->" <+> body
   | otherwise = empty -- (++) constructor
   where
-    precPattern = case precCat c of 0 -> "_" ; p -> integer p
+    precPattern = if p <= minPrec then "_" else integer p
+    p = precCat c
     body = text $ mkRhs ["x", "xs"] rhs
-mkPrtListCase _ = error "mkPrtListCase undefined for non-list categories"
+mkPrtListCase _ _ = error "mkPrtListCase undefined for non-list categories"
 
 mkRhs args its =
   "(concatD [" ++ unwords (intersperse ";" (mk args its)) ++ "])"
