@@ -1,4 +1,4 @@
-resolver: ghc-9.0.1
+resolver: nightly-2021-09-18
 compiler: ghc-9.0.1
 compiler-check: match-exact
 
@@ -6,89 +6,11 @@ packages:
 - source
 - testing
 
-extra-deps:
-- alex-3.2.6
-- cabal-doctest-1.0.8
-- happy-1.20.0
-- string-qq-0.0.4
+# # The following flag fixes this error:
+# #   In the dependencies for transformers-compat-0.6.6:
+# #     transformers-0.5.6.2 from stack configuration does not match >=0.3 && ==0.2.*
+# #   needed due to bnfc-system-tests-2.9.2.0 -> transformers-compat-0.6.6
 
-# For --test:
-- HUnit-1.6.2.0
-- QuickCheck-2.14.2
-- ansi-terminal-0.11
-- base-compat-0.11.2
-- call-stack-0.4.0
-- clock-0.8.2
-- code-page-0.2.1
-- colour-2.3.5
-- doctest-0.18.1
-- ghc-paths-0.1.0.12@rev:2
-- hspec-2.8.2
-- hspec-core-2.8.2
-- hspec-discover-2.8.2
-- hspec-expectations-0.8.2
-- primitive-0.7.1.0
-- quickcheck-io-0.2.0
-- random-1.2.0
-- setenv-0.1.1.3
-- splitmix-0.1.0.3
-- syb-0.7.2.1
-- temporary-1.3
-- tf-random-0.5
-
-# For package `testing`:
-- Diff-0.4.0
-- HTF-0.14.0.6
-- aeson-1.5.6.0
-- assoc-1.0.2
-- async-2.2.3
-- attoparsec-0.14.1
-- base-compat-batteries-0.11.2
-- base-orphans-0.8.4
-- base64-bytestring-1.2.0.1
-- bifunctors-5.5.11
-- blaze-builder-0.4.2.1
-- comonad-5.0.8
-- constraints-0.13
-- cpphs-1.20.9.1
-- data-fix-0.3.1
-- distributive-0.6.2.1
-- dlist-1.0
-- enclosed-exceptions-1.0.3
-- hashable-1.3.2.0
-- haskell-src-1.0.3.1
-- indexed-traversable-0.1.1
-- integer-logarithms-1.0.3.1
-- lifted-async-0.10.2
-- lifted-base-0.2.3.12
-- monad-control-1.0.2.3
-- old-locale-1.0.0.7
-- old-time-1.1.0.3
-- polyparse-1.13
-- regex-base-0.94.0.1
-- regex-compat-0.95.2.1
-- regex-posix-0.96.0.0
-- scientific-0.3.7.0
-- shelly-1.9.0
-- strict-0.4.0.1
-- tagged-0.8.6.1
-- th-abstraction-0.4.2.0
-- these-1.1.1.1
-- time-compat-1.9.6
-- transformers-base-0.4.5.2
-- transformers-compat-0.6.6
-- type-equality-1
-- unix-compat-0.5.3
-- unordered-containers-0.2.14.0
-- uuid-types-1.0.5
-- vector-0.12.3.0
-- xmlgen-0.6.2.2
-
-# The following flag fixes this error:
-#   In the dependencies for transformers-compat-0.6.6:
-#     transformers-0.5.6.2 from stack configuration does not match >=0.3 && ==0.2.*
-#   needed due to bnfc-system-tests-2.9.2.0 -> transformers-compat-0.6.6
-
-flags:
-  transformers-compat:
-    five-three: true
+# flags:
+#   transformers-compat:
+#     five-three: true
