@@ -114,8 +114,12 @@ jobs:
           startsWith(github.ref, 'refs/tags/v')
           && matrix.ghc == '9.0.1'
         run: |
+          cabal sdist
           export DIST_TGZ=$(cabal sdist | tail -1)
           echo "DIST_TGZ=${DIST_TGZ}" >> ${GITHUB_ENV}
+        # Note: we do sdist twice because the first time it might print stuff like
+        # "Writing default configuration to /home/runner/.cabal/config"
+        # that spoils our `tail -1` hack.
 
       - name: Source tarball release.
         if: >-
