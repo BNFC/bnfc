@@ -4,8 +4,8 @@ name: Stack build
 
 on:
   push:
-    branches: [ master, ci-* ]
-    tags:     [ v* ]
+    branches: [ master, 'ci-*' ]
+    tags:     [ 'v*' ]
   pull_request:
     types: [ opened, synchronize]
 
