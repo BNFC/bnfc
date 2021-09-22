@@ -68,6 +68,7 @@ prologue tokenText useGadt name absMod cf = map text $ concat
     , "#endif"
     ]
   , [ ""
+    -- Needed for precedence category lists, e.g. @[Exp2]@:
     , "{-# OPTIONS_GHC -fno-warn-incomplete-patterns #-}"
     , ""
     , "-- | Pretty-printer for " ++ takeWhile ('.' /=) name ++ "."
@@ -292,7 +293,7 @@ case_fun absMod functor cf cat rules =
 
       -- Special printing of lists (precedence changes concrete syntax!)
       if isList cat then
-        map mkPrtListCase $ List.sortBy compareRules $ rulesForNormalizedCat cf cat
+        listCases $ List.sortBy compareRules $ rulesForNormalizedCat cf cat
 
       -- Ordinary category
       else
@@ -310,6 +311,16 @@ case_fun absMod functor cf cat rules =
       ListCat c    -> "[" <> type' c <> "]"
       c@TokenCat{} -> text (qualifiedCat absMod c)
       c            -> text (qualifiedCat absMod c) <> "' a"
+    listCases [] = []
+    listCases rules = concat
+      [ [ "prt _ [] = concatD []" | not $ any isNilFun rules ]
+            -- Andreas, 2021-09-22, issue #386
+            -- If the list is @nonempty@ according to the grammar, still add a nil case.
+            -- In the AST it is simply a list, and the AST could be created
+            -- by other means than by parsing.
+      , map mkPrtListCase rules
+      ]
+
 
 -- | When writing the Print instance for a category (in case_fun), we have
 -- a different case for each constructor for this category.

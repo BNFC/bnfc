@@ -174,9 +174,10 @@ case_fun absMod cat xs = unlines [
 --   mkListRule rs = unlines $ ("and prt" ++ fixTypeUpper cat ++ "ListBNFC" +++ "_ es : doc = match es with"):rs
 
 ifList :: CF -> Cat -> String
-ifList cf cat = render $
-  case cases of
-    []         -> empty
+ifList cf cat
+  | null rules = ""
+  | otherwise  = render $ case cases of
+    []         -> empty  -- IMPOSSIBLE CASE when (rules /= [])
     first:rest -> vcat
         [ "and prt" <> text (fixTypeUpper cat)  <> "ListBNFC i es : doc = match (i, es) with"
         , nest 4 first
@@ -184,8 +185,14 @@ ifList cf cat = render $
         ]
   where
     rules = sortBy compareRules $ rulesForNormalizedCat cf (ListCat cat)
-    cases = [ d | r <- rules, let d = mkPrtListCase r, not (isEmpty d) ]
-
+    cases = concat
+      [ [ "(_,[]) -> (concatD [])" | not $ any isNilFun rules ]
+            -- Andreas, 2021-09-22, issue #386
+            -- If the list is @nonempty@ according to the grammar, still add a nil case.
+            -- In the AST it is simply a list, and the AST could be created
+            -- by other means than by parsing.
+      , [ d | r <- rules, let d = mkPrtListCase r, not (isEmpty d) ]
+      ]
 
 -- | Pattern match on the list constructor and the coercion level
 --
