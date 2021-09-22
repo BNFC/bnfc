@@ -68,9 +68,9 @@ prologue tokenText useGadt name absMod cf = map text $ concat
     , "#endif"
     ]
   , [ ""
-    -- Needed for precedence category lists, e.g. @[Exp2]@:
-    , "{-# OPTIONS_GHC -fno-warn-incomplete-patterns #-}"
-    , ""
+    -- -- WAS: Needed for precedence category lists, e.g. @[Exp2]@:
+    -- , "{-# OPTIONS_GHC -fno-warn-incomplete-patterns #-}"
+    -- , ""
     , "-- | Pretty-printer for " ++ takeWhile ('.' /=) name ++ "."
     , ""
     , "module " ++ name +++ "where"
@@ -318,9 +318,13 @@ case_fun absMod functor cf cat rules =
             -- If the list is @nonempty@ according to the grammar, still add a nil case.
             -- In the AST it is simply a list, and the AST could be created
             -- by other means than by parsing.
-      , map mkPrtListCase rules
+      , map (mkPrtListCase minPrec) rules
       ]
-
+      where
+      -- Andreas, 2021-09-22, issue #384:
+      -- The minimum precedence of a rule lhs category in the rules set.
+      -- This is considered the default precedence; used to make the printing function total.
+      minPrec = minimum $ map precRule rules
 
 -- | When writing the Print instance for a category (in case_fun), we have
 -- a different case for each constructor for this category.
@@ -379,34 +383,38 @@ mkPrintCase absMod functor (Rule f cat rhs _internal) =
 
 -- | Pattern match on the list constructor and the coercion level
 --
--- >>> mkPrtListCase (npRule "[]" (ListCat (Cat "Foo")) [] Parsable)
+-- >>> mkPrtListCase 0 (npRule "[]" (ListCat (Cat "Foo")) [] Parsable)
 -- prt _ [] = concatD []
 --
--- >>> mkPrtListCase (npRule "(:[])" (ListCat (Cat "Foo")) [Left (Cat "FOO")] Parsable)
+-- >>> mkPrtListCase 0 (npRule "(:[])" (ListCat (Cat "Foo")) [Left (Cat "FOO")] Parsable)
 -- prt _ [x] = concatD [prt 0 x]
 --
--- >>> mkPrtListCase (npRule "(:)" (ListCat (Cat "Foo")) [Left (Cat "Foo"), Left (ListCat (Cat "Foo"))] Parsable)
+-- >>> mkPrtListCase 0 (npRule "(:)" (ListCat (Cat "Foo")) [Left (Cat "Foo"), Left (ListCat (Cat "Foo"))] Parsable)
 -- prt _ (x:xs) = concatD [prt 0 x, prt 0 xs]
 --
--- >>> mkPrtListCase (npRule "[]" (ListCat (CoercCat "Foo" 2)) [] Parsable)
+-- >>> mkPrtListCase 0 (npRule "[]" (ListCat (CoercCat "Foo" 2)) [] Parsable)
 -- prt 2 [] = concatD []
 --
--- >>> mkPrtListCase (npRule "(:[])" (ListCat (CoercCat "Foo" 2)) [Left (CoercCat "Foo" 2)] Parsable)
+-- >>> mkPrtListCase 0 (npRule "(:[])" (ListCat (CoercCat "Foo" 2)) [Left (CoercCat "Foo" 2)] Parsable)
 -- prt 2 [x] = concatD [prt 2 x]
 --
--- >>> mkPrtListCase (npRule "(:)" (ListCat (CoercCat "Foo" 2)) [Left (CoercCat "Foo" 2), Left (ListCat (CoercCat "Foo" 2))] Parsable)
--- prt 2 (x:xs) = concatD [prt 2 x, prt 2 xs]
+-- >>> mkPrtListCase 2 (npRule "(:)" (ListCat (CoercCat "Foo" 2)) [Left (CoercCat "Foo" 2), Left (ListCat (CoercCat "Foo" 2))] Parsable)
+-- prt _ (x:xs) = concatD [prt 2 x, prt 2 xs]
 --
-mkPrtListCase :: Rule -> Doc
-mkPrtListCase (Rule f (WithPosition _ (ListCat c)) rhs _internal)
+mkPrtListCase
+  :: Integer -- ^ The lowest precedence of a lhs in a list rule.  Default: 0.
+  -> Rule    -- ^ The list rule.
+  -> Doc
+mkPrtListCase minPrec (Rule f (WithPosition _ (ListCat c)) rhs _internal)
   | isNilFun f = "prt" <+> precPattern <+> "[]" <+> "=" <+> body
   | isOneFun f = "prt" <+> precPattern <+> "[x]" <+> "=" <+> body
   | isConsFun f = "prt" <+> precPattern <+> "(x:xs)" <+> "=" <+> body
   | otherwise = empty -- (++) constructor
   where
-    precPattern = case precCat c of 0 -> "_" ; p -> integer p
+    precPattern = if p <= minPrec then "_" else integer p
+    p = precCat c
     body = mkRhs ["x", "xs"] rhs
-mkPrtListCase _ = error "mkPrtListCase undefined for non-list categories"
+mkPrtListCase _ _ = error "mkPrtListCase undefined for non-list categories"
 
 
 -- | Define an ordering on lists' rules with the following properties:

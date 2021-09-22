@@ -1,12 +1,13 @@
 # 2.9.3
 
-Andreas Abel <andreas.abel@gu.se>
+Andreas Abel <andreas.abel@gu.se>  September 2021
 
 * BNFC now uniformly signs generated files with its version number [#373]
 * C/C++: include `stdio.h` in parser header files [#381]
 * C++: fixed parser regression in 2.9.2: missing `#include <algorithm>` [#377]
 * Ocaml: lex CR as whitespace [see also #376]
 * Ocaml: correct position in parse errors [#380]
+* Ocaml/Haskell: make printer for lists categories total [#383]
 
 # 2.9.2
 
