@@ -59,13 +59,19 @@ jobs:
           export GHC_VER=$(ghc --numeric-version)
           export CABAL_VER=$(cabal --numeric-version)
           export STACK_VER=$(stack --numeric-version)
-          echo "GHC_VER   = ${GHC_VER}"
-          echo "CABAL_VER = ${CABAL_VER}"
-          echo "STACK_VER = ${STACK_VER}"
-          echo "GHC_VER=${GHC_VER}"      >> ${GITHUB_ENV}
-          echo "CABAL_VER=${CABAL_VER}"  >> ${GITHUB_ENV}
-          echo "STACK_VER=${STACK_VER}"  >> ${GITHUB_ENV}
-          echo "STACK_FLAGS=--stack-yaml stack-${GHC_VER}.yaml --system-ghc --no-terminal --color always" >> ${GITHUB_ENV}
+          export STACK_FLAGS="--stack-yaml stack-${GHC_VER}.yaml --system-ghc --no-terminal --color always"
+          export TARGET=$(if [ "${{ runner.os }}" == "Windows" ]; then echo ":bnfc"; fi)
+          echo "GHC_VER     = ${GHC_VER}"
+          echo "CABAL_VER   = ${CABAL_VER}"
+          echo "STACK_VER   = ${STACK_VER}"
+          echo "STACK_FLAGS = ${STACK_FLAGS}"
+          echo "TARGET      = ${TARGET}"
+          echo "GHC_VER=${GHC_VER}"          >> ${GITHUB_ENV}
+          echo "CABAL_VER=${CABAL_VER}"      >> ${GITHUB_ENV}
+          echo "STACK_VER=${STACK_VER}"      >> ${GITHUB_ENV}
+          echo "STACK_FLAGS=${STACK_FLAGS}"  >> ${GITHUB_ENV}
+          echo "TARGET=${TARGET}"            >> ${GITHUB_ENV}
+        # Stack build TARGET restriction on Windows as it cannot build the 'testing' package.
         # From now on, use env.{GHC|CABAL}_VER rather than matrix.{ghc|cabal}-ver!
 
       - name: Cache dependencies
@@ -77,13 +83,13 @@ jobs:
           key: ${{ runner.os }}-${{ env.STACK_VER }}-${{ hashFiles(format('stack-{0}.yaml', env.GHC_VER)) }}
 
       - name: Build dependencies.
-        run: stack build ${{ env.STACK_FLAGS }} --only-dependencies
+        run: stack build ${{ env.TARGET }} ${{ env.STACK_FLAGS }} --only-dependencies
 
       - name: Build bnfc w/o tests.
-        run: stack build ${{ env.STACK_FLAGS }}
+        run: stack build ${{ env.TARGET }} ${{ env.STACK_FLAGS }}
 
       - name: Build bnfc and run tests.
-        run: stack build ${{ env.STACK_FLAGS }} --test
+        run: stack build ${{ env.TARGET }} ${{ env.STACK_FLAGS }} --test
         # # matrix.ghc != '8.4.4' &&
         # if: >-
         #   matrix.ghc != '8.2.2' &&
