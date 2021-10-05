@@ -2,6 +2,8 @@
 
 Unreleased
 
+* LBNF: empty tokens types are now forbidden [#388]
+
 # 2.9.3
 
 Andreas Abel <andreas.abel@gu.se>  September 2021

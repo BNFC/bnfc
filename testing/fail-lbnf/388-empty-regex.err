@@ -1,0 +1,4 @@
+ERROR: The following tokens accept nothing:
+  fail-lbnf/388-empty-regex.cf:3:7: Empty
+
+Aborting.  (Use option --force to continue despite errors.)

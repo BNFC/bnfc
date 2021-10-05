@@ -47,6 +47,7 @@ import System.IO   (hPutStrLn, stderr)
 -- Local imports:
 
 import qualified BNFC.Abs as Abs
+import BNFC.Abs (Reg(RAlts))
 import BNFC.Par
 
 import BNFC.CF
@@ -537,9 +538,16 @@ checkComments cf = concat
   where
   prags = cfgPragmas cf
 
--- | Check if any of the user-defined terminal categories is nullable.
+-- | Check if any of the user-defined terminal categories is nullable or empty.
 checkTokens :: CFG f -> Maybe String
-checkTokens cf
+checkTokens cf =
+  case catMaybes [ checkTokensEmpty cf, checkTokensNullable cf ] of
+    [] -> Nothing
+    ss -> Just $ concat ss
+
+-- | Check if any of the user-defined terminal categories is nullable.
+checkTokensNullable :: CFG f -> Maybe String
+checkTokensNullable cf
   | null pxs  = Nothing
   | otherwise = Just $ unlines $ concat
       [ [ "ERROR: The following tokens accept the empty string:" ]
@@ -547,6 +555,18 @@ checkTokens cf
       ]
   where
     pxs = [ px | TokenReg px _ regex <- cfgPragmas cf, nullable regex ]
+
+-- | Check if any of the user-defined terminal categories is nullable.
+checkTokensEmpty :: CFG f -> Maybe String
+checkTokensEmpty cf
+  | null pxs  = Nothing
+  | otherwise = Just $ unlines $ concat
+      [ [ "ERROR: The following tokens accept nothing:" ]
+      , printNames pxs
+      ]
+  where
+    -- The regular expression is already simplified, so we match against 0 directly.
+    pxs = [ px | TokenReg px _ (RAlts "") <- cfgPragmas cf ]
 
 
 -- we should actually check that
