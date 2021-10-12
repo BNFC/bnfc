@@ -117,7 +117,7 @@ prAbs rp c = unlines [
   "{",
   "public:",
   "  virtual " ++ c ++ " *clone() const = 0;",
-  if rp == RecordPositions then "  int line_number;" else "",
+  if rp == RecordPositions then "  int line_number, char_number;" else "",
   "};"
   ]
 
