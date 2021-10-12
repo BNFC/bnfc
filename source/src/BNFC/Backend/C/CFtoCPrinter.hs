@@ -155,6 +155,7 @@ mkCFile cf groups = concat
       "/*** Pretty Printer and Abstract Syntax Viewer ***/",
       "",
       "#include <ctype.h>   /* isspace */",
+      "#include <stddef.h>  /* size_t */",
       "#include <stdio.h>",
       "#include <string.h>",
       "#include <stdlib.h>",
@@ -164,8 +165,8 @@ mkCFile cf groups = concat
       "",
       "int _n_;",
       "char *buf_;",
-      "int cur_;",
-      "int buf_size;",
+      "size_t cur_;",
+      "size_t buf_size;",
       ""
      ]
     printBasics = unlines
@@ -266,8 +267,8 @@ mkCFile cf groups = concat
      [
       "void bufAppendS(const char *s)",
       "{",
-      "  int len = strlen(s);",
-      "  int n;",
+      "  size_t len = strlen(s);",
+      "  size_t n;",
       "  while (cur_ + len >= buf_size)",
       "  {",
       "    buf_size *= 2; /* Double the buffer size */",
@@ -314,7 +315,7 @@ mkCFile cf groups = concat
       "  buf_ = temp;",
       "}",
       "char *buf_;",
-      "int cur_, buf_size;",
+      "size_t cur_, buf_size;",
       ""
      ]
 
