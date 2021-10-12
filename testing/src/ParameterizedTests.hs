@@ -332,6 +332,12 @@ haskellRunTestProg _lang args = do
 parameters :: [TestParameters]
 parameters = concat
   [ []
+    -- C++ (extras)
+  , [ cBase { tpName = "C++ (with line numbers)"
+            , tpBnfcOptions = ["--cpp", "-l"] }
+    , cBase { tpName = "C++ (with namespace)"
+            , tpBnfcOptions = ["--cpp", "-p foobar"] }
+    ]
     -- C
   , [ TP { tpName = "C"
          , tpBnfcOptions = ["--c"]
@@ -351,6 +357,9 @@ parameters = concat
              --     bin :
              --     args
          }
+    , cBase { tpName = "C (with line numbers)"
+            , tpBnfcOptions = ["--c", "--line-numbers"] }
+
     ]
     -- OCaml
   , [ ocaml ]
@@ -359,10 +368,6 @@ parameters = concat
             , tpBnfcOptions = ["--cpp-nostl"] }
     , cBase { tpName = "C++"
             , tpBnfcOptions = ["--cpp"] }
-    ]
-    -- C++ (extras)
-  , [ cBase { tpName = "C++ (with namespace)"
-            , tpBnfcOptions = ["--cpp", "-p foobar"] }
     ]
     -- Haskell/Functor
   , [ haskellFunctorParameters ]

@@ -3,6 +3,7 @@
 Unreleased
 
 * LBNF: empty tokens types are now forbidden [#388]
+* C++: repair broken `--line-numbers` [#390], regression in 2.9.2 by [#349]
 
 # 2.9.3
 
