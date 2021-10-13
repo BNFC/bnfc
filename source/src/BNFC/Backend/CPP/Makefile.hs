@@ -8,7 +8,7 @@ import BNFC.PrettyPrint
 makefile :: String -> String -> String -> Doc
 makefile prefix name basename = vcat
     [ mkVar "CC" "g++ -g"
-    , mkVar "CCFLAGS" "--ansi -W -Wall -Wno-unused-parameter -Wno-unused-function -Wno-unneeded-internal-declaration"
+    , mkVar "CCFLAGS" "--ansi -W -Wall -Wsign-conversion -Wno-unused-parameter -Wno-unused-function -Wno-unneeded-internal-declaration"
     , ""
     , mkVar "FLEX" "flex"
     , mkVar "FLEX_OPTS" ("-P" ++ prefix)
