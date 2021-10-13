@@ -62,7 +62,7 @@ makeC opts cf = do
 makefile :: String -> String -> String -> Doc
 makefile name prefix basename = vcat
     [ "CC = gcc -g"
-    , "CCFLAGS = --ansi -W -Wall -Wno-unused-parameter -Wno-unused-function -Wno-unneeded-internal-declaration ${CC_OPTS}"
+    , "CCFLAGS = --ansi -W -Wall -Wsign-conversion -Wno-unused-parameter -Wno-unused-function -Wno-unneeded-internal-declaration ${CC_OPTS}"
     -- The @#define _POSIX_C_SOURCE 200809L@ is now placed locally in
     -- the generated lexer.
     -- , "CCFLAGS = --ansi -W -Wall -Wno-unused-parameter -Wno-unused-function -Wno-unneeded-internal-declaration -D_POSIX_C_SOURCE=200809L ${CC_OPTS}"
@@ -110,6 +110,8 @@ makefile name prefix basename = vcat
       [ "${FLEX} ${FLEX_OPTS} -oLexer.c " ++ name ++ ".l" ]
     , Makefile.mkRule "Parser.c Bison.h" [ name ++ ".y" ]
       [ "${BISON} ${BISON_OPTS} " ++ name ++ ".y -o Parser.c" ]
+    , Makefile.mkRule "Lexer.o" [ "CCFLAGS+=-Wno-sign-conversion" ]
+        []
     , Makefile.mkRule "Lexer.o" [ "Lexer.c", "Bison.h" ]
       [ "${CC} ${CCFLAGS} -c Lexer.c " ]
     , Makefile.mkRule "Parser.o" ["Parser.c", "Absyn.h", "Bison.h" ]
