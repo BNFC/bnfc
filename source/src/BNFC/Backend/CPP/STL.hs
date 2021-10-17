@@ -30,7 +30,7 @@ import qualified BNFC.Backend.Common.Makefile as Makefile
 
 makeCppStl :: SharedOptions -> CF -> MkFiles ()
 makeCppStl opts cf = do
-    let (hfile, cfile) = cf2CPPAbsAnsi (linenumbers opts) (inPackage opts) name cf
+    let (hfile, cfile) = cf2CPPAbs (linenumbers opts) (inPackage opts) name cf
     mkCppFile "Absyn.H" hfile
     mkCppFile "Absyn.C" cfile
     mkCppFile "Buffer.H" bufferH
@@ -58,11 +58,17 @@ makeCppStl opts cf = do
     prefix :: String
     prefix = snakeCase_ name ++ "_"
     compileOpt :: String
+    -- Compile option used by Makefile
     compileOpt = if Ansi == ansi opts then "--ansi" else "--std=c++14"
     parserMode :: ParserMode
     parserMode = CppParser (inPackage opts) prefix
     mkCppFile         x = mkfile x comment
     mkCppFileWithHint x = mkfile x commentWithEmacsModeHint
+    -- Switch C++ generator module
+    cf2CPPAbs = if Ansi == ansi opts then
+                  cf2CPPAbsAnsi
+                else
+                  cf2CPPAbsBeyondAnsi
 
 printParseErrHeader :: Maybe String -> String
 printParseErrHeader inPackage =

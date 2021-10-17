@@ -270,11 +270,11 @@ prCopyC (c,cs) = unlines [
  where
    cloneIf st cv = if st then (cv ++ "->clone()") else cv
 
---The destructor deletes all a class's members.
+--The destructor defined but no operation
 prDestructorC :: CAbsRule -> String
-prDestructorC (c,cs) = unlines [
+prDestructorC (c, _) = unlines [
   c ++ "::~" ++ c ++"()",
   "{",
-  unlines ["  delete(" ++ cv ++ ");" | (_,isPointer,cv) <- cs, isPointer],
+  "  // NOP",
   "}"
   ]
