@@ -8,15 +8,17 @@
                     tree classes. It generates both a Header file
                     and an Implementation file, and uses the Visitor
                     design pattern. It uses STL (Standard Template Library).
+                    This module use new C++ feature (after --std=c++14)
 
     Author        : Michael Pellauer
     Created       : 4 August, 2003
     Modified      : 22 May, 2004 / Antti-Juhani Kaijanaho
                     29 August, 2006 / Aarne Ranta
+                    17 October, 2021 / Hiroyuki Nagata
 
 -}
 
-module BNFC.Backend.CPP.STL.CFtoSTLAbs (cf2CPPAbs) where
+module BNFC.Backend.CPP.STL.CFtoSTLAbsBeyondAnsi (cf2CPPAbsBeyondAnsi) where
 
 import Data.List        ( intercalate, intersperse )
 
@@ -31,8 +33,8 @@ import BNFC.Backend.CPP.STL.STLUtils
 
 --The result is two files (.H file, .C file)
 
-cf2CPPAbs :: RecordPositions -> Maybe String -> String -> CF -> (String, String)
-cf2CPPAbs rp inPackage _ cf = (mkHFile rp inPackage cab cf, mkCFile inPackage cab cf)
+cf2CPPAbsBeyondAnsi :: RecordPositions -> Maybe String -> String -> CF -> (String, String)
+cf2CPPAbsBeyondAnsi rp inPackage _ cf = (mkHFile rp inPackage cab cf, mkCFile inPackage cab cf)
   where
     cab = cf2cabs cf
 

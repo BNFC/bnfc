@@ -13,4 +13,6 @@ internal-tests :
 test :
 	cd testing && cabal v1-install && bnfc-system-tests && cd ..
 
+tag :
+	hasktags --both .
 #EOF
