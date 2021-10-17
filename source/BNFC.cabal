@@ -235,11 +235,12 @@ library
     BNFC.Backend.CPP.Makefile
     BNFC.Backend.CPP.Naming
     BNFC.Backend.CPP.NoSTL
-    BNFC.Backend.CPP.NoSTL.CFtoCPPAbs
+    BNFC.Backend.CPP.NoSTL.CFtoCPPAbsAnsi
 
     -- C++ STL backend
     BNFC.Backend.CPP.STL
-    BNFC.Backend.CPP.STL.CFtoSTLAbs
+    BNFC.Backend.CPP.STL.CFtoSTLAbsAnsi
+    BNFC.Backend.CPP.STL.CFtoSTLAbsBeyondAnsi
     BNFC.Backend.CPP.STL.STLUtils
     BNFC.Backend.CPP.STL.CFtoCVisitSkelSTL
 
