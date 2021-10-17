@@ -16,7 +16,7 @@
 
 -}
 
-module BNFC.Backend.CPP.STL.CFtoSTLAbs (cf2CPPAbs) where
+module BNFC.Backend.CPP.STL.CFtoSTLAbsAnsi (cf2CPPAbsAnsi) where
 
 import Data.List        ( intercalate, intersperse )
 
@@ -31,8 +31,8 @@ import BNFC.Backend.CPP.STL.STLUtils
 
 --The result is two files (.H file, .C file)
 
-cf2CPPAbs :: RecordPositions -> Maybe String -> String -> CF -> (String, String)
-cf2CPPAbs rp inPackage _ cf = (mkHFile rp inPackage cab cf, mkCFile inPackage cab cf)
+cf2CPPAbsAnsi :: RecordPositions -> Maybe String -> String -> CF -> (String, String)
+cf2CPPAbsAnsi rp inPackage _ cf = (mkHFile rp inPackage cab cf, mkCFile inPackage cab cf)
   where
     cab = cf2cabs cf
 

@@ -20,7 +20,8 @@ import BNFC.Backend.C.CFtoBisonC ( cf2Bison )
 import BNFC.Backend.C.CFtoFlexC  ( cf2flex, ParserMode(..) )
 import BNFC.Backend.CPP.Common   ( commentWithEmacsModeHint )
 import BNFC.Backend.CPP.Makefile
-import BNFC.Backend.CPP.STL.CFtoSTLAbs
+import BNFC.Backend.CPP.STL.CFtoSTLAbsAnsi
+import BNFC.Backend.CPP.STL.CFtoSTLAbsBeyondAnsi
 import BNFC.Backend.CPP.STL.CFtoCVisitSkelSTL
 import BNFC.Backend.CPP.PrettyPrinter
 import BNFC.Backend.CPP.STL.STLUtils
@@ -56,11 +57,17 @@ makeCppStl opts cf = do
     prefix :: String
     prefix = snakeCase_ name ++ "_"
     compileOpt :: String
-    compileOpt = "--ansi"
+    -- Compile option used by Makefile
+    compileOpt = if Ansi == ansi opts then "--ansi" else "-std=c++14"
     parserMode :: ParserMode
     parserMode = CppParser (inPackage opts) prefix
     mkCppFile         x = mkfile x comment
     mkCppFileWithHint x = mkfile x commentWithEmacsModeHint
+    -- Switch C++ generator module
+    cf2CPPAbs = if Ansi == ansi opts then
+                  cf2CPPAbsAnsi
+                else
+                  cf2CPPAbsBeyondAnsi
 
 printParseErrHeader :: Maybe String -> String
 printParseErrHeader inPackage =
