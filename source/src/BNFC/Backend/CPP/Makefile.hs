@@ -5,10 +5,10 @@ module BNFC.Backend.CPP.Makefile (makefile) where
 import BNFC.Backend.Common.Makefile
 import BNFC.PrettyPrint
 
-makefile :: String -> String -> String -> Doc
-makefile prefix name basename = vcat
+makefile :: String -> String -> String -> String -> Doc
+makefile prefix name compileOpt basename = vcat
     [ mkVar "CC" "g++ -g"
-    , mkVar "CCFLAGS" "-std=c++11 -W -Wall -Wno-unused-parameter -Wno-unused-function -Wno-unneeded-internal-declaration"
+    , mkVar "CCFLAGS" (compileOpt ++ " -W -Wall -Wno-unused-parameter -Wno-unused-function -Wno-unneeded-internal-declaration")
     , ""
     , mkVar "FLEX" "flex"
     , mkVar "FLEX_OPTS" ("-P" ++ prefix)
