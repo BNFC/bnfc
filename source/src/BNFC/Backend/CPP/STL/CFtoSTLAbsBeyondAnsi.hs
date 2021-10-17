@@ -20,7 +20,7 @@
 
 module BNFC.Backend.CPP.STL.CFtoSTLAbsBeyondAnsi (cf2CPPAbsBeyondAnsi) where
 
-import Data.List        ( intercalate, intersperse )
+import Data.List        ( intercalate, intersperse, isPrefixOf )
 
 import BNFC.Backend.Common.OOAbstract
 import BNFC.CF
@@ -51,18 +51,22 @@ mkHFile rp inPackage cabs cf = unlines
   "#include <string>",
   "#include <vector>",
   "#include <algorithm>",
+  "#include <memory>",
   "",
   "//C++ Abstract Syntax Interface.",
   nsStart inPackage,
-  "/********************   TypeDef Section    ********************/",
+  "/********************   Type Alias Section    ********************/",
   "",
-  unlines ["typedef " ++ d ++ " " ++ c ++ ";" | (c,d) <- basetypes],
+  -- using {newtype} = {oldtype};
+  unlines ["using " ++ c ++ " = " ++ d ++ ";" | (c,d) <- basetypes],
   "",
-  unlines ["typedef std::string " ++ s ++ ";" | s <- tokentypes cabs],
+  unlines ["using " ++ s ++ " = std::string;" | s <- tokentypes cabs],
   "",
   "/********************   Forward Declarations    ********************/",
   "",
-  unlines ["class " ++ c ++ ";" | c <- classes, notElem c (defineds cabs)],
+  unlines ["class " ++ c ++ ";" | c <- classes, notElem c (defineds cabs), not $ isPrefixOf "List" c ],
+  -- using NewType = std::vector<std::unique_ptr<SOMETYPE>>;
+  unlines ["using " ++ l ++ " = std::vector<std::unique_ptr<" ++ drop 4 l ++ ">>;" | l <- classes, notElem l (defineds cabs), isPrefixOf "List" l ],
   "",
   "/********************   Visitor Interfaces    ********************/",
   prVisitor cabs,
@@ -119,7 +123,7 @@ prAbs rp c = unlines [
   "class " ++ c ++ " : public Visitable",
   "{",
   "public:",
-  "  virtual " ++ c ++ " *clone() const = 0;",
+  "  virtual std::unique_ptr<" ++ c ++ "> clone() const = 0;",
   if rp == RecordPositions then "  int line_number, char_number;" else "",
   "};"
   ]
@@ -130,35 +134,35 @@ prCon (c,(f,cs)) = unlines [
   "{",
   "public:",
   unlines
-    ["  "++ typ +++ pointerIf st var ++ ";" | (typ,st,var) <- cs],
-  "  " ++ f ++ "(const " ++ f ++ " &);",
-  "  " ++ f ++ " &operator=(const " ++f++ " &);",
-  "  " ++ f ++ "(" ++ conargs ++ ");",
-    -- Typ *p1, PIdent *p2, ListStm *p3);
-  "  ~" ++f ++ "();",
-  "  virtual void accept(Visitor *v);",
-  "  virtual " ++f++ " *clone() const;",
-  "  void swap(" ++f++ " &);",
-  "};"
+    ["  std::unique_ptr<" ++ typ ++ "> " ++ var ++ ";" | (typ,_,var) <- cs],
+    "",
+    "  " ++ f ++ "(" ++ f ++ " &&);",
+    "  " ++ f ++ "(const " ++ f ++ " &);",
+    "  " ++ f ++ " &operator=(const " ++f++ " &&);",
+    "  " ++ f ++ "(" ++ conargs ++ ");",
+    "  ~" ++f ++ "();",
+    "  virtual void accept(Visitor *v);",
+    "  std::unique_ptr<" ++c++ "> clone() const override;",
+    "};"
   ]
- where
-   conargs = concat $ intersperse ", "
-     [x +++ pointerIf st ("p" ++ show i) | ((x,st,_),i) <- zip cs [1..]]
+  where
+    conargs = concat $ intersperse ", "
+      ["std::unique_ptr<" ++ x ++ "> p" ++ show i | ((x,_,_),i) <- zip cs [1..]]
 
 prList :: (String, Bool) -> String
 prList (c, b) = unlines
-  [ "class " ++c++ " : public Visitable, public std::vector<" ++bas++ ">"
-  , "{"
-  , "public:"
-  , "  virtual void accept(Visitor *v);"
-  , "  virtual " ++ c ++ " *clone() const;"
-  , "};"
+  [ "//class " ++c++ " : public Visitable, public std::vector<std::unique_ptr<" ++bas++ ">>"
+  , "//{"
+  , "//public:"
+  , "//  virtual void accept(Visitor *v);"
+  , "//virtual " ++ c ++ " *clone() const;"
+  , "//};"
   , ""
-    -- cons for this list type
-  , concat [ c, "* ", "cons", c, "(", bas, " x, ", c, "* xs);" ]
+  -- cons for this list type
+  , concat [ "// std::vector<std::unique_ptr<", c, ">> ", "cons", c, "(std::unique_ptr<", bas, "> x, std::vector<std::unique_ptr<", c, ">> xs);" ]
   ]
   where
-  bas = applyWhen b (++ "*") $ drop 4 c {- drop "List" -}
+  bas = applyWhen b (++ "") $ drop 4 c {- drop "List" -}
 
 
 -- **** Implementation (.C) File Functions **** --
@@ -171,7 +175,7 @@ mkCFile inPackage cabs cf = unlines $ [
   "#include <vector>",
   "#include \"Absyn.H\"",
   nsStart inPackage,
-  unlines [prConC  r | (_,rs) <- signatures cabs, r <- rs],
+  unlines [prConC c r | (c,rs) <- signatures cabs, r <- rs],
   unlines [prListC l | l <- listtypes cabs],
   definedRules (Just $ LC nil cons) cf
   "/********************   Defined Constructors    ********************/",
@@ -182,14 +186,14 @@ mkCFile inPackage cabs cf = unlines $ [
   cons t = (,dummyType) $ concat [ "consList", identType t ]
 
 
-prConC :: CAbsRule -> String
-prConC fcs@(f,_) = unlines [
+prConC :: String -> CAbsRule -> String
+prConC c fcs@(f,_) = unlines [
   "/********************   " ++ f ++ "    ********************/",
   prConstructorC fcs,
   prCopyC fcs,
   prDestructorC fcs,
   prAcceptC f,
-  prCloneC f,
+  prCloneC c f,
   ""
  ]
 
@@ -197,9 +201,9 @@ prListC :: (String,Bool) -> String
 prListC (c,b) = unlines
   [ "/********************   " ++ c ++ "    ********************/"
   , ""
-  , prAcceptC c
-  , prCloneC c
-  , prConsC c b
+  --, prAcceptC c
+  -- , prCloneC c
+  --, prConsC c b
   ]
 
 
@@ -213,11 +217,11 @@ prAcceptC ty = unlines [
   ]
 
 --The cloner makes a new deep copy of the object
-prCloneC :: String -> String
-prCloneC c = unlines [
-  c +++ "*" ++ c ++ "::clone() const",
+prCloneC :: String -> String -> String
+prCloneC f c  = unlines [
+  "std::unique_ptr<" ++ f ++ "> " ++ c ++ "::clone() const ",
   "{",
-  "  return new" +++ c ++ "(*this);",
+  "  return std::make_unique<" ++ c ++ ">(*this);",
   "}"
   ]
 
@@ -237,34 +241,40 @@ prConstructorC :: CAbsRule -> String
 prConstructorC (f,cs) = unlines [
   f ++ "::" ++ f ++ "(" ++ conargs ++ ")",
   "{",
-  unlines ["  " ++ c ++ " = " ++ p ++ ";" | (c,p) <- zip cvs pvs],
+  unlines ["  " ++ c ++ " = std::move(" ++ p ++ ");" | (c,p) <- zip cvs pvs],
   "}"
   ]
  where
    cvs = [c | (_,_,c) <- cs]
    pvs = ['p' : show i | ((_,_,_),i) <- zip cs [1..]]
    conargs = intercalate ", "
-     [x +++ pointerIf st v | ((x,st,_),v) <- zip cs pvs]
+     ["std::unique_ptr<" ++ x ++ ">" +++ v | ((x,_,_),v) <- zip cs pvs]
 
 
 --Copy constructor and copy assignment
 prCopyC :: CAbsRule -> String
 prCopyC (c,cs) = unlines [
+  -- Prog::Prog(const Prog & other) {}
   c ++ "::" ++ c ++ "(const" +++ c +++ "& other)",
   "{",
-  unlines ["  " ++ cv ++ " = other." ++ cloneIf st cv ++ ";" | (_,st,cv) <- cs],
+  -- unlines ["  " ++ cv ++ " = std::move(other." ++ cv ++ ");" | (x,_,cv) <- cs],
+  "  *this = std::move(other);",
   "}",
   "",
-  c +++ "&" ++ c ++ "::" ++ "operator=(const" +++ c +++ "& other)",
+  -- Prog::Prog(Prog && other) {}
+  c ++ "::" ++ c ++ "(" ++ c +++ "&& other)",
   "{",
-  "  " ++ c +++ "tmp(other);",
-  "  swap(tmp);",
+    unlines ["  " ++ cv ++ " = std::move(other." ++ cv ++ ");" | (x,_,cv) <- cs],
+  "}",
+  "",
+  -- Prog &Prog::operator=(const Prog && other)
+  c +++ "&" ++ c ++ "::" ++ "operator=(const" +++ c +++ "&& other)",
+  "{",
+  unlines ["  //" ++ cv ++ "->reserve(other." ++ cv ++ "->size());" | (x,_,cv) <- cs],
+  unlines ["  //for (auto const& e : *other." ++ cv ++ ") {" | (x,_,cv) <- cs],
+  unlines ["  //  " ++ cv ++ "->push_back(e->clone());" | (x,_,cv) <- cs],
+  -- unlines ["  " ++ cv ++ " = std::move(other." ++ cv ++ ");" | (x,_,cv) <- cs],
   "  return *this;",
-  "}",
-  "",
-  "void" +++ c ++ "::swap(" ++ c +++ "& other)",
-  "{",
-  unlines ["  std::swap(" ++ cv ++ ", other." ++ cv ++ ");" | (_,_,cv) <- cs],
   "}"
   ]
  where
