@@ -57,7 +57,7 @@ makeCppStl opts cf = do
     prefix :: String
     prefix = snakeCase_ name ++ "_"
     compileOpt :: String
-    compileOpt = "--ansi"
+    compileOpt = if Ansi == ansi opts then "--ansi" else "--std=c++14"
     parserMode :: ParserMode
     parserMode = CppParser (inPackage opts) prefix
     mkCppFile         x = mkfile x comment
