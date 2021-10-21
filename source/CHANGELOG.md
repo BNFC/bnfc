@@ -3,7 +3,10 @@
 Unreleased
 
 * LBNF: empty tokens types are now forbidden [#388]
+* C/C++: use `size_t` and `-Wsign-conversion` [#391]
 * C++: repair broken `--line-numbers` [#390], regression in 2.9.2 by [#349]
+
+Contributors: Michał Radwański
 
 # 2.9.3
 
