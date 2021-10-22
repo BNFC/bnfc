@@ -5,8 +5,8 @@ module BNFC.Backend.CPP.Makefile (makefile) where
 import BNFC.Backend.Common.Makefile
 import BNFC.PrettyPrint
 
-makefile :: String -> String -> String -> String -> Doc
-makefile prefix name compileOpt basename = vcat
+makefile :: String -> String -> String -> String -> String -> String -> Doc
+makefile prefix name compileOpt lexerExt parserExt basename = vcat
     [ mkVar "CC" "g++ -g"
     , mkVar "CCFLAGS" (compileOpt ++ " -W -Wall -Wno-unused-parameter -Wno-unused-function -Wno-unneeded-internal-declaration")
     , ""
@@ -31,8 +31,8 @@ makefile prefix name compileOpt basename = vcat
             [ "Absyn.C", "Absyn.H"
             , "Buffer.C", "Buffer.H"
             , "Test.C"
-            , "Bison.H", "Parser.C", "Parser.H", "ParserError.H", name ++ ".y"
-            , "Lexer.C", name ++ ".l"
+            , "Bison.H", "Parser.C", "Parser.H", "ParserError.H", name ++ parserExt
+            , "Lexer.C", name ++ lexerExt
             , "Skeleton.C", "Skeleton.H"
             , "Printer.C", "Printer.H"
             , basename
@@ -46,10 +46,10 @@ makefile prefix name compileOpt basename = vcat
         [ "${CC} ${CCFLAGS} -c Absyn.C" ]
     , mkRule "Buffer.o" [ "Buffer.C", "Buffer.H" ]
         [ "${CC} ${CCFLAGS} -c Buffer.C " ]
-    , mkRule "Lexer.C" [ name ++ ".l" ]
-        [ "${FLEX} ${FLEX_OPTS} -oLexer.C " ++ name ++ ".l" ]
-    , mkRule "Parser.C Bison.H" [ name ++ ".y" ]
-      [ "${BISON} ${BISON_OPTS} " ++ name ++ ".y -o Parser.C" ]
+    , mkRule "Lexer.C" [ name ++ lexerExt ]
+        [ "${FLEX} ${FLEX_OPTS} -oLexer.C " ++ name ++ lexerExt ]
+    , mkRule "Parser.C Bison.H" [ name ++ parserExt ]
+      [ "${BISON} ${BISON_OPTS} " ++ name ++ parserExt ++ " -o Parser.C" ]
     , mkRule "Lexer.o" [ "CCFLAGS+=-Wno-sign-conversion" ]
     , mkRule "Lexer.o" [ "Lexer.C", "Bison.H" ]
         [ "${CC} ${CCFLAGS} -c Lexer.C " ]

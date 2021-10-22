@@ -16,7 +16,7 @@ import BNFC.Backend.C.CFtoBisonC ( cf2Bison )
 import BNFC.Backend.C.CFtoFlexC  ( cf2flex, ParserMode(..) )
 import BNFC.Backend.CPP.Common   ( commentWithEmacsModeHint )
 import BNFC.Backend.CPP.Makefile
-import BNFC.Backend.CPP.NoSTL.CFtoCPPAbsAnsi
+import BNFC.Backend.CPP.NoSTL.CFtoCPPAbs
 import BNFC.Backend.CPP.STL.CFtoCVisitSkelSTL
 import BNFC.Backend.CPP.PrettyPrinter
 import qualified BNFC.Backend.Common.Makefile as Makefile
@@ -40,7 +40,7 @@ makeCppNoStl opts cf = do
     mkCppFile "Printer.H" prinH
     mkCppFile "Printer.C" prinC
     mkCppFile "Test.C" (cpptest cf)
-    Makefile.mkMakefile opts $ makefile prefix name compileOpt
+    Makefile.mkMakefile opts $ makefile prefix name compileOpt ".l" ".y"
   where
     name :: String
     name = lang opts

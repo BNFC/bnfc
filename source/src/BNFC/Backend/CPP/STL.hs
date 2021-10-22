@@ -20,8 +20,7 @@ import BNFC.Backend.C.CFtoBisonC ( cf2Bison )
 import BNFC.Backend.C.CFtoFlexC  ( cf2flex, ParserMode(..) )
 import BNFC.Backend.CPP.Common   ( commentWithEmacsModeHint )
 import BNFC.Backend.CPP.Makefile
-import BNFC.Backend.CPP.STL.CFtoSTLAbsAnsi
-import BNFC.Backend.CPP.STL.CFtoSTLAbsBeyondAnsi
+import BNFC.Backend.CPP.STL.CFtoSTLAbs
 import BNFC.Backend.CPP.STL.CFtoCVisitSkelSTL
 import BNFC.Backend.CPP.PrettyPrinter
 import BNFC.Backend.CPP.STL.STLUtils
@@ -29,14 +28,14 @@ import qualified BNFC.Backend.Common.Makefile as Makefile
 
 makeCppStl :: SharedOptions -> CF -> MkFiles ()
 makeCppStl opts cf = do
-    let (hfile, cfile) = cf2CPPAbs (linenumbers opts) (inPackage opts) name cf
+    let (hfile, cfile) = cf2CPPAbs (linenumbers opts) cppStdMode (inPackage opts) name cf
     mkCppFile "Absyn.H" hfile
     mkCppFile "Absyn.C" cfile
     mkCppFile "Buffer.H" bufferH
     mkCppFile "Buffer.C" $ bufferC "Buffer.H"
     let (flex, env) = cf2flex parserMode cf
-    mkCppFileWithHint (name ++ ".l") flex
-    mkCppFileWithHint (name ++ ".y") $ cf2Bison (linenumbers opts) parserMode cf env
+    mkCppFileWithHint (name ++ lexerExt) flex
+    mkCppFileWithHint (name ++ parserExt) $ cf2Bison (linenumbers opts) parserMode cf env
     mkCppFile "Parser.H" $
       mkHeaderFile (inPackage opts) (toList $ allEntryPoints cf)
     mkCppFile "ParserError.H" $ printParseErrHeader (inPackage opts)
@@ -47,7 +46,7 @@ makeCppStl opts cf = do
     mkCppFile "Printer.H" prinH
     mkCppFile "Printer.C" prinC
     mkCppFile "Test.C" (cpptest (inPackage opts) cf)
-    Makefile.mkMakefile opts $ makefile prefix name compileOpt
+    Makefile.mkMakefile opts $ makefile prefix name compileOpt lexerExt parserExt
   where
     name :: String
     name = lang opts
@@ -56,18 +55,24 @@ makeCppStl opts cf = do
     -- It should be a valid C identifier.
     prefix :: String
     prefix = snakeCase_ name ++ "_"
-    compileOpt :: String
     -- Compile option used by Makefile
+    compileOpt :: String
     compileOpt = if Ansi == ansi opts then "--ansi" else "-std=c++14"
+    lexerExt :: String
+    lexerExt = if Ansi == ansi opts then ".l" else ".ll"
+    parserExt :: String
+    parserExt = if Ansi == ansi opts then ".y" else ".yy"
+
     parserMode :: ParserMode
-    parserMode = CppParser (inPackage opts) prefix
+    parserMode = CppParser (inPackage opts) prefix (ansi opts)
     mkCppFile         x = mkfile x comment
     mkCppFileWithHint x = mkfile x commentWithEmacsModeHint
     -- Switch C++ generator module
-    cf2CPPAbs = if Ansi == ansi opts then
-                  cf2CPPAbsAnsi
-                else
-                  cf2CPPAbsBeyondAnsi
+    cppStdMode :: CppStdMode
+    cppStdMode = if Ansi == ansi opts then
+                   CppStdAnsi (ansi opts)
+                 else
+                   CppStdBeyondAnsi (ansi opts)
 
 printParseErrHeader :: Maybe String -> String
 printParseErrHeader inPackage =
