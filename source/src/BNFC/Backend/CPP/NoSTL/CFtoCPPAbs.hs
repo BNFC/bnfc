@@ -16,7 +16,7 @@
     Modified      : 22 May, 2004 / Antti-Juhani Kaijanaho
 -}
 
-module BNFC.Backend.CPP.NoSTL.CFtoCPPAbsAnsi (cf2CPPAbs) where
+module BNFC.Backend.CPP.NoSTL.CFtoCPPAbs (cf2CPPAbs) where
 
 import Prelude hiding ((<>))
 
@@ -32,11 +32,9 @@ import BNFC.Backend.Common.NamedVariables
 import BNFC.Backend.Common.OOAbstract
 import BNFC.Backend.CPP.Common
 
-
 --The result is two files (.H file, .C file)
 cf2CPPAbs :: String -> CF -> (String, String)
 cf2CPPAbs _ cf = (mkHFile cf, mkCFile cf)
-
 
 {- **** Header (.H) File Functions **** -}
 

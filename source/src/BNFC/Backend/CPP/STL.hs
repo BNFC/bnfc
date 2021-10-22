@@ -21,8 +21,7 @@ import BNFC.Backend.C.CFtoBisonC ( cf2Bison )
 import BNFC.Backend.C.CFtoFlexC  ( cf2flex, ParserMode(..) )
 import BNFC.Backend.CPP.Common   ( commentWithEmacsModeHint )
 import BNFC.Backend.CPP.Makefile
-import BNFC.Backend.CPP.STL.CFtoSTLAbsAnsi
-import BNFC.Backend.CPP.STL.CFtoSTLAbsBeyondAnsi
+import BNFC.Backend.CPP.STL.CFtoSTLAbs
 import BNFC.Backend.CPP.STL.CFtoCVisitSkelSTL
 import BNFC.Backend.CPP.PrettyPrinter
 import BNFC.Backend.CPP.STL.STLUtils
@@ -30,7 +29,7 @@ import qualified BNFC.Backend.Common.Makefile as Makefile
 
 makeCppStl :: SharedOptions -> CF -> MkFiles ()
 makeCppStl opts cf = do
-    let (hfile, cfile) = cf2CPPAbs (linenumbers opts) (inPackage opts) name cf
+    let (hfile, cfile) = cf2CPPAbs (linenumbers opts) cppStdMode (inPackage opts) name cf
     mkCppFile "Absyn.H" hfile
     mkCppFile "Absyn.C" cfile
     mkCppFile "Buffer.H" bufferH
@@ -65,10 +64,11 @@ makeCppStl opts cf = do
     mkCppFile         x = mkfile x comment
     mkCppFileWithHint x = mkfile x commentWithEmacsModeHint
     -- Switch C++ generator module
-    cf2CPPAbs = if Ansi == ansi opts then
-                  cf2CPPAbsAnsi
-                else
-                  cf2CPPAbsBeyondAnsi
+    cppStdMode :: CppStdMode
+    cppStdMode = if Ansi == ansi opts then
+                   CppStdAnsi (ansi opts)
+                 else
+                   CppStdBeyondAnsi (ansi opts)
 
 printParseErrHeader :: Maybe String -> String
 printParseErrHeader inPackage =
