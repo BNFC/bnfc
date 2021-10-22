@@ -8,7 +8,7 @@
                     tree classes. It generates both a Header file
                     and an Implementation file, and uses the Visitor
                     design pattern. It uses STL (Standard Template Library).
-                    This module use new C++ feature (after --std=c++14)
+                    This module use new C++ feature (after -std=c++14)
 
     Author        : Michael Pellauer
     Created       : 4 August, 2003

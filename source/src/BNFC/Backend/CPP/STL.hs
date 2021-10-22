@@ -59,7 +59,7 @@ makeCppStl opts cf = do
     prefix = snakeCase_ name ++ "_"
     compileOpt :: String
     -- Compile option used by Makefile
-    compileOpt = if Ansi == ansi opts then "--ansi" else "--std=c++14"
+    compileOpt = if Ansi == ansi opts then "--ansi" else "-std=c++14"
     parserMode :: ParserMode
     parserMode = CppParser (inPackage opts) prefix
     mkCppFile         x = mkfile x comment
