@@ -35,10 +35,10 @@ import System.FilePath ( (<.>) )
 
 import BNFC.CF
 import BNFC.Backend.Common.NamedVariables hiding (varName)
-import BNFC.Backend.C.CFtoFlexC (ParserMode(..), cParser, stlParser, parserHExt, parserName, parserPackage)
+import BNFC.Backend.C.CFtoFlexC (ParserMode(..), cParser, reentrant, stlParser, parserHExt, parserName, parserPackage, variant, automove)
 import BNFC.Backend.CPP.Naming
 import BNFC.Backend.CPP.STL.STLUtils
-import BNFC.Options (RecordPositions(..), InPackage)
+import BNFC.Options (RecordPositions(..), InPackage, Ansi(..) )
 import BNFC.PrettyPrint
 import BNFC.Utils ((+++), table, applyWhen, for, unless, when, whenJust)
 
@@ -96,7 +96,7 @@ header mode cf = unlines $ concat
     ]
   , [ ""
     , "/* Reentrant parser */"
-    , "%pure_parser"
+    , reentrant mode
     , "  /* From Bison 2.3b (2008): %define api.pure full */"
          -- The flag %pure_parser is deprecated with a warning since Bison 3.4,
          -- but older Bisons like 2.3 (2006, shipped with macOS) don't recognize
@@ -109,6 +109,11 @@ header mode cf = unlines $ concat
     , ""
     , "/* Argument to the parser to be filled with the parsed tree. */"
     , "%parse-param { YYSTYPE *result }"
+    , ""
+    -- Use variant type if c++14
+    , unlines $ (variant mode)
+    -- Use std::move if c++14
+    , unlines $ (automove mode)
     , ""
     , "%{"
     , "/* Begin C preamble code */"
@@ -373,7 +378,7 @@ rulesForBison rp mode cf env = map mkOne (ruleGroups cf) ++ posRules
   mkOne (cat,rules) = constructRule rp mode cf env rules cat
   posRules :: Rules
   posRules
-    | CppParser inPackage _ <- mode = for (positionCats cf) $ \ n -> (TokenCat n,
+    | CppParser inPackage _ _ <- mode = for (positionCats cf) $ \ n -> (TokenCat n,
       [( Map.findWithDefault n (Tokentype n) env
        , addResult cf (TokenCat n) $ concat
          [ "$$ = new ", nsScope inPackage, n, "($1, @$.first_line);" ]
@@ -416,7 +421,7 @@ generateAction :: IsFun a
   -> [(MetaVar, Bool)]   -- ^ Meta-vars; should the list referenced by the var be reversed?
   -> Action
 generateAction rp = \case
-  CppParser ns _ -> generateActionSTL rp ns
+  CppParser ns _ _ -> generateActionSTL rp ns
   CParser   b  _ -> \ nt f r -> generateActionC rp (not b) nt f r . map fst
 
 -- | Generates a string containing the semantic action.

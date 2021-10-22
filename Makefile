@@ -14,5 +14,5 @@ test :
 	cd testing && cabal v1-install && bnfc-system-tests && cd ..
 
 tag :
-	hasktags --etags ./source -o ./source/TAGS
+	cd ./source && hasktags --etags .
 #EOF
