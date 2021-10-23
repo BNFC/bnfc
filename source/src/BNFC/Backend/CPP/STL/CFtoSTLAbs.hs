@@ -19,7 +19,8 @@
 
 module BNFC.Backend.CPP.STL.CFtoSTLAbs ( cf2CPPAbs, CppStdMode(..) ) where
 
-import Data.List        ( intercalate, intersperse, isPrefixOf )
+import Data.List        ( intercalate, intersperse )
+import Data.Char        ( toLower )
 
 import BNFC.Backend.Common.OOAbstract
 import BNFC.CF
@@ -87,8 +88,7 @@ mkHFile rp mode inPackage cabs cf = unlines
       ["class " ++ c ++ ";" | c <- classes, notElem c (defineds cabs)]
     ;
     CppStdBeyondAnsi _ -> unlines $
-      ["class " ++ c ++ ";" | c <- classes, notElem c (defineds cabs), not $ isPrefixOf "List" c ]
-      ++ ["using " ++ l ++ " = std::vector<std::unique_ptr<" ++ drop 4 l ++ ">>;" | l <- classes, notElem l (defineds cabs), isPrefixOf "List" l ]
+      ["class " ++ c ++ ";" | c <- classes, notElem c (defineds cabs)]
     ;
     },
   "",
@@ -103,7 +103,7 @@ mkHFile rp mode inPackage cabs cf = unlines
   "",
   unlines [prCon mode (c,r) | (c,rs) <- signatures cabs, r <- rs],
   "",
-  unlines [prList c | c <- listtypes cabs],
+  unlines [prList mode c | c <- listtypes cabs],
   "",
   definedRules Nothing cf
   "/********************   Defined Constructors    ********************/",
@@ -213,20 +213,40 @@ prCon mode (c,(f,cs)) =
        ;
        }
 
-prList :: (String, Bool) -> String
-prList (c, b) = unlines
-  [ "class " ++c++ " : public Visitable, public std::vector<" ++bas++ ">"
-  , "{"
-  , "public:"
-  , "  virtual void accept(Visitor *v);"
-  , "  virtual " ++ c ++ " *clone() const;"
-  , "};"
-  , ""
-    -- cons for this list type
-  , concat [ c, "* ", "cons", c, "(", bas, " x, ", c, "* xs);" ]
-  ]
+prList :: CppStdMode -> (String, Bool) -> String
+prList mode (c, b) = case mode of {
+  CppStdAnsi _ -> unlines [
+      "class " ++c++ " : public Visitable, public std::vector<" ++bas++ ">"
+      , "{"
+      , "public:"
+      , "  virtual void accept(Visitor *v);"
+      , "  virtual " ++ c ++ " *clone() const;"
+      , "};"
+      , ""
+      -- cons for this list type
+      , concat [ c, "* ", "cons", c, "(", bas, " x, ", c, "* xs);" ]
+      ];
+  CppStdBeyondAnsi _ -> unlines [
+      "class " ++c++ " : public Visitable"
+      , "{"
+      , "public:"
+      , "  std::vector<std::unique_ptr<" ++childClass++ ">>" +++ "list" ++ map toLower childClass ++ "_;"
+      , ""
+        -- "right-hand side" operations; for move
+      , "  " ++ c ++ "(" ++ c ++ "&& rhs);"
+      , "  " ++ c ++ "& operator=(" ++ c ++ "&& rhs);"
+      , "  " ++ c ++ "(const" +++ c ++ "& rhs);"
+      , "  " ++ c ++ "& operator=(const" +++ c ++ "& rhs);"
+      , " ~" ++ c ++ "();"
+      , "  virtual void accept(Visitor *v);"
+      , "  std::unique_ptr<" ++ c ++ "> clone() const;"
+      , "};"
+      , ""
+      ];
+    }
   where
-  bas = applyWhen b (++ "*") $ drop 4 c {- drop "List" -}
+    childClass = drop 4 c
+    bas = applyWhen b (++ "*") $ drop 4 c {- drop "List" -}
 
 
 -- **** Implementation (.C) File Functions **** --
@@ -241,7 +261,6 @@ mkCFile mode inPackage cabs cf = unlines $ [
   nsStart inPackage,
   unlines [prConC  mode c r  | (c,rs) <- signatures cabs, r <- rs],
   unlines [prListC mode l | l <- listtypes cabs],
-  -- unlines [prListC mode l r | (l,rs) <- listtypes cabs, r <- rs],
   definedRules (Just $ LC nil cons) cf
   "/********************   Defined Constructors    ********************/",
   nsEnd inPackage
@@ -265,11 +284,38 @@ prConC mode c fcs@(f,_) = unlines [
 prListC :: CppStdMode -> (String,Bool) -> String
 prListC mode (c,b) = unlines
   [ "/********************   " ++ c ++ "    ********************/"
-  , ""
+  , case mode of {
+      CppStdBeyondAnsi _ -> unlines [
+          c ++ "::" ++ c ++ "(" ++ c ++ "&& rhs) = default;",
+          "",
+          c ++ "&" +++ c ++ "::operator=(" ++ c ++ "&& rhs) = default;",
+          "",
+          c ++ "::" ++ c ++ "(const" +++ c ++ "& rhs)",
+          "{",
+          "  for (const auto& e : rhs." ++inner++ ")",
+          "  {",
+          "    " ++inner++".push_back(e->clone());",
+          "  }",
+          "}",
+          "",
+          c ++ "&" +++ c ++ "::operator=(const" +++ c ++ "& rhs)",
+          "{",
+          "  for (const auto& e : rhs." ++inner++ ")",
+          "  {",
+          "    " ++inner++".push_back(e->clone());",
+          "  }",
+          "  return *this;",
+          "}",
+          "",
+          c ++ "::~" ++ c ++"() = default;",
+          ""];
+        }
   , prAcceptC c
   , prCloneC mode c c
-  , prConsC c b
+  , prConsC mode c b
   ]
+  where
+    inner = map toLower c ++ "_"
 
 
 --The standard accept function for the Visitor pattern
@@ -299,15 +345,27 @@ prCloneC mode f c = case mode of {
   }
 
 -- | Make a list constructor definition.
-prConsC :: String -> Bool -> String
-prConsC c b = unlines
-  [ concat [ c, "* ", "cons", c, "(", bas, " x, ", c, "* xs) {" ]
-  , "  xs->insert(xs->begin(), x);"
-  , "  return xs;"
-  , "}"
-  ]
+prConsC :: CppStdMode -> String -> Bool -> String
+prConsC mode c b = case mode of {
+    CppStdAnsi _ -> unlines [
+        concat [ c, "* ", "cons", c, "(", bas, " x, ", c, "* xs) {" ]
+        , "  xs->insert(xs->begin(), x);"
+        , "  return xs;"
+        , "}"
+        ];
+    CppStdBeyondAnsi _ -> unlines [
+        concat [ "std::unique_ptr<", c, "> ", "cons", c, "(std::unique_ptr<", bas, "> x, std::unique_ptr<", c, "> xs) {" ]
+        , "  xs->" ++inner++ ".insert(xs->" ++inner++ ".begin(), std::move(x));"
+        , "  return xs;"
+        , "}"
+        ];
+      }
   where
-  bas = applyWhen b (++ "*") $ drop 4 c {- drop "List" -}
+    bas = case mode of {
+      CppStdAnsi _ -> applyWhen b (++ "*") $ drop 4 c {- drop "List" -};
+      CppStdBeyondAnsi _ -> drop 4 c;
+      }
+    inner = map toLower c ++ "_"
 
 --The constructor assigns the parameters to the corresponding instance variables.
 prConstructorC :: CppStdMode -> CAbsRule -> String
@@ -321,7 +379,7 @@ prConstructorC mode (f,cs) = case mode of {
   CppStdBeyondAnsi _ -> unlines [
       f ++ "::" ++ f ++ "(" ++ conargs ++ ")",
       "{",
-      unlines ["  " ++ c ++ " = " ++ p ++ ";" | (c,p) <- zip cvs pvs],
+      unlines ["  *" ++ c ++ " = " ++ p ++ ";" | (c,p) <- zip cvs pvs],
       "}"
       ];
     }
@@ -366,13 +424,16 @@ prCopyC mode (c,cs) = case mode of {
       "",
       c ++ "&" +++ c ++ "::operator=(" ++ c ++ "&& rhs) = default;",
       "",
-      c ++ "::" ++ c ++ "(const" +++ c ++ "& rhs)" ++ if length cs == 0 then "" else ":",
-      intercalate ", \n" ["  std::make_unique<" ++ x ++ ">(*rhs." ++ c ++ ")" | (x,_,c) <- cs],
-      "{}",
+      -- c ++ "::" ++ c ++ "(const" +++ c ++ "& rhs)" ++ if length cs == 0 then "" else ":",
+      -- intercalate ", \n" ["  " ++c++ "(std::make_unique<" ++ x ++ ">(*rhs." ++ c ++ "))" | (x,_,c) <- cs],
+      c ++ "::" ++ c ++ "(const" +++ c ++ "& rhs)",
+      "{",
+      unlines ["  *"  ++ c ++ " = *rhs." ++ c ++ ";" | (x,st,c) <- cs],
+      "}",
       "",
       c ++ "&" +++ c ++ "::operator=(const" +++ c ++ "& rhs)",
       "{",
-      unlines ["  "  ++ pointerIf st c ++ " = *rhs." ++ c ++ ";" | (x,st,c) <- cs],
+      unlines ["  *"  ++ c ++ " = *rhs." ++ c ++ ";" | (x,st,c) <- cs],
       "  return *this;",
       "}",
       ""
