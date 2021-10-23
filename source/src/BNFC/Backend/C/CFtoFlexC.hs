@@ -17,7 +17,7 @@
 
 module BNFC.Backend.C.CFtoFlexC
   ( cf2flex
-  , ParserMode(..), parserName, parserPackage, cParser, stlParser, parserHExt
+  , ParserMode(..), parserName, parserPackage, reentrant, cParser, stlParser, parserHExt, variant, automove
   , preludeForBuffer  -- C code defining a buffer for lexing string literals.
   , cMacros           -- Lexer definitions.
   , commentStates     -- Stream of names for lexer states for comments.
@@ -38,38 +38,58 @@ import BNFC.CF
 import BNFC.Backend.C.Common         ( posixC )
 import BNFC.Backend.C.RegToFlex
 import BNFC.Backend.Common.NamedVariables
-import BNFC.Options                  ( InPackage )
+import BNFC.Options                  ( InPackage, Ansi(..) )
 import BNFC.PrettyPrint
 import BNFC.Utils                    ( cstring, symbolToName, unless, when )
 
 data ParserMode
-  = CParser Bool String    -- ^ @C@ (@False@) or @C++ no STL@ (@True@) mode, with @name@ to use as prefix.
-  | CppParser InPackage String    -- ^ @C++@ mode, with optional package name
+  = CParser Bool String             -- ^ @C@ (@False@) or @C++ no STL@ (@True@) mode, with @name@ to use as prefix.
+  | CppParser InPackage String Ansi -- ^ @C++@ mode, with optional package name, --ansi or -std=c++14
 
 parserName :: ParserMode -> String
 parserName = \case
   CParser   _ n -> n
-  CppParser p n -> fromMaybe n p
+  CppParser p n _ -> fromMaybe n p
 
 parserPackage :: ParserMode -> InPackage
 parserPackage = \case
   CParser   _ _ -> Nothing
-  CppParser p _ -> p
+  CppParser p _ _ -> p
+
+reentrant :: ParserMode -> String
+reentrant = \case
+  CParser   _ _ -> "%pure_parser";
+  CppParser _ _ ansi | ansi == BeyondAnsi -> "%define api.pure"
+                     | otherwise          -> "%pure_parser";
+
+variant :: ParserMode -> [String]
+variant = \case
+  CppParser _ _ ansi | ansi == BeyondAnsi -> [
+                         "/* variant based implementation of semantic values for C++ */"
+                         ,"%define api.value.type variant"]
+  _ -> []
+
+automove :: ParserMode -> [String]
+automove = \case
+  CppParser _ _ ansi | ansi == BeyondAnsi -> [
+                         "/* every occurrence '$n' is replaced by 'std::move ($n)' */"
+                         , "%define api.value.automove"]
+  _ -> []
 
 cParser :: ParserMode -> Bool
 cParser = \case
   CParser   b _ -> not b
-  CppParser _ _ -> False
+  CppParser _ _ _ -> False
 
 stlParser :: ParserMode -> Bool
 stlParser = \case
   CParser   _ _ -> False
-  CppParser _ _ -> True
+  CppParser _ _ _ -> True
 
 parserHExt :: ParserMode -> String
 parserHExt = \case
   CParser   b _ -> if b then "H" else "h"
-  CppParser _ _ -> "H"
+  CppParser _ _ _ -> "H"
 
 -- | Entrypoint.
 cf2flex :: ParserMode -> CF -> (String, SymMap) -- The environment is reused by the parser.

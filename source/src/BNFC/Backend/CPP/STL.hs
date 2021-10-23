@@ -35,8 +35,8 @@ makeCppStl opts cf = do
     mkCppFile "Buffer.H" bufferH
     mkCppFile "Buffer.C" $ bufferC "Buffer.H"
     let (flex, env) = cf2flex parserMode cf
-    mkCppFileWithHint (name ++ ".l") flex
-    mkCppFileWithHint (name ++ ".y") $ cf2Bison (linenumbers opts) parserMode cf env
+    mkCppFileWithHint (name ++ lexerExt) flex
+    mkCppFileWithHint (name ++ parserExt) $ cf2Bison (linenumbers opts) parserMode cf env
     mkCppFile "Parser.H" $
       mkHeaderFile (inPackage opts) cf (allParserCats cf) (toList $ allEntryPoints cf) (Map.elems env)
     mkCppFile "ParserError.H" $ printParseErrHeader (inPackage opts)
@@ -47,7 +47,7 @@ makeCppStl opts cf = do
     mkCppFile "Printer.H" prinH
     mkCppFile "Printer.C" prinC
     mkCppFile "Test.C" (cpptest (inPackage opts) cf)
-    Makefile.mkMakefile opts $ makefile prefix name compileOpt
+    Makefile.mkMakefile opts $ makefile prefix name compileOpt lexerExt parserExt
   where
     name :: String
     name = lang opts
@@ -56,11 +56,16 @@ makeCppStl opts cf = do
     -- It should be a valid C identifier.
     prefix :: String
     prefix = snakeCase_ name ++ "_"
-    compileOpt :: String
     -- Compile option used by Makefile
+    compileOpt :: String
     compileOpt = if Ansi == ansi opts then "--ansi" else "-std=c++14"
+    lexerExt :: String
+    lexerExt = if Ansi == ansi opts then ".l" else ".ll"
+    parserExt :: String
+    parserExt = if Ansi == ansi opts then ".y" else ".yy"
+
     parserMode :: ParserMode
-    parserMode = CppParser (inPackage opts) prefix
+    parserMode = CppParser (inPackage opts) prefix (ansi opts)
     mkCppFile         x = mkfile x comment
     mkCppFileWithHint x = mkfile x commentWithEmacsModeHint
     -- Switch C++ generator module
