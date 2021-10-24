@@ -285,6 +285,8 @@ prListC :: CppStdMode -> (String,Bool) -> String
 prListC mode (c,b) = unlines
   [ "/********************   " ++ c ++ "    ********************/"
   , case mode of {
+      CppStdAnsi _ -> []
+      ;
       CppStdBeyondAnsi _ -> unlines [
           c ++ "::" ++ c ++ "(" ++ c ++ "&& rhs) = default;",
           "",

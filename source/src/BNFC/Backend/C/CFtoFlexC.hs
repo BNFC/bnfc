@@ -17,7 +17,7 @@
 
 module BNFC.Backend.C.CFtoFlexC
   ( cf2flex
-  , ParserMode(..), parserName, parserPackage, reentrant, cParser, stlParser, parserHExt, variant, automove
+  , ParserMode(..), parserName, parserPackage, reentrant, cParser, stlParser, parserHExt, variant, beyondAnsi, isBisonUseUnion, isBisonUseVariant
   , preludeForBuffer  -- C code defining a buffer for lexing string literals.
   , cMacros           -- Lexer definitions.
   , commentStates     -- Stream of names for lexer states for comments.
@@ -40,7 +40,7 @@ import BNFC.Backend.C.RegToFlex
 import BNFC.Backend.Common.NamedVariables
 import BNFC.Options                  ( InPackage, Ansi(..) )
 import BNFC.PrettyPrint
-import BNFC.Utils                    ( cstring, symbolToName, unless, when )
+import BNFC.Utils                    ( cstring, symbolToName, unless, when, camelCase_ )
 
 data ParserMode
   = CParser Bool String             -- ^ @C@ (@False@) or @C++ no STL@ (@True@) mode, with @name@ to use as prefix.
@@ -59,22 +59,33 @@ parserPackage = \case
 reentrant :: ParserMode -> String
 reentrant = \case
   CParser   _ _ -> "%pure_parser";
-  CppParser _ _ ansi | ansi == BeyondAnsi -> "%define api.pure"
+  CppParser _ _ ansi | ansi == BeyondAnsi -> "/* \"lalr1.cc\" is always pure parser. needless to define %define api.pure full */"
                      | otherwise          -> "%pure_parser";
 
 variant :: ParserMode -> [String]
 variant = \case
   CppParser _ _ ansi | ansi == BeyondAnsi -> [
                          "/* variant based implementation of semantic values for C++ */"
-                         ,"%define api.value.type variant"]
+                         ,"%require \"3.2\""
+                         ,"%define api.value.type variant"
+                         ,"/* 'yacc.c' does not support variant, so use skeleton 'lalr1.cc' */"
+                         ,"%skeleton \"lalr1.cc\""]
   _ -> []
 
-automove :: ParserMode -> [String]
-automove = \case
-  CppParser _ _ ansi | ansi == BeyondAnsi -> [
-                         "/* every occurrence '$n' is replaced by 'std::move ($n)' */"
-                         , "%define api.value.automove"]
-  _ -> []
+beyondAnsi :: ParserMode -> Bool
+beyondAnsi = \case
+  CppParser _ _ ansi | ansi == BeyondAnsi -> True
+  _ -> False
+
+isBisonUseUnion :: ParserMode -> Bool
+isBisonUseUnion = \case
+  CppParser _ _ ansi | ansi == Ansi -> True
+  _ -> False
+
+isBisonUseVariant :: ParserMode -> Bool
+isBisonUseVariant = \case
+  CppParser _ _ ansi | ansi == BeyondAnsi -> True
+  _ -> False
 
 cParser :: ParserMode -> Bool
 cParser = \case
@@ -113,11 +124,20 @@ prelude :: Bool -> ParserMode -> String
 prelude stringLiterals mode = unlines $ concat
   [ [ "/* Lexer definition for use with FLex */"
     , ""
-    -- noinput and nounput are most often unused
-    -- https://stackoverflow.com/questions/39075510/option-noinput-nounput-what-are-they-for
-    , "%option noyywrap noinput nounput"
-    , "%option reentrant bison-bridge bison-locations"
-    , ""
+    , if (beyondAnsi mode) then
+        unlines
+        [
+          "%option nodefault noyywrap c++"
+        , "%option yyclass=\"" ++ns++ "::" ++camelCaseName++ "Scanner\""
+        ]
+      else
+        unlines
+        -- noinput and nounput are most often unused
+        -- https://stackoverflow.com/questions/39075510/option-noinput-nounput-what-are-they-for
+        [ "%option noyywrap noinput nounput"
+        , "%option reentrant bison-bridge bison-locations"
+        , ""
+        ]
     ]
   , when stringLiterals
     [ "/* Additional data for the lexer: a buffer for lexing string literals. */"
@@ -132,6 +152,13 @@ prelude stringLiterals mode = unlines $ concat
     , [ "}" ]
     ]
   , [ "%{"
+    , when (beyondAnsi mode) unlines
+      [
+        "#include \"Scanner.H\""  -- #include for the class inheriting "yyFlexLexer"
+      , ""
+      , "#undef  YY_DECL"
+      , "#define YY_DECL int " ++ns++ "::" ++camelCaseName++ "Scanner::yylex(" ++ns++ "::" ++camelCaseName++ "Parser::semantic_type* const lval, " ++ns++ "::" ++camelCaseName++ "Parser::location_type* location )"
+      ]
     , "#include \"" ++ ("Absyn" <.> h) ++ "\""
     , "#include \"" ++ ("Bison" <.> h) ++ "\""
     , ""
@@ -164,7 +191,10 @@ prelude stringLiterals mode = unlines $ concat
     ]
   ]
   where
-  h = parserHExt mode
+    h = parserHExt mode
+    name = parserName mode
+    camelCaseName = camelCase_ name
+    ns = fromMaybe camelCaseName (parserPackage mode)
 
 -- | Part of the lexer prelude needed when string literals are to be lexed.
 --   Defines an interface to the Buffer.
