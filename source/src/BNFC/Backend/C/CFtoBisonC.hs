@@ -97,10 +97,10 @@ header mode cf = unlines $ concat
   , [ ""
     , "/* Reentrant parser */"
     , reentrant mode
-    , "  /* From Bison 2.3b (2008): %define api.pure full */"
-         -- The flag %pure_parser is deprecated with a warning since Bison 3.4,
-         -- but older Bisons like 2.3 (2006, shipped with macOS) don't recognize
-         -- %define api.pure full
+    , "/* From Bison 2.3b (2008): %define api.pure full */"
+      -- The flag %pure_parser is deprecated with a warning since Bison 3.4,
+      -- but older Bisons like 2.3 (2006, shipped with macOS) don't recognize
+      -- %define api.pure full
     , "%lex-param   { yyscan_t scanner }"
     , "%parse-param { yyscan_t scanner }"
     , ""
@@ -113,7 +113,7 @@ header mode cf = unlines $ concat
     -- Use variant type if c++14
     , unlines $ (variant mode)
     -- Use std::move if c++14
-    , unlines $ (automove mode)
+    --, unlines $ (automove mode)
     , ""
     , "%{"
     , "/* Begin C preamble code */"
@@ -295,7 +295,7 @@ reverseList mode c0 = unlines
 --    ListFoo* listfoo_;
 --
 -- >>> let foo2 = CoercCat "Foo" 2
--- >>> union (CppParser Nothing "") [foo, ListCat foo, foo2, ListCat foo2]
+-- >>> union (CppParser Nothing "" Ansi) [foo, ListCat foo, foo2, ListCat foo2]
 -- %union
 -- {
 --   int    _int;

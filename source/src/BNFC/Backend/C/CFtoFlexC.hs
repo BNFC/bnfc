@@ -59,14 +59,17 @@ parserPackage = \case
 reentrant :: ParserMode -> String
 reentrant = \case
   CParser   _ _ -> "%pure_parser";
-  CppParser _ _ ansi | ansi == BeyondAnsi -> "%define api.pure"
+  CppParser _ _ ansi | ansi == BeyondAnsi -> "/* \"lalr1.cc\" is always pure parser. needless to define %define api.pure full */"
                      | otherwise          -> "%pure_parser";
 
 variant :: ParserMode -> [String]
 variant = \case
   CppParser _ _ ansi | ansi == BeyondAnsi -> [
                          "/* variant based implementation of semantic values for C++ */"
-                         ,"%define api.value.type variant"]
+                         ,"%require \"3.2\""
+                         ,"%define api.value.type variant"
+                         ,"/* 'yacc.c' does not support variant, so use skeleton 'lalr1.cc' */"
+                         ,"%skeleton \"lalr1.cc\""]
   _ -> []
 
 automove :: ParserMode -> [String]
