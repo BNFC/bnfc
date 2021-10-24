@@ -22,6 +22,7 @@ module BNFC.Backend.C.CFtoBisonC
   , resultName, typeName, varName
   , specialToks, startSymbol
   , unionBuiltinTokens
+  , positionCats
   )
   where
 
@@ -30,17 +31,18 @@ import Prelude hiding ((<>))
 import Data.Char       ( toLower, isUpper )
 import Data.Foldable   ( toList )
 import Data.List       ( intercalate, nub )
+import Data.Maybe      ( fromMaybe )
 import qualified Data.Map as Map
 import System.FilePath ( (<.>) )
 
 import BNFC.CF
 import BNFC.Backend.Common.NamedVariables hiding (varName)
-import BNFC.Backend.C.CFtoFlexC (ParserMode(..), cParser, reentrant, stlParser, parserHExt, parserName, parserPackage, variant, automove)
+import BNFC.Backend.C.CFtoFlexC (ParserMode(..), cParser, stlParser, parserHExt, parserName, parserPackage, isBisonUseUnion, isBisonUseVariant, beyondAnsi)
 import BNFC.Backend.CPP.Naming
 import BNFC.Backend.CPP.STL.STLUtils
-import BNFC.Options (RecordPositions(..), InPackage, Ansi(..) )
+import BNFC.Options (RecordPositions(..), InPackage, Ansi(..))
 import BNFC.PrettyPrint
-import BNFC.Utils ((+++), table, applyWhen, for, unless, when, whenJust)
+import BNFC.Utils ((+++), table, applyWhen, for, unless, when, whenJust, camelCase_)
 
 --This follows the basic structure of CFtoHappy.
 
@@ -54,14 +56,57 @@ type MetaVar     = String
 cf2Bison :: RecordPositions -> ParserMode -> CF -> SymMap -> String
 cf2Bison rp mode cf env = unlines
     [ header mode cf
-    , render $ union mode $ posCats ++ allParserCatsNorm cf
-    , ""
-    , unionDependentCode mode
-    , unlines $ table " " $ concat
-      [ [ ["%token", "_ERROR_" ] ]
-      , tokens (map fst $ tokenPragmas cf) env
-      , specialToks cf
-      ]
+    , case isBisonUseUnion mode of {
+        --
+        -- C and CPP(Ansi) ParserMode will genrate following bison code:
+        --
+        -- %union
+        -- {
+        --   char*  _string;
+        --   Program* program_;
+        -- }
+        -- ...
+        -- %token _ERROR_
+        -- %token _STAR    /* * */
+        -- ...
+        -- %token<_string> _STRING_
+        -- %token<_int>    _INTEGER_
+        -- %token<_string> _IDENT_
+        --
+        -- %type <program_> Program
+        --
+        True -> unlines [
+          render $ union mode $ posCats ++ allParserCatsNorm cf  -- '%union' directive
+          , ""
+          , unionDependentCode mode                       -- yyerror, yyparse part for '%union'
+          , unlines $ table " " $ concat
+            [ [ ["%token", "_ERROR_" ] ]                  -- define %tokens /* x */
+            , tokens mode (map fst $ tokenPragmas cf) env -- user-defined regex %tokens
+            , specialToks mode cf                         -- built-in %tokens
+            ]]
+        ;
+        --
+        -- CPP(BeyondAnsi) ParserMode will genrate following bison code:
+        --
+        -- /** NO union directive ! result will be stored into driver class */
+        -- ...
+        -- %token _ERROR_
+        -- %token _STAR    /* * */
+        -- ...
+        -- %token<std::string> _STRING_
+        -- %token<int>    _     INTEGER_
+        -- %token<std::string> _IDENT_
+        --
+        -- %type <std::shared_ptr<Program>> Program
+        --
+        False -> unlines [
+            unlines $ table " " $ concat
+              [ [ ["%token", "_ERROR_" ] ]                  -- define %tokens /* x */
+              , tokens mode (map fst $ tokenPragmas cf) env -- user-defined regex %tokens
+              , specialToks mode cf                         -- built-in %tokens
+              ]]
+        ;
+        }
     , declarations mode cf
     , startSymbol cf
     , ""
@@ -71,94 +116,149 @@ cf2Bison rp mode cf env = unlines
     , "%%"
     , ""
     , nsStart inPackage
-    , entryCode mode cf
+    , if (beyondAnsi mode) then
+         unlines [
+        "void " ++ns++ "::" ++camelCaseName++ "Parser::error(const " ++camelCaseName++ "Parser::location_type& l, const std::string& m)"
+        , "{"
+        , "    driver.error(l, m);"
+        , "}"]
+      else
+        entryCode mode cf -- entryCode for beyondAndi is in Driver
     , nsEnd inPackage
     ]
   where
-  inPackage = parserPackage mode
-  posCats
-    | stlParser mode = map TokenCat $ positionCats cf
-    | otherwise      = []
+    inPackage = parserPackage mode
+    posCats
+      | stlParser mode = map TokenCat $ positionCats cf
+      | otherwise      = []
+    name = parserName mode
+    camelCaseName = camelCase_ name
+    ns = fromMaybe camelCaseName (parserPackage mode)
+
 
 positionCats :: CF -> [String]
 positionCats cf = [ wpThing name | TokenReg name True _ <- cfgPragmas cf ]
 
 header :: ParserMode -> CF -> String
-header mode cf = unlines $ concat
-  [ [ "/* Parser definition to be used with Bison. */"
-    , ""
-    , "/* Generate header file for lexer. */"
-    , "%defines \"" ++ ("Bison" <.> h) ++ "\""
-    ]
+header mode cf = unlines $ concat [
+  --
+  -- Common header
+  --
+  [ "/* Parser definition to be used with Bison. */"
+  , ""
+  , "/* Generate header file for lexer. */"
+  , "%defines \"" ++ ("Bison" <.> hExt) ++ "\""
+  ]
+  , when (beyondAnsi mode)
+    [ "%define parse.trace"
+      , "%define api.namespace {" ++ ns ++ "}"
+      , "/* Specify the namespace for the C++ parser class. */"]
   , whenJust (parserPackage mode) $ \ ns ->
-    [ "%name-prefix = \"" ++ ns ++ "\""
-    , "  /* From Bison 2.6: %define api.prefix {" ++ ns ++ "} */"
-    ]
-  , [ ""
-    , "/* Reentrant parser */"
-    , reentrant mode
-    , "  /* From Bison 2.3b (2008): %define api.pure full */"
-         -- The flag %pure_parser is deprecated with a warning since Bison 3.4,
-         -- but older Bisons like 2.3 (2006, shipped with macOS) don't recognize
-         -- %define api.pure full
-    , "%lex-param   { yyscan_t scanner }"
-    , "%parse-param { yyscan_t scanner }"
-    , ""
-    , concat [ "/* Turn on line/column tracking in the ", name, "lloc structure: */" ]
-    , "%locations"
-    , ""
-    , "/* Argument to the parser to be filled with the parsed tree. */"
-    , "%parse-param { YYSTYPE *result }"
-    , ""
-    -- Use variant type if c++14
-    , unlines $ (variant mode)
-    -- Use std::move if c++14
-    , unlines $ (automove mode)
-    , ""
-    , "%{"
-    , "/* Begin C preamble code */"
-    , ""
-    ]
-    -- Andreas, 2021-08-26, issue #377:  Some C++ compilers want "algorithm".
-    -- Fixing regression introduced in 2.9.2.
-  , when (stlParser mode)
-    [ "#include <algorithm> /* for std::reverse */"  -- mandatory e.g. with GNU C++ 11
-    ]
-  , [ "#include <stdio.h>"
-    , "#include <stdlib.h>"
-    , "#include <string.h>"
-    , "#include \"" ++ ("Absyn" <.> h) ++ "\""
-    , ""
-    , "#define YYMAXDEPTH 10000000"  -- default maximum stack size is 10000, but right-recursion needs O(n) stack
-    , ""
-    , "/* The type yyscan_t is defined by flex, but we need it in the parser already. */"
-    , "#ifndef YY_TYPEDEF_YY_SCANNER_T"
-    , "#define YY_TYPEDEF_YY_SCANNER_T"
-    , "typedef void* yyscan_t;"
-    , "#endif"
-    , ""
-    -- , "typedef struct " ++ name ++ "_buffer_state *YY_BUFFER_STATE;"
-    , "typedef struct yy_buffer_state *YY_BUFFER_STATE;"
-    , "extern YY_BUFFER_STATE " ++ name ++ "_scan_string(const char *str, yyscan_t scanner);"
-    , "extern void " ++ name ++ "_delete_buffer(YY_BUFFER_STATE buf, yyscan_t scanner);"
-    , ""
-    , "extern void " ++ name ++ "lex_destroy(yyscan_t scanner);"
-    , "extern char* " ++ name ++ "get_text(yyscan_t scanner);"
-    , ""
-    , "extern yyscan_t " ++ name ++ "_initialize_lexer(FILE * inp);"
-    , ""
-    ]
-  , unless (stlParser mode)
-    [ "/* List reversal functions. */"
-    , concatMap (reverseList mode) $ filter isList $ allParserCatsNorm cf
-    ]
-  , [ "/* End C preamble code */"
-    , "%}"
-    ]
+      [ "%name-prefix = \"" ++ ns ++ "\""
+      , "/* From Bison 2.6: %define api.prefix {" ++ ns ++ "} */"]
+  , if beyondAnsi mode then
+      -- Bison c++ beyond ansi mode
+      [""
+      , "/* Reentrant parser */"
+      , "/* lalr1.cc always pure parser. needless to define %define api.pure full */"
+      , ""
+      , "%define api.parser.class {" ++ camelCaseName ++ "Parser}"
+      , "%code top {"
+      , "#include <memory>"
+      , "}"
+      , "%code requires{"
+      , "#include \"Absyn" ++ hExt ++ "\""
+      , ""
+      , "    namespace " ++ ns ++ " {"
+      , "        class " ++ camelCaseName ++ "Scanner;"
+      , "        class " ++ camelCaseName ++ "Driver;"
+      , "    }"
+      , "}"
+      , "%parse-param { " ++ camelCaseName ++ "Scanner  &scanner  }"
+      , "%parse-param { " ++ camelCaseName ++ "Driver  &driver  }"
+      , ""
+      , "/* Turn on line/column tracking in the " ++name++ "lloc structure: */"
+      , "%locations"
+      , "/* variant based implementation of semantic values for C++ */"
+      , "%require \"3.2\""
+      , "%define api.value.type variant"
+      , "/* 'yacc.c' does not support variant, so use skeleton 'lalr1.cc' */"
+      , "%skeleton \"lalr1.cc\""
+      , ""
+      , "%code{"
+      , "/* Begin C++ preamble code */"
+      , "#include <algorithm> /* for std::reverse */"
+      , "#include <iostream>"
+      , "#include <cstdlib>"
+      , "#include <fstream>"
+      , ""
+      , "/* include for all driver functions */"
+      , "#include \"Driver.hh\""
+      , ""
+      , "#undef yylex"
+      , "#define yylex scanner.lex"
+      , "}"
+      , ""
+      ]
+    else
+      -- Bison c/c++ ansi mode
+      [""
+      , "/* Reentrant parser */"
+      , "%pure_parser"
+      , "/* From Bison 2.3b (2008): %define api.pure full */"
+      , "/* The flag %pure_parser is deprecated with a warning since Bison 3.4, */"
+      , "/* but older Bisons like 2.3 (2006, shipped with macOS) don't recognize %define api.pure full */"
+      , ""
+      , "%lex-param   { yyscan_t scanner }"
+      , "%parse-param { yyscan_t scanner }"
+      , ""
+      , "/* Turn on line/column tracking in the " ++name++ "lloc structure: */"
+      , "%locations"
+      , "/* Argument to the parser to be filled with the parsed tree. */"
+      , "%parse-param { YYSTYPE *result }"
+      , ""
+      , "%{"
+      , "/* Begin C preamble code */"
+      , ""
+      -- Andreas, 2021-08-26, issue #377:  Some C++ compilers want "algorithm".
+      -- Fixing regression introduced in 2.9.2.
+      , when (stlParser mode)
+        "#include <algorithm> /* for std::reverse */"  -- mandatory e.g. with GNU C++ 11
+      , "#include <stdio.h>"
+      , "#include <stdlib.h>"
+      , "#include <string.h>"
+      , "#include \"" ++ ("Absyn" <.> hExt) ++ "\""
+      , ""
+      , "#define YYMAXDEPTH 10000000"  -- default maximum stack size is 10000, but right-recursion needs O(n) stack
+      , ""
+      , "/* The type yyscan_t is defined by flex, but we need it in the parser already. */"
+      , "#ifndef YY_TYPEDEF_YY_SCANNER_T"
+      , "#define YY_TYPEDEF_YY_SCANNER_T"
+      , "typedef void* yyscan_t;"
+      , "#endif"
+      , ""
+      , "typedef struct " ++ name ++ "_buffer_state *YY_BUFFER_STATE;"
+      , "typedef struct yy_buffer_state *YY_BUFFER_STATE;"
+      , "extern YY_BUFFER_STATE " ++ name ++ "_scan_string(const char *str, yyscan_t scanner);"
+      , "extern void " ++ name ++ "_delete_buffer(YY_BUFFER_STATE buf, yyscan_t scanner);"
+      , ""
+      , "extern void " ++ name ++ "lex_destroy(yyscan_t scanner);"
+      , "extern char* " ++ name ++ "get_text(yyscan_t scanner);"
+      , ""
+      , "extern yyscan_t " ++ name ++ "_initialize_lexer(FILE * inp);"
+      ,  ""
+      , unless (stlParser mode)
+        unlines [ "/* List reversal functions. */"
+                , concatMap (reverseList mode) $ filter isList $ allParserCatsNorm cf]
+      , "/* End C preamble code */"
+      , "%}"
+      ]
   ]
   where
-  h    = parserHExt mode
-  name = parserName mode
+    hExt = "." ++ parserHExt mode
+    name = parserName mode
+    camelCaseName = camelCase_ name
+    ns = fromMaybe camelCaseName (parserPackage mode)
 
 -- | Code that needs the @YYSTYPE@ defined by the @%union@ pragma.
 --
@@ -295,7 +395,7 @@ reverseList mode c0 = unlines
 --    ListFoo* listfoo_;
 --
 -- >>> let foo2 = CoercCat "Foo" 2
--- >>> union (CppParser Nothing "") [foo, ListCat foo, foo2, ListCat foo2]
+-- >>> union (CppParser Nothing "" Ansi) [foo, ListCat foo, foo2, ListCat foo2]
 -- %union
 -- {
 --   int    _int;
@@ -328,22 +428,29 @@ unionBuiltinTokens =
 declarations :: ParserMode -> CF -> String
 declarations mode cf = unlines $ map typeNT $
   posCats ++
-  filter (not . null . rulesForCat cf) (allParserCats cf) -- don't define internal rules
+  -- don't define internal rules
+  filter (not . null . rulesForCat cf) (allParserCats cf)
   where
-  typeNT nt = "%type <" ++ varName nt ++ "> " ++ identCat nt
-  posCats
-    | stlParser mode = map TokenCat $ positionCats cf
-    | otherwise      = []
+    typeNT nt = if isBisonUseVariant mode then
+                  "%type <std::shared_ptr<" ++ (identCat $ normCat nt) ++ ">> " ++ identCat nt
+                else
+                  "%type <" ++ varName nt ++ "> " ++ identCat nt
+    posCats
+      | stlParser mode = map TokenCat $ positionCats cf
+      | otherwise      = []
 
 --declares terminal types.
 -- token name "literal"
 -- "Syntax error messages passed to yyerror from the parser will reference the literal string instead of the token name."
 -- https://www.gnu.org/software/bison/manual/html_node/Token-Decl.html
-tokens :: [UserDef] -> SymMap -> [[String]]
-tokens user env = map declTok $ Map.toList env
+tokens :: ParserMode -> [UserDef] -> SymMap -> [[String]]
+tokens mode userDefs env = map declTok $ Map.toList env
   where
+  stringType = case isBisonUseVariant mode of
+    True -> "<std::string>";
+    False -> "<_string>";
   declTok (Keyword   s, r) = tok "" s r
-  declTok (Tokentype s, r) = tok (if s `elem` user then "<_string>" else "") s r
+  declTok (Tokentype s, r) = tok (if s `elem` userDefs then stringType else "") s r
   tok t s r = [ "%token" ++ t, r, " /* " ++ cStringEscape s ++ " */" ]
 
 -- | Escape characters inside a C string.
@@ -355,16 +462,21 @@ cStringEscape = concatMap escChar
       | otherwise = [c]
 
 -- | Produces a table with the built-in token types.
-specialToks :: CF -> [[String]]
-specialToks cf = concat
-  [ ifC catString  [ "%token<_string>", "_STRING_"  ]
-  , ifC catChar    [ "%token<_char>  ", "_CHAR_"    ]
-  , ifC catInteger [ "%token<_int>   ", "_INTEGER_" ]
-  , ifC catDouble  [ "%token<_double>", "_DOUBLE_"  ]
-  , ifC catIdent   [ "%token<_string>", "_IDENT_"   ]
+specialToks :: ParserMode -> CF -> [[String]]
+specialToks mode cf = concat
+  [ ifC catString  [ "%token"++stringToken,     "_STRING_"  ]
+  , ifC catChar    [ "%token"++charToken++"  ", "_CHAR_"    ]
+  , ifC catInteger [ "%token"++intToken++"   ", "_INTEGER_" ]
+  , ifC catDouble  [ "%token"++doubleToken,     "_DOUBLE_"  ]
+  , ifC catIdent   [ "%token"++stringToken,     "_IDENT_"   ]
   ]
   where
     ifC cat s = if isUsedCat cf (TokenCat cat) then [s] else []
+    stringToken = if isBisonUseVariant mode then "<std::string>" else "<_string>"
+    charToken = if isBisonUseVariant mode then "<char>" else "<_char>"
+    intToken = if isBisonUseVariant mode then "<int>" else "<_int>"
+    doubleToken = if isBisonUseVariant mode then "<double>" else "<_double>"
+
 
 -- | Bison only supports a single entrypoint.
 startSymbol :: CF -> String
@@ -380,7 +492,7 @@ rulesForBison rp mode cf env = map mkOne (ruleGroups cf) ++ posRules
   posRules
     | CppParser inPackage _ _ <- mode = for (positionCats cf) $ \ n -> (TokenCat n,
       [( Map.findWithDefault n (Tokentype n) env
-       , addResult cf (TokenCat n) $ concat
+       , addResult mode cf (TokenCat n) $ concat
          [ "$$ = new ", nsScope inPackage, n, "($1, @$.first_line);" ]
        )])
     | otherwise = []
@@ -392,7 +504,7 @@ constructRule
   -> NonTerminal                      -- ^ ... this non-terminal.
   -> (NonTerminal,[(Pattern,Action)])
 constructRule rp mode cf env rules nt = (nt,) $
-    [ (p,) $ addResult cf nt $ generateAction rp mode (identCat (normCat nt)) (funRule r) b m
+    [ (p,) $ addResult mode cf nt $ generateAction rp mode (identCat (normCat nt)) (funRule r) b m
     | r0 <- rules
     , let (b,r) = if isConsFun (funRule r0) && valCat r0 `elem` cfgReversibleCats cf
                   then (True, revSepListRule r0)
@@ -402,14 +514,16 @@ constructRule rp mode cf env rules nt = (nt,) $
 
 -- | Add action if we parse an entrypoint non-terminal:
 -- Set field in result record to current parse.
-addResult :: CF -> NonTerminal -> Action -> Action
-addResult cf nt a =
-  if nt `elem` toList (allEntryPoints cf)
-  -- Note: Bison has only a single entrypoint,
-  -- but BNFC works around this by adding dedicated parse methods for all entrypoints.
-  -- Andreas, 2021-03-24: But see #350: bison still uses only the @%start@ non-terminal.
-    then concat [ a, " result->", varName (normCat nt), " = $$;" ]
-    else a
+addResult :: ParserMode -> CF -> NonTerminal -> Action -> Action
+addResult mode cf nt a =
+  if nt `elem` toList (allEntryPoints cf) then
+    -- Note: Bison has only a single entrypoint,
+    -- but BNFC works around this by adding dedicated parse methods for all entrypoints.
+    -- Andreas, 2021-03-24: But see #350: bison still uses only the @%start@ non-terminal.
+    case beyondAnsi mode of
+      False -> concat [ a, " result->", varName (normCat nt), " = $$;" ]
+      True  -> concat [ a, " driver.", varName (normCat nt), " = $$;" ]
+  else a
 
 -- | Switch between STL or not.
 generateAction :: IsFun a
@@ -421,7 +535,8 @@ generateAction :: IsFun a
   -> [(MetaVar, Bool)]   -- ^ Meta-vars; should the list referenced by the var be reversed?
   -> Action
 generateAction rp = \case
-  CppParser ns _ _ -> generateActionSTL rp ns
+  CppParser ns _ Ansi -> generateActionSTL rp ns
+  CppParser ns _ BeyondAnsi -> generateActionSTLBeyondAnsi rp ns
   CParser   b  _ -> \ nt f r -> generateActionC rp (not b) nt f r . map fst
 
 -- | Generates a string containing the semantic action.
@@ -475,6 +590,30 @@ generateActionSTL rp inPackage nt f b mbs = reverses ++
             = ""
   reverses  = unwords ["std::reverse(" ++ m ++"->begin(),"++m++"->end()) ;" | (m, True) <- mbs]
   scope     = nsScope inPackage
+
+generateActionSTLBeyondAnsi :: IsFun a => RecordPositions -> InPackage -> String -> a -> Bool -> [(MetaVar,Bool)] -> Action
+generateActionSTLBeyondAnsi rp inPackage nt f b mbs = reverses ++
+  if | isCoercion f    -> concat ["$$ = ", unwords ms, ";", loc]
+     | isNilFun f      -> concat ["$$ = ", "std::make_shared<", scope, nt, ">();"]
+     | isOneFun f      -> concat ["$$ = ", "std::make_shared<", scope, nt, ">(); $$->cons(", head ms, ");"]
+     | isConsFun f     -> concat [lst, "->cons(", el, ");"]
+     | isDefinedRule f -> concat ["$$ = ", scope, sanitizeCpp (funName f), "(", intercalate ", " ms, ");" ]
+     | otherwise       -> concat ["$$ = ", "std::make_shared<", scope, funName f, ">(", (intercalate ", " ms), ");", loc]
+  where
+    -- ms = ["$1", "$1", ...];
+    -- Bison's semantic value of the n-th symbol of the right-hand side of the rule.
+    ms = map fst mbs
+    -- The following match only happens in the cons case:
+    [el, lst] = applyWhen b reverse ms -- b: left-recursion transformed?
+    loc | RecordPositions <- rp
+      = " $$->line_number = @$.first_line; $$->char_number = @$.first_column;"
+        | otherwise
+      = ""
+    -- TODO: temporary commented reverse()
+    -- reverses  = unwords [m ++"->reverse();" | (m, True) <- mbs]
+    reverses  = unwords ["/*" ++m++ "->reverse(); */" | (m, True) <- mbs]
+    scope     = nsScope inPackage
+
 
 -- Generate patterns and a set of metavariables indicating
 -- where in the pattern the non-terminal

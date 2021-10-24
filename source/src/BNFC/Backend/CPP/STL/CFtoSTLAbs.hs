@@ -31,9 +31,6 @@ import BNFC.Utils       ( (+++), applyWhen )
 import BNFC.Backend.CPP.Common
 import BNFC.Backend.CPP.STL.STLUtils
 
-data CppStdMode
-  = CppStdAnsi Ansi -- ^ @Ansi@ mode.
-  | CppStdBeyondAnsi Ansi -- ^ @BeyondAnsi@ mode.
 
 --The result is two files (.H file, .C file)
 
@@ -93,7 +90,7 @@ mkHFile rp mode inPackage cabs cf = unlines
     },
   "",
   "/********************   Visitor Interfaces    ********************/",
-  prVisitor cabs,
+  prVisitor mode cabs,
   "",
   prVisitable,
   "",
@@ -127,20 +124,21 @@ prVisitable = unlines [
   "};"
   ]
 
-prVisitor :: CAbs -> String
-prVisitor cf = unlines [
+prVisitor :: CppStdMode -> CAbs -> String
+prVisitor mode cf = unlines [
   "class Visitor",
   "{",
   "public:",
   "  virtual ~Visitor() {}",
   unlines
-    ["  virtual void visit"++c++"("++c++" *p) = 0;" | c <- allClasses cf,
-                                                      notElem c (defineds cf)],
+  ["  virtual void visit"++c++"("++ c +++ vararg ++") = 0;" | c <- allClasses cf, notElem c (defineds cf)],
   "",
   unlines
-    ["  virtual void visit"++c++"(" ++c++" x) = 0;" | c <- allNonClasses cf],
+  ["  virtual void visit"++c++"("++c++" x) = 0;" | c <- allNonClasses cf],
   "};"
- ]
+  ]
+  where
+    vararg = "*p"
 
 prAbs :: CppStdMode -> RecordPositions -> String -> String
 prAbs mode rp c =
@@ -157,7 +155,7 @@ prAbs mode rp c =
         "class " ++ c ++ " : public Visitable",
           "{",
           "public:",
-          "  virtual std::unique_ptr<" ++ c ++ "> clone() const = 0;",
+          "  virtual" +++ wrapSharedPtr c +++ "clone() const = 0;",
           if rp == RecordPositions then "  int line_number, char_number;" else "",
           "};"
         ];
@@ -185,9 +183,8 @@ prCon mode (c,(f,cs)) =
     CppStdBeyondAnsi _ -> unlines [
         "class " ++f++ " : public " ++ c,
         "{",
-        "private:",
-        unlines ["  std::unique_ptr<" ++ typ ++ "> " ++ var ++ ";" | (typ,_,var) <- cs],
         "public:",
+        unlines ["  " ++ wrapSharedPtrIf isClass typ +++ var ++ ";" | (typ,isClass,var) <- cs],
         -- "right-hand side" operations; for move
         "  " ++ f ++ "(" ++ f ++ "&& rhs);",
         "  " ++ f ++ "& operator=(" ++ f ++ "&& rhs);",
@@ -196,7 +193,7 @@ prCon mode (c,(f,cs)) =
         "  " ++ f ++ "(" ++ conargs ++ ");",
         "  ~" ++f ++ "();",
         "  virtual void accept(Visitor *v);",
-        "  std::unique_ptr<" ++c++ "> clone() const override;",
+        "  " ++ wrapSharedPtr c +++ " clone() const override;",
         "};"
         ];
       }
@@ -209,7 +206,7 @@ prCon mode (c,(f,cs)) =
        ;
        CppStdBeyondAnsi _ ->
            concat $ intersperse ", "
-           ["const" +++ x ++ "& p" ++ show i | ((x,_,_),i) <- zip cs [1..]]
+           [wrapSharedPtrIf isClass x ++ "& p" ++ show i | ((x,isClass,_),i) <- zip cs [1..]]
        ;
        }
 
@@ -230,22 +227,35 @@ prList mode (c, b) = case mode of {
       "class " ++c++ " : public Visitable"
       , "{"
       , "public:"
-      , "  std::vector<std::unique_ptr<" ++childClass++ ">>" +++ "list" ++ map toLower childClass ++ "_;"
+      , "  std::vector<" ++ wrapSharedPtr childClass++ ">" +++ childClassVarName ++ ";"
+      , ""
+      -- ref: https://stackoverflow.com/questions/51148797/how-can-i-define-iterator-and-const-iterator-in-my-class-while-i-uses-stdvecto
+      , "  // define iterator and const_iterator, expose it"
+      , "  using iterator = typename std::vector<" ++ wrapSharedPtr childClass ++ ">::iterator;"
+      , "  using const_iterator = typename std::vector<" ++ wrapSharedPtr childClass++ ">::const_iterator;"
+      , "  auto begin() const { return " ++childClassVarName++ ".begin(); }"
+      , "  auto begin()       { return " ++childClassVarName++ ".begin(); }"
+      , "  auto end()   const { return " ++childClassVarName++ ".end(); }"
+      , "  auto end()         { return " ++childClassVarName++ ".end(); }"
       , ""
         -- "right-hand side" operations; for move
       , "  " ++ c ++ "(" ++ c ++ "&& rhs);"
       , "  " ++ c ++ "& operator=(" ++ c ++ "&& rhs);"
       , "  " ++ c ++ "(const" +++ c ++ "& rhs);"
       , "  " ++ c ++ "& operator=(const" +++ c ++ "& rhs);"
+      , "  " ++ c ++ "();"
       , " ~" ++ c ++ "();"
       , "  virtual void accept(Visitor *v);"
-      , "  std::unique_ptr<" ++ c ++ "> clone() const;"
+      , "  " ++ wrapSharedPtr c +++ " clone() const;"
+      , "  void cons(" ++ wrapSharedPtr childClass ++ ");"
+      , "  void reverse();"
       , "};"
       , ""
       ];
     }
   where
     childClass = drop 4 c
+    childClassVarName = "list" ++ map toLower childClass ++ "_"
     bas = applyWhen b (++ "*") $ drop 4 c {- drop "List" -}
 
 
@@ -257,7 +267,7 @@ mkCFile mode inPackage cabs cf = unlines $ [
   "#include <algorithm>",
   "#include <string>",
   "#include <vector>",
-  "#include \"Absyn.H\"",
+  "#include \"Absyn"++hExt++"\"",
   nsStart inPackage,
   unlines [prConC  mode c r  | (c,rs) <- signatures cabs, r <- rs],
   unlines [prListC mode l | l <- listtypes cabs],
@@ -268,6 +278,9 @@ mkCFile mode inPackage cabs cf = unlines $ [
   where
   nil  t = (,dummyType) $ concat [ "new List", identType t, "()" ]
   cons t = (,dummyType) $ concat [ "consList", identType t ]
+  hExt = case mode of
+    CppStdAnsi _ -> ".h";
+    CppStdBeyondAnsi _ -> ".hh";
 
 
 prConC :: CppStdMode -> String -> CAbsRule -> String
@@ -276,7 +289,7 @@ prConC mode c fcs@(f,_) = unlines [
   prConstructorC mode fcs,
   prCopyC mode fcs,
   prDestructorC mode fcs,
-  prAcceptC f,
+  prAcceptC mode f,
   prCloneC mode c f,
   ""
  ]
@@ -285,6 +298,8 @@ prListC :: CppStdMode -> (String,Bool) -> String
 prListC mode (c,b) = unlines
   [ "/********************   " ++ c ++ "    ********************/"
   , case mode of {
+      CppStdAnsi _ -> []
+      ;
       CppStdBeyondAnsi _ -> unlines [
           c ++ "::" ++ c ++ "(" ++ c ++ "&& rhs) = default;",
           "",
@@ -307,10 +322,11 @@ prListC mode (c,b) = unlines
           "  return *this;",
           "}",
           "",
+          c ++ "::" ++ c ++"() = default;",
           c ++ "::~" ++ c ++"() = default;",
           ""];
         }
-  , prAcceptC c
+  , prAcceptC mode c
   , prCloneC mode c c
   , prConsC mode c b
   ]
@@ -319,13 +335,21 @@ prListC mode (c,b) = unlines
 
 
 --The standard accept function for the Visitor pattern
-prAcceptC :: String -> String
-prAcceptC ty = unlines [
-  "void " ++ ty ++ "::accept(Visitor *v)",
-  "{",
-  "  v->visit" ++ ty ++ "(this);",
-  "}"
-  ]
+prAcceptC :: CppStdMode -> String -> String
+prAcceptC mode ty = case mode of {
+    CppStdAnsi _ -> unlines [
+        "void " ++ ty ++ "::accept(Visitor *v)",
+        "{",
+        "  v->visit" ++ ty ++ "(this);",
+        "}"
+        ];
+    CppStdBeyondAnsi _ -> unlines [
+        "void " ++ty++ "::accept(Visitor *v)",
+        "{",
+        "  v->visit" ++ ty ++ "(this);",
+        "}"
+        ];
+    }
 
 --The cloner makes a new deep copy of the object
 prCloneC :: CppStdMode -> String -> String -> String
@@ -337,9 +361,9 @@ prCloneC mode f c = case mode of {
       "}"
       ];
   CppStdBeyondAnsi _ -> unlines [
-      "std::unique_ptr<" ++ f ++ "> " ++ c ++ "::clone() const ",
+      wrapSharedPtr f +++ c ++ "::clone() const ",
       "{",
-      "  return std::make_unique<" ++ c ++ ">(*this);",
+      "  return std::make_shared<" ++ c ++ ">(*this);",
       "}"
       ];
   }
@@ -354,9 +378,12 @@ prConsC mode c b = case mode of {
         , "}"
         ];
     CppStdBeyondAnsi _ -> unlines [
-        concat [ "std::unique_ptr<", c, "> ", "cons", c, "(std::unique_ptr<", bas, "> x, std::unique_ptr<", c, "> xs) {" ]
-        , "  xs->" ++inner++ ".insert(xs->" ++inner++ ".begin(), std::move(x));"
-        , "  return xs;"
+        concat [ "void ", c, "::cons(", wrapSharedPtr bas, " x) {" ]
+        , "  " ++inner++ ".insert(" ++inner++ ".begin(), x);"
+        , "}"
+        , ""
+        , "void" +++ c ++ "::reverse() {"
+        , "  std::reverse(" ++inner++ ".begin(), " ++inner++ ".end());"
         , "}"
         ];
       }
@@ -379,20 +406,21 @@ prConstructorC mode (f,cs) = case mode of {
   CppStdBeyondAnsi _ -> unlines [
       f ++ "::" ++ f ++ "(" ++ conargs ++ ")",
       "{",
-      unlines ["  *" ++ c ++ " = " ++ p ++ ";" | (c,p) <- zip cvs pvs],
+      unlines ["  " ++ c ++ " = " ++ wrapMoveIf isClass p ++ ";" | (c,isClass,p) <- zip3 cvs isClasses pvs],
       "}"
       ];
     }
  where
    cvs = [c | (_,_,c) <- cs]
+   isClasses = [isClass | (_,isClass,_) <- cs]
    pvs = ['p' : show i | ((_,_,_),i) <- zip cs [1..]]
 
    conargs = case mode of {
      CppStdAnsi _ ->
-       intercalate ", " [x +++ pointerIf st v | ((x,st,_),v) <- zip cs pvs]
+       intercalate ", " [x +++ pointerIf isClass v | ((x,isClass,_),v) <- zip cs pvs]
      ;
      CppStdBeyondAnsi _ ->
-       intercalate ", " ["const"+++ x ++ "&" +++ v | ((x,_,_),v) <- zip cs pvs]
+       intercalate ", " [wrapSharedPtrIf isClass x ++ "&" +++ v | ((x,isClass,_),v) <- zip cs pvs]
      ;
      }
 
@@ -424,16 +452,14 @@ prCopyC mode (c,cs) = case mode of {
       "",
       c ++ "&" +++ c ++ "::operator=(" ++ c ++ "&& rhs) = default;",
       "",
-      -- c ++ "::" ++ c ++ "(const" +++ c ++ "& rhs)" ++ if length cs == 0 then "" else ":",
-      -- intercalate ", \n" ["  " ++c++ "(std::make_unique<" ++ x ++ ">(*rhs." ++ c ++ "))" | (x,_,c) <- cs],
       c ++ "::" ++ c ++ "(const" +++ c ++ "& rhs)",
       "{",
-      unlines ["  *"  ++ c ++ " = *rhs." ++ c ++ ";" | (x,st,c) <- cs],
+      unlines ["  "  ++ pointerIf isClass c ++ " = " ++ pointerIf isClass "rhs" ++ "." ++ c ++ ";" | (_,isClass,c) <- cs],
       "}",
       "",
       c ++ "&" +++ c ++ "::operator=(const" +++ c ++ "& rhs)",
       "{",
-      unlines ["  *"  ++ c ++ " = *rhs." ++ c ++ ";" | (x,st,c) <- cs],
+      unlines ["  "  ++ pointerIf isClass c ++ " = " ++ pointerIf isClass "rhs" ++ "." ++ c ++ ";" | (_,isClass,c) <- cs],
       "  return *this;",
       "}",
       ""

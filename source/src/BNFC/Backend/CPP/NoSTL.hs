@@ -6,6 +6,7 @@
 module BNFC.Backend.CPP.NoSTL (makeCppNoStl) where
 
 import Data.Foldable (toList)
+import qualified Data.Map as Map
 
 import BNFC.Utils
 import BNFC.CF
@@ -14,7 +15,7 @@ import BNFC.Backend.Base
 import BNFC.Backend.C            ( bufferH, bufferC, comment, testfileHeader )
 import BNFC.Backend.C.CFtoBisonC ( cf2Bison )
 import BNFC.Backend.C.CFtoFlexC  ( cf2flex, ParserMode(..) )
-import BNFC.Backend.CPP.Common   ( commentWithEmacsModeHint )
+import BNFC.Backend.CPP.Common   ( commentWithEmacsModeHint, CppStdMode(..) )
 import BNFC.Backend.CPP.Makefile
 import BNFC.Backend.CPP.NoSTL.CFtoCPPAbs
 import BNFC.Backend.CPP.STL.CFtoCVisitSkelSTL
@@ -32,15 +33,15 @@ makeCppNoStl opts cf = do
     mkCppFileWithHint (name ++ ".l") flex
     mkCppFileWithHint (name ++ ".y") $ cf2Bison (linenumbers opts) parserMode cf env
     mkCppFile "Parser.H" $
-      mkHeaderFile (toList $ allEntryPoints cf)
-    let (skelH, skelC) = cf2CVisitSkel False Nothing cf
+      mkHeaderFile cf (allParserCats cf) (toList $ allEntryPoints cf) (Map.elems env)
+    let (skelH, skelC) = cf2CVisitSkel opts False Nothing cf
     mkCppFile "Skeleton.H" skelH
     mkCppFile "Skeleton.C" skelC
-    let (prinH, prinC) = cf2CPPPrinter False Nothing cf
+    let (prinH, prinC) = cf2CPPPrinter (CppStdAnsi Ansi) False Nothing cf ".H"
     mkCppFile "Printer.H" prinH
     mkCppFile "Printer.C" prinC
     mkCppFile "Test.C" (cpptest cf)
-    Makefile.mkMakefile opts $ makefile prefix name compileOpt ".l" ".y"
+    Makefile.mkMakefile opts $ makefile prefix name opts
   where
     name :: String
     name = lang opts
@@ -49,8 +50,6 @@ makeCppNoStl opts cf = do
     -- It should be a valid C identifier.
     prefix :: String
     prefix = snakeCase_ name ++ "_"
-    compileOpt :: String
-    compileOpt = "--ansi"
     parserMode :: ParserMode
     parserMode = CParser True prefix
     mkCppFile         x = mkfile x comment
@@ -128,8 +127,7 @@ cpptest cf = unlines $ concat
    dat = identCat $ normCat cat
    def = identCat cat
 
-mkHeaderFile :: [Cat] -> String
-mkHeaderFile eps = unlines $ concat
+mkHeaderFile _cf _cats eps _env = unlines $ concat
   [ [ "#ifndef PARSER_HEADER_FILE"
     , "#define PARSER_HEADER_FILE"
     , ""

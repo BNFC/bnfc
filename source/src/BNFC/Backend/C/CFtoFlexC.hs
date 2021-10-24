@@ -17,7 +17,7 @@
 
 module BNFC.Backend.C.CFtoFlexC
   ( cf2flex
-  , ParserMode(..), parserName, parserPackage, reentrant, cParser, stlParser, parserHExt, variant, automove
+  , ParserMode(..), parserName, parserPackage, reentrant, cParser, stlParser, parserHExt, variant, beyondAnsi, isBisonUseUnion, isBisonUseVariant
   , preludeForBuffer  -- C code defining a buffer for lexing string literals.
   , cMacros           -- Lexer definitions.
   , commentStates     -- Stream of names for lexer states for comments.
@@ -40,7 +40,7 @@ import BNFC.Backend.C.RegToFlex
 import BNFC.Backend.Common.NamedVariables
 import BNFC.Options                  ( InPackage, Ansi(..) )
 import BNFC.PrettyPrint
-import BNFC.Utils                    ( cstring, symbolToName, unless, when )
+import BNFC.Utils                    ( cstring, symbolToName, unless, when, camelCase_ )
 
 data ParserMode
   = CParser Bool String             -- ^ @C@ (@False@) or @C++ no STL@ (@True@) mode, with @name@ to use as prefix.
@@ -59,22 +59,33 @@ parserPackage = \case
 reentrant :: ParserMode -> String
 reentrant = \case
   CParser   _ _ -> "%pure_parser";
-  CppParser _ _ ansi | ansi == BeyondAnsi -> "%define api.pure"
+  CppParser _ _ ansi | ansi == BeyondAnsi -> "/* \"lalr1.cc\" is always pure parser. needless to define %define api.pure full */"
                      | otherwise          -> "%pure_parser";
 
 variant :: ParserMode -> [String]
 variant = \case
   CppParser _ _ ansi | ansi == BeyondAnsi -> [
                          "/* variant based implementation of semantic values for C++ */"
-                         ,"%define api.value.type variant"]
+                         ,"%require \"3.2\""
+                         ,"%define api.value.type variant"
+                         ,"/* 'yacc.c' does not support variant, so use skeleton 'lalr1.cc' */"
+                         ,"%skeleton \"lalr1.cc\""]
   _ -> []
 
-automove :: ParserMode -> [String]
-automove = \case
-  CppParser _ _ ansi | ansi == BeyondAnsi -> [
-                         "/* every occurrence '$n' is replaced by 'std::move ($n)' */"
-                         , "%define api.value.automove"]
-  _ -> []
+beyondAnsi :: ParserMode -> Bool
+beyondAnsi = \case
+  CppParser _ _ ansi | ansi == BeyondAnsi -> True
+  _ -> False
+
+isBisonUseUnion :: ParserMode -> Bool
+isBisonUseUnion = \case
+  CppParser _ _ ansi | ansi == Ansi -> True
+  _ -> False
+
+isBisonUseVariant :: ParserMode -> Bool
+isBisonUseVariant = \case
+  CppParser _ _ ansi | ansi == BeyondAnsi -> True
+  _ -> False
 
 cParser :: ParserMode -> Bool
 cParser = \case
@@ -89,16 +100,17 @@ stlParser = \case
 parserHExt :: ParserMode -> String
 parserHExt = \case
   CParser   b _ -> if b then "H" else "h"
-  CppParser _ _ _ -> "H"
+  CppParser _ _ ansi | ansi == BeyondAnsi -> "hh"
+                     | otherwise -> "h"
 
 -- | Entrypoint.
 cf2flex :: ParserMode -> CF -> (String, SymMap) -- The environment is reused by the parser.
 cf2flex mode cf = (, env) $ unlines
     [ prelude stringLiterals mode
     , cMacros cf
-    , lexSymbols env1
-    , restOfFlex (parserPackage mode) cf env
-    , footer -- mode
+    , lexSymbols mode env1
+    , restOfFlex mode cf env
+    , footer mode
     ]
   where
     env  = Map.fromList env2
@@ -113,11 +125,20 @@ prelude :: Bool -> ParserMode -> String
 prelude stringLiterals mode = unlines $ concat
   [ [ "/* Lexer definition for use with FLex */"
     , ""
-    -- noinput and nounput are most often unused
-    -- https://stackoverflow.com/questions/39075510/option-noinput-nounput-what-are-they-for
-    , "%option noyywrap noinput nounput"
-    , "%option reentrant bison-bridge bison-locations"
-    , ""
+    , if (beyondAnsi mode) then
+        unlines
+        [
+          "%option nodefault noyywrap c++"
+        , "%option prefix=\"Bnfc\""
+        ]
+      else
+        unlines
+        -- noinput and nounput are most often unused
+        -- https://stackoverflow.com/questions/39075510/option-noinput-nounput-what-are-they-for
+        [ "%option noyywrap noinput nounput"
+        , "%option reentrant bison-bridge bison-locations"
+        , ""
+        ]
     ]
   , when stringLiterals
     [ "/* Additional data for the lexer: a buffer for lexing string literals. */"
@@ -131,7 +152,20 @@ prelude stringLiterals mode = unlines $ concat
     , posixC
     , [ "}" ]
     ]
+  , when (beyondAnsi mode)
+    [ "%top{"
+    , "#include <memory>"
+    , "}"
+    ]
   , [ "%{"
+    , when (beyondAnsi mode) unlines
+      [
+        "#include \"Scanner.hh\""  -- #include for the class inheriting "yyFlexLexer"
+      , ""
+      , "/* using \"token\" to make the returns for the tokens shorter to type */"
+      , "using token = " ++ns++ "::" ++camelCaseName++ "Parser::token;"
+      , ""
+      ]
     , "#include \"" ++ ("Absyn" <.> h) ++ "\""
     , "#include \"" ++ ("Bison" <.> h) ++ "\""
     , ""
@@ -139,65 +173,79 @@ prelude stringLiterals mode = unlines $ concat
   , [ "#define initialize_lexer " ++ parserName mode ++ "_initialize_lexer"
     , ""
     ]
-  , when stringLiterals $ preludeForBuffer $ "Buffer" <.> h
+  , when stringLiterals $ preludeForBuffer mode $ "Buffer" <.> h
     -- https://www.gnu.org/software/bison/manual/html_node/Token-Locations.html
     -- Flex is responsible for keeping tracking of the yylloc for Bison.
     -- Flex also doesn't do this automatically so we need this function
     -- https://stackoverflow.com/a/22125500/425756
-  , [ "static void update_loc(YYLTYPE* loc, char* text)"
-    , "{"
-    , "  loc->first_line = loc->last_line;"
-    , "  loc->first_column = loc->last_column;"
-    , "  int i = 0;"  -- put this here as @for (int i...)@ is only allowed in C99
-    , "  for (; text[i] != '\\0'; ++i) {"
-    , "      if (text[i] == '\\n') {"        -- Checking for \n is good enough to also support \r\n (but not \r)
-    , "          ++loc->last_line;"
-    , "          loc->last_column = 0; "
-    , "      } else {"
-    , "          ++loc->last_column; "
-    , "      }"
-    , "  }"
-    , "}"
-    , "#define YY_USER_ACTION update_loc(yylloc, yytext);"
-    , ""
-    , "%}"
-    ]
+  , if beyondAnsi mode then
+      [ "/* update location on matching */"
+      , "#define YY_USER_ACTION loc->step(); loc->columns(yyleng);"
+      , "%}"
+      ]
+    else
+      [ "static void update_loc(YYLTYPE* loc, char* text)"
+      , "{"
+      , "  loc->first_line = loc->last_line;"
+      , "  loc->first_column = loc->last_column;"
+      , "  int i = 0;"  -- put this here as @for (int i...)@ is only allowed in C99
+      , "  for (; text[i] != '\\0'; ++i) {"
+      , "      if (text[i] == '\\n') {"        -- Checking for \n is good enough to also support \r\n (but not \r)
+      , "          ++loc->last_line;"
+      , "          loc->last_column = 0; "
+      , "      } else {"
+      , "          ++loc->last_column; "
+      , "      }"
+      , "  }"
+      , "}"
+      , "#define YY_USER_ACTION update_loc(yylloc, yytext);"
+      , ""
+      , "%}"
+      ]
   ]
   where
-  h = parserHExt mode
+    h = parserHExt mode
+    name = parserName mode
+    camelCaseName = camelCase_ name
+    ns = fromMaybe camelCaseName (parserPackage mode)
 
 -- | Part of the lexer prelude needed when string literals are to be lexed.
 --   Defines an interface to the Buffer.
-preludeForBuffer :: String -> [String]
-preludeForBuffer bufferH =
-    [ "/* BEGIN extensible string buffer */"
-    , ""
-    , "#include \"" ++ bufferH ++ "\""
-    , ""
-    , "/* The initial size of the buffer to lex string literals. */"
-    , "#define LITERAL_BUFFER_INITIAL_SIZE 1024"
-    , ""
-    , "/* The pointer to the literal buffer. */"
-    , "#define literal_buffer yyextra"
-    , ""
-    , "/* Initialize the literal buffer. */"
-    , "#define LITERAL_BUFFER_CREATE() literal_buffer = newBuffer(LITERAL_BUFFER_INITIAL_SIZE)"
-    , ""
-    , "/* Append characters at the end of the buffer. */"
-    , "#define LITERAL_BUFFER_APPEND(s) bufferAppendString(literal_buffer, s)"
-    , ""
-    , "/* Append a character at the end of the buffer. */"
-    , "#define LITERAL_BUFFER_APPEND_CHAR(c) bufferAppendChar(literal_buffer, c)"
-    , ""
-    , "/* Release the buffer, returning a pointer to its content. */"
-    , "#define LITERAL_BUFFER_HARVEST() releaseBuffer(literal_buffer)"
-    , ""
-    , "/* In exceptional cases, e.g. when reaching EOF, we have to free the buffer. */"
-    , "#define LITERAL_BUFFER_FREE() freeBuffer(literal_buffer)"
-    , ""
-    , "/* END extensible string buffer */"
-    , ""
-    ]
+preludeForBuffer :: ParserMode -> String -> [String]
+preludeForBuffer mode bufferH =
+  ["/* BEGIN extensible string buffer */"
+  , ""
+  , "#include \"" ++ bufferH ++ "\""
+  , ""
+  , "/* The initial size of the buffer to lex string literals. */"
+  , "#define LITERAL_BUFFER_INITIAL_SIZE 1024"
+  , ""
+  , "/* The pointer to the literal buffer. */"
+  , if (beyondAnsi mode) then
+      -- yyextra is not available in C++ lexer
+      -- https://stackoverflow.com/questions/51065292/how-to-use-yyextra-in-c
+      "Buffer literal_buffer = nullptr;"
+    else
+      "#define literal_buffer yyextra"
+  , ""
+  , "/* Initialize the literal buffer. */"
+  , "#define LITERAL_BUFFER_CREATE() literal_buffer = newBuffer(LITERAL_BUFFER_INITIAL_SIZE)"
+  , ""
+  , "/* Append characters at the end of the buffer. */"
+  , "#define LITERAL_BUFFER_APPEND(s) bufferAppendString(literal_buffer, s)"
+  , ""
+  , "/* Append a character at the end of the buffer. */"
+  , "#define LITERAL_BUFFER_APPEND_CHAR(c) bufferAppendChar(literal_buffer, c)"
+  , ""
+  , "/* Release the buffer, returning a pointer to its content. */"
+  , "#define LITERAL_BUFFER_HARVEST() releaseBuffer(literal_buffer)"
+  , ""
+  , "/* In exceptional cases, e.g. when reaching EOF, we have to free the buffer. */"
+  , "#define LITERAL_BUFFER_FREE() freeBuffer(literal_buffer)"
+  , ""
+  , "/* END extensible string buffer */"
+  , ""
+  ]
 
 -- For now all categories are included.
 -- Optimally only the ones that are used should be generated.
@@ -216,42 +264,94 @@ cMacros cf = unlines
   , "%%  /* Rules. */"
   ]
 
-lexSymbols :: KeywordEnv -> String
-lexSymbols ss = concatMap transSym ss
+lexSymbols :: ParserMode -> KeywordEnv -> String
+lexSymbols mode ss = concatMap transSym ss
   where
     transSym (s,r) =
-      "<INITIAL>\"" ++ s' ++ "\"      \t return " ++ r ++ ";\n"
+      "<INITIAL>\"" ++ s' ++ "\"      \t return " ++ prefix ++ r ++ ";\n"
         where
          s' = escapeChars s
+         prefix = if (beyondAnsi mode) then "token::" else ""
 
-restOfFlex :: InPackage -> CF -> SymMap -> String
-restOfFlex _inPackage cf env = unlines $ concat
+restOfFlex :: ParserMode -> CF -> SymMap -> String
+restOfFlex mode cf env = unlines $ concat
   [ [ render $ lexComments $ comments cf
     , ""
     ]
   , userDefTokens
-  , ifC catString  $ lexStrings "yylval" "_STRING_" "_ERROR_"
-  , ifC catChar    $ lexChars   "yylval" "_CHAR_"
-  , ifC catDouble  [ "<INITIAL>{DIGIT}+\".\"{DIGIT}+(\"e\"(\\-)?{DIGIT}+)?      \t yylval->_double = atof(yytext); return _DOUBLE_;" ]
-  , ifC catInteger [ "<INITIAL>{DIGIT}+      \t yylval->_int = atoi(yytext); return _INTEGER_;" ]
-  , ifC catIdent   [ "<INITIAL>{LETTER}{IDENT}*      \t yylval->_string = strdup(yytext); return _IDENT_;" ]
+  , ifC catString  $ lexStrings mode (prefix++"_STRING_") (prefix++"_ERROR_")
+  , ifC catChar    $ lexChars   "yylval" (prefix++"_CHAR_")
+  , ifC catDouble  [ "<INITIAL>{DIGIT}+\".\"{DIGIT}+(\"e\"(\\-)?{DIGIT}+)?      \t " ++ (yylvalCopy mode "double" "yytext") ++ " return " ++prefix++ "_DOUBLE_;" ]
+  , ifC catInteger [ "<INITIAL>{DIGIT}+      \t " ++ (yylvalCopy mode "int" "yytext") ++ " return " ++prefix++ "_INTEGER_;" ]
+  , ifC catIdent   [ "<INITIAL>{LETTER}{IDENT}*      \t " ++ (yylvalCopy mode "string" "yytext") ++ " return " ++prefix++ "_IDENT_;" ]
   , [ "<INITIAL>[ \\t\\r\\n\\f]      \t /* ignore white space. */;"
-    , "<INITIAL>.      \t return _ERROR_;"
+    , "<INITIAL>.      \t return " ++prefix++ "_ERROR_;"
     , ""
     , "%%  /* Initialization code. */"
     ]
+  , when (beyondAnsi mode)
+    [
+      "namespace " ++ns++ " {"
+      , ""
+      , "" ++camelCaseName++ "Scanner::" ++camelCaseName++ "Scanner(std::istream *in)"
+      , "    : BnfcFlexLexer(in)"
+      , "{"
+      , "    loc = new " ++camelCaseName++ "::" ++camelCaseName++ "Parser::location_type();"
+      , "}"
+      , ""
+      , "" ++camelCaseName++ "Scanner::~" ++camelCaseName++ "Scanner()"
+      , "{"
+      , "}"
+      , ""
+      , "/* This implementation of " ++camelCaseName++ "FlexLexer::yylex() is required to fill the"
+      , " * vtable of the class " ++camelCaseName++ "FlexLexer. We define the scanner's main yylex"
+      , " * function via YY_DECL to reside in the Scanner class instead. */"
+      , ""
+      , "}"
+      , ""
+      , "#ifdef yylex"
+      , "#undef yylex"
+      , "#endif"
+      , ""
+      , "int BnfcFlexLexer::yylex()"
+      , "{"
+      , "    std::cerr << \"in BnfcFlexLexer::yylex() !\" << std::endl;"
+      , "    return 0;"
+      , "}"
+    ]
   ]
   where
-  ifC cat s = if isUsedCat cf (TokenCat cat) then s else []
-  userDefTokens =
-    [ "<INITIAL>" ++ printRegFlex exp ++
-       "    \t yylval->_string = strdup(yytext); return " ++ sName name ++ ";"
-    | (name, exp) <- tokenPragmas cf
-    ]
-    where sName n = fromMaybe n $ Map.lookup (Tokentype n) env
+    name = parserName mode
+    camelCaseName = camelCase_ name
+    ns = fromMaybe camelCaseName (parserPackage mode)
+    _inPackage = parserPackage mode
+    prefix = if (beyondAnsi mode) then "token::" else ""
+    ifC cat s = if isUsedCat cf (TokenCat cat) then s else []
+    userDefTokens =
+      [ "<INITIAL>" ++ printRegFlex exp ++
+        "    \t " ++ (yylvalCopy mode "string" "yytext") ++ " return " ++ prefix ++ (sName name) ++ ";"
+      | (name, exp) <- tokenPragmas cf
+      ]
+      where sName n = fromMaybe n $ Map.lookup (Tokentype n) env
 
-footer :: String
-footer = unlines
+-- | switch yylval->emplace<T> and yylval->_x = conv(yytext)
+yylvalCopy :: ParserMode -> String -> String -> String
+yylvalCopy mode typeStr arg =
+  case (beyondAnsi mode, typeStr) of
+    (True , "string") -> "yylval->emplace<std::string>(" ++arg++ ");"
+    (True , "int")    -> "yylval->emplace<int>(atoi(" ++arg++ "));"
+    (True , _       ) -> "yylval->emplace<" ++typeStr++ ">(" ++arg++ ");"
+    (False, "string") -> "yylval->_string = strdup(" ++arg++ ");"
+    (False, "int"   ) -> "yylval->_int    = atoi(" ++arg++ ");"
+    (False, "double") -> "yylval->_double = atof(" ++arg++ ");"
+    (False, _       ) -> ""
+
+footer :: ParserMode -> String
+footer mode =
+  if beyondAnsi mode then
+    "" -- TODO: Add required code later
+  else
+    unlines $
     [ "yyscan_t initialize_lexer(FILE *inp)"
     , "{"
     , "  yyscan_t scanner;"
@@ -262,11 +362,11 @@ footer = unlines
     ]
 
 -- | Lexing of strings, converting escaped characters.
-lexStrings :: String -> String -> String -> [String]
-lexStrings yylval stringToken errorToken =
+lexStrings :: ParserMode -> String -> String -> [String]
+lexStrings mode stringToken errorToken =
     [ "<INITIAL>\"\\\"\"        \t LITERAL_BUFFER_CREATE(); BEGIN STRING;"
     , "<STRING>\\\\             \t BEGIN ESCAPED;"
-    , "<STRING>\\\"             \t " ++ yylval ++ "->_string = LITERAL_BUFFER_HARVEST(); BEGIN INITIAL; return " ++ stringToken ++ ";"
+    , "<STRING>\\\"             \t " ++ (yylvalCopy mode "string" "LITERAL_BUFFER_HARVEST()") ++ " BEGIN INITIAL; return " ++ stringToken ++ ";"
     , "<STRING>.              \t LITERAL_BUFFER_APPEND_CHAR(yytext[0]);"
     , "<ESCAPED>f             \t LITERAL_BUFFER_APPEND_CHAR('\\f'); BEGIN STRING;"
     , "<ESCAPED>n             \t LITERAL_BUFFER_APPEND_CHAR('\\n'); BEGIN STRING;"
