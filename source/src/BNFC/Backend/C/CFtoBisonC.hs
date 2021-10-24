@@ -35,10 +35,10 @@ import System.FilePath ( (<.>) )
 
 import BNFC.CF
 import BNFC.Backend.Common.NamedVariables hiding (varName)
-import BNFC.Backend.C.CFtoFlexC (ParserMode(..), cParser, reentrant, stlParser, parserHExt, parserName, parserPackage, variant, automove)
+import BNFC.Backend.C.CFtoFlexC (ParserMode(..), cParser, reentrant, stlParser, parserHExt, parserName, parserPackage, variant, isBisonUseUnion, isBisonUseVariant)
 import BNFC.Backend.CPP.Naming
 import BNFC.Backend.CPP.STL.STLUtils
-import BNFC.Options (RecordPositions(..), InPackage, Ansi(..) )
+import BNFC.Options (RecordPositions(..), InPackage, Ansi(..))
 import BNFC.PrettyPrint
 import BNFC.Utils ((+++), table, applyWhen, for, unless, when, whenJust)
 
@@ -54,14 +54,57 @@ type MetaVar     = String
 cf2Bison :: RecordPositions -> ParserMode -> CF -> SymMap -> String
 cf2Bison rp mode cf env = unlines
     [ header mode cf
-    , render $ union mode $ posCats ++ allParserCatsNorm cf
-    , ""
-    , unionDependentCode mode
-    , unlines $ table " " $ concat
-      [ [ ["%token", "_ERROR_" ] ]
-      , tokens (map fst $ tokenPragmas cf) env
-      , specialToks cf
-      ]
+    , case isBisonUseUnion mode of {
+        --
+        -- C and CPP(Ansi) ParserMode will genrate following bison code:
+        --
+        -- %union
+        -- {
+        --   char*  _string;
+        --   Program* program_;
+        -- }
+        -- ...
+        -- %token _ERROR_
+        -- %token _STAR    /* * */
+        -- ...
+        -- %token<_string> _STRING_
+        -- %token<_int>    _INTEGER_
+        -- %token<_string> _IDENT_
+        --
+        -- %type <program_> Program
+        --
+        True -> unlines [
+          render $
+            union mode $ posCats ++ allParserCatsNorm cf  -- '%union' directive
+          , unionDependentCode mode                       -- yyerror, yyparse part for '%union'
+          , unlines $ table " " $ concat
+            [ [ ["%token", "_ERROR_" ] ]                  -- define %tokens /* x */
+            , tokens mode (map fst $ tokenPragmas cf) env -- user-defined regex %tokens
+            , specialToks mode cf                         -- built-in %tokens
+            ]]
+        ;
+        --
+        -- CPP(BeyondAnsi) ParserMode will genrate following bison code:
+        --
+        -- /** no union directive ! */
+        -- ...
+        -- %token _ERROR_
+        -- %token _STAR    /* * */
+        -- ...
+        -- %token<std::string> _STRING_
+        -- %token<int>    _     INTEGER_
+        -- %token<std::string> _IDENT_
+        --
+        -- %type <std::unique_ptr<Program>> Program
+        --
+        False -> unlines [
+            unlines $ table " " $ concat
+              [ [ ["%token", "_ERROR_" ] ]                  -- define %tokens /* x */
+              , tokens mode (map fst $ tokenPragmas cf) env -- user-defined regex %tokens
+              , specialToks mode cf                         -- built-in %tokens
+              ]]
+        ;
+        }
     , declarations mode cf
     , startSymbol cf
     , ""
@@ -330,20 +373,26 @@ declarations mode cf = unlines $ map typeNT $
   posCats ++
   filter (not . null . rulesForCat cf) (allParserCats cf) -- don't define internal rules
   where
-  typeNT nt = "%type <" ++ varName nt ++ "> " ++ identCat nt
-  posCats
-    | stlParser mode = map TokenCat $ positionCats cf
-    | otherwise      = []
+    typeNT nt = if isBisonUseVariant mode then
+                  "%type <std::unique_ptr<" ++ identCat nt ++ ">> " ++ identCat nt
+                else
+                  "%type <" ++ varName nt ++ "> " ++ identCat nt
+    posCats
+      | stlParser mode = map TokenCat $ positionCats cf
+      | otherwise      = []
 
 --declares terminal types.
 -- token name "literal"
 -- "Syntax error messages passed to yyerror from the parser will reference the literal string instead of the token name."
 -- https://www.gnu.org/software/bison/manual/html_node/Token-Decl.html
-tokens :: [UserDef] -> SymMap -> [[String]]
-tokens user env = map declTok $ Map.toList env
+tokens :: ParserMode -> [UserDef] -> SymMap -> [[String]]
+tokens mode userDefs env = map declTok $ Map.toList env
   where
+  stringType = case isBisonUseVariant mode of
+    True -> "<std::string>";
+    False -> "<_string>";
   declTok (Keyword   s, r) = tok "" s r
-  declTok (Tokentype s, r) = tok (if s `elem` user then "<_string>" else "") s r
+  declTok (Tokentype s, r) = tok (if s `elem` userDefs then stringType else "") s r
   tok t s r = [ "%token" ++ t, r, " /* " ++ cStringEscape s ++ " */" ]
 
 -- | Escape characters inside a C string.
@@ -355,16 +404,21 @@ cStringEscape = concatMap escChar
       | otherwise = [c]
 
 -- | Produces a table with the built-in token types.
-specialToks :: CF -> [[String]]
-specialToks cf = concat
-  [ ifC catString  [ "%token<_string>", "_STRING_"  ]
-  , ifC catChar    [ "%token<_char>  ", "_CHAR_"    ]
-  , ifC catInteger [ "%token<_int>   ", "_INTEGER_" ]
-  , ifC catDouble  [ "%token<_double>", "_DOUBLE_"  ]
-  , ifC catIdent   [ "%token<_string>", "_IDENT_"   ]
+specialToks :: ParserMode -> CF -> [[String]]
+specialToks mode cf = concat
+  [ ifC catString  [ "%token"++stringToken,     "_STRING_"  ]
+  , ifC catChar    [ "%token"++charToken++"  ", "_CHAR_"    ]
+  , ifC catInteger [ "%token"++intToken++"   ", "_INTEGER_" ]
+  , ifC catDouble  [ "%token"++doubleToken,     "_DOUBLE_"  ]
+  , ifC catIdent   [ "%token"++stringToken,     "_IDENT_"   ]
   ]
   where
     ifC cat s = if isUsedCat cf (TokenCat cat) then [s] else []
+    stringToken = if isBisonUseVariant mode then "<std::string>" else "<_string>"
+    charToken = if isBisonUseVariant mode then "<char>" else "<_char>"
+    intToken = if isBisonUseVariant mode then "<int>" else "<_int>"
+    doubleToken = if isBisonUseVariant mode then "<double>" else "<_double>"
+
 
 -- | Bison only supports a single entrypoint.
 startSymbol :: CF -> String
