@@ -30,17 +30,18 @@ import Prelude hiding ((<>))
 import Data.Char       ( toLower, isUpper )
 import Data.Foldable   ( toList )
 import Data.List       ( intercalate, nub )
+import Data.Maybe      ( fromMaybe )
 import qualified Data.Map as Map
 import System.FilePath ( (<.>) )
 
 import BNFC.CF
 import BNFC.Backend.Common.NamedVariables hiding (varName)
-import BNFC.Backend.C.CFtoFlexC (ParserMode(..), cParser, reentrant, stlParser, parserHExt, parserName, parserPackage, variant, isBisonUseUnion, isBisonUseVariant)
+import BNFC.Backend.C.CFtoFlexC (ParserMode(..), cParser, reentrant, stlParser, parserHExt, parserName, parserPackage, variant, isBisonUseUnion, isBisonUseVariant, beyondAnsi)
 import BNFC.Backend.CPP.Naming
 import BNFC.Backend.CPP.STL.STLUtils
 import BNFC.Options (RecordPositions(..), InPackage, Ansi(..))
 import BNFC.PrettyPrint
-import BNFC.Utils ((+++), table, applyWhen, for, unless, when, whenJust)
+import BNFC.Utils ((+++), table, applyWhen, for, unless, when, whenJust, camelCase_)
 
 --This follows the basic structure of CFtoHappy.
 
@@ -74,8 +75,8 @@ cf2Bison rp mode cf env = unlines
         -- %type <program_> Program
         --
         True -> unlines [
-          render $
-            union mode $ posCats ++ allParserCatsNorm cf  -- '%union' directive
+          render $ union mode $ posCats ++ allParserCatsNorm cf  -- '%union' directive
+          , ""
           , unionDependentCode mode                       -- yyerror, yyparse part for '%union'
           , unlines $ table " " $ concat
             [ [ ["%token", "_ERROR_" ] ]                  -- define %tokens /* x */
@@ -127,81 +128,121 @@ positionCats :: CF -> [String]
 positionCats cf = [ wpThing name | TokenReg name True _ <- cfgPragmas cf ]
 
 header :: ParserMode -> CF -> String
-header mode cf = unlines $ concat
-  [ [ "/* Parser definition to be used with Bison. */"
-    , ""
-    , "/* Generate header file for lexer. */"
-    , "%defines \"" ++ ("Bison" <.> h) ++ "\""
-    ]
+header mode cf = unlines $ concat [
+  --
+  -- Common header
+  --
+  [ "/* Parser definition to be used with Bison. */"
+  , ""
+  , "/* Generate header file for lexer. */"
+  , "%defines \"" ++ ("Bison" <.> h) ++ "\""
+  ]
   , whenJust (parserPackage mode) $ \ ns ->
-    [ "%name-prefix = \"" ++ ns ++ "\""
-    , "  /* From Bison 2.6: %define api.prefix {" ++ ns ++ "} */"
-    ]
-  , [ ""
-    , "/* Reentrant parser */"
-    , reentrant mode
-    , "/* From Bison 2.3b (2008): %define api.pure full */"
-      -- The flag %pure_parser is deprecated with a warning since Bison 3.4,
-      -- but older Bisons like 2.3 (2006, shipped with macOS) don't recognize
-      -- %define api.pure full
-    , "%lex-param   { yyscan_t scanner }"
-    , "%parse-param { yyscan_t scanner }"
-    , ""
-    , concat [ "/* Turn on line/column tracking in the ", name, "lloc structure: */" ]
-    , "%locations"
-    , ""
-    , "/* Argument to the parser to be filled with the parsed tree. */"
-    , "%parse-param { YYSTYPE *result }"
-    , ""
-    -- Use variant type if c++14
-    , unlines $ (variant mode)
-    -- Use std::move if c++14
-    --, unlines $ (automove mode)
-    , ""
-    , "%{"
-    , "/* Begin C preamble code */"
-    , ""
-    ]
-    -- Andreas, 2021-08-26, issue #377:  Some C++ compilers want "algorithm".
-    -- Fixing regression introduced in 2.9.2.
-  , when (stlParser mode)
-    [ "#include <algorithm> /* for std::reverse */"  -- mandatory e.g. with GNU C++ 11
-    ]
-  , [ "#include <stdio.h>"
-    , "#include <stdlib.h>"
-    , "#include <string.h>"
-    , "#include \"" ++ ("Absyn" <.> h) ++ "\""
-    , ""
-    , "#define YYMAXDEPTH 10000000"  -- default maximum stack size is 10000, but right-recursion needs O(n) stack
-    , ""
-    , "/* The type yyscan_t is defined by flex, but we need it in the parser already. */"
-    , "#ifndef YY_TYPEDEF_YY_SCANNER_T"
-    , "#define YY_TYPEDEF_YY_SCANNER_T"
-    , "typedef void* yyscan_t;"
-    , "#endif"
-    , ""
-    -- , "typedef struct " ++ name ++ "_buffer_state *YY_BUFFER_STATE;"
-    , "typedef struct yy_buffer_state *YY_BUFFER_STATE;"
-    , "extern YY_BUFFER_STATE " ++ name ++ "_scan_string(const char *str, yyscan_t scanner);"
-    , "extern void " ++ name ++ "_delete_buffer(YY_BUFFER_STATE buf, yyscan_t scanner);"
-    , ""
-    , "extern void " ++ name ++ "lex_destroy(yyscan_t scanner);"
-    , "extern char* " ++ name ++ "get_text(yyscan_t scanner);"
-    , ""
-    , "extern yyscan_t " ++ name ++ "_initialize_lexer(FILE * inp);"
-    , ""
-    ]
-  , unless (stlParser mode)
-    [ "/* List reversal functions. */"
-    , concatMap (reverseList mode) $ filter isList $ allParserCatsNorm cf
-    ]
-  , [ "/* End C preamble code */"
-    , "%}"
-    ]
+      if beyondAnsi mode then
+        [ "%api.namespace = \"" ++ ns ++ "\""
+        , "/* Specify the namespace for the C++ parser class. */"]
+      else
+        [ "%name-prefix = \"" ++ ns ++ "\""
+        , "/* From Bison 2.6: %define api.prefix {" ++ ns ++ "} */"]
+  , if beyondAnsi mode then
+      -- Bison c++ beyond ansi mode
+      [""
+      , "/* Reentrant parser */"
+      , "/* lalr1.cc always pure parser. needless to define %define api.pure full */"
+      , ""
+      , "%define api.parser.class {" ++ camelCaseName ++ "Parser}"
+      , "%code requires{"
+      , "    namespace " ++ driverNs ++ " {"
+      , "        class " ++ camelCaseName ++ "Scanner;"
+      , "        class " ++ camelCaseName ++ "Driver;"
+      , "    }"
+      , "}"
+      , "%parse-param { " ++ camelCaseName ++ "Scanner  &scanner  }"
+      , "%parse-param { " ++ camelCaseName ++ "Driver  &driver  }"
+      , ""
+      , "/* Turn on line/column tracking in the " ++name++ "lloc structure: */"
+      , "%locations"
+      , "/* variant based implementation of semantic values for C++ */"
+      , "%require \"3.2\""
+      , "%define api.value.type variant"
+      , "/* 'yacc.c' does not support variant, so use skeleton 'lalr1.cc' */"
+      , "%skeleton \"lalr1.cc\""
+      , ""
+      , "%code{"
+      , "/* Begin C++ preamble code */"
+      , "#include <algorithm> /* for std::reverse */"
+      , "#include <iostream>"
+      , "#include <cstdlib>"
+      , "#include <fstream>"
+      , ""
+      , "/* include for all driver functions */"
+      , "#include \"Driver.H\""
+      , ""
+      , "#undef yylex"
+      , "#define yylex scanner.yylex"
+      , "}"
+      , ""
+      ]
+    else
+      -- Bison c/c++ ansi mode
+      [""
+      , "/* Reentrant parser */"
+      , "%pure_parser"
+      , "/* From Bison 2.3b (2008): %define api.pure full */"
+      , "/* The flag %pure_parser is deprecated with a warning since Bison 3.4, */"
+      , "/* but older Bisons like 2.3 (2006, shipped with macOS) don't recognize %define api.pure full */"
+      , ""
+      , "%lex-param   { yyscan_t scanner }"
+      , "%parse-param { yyscan_t scanner }"
+      , ""
+      , "/* Turn on line/column tracking in the " ++name++ "lloc structure: */"
+      , "%locations"
+      , "/* Argument to the parser to be filled with the parsed tree. */"
+      , "%parse-param { YYSTYPE *result }"
+      , ""
+      , "%{"
+      , "/* Begin C preamble code */"
+      , ""
+      -- Andreas, 2021-08-26, issue #377:  Some C++ compilers want "algorithm".
+      -- Fixing regression introduced in 2.9.2.
+      , when (stlParser mode)
+        "#include <algorithm> /* for std::reverse */"  -- mandatory e.g. with GNU C++ 11
+      , "#include <stdio.h>"
+      , "#include <stdlib.h>"
+      , "#include <string.h>"
+      , "#include \"" ++ ("Absyn" <.> h) ++ "\""
+      , ""
+      , "#define YYMAXDEPTH 10000000"  -- default maximum stack size is 10000, but right-recursion needs O(n) stack
+      , ""
+      , "/* The type yyscan_t is defined by flex, but we need it in the parser already. */"
+      , "#ifndef YY_TYPEDEF_YY_SCANNER_T"
+      , "#define YY_TYPEDEF_YY_SCANNER_T"
+      , "typedef void* yyscan_t;"
+      , "#endif"
+      , ""
+      , "typedef struct " ++ name ++ "_buffer_state *YY_BUFFER_STATE;"
+      , "typedef struct yy_buffer_state *YY_BUFFER_STATE;"
+      , "extern YY_BUFFER_STATE " ++ name ++ "_scan_string(const char *str, yyscan_t scanner);"
+      , "extern void " ++ name ++ "_delete_buffer(YY_BUFFER_STATE buf, yyscan_t scanner);"
+      , ""
+      , "extern void " ++ name ++ "lex_destroy(yyscan_t scanner);"
+      , "extern char* " ++ name ++ "get_text(yyscan_t scanner);"
+      , ""
+      , "extern yyscan_t " ++ name ++ "_initialize_lexer(FILE * inp);"
+      ,  ""
+      , unless (stlParser mode)
+        unlines [ "/* List reversal functions. */"
+                , concatMap (reverseList mode) $ filter isList $ allParserCatsNorm cf]
+      , "/* End C preamble code */"
+      , "%}"
+      ]
   ]
   where
-  h    = parserHExt mode
-  name = parserName mode
+    h = parserHExt mode
+    name = parserName mode
+    camelCaseName = camelCase_ name
+    -- namespace for C++ driver
+    driverNs = fromMaybe camelCaseName (parserPackage mode)
 
 -- | Code that needs the @YYSTYPE@ defined by the @%union@ pragma.
 --

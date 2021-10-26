@@ -17,7 +17,7 @@
 
 module BNFC.Backend.C.CFtoFlexC
   ( cf2flex
-  , ParserMode(..), parserName, parserPackage, reentrant, cParser, stlParser, parserHExt, variant, automove, isBisonUseUnion, isBisonUseVariant
+  , ParserMode(..), parserName, parserPackage, reentrant, cParser, stlParser, parserHExt, variant, beyondAnsi, isBisonUseUnion, isBisonUseVariant
   , preludeForBuffer  -- C code defining a buffer for lexing string literals.
   , cMacros           -- Lexer definitions.
   , commentStates     -- Stream of names for lexer states for comments.
@@ -72,16 +72,14 @@ variant = \case
                          ,"%skeleton \"lalr1.cc\""]
   _ -> []
 
-automove :: ParserMode -> [String]
-automove = \case
-  CppParser _ _ ansi | ansi == BeyondAnsi -> [
-                         "/* every occurrence '$n' is replaced by 'std::move ($n)' */"
-                         , "%define api.value.automove"]
-  _ -> []
+beyondAnsi :: ParserMode -> Bool
+beyondAnsi = \case
+  CppParser _ _ ansi | ansi == BeyondAnsi -> True
+  _ -> False
 
 isBisonUseUnion :: ParserMode -> Bool
 isBisonUseUnion = \case
-  CppParser _ _ ansi | ansi == BeyondAnsi -> False
+  CppParser _ _ ansi | ansi == Ansi -> True
   _ -> False
 
 isBisonUseVariant :: ParserMode -> Bool
