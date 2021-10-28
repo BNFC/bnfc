@@ -209,7 +209,7 @@ prCon mode (c,(f,cs)) =
        ;
        CppStdBeyondAnsi _ ->
            concat $ intersperse ", "
-           ["const" +++ x ++ "& p" ++ show i | ((x,_,_),i) <- zip cs [1..]]
+           ["std::unique_ptr<" ++x++ ">& p" ++ show i | ((x,_,_),i) <- zip cs [1..]]
        ;
        }
 
@@ -240,6 +240,8 @@ prList mode (c, b) = case mode of {
       , " ~" ++ c ++ "();"
       , "  virtual void accept(Visitor *v);"
       , "  std::unique_ptr<" ++ c ++ "> clone() const;"
+      , "  std::unique_ptr<" ++ c ++ "> cons" ++ c ++ "(std::unique_ptr<" ++ childClass ++ ">, std::unique_ptr<" ++c++ ">);"
+      , "  void reverse();"
       , "};"
       , ""
       ];
@@ -257,7 +259,7 @@ mkCFile mode inPackage cabs cf = unlines $ [
   "#include <algorithm>",
   "#include <string>",
   "#include <vector>",
-  "#include \"Absyn.H\"",
+  "#include \"Absyn"++hExt++"\"",
   nsStart inPackage,
   unlines [prConC  mode c r  | (c,rs) <- signatures cabs, r <- rs],
   unlines [prListC mode l | l <- listtypes cabs],
@@ -268,6 +270,9 @@ mkCFile mode inPackage cabs cf = unlines $ [
   where
   nil  t = (,dummyType) $ concat [ "new List", identType t, "()" ]
   cons t = (,dummyType) $ concat [ "consList", identType t ]
+  hExt = case mode of
+    CppStdAnsi _ -> ".h";
+    CppStdBeyondAnsi _ -> ".hh";
 
 
 prConC :: CppStdMode -> String -> CAbsRule -> String
@@ -356,9 +361,13 @@ prConsC mode c b = case mode of {
         , "}"
         ];
     CppStdBeyondAnsi _ -> unlines [
-        concat [ "std::unique_ptr<", c, "> ", "cons", c, "(std::unique_ptr<", bas, "> x, std::unique_ptr<", c, "> xs) {" ]
+        concat [ "std::unique_ptr<", c, "> ", c, "::cons", c, "(std::unique_ptr<", bas, "> x, std::unique_ptr<", c, "> xs) {" ]
         , "  xs->" ++inner++ ".insert(xs->" ++inner++ ".begin(), std::move(x));"
         , "  return xs;"
+        , "}"
+        , ""
+        , "void" +++ c ++ "::reverse() {"
+        , "  std::reverse(" ++inner++ ".begin(), " ++inner++ ".end());"
         , "}"
         ];
       }
@@ -381,7 +390,7 @@ prConstructorC mode (f,cs) = case mode of {
   CppStdBeyondAnsi _ -> unlines [
       f ++ "::" ++ f ++ "(" ++ conargs ++ ")",
       "{",
-      unlines ["  *" ++ c ++ " = " ++ p ++ ";" | (c,p) <- zip cvs pvs],
+      unlines ["  " ++ c ++ " = std::move(" ++ p ++ ");" | (c,p) <- zip cvs pvs],
       "}"
       ];
     }
@@ -394,7 +403,7 @@ prConstructorC mode (f,cs) = case mode of {
        intercalate ", " [x +++ pointerIf st v | ((x,st,_),v) <- zip cs pvs]
      ;
      CppStdBeyondAnsi _ ->
-       intercalate ", " ["const"+++ x ++ "&" +++ v | ((x,_,_),v) <- zip cs pvs]
+       intercalate ", " ["std::unique_ptr<" ++x++ ">&" +++ v | ((x,_,_),v) <- zip cs pvs]
      ;
      }
 
@@ -426,16 +435,14 @@ prCopyC mode (c,cs) = case mode of {
       "",
       c ++ "&" +++ c ++ "::operator=(" ++ c ++ "&& rhs) = default;",
       "",
-      -- c ++ "::" ++ c ++ "(const" +++ c ++ "& rhs)" ++ if length cs == 0 then "" else ":",
-      -- intercalate ", \n" ["  " ++c++ "(std::make_unique<" ++ x ++ ">(*rhs." ++ c ++ "))" | (x,_,c) <- cs],
       c ++ "::" ++ c ++ "(const" +++ c ++ "& rhs)",
       "{",
-      unlines ["  *"  ++ c ++ " = *rhs." ++ c ++ ";" | (x,st,c) <- cs],
+      unlines ["  *"  ++ c ++ " = *rhs." ++ c ++ ";" | (_,_,c) <- cs],
       "}",
       "",
       c ++ "&" +++ c ++ "::operator=(const" +++ c ++ "& rhs)",
       "{",
-      unlines ["  *"  ++ c ++ " = *rhs." ++ c ++ ";" | (x,st,c) <- cs],
+      unlines ["  *"  ++ c ++ " = *rhs." ++ c ++ ";" | (_,_,c) <- cs],
       "  return *this;",
       "}",
       ""

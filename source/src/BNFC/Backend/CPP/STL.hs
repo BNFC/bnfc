@@ -30,34 +30,35 @@ import qualified BNFC.Backend.Common.Makefile as Makefile
 
 makeCppStl :: SharedOptions -> CF -> MkFiles ()
 makeCppStl opts cf = do
-    let (hfile, cfile) = cf2CPPAbs (linenumbers opts) cppStdMode (inPackage opts) name cf
-    mkCppFile "Absyn.H" hfile
-    mkCppFile "Absyn.C" cfile
-    mkCppFile "Buffer.H" bufferH
-    mkCppFile "Buffer.C" $ bufferC "Buffer.H"
-    let (flex, env) = cf2flex parserMode cf
-    mkCppFileWithHint (name ++ lexerExt) flex
-    mkCppFileWithHint (name ++ parserExt) $ cf2Bison (linenumbers opts) parserMode cf env
-    mkCppFile "Parser.H" $
-      mkHeaderFile (inPackage opts) cf (allParserCats cf) (toList $ allEntryPoints cf) (Map.elems env)
-    mkCppFile "ParserError.H" $ printParseErrHeader (inPackage opts)
-    let (skelH, skelC) = cf2CVisitSkel True (inPackage opts) cf
-    mkCppFile "Skeleton.H" skelH
-    mkCppFile "Skeleton.C" skelC
-    let (prinH, prinC) = cf2CPPPrinter True (inPackage opts) cf
-    mkCppFile "Printer.H" prinH
-    mkCppFile "Printer.C" prinC
-    mkCppFile "Test.C" (cpptest (inPackage opts) cf)
+  let (hfile, cfile) = cf2CPPAbs (linenumbers opts) cppStdMode (inPackage opts) name cf
+  mkCppFile ("Absyn" ++ hExt) hfile
+  mkCppFile ("Absyn" ++ cppExt) cfile
+  mkCppFile ("Buffer" ++ hExt) bufferH
+  mkCppFile ("Buffer" ++ cppExt) $ bufferC ("Buffer" ++ hExt)
+  -- Generate xxx.ll file
+  let (flex, env) = cf2flex parserMode cf
+  mkCppFileWithHint (name ++ lexerExt) flex
+  -- Generate xxx.yy file
+  mkCppFileWithHint (name ++ parserExt) $ cf2Bison (linenumbers opts) parserMode cf env
+  mkCppFile ("Parser" ++ hExt) $
+    mkHeaderFile hExt (inPackage opts) cf (allParserCats cf) (toList $ allEntryPoints cf) (Map.elems env)
+  mkCppFile ("ParserError" ++ hExt) $ printParseErrHeader (inPackage opts)
+  let (skelH, skelC) = cf2CVisitSkel True (inPackage opts) cf
+  mkCppFile ("Skeleton" ++ hExt) skelH
+  mkCppFile ("Skeleton" ++ cppExt) skelC
+  let (prinH, prinC) = cf2CPPPrinter True (inPackage opts) cf
+  mkCppFile ("Printer" ++ hExt) prinH
+  mkCppFile ("Printer" ++ cppExt) prinC
+  mkCppFile ("Test" ++ cppExt) (cpptest (inPackage opts) cf)
 
-    case (ansi opts) of
-      BeyondAnsi -> do
-        mkCppFile "Driver.C" $ driverC parserMode "Driver.H"
-        mkCppFile "Driver.H" $ driverH parserMode
-        mkCppFile "Scanner.H" $ scannerH parserMode;
-      _ ->
-        return();
-
-    Makefile.mkMakefile opts $ makefile prefix name compileOpt lexerExt parserExt
+  case (ansi opts) of
+    BeyondAnsi -> do
+      mkCppFile ("Driver" ++ cppExt) $ driverC parserMode ("Driver" ++ hExt)
+      mkCppFile ("Driver" ++ hExt) $ driverH parserMode
+      mkCppFile ("Scanner" ++ hExt) $ scannerH parserMode;
+    _ ->
+      return();
+  Makefile.mkMakefile opts $ makefile prefix name opts
   where
     name :: String
     name = lang opts
@@ -66,14 +67,6 @@ makeCppStl opts cf = do
     -- It should be a valid C identifier.
     prefix :: String
     prefix = snakeCase_ name ++ "_"
-    -- Compile option used by Makefile
-    compileOpt :: String
-    compileOpt = if Ansi == ansi opts then "--ansi" else "-std=c++14"
-    lexerExt :: String
-    lexerExt = if Ansi == ansi opts then ".l" else ".ll"
-    parserExt :: String
-    parserExt = if Ansi == ansi opts then ".y" else ".yy"
-
     parserMode :: ParserMode
     parserMode = CppParser (inPackage opts) prefix (ansi opts)
     mkCppFile         x = mkfile x comment
@@ -84,6 +77,11 @@ makeCppStl opts cf = do
                    CppStdAnsi (ansi opts)
                  else
                    CppStdBeyondAnsi (ansi opts)
+    lexerExt = if Ansi == ansi opts then ".l" else ".ll"
+    parserExt = if Ansi == ansi opts then ".y" else ".yy"
+    cppExt = if Ansi == ansi opts then ".c" else ".cc"
+    hExt = if Ansi == ansi opts then ".h" else ".hh"
+
 
 printParseErrHeader :: Maybe String -> String
 printParseErrHeader inPackage =
@@ -190,14 +188,14 @@ cpptest inPackage cf = unlines $ concat
    def = identCat cat
    scope = nsScope inPackage
 
-mkHeaderFile inPackage _cf _cats eps _env = unlines $ concat
+mkHeaderFile hExt inPackage _cf _cats eps _env = unlines $ concat
   [ [ "#ifndef " ++ hdef
     , "#define " ++ hdef
     , ""
     , "#include<vector>"
     , "#include<string>"
     , "#include<cstdio>"
-    , "#include \"Absyn.H\""
+    , "#include \"Absyn" ++ hExt ++ "\""
     , ""
     , nsStart inPackage
     ]
@@ -226,8 +224,8 @@ driverH mode = unlines
   , "#include <cstddef>"
   , "#include <istream>"
   , ""
-  , "#include \"Scanner.H\""
-  , "#include \"Parser.H\""
+  , "#include \"Scanner.hh\""
+  , "#include \"Parser.hh\""
   , ""
   , "namespace " ++ns++ "{"
   , ""
@@ -272,7 +270,7 @@ driverC mode driverH = unlines
   , "#include <fstream>"
   , "#include <cassert>"
   , " "
-  , "#include \"Driver.H\""
+  , "#include \"Driver.hh\""
   , " "
   , "" ++ns++ "::" ++camelCaseName++ "Driver::~" ++camelCaseName++ "Driver()"
   , "{"
@@ -364,7 +362,7 @@ scannerH mode = unlines
   , "#include <FlexLexer.h>"
   , "#endif"
   , ""
-  , "#include \"Parser.H\""
+  , "#include \"Bison.hh\""
   , "#include \"location.hh\""
   , ""
   , "namespace " ++ns++ "{"

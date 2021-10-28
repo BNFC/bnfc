@@ -36,7 +36,7 @@ import System.FilePath ( (<.>) )
 
 import BNFC.CF
 import BNFC.Backend.Common.NamedVariables hiding (varName)
-import BNFC.Backend.C.CFtoFlexC (ParserMode(..), cParser, reentrant, stlParser, parserHExt, parserName, parserPackage, variant, isBisonUseUnion, isBisonUseVariant, beyondAnsi)
+import BNFC.Backend.C.CFtoFlexC (ParserMode(..), cParser, stlParser, parserHExt, parserName, parserPackage, isBisonUseUnion, isBisonUseVariant, beyondAnsi)
 import BNFC.Backend.CPP.Naming
 import BNFC.Backend.CPP.STL.STLUtils
 import BNFC.Options (RecordPositions(..), InPackage, Ansi(..))
@@ -115,7 +115,8 @@ cf2Bison rp mode cf env = unlines
     , "%%"
     , ""
     , nsStart inPackage
-    , entryCode mode cf
+    , unless (beyondAnsi mode) -- entryCode for beyondAndi is in Driver
+      entryCode mode cf
     , nsEnd inPackage
     ]
   where
@@ -135,7 +136,7 @@ header mode cf = unlines $ concat [
   [ "/* Parser definition to be used with Bison. */"
   , ""
   , "/* Generate header file for lexer. */"
-  , "%defines \"" ++ ("Bison" <.> h) ++ "\""
+  , "%defines \"" ++ ("Bison" <.> hExt) ++ "\""
   ]
   , when (beyondAnsi mode)
     [ "%define api.namespace {" ++ ns ++ "}"
@@ -150,7 +151,12 @@ header mode cf = unlines $ concat [
       , "/* lalr1.cc always pure parser. needless to define %define api.pure full */"
       , ""
       , "%define api.parser.class {" ++ camelCaseName ++ "Parser}"
+      , "%code top {"
+      , "#include <memory>"
+      , "}"
       , "%code requires{"
+      , "#include \"Absyn" ++ hExt ++ "\""
+      , ""
       , "    namespace " ++ ns ++ " {"
       , "        class " ++ camelCaseName ++ "Scanner;"
       , "        class " ++ camelCaseName ++ "Driver;"
@@ -175,7 +181,7 @@ header mode cf = unlines $ concat [
       , "#include <fstream>"
       , ""
       , "/* include for all driver functions */"
-      , "#include \"Driver.H\""
+      , "#include \"Driver.hh\""
       , ""
       , "#undef yylex"
       , "#define yylex scanner.yylex"
@@ -209,7 +215,7 @@ header mode cf = unlines $ concat [
       , "#include <stdio.h>"
       , "#include <stdlib.h>"
       , "#include <string.h>"
-      , "#include \"" ++ ("Absyn" <.> h) ++ "\""
+      , "#include \"" ++ ("Absyn" <.> hExt) ++ "\""
       , ""
       , "#define YYMAXDEPTH 10000000"  -- default maximum stack size is 10000, but right-recursion needs O(n) stack
       , ""
@@ -237,7 +243,7 @@ header mode cf = unlines $ concat [
       ]
   ]
   where
-    h = parserHExt mode
+    hExt = "." ++ parserHExt mode
     name = parserName mode
     camelCaseName = camelCase_ name
     ns = fromMaybe camelCaseName (parserPackage mode)
@@ -473,7 +479,7 @@ rulesForBison rp mode cf env = map mkOne (ruleGroups cf) ++ posRules
   posRules
     | CppParser inPackage _ _ <- mode = for (positionCats cf) $ \ n -> (TokenCat n,
       [( Map.findWithDefault n (Tokentype n) env
-       , addResult cf (TokenCat n) $ concat
+       , addResult mode cf (TokenCat n) $ concat
          [ "$$ = new ", nsScope inPackage, n, "($1, @$.first_line);" ]
        )])
     | otherwise = []
@@ -485,7 +491,7 @@ constructRule
   -> NonTerminal                      -- ^ ... this non-terminal.
   -> (NonTerminal,[(Pattern,Action)])
 constructRule rp mode cf env rules nt = (nt,) $
-    [ (p,) $ addResult cf nt $ generateAction rp mode (identCat (normCat nt)) (funRule r) b m
+    [ (p,) $ addResult mode cf nt $ generateAction rp mode (identCat (normCat nt)) (funRule r) b m
     | r0 <- rules
     , let (b,r) = if isConsFun (funRule r0) && valCat r0 `elem` cfgReversibleCats cf
                   then (True, revSepListRule r0)
@@ -495,14 +501,16 @@ constructRule rp mode cf env rules nt = (nt,) $
 
 -- | Add action if we parse an entrypoint non-terminal:
 -- Set field in result record to current parse.
-addResult :: CF -> NonTerminal -> Action -> Action
-addResult cf nt a =
-  if nt `elem` toList (allEntryPoints cf)
-  -- Note: Bison has only a single entrypoint,
-  -- but BNFC works around this by adding dedicated parse methods for all entrypoints.
-  -- Andreas, 2021-03-24: But see #350: bison still uses only the @%start@ non-terminal.
-    then concat [ a, " result->", varName (normCat nt), " = $$;" ]
-    else a
+addResult :: ParserMode -> CF -> NonTerminal -> Action -> Action
+addResult mode cf nt a =
+  if nt `elem` toList (allEntryPoints cf) then
+    -- Note: Bison has only a single entrypoint,
+    -- but BNFC works around this by adding dedicated parse methods for all entrypoints.
+    -- Andreas, 2021-03-24: But see #350: bison still uses only the @%start@ non-terminal.
+    case beyondAnsi mode of
+      False -> concat [ a, " result->", varName (normCat nt), " = $$;" ]
+      True  -> concat [ a, " result->", varName (normCat nt), " = std::move($$);" ]
+  else a
 
 -- | Switch between STL or not.
 generateAction :: IsFun a
@@ -514,7 +522,8 @@ generateAction :: IsFun a
   -> [(MetaVar, Bool)]   -- ^ Meta-vars; should the list referenced by the var be reversed?
   -> Action
 generateAction rp = \case
-  CppParser ns _ _ -> generateActionSTL rp ns
+  CppParser ns _ Ansi -> generateActionSTL rp ns
+  CppParser ns _ BeyondAnsi -> generateActionSTLBeyondAnsi rp ns
   CParser   b  _ -> \ nt f r -> generateActionC rp (not b) nt f r . map fst
 
 -- | Generates a string containing the semantic action.
@@ -568,6 +577,28 @@ generateActionSTL rp inPackage nt f b mbs = reverses ++
             = ""
   reverses  = unwords ["std::reverse(" ++ m ++"->begin(),"++m++"->end()) ;" | (m, True) <- mbs]
   scope     = nsScope inPackage
+
+generateActionSTLBeyondAnsi :: IsFun a => RecordPositions -> InPackage -> String -> a -> Bool -> [(MetaVar,Bool)] -> Action
+generateActionSTLBeyondAnsi rp inPackage nt f b mbs = reverses ++
+  if | isCoercion f    -> concat ["$$ = ", unwords ms, ";", loc]
+     | isNilFun f      -> concat ["$$ = ", "std::make_unique<", scope, nt, ">();"]
+     | isOneFun f      -> concat ["$$ = ", "std::make_unique<", scope, nt, ">(); $$->push_back(", head ms, ");"]
+     | isConsFun f     -> concat [lst, "->push_back(", el, "); $$ = ", lst, ";"]
+     | isDefinedRule f -> concat ["$$ = ", scope, sanitizeCpp (funName f), "(", intercalate ", " ms, ");" ]
+     | otherwise       -> concat ["$$ = ", "std::make_unique<", scope, funName f, ">(", intercalate ", " ms, ");", loc]
+  where
+    -- ms = ["$1", "$1", ...];
+    -- Bison's semantic value of the n-th symbol of the right-hand side of the rule.
+    ms = map fst mbs
+    -- The following match only happens in the cons case:
+    [el, lst] = applyWhen b reverse ms -- b: left-recursion transformed?
+    loc | RecordPositions <- rp
+      = " $$->line_number = @$.first_line; $$->char_number = @$.first_column;"
+        | otherwise
+      = ""
+    reverses  = unwords [m ++"->reverse();" | (m, True) <- mbs]
+    scope     = nsScope inPackage
+
 
 -- Generate patterns and a set of metavariables indicating
 -- where in the pattern the non-terminal
