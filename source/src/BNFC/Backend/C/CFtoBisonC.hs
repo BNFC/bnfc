@@ -137,13 +137,12 @@ header mode cf = unlines $ concat [
   , "/* Generate header file for lexer. */"
   , "%defines \"" ++ ("Bison" <.> h) ++ "\""
   ]
+  , when (beyondAnsi mode)
+    [ "%define api.namespace {" ++ ns ++ "}"
+    , "/* Specify the namespace for the C++ parser class. */"]
   , whenJust (parserPackage mode) $ \ ns ->
-      if beyondAnsi mode then
-        [ "%api.namespace = \"" ++ ns ++ "\""
-        , "/* Specify the namespace for the C++ parser class. */"]
-      else
-        [ "%name-prefix = \"" ++ ns ++ "\""
-        , "/* From Bison 2.6: %define api.prefix {" ++ ns ++ "} */"]
+      [ "%name-prefix = \"" ++ ns ++ "\""
+      , "/* From Bison 2.6: %define api.prefix {" ++ ns ++ "} */"]
   , if beyondAnsi mode then
       -- Bison c++ beyond ansi mode
       [""
@@ -152,7 +151,7 @@ header mode cf = unlines $ concat [
       , ""
       , "%define api.parser.class {" ++ camelCaseName ++ "Parser}"
       , "%code requires{"
-      , "    namespace " ++ driverNs ++ " {"
+      , "    namespace " ++ ns ++ " {"
       , "        class " ++ camelCaseName ++ "Scanner;"
       , "        class " ++ camelCaseName ++ "Driver;"
       , "    }"
@@ -241,8 +240,7 @@ header mode cf = unlines $ concat [
     h = parserHExt mode
     name = parserName mode
     camelCaseName = camelCase_ name
-    -- namespace for C++ driver
-    driverNs = fromMaybe camelCaseName (parserPackage mode)
+    ns = fromMaybe camelCaseName (parserPackage mode)
 
 -- | Code that needs the @YYSTYPE@ defined by the @%union@ pragma.
 --

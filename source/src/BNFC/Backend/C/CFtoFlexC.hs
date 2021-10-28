@@ -40,7 +40,7 @@ import BNFC.Backend.C.RegToFlex
 import BNFC.Backend.Common.NamedVariables
 import BNFC.Options                  ( InPackage, Ansi(..) )
 import BNFC.PrettyPrint
-import BNFC.Utils                    ( cstring, symbolToName, unless, when )
+import BNFC.Utils                    ( cstring, symbolToName, unless, when, camelCase_ )
 
 data ParserMode
   = CParser Bool String             -- ^ @C@ (@False@) or @C++ no STL@ (@True@) mode, with @name@ to use as prefix.
@@ -124,11 +124,20 @@ prelude :: Bool -> ParserMode -> String
 prelude stringLiterals mode = unlines $ concat
   [ [ "/* Lexer definition for use with FLex */"
     , ""
-    -- noinput and nounput are most often unused
-    -- https://stackoverflow.com/questions/39075510/option-noinput-nounput-what-are-they-for
-    , "%option noyywrap noinput nounput"
-    , "%option reentrant bison-bridge bison-locations"
-    , ""
+    , if (beyondAnsi mode) then
+        unlines
+        [
+          "%option nodefault noyywrap c++"
+        , "%option yyclass=\"" ++ns++ "::" ++camelCaseName++ "Scanner\""
+        ]
+      else
+        unlines
+        -- noinput and nounput are most often unused
+        -- https://stackoverflow.com/questions/39075510/option-noinput-nounput-what-are-they-for
+        [ "%option noyywrap noinput nounput"
+        , "%option reentrant bison-bridge bison-locations"
+        , ""
+        ]
     ]
   , when stringLiterals
     [ "/* Additional data for the lexer: a buffer for lexing string literals. */"
@@ -143,6 +152,13 @@ prelude stringLiterals mode = unlines $ concat
     , [ "}" ]
     ]
   , [ "%{"
+    , when (beyondAnsi mode) unlines
+      [
+        "#include \"Scanner.H\""  -- #include for the class inheriting "yyFlexLexer"
+      , ""
+      , "#undef  YY_DECL"
+      , "#define YY_DECL int " ++ns++ "::" ++camelCaseName++ "Scanner::yylex(" ++ns++ "::" ++camelCaseName++ "Parser::semantic_type* const lval, " ++ns++ "::" ++camelCaseName++ "Parser::location_type* location )"
+      ]
     , "#include \"" ++ ("Absyn" <.> h) ++ "\""
     , "#include \"" ++ ("Bison" <.> h) ++ "\""
     , ""
@@ -175,7 +191,10 @@ prelude stringLiterals mode = unlines $ concat
     ]
   ]
   where
-  h = parserHExt mode
+    h = parserHExt mode
+    name = parserName mode
+    camelCaseName = camelCase_ name
+    ns = fromMaybe camelCaseName (parserPackage mode)
 
 -- | Part of the lexer prelude needed when string literals are to be lexed.
 --   Defines an interface to the Buffer.
