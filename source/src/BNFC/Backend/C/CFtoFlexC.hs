@@ -171,24 +171,30 @@ prelude stringLiterals mode = unlines $ concat
     -- Flex is responsible for keeping tracking of the yylloc for Bison.
     -- Flex also doesn't do this automatically so we need this function
     -- https://stackoverflow.com/a/22125500/425756
-  , [ "static void update_loc(YYLTYPE* loc, char* text)"
-    , "{"
-    , "  loc->first_line = loc->last_line;"
-    , "  loc->first_column = loc->last_column;"
-    , "  int i = 0;"  -- put this here as @for (int i...)@ is only allowed in C99
-    , "  for (; text[i] != '\\0'; ++i) {"
-    , "      if (text[i] == '\\n') {"        -- Checking for \n is good enough to also support \r\n (but not \r)
-    , "          ++loc->last_line;"
-    , "          loc->last_column = 0; "
-    , "      } else {"
-    , "          ++loc->last_column; "
-    , "      }"
-    , "  }"
-    , "}"
-    , "#define YY_USER_ACTION update_loc(yylloc, yytext);"
-    , ""
-    , "%}"
-    ]
+  , if beyondAnsi mode then
+      [ "/* update location on matching */"
+      , "#define YY_USER_ACTION loc->step(); loc->columns(yyleng);"
+      , "%}"
+      ]
+    else
+      [ "static void update_loc(YYLTYPE* loc, char* text)"
+      , "{"
+      , "  loc->first_line = loc->last_line;"
+      , "  loc->first_column = loc->last_column;"
+      , "  int i = 0;"  -- put this here as @for (int i...)@ is only allowed in C99
+      , "  for (; text[i] != '\\0'; ++i) {"
+      , "      if (text[i] == '\\n') {"        -- Checking for \n is good enough to also support \r\n (but not \r)
+      , "          ++loc->last_line;"
+      , "          loc->last_column = 0; "
+      , "      } else {"
+      , "          ++loc->last_column; "
+      , "      }"
+      , "  }"
+      , "}"
+      , "#define YY_USER_ACTION update_loc(yylloc, yytext);"
+      , ""
+      , "%}"
+      ]
   ]
   where
     h = parserHExt mode
