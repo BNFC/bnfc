@@ -108,7 +108,7 @@ cf2flex :: ParserMode -> CF -> (String, SymMap) -- The environment is reused by 
 cf2flex mode cf = (, env) $ unlines
     [ prelude stringLiterals mode
     , cMacros cf
-    , lexSymbols env1
+    , lexSymbols mode env1
     , restOfFlex (parserPackage mode) cf env
     , footer -- mode
     ]
@@ -164,6 +164,10 @@ prelude stringLiterals mode = unlines $ concat
       , ""
       , "#undef  YY_DECL"
       , "#define YY_DECL int " ++ns++ "::" ++camelCaseName++ "Scanner::yylex(" ++ns++ "::" ++camelCaseName++ "Parser::semantic_type* const lval, " ++ns++ "::" ++camelCaseName++ "Parser::location_type* location )"
+      , ""
+      , "/* using \"token\" to make the returns for the tokens shorter to type */"
+      , "using token = " ++ns++ "::" ++camelCaseName++ "Parser::token;"
+      , ""
       ]
     , "#include \"" ++ ("Absyn" <.> h) ++ "\""
     , "#include \"" ++ ("Bison" <.> h) ++ "\""
@@ -258,13 +262,14 @@ cMacros cf = unlines
   , "%%  /* Rules. */"
   ]
 
-lexSymbols :: KeywordEnv -> String
-lexSymbols ss = concatMap transSym ss
+lexSymbols :: ParserMode -> KeywordEnv -> String
+lexSymbols mode ss = concatMap transSym ss
   where
     transSym (s,r) =
-      "<INITIAL>\"" ++ s' ++ "\"      \t return " ++ r ++ ";\n"
+      "<INITIAL>\"" ++ s' ++ "\"      \t return " ++ prefix ++ r ++ ";\n"
         where
          s' = escapeChars s
+         prefix = if (beyondAnsi mode) then "token::" else ""
 
 restOfFlex :: InPackage -> CF -> SymMap -> String
 restOfFlex _inPackage cf env = unlines $ concat

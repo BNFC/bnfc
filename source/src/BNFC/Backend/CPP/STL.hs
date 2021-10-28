@@ -41,7 +41,7 @@ makeCppStl opts cf = do
   -- Generate xxx.yy file
   mkCppFileWithHint (name ++ parserExt) $ cf2Bison (linenumbers opts) parserMode cf env
   mkCppFile ("Parser"++hExt) $
-    mkHeaderFile (inPackage opts) cf (allParserCats cf) (toList $ allEntryPoints cf) (Map.elems env)
+    mkHeaderFile hExt (inPackage opts) cf (allParserCats cf) (toList $ allEntryPoints cf) (Map.elems env)
   mkCppFile ("ParserError"++hExt) $ printParseErrHeader (inPackage opts)
   let (skelH, skelC) = cf2CVisitSkel True (inPackage opts) cf
   mkCppFile ("Skeleton"++hExt) skelH
@@ -197,14 +197,14 @@ cpptest inPackage cf = unlines $ concat
    def = identCat cat
    scope = nsScope inPackage
 
-mkHeaderFile inPackage _cf _cats eps _env = unlines $ concat
+mkHeaderFile hExt inPackage _cf _cats eps _env = unlines $ concat
   [ [ "#ifndef " ++ hdef
     , "#define " ++ hdef
     , ""
     , "#include<vector>"
     , "#include<string>"
     , "#include<cstdio>"
-    , "#include \"Absyn.H\""
+    , "#include \"Absyn" ++hExt ++ "\""
     , ""
     , nsStart inPackage
     ]

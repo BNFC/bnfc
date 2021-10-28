@@ -135,7 +135,7 @@ header mode cf = unlines $ concat [
   [ "/* Parser definition to be used with Bison. */"
   , ""
   , "/* Generate header file for lexer. */"
-  , "%defines \"" ++ ("Bison" <.> h) ++ "\""
+  , "%defines \"" ++ ("Bison" <.> hExt) ++ "\""
   ]
   , when (beyondAnsi mode)
     [ "%define api.namespace {" ++ ns ++ "}"
@@ -154,6 +154,7 @@ header mode cf = unlines $ concat [
       , "#include <memory>"
       , "}"
       , "%code requires{"
+      , "#include \"Absyn" ++ hExt ++ "\""
       , ""
       , "    namespace " ++ ns ++ " {"
       , "        class " ++ camelCaseName ++ "Scanner;"
@@ -179,7 +180,7 @@ header mode cf = unlines $ concat [
       , "#include <fstream>"
       , ""
       , "/* include for all driver functions */"
-      , "#include \"Driver.H\""
+      , "#include \"Driver.hh\""
       , ""
       , "#undef yylex"
       , "#define yylex scanner.yylex"
@@ -213,7 +214,7 @@ header mode cf = unlines $ concat [
       , "#include <stdio.h>"
       , "#include <stdlib.h>"
       , "#include <string.h>"
-      , "#include \"" ++ ("Absyn" <.> h) ++ "\""
+      , "#include \"" ++ ("Absyn" <.> hExt) ++ "\""
       , ""
       , "#define YYMAXDEPTH 10000000"  -- default maximum stack size is 10000, but right-recursion needs O(n) stack
       , ""
@@ -241,7 +242,7 @@ header mode cf = unlines $ concat [
       ]
   ]
   where
-    h = parserHExt mode
+    hExt = "." ++ parserHExt mode
     name = parserName mode
     camelCaseName = camelCase_ name
     ns = fromMaybe camelCaseName (parserPackage mode)
