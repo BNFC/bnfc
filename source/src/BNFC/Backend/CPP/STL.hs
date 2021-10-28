@@ -11,6 +11,7 @@ module BNFC.Backend.CPP.STL (makeCppStl,) where
 
 import Data.Foldable (toList)
 import qualified Data.Map as Map
+import Data.Maybe      ( fromMaybe )
 
 import BNFC.Utils
 import BNFC.CF
@@ -18,7 +19,7 @@ import BNFC.Options
 import BNFC.Backend.Base
 import BNFC.Backend.C            ( bufferH, bufferC, comment, testfileHeader )
 import BNFC.Backend.C.CFtoBisonC ( cf2Bison )
-import BNFC.Backend.C.CFtoFlexC  ( cf2flex, ParserMode(..) )
+import BNFC.Backend.C.CFtoFlexC  ( cf2flex, ParserMode(..), beyondAnsi, parserPackage, parserName )
 import BNFC.Backend.CPP.Common   ( commentWithEmacsModeHint )
 import BNFC.Backend.CPP.Makefile
 import BNFC.Backend.CPP.STL.CFtoSTLAbs
@@ -47,6 +48,15 @@ makeCppStl opts cf = do
     mkCppFile "Printer.H" prinH
     mkCppFile "Printer.C" prinC
     mkCppFile "Test.C" (cpptest (inPackage opts) cf)
+
+    case (ansi opts) of
+      BeyondAnsi -> do
+        mkCppFile "Driver.C" $ driverC parserMode "Driver.H"
+        mkCppFile "Driver.H" $ driverH parserMode
+        mkCppFile "Scanner.H" $ scannerH parserMode;
+      _ ->
+        return();
+
     Makefile.mkMakefile opts $ makefile prefix name compileOpt lexerExt parserExt
   where
     name :: String
@@ -203,3 +213,192 @@ mkHeaderFile inPackage _cf _cats eps _env = unlines $ concat
     [ identCat (normCat s) ++ "*" +++ "p" ++ identCat s ++ "(FILE *inp);"
     , identCat (normCat s) ++ "*" +++ "ps" ++ identCat s ++ "(const char *str);"
     ]
+
+
+-- | C++ lexer/parser driver
+
+driverH :: ParserMode -> String
+driverH mode = unlines
+  [ "#ifndef __DRIVER_H__"
+  , "#define __DRIVER_H__ 1"
+
+  , "#include <string>"
+  , "#include <cstddef>"
+  , "#include <istream>"
+  , ""
+  , "#include \"Scanner.H\""
+  , "#include \"Parser.H\""
+  , ""
+  , "namespace " ++ns++ "{"
+  , ""
+  , "class  " ++camelCaseName++ "Driver{"
+  , "public:"
+  , "   " ++camelCaseName++ "Driver() = default;"
+  , "   virtual ~ " ++camelCaseName++ "Driver();"
+  , ""
+  , "   /**"
+  , "    * parse - parse from a file"
+  , "    * @param filename - valid string with input file"
+  , "    */"
+  , "   void parse( const char *filename );"
+  , "   /**"
+  , "    * parse - parse from a c++ input stream"
+  , "    * @param is - std::istream&, valid input stream"
+  , "    */"
+  , "   void parse( std::istream &iss );"
+  , ""
+  , "   std::ostream& print(std::ostream &stream);"
+  , "private:"
+  , ""
+  , "   void parse_helper( std::istream &stream );"
+  , ""
+  , "   " ++ns++ "::" ++camelCaseName++ "Parser  *parser  = nullptr;"
+  , "   " ++ns++ "::" ++camelCaseName++ "Scanner *scanner = nullptr;"
+  , "};"
+  , ""
+  , "} /* end namespace " ++ns++ " */"
+  , "#endif /* END __DRIVER_H__ */"
+  ]
+  where
+    name = parserName mode
+    camelCaseName = camelCase_ name
+    ns = fromMaybe camelCaseName (parserPackage mode)
+
+-- | C++ lexer/parser driver
+
+driverC :: ParserMode -> String -> String
+driverC mode driverH = unlines
+  [ "#include <cctype>"
+  , "#include <fstream>"
+  , "#include <cassert>"
+  , " "
+  , "#include \"Driver.H\""
+  , " "
+  , "" ++ns++ "::" ++camelCaseName++ "Driver::~" ++camelCaseName++ "Driver()"
+  , "{"
+  , "   delete(scanner);"
+  , "   scanner = nullptr;"
+  , "   delete(parser);"
+  , "   parser = nullptr;"
+  , "}"
+  , " "
+  , "void "
+  , ns++ "::" ++camelCaseName++ "Driver::parse( const char * const filename )"
+  , "{"
+  , "   /**"
+  , "    * Remember, if you want to have checks in release mode"
+  , "    * then this needs to be an if statement "
+  , "    */"
+  , "   assert( filename != nullptr );"
+  , "   std::ifstream in_file( filename );"
+  , "   if( ! in_file.good() )"
+  , "   {"
+  , "       exit( EXIT_FAILURE );"
+  , "   }"
+  , "   parse_helper( in_file );"
+  , "   return;"
+  , "}"
+  , " "
+  , "void"
+  , ns++ "::" ++camelCaseName++ "Driver::parse( std::istream &stream )"
+  , "{"
+  , "   if( ! stream.good()  && stream.eof() )"
+  , "   {"
+  , "       return;"
+  , "   }"
+  , "   //else"
+  , "   parse_helper( stream ); "
+  , "   return;"
+  , "}"
+  , " "
+  , " "
+  , "void "
+  , ns++ "::" ++camelCaseName++ "Driver::parse_helper( std::istream &stream )"
+  , "{"
+  , "   "
+  , "   delete(scanner);"
+  , "   try"
+  , "   {"
+  , "      scanner = new " ++ns++ "::" ++camelCaseName++ "Scanner( &stream );"
+  , "   }"
+  , "   catch( std::bad_alloc &ba )"
+  , "   {"
+  , "      std::cerr << \"Failed to allocate scanner: (\" <<"
+  , "         ba.what() << \"), exiting!!\\n\";"
+  , "      exit( EXIT_FAILURE );"
+  , "   }"
+  , "   "
+  , "   delete(parser); "
+  , "   try"
+  , "   {"
+  , "      parser = new " ++ns++ "::" ++camelCaseName++ "Parser( (*scanner) /* scanner */, "
+  , "                                  (*this)    /* driver */ );"
+  , "   }"
+  , "   catch( std::bad_alloc &ba )"
+  , "   {"
+  , "      std::cerr << \"Failed to allocate parser: (\" << "
+  , "         ba.what() << \"), exiting!!\\n\";"
+  , "      exit( EXIT_FAILURE );"
+  , "   }"
+  , "   const int accept( 0 );"
+  , "   if( parser->parse() != accept )"
+  , "   {"
+  , "      std::cerr << \"Parse failed!!\\n\";"
+  , "   }"
+  , "   return;"
+  , "}"
+  ]
+  where
+    name = parserName mode
+    camelCaseName = camelCase_ name
+    ns = fromMaybe camelCaseName (parserPackage mode)
+
+-- | C++ lexer def
+
+scannerH :: ParserMode -> String
+scannerH mode = unlines
+  [ "#ifndef __SCANNER_H__"
+  , "#define __SCANNER_H__ 1"
+  , ""
+  , "#if ! defined(yyFlexLexerOnce)"
+  , "#include <FlexLexer.h>"
+  , "#endif"
+  , ""
+  , "#include \"Parser.H\""
+  , "#include \"location.hh\""
+  , ""
+  , "namespace " ++ns++ "{"
+  , ""
+  , "class " ++camelCaseName++ "Scanner : public yyFlexLexer{"
+  , "public:"
+  , ""
+  , "   " ++camelCaseName++ "Scanner(std::istream *in) : yyFlexLexer(in)"
+  , "   {"
+  , "      loc = new " ++ns++ "::" ++camelCaseName++ "Parser::location_type();"
+  , "   };"
+  , ""
+  , "   //get rid of override virtual function warning"
+  , "   using FlexLexer::yylex;"
+  , ""
+  , "   virtual"
+  , "   int yylex( " ++ns++ "::" ++camelCaseName++ "Parser::semantic_type * const lval,"
+  , "              " ++ns++ "::" ++camelCaseName++ "Parser::location_type *location );"
+  , "   // YY_DECL defined in mc_lexer.l"
+  , "   // Method body created by flex in mc_lexer.yy.cc"
+  , ""
+  , ""
+  , "private:"
+  , "   /* yyval ptr */"
+  , "   " ++ns++ "::" ++camelCaseName++ "Parser::semantic_type *yylval = nullptr;"
+  , "   /* location ptr */"
+  , "   " ++ns++ "::" ++camelCaseName++ "Parser::location_type *loc    = nullptr;"
+  , "};"
+  , ""
+  , "} /* end namespace " ++ns++ " */"
+  ,  ""
+  , "#endif /* END __SCANNER_H__ */"
+  ]
+  where
+    name = parserName mode
+    camelCaseName = camelCase_ name
+    ns = fromMaybe camelCaseName (parserPackage mode)
