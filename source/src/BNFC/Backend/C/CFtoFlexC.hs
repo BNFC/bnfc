@@ -100,7 +100,8 @@ stlParser = \case
 parserHExt :: ParserMode -> String
 parserHExt = \case
   CParser   b _ -> if b then "H" else "h"
-  CppParser _ _ _ -> "H"
+  CppParser _ _ ansi | ansi == BeyondAnsi -> "hh"
+                     | otherwise -> "h"
 
 -- | Entrypoint.
 cf2flex :: ParserMode -> CF -> (String, SymMap) -- The environment is reused by the parser.
@@ -151,10 +152,15 @@ prelude stringLiterals mode = unlines $ concat
     , posixC
     , [ "}" ]
     ]
+  , when (beyondAnsi mode)
+    [ "%top{"
+    , "#include <memory>"
+    , "}"
+    ]
   , [ "%{"
     , when (beyondAnsi mode) unlines
       [
-        "#include \"Scanner.H\""  -- #include for the class inheriting "yyFlexLexer"
+        "#include \"Scanner.hh\""  -- #include for the class inheriting "yyFlexLexer"
       , ""
       , "#undef  YY_DECL"
       , "#define YY_DECL int " ++ns++ "::" ++camelCaseName++ "Scanner::yylex(" ++ns++ "::" ++camelCaseName++ "Parser::semantic_type* const lval, " ++ns++ "::" ++camelCaseName++ "Parser::location_type* location )"

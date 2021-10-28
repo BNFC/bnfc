@@ -257,7 +257,7 @@ mkCFile mode inPackage cabs cf = unlines $ [
   "#include <algorithm>",
   "#include <string>",
   "#include <vector>",
-  "#include \"Absyn.H\"",
+  "#include \"Absyn"++hExt++"\"",
   nsStart inPackage,
   unlines [prConC  mode c r  | (c,rs) <- signatures cabs, r <- rs],
   unlines [prListC mode l | l <- listtypes cabs],
@@ -268,6 +268,9 @@ mkCFile mode inPackage cabs cf = unlines $ [
   where
   nil  t = (,dummyType) $ concat [ "new List", identType t, "()" ]
   cons t = (,dummyType) $ concat [ "consList", identType t ]
+  hExt = case mode of
+    CppStdAnsi _ -> ".h";
+    CppStdBeyondAnsi _ -> ".hh";
 
 
 prConC :: CppStdMode -> String -> CAbsRule -> String
