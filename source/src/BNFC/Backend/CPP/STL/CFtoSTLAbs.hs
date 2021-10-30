@@ -240,6 +240,8 @@ prList mode (c, b) = case mode of {
       , " ~" ++ c ++ "();"
       , "  virtual void accept(Visitor *v);"
       , "  std::unique_ptr<" ++ c ++ "> clone() const;"
+      , "  std::unique_ptr<" ++ c ++ "> cons" ++ c ++ "(std::unique_ptr<" ++ childClass ++ ">, std::unique_ptr<" ++c++ ">);"
+      , "  void reverse();"
       , "};"
       , ""
       ];
@@ -359,9 +361,13 @@ prConsC mode c b = case mode of {
         , "}"
         ];
     CppStdBeyondAnsi _ -> unlines [
-        concat [ "std::unique_ptr<", c, "> ", "cons", c, "(std::unique_ptr<", bas, "> x, std::unique_ptr<", c, "> xs) {" ]
+        concat [ "std::unique_ptr<", c, "> ", c, "::cons", c, "(std::unique_ptr<", bas, "> x, std::unique_ptr<", c, "> xs) {" ]
         , "  xs->" ++inner++ ".insert(xs->" ++inner++ ".begin(), std::move(x));"
         , "  return xs;"
+        , "}"
+        , ""
+        , "void" +++ c ++ "::reverse() {"
+        , "  std::reverse(" ++inner++ ".begin(), " ++inner++ ".end());"
         , "}"
         ];
       }
@@ -433,12 +439,12 @@ prCopyC mode (c,cs) = case mode of {
       -- intercalate ", \n" ["  " ++c++ "(std::make_unique<" ++ x ++ ">(*rhs." ++ c ++ "))" | (x,_,c) <- cs],
       c ++ "::" ++ c ++ "(const" +++ c ++ "& rhs)",
       "{",
-      unlines ["  *"  ++ c ++ " = *rhs." ++ c ++ ";" | (x,st,c) <- cs],
+      unlines ["  *"  ++ c ++ " = *rhs." ++ c ++ ";" | (_,_,c) <- cs],
       "}",
       "",
       c ++ "&" +++ c ++ "::operator=(const" +++ c ++ "& rhs)",
       "{",
-      unlines ["  *"  ++ c ++ " = *rhs." ++ c ++ ";" | (x,st,c) <- cs],
+      unlines ["  *"  ++ c ++ " = *rhs." ++ c ++ ";" | (_,_,c) <- cs],
       "  return *this;",
       "}",
       ""

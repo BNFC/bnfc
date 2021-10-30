@@ -36,7 +36,7 @@ import System.FilePath ( (<.>) )
 
 import BNFC.CF
 import BNFC.Backend.Common.NamedVariables hiding (varName)
-import BNFC.Backend.C.CFtoFlexC (ParserMode(..), cParser, reentrant, stlParser, parserHExt, parserName, parserPackage, variant, isBisonUseUnion, isBisonUseVariant, beyondAnsi)
+import BNFC.Backend.C.CFtoFlexC (ParserMode(..), cParser, stlParser, parserHExt, parserName, parserPackage, isBisonUseUnion, isBisonUseVariant, beyondAnsi)
 import BNFC.Backend.CPP.Naming
 import BNFC.Backend.CPP.STL.STLUtils
 import BNFC.Options (RecordPositions(..), InPackage, Ansi(..))
@@ -519,7 +519,8 @@ generateAction :: IsFun a
   -> [(MetaVar, Bool)]   -- ^ Meta-vars; should the list referenced by the var be reversed?
   -> Action
 generateAction rp = \case
-  CppParser ns _ _ -> generateActionSTL rp ns
+  CppParser ns _ Ansi -> generateActionSTL rp ns
+  CppParser ns _ BeyondAnsi -> generateActionSTLBeyondAnsi rp ns
   CParser   b  _ -> \ nt f r -> generateActionC rp (not b) nt f r . map fst
 
 -- | Generates a string containing the semantic action.
@@ -573,6 +574,27 @@ generateActionSTL rp inPackage nt f b mbs = reverses ++
             = ""
   reverses  = unwords ["std::reverse(" ++ m ++"->begin(),"++m++"->end()) ;" | (m, True) <- mbs]
   scope     = nsScope inPackage
+
+generateActionSTLBeyondAnsi :: IsFun a => RecordPositions -> InPackage -> String -> a -> Bool -> [(MetaVar,Bool)] -> Action
+generateActionSTLBeyondAnsi rp inPackage nt f b mbs = reverses ++
+  if | isCoercion f    -> concat ["$$ = ", unwords ms, ";", loc]
+     | isNilFun f      -> concat ["$$ = ", "new ", scope, nt, "();"]
+     | isOneFun f      -> concat ["$$ = ", "new ", scope, nt, "(); $$->push_back(", head ms, ");"]
+     | isConsFun f     -> concat [lst, "->push_back(", el, "); $$ = ", lst, ";"]
+     | isDefinedRule f -> concat ["$$ = ", scope, sanitizeCpp (funName f), "(", intercalate ", " ms, ");" ]
+     | otherwise       -> concat ["$$ = ", "new ", scope, funName f, "(", intercalate ", " ms, ");", loc]
+ where
+  ms        = map fst mbs
+  -- The following match only happens in the cons case:
+  [el, lst] = applyWhen b reverse ms  -- b: left-recursion transformed?
+
+  loc | RecordPositions <- rp
+            = " $$->line_number = @$.first_line; $$->char_number = @$.first_column;"
+      | otherwise
+            = ""
+  reverses  = unwords [m ++"->reverse();" | (m, True) <- mbs]
+  scope     = nsScope inPackage
+
 
 -- Generate patterns and a set of metavariables indicating
 -- where in the pattern the non-terminal
