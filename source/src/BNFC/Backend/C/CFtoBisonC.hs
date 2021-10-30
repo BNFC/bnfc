@@ -115,7 +115,8 @@ cf2Bison rp mode cf env = unlines
     , "%%"
     , ""
     , nsStart inPackage
-    , entryCode mode cf
+    , unless (beyondAnsi mode) -- entryCode for beyondAndi is in Driver
+      entryCode mode cf
     , nsEnd inPackage
     ]
   where
@@ -478,7 +479,7 @@ rulesForBison rp mode cf env = map mkOne (ruleGroups cf) ++ posRules
   posRules
     | CppParser inPackage _ _ <- mode = for (positionCats cf) $ \ n -> (TokenCat n,
       [( Map.findWithDefault n (Tokentype n) env
-       , addResult cf (TokenCat n) $ concat
+       , addResult mode cf (TokenCat n) $ concat
          [ "$$ = new ", nsScope inPackage, n, "($1, @$.first_line);" ]
        )])
     | otherwise = []
@@ -490,7 +491,7 @@ constructRule
   -> NonTerminal                      -- ^ ... this non-terminal.
   -> (NonTerminal,[(Pattern,Action)])
 constructRule rp mode cf env rules nt = (nt,) $
-    [ (p,) $ addResult cf nt $ generateAction rp mode (identCat (normCat nt)) (funRule r) b m
+    [ (p,) $ addResult mode cf nt $ generateAction rp mode (identCat (normCat nt)) (funRule r) b m
     | r0 <- rules
     , let (b,r) = if isConsFun (funRule r0) && valCat r0 `elem` cfgReversibleCats cf
                   then (True, revSepListRule r0)
@@ -500,14 +501,16 @@ constructRule rp mode cf env rules nt = (nt,) $
 
 -- | Add action if we parse an entrypoint non-terminal:
 -- Set field in result record to current parse.
-addResult :: CF -> NonTerminal -> Action -> Action
-addResult cf nt a =
-  if nt `elem` toList (allEntryPoints cf)
-  -- Note: Bison has only a single entrypoint,
-  -- but BNFC works around this by adding dedicated parse methods for all entrypoints.
-  -- Andreas, 2021-03-24: But see #350: bison still uses only the @%start@ non-terminal.
-    then concat [ a, " result->", varName (normCat nt), " = $$;" ]
-    else a
+addResult :: ParserMode -> CF -> NonTerminal -> Action -> Action
+addResult mode cf nt a =
+  if nt `elem` toList (allEntryPoints cf) then
+    -- Note: Bison has only a single entrypoint,
+    -- but BNFC works around this by adding dedicated parse methods for all entrypoints.
+    -- Andreas, 2021-03-24: But see #350: bison still uses only the @%start@ non-terminal.
+    case beyondAnsi mode of
+      False -> concat [ a, " result->", varName (normCat nt), " = $$;" ]
+      True  -> concat [ a, " result->", varName (normCat nt), " = std::move($$);" ]
+  else a
 
 -- | Switch between STL or not.
 generateAction :: IsFun a
@@ -583,17 +586,18 @@ generateActionSTLBeyondAnsi rp inPackage nt f b mbs = reverses ++
      | isConsFun f     -> concat [lst, "->push_back(", el, "); $$ = ", lst, ";"]
      | isDefinedRule f -> concat ["$$ = ", scope, sanitizeCpp (funName f), "(", intercalate ", " ms, ");" ]
      | otherwise       -> concat ["$$ = ", "new ", scope, funName f, "(", intercalate ", " ms, ");", loc]
- where
-  ms        = map fst mbs
-  -- The following match only happens in the cons case:
-  [el, lst] = applyWhen b reverse ms  -- b: left-recursion transformed?
-
-  loc | RecordPositions <- rp
-            = " $$->line_number = @$.first_line; $$->char_number = @$.first_column;"
-      | otherwise
-            = ""
-  reverses  = unwords [m ++"->reverse();" | (m, True) <- mbs]
-  scope     = nsScope inPackage
+  where
+    -- ms = ["$1", "$1", ...];
+    -- Bison's semantic value of the n-th symbol of the right-hand side of the rule.
+    ms = ["std::move(" ++m++ ")" | m <- map fst mbs]
+    -- The following match only happens in the cons case:
+    [el, lst] = applyWhen b reverse ms -- b: left-recursion transformed?
+    loc | RecordPositions <- rp
+      = " $$->line_number = @$.first_line; $$->char_number = @$.first_column;"
+        | otherwise
+      = ""
+    reverses  = unwords [m ++"->reverse();" | (m, True) <- mbs]
+    scope     = nsScope inPackage
 
 
 -- Generate patterns and a set of metavariables indicating

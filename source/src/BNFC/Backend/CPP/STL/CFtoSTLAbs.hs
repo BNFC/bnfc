@@ -209,7 +209,7 @@ prCon mode (c,(f,cs)) =
        ;
        CppStdBeyondAnsi _ ->
            concat $ intersperse ", "
-           ["const" +++ x ++ "& p" ++ show i | ((x,_,_),i) <- zip cs [1..]]
+           [x ++ "&& p" ++ show i | ((x,_,_),i) <- zip cs [1..]]
        ;
        }
 
@@ -403,7 +403,7 @@ prConstructorC mode (f,cs) = case mode of {
        intercalate ", " [x +++ pointerIf st v | ((x,st,_),v) <- zip cs pvs]
      ;
      CppStdBeyondAnsi _ ->
-       intercalate ", " ["const"+++ x ++ "&" +++ v | ((x,_,_),v) <- zip cs pvs]
+       intercalate ", " [x ++ "&&" +++ v | ((x,_,_),v) <- zip cs pvs]
      ;
      }
 
@@ -435,8 +435,6 @@ prCopyC mode (c,cs) = case mode of {
       "",
       c ++ "&" +++ c ++ "::operator=(" ++ c ++ "&& rhs) = default;",
       "",
-      -- c ++ "::" ++ c ++ "(const" +++ c ++ "& rhs)" ++ if length cs == 0 then "" else ":",
-      -- intercalate ", \n" ["  " ++c++ "(std::make_unique<" ++ x ++ ">(*rhs." ++ c ++ "))" | (x,_,c) <- cs],
       c ++ "::" ++ c ++ "(const" +++ c ++ "& rhs)",
       "{",
       unlines ["  *"  ++ c ++ " = *rhs." ++ c ++ ";" | (_,_,c) <- cs],
