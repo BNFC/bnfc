@@ -209,7 +209,7 @@ prCon mode (c,(f,cs)) =
        ;
        CppStdBeyondAnsi _ ->
            concat $ intersperse ", "
-           [x ++ "&& p" ++ show i | ((x,_,_),i) <- zip cs [1..]]
+           ["std::unique_ptr<" ++x++ ">& p" ++ show i | ((x,_,_),i) <- zip cs [1..]]
        ;
        }
 
@@ -390,7 +390,7 @@ prConstructorC mode (f,cs) = case mode of {
   CppStdBeyondAnsi _ -> unlines [
       f ++ "::" ++ f ++ "(" ++ conargs ++ ")",
       "{",
-      unlines ["  *" ++ c ++ " = " ++ p ++ ";" | (c,p) <- zip cvs pvs],
+      unlines ["  " ++ c ++ " = std::move(" ++ p ++ ");" | (c,p) <- zip cvs pvs],
       "}"
       ];
     }
@@ -403,7 +403,7 @@ prConstructorC mode (f,cs) = case mode of {
        intercalate ", " [x +++ pointerIf st v | ((x,st,_),v) <- zip cs pvs]
      ;
      CppStdBeyondAnsi _ ->
-       intercalate ", " [x ++ "&&" +++ v | ((x,_,_),v) <- zip cs pvs]
+       intercalate ", " ["std::unique_ptr<" ++x++ ">&" +++ v | ((x,_,_),v) <- zip cs pvs]
      ;
      }
 

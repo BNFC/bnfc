@@ -581,15 +581,15 @@ generateActionSTL rp inPackage nt f b mbs = reverses ++
 generateActionSTLBeyondAnsi :: IsFun a => RecordPositions -> InPackage -> String -> a -> Bool -> [(MetaVar,Bool)] -> Action
 generateActionSTLBeyondAnsi rp inPackage nt f b mbs = reverses ++
   if | isCoercion f    -> concat ["$$ = ", unwords ms, ";", loc]
-     | isNilFun f      -> concat ["$$ = ", "new ", scope, nt, "();"]
-     | isOneFun f      -> concat ["$$ = ", "new ", scope, nt, "(); $$->push_back(", head ms, ");"]
+     | isNilFun f      -> concat ["$$ = ", "std::make_unique<", scope, nt, ">();"]
+     | isOneFun f      -> concat ["$$ = ", "std::make_unique<", scope, nt, ">(); $$->push_back(", head ms, ");"]
      | isConsFun f     -> concat [lst, "->push_back(", el, "); $$ = ", lst, ";"]
      | isDefinedRule f -> concat ["$$ = ", scope, sanitizeCpp (funName f), "(", intercalate ", " ms, ");" ]
-     | otherwise       -> concat ["$$ = ", "new ", scope, funName f, "(", intercalate ", " ms, ");", loc]
+     | otherwise       -> concat ["$$ = ", "std::make_unique<", scope, funName f, ">(", intercalate ", " ms, ");", loc]
   where
     -- ms = ["$1", "$1", ...];
     -- Bison's semantic value of the n-th symbol of the right-hand side of the rule.
-    ms = ["std::move(" ++m++ ")" | m <- map fst mbs]
+    ms = map fst mbs
     -- The following match only happens in the cons case:
     [el, lst] = applyWhen b reverse ms -- b: left-recursion transformed?
     loc | RecordPositions <- rp
