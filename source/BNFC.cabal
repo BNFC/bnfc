@@ -35,7 +35,6 @@ tested-with:
   GHC == 8.8.4
   GHC == 8.10.7
   GHC == 9.0.1
-  GHC == 9.2.0.20210821
 
 Extra-source-files:
   README.md
