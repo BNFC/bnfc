@@ -206,6 +206,7 @@ cf2Layout layName lexName cf = unlines $ concat
     , "  closingToken :: Position -> Block -> Token"
     , "  closingToken pos = sToken pos . \\case"
     , "    Implicit (LayoutDelimiters _ _ (Just sy)) _ _ -> sy"
+    , "    _ -> error \"Trying to close a top level block.\""
     , ""
     , "type Position = Posn"
     , "type Line     = Int"
