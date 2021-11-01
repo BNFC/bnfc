@@ -325,7 +325,7 @@ testfile opts cf = unlines $ concat $
         , "import qualified Data.ByteString.Char8 as BS"
         ]
   , [ "import System.Environment ( getArgs )"
-    , "import System.Exit        ( exitFailure, exitSuccess )"
+    , "import System.Exit        ( exitFailure )"
     , "import Control.Monad      ( when )"
     , ""
     ]
@@ -370,7 +370,6 @@ testfile opts cf = unlines $ concat $
     , "    , \"  (files)         Parse content of files verbosely.\""
     , "    , \"  -s (files)      Silent mode. Parse content of files silently.\""
     , "    ]"
-    , "  exitFailure"
     , ""
     , "main :: IO ()"
     , "main = do"
@@ -423,8 +422,7 @@ runStd xml myLLexer = unlines $ concat
    , "      showTree v tree"
    ]
  , [ "      putStrV v $ \"\\n[XML]\\n\\n\" ++ printXML tree" | xml ]
- , [ "      exitSuccess"
-   , "  where"
+ , [ "  where"
    , "  ts = " ++ myLLexer "s"
    , "  showPosToken ((l,c),t) = concat [ show l, \":\", show c, \"\\t\", show t ]"
    ]
