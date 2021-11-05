@@ -237,10 +237,11 @@ prList mode (c, b) = case mode of {
       , "  " ++ c ++ "& operator=(" ++ c ++ "&& rhs);"
       , "  " ++ c ++ "(const" +++ c ++ "& rhs);"
       , "  " ++ c ++ "& operator=(const" +++ c ++ "& rhs);"
+      , "  " ++ c ++ "();"
       , " ~" ++ c ++ "();"
       , "  virtual void accept(Visitor *v);"
       , "  std::unique_ptr<" ++ c ++ "> clone() const;"
-      , "  std::unique_ptr<" ++ c ++ "> cons" ++ c ++ "(std::unique_ptr<" ++ childClass ++ ">, std::unique_ptr<" ++c++ ">);"
+      , "  void cons(std::unique_ptr<" ++ childClass ++ ">);"
       , "  void reverse();"
       , "};"
       , ""
@@ -314,6 +315,7 @@ prListC mode (c,b) = unlines
           "  return *this;",
           "}",
           "",
+          c ++ "::" ++ c ++"() = default;",
           c ++ "::~" ++ c ++"() = default;",
           ""];
         }
@@ -361,9 +363,8 @@ prConsC mode c b = case mode of {
         , "}"
         ];
     CppStdBeyondAnsi _ -> unlines [
-        concat [ "std::unique_ptr<", c, "> ", c, "::cons", c, "(std::unique_ptr<", bas, "> x, std::unique_ptr<", c, "> xs) {" ]
-        , "  xs->" ++inner++ ".insert(xs->" ++inner++ ".begin(), std::move(x));"
-        , "  return xs;"
+        concat [ "void ", c, "::cons(std::unique_ptr<", bas, "> x) {" ]
+        , "  " ++inner++ ".insert(" ++inner++ ".begin(), std::move(x));"
         , "}"
         , ""
         , "void" +++ c ++ "::reverse() {"

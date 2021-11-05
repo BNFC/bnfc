@@ -10,16 +10,18 @@
 module BNFC.Backend.CPP.STL (makeCppStl,) where
 
 import Data.Foldable (toList)
+import Data.List       ( nub )
 import qualified Data.Map as Map
 import Data.Maybe      ( fromMaybe )
 
 import BNFC.Utils
 import BNFC.CF
 import BNFC.Options
+import BNFC.PrettyPrint
 import BNFC.Backend.Base
 import BNFC.Backend.C            ( bufferH, bufferC, comment, testfileHeader )
-import BNFC.Backend.C.CFtoBisonC ( cf2Bison )
-import BNFC.Backend.C.CFtoFlexC  ( cf2flex, ParserMode(..), beyondAnsi, parserPackage, parserName )
+import BNFC.Backend.C.CFtoBisonC ( cf2Bison, unionBuiltinTokens, positionCats, varName )
+import BNFC.Backend.C.CFtoFlexC  ( cf2flex, ParserMode(..), beyondAnsi, parserPackage, parserName, stlParser )
 import BNFC.Backend.CPP.Common   ( commentWithEmacsModeHint )
 import BNFC.Backend.CPP.Makefile
 import BNFC.Backend.CPP.STL.CFtoSTLAbs
@@ -54,7 +56,7 @@ makeCppStl opts cf = do
   case (ansi opts) of
     BeyondAnsi -> do
       mkCppFile ("Driver" ++ cppExt) $ driverC parserMode ("Driver" ++ hExt)
-      mkCppFile ("Driver" ++ hExt) $ driverH parserMode
+      mkCppFile ("Driver" ++ hExt) $ driverH parserMode cats
       mkCppFile ("Scanner" ++ hExt) $ scannerH parserMode;
     _ ->
       return();
@@ -81,6 +83,10 @@ makeCppStl opts cf = do
     parserExt = if Ansi == ansi opts then ".y" else ".yy"
     cppExt = if Ansi == ansi opts then ".c" else ".cc"
     hExt = if Ansi == ansi opts then ".h" else ".hh"
+    posCats
+      | stlParser parserMode = map TokenCat $ positionCats cf
+      | otherwise      = []
+    cats = posCats ++ allParserCatsNorm cf
 
 
 printParseErrHeader :: Maybe String -> String
@@ -215,8 +221,8 @@ mkHeaderFile hExt inPackage _cf _cats eps _env = unlines $ concat
 
 -- | C++ lexer/parser driver
 
-driverH :: ParserMode -> String
-driverH mode = unlines
+driverH :: ParserMode -> [Cat] -> String
+driverH mode cats = unlines
   [ "#ifndef __DRIVER_H__"
   , "#define __DRIVER_H__ 1"
 
@@ -231,27 +237,34 @@ driverH mode = unlines
   , ""
   , "class  " ++camelCaseName++ "Driver{"
   , "public:"
-  , "   " ++camelCaseName++ "Driver() = default;"
-  , "   virtual ~ " ++camelCaseName++ "Driver();"
+  , "    " ++camelCaseName++ "Driver() = default;"
+  , "    virtual ~ " ++camelCaseName++ "Driver();"
   , ""
-  , "   /**"
-  , "    * parse - parse from a file"
-  , "    * @param filename - valid string with input file"
-  , "    */"
-  , "   void parse( const char *filename );"
-  , "   /**"
-  , "    * parse - parse from a c++ input stream"
-  , "    * @param is - std::istream&, valid input stream"
-  , "    */"
-  , "   void parse( std::istream &iss );"
+  , "    /**"
+  , "     * parser parsed values defined by bnfc"
+  , "     */"
+  -- bnfc builtin tokens
+  , unlines [ prettyShow ("    " ++ tok) | tok <- unionBuiltinTokens ]
+  , unlines [ prettyShow ("    std::unique_ptr<" ++ identCat tok ++ ">"+++ varName tok ++";") | tok <- normCats ]
   , ""
-  , "   std::ostream& print(std::ostream &stream);"
+  , "    /**"
+  , "     * parse - parse from a file"
+  , "     * @param filename - valid string with input file"
+  , "     */"
+  , "    void parse( const char *filename );"
+  , "    /**"
+  , "     * parse - parse from a c++ input stream"
+  , "     * @param is - std::istream&, valid input stream"
+  , "     */"
+  , "    void parse( std::istream &iss );"
+  , ""
+  , "    std::ostream& print(std::ostream &stream);"
   , "private:"
   , ""
-  , "   void parse_helper( std::istream &stream );"
+  , "    void parse_helper( std::istream &stream );"
   , ""
-  , "   " ++ns++ "::" ++camelCaseName++ "Parser  *parser  = nullptr;"
-  , "   " ++ns++ "::" ++camelCaseName++ "Scanner *scanner = nullptr;"
+  , "    " ++ns++ "::" ++camelCaseName++ "Parser  *parser  = nullptr;"
+  , "    " ++ns++ "::" ++camelCaseName++ "Scanner *scanner = nullptr;"
   , "};"
   , ""
   , "} /* end namespace " ++ns++ " */"
@@ -261,6 +274,7 @@ driverH mode = unlines
     name = parserName mode
     camelCaseName = camelCase_ name
     ns = fromMaybe camelCaseName (parserPackage mode)
+    normCats = nub (map normCat cats)
 
 -- | C++ lexer/parser driver
 
@@ -274,76 +288,76 @@ driverC mode driverH = unlines
   , " "
   , "" ++ns++ "::" ++camelCaseName++ "Driver::~" ++camelCaseName++ "Driver()"
   , "{"
-  , "   delete(scanner);"
-  , "   scanner = nullptr;"
-  , "   delete(parser);"
-  , "   parser = nullptr;"
+  , "    delete(scanner);"
+  , "    scanner = nullptr;"
+  , "    delete(parser);"
+  , "    parser = nullptr;"
   , "}"
   , " "
   , "void "
   , ns++ "::" ++camelCaseName++ "Driver::parse( const char * const filename )"
   , "{"
-  , "   /**"
-  , "    * Remember, if you want to have checks in release mode"
-  , "    * then this needs to be an if statement "
-  , "    */"
-  , "   assert( filename != nullptr );"
-  , "   std::ifstream in_file( filename );"
-  , "   if( ! in_file.good() )"
-  , "   {"
-  , "       exit( EXIT_FAILURE );"
-  , "   }"
-  , "   parse_helper( in_file );"
-  , "   return;"
+  , "    /**"
+  , "     * Remember, if you want to have checks in release mode"
+  , "     * then this needs to be an if statement "
+  , "     */"
+  , "    assert( filename != nullptr );"
+  , "    std::ifstream in_file( filename );"
+  , "    if( ! in_file.good() )"
+  , "    {"
+  , "        exit( EXIT_FAILURE );"
+  , "    }"
+  , "    parse_helper( in_file );"
+  , "    return;"
   , "}"
   , " "
   , "void"
   , ns++ "::" ++camelCaseName++ "Driver::parse( std::istream &stream )"
   , "{"
-  , "   if( ! stream.good()  && stream.eof() )"
-  , "   {"
-  , "       return;"
-  , "   }"
-  , "   //else"
-  , "   parse_helper( stream ); "
-  , "   return;"
+  , "    if( ! stream.good()  && stream.eof() )"
+  , "    {"
+  , "        return;"
+  , "    }"
+  , "    //else"
+  , "    parse_helper( stream ); "
+  , "    return;"
   , "}"
   , " "
   , " "
   , "void "
   , ns++ "::" ++camelCaseName++ "Driver::parse_helper( std::istream &stream )"
   , "{"
-  , "   "
-  , "   delete(scanner);"
-  , "   try"
-  , "   {"
-  , "      scanner = new " ++ns++ "::" ++camelCaseName++ "Scanner( &stream );"
-  , "   }"
-  , "   catch( std::bad_alloc &ba )"
-  , "   {"
-  , "      std::cerr << \"Failed to allocate scanner: (\" <<"
-  , "         ba.what() << \"), exiting!!\\n\";"
-  , "      exit( EXIT_FAILURE );"
-  , "   }"
-  , "   "
-  , "   delete(parser); "
-  , "   try"
-  , "   {"
-  , "      parser = new " ++ns++ "::" ++camelCaseName++ "Parser( (*scanner) /* scanner */, "
-  , "                                  (*this)    /* driver */ );"
-  , "   }"
-  , "   catch( std::bad_alloc &ba )"
-  , "   {"
-  , "      std::cerr << \"Failed to allocate parser: (\" << "
-  , "         ba.what() << \"), exiting!!\\n\";"
-  , "      exit( EXIT_FAILURE );"
-  , "   }"
-  , "   const int accept( 0 );"
-  , "   if( parser->parse() != accept )"
-  , "   {"
-  , "      std::cerr << \"Parse failed!!\\n\";"
-  , "   }"
-  , "   return;"
+  , "    "
+  , "    delete(scanner);"
+  , "    try"
+  , "    {"
+  , "       scanner = new " ++ns++ "::" ++camelCaseName++ "Scanner( &stream );"
+  , "    }"
+  , "    catch( std::bad_alloc &ba )"
+  , "    {"
+  , "       std::cerr << \"Failed to allocate scanner: (\" <<"
+  , "          ba.what() << \"), exiting!!\\n\";"
+  , "       exit( EXIT_FAILURE );"
+  , "    }"
+  , "    "
+  , "    delete(parser); "
+  , "    try"
+  , "    {"
+  , "       parser = new " ++ns++ "::" ++camelCaseName++ "Parser( (*scanner) /* scanner */, "
+  , "                                   (*this)    /* driver */ );"
+  , "    }"
+  , "    catch( std::bad_alloc &ba )"
+  , "    {"
+  , "       std::cerr << \"Failed to allocate parser: (\" << "
+  , "          ba.what() << \"), exiting!!\\n\";"
+  , "       exit( EXIT_FAILURE );"
+  , "    }"
+  , "    const int accept( 0 );"
+  , "    if( parser->parse() != accept )"
+  , "    {"
+  , "       std::cerr << \"Parse failed!!\\n\";"
+  , "    }"
+  , "    return;"
   , "}"
   ]
   where
@@ -370,26 +384,26 @@ scannerH mode = unlines
   , "class " ++camelCaseName++ "Scanner : public yyFlexLexer{"
   , "public:"
   , ""
-  , "   " ++camelCaseName++ "Scanner(std::istream *in) : yyFlexLexer(in)"
-  , "   {"
-  , "      loc = new " ++ns++ "::" ++camelCaseName++ "Parser::location_type();"
-  , "   };"
+  , "    " ++camelCaseName++ "Scanner(std::istream *in) : yyFlexLexer(in)"
+  , "    {"
+  , "       loc = new " ++ns++ "::" ++camelCaseName++ "Parser::location_type();"
+  , "    };"
   , ""
-  , "   //get rid of override virtual function warning"
-  , "   using FlexLexer::yylex;"
+  , "    //get rid of override virtual function warning"
+  , "    using FlexLexer::yylex;"
   , ""
-  , "   virtual"
-  , "   int yylex( " ++ns++ "::" ++camelCaseName++ "Parser::semantic_type * const lval,"
-  , "              " ++ns++ "::" ++camelCaseName++ "Parser::location_type *location );"
-  , "   // YY_DECL defined in mc_lexer.l"
-  , "   // Method body created by flex in mc_lexer.yy.cc"
+  , "    virtual"
+  , "    int yylex( " ++ns++ "::" ++camelCaseName++ "Parser::semantic_type * const lval,"
+  , "               " ++ns++ "::" ++camelCaseName++ "Parser::location_type *location );"
+  , "    // YY_DECL defined in mc_lexer.l"
+  , "    // Method body created by flex in mc_lexer.yy.cc"
   , ""
   , ""
   , "private:"
-  , "   /* yyval ptr */"
-  , "   " ++ns++ "::" ++camelCaseName++ "Parser::semantic_type *yylval = nullptr;"
-  , "   /* location ptr */"
-  , "   " ++ns++ "::" ++camelCaseName++ "Parser::location_type *loc    = nullptr;"
+  , "    /* yyval ptr */"
+  , "    " ++ns++ "::" ++camelCaseName++ "Parser::semantic_type *yylval = nullptr;"
+  , "    /* location ptr */"
+  , "    " ++ns++ "::" ++camelCaseName++ "Parser::location_type *loc    = nullptr;"
   , "};"
   , ""
   , "} /* end namespace " ++ns++ " */"
