@@ -22,6 +22,7 @@ module BNFC.Backend.C.CFtoBisonC
   , resultName, typeName, varName
   , specialToks, startSymbol
   , unionBuiltinTokens
+  , positionCats
   )
   where
 
@@ -87,7 +88,7 @@ cf2Bison rp mode cf env = unlines
         --
         -- CPP(BeyondAnsi) ParserMode will genrate following bison code:
         --
-        -- /** no union directive ! */
+        -- /** NO union directive ! result will be stored into driver class */
         -- ...
         -- %token _ERROR_
         -- %token _STAR    /* * */
@@ -183,8 +184,8 @@ header mode cf = unlines $ concat [
       , "/* include for all driver functions */"
       , "#include \"Driver.hh\""
       , ""
-      , "#undef yylex"
-      , "#define yylex scanner.yylex"
+      -- , "#undef yylex"
+      -- , "#define yylex scanner.yylex"
       , "}"
       , ""
       ]
@@ -509,7 +510,7 @@ addResult mode cf nt a =
     -- Andreas, 2021-03-24: But see #350: bison still uses only the @%start@ non-terminal.
     case beyondAnsi mode of
       False -> concat [ a, " result->", varName (normCat nt), " = $$;" ]
-      True  -> concat [ a, " result->", varName (normCat nt), " = std::move($$);" ]
+      True  -> concat [ a, " driver.", varName (normCat nt), " = std::move($$);" ]
   else a
 
 -- | Switch between STL or not.
@@ -582,8 +583,8 @@ generateActionSTLBeyondAnsi :: IsFun a => RecordPositions -> InPackage -> String
 generateActionSTLBeyondAnsi rp inPackage nt f b mbs = reverses ++
   if | isCoercion f    -> concat ["$$ = ", unwords ms, ";", loc]
      | isNilFun f      -> concat ["$$ = ", "std::make_unique<", scope, nt, ">();"]
-     | isOneFun f      -> concat ["$$ = ", "std::make_unique<", scope, nt, ">(); $$->push_back(", head ms, ");"]
-     | isConsFun f     -> concat [lst, "->push_back(", el, "); $$ = ", lst, ";"]
+     | isOneFun f      -> concat ["$$ = ", "std::make_unique<", scope, nt, ">(); $$->cons(std::make_unique<", drop 4 nt, ">(", head ms, "));"]
+     | isConsFun f     -> concat [lst, "->cons(std::make_unique<", drop 4 nt, ">(", el, "));"]
      | isDefinedRule f -> concat ["$$ = ", scope, sanitizeCpp (funName f), "(", intercalate ", " ms, ");" ]
      | otherwise       -> concat ["$$ = ", "std::make_unique<", scope, funName f, ">(", intercalate ", " ms, ");", loc]
   where
