@@ -29,10 +29,10 @@ data CAbs = CAbs {
   tokentypes :: [String],               -- user non-position token types
   listtypes  :: [(String,Bool)],        -- list types used, whether of classes
   absclasses :: [String],               -- grammar-def cats, normalized names
-  conclasses :: [Fun],               -- constructors, except list ones
+  conclasses :: [Fun],                  -- constructors, except list ones
   signatures :: [(String,[CAbsRule])],  -- rules for each class, incl. pos tokens
   postokens  :: [String],               -- position token types
-  defineds   :: [Fun]                -- defined (non-)constructors
+  defineds   :: [Fun]                   -- defined (non-)constructors
   }
 
 -- (valcat,(constr,args)), True = is class (not basic), class variable stored
@@ -99,3 +99,9 @@ classVar c = map toLower c ++ "_"
 
 pointerIf :: Bool -> String -> String
 pointerIf b v = if b then "*" ++ v else v
+
+wrapUniquePtrIf :: Bool -> String -> String
+wrapUniquePtrIf b v = if b then "std::unique_ptr<" ++v++">" else v
+
+wrapMoveIf :: Bool -> String -> String
+wrapMoveIf b v = if b then "std::move(" ++v++")" else v

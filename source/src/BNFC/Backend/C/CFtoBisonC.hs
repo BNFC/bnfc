@@ -184,8 +184,8 @@ header mode cf = unlines $ concat [
       , "/* include for all driver functions */"
       , "#include \"Driver.hh\""
       , ""
-      -- , "#undef yylex"
-      -- , "#define yylex scanner.yylex"
+      , "#undef yylex"
+      , "#define yylex scanner.lex"
       , "}"
       , ""
       ]
@@ -583,10 +583,10 @@ generateActionSTLBeyondAnsi :: IsFun a => RecordPositions -> InPackage -> String
 generateActionSTLBeyondAnsi rp inPackage nt f b mbs = reverses ++
   if | isCoercion f    -> concat ["$$ = ", unwords ms, ";", loc]
      | isNilFun f      -> concat ["$$ = ", "std::make_unique<", scope, nt, ">();"]
-     | isOneFun f      -> concat ["$$ = ", "std::make_unique<", scope, nt, ">(); $$->cons(std::make_unique<", drop 4 nt, ">(", head ms, "));"]
-     | isConsFun f     -> concat [lst, "->cons(std::make_unique<", drop 4 nt, ">(", el, "));"]
+     | isOneFun f      -> concat ["$$ = ", "std::make_unique<", scope, nt, ">(); $$->cons(", head ms, "->clone());"]
+     | isConsFun f     -> concat [lst, "->cons(", el, "->clone());"]
      | isDefinedRule f -> concat ["$$ = ", scope, sanitizeCpp (funName f), "(", intercalate ", " ms, ");" ]
-     | otherwise       -> concat ["$$ = ", "std::make_unique<", scope, funName f, ">(", intercalate ", " ms, ");", loc]
+     | otherwise       -> concat ["$$ = ", "std::make_unique<", scope, funName f, ">(", (intercalate ", " ms), ");", loc]
   where
     -- ms = ["$1", "$1", ...];
     -- Bison's semantic value of the n-th symbol of the right-hand side of the rule.

@@ -129,7 +129,7 @@ prelude stringLiterals mode = unlines $ concat
         unlines
         [
           "%option nodefault noyywrap c++"
-        , "%option yyclass=\"" ++ns++ "::" ++camelCaseName++ "Scanner\""
+        -- , "%option yyclass=\"" ++ns++ "::" ++camelCaseName++ "Scanner\""
         ]
       else
         unlines
@@ -162,8 +162,16 @@ prelude stringLiterals mode = unlines $ concat
       [
         "#include \"Scanner.hh\""  -- #include for the class inheriting "yyFlexLexer"
       , ""
-      , "#undef  YY_DECL"
-      , "#define YY_DECL int " ++ns++ "::" ++camelCaseName++ "Scanner::yylex(" ++ns++ "::" ++camelCaseName++ "Parser::semantic_type* const lval, " ++ns++ "::" ++camelCaseName++ "Parser::location_type* location )"
+      , "// Flex expects the signature of yylex to be defined in the macro YY_DECL, and"
+      , "// the C++ parser expects it to be declared."
+      , "#ifndef YY_DECL"
+      , "#define YY_DECL \\"
+      , "    int         \\"
+      , "    " ++ns++ "::" ++camelCaseName++ "Scanner::lex(                        \\"
+      , "    " ++ns++ "::" ++camelCaseName++ "Parser::semantic_type* const yylval, \\"
+      , "    " ++ns++ "::" ++camelCaseName++ "Parser::location_type* yylloc        \\"
+      , "    )"
+      , "#endif"
       , ""
       , "/* using \"token\" to make the returns for the tokens shorter to type */"
       , "using token = " ++ns++ "::" ++camelCaseName++ "Parser::token;"
