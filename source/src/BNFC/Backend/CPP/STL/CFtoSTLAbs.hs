@@ -186,7 +186,7 @@ prCon mode (c,(f,cs)) =
         "class " ++f++ " : public " ++ c,
         "{",
         "private:",
-        unlines ["  std::unique_ptr<" ++ typ ++ "> " ++ var ++ ";" | (typ,_,var) <- cs],
+        unlines ["  " ++ wrapUniquePtrIf isClass typ +++ var ++ ";" | (typ,isClass,var) <- cs],
         "public:",
         -- "right-hand side" operations; for move
         "  " ++ f ++ "(" ++ f ++ "&& rhs);",
@@ -209,7 +209,7 @@ prCon mode (c,(f,cs)) =
        ;
        CppStdBeyondAnsi _ ->
            concat $ intersperse ", "
-           ["std::unique_ptr<" ++x++ ">& p" ++ show i | ((x,_,_),i) <- zip cs [1..]]
+           [wrapUniquePtrIf isClass x ++ "& p" ++ show i | ((x,isClass,_),i) <- zip cs [1..]]
        ;
        }
 
@@ -391,20 +391,21 @@ prConstructorC mode (f,cs) = case mode of {
   CppStdBeyondAnsi _ -> unlines [
       f ++ "::" ++ f ++ "(" ++ conargs ++ ")",
       "{",
-      unlines ["  " ++ c ++ " = std::move(" ++ p ++ ");" | (c,p) <- zip cvs pvs],
+      unlines ["  " ++ c ++ " = " ++ wrapMoveIf isClass p ++ ";" | (c,isClass,p) <- zip3 cvs isClasses pvs],
       "}"
       ];
     }
  where
    cvs = [c | (_,_,c) <- cs]
+   isClasses = [isClass | (_,isClass,_) <- cs]
    pvs = ['p' : show i | ((_,_,_),i) <- zip cs [1..]]
 
    conargs = case mode of {
      CppStdAnsi _ ->
-       intercalate ", " [x +++ pointerIf st v | ((x,st,_),v) <- zip cs pvs]
+       intercalate ", " [x +++ pointerIf isClass v | ((x,isClass,_),v) <- zip cs pvs]
      ;
      CppStdBeyondAnsi _ ->
-       intercalate ", " ["std::unique_ptr<" ++x++ ">&" +++ v | ((x,_,_),v) <- zip cs pvs]
+       intercalate ", " [wrapUniquePtrIf isClass x ++ "&" +++ v | ((x,isClass,_),v) <- zip cs pvs]
      ;
      }
 
@@ -438,12 +439,12 @@ prCopyC mode (c,cs) = case mode of {
       "",
       c ++ "::" ++ c ++ "(const" +++ c ++ "& rhs)",
       "{",
-      unlines ["  *"  ++ c ++ " = *rhs." ++ c ++ ";" | (_,_,c) <- cs],
+      unlines ["  "  ++ pointerIf isClass c ++ " = " ++ pointerIf isClass "rhs" ++ "." ++ c ++ ";" | (_,isClass,c) <- cs],
       "}",
       "",
       c ++ "&" +++ c ++ "::operator=(const" +++ c ++ "& rhs)",
       "{",
-      unlines ["  *"  ++ c ++ " = *rhs." ++ c ++ ";" | (_,_,c) <- cs],
+      unlines ["  "  ++ pointerIf isClass c ++ " = " ++ pointerIf isClass "rhs" ++ "." ++ c ++ ";" | (_,isClass,c) <- cs],
       "  return *this;",
       "}",
       ""
