@@ -185,9 +185,8 @@ prCon mode (c,(f,cs)) =
     CppStdBeyondAnsi _ -> unlines [
         "class " ++f++ " : public " ++ c,
         "{",
-        "private:",
-        unlines ["  " ++ wrapUniquePtrIf isClass typ +++ var ++ ";" | (typ,isClass,var) <- cs],
         "public:",
+        unlines ["  " ++ wrapUniquePtrIf isClass typ +++ var ++ ";" | (typ,isClass,var) <- cs],
         -- "right-hand side" operations; for move
         "  " ++ f ++ "(" ++ f ++ "&& rhs);",
         "  " ++ f ++ "& operator=(" ++ f ++ "&& rhs);",
@@ -230,7 +229,16 @@ prList mode (c, b) = case mode of {
       "class " ++c++ " : public Visitable"
       , "{"
       , "public:"
-      , "  std::vector<std::unique_ptr<" ++childClass++ ">>" +++ "list" ++ map toLower childClass ++ "_;"
+      , "  std::vector<std::unique_ptr<" ++childClass++ ">>" +++ childClassVarName ++ ";"
+      , ""
+      -- ref: https://stackoverflow.com/questions/51148797/how-can-i-define-iterator-and-const-iterator-in-my-class-while-i-uses-stdvecto
+      , "  // define iterator and const_iterator, expose it"
+      , "  using iterator = typename std::vector<" ++childClass++ ">::iterator;"
+      , "  using const_iterator = typename std::vector<" ++childClass++ ">::const_iterator;"
+      , "  auto begin() const { return " ++childClassVarName++ ".begin(); }"
+      , "  auto begin()       { return " ++childClassVarName++ ".begin(); }"
+      , "  auto end()   const { return " ++childClassVarName++ ".end(); }"
+      , "  auto end()         { return " ++childClassVarName++ ".end(); }"
       , ""
         -- "right-hand side" operations; for move
       , "  " ++ c ++ "(" ++ c ++ "&& rhs);"
@@ -249,6 +257,7 @@ prList mode (c, b) = case mode of {
     }
   where
     childClass = drop 4 c
+    childClassVarName = "list" ++ map toLower childClass ++ "_"
     bas = applyWhen b (++ "*") $ drop 4 c {- drop "List" -}
 
 

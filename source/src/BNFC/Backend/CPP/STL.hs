@@ -48,10 +48,10 @@ makeCppStl opts cf = do
   let (skelH, skelC) = cf2CVisitSkel True (inPackage opts) cf
   mkCppFile ("Skeleton" ++ hExt) skelH
   mkCppFile ("Skeleton" ++ cppExt) skelC
-  let (prinH, prinC) = cf2CPPPrinter True (inPackage opts) cf
+  let (prinH, prinC) = cf2CPPPrinter True (inPackage opts) cf hExt
   mkCppFile ("Printer" ++ hExt) prinH
   mkCppFile ("Printer" ++ cppExt) prinC
-  mkCppFile ("Test" ++ cppExt) (cpptest (inPackage opts) cf)
+  mkCppFile ("Test" ++ cppExt) (cpptest (inPackage opts) cf hExt)
 
   case (ansi opts) of
     BeyondAnsi -> do
@@ -75,10 +75,7 @@ makeCppStl opts cf = do
     mkCppFileWithHint x = mkfile x commentWithEmacsModeHint
     -- Switch C++ generator module
     cppStdMode :: CppStdMode
-    cppStdMode = if Ansi == ansi opts then
-                   CppStdAnsi (ansi opts)
-                 else
-                   CppStdBeyondAnsi (ansi opts)
+    cppStdMode = if Ansi == ansi opts then CppStdAnsi (ansi opts) else CppStdBeyondAnsi (ansi opts)
     lexerExt = if Ansi == ansi opts then ".l" else ".ll"
     parserExt = if Ansi == ansi opts then ".y" else ".yy"
     cppExt = if Ansi == ansi opts then ".c" else ".cc"
@@ -113,18 +110,18 @@ printParseErrHeader inPackage =
      , nsEnd inPackage
      ]
 
-cpptest :: Maybe String -> CF -> String
-cpptest inPackage cf = unlines $ concat
+cpptest :: Maybe String -> CF -> String -> String
+cpptest inPackage cf hExt = unlines $ concat
   [ testfileHeader
   , [ "",
     "#include <cstdio>",
     "#include <string>",
     "#include <iostream>",
     "#include <memory>",
-    "#include \"Parser.H\"",
-    "#include \"Printer.H\"",
-    "#include \"Absyn.H\"",
-    "#include \"ParserError.H\"",
+    "#include \"Parser" ++hExt++ "\"",
+    "#include \"Printer" ++hExt++ "\"",
+    "#include \"Absyn" ++hExt++ "\"",
+    "#include \"ParserError" ++hExt++ "\"",
     "",
     "void usage() {",
     "  printf(\"usage: Call with one of the following argument " ++

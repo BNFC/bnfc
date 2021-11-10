@@ -36,7 +36,7 @@ makeCppNoStl opts cf = do
     let (skelH, skelC) = cf2CVisitSkel False Nothing cf
     mkCppFile "Skeleton.H" skelH
     mkCppFile "Skeleton.C" skelC
-    let (prinH, prinC) = cf2CPPPrinter False Nothing cf
+    let (prinH, prinC) = cf2CPPPrinter False Nothing cf ".H"
     mkCppFile "Printer.H" prinH
     mkCppFile "Printer.C" prinC
     mkCppFile "Test.C" (cpptest cf)
