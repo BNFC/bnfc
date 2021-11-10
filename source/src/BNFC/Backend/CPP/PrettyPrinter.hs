@@ -35,12 +35,12 @@ import BNFC.Backend.CPP.STL.STLUtils
 import BNFC.PrettyPrint
 
 --Produces (.H file, .C file)
-cf2CPPPrinter :: Bool -> Maybe String -> CF -> (String, String)
-cf2CPPPrinter useStl inPackage cf =
-    (mkHFile useStl inPackage cf groups, mkCFile useStl inPackage cf groups)
- where
+cf2CPPPrinter :: Bool -> Maybe String -> CF -> String -> (String, String)
+cf2CPPPrinter useStl inPackage cf hExt =
+    (mkHFile useStl inPackage cf groups hExt, mkCFile useStl inPackage cf groups hExt)
+  where
     groups = when useStl (positionRules cf)  -- CPP/NoSTL treats position tokens as just tokens
-          ++ fixCoercions (ruleGroupsInternals cf)
+             ++ fixCoercions (ruleGroupsInternals cf)
 
 positionRules :: CF -> [(Cat,[Rule])]
 positionRules cf =
@@ -51,8 +51,8 @@ positionRules cf =
 {- **** Header (.H) File Methods **** -}
 
 --An extremely large function to make the Header File
-mkHFile :: Bool -> Maybe String -> CF -> [(Cat,[Rule])] -> String
-mkHFile useStl inPackage cf groups = unlines
+mkHFile :: Bool -> Maybe String -> CF -> [(Cat,[Rule])] -> String -> String
+mkHFile useStl inPackage cf groups hExt = unlines
   [ printHeader
   , content
   , classFooter
@@ -67,7 +67,7 @@ mkHFile useStl inPackage cf groups = unlines
     "#ifndef " ++ hdef,
     "#define " ++ hdef,
     "",
-    "#include \"Absyn.H\"",
+    "#include \"Absyn" ++hExt++ "\"",
     "#include <stdio.h>",
     "#include <stddef.h>",
     "#include <string.h>",
@@ -209,8 +209,8 @@ prRuleH _ = ""
 {- **** Implementation (.C) File Methods **** -}
 
 --This makes the .C file by a similar method.
-mkCFile :: Bool -> Maybe String -> CF -> [(Cat,[Rule])] -> String
-mkCFile useStl inPackage cf groups = concat
+mkCFile :: Bool -> Maybe String -> CF -> [(Cat,[Rule])] -> String -> String
+mkCFile useStl inPackage cf groups hExt = concat
    [
     header,
     nsStart inPackage ++ "\n",
@@ -231,7 +231,7 @@ mkCFile useStl inPackage cf groups = concat
       "/*** Pretty Printer and Abstract Syntax Viewer ***/",
       "",
       "#include <string>",
-      "#include \"Printer.H\"",
+      "#include \"Printer" ++hExt++ "\"",
       "#define INDENT_WIDTH 2",
       ""
      ]
@@ -433,18 +433,18 @@ genPrintVisitorList (cat@(ListCat _), rules) = vcat
   , ""
   ]
   where
-  cl        = identCat (normCat cat)
-  lty       = text cl                   -- List type
-  itty      = lty <> "::const_iterator" -- Iterator type
-  vname     = text $ map toLower cl
-  prules    = sortRulesByPrecedence rules
-  swRules f = switchByPrecedence "_i_" $
+    cl        = identCat (normCat cat)
+    lty       = text cl                   -- List type
+    itty      = lty <> "::const_iterator" -- Iterator type
+    vname     = text $ map toLower cl
+    prules    = sortRulesByPrecedence rules
+    swRules f = switchByPrecedence "_i_" $
                 map (second $ sep . prListRule_) $
-                  uniqOn fst $ filter f prules
-                  -- Discard duplicates, can only handle one rule per precedence.
-  docs0     = swRules isNilFun
-  docs1     = swRules isOneFun
-  docs2     = swRules isConsFun
+                uniqOn fst $ filter f prules
+                -- Discard duplicates, can only handle one rule per precedence.
+    docs0     = swRules isNilFun
+    docs1     = swRules isOneFun
+    docs2     = swRules isConsFun
 
 genPrintVisitorList _ = error "genPrintVisitorList expects a ListCat"
 
