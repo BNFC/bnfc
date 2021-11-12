@@ -1,6 +1,6 @@
 Name: BNFC
-Version: 2.8.3
-cabal-version: >= 1.8
+Version: 2.8.3.1
+cabal-version: >= 1.10
 build-type: Simple
 category: Development
 Copyright: (c) Andreas Abel, Jonas Almström Duregård, Krasimir Angelov, Jean-Philippe Bernardy, Bjorn Bringert, Johan Broberg, Kyle Butt, Paul Callaghan, Grégoire Détrez, Markus Forsberg, Ola Frid, Peter Gammie, Thomas Hallgren, Pascal Hof, Patrik Jansson, Kristofer Johannisson, Antti-Juhani Kaijanaho, Andreas Lööw, Justin Meiners, Kent Mein, Ulf Norell, Gabrielle Paganelli, Michael Pellauer, Fabian Ruch, and Aarne Ranta 2002 - 2019. Free software under GNU General Public License (GPL).
@@ -30,7 +30,10 @@ tested-with: GHC == 7.6.3
            , GHC == 8.2.2
            , GHC == 8.4.4
            , GHC == 8.6.5
-           , GHC == 8.8.1
+           , GHC == 8.8.4
+           , GHC == 8.10.7
+           , GHC == 9.0.1
+           , GHC == 9.2.1
 Extra-source-files: src/BNF.cf changelog Makefile
 
 Source-repository head
@@ -41,13 +44,15 @@ Source-repository head
 Library
   hs-source-dirs: runtime, src
   Build-Depends: base>=4.6 && <5, array
+  default-language:
+    Haskell98
   exposed-modules:
-   Algebra.RingUtils
-   Data.Pair
-   Data.Matrix.Quad
-   Data.Matrix.Class
-   Parsing.Chart
-   Parsing.TestProgram
+    Algebra.RingUtils
+    Data.Pair
+    Data.Matrix.Quad
+    Data.Matrix.Class
+    Parsing.Chart
+    Parsing.TestProgram
 
 Executable bnfc
   Build-Depends:
@@ -66,7 +71,9 @@ Executable bnfc
   Main-is: Main.hs
   HS-source-dirs: compat src
   ghc-options:     -W
-  extensions:
+  default-language:
+    Haskell98
+  default-extensions:
     FlexibleContexts
     LambdaCase
     OverloadedStrings
@@ -226,7 +233,9 @@ Test-suite unit-tests
     time
   Main-is: unit-tests.hs
   HS-source-dirs: compat src test
-  extensions:
+  default-language:
+    Haskell98
+  default-extensions:
     FlexibleContexts
     LambdaCase
     OverloadedStrings
@@ -394,3 +403,4 @@ Test-suite bnfc-doctests
   main-is:        doctests.hs
   build-depends:  base, doctest >= 0.8
   HS-source-dirs: test
+  default-language: Haskell98

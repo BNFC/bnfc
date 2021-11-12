@@ -145,4 +145,4 @@ prCat user (cat, nt)
       var = "p." <> nt
       varType = typename (identCat (normCat cat)) user
       accept = var <> ".accept(new " <> text varType <> "Visitor<R,A>(), arg);"
-      et = typename (show $normCatOfList cat) user
+      et = typename (show $ normCatOfList cat) user
