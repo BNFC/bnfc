@@ -22,7 +22,7 @@ import BNFC.Backend.Base
 import BNFC.Backend.C            ( bufferH, bufferC, comment, testfileHeader )
 import BNFC.Backend.C.CFtoBisonC ( cf2Bison, unionBuiltinTokens, positionCats, varName )
 import BNFC.Backend.C.CFtoFlexC  ( cf2flex, ParserMode(..), beyondAnsi, parserPackage, parserName, stlParser )
-import BNFC.Backend.CPP.Common   ( commentWithEmacsModeHint )
+import BNFC.Backend.CPP.Common   ( commentWithEmacsModeHint, CppStdMode(..) )
 import BNFC.Backend.CPP.Makefile
 import BNFC.Backend.CPP.STL.CFtoSTLAbs
 import BNFC.Backend.CPP.STL.CFtoCVisitSkelSTL
@@ -48,7 +48,7 @@ makeCppStl opts cf = do
   let (skelH, skelC) = cf2CVisitSkel True (inPackage opts) cf
   mkCppFile ("Skeleton" ++ hExt) skelH
   mkCppFile ("Skeleton" ++ cppExt) skelC
-  let (prinH, prinC) = cf2CPPPrinter True (inPackage opts) cf hExt
+  let (prinH, prinC) = cf2CPPPrinter cppStdMode True (inPackage opts) cf hExt
   mkCppFile ("Printer" ++ hExt) prinH
   mkCppFile ("Printer" ++ cppExt) prinC
   mkCppFile ("Test" ++ cppExt) (cpptest (inPackage opts) cf hExt)

@@ -100,9 +100,3 @@ classVar c = map toLower c ++ "_"
 
 pointerIf :: Bool -> String -> String
 pointerIf b v = if b then "*" ++ v else v
-
-wrapUniquePtrIf :: Bool -> String -> String
-wrapUniquePtrIf b v = if b then "std::unique_ptr<" ++v++">" else v
-
-wrapMoveIf :: Bool -> String -> String
-wrapMoveIf b v = if b then "std::move(" ++v++")" else v
