@@ -31,13 +31,14 @@ import BNFC.Utils
 import BNFC.Backend.Common
 import BNFC.Backend.Common.NamedVariables
 import BNFC.Backend.Common.StrUtils (renderCharOrString)
+import BNFC.Backend.CPP.Common      ( CppStdMode(..), wrapUniquePtrIf, wrapPointerIf )
 import BNFC.Backend.CPP.STL.STLUtils
 import BNFC.PrettyPrint
 
 --Produces (.H file, .C file)
-cf2CPPPrinter :: Bool -> Maybe String -> CF -> String -> (String, String)
-cf2CPPPrinter useStl inPackage cf hExt =
-    (mkHFile useStl inPackage cf groups hExt, mkCFile useStl inPackage cf groups hExt)
+cf2CPPPrinter :: CppStdMode -> Bool -> Maybe String -> CF -> String -> (String, String)
+cf2CPPPrinter mode useStl inPackage cf hExt =
+    (mkHFile mode useStl inPackage cf groups hExt, mkCFile mode useStl inPackage cf groups hExt)
   where
     groups = when useStl (positionRules cf)  -- CPP/NoSTL treats position tokens as just tokens
              ++ fixCoercions (ruleGroupsInternals cf)
@@ -51,8 +52,8 @@ positionRules cf =
 {- **** Header (.H) File Methods **** -}
 
 --An extremely large function to make the Header File
-mkHFile :: Bool -> Maybe String -> CF -> [(Cat,[Rule])] -> String -> String
-mkHFile useStl inPackage cf groups hExt = unlines
+mkHFile :: CppStdMode -> Bool -> Maybe String -> CF -> [(Cat,[Rule])] -> String -> String
+mkHFile mode useStl inPackage cf groups hExt = unlines
   [ printHeader
   , content
   , classFooter
@@ -100,7 +101,7 @@ mkHFile useStl inPackage cf groups hExt = unlines
     "  char *print(Visitable *v);"
    ]
   hdef = nsDefine inPackage "PRINTER_HEADER"
-  content = concatMap (prDataH useStl) groups
+  content = concatMap (prDataH mode useStl) groups
   classFooter = unlines $
    [
     "  void visitInteger(Integer i);",
@@ -185,47 +186,58 @@ mkHFile useStl inPackage cf groups hExt = unlines
    ]
 
 --Prints all the required method names and their parameters.
-prDataH :: Bool -> (Cat, [Rule]) -> String
-prDataH useSTL (cat, rules)
- | isList cat = unlines $ concat
-     [ [ concat [ "  void visit", cl, "(", cl, " *p);"          ] ]
-     , when useSTL
-       [ concat [ "  void iter", cl, "(", itty, " i, ", itty, " j);" ] ]
-     ]
- | otherwise  = abstract ++ concatMap prRuleH rules
- where
-   cl       = identCat (normCat cat)
-   itty     = concat [ cl, "::", "const_iterator" ]
-   abstract = case lookupRule (noPosition $ catToStr cat) rules of
-    Just _ -> ""
-    Nothing ->  "  void visit" ++ cl ++ "(" ++ cl ++ " *p); /* abstract class */\n"
+prDataH :: CppStdMode -> Bool -> (Cat, [Rule]) -> String
+prDataH mode useSTL (cat, rules)
+  | isList cat = unlines $ concat
+    [ [ concat [ "  void visit", cl, "(", wrapUniquePtrIf beyondAnsi cl, " ", vararg, ");" ] ]
+    , when useSTL
+      [ concat [ "  void iter", cl, "(", itty, " i, ", itty, " j);" ] ]
+    ]
+  | otherwise  = abstract ++ concatMap prRuleH rules
+  where
+    beyondAnsi = case mode of
+      CppStdBeyondAnsi _ -> True
+      CppStdAnsi       _ -> False
+    cl       = identCat (normCat cat)
+    vararg   = if beyondAnsi then "p" else "*p"
+    prRuleH  = if beyondAnsi then prRuleHBeyondAnsi else prRuleHAnsi
+    itty     = concat [ cl, "::", "const_iterator" ]
+    abstract = case lookupRule (noPosition $ catToStr cat) rules of
+      Just _ -> ""
+      Nothing ->  "  void visit" ++ cl ++ "(" ++ wrapUniquePtrIf beyondAnsi cl +++ vararg ++ "); /* abstract class */\n"
 
 --Prints all the methods to visit a rule.
-prRuleH :: IsFun f => Rul f -> String
-prRuleH (Rule fun _ _ _) | isProperLabel fun = concat
+prRuleHAnsi :: IsFun f => Rul f -> String
+prRuleHAnsi (Rule fun _ _ _) | isProperLabel fun = concat
   ["  void visit", funName fun, "(", funName fun, " *p);\n"]
-prRuleH _ = ""
+prRuleHAnsi _ = ""
+
+prRuleHBeyondAnsi :: IsFun f => Rul f -> String
+prRuleHBeyondAnsi (Rule fun _ _ _) | isProperLabel fun = concat
+  ["  void visit", funName fun, "(", wrapUniquePtrIf True (funName fun), " p);\n"]
+prRuleHBeyondAnsi _ = ""
 
 {- **** Implementation (.C) File Methods **** -}
 
 --This makes the .C file by a similar method.
-mkCFile :: Bool -> Maybe String -> CF -> [(Cat,[Rule])] -> String -> String
-mkCFile useStl inPackage cf groups hExt = concat
+mkCFile :: CppStdMode -> Bool -> Maybe String -> CF -> [(Cat,[Rule])] -> String -> String
+mkCFile mode useStl inPackage cf groups hExt = concat
    [
     header,
     nsStart inPackage ++ "\n",
     prRender useStl,
     printEntries,
-    concatMap (prPrintData useStl inPackage cf) groups,
+    concatMap (prPrintData useStl mode inPackage cf) groups,
     printBasics,
     printTokens,
     showEntries,
-    concatMap (prShowData useStl) groups,
+    concatMap (prShowData useStl mode) groups,
     showBasics,
     showTokens,
     nsEnd inPackage ++ "\n"
    ]
   where
+
     header = unlines
      [
       "/*** Pretty Printer and Abstract Syntax Viewer ***/",
@@ -376,33 +388,30 @@ mkCFile useStl inPackage cf groups hExt = concat
 {- **** Pretty Printer Methods **** -}
 
 -- | Generates methods for the Pretty Printer.
-prPrintData :: Bool -> Maybe String -> CF -> (Cat, [Rule]) -> String
-prPrintData True {- use STL -} _ _ (cat@(ListCat _), rules) =
-    render $ genPrintVisitorList (cat, rules)
-prPrintData False {- use STL -} _ _ (cat@(ListCat _), rules) =
-    genPrintVisitorListNoStl (cat, rules)
--- Not a list :
-prPrintData _ _inPackage cf (TokenCat cat, _rules) | isPositionCat cf cat = unlines $
-  -- a position token
-  [ "void PrintAbsyn::visit" ++ cat ++ "(" ++ cat ++ " *p)"
-  , "{"
-  , "  visitIdent(p->string_);"
-  , "}"
-  , ""
-  ]
-prPrintData _ inPackage _cf (cat, rules) = -- Not a list
-    abstract ++ concatMap (prPrintRule inPackage) rules
+prPrintData :: Bool -> CppStdMode -> Maybe String -> CF -> (Cat, [Rule]) -> String
+prPrintData True mode _ _ (cat@(ListCat _), rules) =
+  render $ genPrintVisitorList (mode, cat, rules)
+prPrintData False mode _ _ (cat@(ListCat _), rules) =
+  genPrintVisitorListNoStl (mode, cat, rules)
+prPrintData _ mode _inPackage cf (TokenCat cat, _rules) |
+  isPositionCat cf cat = genPositionToken cat
+prPrintData _ mode inPackage _cf (cat, rules) =
+  abstract ++ concatMap (prPrintRule beyondAnsi inPackage) rules
   where
-  cl = identCat (normCat cat)
-  abstract = case lookupRule (noPosition $ catToStr cat) rules of
-    Just _ -> ""
-    Nothing ->  "void PrintAbsyn::visit" ++ cl ++ "(" ++ cl +++ "*p) {} //abstract class\n\n"
+    beyondAnsi = case mode of
+      CppStdBeyondAnsi _ -> True
+      CppStdAnsi       _ -> False
+    cl = identCat (normCat cat)
+    vararg   = if beyondAnsi then "p" else "*p"
+    abstract = case lookupRule (noPosition $ catToStr cat) rules of
+      Just _ -> ""
+      Nothing ->  "void PrintAbsyn::visit" ++ cl ++ "(" ++ wrapUniquePtrIf beyondAnsi cl +++ vararg ++") {} //abstract class\n\n"
 
 -- | Generate pretty printer visitor for a list category (STL version).
 --
-genPrintVisitorList :: (Cat, [Rule]) -> Doc
-genPrintVisitorList (cat@(ListCat _), rules) = vcat
-  [ "void PrintAbsyn::visit" <> lty <> parens (lty <+> "*" <> vname)
+genPrintVisitorList :: (CppStdMode, Cat, [Rule]) -> Doc
+genPrintVisitorList (mode, cat@(ListCat _), rules) = vcat
+  [ "void PrintAbsyn::visit" <> lty <> parens (ltyarg <+> varg)
   , codeblock 2
     [ "iter" <> lty <> parens (vname <> "->begin()" <> comma <+> vname <> "->end()") <> semi ]
   , ""
@@ -433,10 +442,15 @@ genPrintVisitorList (cat@(ListCat _), rules) = vcat
   , ""
   ]
   where
+    beyondAnsi = case mode of
+      CppStdBeyondAnsi _ -> True
+      CppStdAnsi       _ -> False
     cl        = identCat (normCat cat)
-    lty       = text cl                   -- List type
+    lty       = text cl                              -- List type
+    ltyarg    = text $ wrapUniquePtrIf beyondAnsi cl -- List type arg
     itty      = lty <> "::const_iterator" -- Iterator type
     vname     = text $ map toLower cl
+    varg      = text $ wrapPointerIf (not beyondAnsi) (map toLower cl)
     prules    = sortRulesByPrecedence rules
     swRules f = switchByPrecedence "_i_" $
                 map (second $ sep . prListRule_) $
@@ -447,6 +461,16 @@ genPrintVisitorList (cat@(ListCat _), rules) = vcat
     docs2     = swRules isConsFun
 
 genPrintVisitorList _ = error "genPrintVisitorList expects a ListCat"
+
+genPositionToken :: String -> String
+genPositionToken cat = unlines $
+  -- a position token
+  [ "void PrintAbsyn::visit" ++ cat ++ "(" ++ cat ++ " *p)"
+  , "{"
+  , "  visitIdent(p->string_);"
+  , "}"
+  , ""
+  ]
 
 -- | Only render the rhs (items) of a list rule.
 
@@ -464,9 +488,9 @@ prListRule_ (Rule _ _ items _) = for items $ \case
 -- This is the only part of the pretty printer that differs significantly
 -- between the versions with and without STL.
 -- The present version has been adapted from CFtoCPrinter.
-genPrintVisitorListNoStl :: (Cat, [Rule]) -> String
-genPrintVisitorListNoStl (cat@(ListCat _), rules) = unlines $ concat
-  [ [ "void PrintAbsyn::visit" ++ cl ++ "("++ cl ++ " *" ++ vname ++ ")"
+genPrintVisitorListNoStl :: (CppStdMode, Cat, [Rule]) -> String
+genPrintVisitorListNoStl (mode, cat@(ListCat _), rules) = unlines $ concat
+  [ [ "void PrintAbsyn::visit" ++ cl ++ "("++ wrapUniquePtrIf beyondAnsi cl +++ varg ++ ")"
     , "{"
       , "  if (" ++ vname +++ "== 0)"
       , "  { /* nil */"
@@ -491,20 +515,24 @@ genPrintVisitorListNoStl (cat@(ListCat _), rules) = unlines $ concat
       ]
     ]
   where
-  cl          = identCat (normCat cat)
-  vname       = map toLower cl
-  pre         = vname ++ "->"
-  prules      = sortRulesByPrecedence rules
-  swRules f   = switchByPrecedence "_i_" $
+    beyondAnsi = case mode of
+      CppStdBeyondAnsi _ -> True
+      CppStdAnsi       _ -> False
+    cl          = identCat (normCat cat)
+    vname       = map toLower cl
+    varg        = wrapPointerIf (not beyondAnsi) (map toLower cl)
+    pre         = vname ++ "->"
+    prules      = sortRulesByPrecedence rules
+    swRules f   = switchByPrecedence "_i_" $
                   map (second $ sep . map text . prPrintRule_ pre) $
-                    uniqOn fst $ filter f prules
-                    -- Discard duplicates, can only handle one rule per precedence.
+                  uniqOn fst $ filter f prules
+                  -- Discard duplicates, can only handle one rule per precedence.
 genPrintVisitorListNoStl _ = error "genPrintVisitorListNoStl expects a ListCat"
 
 --Pretty Printer methods for a rule.
-prPrintRule :: Maybe String -> Rule -> String
-prPrintRule inPackage r@(Rule fun _ _ _) | isProperLabel fun = unlines $ concat
-  [ [ "void PrintAbsyn::visit" ++ funName fun ++ "(" ++ funName fun +++ "*" ++ fnm ++ ")"
+prPrintRule :: Bool -> Maybe String -> Rule -> String
+prPrintRule beyondAnsi inPackage r@(Rule fun _ _ _) | isProperLabel fun = unlines $ concat
+  [ [ "void PrintAbsyn::visit" ++ visitFunName ++ "(" ++ vararg +++ fnm ++ ")"
     , "{"
     , "  int oldi = _i_;"
     , parenCode "_L_PAREN"
@@ -519,34 +547,35 @@ prPrintRule inPackage r@(Rule fun _ _ _) | isProperLabel fun = unlines $ concat
     ]
   ]
   where
-  p = precRule r
-  parenCode x = "  if (oldi > " ++ show p ++ ") render(" ++ nsDefine inPackage x ++ ");"
-  fnm = "p" --old names could cause conflicts
-prPrintRule _ _ = ""
+    visitFunName = funName fun
+    vararg = wrapUniquePtrIf beyondAnsi (funName fun)
+    p = precRule r
+    parenCode x = "  if (oldi > " ++ show p ++ ") render(" ++ nsDefine inPackage x ++ ");"
+    fnm = if beyondAnsi then "p" else "*p" --old names could cause conflicts
+
+prPrintRule _ _ _ = ""
 
 prPrintRule_ :: IsFun a => String -> Rul a -> [String]
 prPrintRule_ pre (Rule _ _ items _) = map (prPrintItem pre) $ numVars items
 
 --This goes on to recurse to the instance variables.
 prPrintItem :: String -> Either (Cat, Doc) String -> String
-prPrintItem _   (Right t) = "  render(" ++ snd (renderCharOrString t) ++ ");"
+prPrintItem _   (Right t)     = "  render(" ++ snd (renderCharOrString t) ++ ");"
 prPrintItem pre (Left (c, nt))
-  | Just t <- maybeTokenCat c
-              = "  visit" ++ t   ++ "(" ++ pre ++ s ++ ");"
-  | isList c  = "  " ++ setI (precCat c) ++
-                  "visit" ++ elt ++ "(" ++ pre ++ s ++ ");"
-  | otherwise = "  " ++ setI (precCat c) ++ pre ++ s ++ "->accept(this);"
+  | Just t <- maybeTokenCat c = "  visit" ++ t ++ "(" ++ pre ++ s ++ ");"
+  | isList c                  = "  " ++ setI (precCat c) ++ "visit" ++ elt ++ "(" ++ pre ++ s ++ "->clone());" -- TODO: clone is only beyondAnsi
+  | otherwise                 = "  " ++ setI (precCat c) ++ pre ++ s ++ "->accept(this);"
   where
-  s   = render nt
-  elt = identCat $ normCat c
+    s   = render nt
+    elt = identCat $ normCat c
 
 {- **** Abstract Syntax Tree Printer **** -}
 
 --This prints the functions for Abstract Syntax tree printing.
-prShowData :: Bool -> (Cat, [Rule]) -> String
-prShowData True (cat@(ListCat c), _) = unlines
+prShowData :: Bool -> CppStdMode -> (Cat, [Rule]) -> String
+prShowData True mode (cat@(ListCat c), _) = unlines
  [
-  "void ShowAbsyn::visit" ++ cl ++ "("++ cl ++ " *" ++ vname ++ ")",
+  "void ShowAbsyn::visit" ++ cl ++ "("++ wrapUniquePtrIf beyondAnsi cl +++ varg ++ ")",
   "{",
   "  for ("++ cl ++"::const_iterator i = " ++
        vname++"->begin() ; i != " ++vname ++"->end() ; ++i)",
@@ -560,12 +589,17 @@ prShowData True (cat@(ListCat c), _) = unlines
   ""
  ]
   where
-    cl = identCat (normCat cat)
+    beyondAnsi = case mode of
+      CppStdBeyondAnsi _ -> True
+      CppStdAnsi       _ -> False
+    cl    = identCat (normCat cat)
     vname = map toLower cl
-prShowData False (cat@(ListCat c), _) =
+    varg  = wrapPointerIf (not beyondAnsi) vname
+
+prShowData False mode (cat@(ListCat c), _) =
  unlines
  [
-  "void ShowAbsyn::visit" ++ cl ++ "("++ cl ++ " *" ++ vname ++ ")",
+  "void ShowAbsyn::visit" ++ cl ++ "("++ wrapUniquePtrIf beyondAnsi cl +++ varg ++ ")",
   "{",
   "  while(" ++ vname ++ "!= 0)",
   "  {",
@@ -585,38 +619,47 @@ prShowData False (cat@(ListCat c), _) =
   ""
  ]
   where
-    cl = identCat (normCat cat)
-    ecl = identCat (normCatOfList cat)
-    vname = map toLower cl
+    beyondAnsi = case mode of
+      CppStdBeyondAnsi _ -> True
+      CppStdAnsi       _ -> False
+    cl     = identCat (normCat cat)
+    ecl    = identCat (normCatOfList cat)
+    vname  = map toLower cl
+    varg   = wrapPointerIf (not beyondAnsi) vname
     member = map toLower ecl ++ "_"
     visitMember
       | Just t <- maybeTokenCat c =
           "      visit" ++ t ++ "(" ++ vname ++ "->" ++ member ++ ");"
       | otherwise =
           "      " ++ vname ++ "->" ++ member ++ "->accept(this);"
-prShowData _ (cat, rules) =  --Not a list:
-  abstract ++ concatMap prShowRule rules
+prShowData _ mode (cat, rules) =  --Not a list:
+  abstract ++ unlines [prShowRule rule beyondAnsi | rule <- rules]
   where
+    beyondAnsi = case mode of
+      CppStdBeyondAnsi _ -> True
+      CppStdAnsi       _ -> False
     cl = identCat (normCat cat)
+    varg = wrapPointerIf (not beyondAnsi) "p"
     abstract = case lookupRule (noPosition $ catToStr cat) rules of
       Just _ -> ""
-      Nothing ->  "void ShowAbsyn::visit" ++ cl ++ "(" ++ cl ++ " *p) {} //abstract class\n\n"
+      Nothing ->  "void ShowAbsyn::visit" ++ cl ++ "(" ++ wrapUniquePtrIf beyondAnsi cl +++ varg ++ ") {} //abstract class\n\n"
 
 --This prints all the methods for Abstract Syntax tree rules.
-prShowRule :: IsFun f => Rul f -> String
-prShowRule (Rule f _ cats _) | isProperLabel f = concat
+prShowRule :: IsFun f => Rul f -> Bool -> String
+prShowRule (Rule f _ cats _) beyondAnsi | isProperLabel f = concat
   [
-   "void ShowAbsyn::visit" ++ fun ++ "(" ++ fun +++ "*" ++ fnm ++ ")\n",
-   "{\n",
-   lparen,
-   "  bufAppend(\"" ++ fun ++ "\");\n",
-   optspace,
-   cats',
-   rparen,
-   "}\n"
+    "void ShowAbsyn::visit" ++ fun ++ "(" ++ vararg +++ fnm ++ ")\n",
+    "{\n",
+    lparen,
+    "  bufAppend(\"" ++ fun ++ "\");\n",
+    optspace,
+    cats',
+    rparen,
+    "}\n"
   ]
-   where
+  where
     fun = funName f
+    vararg = wrapUniquePtrIf beyondAnsi (funName fun)
     (optspace, lparen, rparen, cats')
       | null [ () | Left _ <- cats ]  -- @all isRight cats@, but Data.Either.isRight requires base >= 4.7
                   = ("", "", "", "")
@@ -627,8 +670,8 @@ prShowRule (Rule f _ cats _) | isProperLabel f = concat
     insertSpaces (x:xs) = if x == ""
       then insertSpaces xs
       else x : "  bufAppend(' ');\n" : insertSpaces xs
-    fnm = "p" --other names could cause conflicts
-prShowRule _ = ""
+    fnm = if beyondAnsi then "p" else "*p" --other names could cause conflicts
+prShowRule _ _ = ""
 
 -- This recurses to the instance variables of a class.
 prShowCat :: String -> Either (Cat, Doc) String -> String

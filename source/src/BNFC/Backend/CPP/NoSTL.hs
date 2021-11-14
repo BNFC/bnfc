@@ -15,7 +15,7 @@ import BNFC.Backend.Base
 import BNFC.Backend.C            ( bufferH, bufferC, comment, testfileHeader )
 import BNFC.Backend.C.CFtoBisonC ( cf2Bison )
 import BNFC.Backend.C.CFtoFlexC  ( cf2flex, ParserMode(..) )
-import BNFC.Backend.CPP.Common   ( commentWithEmacsModeHint )
+import BNFC.Backend.CPP.Common   ( commentWithEmacsModeHint, CppStdMode(..) )
 import BNFC.Backend.CPP.Makefile
 import BNFC.Backend.CPP.NoSTL.CFtoCPPAbs
 import BNFC.Backend.CPP.STL.CFtoCVisitSkelSTL
@@ -37,7 +37,7 @@ makeCppNoStl opts cf = do
     let (skelH, skelC) = cf2CVisitSkel False Nothing cf
     mkCppFile "Skeleton.H" skelH
     mkCppFile "Skeleton.C" skelC
-    let (prinH, prinC) = cf2CPPPrinter False Nothing cf ".H"
+    let (prinH, prinC) = cf2CPPPrinter (CppStdAnsi Ansi) False Nothing cf ".H"
     mkCppFile "Printer.H" prinH
     mkCppFile "Printer.C" prinC
     mkCppFile "Test.C" (cpptest cf)

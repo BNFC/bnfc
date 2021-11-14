@@ -31,9 +31,6 @@ import BNFC.Utils       ( (+++), applyWhen )
 import BNFC.Backend.CPP.Common
 import BNFC.Backend.CPP.STL.STLUtils
 
-data CppStdMode
-  = CppStdAnsi Ansi -- ^ @Ansi@ mode.
-  | CppStdBeyondAnsi Ansi -- ^ @BeyondAnsi@ mode.
 
 --The result is two files (.H file, .C file)
 
@@ -93,7 +90,7 @@ mkHFile rp mode inPackage cabs cf = unlines
     },
   "",
   "/********************   Visitor Interfaces    ********************/",
-  prVisitor cabs,
+  prVisitor mode cabs,
   "",
   prVisitable,
   "",
@@ -127,20 +124,24 @@ prVisitable = unlines [
   "};"
   ]
 
-prVisitor :: CAbs -> String
-prVisitor cf = unlines [
+prVisitor :: CppStdMode -> CAbs -> String
+prVisitor mode cf = unlines [
   "class Visitor",
   "{",
   "public:",
   "  virtual ~Visitor() {}",
   unlines
-    ["  virtual void visit"++c++"("++c++" *p) = 0;" | c <- allClasses cf,
-                                                      notElem c (defineds cf)],
+  ["  virtual void visit"++c++"("++ wrapUniquePtrIf isBeyondAnsi c +++ vararg ++") = 0;" | c <- allClasses cf, notElem c (defineds cf)],
   "",
   unlines
-    ["  virtual void visit"++c++"(" ++c++" x) = 0;" | c <- allNonClasses cf],
+  ["  virtual void visit"++c++"("++c++" x) = 0;" | c <- allNonClasses cf],
   "};"
- ]
+  ]
+  where
+    isBeyondAnsi = case mode of
+      CppStdAnsi _       -> False
+      CppStdBeyondAnsi _ -> True
+    vararg = if isBeyondAnsi then "p" else "*p"
 
 prAbs :: CppStdMode -> RecordPositions -> String -> String
 prAbs mode rp c =
@@ -157,7 +158,7 @@ prAbs mode rp c =
         "class " ++ c ++ " : public Visitable",
           "{",
           "public:",
-          "  virtual std::unique_ptr<" ++ c ++ "> clone() const = 0;",
+          "  virtual" +++ wrapUniquePtrIf True c +++ "clone() const = 0;",
           if rp == RecordPositions then "  int line_number, char_number;" else "",
           "};"
         ];
@@ -229,12 +230,12 @@ prList mode (c, b) = case mode of {
       "class " ++c++ " : public Visitable"
       , "{"
       , "public:"
-      , "  std::vector<std::unique_ptr<" ++childClass++ ">>" +++ childClassVarName ++ ";"
+      , "  std::vector<" ++ wrapUniquePtrIf True childClass++ ">" +++ childClassVarName ++ ";"
       , ""
       -- ref: https://stackoverflow.com/questions/51148797/how-can-i-define-iterator-and-const-iterator-in-my-class-while-i-uses-stdvecto
       , "  // define iterator and const_iterator, expose it"
-      , "  using iterator = typename std::vector<" ++childClass++ ">::iterator;"
-      , "  using const_iterator = typename std::vector<" ++childClass++ ">::const_iterator;"
+      , "  using iterator = typename std::vector<" ++ wrapUniquePtrIf True childClass ++ ">::iterator;"
+      , "  using const_iterator = typename std::vector<" ++ wrapUniquePtrIf True childClass++ ">::const_iterator;"
       , "  auto begin() const { return " ++childClassVarName++ ".begin(); }"
       , "  auto begin()       { return " ++childClassVarName++ ".begin(); }"
       , "  auto end()   const { return " ++childClassVarName++ ".end(); }"
@@ -249,7 +250,7 @@ prList mode (c, b) = case mode of {
       , " ~" ++ c ++ "();"
       , "  virtual void accept(Visitor *v);"
       , "  std::unique_ptr<" ++ c ++ "> clone() const;"
-      , "  void cons(std::unique_ptr<" ++ childClass ++ ">);"
+      , "  void cons(" ++ wrapUniquePtrIf True childClass ++ ");"
       , "  void reverse();"
       , "};"
       , ""
@@ -291,7 +292,7 @@ prConC mode c fcs@(f,_) = unlines [
   prConstructorC mode fcs,
   prCopyC mode fcs,
   prDestructorC mode fcs,
-  prAcceptC f,
+  prAcceptC mode f,
   prCloneC mode c f,
   ""
  ]
@@ -328,7 +329,7 @@ prListC mode (c,b) = unlines
           c ++ "::~" ++ c ++"() = default;",
           ""];
         }
-  , prAcceptC c
+  , prAcceptC mode c
   , prCloneC mode c c
   , prConsC mode c b
   ]
@@ -337,13 +338,21 @@ prListC mode (c,b) = unlines
 
 
 --The standard accept function for the Visitor pattern
-prAcceptC :: String -> String
-prAcceptC ty = unlines [
-  "void " ++ ty ++ "::accept(Visitor *v)",
-  "{",
-  "  v->visit" ++ ty ++ "(this);",
-  "}"
-  ]
+prAcceptC :: CppStdMode -> String -> String
+prAcceptC mode ty = case mode of {
+    CppStdAnsi _ -> unlines [
+        "void " ++ ty ++ "::accept(Visitor *v)",
+        "{",
+        "  v->visit" ++ ty ++ "(this);",
+        "}"
+        ];
+    CppStdBeyondAnsi _ -> unlines [
+        "void " ++ty++ "::accept(Visitor *v)",
+        "{",
+        "  v->visit" ++ ty ++ "(std::make_unique<" ++ty++ ">(*this));",
+        "}"
+        ];
+    }
 
 --The cloner makes a new deep copy of the object
 prCloneC :: CppStdMode -> String -> String -> String
@@ -355,7 +364,7 @@ prCloneC mode f c = case mode of {
       "}"
       ];
   CppStdBeyondAnsi _ -> unlines [
-      "std::unique_ptr<" ++ f ++ "> " ++ c ++ "::clone() const ",
+      wrapUniquePtrIf True f +++ c ++ "::clone() const ",
       "{",
       "  return std::make_unique<" ++ c ++ ">(*this);",
       "}"

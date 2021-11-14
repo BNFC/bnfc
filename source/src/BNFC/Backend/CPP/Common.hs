@@ -9,7 +9,7 @@ import Data.List  ( intercalate )
 
 import BNFC.CF
 import BNFC.TypeChecker
-
+import BNFC.Options            ( Ansi )
 import BNFC.Backend.C          ( comment )
 import BNFC.Backend.CPP.Naming
 
@@ -72,3 +72,16 @@ definedRules mlc cf banner
             LitString s    -> show s
 
           call x es = x ++ "(" ++ intercalate ", " (map loop es) ++ ")"
+
+data CppStdMode
+  = CppStdAnsi Ansi -- ^ @Ansi@ mode.
+  | CppStdBeyondAnsi Ansi -- ^ @BeyondAnsi@ mode.
+
+wrapPointerIf :: Bool -> String -> String
+wrapPointerIf b v = if b then "*" ++ v else v
+
+wrapUniquePtrIf :: Bool -> String -> String
+wrapUniquePtrIf b v = if b then "std::unique_ptr<" ++v++">" else v
+
+wrapMoveIf :: Bool -> String -> String
+wrapMoveIf b v = if b then "std::move(" ++v++")" else v
