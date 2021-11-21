@@ -10,9 +10,7 @@
 
 module ParameterizedTests where
 
-import Prelude hiding (FilePath)
-
-import Control.Monad (forM_, unless)
+import Control.Monad (forM_)
 import Data.Maybe    (mapMaybe)
 #if __GLASGOW_HASKELL__ < 808
 import Data.Semigroup ((<>))
@@ -24,11 +22,12 @@ import Text.Regex.Posix ((=~))
 import System.FilePath (takeBaseName, takeFileName, dropExtension, replaceExtension)
 
 import Shelly
-  ( FilePath, Sh, ShellCmd, (</>)
+  ( Sh, ShellCmd, (</>)
   , absPath, appendfile
   , canonicalize, cd, cp, cmd
   , echo, errExit
-  , lastExitCode, lastStderr, ls
+  , lastExitCode --, lastStderr
+  , ls
   , readfile, run_
   , setStdin
   , test_f, toTextArg

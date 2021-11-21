@@ -169,7 +169,7 @@ prOrd cf = concat
     , "  compare x y = P.compare (index x) (index y) `P.mappend` compareSame x y"
     ]
   , [ "", "index :: Tree c -> P.Int" ]
-  , zipWith mkIndex cs [0..]
+  , zipWith mkIndex cs [0::Int ..]
   , when (null cs) [ "index = P.undefined" ]
   , [ "", "compareSame :: Tree c -> Tree c -> P.Ordering" ]
   , map mkCompareSame cs

@@ -140,7 +140,7 @@ prCon (c,(f,cs)) = unlines [
   ]
  where
    conargs = concat $ intersperse ", "
-     [x +++ pointerIf st ("p" ++ show i) | ((x,st,_),i) <- zip cs [1..]]
+     [x +++ pointerIf st ("p" ++ show i) | ((x,st,_),i) <- zip cs [1::Int ..]]
 
 prList :: (String, Bool) -> String
 prList (c, b) = unlines
@@ -239,7 +239,7 @@ prConstructorC (f,cs) = unlines [
   ]
  where
    cvs = [c | (_,_,c) <- cs]
-   pvs = ['p' : show i | ((_,_,_),i) <- zip cs [1..]]
+   pvs = ['p' : show i | ((_,_,_),i) <- zip cs [1::Int ..]]
    conargs = intercalate ", "
      [x +++ pointerIf st v | ((x,st,_),v) <- zip cs pvs]
 

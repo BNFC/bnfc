@@ -68,11 +68,13 @@ prologue = unlines [
   ""
   ]
 
+integerRule :: String
 integerRule = "let showInt (i:int) : showable = s2s (string_of_int i)"
 
+doubleRule :: String
 doubleRule = "let showFloat (f:float) : showable = s2s (string_of_float f)"
 
-
+identRule :: ModuleName -> CF -> String
 identRule absMod cf = ownPrintRule absMod cf catIdent
 
 ownPrintRule :: ModuleName -> CF -> TokenCat -> String
@@ -107,6 +109,8 @@ rules absMod cf = unlines $ mutualDefs $
    ruleOf s = fromJust $ lookupRule (noPosition s) (cfgRules cf)
 
 -- case_fun :: Cat -> [(Constructor,Rule)] -> String
+case_fun :: String
+         -> Cat -> [((String, [String]), (a, [Either Cat t]))] -> String
 case_fun absMod cat xs = unlines [
   showsFun cat +++ "(e : " ++ fixTypeQual absMod cat ++ ") : showable = match e with",
   unlines $ insertBar $ map (\ ((c,xx),r) ->
@@ -117,7 +121,7 @@ case_fun absMod cat xs = unlines [
     xs
   ]
 
-
+mkRhs :: [String] -> [Either Cat t] -> String
 mkRhs args its =
   case unwords (intersperse " >> s2s \", \" >> " (mk args its)) of
     [] -> ""

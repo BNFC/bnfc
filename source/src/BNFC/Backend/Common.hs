@@ -13,7 +13,7 @@ module BNFC.Backend.Common
 
 import Prelude hiding ((<>))
 
-import Data.Bifunctor   ( second )
+-- import Data.Bifunctor   ( second )
 import Data.Char
 
 import BNFC.CF
@@ -35,29 +35,30 @@ asciiKeywords = filter (all isAscii) . cfgKeywords
 flexEps :: String
 flexEps = "[^.\\n]?"
 
--- | Helper function for c-like languages that generates the code printing
--- the list separator according to the given precedence level:
---
--- >>> let my_render c = "my_render(\"" <> text c <> "\")"
--- >>> renderListSepByPrecedence "x" my_render []
--- <BLANKLINE>
---
--- >>> renderListSepByPrecedence "x" my_render [(0,",")]
--- my_render(",");
---
--- >>> renderListSepByPrecedence "x" my_render [(3,";"), (1, "--")]
--- switch(x)
--- {
---   case 3: my_render(";"); break;
---   case 1: my_render("--"); break;
--- }
-renderListSepByPrecedence
-  :: Doc                 -- ^ Name of the coercion level variable
-  -> (String -> Doc)     -- ^ render function
-  -> [(Integer, String)] -- ^ separators by precedence
-  -> Doc
-renderListSepByPrecedence var render =
-  vcat . switchByPrecedence var . map (second $ render >.> (<> ";"))
+-- UNUSED
+-- -- | Helper function for c-like languages that generates the code printing
+-- -- the list separator according to the given precedence level:
+-- --
+-- -- >>> let my_render c = "my_render(\"" <> text c <> "\")"
+-- -- >>> renderListSepByPrecedence "x" my_render []
+-- -- <BLANKLINE>
+-- --
+-- -- >>> renderListSepByPrecedence "x" my_render [(0,",")]
+-- -- my_render(",");
+-- --
+-- -- >>> renderListSepByPrecedence "x" my_render [(3,";"), (1, "--")]
+-- -- switch(x)
+-- -- {
+-- --   case 3: my_render(";"); break;
+-- --   case 1: my_render("--"); break;
+-- -- }
+-- renderListSepByPrecedence
+--   :: Doc                 -- ^ Name of the coercion level variable
+--   -> (String -> Doc)     -- ^ render function
+--   -> [(Integer, String)] -- ^ separators by precedence
+--   -> Doc
+-- renderListSepByPrecedence var render =
+--   vcat . switchByPrecedence var . map (second $ render >.> (<> ";"))
 
 -- Note (Andreas, 2021-05-02):
 -- @renderListSepByPrecedence@ did not account for mixfix lists (issue #358)

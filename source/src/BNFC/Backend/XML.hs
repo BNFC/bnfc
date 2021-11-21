@@ -7,6 +7,8 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PatternSynonyms #-}
 
+{-# OPTIONS_GHC -fno-warn-missing-signatures #-}
+
 module BNFC.Backend.XML ---- (cf2DTD, cf2XML)
   where
 
@@ -85,7 +87,11 @@ endtagDef b = if b then endtagDefConstr else endtagDefNotyp
 -- lengthy, but validation guarantees type correctness
 -- flag -xmlt
 elemDataConstrs cf (cat,fcs) = elemc cat [(f,rhsCat cf f cs) | (f,cs) <- fcs]
+
+efunDefConstrs :: String
 efunDefConstrs = "elemFun i t x = [P.replicate (i+i) ' ' ++ tag t ++ \" \" ++ etag x]"
+
+endtagDefConstrs :: String
 endtagDefConstrs = "endtag _ c = tag (\"/\" ++ c)"
 
 -- coding 1:

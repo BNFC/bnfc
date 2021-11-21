@@ -288,7 +288,7 @@ getCF opts (Abs.Grammar defs) = do
   where
     notIdent s       = null s || not (isAlpha (head s)) || any (not . isIdentRest) s
     isIdentRest c    = isAlphaNum c || c == '_' || c == '\''
-    revs cf@CFG{..} =
+    revs cf =
         cf{ cfgReversibleCats = findAllReversibleCats cf }
 
 -- | This function goes through each rule of a grammar and replace Cat "X" with

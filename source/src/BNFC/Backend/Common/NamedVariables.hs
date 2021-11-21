@@ -146,9 +146,11 @@ fixCoercions rs = nub (fixAll rs rs)
     else (normCat cat, fixCoercion cat top) : fixAll top cats
 
 --A generic variable name for C-like languages.
+varName :: String -> String
 varName c = map toLower c ++ "_"
 
 --this makes var names a little cleaner.
+showNum :: Int -> String
 showNum n = if n == 0 then "" else show n
 
 -- Makes the first letter a lowercase.

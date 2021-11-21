@@ -48,6 +48,7 @@ prtTerminals name cf = unlines $
   , prtComments $ comments cf
   ]
 
+identSection :: CFG f -> String
 identSection cf = if not (hasIdent cf) then [] else
                     unlines [
                                "===Identifiers===",
@@ -87,6 +88,7 @@ stringLit = unlines . \case
                ""]
   _ -> []
 
+prtOwnToken :: (String, Reg) -> String
 prtOwnToken (name,reg) = unlines
   [name +++ "literals are recognized by the regular expression",
    "```" ++
@@ -227,6 +229,7 @@ latexRegExp = quote . rex (0 :: Int) where
     RAny  -> "char"
   ifPar i j s = if i > j then "(" ++ s ++ ")" else s
 
+quote :: String -> String
 quote s = "``" ++ s ++ "``"
 
 t2tComment :: String -> String

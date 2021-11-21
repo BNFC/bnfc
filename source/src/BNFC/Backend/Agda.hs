@@ -5,9 +5,9 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TupleSections #-}
 
-#if __GLASGOW_HASKELL__ >= 800
-{-# OPTIONS_GHC -fno-warn-unused-top-binds #-}
-#endif
+-- #if __GLASGOW_HASKELL__ >= 800
+-- {-# OPTIONS_GHC -fno-warn-unused-top-binds #-}
+-- #endif
 
 -- | Agda backend.
 --
@@ -293,7 +293,7 @@ cf2AgdaParser time tokenText mod astmod emod pmod layoutMod cats = vsep $
   qual m = "qualified " ++ m
 
 -- We prefix the Agda types with "#" to not conflict with user-provided nonterminals.
-arrow, charT, integerT, listT, intT, natT, intToNatT, natToIntT, stringT, stringFromListT :: IsString a => a
+arrow, charT, integerT, doubleT, boolT, listT, intT, natT, intToNatT, natToIntT, stringT, stringFromListT :: IsString a => a
 arrow = "→"
 charT           = "Char"     -- This is the BNFC name for token type Char!
 integerT        = "Integer"  -- This is the BNFC name for token type Integer!
@@ -677,20 +677,21 @@ definedRules cf = vsep $ map mkDef $ definitions cf
 
 -- * Generate bindings for the pretty printers
 
--- | Generate Agda code to print tokens.
---
--- >>> printToken "Ident"
--- printIdent : Ident → #String
--- printIdent (ident s) = #stringFromList s
---
-printToken :: String -> Doc
-printToken t = vcat
-  [ hsep [ f, colon, text t, arrow, stringT ]
-  , hsep [ f, lparen <> c <+> "s" <> rparen, equals, stringFromListT, "s" ]
-  ]
-  where
-  f = text $ "print" ++ t
-  c = text $ agdaLower t
+-- UNUSED
+-- -- | Generate Agda code to print tokens.
+-- --
+-- -- >>> printToken "Ident"
+-- -- printIdent : Ident → #String
+-- -- printIdent (ident s) = #stringFromList s
+-- --
+-- printToken :: String -> Doc
+-- printToken t = vcat
+--   [ hsep [ f, colon, text t, arrow, stringT ]
+--   , hsep [ f, lparen <> c <+> "s" <> rparen, equals, stringFromListT, "s" ]
+--   ]
+--   where
+--   f = text $ "print" ++ t
+--   c = text $ agdaLower t
 
 -- | Generate Agda bindings to printers for AST.
 --
@@ -775,15 +776,16 @@ parsers tokenText layoutMod cats =
 
 -- * Auxiliary functions
 
--- | Concatenate documents created from token categories,
---   separated by blank lines.
---
--- >>> allTokenCats text ["T", "U"]
--- T
--- <BLANKLINE>
--- U
-allTokenCats :: (TokenCat -> Doc) -> [TokenCat] -> Doc
-allTokenCats f = vsep . map f
+-- UNUSED
+-- -- | Concatenate documents created from token categories,
+-- --   separated by blank lines.
+-- --
+-- -- >>> allTokenCats text ["T", "U"]
+-- -- T
+-- -- <BLANKLINE>
+-- -- U
+-- allTokenCats :: (TokenCat -> Doc) -> [TokenCat] -> Doc
+-- allTokenCats f = vsep . map f
 
 -- | Pretty-print a rule name for Haskell.
 prettyFun :: ModuleName -> Fun -> Doc

@@ -655,8 +655,8 @@ prShowCat fnm (Left (cat, nt))
 {- **** Helper Functions Section **** -}
 
 -- from ListIdent to Ident
+baseName :: [a] -> [a]
 baseName = drop 4
-
 
 --Just sets the coercion level for parentheses in the Pretty Printer.
 setI :: Integer -> String

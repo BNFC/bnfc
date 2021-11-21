@@ -535,6 +535,7 @@ bnfcVisitorsAndTests pbase pabsyn cf cf0 cf1 cf2 cf3 cf4 cf5 cf6 =
     }
   where app x = x pbase pabsyn cf
 
+inputfile :: MakeFileDetails -> String
 inputfile x
   | null (fileextension x) = filename x
   | otherwise              = filename x <.> fileextension x

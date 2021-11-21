@@ -68,8 +68,9 @@ prData (cat,rules) =
   concat (intersperse "\n | " (map prRule rules)) ++
   "\n"
 
-prRule (fun,[])   = fun
-prRule (fun,cats) = fun +++ "of" +++ render (mkTupleType cats)
+prRule :: (String, [Cat]) -> String
+prRule (fun, [])   = fun
+prRule (fun, cats) = fun +++ "of" +++ render (mkTupleType cats)
 
 -- | Creates an OCaml type tuple by intercalating * between type names
 -- >>> mkTupleType [Cat "A"]

@@ -4,6 +4,8 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TupleSections #-}
 
+{-# OPTIONS_GHC -fno-warn-orphans #-}
+
 module BNFC.Options
   ( Mode(..), Target(..), Backend
   , parseMode, usage, help, versionString

@@ -56,6 +56,7 @@ sanitizedLang = camelCase_ . lang
 
 absFile, absFileM, ocamllexFile, ocamllexFileM, ocamlyaccFile, ocamlyaccFileM,
   utilFile, templateFile, templateFileM, printerFile, printerFileM,
+  showFile, showFileM,
   tFile :: SharedOptions -> String
 absFile       = mkFile withLang "Abs" "ml"
 absFileM      = mkMod  withLang "Abs"

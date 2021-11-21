@@ -12,10 +12,12 @@ absFile, absFileM,
  alexFile, alexFileHs, alexFileM,
  composOpFile, composOpFileM,
  happyFile, happyFileHs, happyFileM,
+ txtFile,
  errFile, errFileM,
  templateFile, templateFileM,
  printerFile, printerFileM,
  layoutFile, layoutFileM,
+ xmlFile, xmlFileM,
  tFile, tFileExe :: Options -> String
 absFile       = mkFile withLang "Abs" "hs"
 absFileM      = mkMod  withLang "Abs"

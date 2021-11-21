@@ -6,7 +6,6 @@
 module BNFC.Backend.CPP.NoSTL (makeCppNoStl) where
 
 import Data.Foldable (toList)
-import qualified Data.Map as Map
 
 import BNFC.Utils
 import BNFC.CF
@@ -33,7 +32,7 @@ makeCppNoStl opts cf = do
     mkCppFileWithHint (name ++ ".l") flex
     mkCppFileWithHint (name ++ ".y") $ cf2Bison (linenumbers opts) parserMode cf env
     mkCppFile "Parser.H" $
-      mkHeaderFile cf (allParserCats cf) (toList $ allEntryPoints cf) (Map.elems env)
+      mkHeaderFile (toList $ allEntryPoints cf)
     let (skelH, skelC) = cf2CVisitSkel False Nothing cf
     mkCppFile "Skeleton.H" skelH
     mkCppFile "Skeleton.C" skelC
@@ -127,7 +126,8 @@ cpptest cf = unlines $ concat
    dat = identCat $ normCat cat
    def = identCat cat
 
-mkHeaderFile _cf _cats eps _env = unlines $ concat
+mkHeaderFile :: [Cat] -> String
+mkHeaderFile eps = unlines $ concat
   [ [ "#ifndef PARSER_HEADER_FILE"
     , "#define PARSER_HEADER_FILE"
     , ""

@@ -182,6 +182,7 @@ prVisitor fs = unlines
    prVisitFun _ = ""
 
 --typedefs in the Header make generation much nicer.
+prTypeDefs :: [String] -> String
 prTypeDefs user = unlines
   [
    "/********************   TypeDef Section    ********************/",
@@ -247,6 +248,7 @@ prDataC :: [UserDef] -> Data -> String
 prDataC user (cat, rules) = concatMap (prRuleC user cat) rules
 
 --Classes for rules vary based on the type of rule.
+prRuleC :: [UserDef] -> Cat -> (String, [Cat]) -> String
 prRuleC user c (fun, cats) =
     if isNilFun fun || isOneFun fun
     then ""  --these are not represented in the AbSyn

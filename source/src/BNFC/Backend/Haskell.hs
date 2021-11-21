@@ -406,7 +406,7 @@ testfile opts cf = unlines $ concat $
     (hasTopLevelLayout, layoutKeywords, _) = layoutPragmas cf
     useTopLevelLayout = isJust hasTopLevelLayout
 
-
+runStd :: Bool -> (String -> String) -> String
 runStd xml myLLexer = unlines $ concat
  [ [ "run v p s ="
    , "  case p ts of"
@@ -428,6 +428,7 @@ runStd xml myLLexer = unlines $ concat
    ]
  ]
 
+runGlr :: (String -> String) -> String
 runGlr myLLexer
  = unlines
    [ "run v p s"
@@ -454,7 +455,7 @@ runGlr myLLexer
    , "     ]"
    ]
 
-
+liftParser :: String
 liftParser
  = unlines
    [ "type Forest = Data.Map.Map ForestId [Branch]      -- omitted in ParX export."

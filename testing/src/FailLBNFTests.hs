@@ -7,7 +7,7 @@ import qualified Data.Text as T
 import qualified Data.Set as Set
 import Shelly
 import System.FilePath (dropExtension)
-import Test.HUnit (assertBool)
+-- import Test.HUnit (assertBool)
 import TestUtils
 
 all :: IO Test

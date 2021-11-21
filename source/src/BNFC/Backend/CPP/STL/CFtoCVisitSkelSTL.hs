@@ -102,6 +102,7 @@ mkCFile useSTL inPackage cf = unlines [
        | otherwise = "visit" ++ cat ++ "(" ++ field ++ ");"
        where field = v ++ "->" ++ var
 
+headerC :: String
 headerC = unlines [
       "/*** Visitor Design Pattern Skeleton. ***/",
       "/* This implements the common visitor design pattern.",
@@ -113,6 +114,7 @@ headerC = unlines [
       ""
       ]
 
+prBasic :: String -> String
 prBasic c = unlines [
   "void Skeleton::visit" ++ c ++ "(" ++ c ++ " x)",
   "{",
@@ -120,6 +122,7 @@ prBasic c = unlines [
   "}"
   ]
 
+prList :: Bool -> (String, Bool) -> String
 prList True (cl,b) = unlines [
   "void Skeleton::visit" ++ cl ++ "("++ cl +++ "*" ++ vname ++ ")",
   "{",
