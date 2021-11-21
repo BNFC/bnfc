@@ -159,9 +159,9 @@ restOfJLex jflex rp cf = vcat
     , ifC catString strStates
     , ifC catChar chStates
     , ifC catDouble
-        "<YYINITIAL>{DIGIT}+\".\"{DIGIT}+(\"e\"(\\-)?{DIGIT}+)? { return cf.newSymbol(\"\", sym._DOUBLE_, left_loc(), right_loc(), new Double(yytext())); }"
+        "<YYINITIAL>{DIGIT}+\".\"{DIGIT}+(\"e\"(\\-)?{DIGIT}+)? { return cf.newSymbol(\"\", sym._DOUBLE_, left_loc(), right_loc(), Double.valueOf(yytext())); }"
     , ifC catInteger
-        "<YYINITIAL>{DIGIT}+ { return cf.newSymbol(\"\", sym._INTEGER_, left_loc(), right_loc(), new Integer(yytext())); }"
+        "<YYINITIAL>{DIGIT}+ { return cf.newSymbol(\"\", sym._INTEGER_, left_loc(), right_loc(), Integer.valueOf(yytext())); }"
     , ifC catIdent
         "<YYINITIAL>{LETTER}{IDENT}* { return cf.newSymbol(\"\", sym._IDENT_, left_loc(), right_loc(), yytext().intern()); }"
     , "<YYINITIAL>[ \\t\\r\\n\\f] { /* ignore white space. */ }"
