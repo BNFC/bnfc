@@ -119,10 +119,10 @@ definedRules defs packageAbsyn cf = map rule defs
              | isUpper (head x) -> callQ x es
              | otherwise        -> call (sanitize x) es
             -- -- | x `elem` args    -> call x es
-           LitInt n             -> "new Integer(" ++ show n ++ ")"
-           LitDouble x          -> "new Double(" ++ show x ++ ")"
-           LitChar c            -> "new Character(" ++ show c ++ ")"
-           LitString s          -> "new String(" ++ show s ++ ")"
+           LitInt n             -> "Integer.valueOf(" ++ show n ++ ")"
+           LitDouble x          -> "Double.valueOf(" ++ show x ++ ")"
+           LitChar c            -> "Character.valueOf(" ++ show c ++ ")"
+           LitString s          -> "String.valueOf(" ++ show s ++ ")"
          where
          call x es = x ++ "(" ++ intercalate ", " (map (javaExp args) es) ++ ")"
          callQ     = call . qualify
