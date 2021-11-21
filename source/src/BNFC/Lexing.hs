@@ -1,9 +1,9 @@
 {-# LANGUAGE PatternGuards #-}
 
 module BNFC.Lexing
-    ( mkLexer, LexType(..), mkRegMultilineComment ) where
-
-import Prelude hiding ((<>))
+    ( mkLexer, LexType(..), mkRegMultilineComment
+    , debugPrint -- to avoid warning about unused definition
+    ) where
 
 -- import Control.Arrow ( (&&&) )
 import Data.List     ( inits, tails )
@@ -14,6 +14,7 @@ import BNFC.CF
 import BNFC.Regex    ( simpReg )
 import BNFC.Utils    ( unless  )
 
+-- Used in test suite
 debugPrint :: Reg -> IO ()
 debugPrint = putStrLn . concat . words . printTree
 
@@ -40,8 +41,10 @@ mkLexer cf = concat
     ]
   ]
 
+(<&>) :: Reg -> Reg -> Reg
+(<&>) = RSeq
 
-(<>) = RSeq
+(<|>) :: Reg -> Reg -> Reg
 (<|>) = RAlt
 
 -- Bult-in tokens
@@ -51,7 +54,7 @@ mkLexer cf = concat
 -- >>> debugPrint regIdent
 -- letter(letter|digit|'_'|'\'')*
 regIdent :: Reg
-regIdent = RLetter <> RStar (RLetter <|> RDigit <|> RChar '_' <|> RChar '\'')
+regIdent = RLetter <&> RStar (RLetter <|> RDigit <|> RChar '_' <|> RChar '\'')
 
 -- | Integer regex
 -- >>> debugPrint regInteger
@@ -64,30 +67,30 @@ regInteger = RPlus RDigit
 -- '"'(char-["\"\\"]|'\\'["\"\\nt"])*'"'
 regString :: Reg
 regString = RChar '"'
-            <> RStar ((RAny `RMinus` RAlts "\"\\")
-                       <|> (RChar '\\' <> RAlts "\"\\nt"))
-            <> RChar '"'
+            <&> RStar ((RAny `RMinus` RAlts "\"\\")
+                       <|> (RChar '\\' <&> RAlts "\"\\nt"))
+            <&> RChar '"'
 
 -- | Char regex
 -- >>> debugPrint regChar
 -- '\''(char-["'\\"]|'\\'["'\\nt"])'\''
 regChar :: Reg
 regChar = RChar '\''
-          <> (RMinus RAny (RAlts "'\\") <|> (RChar '\\' <> RAlts "'\\nt"))
-          <> RChar '\''
+          <&> (RMinus RAny (RAlts "'\\") <|> (RChar '\\' <&> RAlts "'\\nt"))
+          <&> RChar '\''
 
 -- | Double regex
 -- >>> debugPrint regDouble
 -- digit+'.'digit+('e''-'?digit+)?
 regDouble :: Reg
-regDouble = RPlus RDigit <> RChar '.' <> RPlus RDigit
-            <> ROpt (RChar 'e' <> ROpt (RChar '-') <> RPlus RDigit)
+regDouble = RPlus RDigit <&> RChar '.' <&> RPlus RDigit
+            <&> ROpt (RChar 'e' <&> ROpt (RChar '-') <&> RPlus RDigit)
 
 -- | Create regex for single line comments
 -- >>> debugPrint $ mkRegSingleLineComment "--"
 -- {"--"}char*'\n'
 mkRegSingleLineComment :: String -> Reg
-mkRegSingleLineComment s = RSeqs s <> RStar RAny <> RChar '\n'
+mkRegSingleLineComment s = RSeqs s <&> RStar RAny <&> RChar '\n'
 
 
 -- -- | Create regex for multiline comments.

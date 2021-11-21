@@ -9,6 +9,7 @@ import BNFC.Backend.Common.NamedVariables
 comment :: String -> String
 comment = ("// " ++)
 
+javaReserved :: [String]
 javaReserved =
   [ "abstract"
   , "assert"

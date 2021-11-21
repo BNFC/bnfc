@@ -1,13 +1,9 @@
-{-
-    BNF Converter: Abstract syntax
-    Copyright (C) 2004  Author:  Aarne Ranta
-
--}
-
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE PatternSynonyms #-}
+
+{-# OPTIONS_GHC -fno-warn-orphans #-}  -- ghc 7.10
 
 module BNFC.Utils
     ( ModuleName
@@ -39,7 +35,9 @@ import Data.Char
 import Data.List          (intercalate)
 import Data.List.NonEmpty (pattern (:|))
 import Data.Map           (Map)
+#if !MIN_VERSION_base(4,11,0)
 import Data.Semigroup     (Semigroup(..))
+#endif
 import Data.Time
 
 import qualified Data.Foldable      as Fold
@@ -267,8 +265,10 @@ hasNumericSuffix s = case spanEnd isDigit s of
 
 truncateZonedTimeToSeconds :: ZonedTime -> ZonedTime
 truncateZonedTimeToSeconds (ZonedTime (LocalTime day (TimeOfDay h m s)) zone) =
-  ZonedTime (LocalTime day (TimeOfDay h m s')) zone
-  where s' = fromIntegral $ truncate s
+  ZonedTime (LocalTime day (TimeOfDay h m $ fromIntegral sec)) zone
+  where
+  sec :: Int
+  sec = truncate s
 
 getZonedTimeTruncatedToSeconds :: IO ZonedTime
 getZonedTimeTruncatedToSeconds = truncateZonedTimeToSeconds <$> getZonedTime
@@ -363,21 +363,18 @@ data NameStyle
 mkName :: [String] -> NameStyle -> String -> String
 mkName reserved style s = notReserved name'
   where
-    notReserved s
-      | s `elem` reserved = notReserved (s ++ "_")
-      | otherwise = s
+    notReserved name
+      | name `elem` reserved = notReserved (name ++ "_")
+      | otherwise = name
     tokens = parseIdent s
     name' = case style of
-        LowerCase -> map toLower (concat tokens)
-        UpperCase -> map toUpper (concat tokens)
+        LowerCase -> map toLower $ concat tokens
+        UpperCase -> map toUpper $ concat tokens
         CamelCase -> concatMap capitalize tokens
-        MixedCase -> case concatMap capitalize tokens of
-                         "" -> ""
-                         c:cs -> toLower c:cs
-        SnakeCase -> map toLower (intercalate "_" tokens)
+        MixedCase -> mapHead toLower $ concatMap capitalize tokens
+        SnakeCase -> map toLower $ intercalate "_" tokens
         OrigCase  -> s
-    capitalize [] = []
-    capitalize (c:cs) = toUpper c:cs
+    capitalize = mapHead toUpper
 
 -- | Same as above but accept a list as argument and make sure that the
 -- names generated are uniques.

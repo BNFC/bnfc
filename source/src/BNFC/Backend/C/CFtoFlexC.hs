@@ -297,7 +297,7 @@ lexComments (m,s) = vcat $ concat
 
 -- | If we have several block comments, we need different COMMENT lexing states.
 commentStates :: [String]
-commentStates = map ("COMMENT" ++) $ "" : map show [1..]
+commentStates = map ("COMMENT" ++) $ "" : map show [1::Int ..]
 
 -- | Create a lexer rule for single-line comments.
 -- The first argument is -- an optional c++ namespace

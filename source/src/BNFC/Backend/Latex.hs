@@ -137,6 +137,7 @@ stringLit = \case
     ]
   _ -> []
 
+prtOwnToken :: (String, Reg) -> String
 prtOwnToken (name,reg) = unlines
   [ name +++ "literals are recognized by the regular expression",
    "\\(" ++

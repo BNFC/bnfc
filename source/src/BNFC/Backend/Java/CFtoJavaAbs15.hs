@@ -101,6 +101,7 @@ definedRules defs packageAbsyn cf = map rule defs
        javaType = \case
            ListT (BaseT x) -> concat [ packageAbsyn, ".List", x ]
            BaseT x         -> typename packageAbsyn (ctxTokens ctx) x
+           ListT ListT{}   -> undefined
            -- ListT t         -> javaType t -- undefined
 
        javaArg :: (String, Base) -> String
@@ -227,10 +228,10 @@ prHashCode _ _ vs =
                             "}"
                            ]
   where
-  aPrime = 37
-  hashKids [] = show aPrime
+  aPrime = "37"
+  hashKids [] = aPrime
   hashKids (v:vs) = hashKids_ (hashKid v) vs
-  hashKids_ = foldl (\r v -> show aPrime ++ "*" ++ "(" ++ r ++ ")+" ++ hashKid v)
+  hashKids_ = foldl (\r v -> aPrime ++ "*" ++ "(" ++ r ++ ")+" ++ hashKid v)
   hashKid iv = "this." ++ render (iVarName iv) ++ ".hashCode()"
 
 

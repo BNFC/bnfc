@@ -86,6 +86,7 @@ cf2cabs cf = CAbs
       0             -> v         : vars (v:seen) vs
       n             -> (v ++ show (n+1)) : vars (v:seen) vs
 
+basetypes :: [ (String, String) ]
 basetypes = [
   ("Integer","int"),
   ("Char",   "char"),

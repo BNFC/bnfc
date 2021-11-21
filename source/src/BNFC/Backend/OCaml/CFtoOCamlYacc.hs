@@ -66,7 +66,7 @@ tokens symbols reswords =
   unlines $ concat
     [ [ unwords $ "%token" : map ("KW_" ++) reswords | hasReserved ]
     , [ "" | hasReserved ]
-    , (`map` zip symbols [1..]) $ \ (s, n) ->
+    , (`map` zip symbols [1::Int ..]) $ \ (s, n) ->
         "%token SYMB" ++ show n +++ "/*" +++ s +++ "*/"
     ]
   where
@@ -81,7 +81,7 @@ terminal cf = \ s ->
     -- so just writing @terminal cf s = ...@ could result in computing
     -- kws for every @s@ anew.
     if s `elem` kws then "KW_" ++ s
-    else case lookup s (zip (unicodeAndSymbols cf) [1..]) of
+    else case lookup s (zip (unicodeAndSymbols cf) [1::Int ..]) of
       Just i -> "SYMB" ++ show i
       Nothing -> error $ "CFtoOCamlYacc: terminal " ++ show s ++ " not defined in CF."
   where
@@ -107,6 +107,7 @@ specialTokens cf = unlines $ concat $
     "Integer" -> "<int>"
     "Double"  -> "<float>"
     "Char"    -> "<char>"
+    _ -> undefined
   posTy = \case
     True  -> "<(int * int) * string>"
     False -> "<string>"

@@ -60,8 +60,8 @@ exampleGrammars = map (fmap prefix) $
   -- Regular expressions to include certain parameterized tests:
   needsLayout = Included ["Agda", "Haskell"]
   -- Regular expressions to exclude certain parameterized tests:
-  noJava = "^Java"    -- begins with "Java"
-  noCPP  = "^C\\+\\+" -- begins with "C++"
+  -- noJava = "^Java"    -- begins with "Java"
+  -- noCPP  = "^C\\+\\+" -- begins with "C++"
 
 layoutExamples :: [Example]
 layoutExamples = take 2 exampleGrammars

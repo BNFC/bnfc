@@ -103,30 +103,35 @@ prologue = unlines [
   ""
   ]
 
+charRule :: CF -> String
 charRule cf = unlines [
     "let rec prtChar (_:int) (c:char) : doc = render (\"'\" ^ Char.escaped c ^ \"'\")",
     ifList cf (TokenCat catChar),
     ""
     ]
 
+integerRule :: CF -> String
 integerRule cf = unlines [
     "let rec prtInt (_:int) (i:int) : doc = render (string_of_int i)",
     ifList cf (TokenCat catInteger),
     ""
     ]
 
+doubleRule :: CF -> String
 doubleRule cf = unlines [
     "let rec prtFloat (_:int) (f:float) : doc = render (sprintf \"%.15g\" f)",
     ifList cf (TokenCat catDouble),
     ""
     ]
 
+stringRule :: CF -> String
 stringRule cf = unlines [
     "let rec prtString (_:int) (s:string) : doc = render (\"\\\"\" ^ String.escaped s ^ \"\\\"\")",
     ifList cf (TokenCat catString),
     ""
     ]
 
+identRule :: ModuleName -> CF -> String
 identRule absMod cf = ownPrintRule absMod cf catIdent
 
 ownPrintRule :: ModuleName -> CF -> TokenCat -> String
@@ -154,7 +159,12 @@ rules absMod cf = unlines $ mutualDefs $
    var xs   = map toLower (catToStr xs)
    ruleOf s = fromJust $ lookupRule (noPosition s) (cfgRules cf)
 
---- case_fun :: Cat -> [(Constructor,Rule)] -> String
+-- case_fun :: Cat -> [(Constructor,Rule)] -> String
+case_fun
+  :: String
+  -> Cat
+  -> [((String, [String]), (Cat, [Either Cat String]))]
+  -> String
 case_fun absMod cat xs = unlines [
 --  "instance Print" +++ cat +++ "where",
   prtFun cat +++"(i:int)" +++ "(e : " ++ fixTypeQual absMod cat ++ ") : doc = match e with",
@@ -233,6 +243,7 @@ mkPrtListCase minPrec (Rule f (WithPosition _ (ListCat c)) rhs _)
     body = text $ mkRhs ["x", "xs"] rhs
 mkPrtListCase _ _ = error "mkPrtListCase undefined for non-list categories"
 
+mkRhs :: [String] -> [Either Cat String] -> [Char]
 mkRhs args its =
   "(concatD [" ++ unwords (intersperse ";" (mk args its)) ++ "])"
  where

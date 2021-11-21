@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE PatternGuards #-}
 
@@ -5,7 +6,9 @@
 
 module BNFC.Regex ( nullable, simpReg ) where
 
+#if !MIN_VERSION_base(4,11,0)
 import Data.Semigroup (Semigroup(..))
+#endif
 import Data.Set (Set)
 import qualified Data.Set as Set
 import qualified Data.List as List
@@ -74,7 +77,7 @@ simpReg = rloop
 -- We represent character classes as a difference of unions of atomic
 -- character classes.
 
-data CharClass = CMinus { ccYes, ccNo :: CharClassUnion }
+data CharClass = CMinus { _ccYes, _ccNo :: CharClassUnion }
   deriving (Eq, Ord, Show)
 
 data CharClassUnion

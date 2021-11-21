@@ -172,7 +172,7 @@ prDefH tokenCats (Define fun args e _t) =
       -- Subsequent uses are cloned.
       True  -> case lookup x args of
         Just t -> return $ cloner (toCat t) x
-        -- pattern match left incomplete on purpose
+        Nothing -> undefined -- impossible
 
     -- Andreas, 2021-02-13, issue #338
     -- Token categories are just @typedef@s in C, so no constructor needed.
@@ -238,10 +238,11 @@ prRuleH c (fun, cats)
   where
     prParamsH :: [(String, a)] -> String
     prParamsH [] = "void"
-    prParamsH ps = intercalate ", " $ zipWith par ps [0..]
+    prParamsH ps = intercalate ", " $ zipWith par ps [0::Int ..]
       where par (t, _) n = t ++ " p" ++ show n
 
 -- typedefs in the Header make generation much nicer.
+prTypeDefs :: [String] -> String
 prTypeDefs user = unlines $ concat
   [ [ "/********************   TypeDef Section    ********************/"
     , ""
@@ -537,7 +538,7 @@ prDataC (cat, rules) = map (prRuleC cat) rules
 -- }
 prRuleC :: Cat -> (String, [Cat]) -> Doc
 prRuleC _ (fun, _) | isNilFun fun || isOneFun fun = empty
-prRuleC cat (fun, _) | isConsFun fun = vcat'
+prRuleC cat@(ListCat c') (fun, _) | isConsFun fun = vcat'
     [ "/********************   " <> c <> "    ********************/"
     , ""
     , c <+> "make_" <> c <> parens (text m <+> "p1" <> "," <+> c <+> "p2")
@@ -558,8 +559,6 @@ prRuleC cat (fun, _) | isConsFun fun = vcat'
     icat = identCat (normCat cat)
     c = text icat
     v = text (map toLower icat ++ "_")
-    ListCat c' = cat            -- We're making a list constructor, so we
-                                -- expect a list category
     m = identCat (normCat c')
     m' = map toLower m ++ "_"
 prRuleC c (fun, cats) = vcat'
@@ -610,7 +609,7 @@ prConstructorC cat c vs cats = vcat'
 -- >>> prParams [Cat "O", Cat "E"]
 -- [(O,p1),(E,p2)]
 prParams :: [Cat] -> [(Doc, Doc)]
-prParams = zipWith prParam [1..]
+prParams = zipWith prParam [1::Int ..]
   where
     prParam n c = (text (identCat c), text ("p" ++ show n))
 
@@ -631,4 +630,5 @@ prAssigns c vars params = vcat $ zipWith prAssign vars params
 
 {- **** Helper Functions **** -}
 
+memName :: String -> String
 memName s = map toLower s ++ "_"

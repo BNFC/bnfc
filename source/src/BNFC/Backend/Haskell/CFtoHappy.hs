@@ -30,7 +30,8 @@ type MetaVar     = String
 
 -- default naming
 
-tokenName   = "Token"
+tokenName :: String
+tokenName = "Token"
 
 -- | Generate a happy parser file from a grammar.
 
