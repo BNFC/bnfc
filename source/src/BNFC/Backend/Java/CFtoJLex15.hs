@@ -207,17 +207,17 @@ restOfJLex jflex rp cf = vcat
     chStates = vcat --These handle escaped characters in Chars.
         [ "<YYINITIAL>\"'\" { left = left_loc(); yybegin(CHAR); }"
         , "<CHAR>\\\\ { yybegin(CHARESC); }"
-        , "<CHAR>[^'] { yybegin(CHAREND); return cf.newSymbol(\"\", sym._CHAR_, left, right_loc(), new Character(yytext().charAt(0))); }"
+        , "<CHAR>[^'] { yybegin(CHAREND); return cf.newSymbol(\"\", sym._CHAR_, left, right_loc(), Character.valueOf(yytext().charAt(0))); }"
         , "<CHAR>\\r\\n|\\r|\\n { throw new Error(\"Unterminated character literal on line \" + left.getLine() " <>
           (if jflex == JFlexCup then "+ \" beginning at column \" + left.getColumn()" else "") <> "); }"
         , if jflex == JFlexCup
           then "<CHAR><<EOF>> { throw new Error(\"Unterminated character literal at EOF, beginning at \" + left.getLine() + \":\" + left.getColumn()); }"
           else ""
-        , "<CHARESC>n { yybegin(CHAREND); return cf.newSymbol(\"\", sym._CHAR_, left, right_loc(), new Character('\\n')); }"
-        , "<CHARESC>t { yybegin(CHAREND); return cf.newSymbol(\"\", sym._CHAR_, left, right_loc(), new Character('\\t')); }"
-        , "<CHARESC>r { yybegin(CHAREND); return cf.newSymbol(\"\", sym._CHAR_, left, right_loc(), new Character('\\r')); }"
-        , "<CHARESC>f { yybegin(CHAREND); return cf.newSymbol(\"\", sym._CHAR_, left, right_loc(), new Character('\\f')); }"
-        , "<CHARESC>. { yybegin(CHAREND); return cf.newSymbol(\"\", sym._CHAR_, left, right_loc(), new Character(yytext().charAt(0))); }"
+        , "<CHARESC>n { yybegin(CHAREND); return cf.newSymbol(\"\", sym._CHAR_, left, right_loc(), Character.valueOf('\\n')); }"
+        , "<CHARESC>t { yybegin(CHAREND); return cf.newSymbol(\"\", sym._CHAR_, left, right_loc(), Character.valueOf('\\t')); }"
+        , "<CHARESC>r { yybegin(CHAREND); return cf.newSymbol(\"\", sym._CHAR_, left, right_loc(), Character.valueOf('\\r')); }"
+        , "<CHARESC>f { yybegin(CHAREND); return cf.newSymbol(\"\", sym._CHAR_, left, right_loc(), Character.valueOf('\\f')); }"
+        , "<CHARESC>. { yybegin(CHAREND); return cf.newSymbol(\"\", sym._CHAR_, left, right_loc(), Character.valueOf(yytext().charAt(0))); }"
         , "<CHARESC>\\r\\n|\\r|\\n { throw new Error(\"Unterminated character literal on line \" + left.getLine() " <>
           (if jflex == JFlexCup then "+ \" beginning at column \" + left.getColumn()" else "") <> "); }"
         , if jflex == JFlexCup
