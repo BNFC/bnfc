@@ -129,7 +129,7 @@ prelude stringLiterals mode = unlines $ concat
         unlines
         [
           "%option nodefault noyywrap c++"
-        -- , "%option yyclass=\"" ++ns++ "::" ++camelCaseName++ "Scanner\""
+        , "%option prefix=\"Bnfc\""
         ]
       else
         unlines
@@ -161,17 +161,6 @@ prelude stringLiterals mode = unlines $ concat
     , when (beyondAnsi mode) unlines
       [
         "#include \"Scanner.hh\""  -- #include for the class inheriting "yyFlexLexer"
-      , ""
-      , "// Flex expects the signature of yylex to be defined in the macro YY_DECL, and"
-      , "// the C++ parser expects it to be declared."
-      , "#ifndef YY_DECL"
-      , "#define YY_DECL \\"
-      , "    int         \\"
-      , "    " ++ns++ "::" ++camelCaseName++ "Scanner::lex(                        \\"
-      , "    " ++ns++ "::" ++camelCaseName++ "Parser::semantic_type* const yylval, \\"
-      , "    " ++ns++ "::" ++camelCaseName++ "Parser::location_type* yylloc        \\"
-      , "    )"
-      , "#endif"
       , ""
       , "/* using \"token\" to make the returns for the tokens shorter to type */"
       , "using token = " ++ns++ "::" ++camelCaseName++ "Parser::token;"
@@ -300,8 +289,41 @@ restOfFlex mode cf env = unlines $ concat
     , ""
     , "%%  /* Initialization code. */"
     ]
+  , when (beyondAnsi mode)
+    [
+      "namespace " ++ns++ " {"
+      , ""
+      , "" ++camelCaseName++ "Scanner::" ++camelCaseName++ "Scanner(std::istream *in)"
+      , "    : BnfcFlexLexer(in)"
+      , "{"
+      , "    loc = new " ++camelCaseName++ "::" ++camelCaseName++ "Parser::location_type();"
+      , "}"
+      , ""
+      , "" ++camelCaseName++ "Scanner::~" ++camelCaseName++ "Scanner()"
+      , "{"
+      , "}"
+      , ""
+      , "/* This implementation of " ++camelCaseName++ "FlexLexer::yylex() is required to fill the"
+      , " * vtable of the class " ++camelCaseName++ "FlexLexer. We define the scanner's main yylex"
+      , " * function via YY_DECL to reside in the Scanner class instead. */"
+      , ""
+      , "}"
+      , ""
+      , "#ifdef yylex"
+      , "#undef yylex"
+      , "#endif"
+      , ""
+      , "int BnfcFlexLexer::yylex()"
+      , "{"
+      , "    std::cerr << \"in BnfcFlexLexer::yylex() !\" << std::endl;"
+      , "    return 0;"
+      , "}"
+    ]
   ]
   where
+    name = parserName mode
+    camelCaseName = camelCase_ name
+    ns = fromMaybe camelCaseName (parserPackage mode)
     _inPackage = parserPackage mode
     prefix = if (beyondAnsi mode) then "token::" else ""
     ifC cat s = if isUsedCat cf (TokenCat cat) then s else []
