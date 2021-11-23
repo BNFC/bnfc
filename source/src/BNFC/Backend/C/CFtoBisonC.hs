@@ -116,15 +116,25 @@ cf2Bison rp mode cf env = unlines
     , "%%"
     , ""
     , nsStart inPackage
-    , unless (beyondAnsi mode) -- entryCode for beyondAndi is in Driver
-      entryCode mode cf
+    , if (beyondAnsi mode) then
+         unlines [
+        "void " ++ns++ "::" ++camelCaseName++ "Parser::error(const " ++camelCaseName++ "Parser::location_type& l, const std::string& m)"
+        , "{"
+        , "    driver.error(l, m);"
+        , "}"]
+      else
+        entryCode mode cf -- entryCode for beyondAndi is in Driver
     , nsEnd inPackage
     ]
   where
-  inPackage = parserPackage mode
-  posCats
-    | stlParser mode = map TokenCat $ positionCats cf
-    | otherwise      = []
+    inPackage = parserPackage mode
+    posCats
+      | stlParser mode = map TokenCat $ positionCats cf
+      | otherwise      = []
+    name = parserName mode
+    camelCaseName = camelCase_ name
+    ns = fromMaybe camelCaseName (parserPackage mode)
+
 
 positionCats :: CF -> [String]
 positionCats cf = [ wpThing name | TokenReg name True _ <- cfgPragmas cf ]
@@ -140,8 +150,9 @@ header mode cf = unlines $ concat [
   , "%defines \"" ++ ("Bison" <.> hExt) ++ "\""
   ]
   , when (beyondAnsi mode)
-    [ "%define api.namespace {" ++ ns ++ "}"
-    , "/* Specify the namespace for the C++ parser class. */"]
+    [ "%define parse.trace"
+      , "%define api.namespace {" ++ ns ++ "}"
+      , "/* Specify the namespace for the C++ parser class. */"]
   , whenJust (parserPackage mode) $ \ ns ->
       [ "%name-prefix = \"" ++ ns ++ "\""
       , "/* From Bison 2.6: %define api.prefix {" ++ ns ++ "} */"]
@@ -583,8 +594,8 @@ generateActionSTLBeyondAnsi :: IsFun a => RecordPositions -> InPackage -> String
 generateActionSTLBeyondAnsi rp inPackage nt f b mbs = reverses ++
   if | isCoercion f    -> concat ["$$ = ", unwords ms, ";", loc]
      | isNilFun f      -> concat ["$$ = ", "std::make_unique<", scope, nt, ">();"]
-     | isOneFun f      -> concat ["$$ = ", "std::make_unique<", scope, nt, ">(); $$->cons(", head ms, "->clone());"]
-     | isConsFun f     -> concat [lst, "->cons(", el, "->clone());"]
+     | isOneFun f      -> concat ["$$ = ", "std::make_unique<", scope, nt, ">(); $$->cons(std::move(", head ms, "));"]
+     | isConsFun f     -> concat [lst, "->cons(std::move(", el, "));"]
      | isDefinedRule f -> concat ["$$ = ", scope, sanitizeCpp (funName f), "(", intercalate ", " ms, ");" ]
      | otherwise       -> concat ["$$ = ", "std::make_unique<", scope, funName f, ">(", (intercalate ", " ms), ");", loc]
   where
@@ -597,7 +608,9 @@ generateActionSTLBeyondAnsi rp inPackage nt f b mbs = reverses ++
       = " $$->line_number = @$.first_line; $$->char_number = @$.first_column;"
         | otherwise
       = ""
-    reverses  = unwords [m ++"->reverse();" | (m, True) <- mbs]
+    -- TODO: temporary commented reverse()
+    -- reverses  = unwords [m ++"->reverse();" | (m, True) <- mbs]
+    reverses  = unwords ["/*" ++m++ "->reverse(); */" | (m, True) <- mbs]
     scope     = nsScope inPackage
 
 

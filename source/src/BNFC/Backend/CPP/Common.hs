@@ -83,5 +83,8 @@ wrapPointerIf b v = if b then "*" ++ v else v
 wrapUniquePtrIf :: Bool -> String -> String
 wrapUniquePtrIf b v = if b then "std::unique_ptr<" ++v++">" else v
 
+wrapUniquePtr :: String -> String
+wrapUniquePtr v = "std::unique_ptr<" ++v++">"
+
 wrapMoveIf :: Bool -> String -> String
 wrapMoveIf b v = if b then "std::move(" ++v++")" else v
