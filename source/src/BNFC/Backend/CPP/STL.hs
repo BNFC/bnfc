@@ -51,7 +51,7 @@ makeCppStl opts cf = do
   let (prinH, prinC) = cf2CPPPrinter cppStdMode True (inPackage opts) cf hExt
   mkCppFile ("Printer" ++ hExt) prinH
   mkCppFile ("Printer" ++ cppExt) prinC
-  mkCppFile ("Test" ++ cppExt) (cpptest (inPackage opts) cf hExt)
+  mkCppFile ("Test" ++ cppExt) (cpptest parserMode (inPackage opts) cf hExt)
 
   case (ansi opts) of
     BeyondAnsi -> do
@@ -110,79 +110,85 @@ printParseErrHeader inPackage =
      , nsEnd inPackage
      ]
 
-cpptest :: Maybe String -> CF -> String -> String
-cpptest inPackage cf hExt = unlines $ concat
+cpptest :: ParserMode -> Maybe String -> CF -> String -> String
+cpptest mode inPackage cf hExt = unlines $ concat
   [ testfileHeader
-  , [ "",
-    "#include <cstdio>",
-    "#include <string>",
-    "#include <iostream>",
-    "#include <memory>",
-    "#include \"Parser" ++hExt++ "\"",
-    "#include \"Printer" ++hExt++ "\"",
-    "#include \"Absyn" ++hExt++ "\"",
-    "#include \"ParserError" ++hExt++ "\"",
-    "",
-    "void usage() {",
-    "  printf(\"usage: Call with one of the following argument " ++
-      "combinations:\\n\");",
-    "  printf(\"\\t--help\\t\\tDisplay this help message.\\n\");",
-    "  printf(\"\\t(no arguments)\\tParse stdin verbosely.\\n\");",
-    "  printf(\"\\t(files)\\t\\tParse content of files verbosely.\\n\");",
-    "  printf(\"\\t-s (files)\\tSilent mode. Parse content of files " ++
-      "silently.\\n\");",
-    "}",
-    "",
-    "int main(int argc, char ** argv)",
-    "{",
-    "  FILE *input;",
-    "  int quiet = 0;",
-    "  char *filename = NULL;",
-    "",
-    "  if (argc > 1) {",
-    "    if (strcmp(argv[1], \"-s\") == 0) {",
-    "      quiet = 1;",
-    "      if (argc > 2) {",
-    "        filename = argv[2];",
-    "      } else {",
-    "        input = stdin;",
-    "      }",
-    "    } else {",
-    "      filename = argv[1];",
-    "    }",
-    "  }",
-    "",
-    "  if (filename) {",
-    "    input = fopen(filename, \"r\");",
-    "    if (!input) {",
-    "      usage();",
-    "      exit(1);",
-    "    }",
-    "  } else input = stdin;",
-    "  /* The default entry point is used. For other options see Parser.H */",
-    "  " ++ scope ++ dat ++ " *parse_tree = NULL;",
-    "  try { ",
-    "  parse_tree = " ++ scope ++ "p" ++ def ++ "(input);",
-    "  } catch( " ++ scope ++ "parse_error &e) {",
-    "     std::cerr << \"Parse error on line \" << e.getLine() << \"\\n\"; ",
-    "  }",
-    "  if (parse_tree)",
-    "  {",
-    "    printf(\"\\nParse Successful!\\n\");",
-    "    if (!quiet) {",
-    "      printf(\"\\n[Abstract Syntax]\\n\");",
-    "      " ++ scope ++ "std::unique_ptr<ShowAbsyn> " ++ scope ++ "s(new ShowAbsyn());",
-    "      printf(\"%s\\n\\n\", s->show(parse_tree));",
-    "      printf(\"[Linearized Tree]\\n\");",
-    "      " ++ scope ++ "std::unique_ptr<PrintAbsyn> " ++ scope ++ "p(new PrintAbsyn());",
-    "      printf(\"%s\\n\\n\", p->print(parse_tree));",
-    "    }",
-    "    delete(parse_tree);",
-    "    return 0;",
-    "  }",
-    "  return 1;",
-    "}",
-    ""
+  , [ ""
+    , "#include <cstdio>"
+    , "#include <string>"
+    , "#include <iostream>"
+    , "#include <memory>"
+    , "#include \"Parser" ++hExt++ "\""
+    , "#include \"Printer" ++hExt++ "\""
+    , "#include \"Absyn" ++hExt++ "\""
+    , "#include \"ParserError" ++hExt++ "\""
+    , ""
+    , "void usage() {"
+    , "    printf(\"usage: Call with one of the following argument combinations:\\n\");"
+    , "    printf(\"\\t--help\\t\\tDisplay this help message.\\n\");"
+    , "    printf(\"\\t(no arguments)\\tParse stdin verbosely.\\n\");"
+    , "    printf(\"\\t(files)\\t\\tParse content of files verbosely.\\n\");"
+    , "    printf(\"\\t-s (files)\\tSilent mode. Parse content of files silently.\\n\");"
+    , "}"
+    , ""
+    , "int main(int argc, char ** argv)"
+    , "{"
+    , "    FILE *input;"
+    , "    int quiet = 0;"
+    , "    char *filename = NULL;"
+    , ""
+    , "    if (argc > 1) {"
+    , "        if (strcmp(argv[1], \"-s\") == 0) {"
+    , "            quiet = 1;"
+    , "            if (argc > 2) {"
+    , "                filename = argv[2];"
+    , "            } else {"
+    , "                input = stdin;"
+    , "            }"
+    , "        } else {"
+    , "            filename = argv[1];"
+    , "        }"
+    , "    }"
+    , ""
+    , "    if (filename) {"
+    , "        input = fopen(filename, \"r\");"
+    , "        if (!input) {"
+    , "            usage();"
+    , "            exit(1);"
+    , "        }"
+    , "    } else input = stdin;"
+    , "    /* The default entry point is used. For other options see Parser.H */"
+    , "    " ++ scope ++ dat ++ " *parse_tree = NULL;"
+    , "    try { "
+    , if beyondAnsi mode then
+        "        //parse_tree = " ++ scope ++ "p" ++ def ++ "(input);"
+      else
+        "        parse_tree = " ++ scope ++ "p" ++ def ++ "(input);"
+    , "    } catch( " ++ scope ++ "parse_error &e) {"
+    , "        std::cerr << \"Parse error on line \" << e.getLine() << \"\\n\"; "
+    , "    }"
+    , "    if (parse_tree)"
+    , "    {"
+    , "        printf(\"\\nParse Successful!\\n\");"
+    , "        if (!quiet) {"
+    , "            printf(\"\\n[Abstract Syntax]\\n\");"
+    , if beyondAnsi mode then
+        "            auto s = std::make_unique<" ++ scope ++ "ShowAbsyn>(" ++ scope ++ "ShowAbsyn());"
+      else
+        "          "++ scope ++ "ShowAbsyn *s = new " ++ scope ++ "ShowAbsyn();"
+    , "            printf(\"%s\\n\\n\", s->show(parse_tree));"
+    , "            printf(\"[Linearized Tree]\\n\");"
+    , if beyondAnsi mode then
+        "            auto p = std::make_unique<" ++ scope ++ "PrintAbsyn>(" ++ scope ++ "PrintAbsyn());"
+      else
+        "          " ++ scope ++ "PrintAbsyn *p = new " ++ scope ++ "PrintAbsyn();"
+    , "            printf(\"%s\\n\\n\", p->print(parse_tree));"
+    , "      }"
+    , "      delete(parse_tree);"
+    , "      return 0;"
+    , "    }"
+    , "    return 1;"
+    , "}"
     ]
   ]
   where
@@ -254,6 +260,9 @@ driverH mode cats = unlines
   , "     * @param is - std::istream&, valid input stream"
   , "     */"
   , "    void parse( std::istream &iss );"
+  , "    /** Error handling with associated line number. This can be modified to"
+  , "     * output the error e.g. to a dialog box. */"
+  , "    void error(const class location& l, const std::string& m);"
   , ""
   , "    std::ostream& print(std::ostream &stream);"
   , "private:"
@@ -320,6 +329,11 @@ driverC mode driverH = unlines
   , "    return;"
   , "}"
   , " "
+  , "void"
+  , ns++ "::" ++camelCaseName++ "Driver::error( const class location& l, const std::string& m )"
+  , "{"
+  , "    std::cerr << l << \": \" << m << std::endl;"
+  , "}"
   , " "
   , "void "
   , ns++ "::" ++camelCaseName++ "Driver::parse_helper( std::istream &stream )"

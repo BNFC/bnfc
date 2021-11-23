@@ -116,15 +116,25 @@ cf2Bison rp mode cf env = unlines
     , "%%"
     , ""
     , nsStart inPackage
-    , unless (beyondAnsi mode) -- entryCode for beyondAndi is in Driver
-      entryCode mode cf
+    , if (beyondAnsi mode) then
+         unlines [
+        "void " ++ns++ "::" ++camelCaseName++ "Parser::error(const " ++camelCaseName++ "Parser::location_type& l, const std::string& m)"
+        , "{"
+        , "    driver.error(l, m);"
+        , "}"]
+      else
+        entryCode mode cf -- entryCode for beyondAndi is in Driver
     , nsEnd inPackage
     ]
   where
-  inPackage = parserPackage mode
-  posCats
-    | stlParser mode = map TokenCat $ positionCats cf
-    | otherwise      = []
+    inPackage = parserPackage mode
+    posCats
+      | stlParser mode = map TokenCat $ positionCats cf
+      | otherwise      = []
+    name = parserName mode
+    camelCaseName = camelCase_ name
+    ns = fromMaybe camelCaseName (parserPackage mode)
+
 
 positionCats :: CF -> [String]
 positionCats cf = [ wpThing name | TokenReg name True _ <- cfgPragmas cf ]
