@@ -22,7 +22,7 @@ import BNFC.Backend.Base
 import BNFC.Backend.C            ( bufferH, bufferC, comment, testfileHeader )
 import BNFC.Backend.C.CFtoBisonC ( cf2Bison, unionBuiltinTokens, positionCats, varName )
 import BNFC.Backend.C.CFtoFlexC  ( cf2flex, ParserMode(..), beyondAnsi, parserPackage, parserName, stlParser )
-import BNFC.Backend.CPP.Common   ( commentWithEmacsModeHint, CppStdMode(..) )
+import BNFC.Backend.CPP.Common   ( commentWithEmacsModeHint, wrapUniquePtr, CppStdMode(..) )
 import BNFC.Backend.CPP.Makefile
 import BNFC.Backend.CPP.STL.CFtoSTLAbs
 import BNFC.Backend.CPP.STL.CFtoCVisitSkelSTL
@@ -55,8 +55,8 @@ makeCppStl opts cf = do
 
   case (ansi opts) of
     BeyondAnsi -> do
-      mkCppFile ("Driver" ++ cppExt) $ driverC parserMode ("Driver" ++ hExt)
-      mkCppFile ("Driver" ++ hExt) $ driverH parserMode cats
+      mkCppFile ("Driver" ++ cppExt) $ driverC parserMode cf ("Driver" ++ hExt)
+      mkCppFile ("Driver" ++ hExt) $ driverH parserMode cf cats
       mkCppFile ("Scanner" ++ hExt) $ scannerH parserMode;
     _ ->
       return();
@@ -117,8 +117,13 @@ cpptest mode inPackage cf hExt = unlines $ concat
     , "#include <cstdio>"
     , "#include <string>"
     , "#include <iostream>"
-    , "#include <memory>"
-    , "#include \"Parser" ++hExt++ "\""
+    , if beyondAnsi mode then
+        unlines [
+        "#include <memory>"
+        , "#include \"Driver" ++hExt++ "\""
+        ]
+      else
+        "#include \"Parser" ++hExt++ "\""
     , "#include \"Printer" ++hExt++ "\""
     , "#include \"Absyn" ++hExt++ "\""
     , "#include \"ParserError" ++hExt++ "\""
@@ -157,34 +162,52 @@ cpptest mode inPackage cf hExt = unlines $ concat
     , "            exit(1);"
     , "        }"
     , "    } else input = stdin;"
-    , "    /* The default entry point is used. For other options see Parser.H */"
-    , "    " ++ scope ++ dat ++ " *parse_tree = NULL;"
-    , "    try { "
+    , ""
     , if beyondAnsi mode then
-        "        //parse_tree = " ++ scope ++ "p" ++ def ++ "(input);"
+        unlines [
+        "    /* The default entry point is used. For other options see Parser.H */"
+        , "    " ++ (wrapUniquePtr $ scope ++ dat) ++ " parse_tree = nullptr;"
+        , "    try { "
+        , "        auto driver = std::make_unique<" ++ns++ "::" ++camelCaseName++ "Driver>();"
+        , "        parse_tree = driver->p" ++ def ++ "(filename);"
+        ]
       else
-        "        parse_tree = " ++ scope ++ "p" ++ def ++ "(input);"
+        unlines [
+        "    /* The default entry point is used. For other options see Parser.H */"
+        , "    " ++ scope ++ dat ++ " *parse_tree = NULL;"
+        , "    try { "
+        ,"        parse_tree = " ++ scope ++ "p" ++ def ++ "(input);"
+        ]
     , "    } catch( " ++ scope ++ "parse_error &e) {"
     , "        std::cerr << \"Parse error on line \" << e.getLine() << \"\\n\"; "
     , "    }"
+    , ""
     , "    if (parse_tree)"
     , "    {"
     , "        printf(\"\\nParse Successful!\\n\");"
-    , "        if (!quiet) {"
-    , "            printf(\"\\n[Abstract Syntax]\\n\");"
     , if beyondAnsi mode then
-        "            auto s = std::make_unique<" ++ scope ++ "ShowAbsyn>(" ++ scope ++ "ShowAbsyn());"
+        unlines [
+        "        if (!quiet) {"
+        , "            printf(\"\\n[Abstract Syntax]\\n\");"
+        , "            auto s = std::make_unique<" ++ scope ++ "ShowAbsyn>(" ++ scope ++ "ShowAbsyn());"
+        , "            printf(\"%s\\n\\n\", s->show(parse_tree.get()));"
+        , "            printf(\"[Linearized Tree]\\n\");"
+        , "            auto p = std::make_unique<" ++ scope ++ "PrintAbsyn>(" ++ scope ++ "PrintAbsyn());"
+        , "            printf(\"%s\\n\\n\", p->print(parse_tree.get()));"
+        , "      }"
+        ]
       else
-        "          "++ scope ++ "ShowAbsyn *s = new " ++ scope ++ "ShowAbsyn();"
-    , "            printf(\"%s\\n\\n\", s->show(parse_tree));"
-    , "            printf(\"[Linearized Tree]\\n\");"
-    , if beyondAnsi mode then
-        "            auto p = std::make_unique<" ++ scope ++ "PrintAbsyn>(" ++ scope ++ "PrintAbsyn());"
-      else
-        "          " ++ scope ++ "PrintAbsyn *p = new " ++ scope ++ "PrintAbsyn();"
-    , "            printf(\"%s\\n\\n\", p->print(parse_tree));"
-    , "      }"
-    , "      delete(parse_tree);"
+        unlines [
+        "        if (!quiet) {"
+        , "            printf(\"\\n[Abstract Syntax]\\n\");"
+        , "           "++ scope ++ "ShowAbsyn *s = new " ++ scope ++ "ShowAbsyn();"
+        , "            printf(\"%s\\n\\n\", s->show(parse_tree));"
+        , "            printf(\"[Linearized Tree]\\n\");"
+        , "           " ++ scope ++ "PrintAbsyn *p = new " ++ scope ++ "PrintAbsyn();"
+        , "            printf(\"%s\\n\\n\", p->print(parse_tree));"
+        , "      }"
+        , "      delete(parse_tree);"
+        ]
     , "      return 0;"
     , "    }"
     , "    return 1;"
@@ -196,14 +219,19 @@ cpptest mode inPackage cf hExt = unlines $ concat
    dat = identCat $ normCat cat
    def = identCat cat
    scope = nsScope inPackage
+   name = parserName mode
+   camelCaseName = camelCase_ name
+   ns = fromMaybe camelCaseName (parserPackage mode)
+
 
 mkHeaderFile hExt inPackage _cf _cats eps _env = unlines $ concat
   [ [ "#ifndef " ++ hdef
     , "#define " ++ hdef
     , ""
-    , "#include<vector>"
-    , "#include<string>"
-    , "#include<cstdio>"
+    , "#include <vector>"
+    , "#include <string>"
+    , "#include <cstdio>"
+    , "#include \"Bison" ++ hExt ++ "\""
     , "#include \"Absyn" ++ hExt ++ "\""
     , ""
     , nsStart inPackage
@@ -224,14 +252,15 @@ mkHeaderFile hExt inPackage _cf _cats eps _env = unlines $ concat
 
 -- | C++ lexer/parser driver
 
-driverH :: ParserMode -> [Cat] -> String
-driverH mode cats = unlines
+driverH :: ParserMode -> CF -> [Cat] -> String
+driverH mode cf cats = unlines
   [ "#ifndef __DRIVER_H__"
   , "#define __DRIVER_H__ 1"
 
   , "#include <string>"
   , "#include <cstddef>"
   , "#include <istream>"
+  , "#include <memory>"
   , ""
   , "#include \"Scanner.hh\""
   , "#include \"Parser.hh\""
@@ -248,29 +277,34 @@ driverH mode cats = unlines
   , "     */"
   -- bnfc builtin tokens
   , unlines [ prettyShow ("    " ++ tok) | tok <- unionBuiltinTokens ]
+  -- user defined tokens
   , unlines [ prettyShow ("    std::unique_ptr<" ++ identCat tok ++ ">"+++ varName tok ++";") | tok <- normCats ]
+  , ""
+  , unlines [ mkFileEntry ep | ep <- entryPoints ]
+  , unlines [ mkStringEntry ep | ep <- entryPoints ]
   , ""
   , "    /**"
   , "     * parse - parse from a file"
   , "     * @param filename - valid string with input file"
   , "     */"
-  , "    void parse( const char *filename );"
+  , "    void parse(const char *filename);"
   , "    /**"
   , "     * parse - parse from a c++ input stream"
   , "     * @param is - std::istream&, valid input stream"
   , "     */"
-  , "    void parse( std::istream &iss );"
+  , "    void parse(std::istream &iss);"
   , "    /** Error handling with associated line number. This can be modified to"
-  , "     * output the error e.g. to a dialog box. */"
+  , "     * output the error. */"
   , "    void error(const class location& l, const std::string& m);"
   , ""
   , "    std::ostream& print(std::ostream &stream);"
+  , ""
   , "private:"
   , ""
   , "    void parse_helper( std::istream &stream );"
   , ""
-  , "    " ++ns++ "::" ++camelCaseName++ "Parser  *parser  = nullptr;"
-  , "    " ++ns++ "::" ++camelCaseName++ "Scanner *scanner = nullptr;"
+  , "    std::unique_ptr<" ++camelCaseName++ "Scanner> scanner = nullptr;"
+  , "    std::unique_ptr<" ++camelCaseName++ "Parser>  parser  = nullptr;"
   , "};"
   , ""
   , "} /* end namespace " ++ns++ " */"
@@ -281,11 +315,17 @@ driverH mode cats = unlines
     camelCaseName = camelCase_ name
     ns = fromMaybe camelCaseName (parserPackage mode)
     normCats = nub (map normCat cats)
+    entryPoints = toList (allEntryPoints cf)
+    mkFileEntry s =
+      "    " ++ (wrapUniquePtr $ identCat (normCat s)) +++ "p" ++ identCat s ++ "(const char *filename);"
+    mkStringEntry s =
+      "    " ++ (wrapUniquePtr $ identCat (normCat s)) +++ "ps" ++ identCat s ++ "(std::istream &stream);"
+
 
 -- | C++ lexer/parser driver
 
-driverC :: ParserMode -> String -> String
-driverC mode driverH = unlines
+driverC :: ParserMode -> CF -> String -> String
+driverC mode cf driverH = unlines
   [ "#include <cctype>"
   , "#include <fstream>"
   , "#include <cassert>"
@@ -294,10 +334,6 @@ driverC mode driverH = unlines
   , " "
   , "" ++ns++ "::" ++camelCaseName++ "Driver::~" ++camelCaseName++ "Driver()"
   , "{"
-  , "    delete(scanner);"
-  , "    scanner = nullptr;"
-  , "    delete(parser);"
-  , "    parser = nullptr;"
   , "}"
   , " "
   , "void "
@@ -320,11 +356,9 @@ driverC mode driverH = unlines
   , "void"
   , ns++ "::" ++camelCaseName++ "Driver::parse( std::istream &stream )"
   , "{"
-  , "    if( ! stream.good()  && stream.eof() )"
-  , "    {"
+  , "    if( ! stream.good()  && stream.eof() ) {"
   , "        return;"
   , "    }"
-  , "    //else"
   , "    parse_helper( stream ); "
   , "    return;"
   , "}"
@@ -338,43 +372,68 @@ driverC mode driverH = unlines
   , "void "
   , ns++ "::" ++camelCaseName++ "Driver::parse_helper( std::istream &stream )"
   , "{"
-  , "    "
-  , "    delete(scanner);"
-  , "    try"
-  , "    {"
-  , "       scanner = new " ++ns++ "::" ++camelCaseName++ "Scanner( &stream );"
+  , ""
+  , "    scanner.reset();"
+  , "    try {"
+  , "        scanner = std::make_unique<" ++ns++ "::" ++camelCaseName++ "Scanner>( &stream );"
+  , "    } catch( std::bad_alloc &ba ) {"
+  , "        std::cerr << \"Failed to allocate scanner: (\""
+  , "                  << ba.what() "
+  , "                  << \"), exiting!!\\n\";"
+  , "        exit( EXIT_FAILURE );"
   , "    }"
-  , "    catch( std::bad_alloc &ba )"
-  , "    {"
-  , "       std::cerr << \"Failed to allocate scanner: (\" <<"
-  , "          ba.what() << \"), exiting!!\\n\";"
-  , "       exit( EXIT_FAILURE );"
-  , "    }"
-  , "    "
-  , "    delete(parser); "
-  , "    try"
-  , "    {"
-  , "       parser = new " ++ns++ "::" ++camelCaseName++ "Parser( (*scanner) /* scanner */, "
-  , "                                   (*this)    /* driver */ );"
-  , "    }"
-  , "    catch( std::bad_alloc &ba )"
-  , "    {"
-  , "       std::cerr << \"Failed to allocate parser: (\" << "
-  , "          ba.what() << \"), exiting!!\\n\";"
-  , "       exit( EXIT_FAILURE );"
+  , ""
+  , "    parser.reset(); "
+  , "    try {"
+  , "        parser = std::make_unique<" ++ns++ "::" ++camelCaseName++ "Parser>((*scanner), (*this));"
+  , "    } catch( std::bad_alloc &ba ) {"
+  , "        std::cerr << \"Failed to allocate parser: (\""
+  , "                  << ba.what() "
+  , "                  << \"), exiting!!\\n\";"
+  , "        exit( EXIT_FAILURE );"
   , "    }"
   , "    const int accept( 0 );"
-  , "    if( parser->parse() != accept )"
-  , "    {"
-  , "       std::cerr << \"Parse failed!!\\n\";"
+  , "    if( parser->parse() != accept ) {"
+  , "        std::cerr << \"Parse failed!!\\n\";"
   , "    }"
   , "    return;"
   , "}"
+  , ""
+  , unlines [ mkFileEntry ep | ep <- entryPoints ]
+  , unlines [ mkStringEntry ep | ep <- entryPoints ]
   ]
   where
     name = parserName mode
     camelCaseName = camelCase_ name
     ns = fromMaybe camelCaseName (parserPackage mode)
+    entryPoints = toList (allEntryPoints cf)
+    mkFileEntry s =
+      unlines [
+      (wrapUniquePtr $ identCat (normCat s))
+      , ns++ "::" ++camelCaseName++ "Driver::p" ++ identCat s ++ "(const char *filename)"
+      , "{"
+      , "    assert( filename != nullptr );"
+      , "    std::ifstream in_file( filename );"
+      , "    if( ! in_file.good() )"
+      , "    {"
+      , "        exit( EXIT_FAILURE );"
+      , "    }"
+      , "    parse_helper( in_file );"
+      , "    return this->" ++ varName s++ "->clone();"
+      , "}"
+      ]
+    mkStringEntry s =
+      unlines [
+      (wrapUniquePtr $ identCat (normCat s))
+      , ns++ "::" ++camelCaseName++ "Driver::ps" ++ identCat s ++ "(std::istream &stream)"
+      , "{"
+      , "    if( ! stream.good()  && stream.eof() ) {"
+      , "        return nullptr;"
+      , "    }"
+      , "    parse_helper( stream );"
+      , "    return this->" ++ varName s++ "->clone();"
+      , "}"
+      ]
 
 -- | C++ lexer def
 
@@ -410,9 +469,6 @@ scannerH mode = unlines
   , ""
   , "    " ++camelCaseName++ "Scanner(std::istream *in);"
   , "    virtual ~" ++camelCaseName++ "Scanner();"
-  -- , "    {"
-  -- , "       loc = new " ++ns++ "::" ++camelCaseName++ "Parser::location_type();"
-  -- , "    };"
   , ""
   , "    virtual"
   , "    int lex( " ++ns++ "::" ++camelCaseName++ "Parser::semantic_type * const lval,"
