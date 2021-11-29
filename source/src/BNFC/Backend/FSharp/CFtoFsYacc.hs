@@ -82,7 +82,7 @@ terminal cf = \ s ->
     if s `elem` kws then "KW_" ++ s
     else case lookup s (zip (unicodeAndSymbols cf) [1..]) of
       Just i -> "SYMB" ++ show i
-      Nothing -> error $ "CFtoOCamlYacc: terminal " ++ show s ++ " not defined in CF."
+      Nothing -> error $ "CFtoFsYacc: terminal " ++ show s ++ " not defined in CF."
   where
   kws = asciiKeywords cf
 

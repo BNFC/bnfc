@@ -4,6 +4,8 @@
 
 -}
 
+-- based on BNFC OCaml backend
+
 module BNFC.Backend.FSharp.FSharpUtil where
 
 import BNFC.CF
@@ -87,7 +89,7 @@ mkEsc s = "\"" ++ concatMap f s ++ "\""
   where
   f x = if x `elem` ['"','\\'] then "\\" ++ [x] else [x]
 
--- TODO: Fix keywords
+-- TODO: Replace keywords with fslex ones
 -- | Keywords of @ocamllex@.
 reservedFsLex :: [String]
 reservedFsLex =
@@ -101,8 +103,8 @@ reservedFsLex =
   , "shortest"
   ]
 
--- | Heuristics to produce name for ocamllex token definition that
--- does not clash with the ocamllex keywords.
+-- | Heuristics to produce name for fslex token definition that
+-- does not clash with the fslex keywords.
 fsharpTokenName :: String -> String
 fsharpTokenName x0
   | x `elem` reservedFsLex = x ++ "_"

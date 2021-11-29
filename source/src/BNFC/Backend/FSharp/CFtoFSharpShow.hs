@@ -1,6 +1,6 @@
 {-
-    TODO: Check if printing fot native fsharp objects like choice types or algebraic types can handle this
-    BNF Converter: Non-pretty-printer generator (no "deriving Show" in OCaml...)
+    TODO: Check if printing fot native fsharp objects like choice types or algebraic types can handle this (it would allow to remove most of the code here)
+    BNF Converter: Non-pretty-printer generator 
     Copyright (C) 2021  Author:  Grzegorz Dziadkiewicz
 
 -}

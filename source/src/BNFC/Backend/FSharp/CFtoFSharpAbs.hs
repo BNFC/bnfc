@@ -66,7 +66,7 @@ prData (cat,rules) =
 prRule (fun, [])  = fun
 prRule (fun,cats) = fun +++ "of" +++ render (mkTupleType cats)
 
--- | Creates an OCaml type tuple by intercalating * between type names
+-- | Creates an FSharp type tuple by intercalating * between type names
 -- >>> mkTupleType [Cat "A"]
 -- A
 --

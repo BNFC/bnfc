@@ -1,1 +1,0 @@
-stack run -- -o testDir --fsharp ./examples/Javalette/JavaletteLight.cf
