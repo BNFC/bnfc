@@ -34,7 +34,7 @@ makeCppNoStl opts cf = do
     mkCppFileWithHint (name ++ ".y") $ cf2Bison (linenumbers opts) parserMode cf env
     mkCppFile "Parser.H" $
       mkHeaderFile cf (allParserCats cf) (toList $ allEntryPoints cf) (Map.elems env)
-    let (skelH, skelC) = cf2CVisitSkel False Nothing cf
+    let (skelH, skelC) = cf2CVisitSkel opts False Nothing cf
     mkCppFile "Skeleton.H" skelH
     mkCppFile "Skeleton.C" skelC
     let (prinH, prinC) = cf2CPPPrinter (CppStdAnsi Ansi) False Nothing cf ".H"

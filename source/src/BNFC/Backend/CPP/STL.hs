@@ -45,7 +45,7 @@ makeCppStl opts cf = do
   mkCppFile ("Parser" ++ hExt) $
     mkHeaderFile hExt (inPackage opts) cf (allParserCats cf) (toList $ allEntryPoints cf) (Map.elems env)
   mkCppFile ("ParserError" ++ hExt) $ printParseErrHeader (inPackage opts)
-  let (skelH, skelC) = cf2CVisitSkel True (inPackage opts) cf
+  let (skelH, skelC) = cf2CVisitSkel opts True (inPackage opts) cf
   mkCppFile ("Skeleton" ++ hExt) skelH
   mkCppFile ("Skeleton" ++ cppExt) skelC
   let (prinH, prinC) = cf2CPPPrinter cppStdMode True (inPackage opts) cf hExt
