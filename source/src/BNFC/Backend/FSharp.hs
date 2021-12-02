@@ -20,11 +20,10 @@ import BNFC.Backend.FSharp.CFtoFSharpShow
 import BNFC.Backend.FSharp.CFtoFSharpTemplate
 import BNFC.Backend.FSharp.CFtoFSharpTest     (fsharpTestfile)
 import BNFC.Backend.FSharp.CFtoFsYacc
-import BNFC.Backend.XML                     (makeXML)
+import qualified BNFC.Backend.XML as XML
 import BNFC.CF
 import BNFC.Options
 import BNFC.Utils
-import Data.String.Interpolate
 
 import qualified BNFC.Backend.C as C
 
@@ -55,8 +54,8 @@ sanitizedLang = camelCase_ . lang
 
 
 absFile, absFileM, fslexFile, fslexFileM, fsyaccFile, fsyaccFileM,
-  utilFile, templateFile, templateFileM, printerFile, printerFileM,
-  tFile :: SharedOptions -> String
+  utilFile, utilFileM, templateFile, templateFileM, printerFile, printerFileM,
+  tFile, tFileM, showFile, showFileM, fsprojFile :: SharedOptions -> String
 absFile       = mkFile withLang "Abs" "fs"
 absFileM      = mkMod  withLang "Abs"
 fslexFile     = mkFile withLang "Lex" "fsl"
@@ -71,9 +70,9 @@ showFile      = mkFile withLang "Show" "fs"
 showFileM     = mkMod  withLang "Show"
 tFileM         = mkMod withLang "Test"
 tFile         = mkFile withLang "Test" "fs"
-utilFileM     = mkMod  noLang "BnfcUtil" 
-utilFile      = mkFile noLang "BnfcUtil" "fs"
-fsprojFile      = mkFile withLang "" "fsproj"
+utilFileM     = mkMod  noLang   "BnfcUtil" 
+utilFile      = mkFile noLang   "BnfcUtil" "fs"
+fsprojFile    = mkFile withLang  "" "fsproj"
 
 makeFSharp :: SharedOptions -> CF -> MkFiles ()
 makeFSharp opts cf = do
@@ -93,11 +92,11 @@ makeFSharp opts cf = do
     mkfile (showFile opts)      comment $ cf2show showMod absMod cf
     mkfile (tFile opts)         comment $ fsharpTestfile absMod lexMod parMod prMod showMod tFileMod cf
     mkfile (utilFile opts)      comment $ utilM (utilFileM opts)
-    mkfile (fsprojFile opts)     comment $ fsprojM opts
-    case xml opts of
-      2 -> makeXML opts True cf
-      1 -> makeXML opts False cf
-      _ -> return ()
+    mkfile (fsprojFile opts)    XML.comment $ fsprojM opts
+    -- case xml opts of
+    --   2 -> makeXML opts True cf
+    --   1 -> makeXML opts False cf
+    --   _ -> return ()
 
 comment :: String -> String
 comment x = unwords [ "(*", x, "*)" ]
@@ -115,34 +114,36 @@ utilM moduleName = unlines
     ]
 
 fsprojM :: SharedOptions -> String
-fsprojM opts = [i|
-  <Project Sdk="Microsoft.NET.Sdk">
+fsprojM opts = unlines
+  ["<Project Sdk=\"Microsoft.NET.Sdk\">"
+  ,""
+  ,"  <PropertyGroup>"
+  ,"    <OutputType>Exe</OutputType>"
+  ,"    <TargetFramework>net5.0</TargetFramework>"
+  ,"    <WarnOn>3390;$(WarnOn)</WarnOn>"
+  ,"  </PropertyGroup>"
+  ,""
+  ,"  <ItemGroup>"
+  ,"    <Compile Include=\"" ++ utilFile opts ++ "\" />"
+  ,"    <Compile Include=\"" ++ absFile opts ++ "\" />"
+  ,"    <FsYacc  Include=\"" ++ fsyaccFile opts ++ "\" >"
+  ,"      <OtherFlags>--module " ++ fsyaccFileM opts ++ "</OtherFlags>"
+  ,"    </FsYacc>"
+  ,"    <FsLex   Include=\"" ++ fslexFile opts ++ "\">"
+  ,"      <OtherFlags>--unicode</OtherFlags>"
+  ,"    </FsLex>"
+  ,"    <Compile Include=\"" ++ fsyaccFileM opts ++ ".fsi\" />"
+  ,"    <Compile Include=\"" ++ fsyaccFileM opts ++ ".fs\" />"
+  ,"    <Compile Include=\"" ++ fslexFileM opts ++ ".fs\" />"
+  ,"    <Compile Include=\"" ++ printerFile opts ++ "\" />"
+  ,"    <Compile Include=\"" ++ showFile opts ++ "\" />"
+  ,"    <Compile Include=\"" ++ templateFile opts ++ "\" />"
+  ,"    <Compile Include=\"" ++ tFile opts ++ "\" />"
+  ,"  </ItemGroup>"
+  ,""
+  ,"  <ItemGroup>"
+  ,"    <PackageReference Include=\"FsLexYacc\" Version=\"10.2.0\" />"
+  ,"  </ItemGroup>"
 
-  <PropertyGroup>
-    <OutputType>Exe</OutputType>
-    <TargetFramework>net5.0</TargetFramework>
-    <WarnOn>3390;$(WarnOn)</WarnOn>
-  </PropertyGroup>
-
-  <ItemGroup>
-    <Compile Include="#{utilFile opts}" />
-    <Compile Include="#{absFile opts}" />
-    <FsYacc Include="#{fsyaccFile opts}" />
-    <FsLex Include="#{fslexFile opts}">
-      <OtherFlags>--unicode</OtherFlags>
-    </FsLex>
-    <Compile Include="#{fsyaccFileM opts}.fsi" />
-    <Compile Include="#{fsyaccFileM opts}.fs" />
-    <Compile Include="#{fslexFileM opts}.fs" />
-    <Compile Include="#{printerFile opts}" />
-    <Compile Include="#{showFile opts}" />
-    <Compile Include="#{templateFile opts}" />
-    <Compile Include="#{tFile opts}" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <PackageReference Include="FsLexYacc" Version="10.2.0" />
-  </ItemGroup>
-
-</Project>
-|]
+  ,"</Project>"
+  ]

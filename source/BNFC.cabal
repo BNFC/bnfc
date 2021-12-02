@@ -113,7 +113,6 @@ library
     , deepseq
     , directory
     , filepath
-    , interpolate
     , mtl         >= 2.2.1
     , pretty      >= 1.1   && < 1.2
     , process

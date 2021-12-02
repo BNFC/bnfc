@@ -43,7 +43,6 @@ header :: String -> String -> String -> CF -> String
 header name absName _ _ = unlines
          ["/* Parser definition for use with fsyacc */",
           "%{",
-          "module " ++ name,
           "open " ++ absName,
           "open FSharp.Text.Lexing",
           "",
