@@ -426,7 +426,7 @@ driverC mode cf driverH = unlines
       , "        exit( EXIT_FAILURE );"
       , "    }"
       , "    parse_helper( in_file );"
-      , "    return this->" ++ varName s++ "->clone();"
+      , "    return std::move(this->" ++ varName s++ ");"
       , "}"
       ]
     mkStringEntry s =
@@ -438,7 +438,7 @@ driverC mode cf driverH = unlines
       , "        return nullptr;"
       , "    }"
       , "    parse_helper( stream );"
-      , "    return this->" ++ varName s++ "->clone();"
+      , "    return std::move(this->" ++ varName s++ ");"
       , "}"
       ]
 

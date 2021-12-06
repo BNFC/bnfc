@@ -594,8 +594,8 @@ generateActionSTLBeyondAnsi :: IsFun a => RecordPositions -> InPackage -> String
 generateActionSTLBeyondAnsi rp inPackage nt f b mbs = reverses ++
   if | isCoercion f    -> concat ["$$ = ", unwords ms, ";", loc]
      | isNilFun f      -> concat ["$$ = ", "std::make_unique<", scope, nt, ">();"]
-     | isOneFun f      -> concat ["$$ = ", "std::make_unique<", scope, nt, ">(); $$->cons(", head ms, "->clone());"]
-     | isConsFun f     -> concat [lst, "->cons(", el, "->clone());"]
+     | isOneFun f      -> concat ["$$ = ", "std::make_unique<", scope, nt, ">(); $$->cons(std::move(", head ms, "));"]
+     | isConsFun f     -> concat [lst, "->cons(std::move(", el, "));"]
      | isDefinedRule f -> concat ["$$ = ", scope, sanitizeCpp (funName f), "(", intercalate ", " ms, ");" ]
      | otherwise       -> concat ["$$ = ", "std::make_unique<", scope, funName f, ">(", (intercalate ", " ms), ");", loc]
   where
@@ -608,7 +608,9 @@ generateActionSTLBeyondAnsi rp inPackage nt f b mbs = reverses ++
       = " $$->line_number = @$.first_line; $$->char_number = @$.first_column;"
         | otherwise
       = ""
-    reverses  = unwords [m ++"->reverse();" | (m, True) <- mbs]
+    -- TODO: temporary commented reverse()
+    -- reverses  = unwords [m ++"->reverse();" | (m, True) <- mbs]
+    reverses  = unwords ["/*" ++m++ "->reverse(); */" | (m, True) <- mbs]
     scope     = nsScope inPackage
 
 
