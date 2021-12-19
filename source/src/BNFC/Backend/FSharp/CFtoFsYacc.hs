@@ -30,17 +30,17 @@ type MetaVar     = String
 -- The main function, that given a CF
 -- generates a fsyacc module.
 cf2fsyacc :: String -> String -> String -> CF -> String
-cf2fsyacc name absName lexName cf
+cf2fsyacc _ absName lexName cf
  = unlines
-    [header name absName lexName cf,
+    [header absName lexName cf,
     declarations absName cf,
     "%%",
     rules cf
     ]
 
 
-header :: String -> String -> String -> CF -> String
-header name absName _ _ = unlines
+header :: String -> String -> CF -> String
+header absName _ _ = unlines
          ["/* Parser definition for use with fsyacc */",
           "%{",
           "open " ++ absName,
@@ -85,12 +85,6 @@ terminal cf = \ s ->
   where
   kws = asciiKeywords cf
 
--- | map a CF nonterminal into a fsyacc symbol
-nonterminal :: Cat -> String
-nonterminal c = map spaceToUnderscore (fixType c)
-    where spaceToUnderscore ' ' = '_'
-          spaceToUnderscore x = x
-
 specialTokens :: CF -> String
 specialTokens cf = unlines $ concat $
   [ [ "%token TOK_EOF" ]
@@ -127,10 +121,7 @@ entryPoints absName cf = unlines $
                       else absName ++ "." ++ fixType c
 
 epName :: Cat -> String
-epName c = "p" ++ capitalize (nonterminal c)
-            where capitalize s = case s of
-                    [] -> []
-                    c:cs -> toUpper c : cs
+epName c = "p" ++ nonterminal c
 
 entryPointRules :: CF -> String
 entryPointRules cf = unlines $ map mkRule $ toList $ allEntryPoints cf
@@ -199,6 +190,6 @@ specialRules cf = unlines $ (`map` literals cf) $ \case
   "Integer" -> "int :  TOK_Integer  { $1 };"
   "Double"  -> "float : TOK_Double  { $1 };"
   "Char"    -> "char : TOK_Char { $1 };"
-  own       -> fixType (TokenCat own) ++ " : TOK_" ++ own ++ " { " ++ own ++ " (" ++  posn ++ "$1)};"
+  own       -> fixType (TokenCat own) ++ " : TOK_" ++ own ++ " { " ++ fixType (TokenCat own) ++ " (" ++  posn ++ "$1)};"
     where -- ignore position categories for now
     posn = "" -- if isPositionCat cf own then "mkPosToken " else ""

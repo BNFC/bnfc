@@ -38,7 +38,7 @@ cf2Template skelName absName cf = unlines
 --TODO: Rewrite in a more readeable way
 toArgs [] = []
 toArgs ((cons,args):xs)
-           = (cons ++ " " ++ mkTuple (names (map (sanitizeFSharp . var) args) (0 :: Int))) : toArgs xs
+           = (fixType (TokenCat cons) ++ " " ++ mkTuple (names (map (sanitizeFSharp . var) args) (0 :: Int))) : toArgs xs
 
 --TODO: It is probably bugy for input like ["a", "a", "b", "b"]
 names :: [String] -> Int -> [String]

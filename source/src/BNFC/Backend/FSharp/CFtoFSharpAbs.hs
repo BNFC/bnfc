@@ -12,7 +12,7 @@ import Text.PrettyPrint
 
 import BNFC.CF
 import BNFC.Utils ( (+++), unless, parensIf )
-import Data.List  ( intersperse, intercalate )
+import Data.List  ( intersperse )
 import BNFC.Backend.FSharp.FSharpUtil
 
 -- to produce an F# module
@@ -31,7 +31,7 @@ cf2Abstract absMod cf = unlines $ concat
     ]
   ]
   where
-  defs = definedRules cf
+    defs = definedRules cf
 
 definedRules :: CF -> [String]
 definedRules cf = map mkDef $ definitions cf
@@ -59,8 +59,8 @@ mutualRecDefs (x:xs) = ("type" +++ x)  :  map ("and" +++) xs
 
 prData :: Data -> String
 prData (cat,rules) =
-  fixType cat +++ "=\n   " ++
-  intercalate "\n | " (map prRule rules) ++
+  fixType cat +++ "=" ++
+  concatMap (("\n    | " ++) . prRule) rules ++
   "\n"
 
 prRule (fun, [])  = fun
@@ -76,7 +76,7 @@ mkTupleType :: [Cat] -> Doc
 mkTupleType = hsep . intersperse (char '*') . map (text . fixType)
 
 prSpecialData :: CF -> TokenCat -> String
-prSpecialData cf cat = fixType (TokenCat cat) +++ "=" +++ cat +++ "of" +++ contentSpec cf cat
+prSpecialData cf cat = fixType (TokenCat cat) +++ "=" +++ fixType (TokenCat cat) +++ "of" +++ contentSpec cf cat
 
 --  unwords ["newtype",cat,"=",cat,contentSpec cf cat,"deriving (Eq,Ord,Show)"]
 

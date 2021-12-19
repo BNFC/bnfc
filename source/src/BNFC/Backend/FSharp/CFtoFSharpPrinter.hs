@@ -33,7 +33,7 @@ cf2Printer name absMod cf = unlines [
   doubleRule cf,
   stringRule cf,
   if hasIdent cf then identRule absMod cf else "",
-  unlines [ownPrintRule absMod cf own | (own,_) <- tokenPragmas cf],
+  unlines [ownPrintRule absMod cf own | (own,_) <- tokenPragmas cf, own /= "Integer" && own /= "Double"],
   rules absMod cf
   ]
 
@@ -114,7 +114,7 @@ integerRule cf = unlines [
     ]
 
 doubleRule cf = unlines [
-    "let rec prtFloat (_:int) (f:float) : Doc = render (sprintf \"%f\" f)",
+    "let rec prtFloat (_:int) (f:float) : Doc = render (sprintf \"%.14f\" f)",
     ifList cf (TokenCat catDouble),
     ""
     ]
@@ -129,7 +129,7 @@ identRule absMod cf = ownPrintRule absMod cf catIdent
 
 ownPrintRule :: ModuleName -> CF -> TokenCat -> String
 ownPrintRule absMod cf own = unlines $ [
-  "let rec" +++ prtFun (TokenCat own) +++ "_ (" ++ absMod ++ "." ++ own ++ posn ++ ") : Doc = render i",
+  "let rec" +++ prtFun (TokenCat own) +++ "_ (" ++ absMod ++ "." ++ fixType (TokenCat own) ++ posn ++ ") : Doc = render i",
   ifList cf (TokenCat own)
   ]
  where
@@ -227,6 +227,4 @@ mkRhs args its =
   mk _ _ = []
   prt c = prtFun c +++ show (precCat c)
 
-prtFun :: Cat -> String
-prtFun (ListCat c) = prtFun c ++ "ListBNFC"
-prtFun c = "prt" ++ fixTypeUpper (normCat c)
+

@@ -19,6 +19,7 @@ fixType (ListCat c) = fixType c +++ "list"
 fixType (TokenCat "Integer") = "int"
 fixType (TokenCat "Double") = "float"
 fixType (TokenCat "String") = "string"
+fixType (TokenCat "Char")   = "char"
 fixType cat = fixKeywordUse $ show cat
 
 fixTypeQual :: String -- ^ Module name (or empty string for no qualification).
@@ -46,17 +47,19 @@ fixKeywordUse s = if s `elem` reservedFSharp then s ++ "T" else s
 
 reservedFSharp :: [String]
 reservedFSharp = [
-    "abstract","and","as","assert","base","begin","class","default","delegate","do","done",
+    "abstract","and","as","asr","assert","base","begin","class","default","delegate","do","done",
     "downcast","downto","elif","else","end","exception","extern","false","finally","for",
-    "fun","function","global","if","in","inherit","inline","interface","internal","lazy","let",
-    "match","member","module","mutable","namespace","new","null","of","open","or",
+    "fun","function","global","if","in","inherit","inline","interface","internal","land","lazy","let","lor",
+    "lsl","lsr","lxor","match","member","mod","module","mutable","namespace","new","null","of","open","or",
     "override","private","public","rec","return","sig","static","struct","then","to",
     "true","try","type","upcast","use","val","void","when","while","with","yield",
     --reserved
     "atomic","break","checked","component","const","constraint","constructor",
     "continue","eager","fixed","fori","functor","include",
     "measure","method","mixin","object","parallel","params","process","protected","pure",
-    "recursive","sealed","tailcall","trait","virtual","volatile"
+    "recursive","sealed","tailcall","trait","virtual","volatile",
+    --used by BNFC
+    "List", "Float", "Int"
     ]
 
 -- | Avoid clashes with keywords.
@@ -110,3 +113,22 @@ fsharpTokenName x0
   | x `elem` reservedFsLex = x ++ "_"
   | otherwise                 = x
   where x = mapHead toLower x0
+
+-- | map a CF nonterminal into a fsyacc symbol
+nonterminal :: Cat -> String
+nonterminal c = map spaceToUnderscore (fixType c)
+    where spaceToUnderscore ' ' = '_'
+          spaceToUnderscore x = x
+
+prtFun :: Cat -> String
+prtFun (ListCat c) = prtFun c ++ "ListBNFC"
+prtFun c = "prt" ++ fixTypeUpper (normCat c)
+
+showsFun :: Cat -> String
+showsFun = showsFunQual id
+
+showsFunQual :: (String -> String) -> Cat -> String
+showsFunQual qual = loop where
+  loop = \case
+    ListCat c -> qual "showList" +++ loop c
+    c         -> qual "show" ++ fixType (normCat c)

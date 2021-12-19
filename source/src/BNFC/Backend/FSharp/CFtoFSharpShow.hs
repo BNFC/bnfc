@@ -24,7 +24,7 @@ cf2show name absMod cf = unlines
   , integerRule
   , doubleRule
   , if hasIdent cf then identRule absMod cf else ""
-  , unlines [ ownPrintRule absMod cf own | (own,_) <- tokenPragmas cf ]
+  , unlines [ ownPrintRule absMod cf own | (own,_) <- tokenPragmas cf, own /= "Integer" && own /= "Double"]
   , rules absMod cf
   ]
 
@@ -53,10 +53,10 @@ prologue name absMod = unlines [
   "    s1 buf",
   "    s2 buf",
   "",
-  "let showChar (c:char) : Showable = fun buf -> ",
+  "let " ++ showsFun (TokenCat "Char") ++ " (c:char) : Showable = fun buf -> ",
   "    buf.Append (\"'\" + string c + \"'\") |> ignore",
   "",
-  "let showString (s:string) : Showable = fun buf -> ",
+  "let " ++ showsFun (TokenCat "String") ++ " (s:string) : Showable = fun buf -> ",
   "    buf.Append (\"\\\"\" + s + \"\\\"\") |> ignore",
   "",
   "let showList (showFun : 'a -> Showable) (xs : 'a list) : Showable = fun buf -> ",
@@ -81,9 +81,10 @@ identRule absMod cf = ownPrintRule absMod cf catIdent
 
 ownPrintRule :: ModuleName -> CF -> TokenCat -> String
 ownPrintRule absMod cf own =
-  "let rec" +++ showsFun (TokenCat own) +++ "(" ++ absMod ++ "." ++ own ++ posn ++ ") : Showable = s2s \""
-  ++ own ++ " \" >> showString i"
+  "let rec" +++ showsFun tokenCat +++ "(" ++ fixTypeQual absMod tokenCat ++ posn ++ ") : Showable = s2s \""
+  ++ own ++ " \" >> showstring i"
  where
+   tokenCat = TokenCat own
    posn = if isPositionCat cf own then " (_,i)" else " i"
 
 -- copy and paste from CFtoTemplate
@@ -130,11 +131,4 @@ mkRhs args its =
   mk args       (Right _ : items) = mk args items
   mk _ _ = []
 
-showsFun :: Cat -> String
-showsFun = showsFunQual id
 
-showsFunQual :: (String -> String) -> Cat -> String
-showsFunQual qual = loop where
-  loop = \case
-    ListCat c -> qual "showList" +++ loop c
-    c         -> qual "show" ++ fixType (normCat c)

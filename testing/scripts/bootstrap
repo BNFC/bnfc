@@ -37,6 +37,7 @@ check antlr "javap org.antlr.v4.Tool"
 check ocamlc
 check ocamllex
 check ocamlyacc
+check dotnet
 ## TODO: add installation of these tools on travis
 # check menhir
 # check agda

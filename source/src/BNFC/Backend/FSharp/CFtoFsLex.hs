@@ -285,8 +285,8 @@ instance Print Reg where
    RAlts str       -> prPrec i 1 $ List.intersperse "|" $ map charLiteral str
    -- RAlts str       -> concat [ ["["], map charLiteral str, ["]"] ]
    RSeqs str       -> [ show str ]
-   RDigit          -> ["_digit"]
-   RLetter         -> ["_letter"]
-   RUpper          -> ["_upper"]
-   RLower          -> ["_lower"]
-   RAny            -> ["_universal"]
+   RDigit          -> ["digit"]
+   RLetter         -> ["letter"]
+   RUpper          -> ["upper"]
+   RLower          -> ["lower"]
+   RAny            -> ["universal"]
