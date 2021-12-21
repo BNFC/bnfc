@@ -123,6 +123,7 @@ module BNFC.Backend.Agda (makeAgda) where
 
 import Prelude hiding ((<>))
 import Control.Monad.State hiding (when)
+import Data.Bifunctor (second)
 import Data.Char
 import Data.Function (on)
 import qualified Data.List as List
@@ -139,7 +140,7 @@ import BNFC.CF
 import BNFC.Backend.Base           (Backend, mkfile)
 import BNFC.Backend.Haskell.HsOpts
 import BNFC.Backend.Haskell.Utils  (parserName, catToType, mkDefName, typeToHaskell', comment)
-import BNFC.Options                (SharedOptions, TokenText(..), tokenText)
+import BNFC.Options                (SharedOptions, TokenText(..), tokenText, functor)
 import BNFC.PrettyPrint
 import BNFC.Utils                  (ModuleName, replace, when, table)
 
@@ -166,7 +167,7 @@ makeAgda
 makeAgda time opts cf = do
   -- Generate AST bindings.
   mkfile (agdaASTFile opts) comment $
-    cf2AgdaAST time (tokenText opts) (agdaASTFileM opts) (absFileM opts) (printerFileM opts) cf
+    cf2AgdaAST time (functor opts) (tokenText opts) (agdaASTFileM opts) (absFileM opts) (printerFileM opts) cf
   -- Generate parser bindings.
   mkfile (agdaParserFile opts) comment $
     cf2AgdaParser time (tokenText opts) (agdaParserFileM opts) (agdaASTFileM opts) (errFileM opts) (happyFileM opts)
@@ -193,24 +194,26 @@ makeAgda time opts cf = do
 --
 cf2AgdaAST
   :: String  -- ^ Current time.
+  -> Bool    -- ^ Include positions information in the AST? (`--functor`)
   -> TokenText
   -> String  -- ^ Module name.
   -> String  -- ^ Haskell Abs module name.
   -> String  -- ^ Haskell Print module name.
   -> CF      -- ^ Grammar.
   -> Doc
-cf2AgdaAST time tokenText mod amod pmod cf = vsep $
+cf2AgdaAST time havePos tokenText mod amod pmod cf = vsep $
   [ preamble time "abstract syntax data types"
   , hsep [ "module", text mod, "where" ]
-  , imports YesImportNumeric False usesPos
+  , imports YesImportNumeric False usesPos havePos
   , when usesString $ hsep [ "String", equals, listT, charT ]
   , importPragmas tokenText usesPos
       [ unwords [ "qualified", amod ]
       , unwords [ pmod, "(printTree)" ]
       ]
   , when usesPos defineIntAndPair
+  , when havePos defineBNFCPosition
   , vsep $ map (uncurry $ prToken amod tokenText) tcats
-  , absyn amod NamedArg dats
+  , absyn amod havePos NamedArg dats
   , definedRules cf
   -- , allTokenCats printToken tcats  -- seem to be included in printerCats
   , printers amod printerCats
@@ -232,7 +235,7 @@ cf2AgdaAST time tokenText mod amod pmod cf = vsep $
     , map TokenCat $ List.nub $ cfgLiterals cf ++ map fst tcats
     ]
   usesString = "String" `elem` cfgLiterals cf
-  usesPos    = hasPositionTokens cf
+  usesPos    = havePos || hasPositionTokens cf
   defineIntAndPair = vsep
     [ vcat $ concat
       [ [ "postulate" ]
@@ -254,6 +257,8 @@ cf2AgdaAST time tokenText mod amod pmod cf = vsep $
       ]
     , "{-# COMPILE GHC #Pair = data (,) ((,)) #-}"
     ]
+  defineBNFCPosition =
+    hsep [ posT, equals, maybeT, parens intPairT ]
 
 -- | Generate parser bindings for Agda.
 --
@@ -271,7 +276,7 @@ cf2AgdaParser
 cf2AgdaParser time tokenText mod astmod emod pmod layoutMod cats = vsep $
   [ preamble time "parsers"
   , hsep [ "module", text mod, "where" ]
-  , imports NoImportNumeric (isJust layoutMod) False
+  , imports NoImportNumeric (isJust layoutMod) False False
   , importCats astmod (List.nub cs)
   , importPragmas tokenText False $ [ qual emod, pmod] ++ maybeToList (qual <$> layoutMod)
   , "-- Error monad of BNFC"
@@ -293,19 +298,29 @@ cf2AgdaParser time tokenText mod astmod emod pmod layoutMod cats = vsep $
   qual m = "qualified " ++ m
 
 -- We prefix the Agda types with "#" to not conflict with user-provided nonterminals.
-arrow, charT, integerT, doubleT, boolT, listT, intT, natT, intToNatT, natToIntT, stringT, stringFromListT :: IsString a => a
-arrow = "→"
+arrow, charT, integerT, doubleT, boolT, listT, maybeT, nothingT, justT,
+  intT, natT, intToNatT, natToIntT, pairT, posT, stringT, stringFromListT
+  :: IsString a => a
+arrow           = "→"
 charT           = "Char"     -- This is the BNFC name for token type Char!
 integerT        = "Integer"  -- This is the BNFC name for token type Integer!
 doubleT         = "Double"   -- This is the BNFC name for token type Double!
 boolT           = "#Bool"
 listT           = "#List"
+maybeT          = "#Maybe"
+nothingT        = "#nothing"
+justT           = "#just"
 intT            = "#Int"     -- Int is the type used by the Haskell backend for line and column positions.
 natT            = "#Nat"
 intToNatT       = "#intToNat"
 natToIntT       = "#natToInt"
+pairT           = "#Pair"
+posT            = "#BNFCPosition"
 stringT         = "#String"
 stringFromListT = "#stringFromList"
+
+intPairT :: Doc
+intPairT = hsep [ pairT, intT, intT ]
 
 -- | Preamble: introductory comments.
 
@@ -324,14 +339,17 @@ preamble _time what = vcat $
 imports
   :: ImportNumeric -- ^ Import also numeric types?
   -> Bool          -- ^ If have layout, import booleans.
-  -> Bool          -- ^ If have position tokens, import natural numbers.
+  -> Bool          -- ^ If have position information, import natural numbers.
+  -> Bool          -- ^ Do we need @Maybe@?
   -> Doc
-imports numeric layout pos = vcat . map prettyImport . concat $
+imports numeric layout pos needMaybe = vcat . map prettyImport . concat $
   [ when layout
     [ ("Agda.Builtin.Bool",   [],            [("Bool", boolT)]) ]
   , [ ("Agda.Builtin.Char",   [charT],       []               ) ]
   , when (numeric == YesImportNumeric) importNumeric
   , [ ("Agda.Builtin.List",   ["[]", "_∷_"], [("List", listT)]) ]
+  , when needMaybe
+    [ ("Agda.Builtin.Maybe",  [], [("Maybe", maybeT), ("nothing", nothingT), ("just", justT)]) ]
   , when pos
     [ ("Agda.Builtin.Nat",    [],            [("Nat" , natT )]) ]
   , [ ("Agda.Builtin.String", [], [("String", stringT), ("primStringFromList", stringFromListT) ]) ]
@@ -377,7 +395,7 @@ importCats m cs = prettyList 2 pre lparen rparen semi $ map text cs
 --
 importPragmas
   :: TokenText
-  -> Bool      -- ^ Do we use position tokens?
+  -> Bool      -- ^ Do we use position information?
   -> [String]  -- ^ Haskell modules to import.
   -> Doc
 importPragmas tokenText pos mods = vcat $ map imp $ base ++ mods
@@ -411,7 +429,8 @@ prToken amod tokenText t pos = vsep
       , nest 2 $ hsep
           [ text $ agdaLower t
           , ":"
-          , "#Pair (#Pair #Int #Int)"
+          , pairT
+          , parens intPairT
           , prettyCat typ
           , arrow, text t
           ]
@@ -431,13 +450,13 @@ prToken amod tokenText t pos = vsep
 --   strongly-connected component analysis and topological
 --   sort by dependency order.
 --
-absyn :: ModuleName -> ConstructorStyle -> [Data] -> Doc
-absyn _amod _style [] = empty
-absyn  amod  style ds = vsep . ("mutual" :) . concatMap (map (nest 2) . prData amod style) $ ds
+absyn :: ModuleName -> Bool -> ConstructorStyle -> [Data] -> Doc
+absyn _amod _havePos _style [] = empty
+absyn  amod  havePos  style ds = vsep . ("mutual" :) . concatMap (map (nest 2) . prData amod havePos style) $ ds
 
 -- | Pretty-print Agda data types and pragmas for AST.
 --
--- >>> vsep $ prData "Foo" UnnamedArg (Cat "Nat", [ ("Zero", []), ("Suc", [Cat "Nat"]) ])
+-- >>> vsep $ prData "Foo" False UnnamedArg (Cat "Nat", [ ("Zero", []), ("Suc", [Cat "Nat"]) ])
 -- data Nat : Set where
 --   zero : Nat
 --   suc  : Nat → Nat
@@ -447,7 +466,19 @@ absyn  amod  style ds = vsep . ("mutual" :) . concatMap (map (nest 2) . prData a
 --   | Foo.Suc
 --   ) #-}
 --
--- >>> vsep $ prData "Bar" UnnamedArg (Cat "C", [ ("C1", []), ("C2", [Cat "C"]) ])
+-- >>> vsep $ prData "Foo" True UnnamedArg (Cat "Nat", [ ("Zero", []), ("Suc", [Cat "Nat"]) ])
+-- Nat = Nat' #BNFCPosition
+-- <BLANKLINE>
+-- data Nat' Pos# : Set where
+--   zero : Pos# → Nat' Pos#
+--   suc  : Pos# → Nat' Pos# → Nat' Pos#
+-- <BLANKLINE>
+-- {-# COMPILE GHC Nat' = data Foo.Nat'
+--   ( Foo.Zero
+--   | Foo.Suc
+--   ) #-}
+--
+-- >>> vsep $ prData "Bar" False UnnamedArg (Cat "C", [ ("C1", []), ("C2", [Cat "C"]) ])
 -- data C : Set where
 --   c1 : C
 --   c2 : C → C
@@ -464,9 +495,23 @@ absyn  amod  style ds = vsep . ("mutual" :) . concatMap (map (nest 2) . prData a
 -- This is a bit of a design problem of the pretty print library:
 -- there is no native concept of a blank line; @text ""@ is a bad hack.
 --
-prData :: ModuleName -> ConstructorStyle -> Data -> [Doc]
-prData amod style (Cat d, cs) = prData' amod style d cs
-prData _    _     (c    , _ ) = error $ "prData: unexpected category " ++ prettyShow c
+prData :: ModuleName -> Bool -> ConstructorStyle -> Data -> [Doc]
+prData amod True  style (Cat d, cs) = concat
+    [ [ hsep [ text d, equals, text (d ++ "'"), posT ] ]
+    , prData' amod style (addP d) cs'
+    ]
+  where
+  param    = "Pos#"
+  addP c   = concat [c, "' ", param]
+  cs'      = map (second $ \ cats -> Cat param : map addParam cats) cs
+  addParam :: Cat -> Cat
+  addParam = \case
+    Cat c     -> Cat $ addP c
+    ListCat c -> ListCat $ addParam c
+    c         -> c
+
+prData amod False style (Cat d, cs) = prData' amod style d cs
+prData _    _     _     (c    , _ ) = error $ "prData: unexpected category " ++ prettyShow c
 
 -- | Pretty-print Agda data types and pragmas.
 --
@@ -481,7 +526,10 @@ prData _    _     (c    , _ ) = error $ "prData: unexpected category " ++ pretty
 --   ) #-}
 --
 prData' :: ModuleName -> ConstructorStyle -> String -> [(Fun, [Cat])] -> [Doc]
-prData' amod style d cs = [ prettyData style d cs , pragmaData amod (head $ words d) cs ]
+prData' amod style d cs =
+  [ prettyData style d cs
+  , pragmaData amod (head $ words d) cs
+  ]
 
 -- | Pretty-print Agda binding for the BNFC Err monad.
 --
@@ -852,6 +900,7 @@ prettyCatParens c = parensIf (compositeCat c) (prettyCat c)
 -- | Is the Agda type corresponding to 'Cat' composite (or atomic)?
 compositeCat :: Cat -> Bool
 compositeCat = \case
+  Cat c     -> any isSpace c
   ListCat{} -> True
   _         -> False
 
