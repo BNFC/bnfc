@@ -311,7 +311,7 @@ haskellGADTParameters = TP
 haskellAgdaParameters :: TestParameters
 haskellAgdaParameters = haskellGADTParameters  -- TODO: use haskellParameters
   { tpName = "Haskell & Agda"
-  , tpBnfcOptions = ["--haskell", "--agda"]
+  , tpBnfcOptions = ["--haskell", "--agda", "--functor"]
   }
 
 -- | Invoke the Makefile with GHC-specific options.
@@ -331,6 +331,8 @@ haskellRunTestProg _lang args = do
 parameters :: [TestParameters]
 parameters = concat
   [ []
+    -- Agda
+  , [ haskellAgdaParameters ]
     -- C++ (extras)
   , [ cBase { tpName = "C++ (with line numbers)"
             , tpBnfcOptions = ["--cpp", "-l"] }
@@ -382,8 +384,6 @@ parameters = concat
     ]
     -- Haskell/GADT
   , [ haskellGADTParameters ]
-    -- Agda
-  , [ haskellAgdaParameters ]
     -- OCaml/Menhir
   , [ ocaml { tpName = "OCaml/Menhir"
             , tpBnfcOptions = ["--ocaml", "--menhir"] }
