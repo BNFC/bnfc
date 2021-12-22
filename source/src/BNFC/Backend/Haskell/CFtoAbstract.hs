@@ -7,8 +7,12 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE RecordWildCards #-}
 
-module BNFC.Backend.Haskell.CFtoAbstract (cf2Abstract, definedRules) where
+module BNFC.Backend.Haskell.CFtoAbstract
+  ( cf2Abstract
+  , DefCfg(..), definedRules', definedRules
+  ) where
 
 import Prelude hiding ((<>))
 import Data.Either (isRight)
@@ -18,11 +22,11 @@ import qualified Data.List as List
 import BNFC.CF
 import BNFC.Options               ( SharedOptions(..), TokenText(..) )
 import BNFC.PrettyPrint
-import BNFC.Utils                 ( when )
+import BNFC.Utils                 ( when, applyWhen )
 
 import BNFC.Backend.Haskell.Utils
   ( avoidReservedWords, catToType, mkDefName
-  , tokenTextImport, tokenTextType, typeToHaskell
+  , tokenTextImport, tokenTextType, typeToHaskell'
   , posType, posConstr, noPosConstr
   , hasPositionClass, hasPositionMethod
   )
@@ -288,42 +292,71 @@ instanceHasPositionTokenType cat = vcat
   where
   t = text cat
 
+-- | Parametrize 'definedRules' so that it can be used for Agda as well.
+
+data DefCfg = DefCfg
+  { sanitizeName :: String -> String
+  , hasType      :: String
+  , arrow        :: String
+  , lambda       :: String
+  , cons         :: String
+  , convTok      :: String -> String
+  , convLitInt   :: Exp -> Exp
+  , polymorphism :: [Base] -> [Base]
+  }
+
+haskellDefCfg :: DefCfg
+haskellDefCfg = DefCfg
+  { sanitizeName = avoidReservedWords []
+  , hasType      = "::"
+  , arrow        = "->"
+  , lambda       = "\\"
+  , cons         = "(:)"
+  , convTok      = id
+  , convLitInt   = id
+  , polymorphism = id
+  }
 
 -- | Generate Haskell code for the @define@d constructors.
 definedRules :: Bool -> CF -> [Doc]
-definedRules functor cf = map mkDef $ definitions cf
+definedRules = definedRules' haskellDefCfg
+
+-- | Generate Haskell/Agda code for the @define@d constructors.
+definedRules' :: DefCfg -> Bool -> CF -> [Doc]
+definedRules' DefCfg{..} functor cf = map mkDef $ definitions cf
   where
   mkDef (Define f args e _) = vcat $ concat
-    [ [ text $ unwords [ fName, "::", typ $ wpThing t ]
+    [ [ text $ unwords [ fName, hasType, typeToHaskell' arrow $ typ $ wpThing t ]
       | t <- maybeToList $ sigLookup f cf
       ]
-    , [ hsep $ map text (fName : xs') ++ [ "=", pretty $ sanitize e ] ]
+    , [ hsep $ concat
+        [ map text [ fName, "=", lambda ]
+        , map text $ addFunctorArg id $ map (sanitizeName . fst) args
+        , [ text arrow, pretty $ sanitize e ]
+        ]
+      ]
     ]
     where
     fName = mkDefName f
-    xs    = map fst args
-    avoidReserved = avoidReservedWords [fName]
-    xs' = addFunctorArg id $ map avoidReserved xs
-    typ (FunT ts t) | functor = List.intercalate " -> " $ "a" : (map funBase $ ts ++ [t])
-    typ t = typeToHaskell t
+    typ :: Type -> Type
+    typ = applyWhen functor $ \ (FunT ts t) ->
+            FunT (polymorphism $ BaseT "a" : map addParam ts) $ addParam t
+    addParam :: Base -> Base
+    addParam = fmap $ \ x -> if tokTyp x then x else x ++ "' a"
+    tokTyp :: String -> Bool
+    tokTyp = (`elem` literals cf)
+    sanitize :: Exp -> Exp
     sanitize = \case
       App x t es
-        | isNilCons x -> App x t $ map sanitize es
-        | tokTyp x    -> App x t $ map sanitize es
-        | otherwise   -> App x t $ addFunctorArg (\ e -> App e dummyType []) $ map sanitize es
-      Var x         -> Var $ avoidReserved x
-      e@LitInt{}    -> e
+        | isConsFun x -> App cons t $ map sanitize es
+        | isNilFun x  -> App x t $ map sanitize es
+        | tokTyp x    -> App (convTok x) t $ map sanitize es
+        | otherwise   -> App (sanitizeName x) t $ addFunctorArg (\ x -> App x dummyType []) $ map sanitize es
+      Var x         -> Var $ sanitizeName x
+      e@LitInt{}    -> convLitInt e
       e@LitDouble{} -> e
       e@LitChar{}   -> e
       e@LitString{} -> e
     -- Functor argument
-    addFunctorArg g
-      | functor = (g "_a" :)
-      | otherwise = id
-    funBase :: Base -> String
-    funBase = \case
-      BaseT x
-        | tokTyp x  -> x
-        | otherwise -> x ++ "' a"
-      ListT b -> concat [ "[", funBase b, "]" ]
-    tokTyp = (`elem` literals cf)
+    addFunctorArg :: (String -> a) -> [a] -> [a]
+    addFunctorArg g = applyWhen functor (g "_a" :)

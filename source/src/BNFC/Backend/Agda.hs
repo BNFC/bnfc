@@ -137,12 +137,13 @@ import qualified Data.Set as Set
 import Data.String (IsString)
 
 import BNFC.CF
-import BNFC.Backend.Base           (Backend, mkfile)
+import BNFC.Backend.Base                 (Backend, mkfile)
 import BNFC.Backend.Haskell.HsOpts
-import BNFC.Backend.Haskell.Utils  (parserName, catToType, mkDefName, typeToHaskell', comment)
-import BNFC.Options                (SharedOptions, TokenText(..), tokenText, functor)
+import BNFC.Backend.Haskell.CFtoAbstract (DefCfg(..), definedRules')
+import BNFC.Backend.Haskell.Utils        (parserName, catToType, comment)
+import BNFC.Options                      (SharedOptions, TokenText(..), tokenText, functor)
 import BNFC.PrettyPrint
-import BNFC.Utils                  (ModuleName, replace, when, table)
+import BNFC.Utils                        (ModuleName, replace, when, table)
 
 -- | How to print the types of constructors in Agda?
 
@@ -214,7 +215,7 @@ cf2AgdaAST time havePos tokenText mod amod pmod cf = vsep $
   , when havePos defineBNFCPosition
   , vsep $ map (uncurry $ prToken amod tokenText) tcats
   , absyn amod havePos NamedArg dats
-  , definedRules cf
+  , definedRules havePos cf
   -- , allTokenCats printToken tcats  -- seem to be included in printerCats
   , printers amod printerCats
   , empty -- Make sure we terminate the file with a new line.
@@ -241,8 +242,8 @@ cf2AgdaAST time havePos tokenText mod amod pmod cf = vsep $
       [ [ "postulate" ]
       , map (nest 2 . text) $ table " "
         [ [ intT,      ":", "Set" ]
-        , [ intToNatT, ":", intT, arrow , natT ]
-        , [ natToIntT, ":", natT, arrow , intT ]
+        , [ intToNatT, ":", intT, uArrow , natT ]
+        , [ natToIntT, ":", natT, uArrow , intT ]
         ]
       ]
     , vcat $ map (\ s -> hsep [ "{-#", "COMPILE", "GHC", text s, "#-}" ]) $
@@ -298,10 +299,10 @@ cf2AgdaParser time tokenText mod astmod emod pmod layoutMod cats = vsep $
   qual m = "qualified " ++ m
 
 -- We prefix the Agda types with "#" to not conflict with user-provided nonterminals.
-arrow, charT, integerT, doubleT, boolT, listT, maybeT, nothingT, justT,
+uArrow, charT, integerT, doubleT, boolT, listT, maybeT, nothingT, justT,
   intT, natT, intToNatT, natToIntT, pairT, posT, stringT, stringFromListT
   :: IsString a => a
-arrow           = "→"
+uArrow           = "→"
 charT           = "Char"     -- This is the BNFC name for token type Char!
 integerT        = "Integer"  -- This is the BNFC name for token type Integer!
 doubleT         = "Double"   -- This is the BNFC name for token type Double!
@@ -432,7 +433,7 @@ prToken amod tokenText t pos = vsep
           , pairT
           , parens intPairT
           , prettyCat typ
-          , arrow, text t
+          , uArrow, text t
           ]
       ]
     else prettyData UnnamedArg t [(agdaLower t, [ typ ])]
@@ -621,7 +622,7 @@ pragmaData amod d haskellDataName cs =
 prettyConstructor :: ConstructorStyle -> String -> (Fun,[Cat]) -> (Doc,Doc)
 prettyConstructor style d (c, as) = (prettyCon c,) $ if null as then text d else hsep $
   [ prettyConstructorArgs style as
-  , arrow
+  , uArrow
   , text d
   ]
 
@@ -636,7 +637,7 @@ prettyConstructor style d (c, as) = (prettyCon c,) $ if null as then text d else
 prettyConstructorArgs :: ConstructorStyle -> [Cat] -> Doc
 prettyConstructorArgs style as =
   case style of
-    UnnamedArg -> hsep $ List.intersperse arrow ts
+    UnnamedArg -> hsep $ List.intersperse uArrow ts
     NamedArg   -> hsep $ map (\ (x :| xs, t) -> parens (hsep [x, hsep xs, colon, t])) tel
   where
   ts  = map prettyCat as
@@ -706,29 +707,21 @@ incr = Map.alter $ maybe (Just 1) (Just . succ)
 
 -- * Generate the defined constructors.
 
+agdaDefCfg :: DefCfg
+agdaDefCfg = DefCfg
+  { sanitizeName = agdaLower
+  , hasType      = ":"
+  , arrow        = uArrow
+  , lambda       = "λ"
+  , cons         = "_∷_"
+  , convTok      = agdaLower
+  , convLitInt   = \ e -> App "#pos" dummyType [e]
+  , polymorphism = (BaseT "{a : Set}" :)
+  }
+
 -- | Generate Haskell code for the @define@d constructors.
-definedRules :: CF -> Doc
-definedRules cf = vsep $ map mkDef $ definitions cf
-  where
-    mkDef (Define f args e _) = vcat $ concat
-      [ [ text $ unwords [ mkDefName f, ":", typeToHaskell' "→" $ wpThing t ]
-        | t <- maybeToList $ sigLookup f cf
-        ]
-      , [ hsep $ concat
-          [ [ text (mkDefName f), "=", "λ" ]
-          , map (text . agdaLower . fst) args
-          , [ "→", pretty $ sanitize e ]
-          ]
-        ]
-      ]
-    sanitize = \case
-      App "(:)" t es-> App "_∷_" t $ map sanitize es
-      App x t es    -> App (agdaLower x) t $ map sanitize es
-      Var x         -> Var $ agdaLower x
-      e@LitInt{}    -> App "#pos" dummyType [e]
-      e@LitDouble{} -> e
-      e@LitChar{}   -> e
-      e@LitString{} -> e
+definedRules :: Bool -> CF -> Doc
+definedRules havePos = vsep . definedRules' agdaDefCfg havePos
 
 -- * Generate bindings for the pretty printers
 
@@ -741,7 +734,7 @@ definedRules cf = vsep $ map mkDef $ definitions cf
 -- --
 -- printToken :: String -> Doc
 -- printToken t = vcat
---   [ hsep [ f, colon, text t, arrow, stringT ]
+--   [ hsep [ f, colon, text t, uArrow, stringT ]
 --   , hsep [ f, lparen <> c <+> "s" <> rparen, equals, stringFromListT, "s" ]
 --   ]
 --   where
@@ -768,7 +761,7 @@ printers  amod cats = vsep
   , vcat $ map pragmaBind cats
   ]
   where
-  prettyTySig c = (agdaPrinterName c, hsep [ prettyCat c, arrow, stringT ])
+  prettyTySig c = (agdaPrinterName c, hsep [ prettyCat c, uArrow, stringT ])
   pragmaBind  c = hsep
     [ "{-#", "COMPILE", "GHC", agdaPrinterName c, equals, "\\", y, "->"
     , "Data.Text.pack", parens ("printTree" <+> parens (y <+> "::" <+> t)), "#-}"
@@ -807,8 +800,8 @@ parsers tokenText layoutMod cats =
   prettyTySig :: Cat -> Doc
   prettyTySig c = hsep . concat $
    [ [ agdaParserName c, colon ]
-   , when layout [ boolT, arrow ]
-   , [ stringT, arrow, "Err", prettyCatParens c ]
+   , when layout [ boolT, uArrow ]
+   , [ stringT, uArrow, "Err", prettyCatParens c ]
    ]
   pragmaBind :: Cat -> Doc
   pragmaBind c = hsep . concat $
