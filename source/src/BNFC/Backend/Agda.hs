@@ -436,7 +436,7 @@ prToken amod tokenText t pos = vsep
           ]
       ]
     else prettyData UnnamedArg t [(agdaLower t, [ typ ])]
-  , pragmaData amod t [(t, [])]
+  , pragmaData amod t t [(t, [])]
   ]
   where
   typ = case tokenText of
@@ -497,12 +497,15 @@ absyn  amod  havePos  style ds = vsep . ("mutual" :) . concatMap (map (nest 2) .
 --
 prData :: ModuleName -> Bool -> ConstructorStyle -> Data -> [Doc]
 prData amod True  style (Cat d, cs) = concat
-    [ [ hsep [ text d, equals, text (d ++ "'"), posT ] ]
-    , prData' amod style (addP d) cs'
+    [ [ hsep [ text d, equals, text (sanitize primed), posT ] ]
+    , prData' amod style (addP d) primed cs'
     ]
   where
+  -- Replace _ by - in Agda names to avoid illegal names like Foo_'.
+  sanitize = replace '_' '-'
+  primed   = d ++ "'"
   param    = "Pos#"
-  addP c   = concat [c, "' ", param]
+  addP c   = concat [sanitize c, "' ", param]
   cs'      = map (second $ \ cats -> Cat param : map addParam cats) cs
   addParam :: Cat -> Cat
   addParam = \case
@@ -510,25 +513,25 @@ prData amod True  style (Cat d, cs) = concat
     ListCat c -> ListCat $ addParam c
     c         -> c
 
-prData amod False style (Cat d, cs) = prData' amod style d cs
+prData amod False style (Cat d, cs) = prData' amod style d d cs
 prData _    _     _     (c    , _ ) = error $ "prData: unexpected category " ++ prettyShow c
 
 -- | Pretty-print Agda data types and pragmas.
 --
--- >>> vsep $ prData' "ErrM" UnnamedArg "Err A" [ ("Ok", [Cat "A"]), ("Bad", [ListCat $ Cat "Char"]) ]
+-- >>> vsep $ prData' "ErrM" UnnamedArg "Err A" "Err_" [ ("Ok", [Cat "A"]), ("Bad", [ListCat $ Cat "Char"]) ]
 -- data Err A : Set where
 --   ok  : A → Err A
 --   bad : #List Char → Err A
 -- <BLANKLINE>
--- {-# COMPILE GHC Err = data ErrM.Err
+-- {-# COMPILE GHC Err = data ErrM.Err_
 --   ( ErrM.Ok
 --   | ErrM.Bad
 --   ) #-}
 --
-prData' :: ModuleName -> ConstructorStyle -> String -> [(Fun, [Cat])] -> [Doc]
-prData' amod style d cs =
+prData' :: ModuleName -> ConstructorStyle -> String -> String -> [(Fun, [Cat])] -> [Doc]
+prData' amod style d haskellDataName cs =
   [ prettyData style d cs
-  , pragmaData amod (head $ words d) cs
+  , pragmaData amod (head $ words d) haskellDataName cs
   ]
 
 -- | Pretty-print Agda binding for the BNFC Err monad.
@@ -536,7 +539,7 @@ prData' amod style d cs =
 -- Note: we use "Err" here since a category "Err" would also conflict
 -- with BNFC's error monad in the Haskell backend.
 prErrM :: ModuleName -> Doc
-prErrM emod = vsep $ prData' emod UnnamedArg "Err A"
+prErrM emod = vsep $ prData' emod UnnamedArg "Err A" "Err"
   [ ("Ok" , [Cat "A"])
   , ("Bad", [ListCat $ Cat "Char"])
   ]
@@ -587,20 +590,24 @@ mkTSTable = map (nest 2 . text) . table " : " . map mkRow
 
 -- | Generate pragmas to bind Haskell AST to Agda.
 --
--- >>> pragmaData "Foo" "Empty" []
--- {-# COMPILE GHC Empty = data Foo.Empty () #-}
+-- >>> pragmaData "Foo" "Empty" "Bar" []
+-- {-# COMPILE GHC Empty = data Foo.Bar () #-}
 --
--- >>> pragmaData "Foo" "Nat" [ ("zero", []), ("suc", [Cat "Nat"]) ]
--- {-# COMPILE GHC Nat = data Foo.Nat
+-- >>> pragmaData "Foo" "Nat" "Natty" [ ("zero", []), ("suc", [Cat "Nat"]) ]
+-- {-# COMPILE GHC Nat = data Foo.Natty
 --   ( Foo.zero
 --   | Foo.suc
 --   ) #-}
 --
-pragmaData :: ModuleName -> String -> [(Fun, [Cat])] -> Doc
-pragmaData amod d cs = prettyList 2 pre lparen (rparen <+> "#-}") "|" $
-  map (prettyFun amod . fst) cs
+pragmaData :: ModuleName -> String -> String -> [(Fun, [Cat])] -> Doc
+pragmaData amod d haskellDataName cs =
+  prettyList 2 pre lparen (rparen <+> "#-}") "|" $
+    map (prettyFun amod . fst) cs
   where
-  pre = hsep [ "{-#", "COMPILE", "GHC", text d, equals, "data", text $ concat [ amod, ".", d ] ]
+  pre = hsep
+    [ "{-#", "COMPILE", "GHC", text d, equals, "data"
+    , text $ concat [ amod, ".", haskellDataName ]
+    ]
 
 -- | Pretty-print since rule as Agda constructor declaration.
 --
