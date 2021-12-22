@@ -169,9 +169,11 @@ distCleanRule opts makeFile = Makefile.mkRule "distclean" ["clean"] $
   alsoBak s = [ s, s <.> "bak" ]
 
 makefileHeader :: Options -> Doc
-makefileHeader Options{ glr } = vcat
+makefileHeader Options{ agda, glr } = vcat
   [ "# Makefile for building the parser and test program."
   , ""
+  , when agda $
+    "AGDA       = agda"
   , "GHC        = ghc"
   , "HAPPY      = happy"
   , hsep $ concat
@@ -277,7 +279,7 @@ makefile opts cf makeFile = vcat
 
   -- | Rule to build Agda parser.
   agdaRule :: Doc
-  agdaRule = Makefile.mkRule "Main" deps [ "agda --no-libraries --ghc --ghc-flag=-Wwarn $<" ]
+  agdaRule = Makefile.mkRule "Main" deps [ "${AGDA} --no-libraries --ghc --ghc-flag=-Wwarn $<" ]
     where
     deps = map ($ opts) $ concat
       [ [ agdaMainFile  -- must be first!
