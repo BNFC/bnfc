@@ -12,7 +12,6 @@ module BNFC.TypeChecker
   ( -- * Type checker entry point
     runTypeChecker
   , checkDefinitions
-  , Base(..)
     -- * Backdoor for rechecking defined syntax constructors for list types
   , checkDefinition'
   , buildSignature, buildContext, ctxTokens, isToken

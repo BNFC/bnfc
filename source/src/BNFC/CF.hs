@@ -112,9 +112,12 @@ data CFG function = CFG
 type Signature = Map String (WithPosition Type)
 
 -- | Type of a non-terminal.
-data Base = BaseT String
-          | ListT Base
-    deriving (Eq, Ord)
+type Base = Base' String
+
+data Base' a
+  = BaseT a
+  | ListT (Base' a)
+    deriving (Eq, Ord, Functor)
 
 -- | Type of a rule label.
 data Type = FunT [Base] Base
