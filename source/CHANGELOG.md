@@ -207,3 +207,23 @@ Grégoire Détrez <gregoire.detrez@gu.se> September 2014
 * Remove the coupling between building the parser and the pdf from latex
 * Improvement to the CNF Backend
 * Bug fixes #92, #21, #34, #33, #90, #30, #60
+
+# 2.5.0
+
+Grégoire Détrez, April 2013
+
+# 2.6.0.3
+
+Grégoire Détrez, January 2013
+
+# 2.4.2.1
+
+Andreas Abel <andreas.abel@ifi.lmu.de> July 2012
+
+# 2.4.2.0
+
+Thomas Hallgren September 2010
+
+# 2.4.1.1
+
+Markus Forsberg September 2010
