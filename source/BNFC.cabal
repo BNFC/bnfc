@@ -345,8 +345,11 @@ test-suite doctests
   ghc-options:        -threaded
   default-extensions: CPP
   main-is:            doctests.hs
-  build-depends:      base, doctest >= 0.8, filepath, BNFC
-    -- The dependency BNFC ensures the build of the library first
-    -- and hence, the presence of Build_doctests.
-    -- See https://hackage.haskell.org/package/cabal-doctest
+  build-depends:      base
+    , filepath
+    , BNFC
+      -- The dependency BNFC ensures the build of the library first
+      -- and hence, the presence of Build_doctests.
+      -- See https://hackage.haskell.org/package/cabal-doctest
+    , doctest >= 0.8
   hs-source-dirs:     test
