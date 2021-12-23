@@ -67,11 +67,11 @@ currentRegressionTest :: Test
 currentRegressionTest = makeTestSuite "Current parameterized test" $
   map (`makeTestCase` ("regression-tests" </> cur)) parameters
   where
-  cur = "comments"
+  -- cur = "comments"
   -- cur = "358_MixFixLists"
   -- cur = "289_LexerKeywords"
   -- cur = "249_unicode"
-  -- cur = "266_define"
+  cur = "266_define"
   -- cur = "235_SymbolsOverlapTokens"
   -- cur = "202_comments"
   -- cur = "278_Keywords"
@@ -279,8 +279,11 @@ haskellParameters = TP
 
   , tpBuild = do
       cmd "hlint"
+        "-i" "Avoid lambda"
+        "-i" "Avoid lambda using `infix`"
         "-i" "Eta reduce"
         "-i" "Redundant bracket"
+        "-i" "Redundant lambda"
         "-i" "Redundant $"
         "-i" "Use camelCase"
         "-i" "Use newtype instead of data"

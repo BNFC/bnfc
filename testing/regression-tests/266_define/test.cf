@@ -8,22 +8,22 @@ SExp.     Stm   ::= "expression" Exp     ;
 
 EHalf.    Exp2  ::= "1/2"                ;
 EDouble.  Exp2  ::= Double               ;
-eSqrt.    Exp1  ::= "sqrt" Exp1          ;
+where.    Exp1  ::= "sqrt" Exp1          ; -- eSqrt
 eSqrt4.   Exp1  ::= "sqrt4" Exp1         ;
 EPower.   Exp   ::= Exp1 "**" Exp        ;
 
 coercions Exp 2                          ;
 
-define    eSqrt  e = EPower e EHalf      ;
-define    eSqrt4 e = eSqrt (eSqrt e)     ;
+define    where  e = EPower e EHalf      ;  -- eSqrt
+define    eSqrt4 e = where (where e)     ;  -- eSqrt (eSqrt e) -- try to provoke clash with Haskell/Agda keyword
 
 -- #285 "define" pragma involving token categories
 
 INil.     Ints ::=                       ;
-iSg.      Ints ::= Integer               ;
+in.       Ints ::= Integer               ; -- iSg
 ISnoc.    Ints ::= Ints "," Integer      ;
 
-define    iSg i = ISnoc INil i           ;
+define    in let = ISnoc INil let        ; -- iSg -- try to provoke clash with Haskell/Agda keyword
 
 CNil.     Chars ::=                      ;
 cSg.      Chars ::= Char                 ;

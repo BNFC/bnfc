@@ -38,11 +38,11 @@ definedRules :: CF -> [String]
 definedRules cf = map mkDef $ definitions cf
   where
     mkDef (Define f args e _) =
-      "let " ++ sanitizeOcaml (funName f) ++ " " ++ mkTuple (map fst args) ++ " = " ++ ocamlExp False e
+      "let " ++ sanitizeOcaml (funName f) ++ " " ++ mkTuple (map (sanitizeOcaml . fst) args) ++ " = " ++ ocamlExp False e
 
     ocamlExp :: Bool -> Exp -> String
     ocamlExp p = \case
-      Var s       -> s
+      Var s       -> sanitizeOcaml s
       App "(:)" _ [e1, e2] -> parensIf p $ unwords [ ocamlExp True e1, "::", ocamlExp False e2 ]
       App s _ []  -> sanitizeOcaml s
       App s _ [e] -> parensIf p $ sanitizeOcaml s ++ ' ' : ocamlExp True e
