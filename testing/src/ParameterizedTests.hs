@@ -317,6 +317,12 @@ haskellAgdaParameters = haskellGADTParameters  -- TODO: use haskellParameters
   , tpBnfcOptions = ["--haskell", "--agda", "--functor"]
   }
 
+haskellAgdaFunctorParameters :: TestParameters
+haskellAgdaFunctorParameters = haskellGADTParameters  -- TODO: use haskellParameters
+  { tpName = "Haskell & Agda (with --functor)"
+  , tpBnfcOptions = ["--haskell", "--agda", "--functor"]
+  }
+
 -- | Invoke the Makefile with GHC-specific options.
 haskellBuild :: Sh ()
 haskellBuild = tpMake [ "GHC_OPTS=-XNoImplicitPrelude -Wall -Werror" ]
@@ -334,8 +340,8 @@ haskellRunTestProg _lang args = do
 parameters :: [TestParameters]
 parameters = concat
   [ []
-    -- Agda
-  , [ haskellAgdaParameters ]
+    -- Functor (Haskell & Agda)
+  , [ haskellAgdaFunctorParameters]
     -- C++ (extras)
   , [ cBase { tpName = "C++ (with line numbers)"
             , tpBnfcOptions = ["--cpp", "-l"] }
@@ -373,8 +379,8 @@ parameters = concat
     , cBase { tpName = "C++"
             , tpBnfcOptions = ["--cpp"] }
     ]
-    -- Haskell/Functor
-  , [ haskellFunctorParameters ]
+    -- Agda
+  , [ haskellAgdaParameters ]
     -- Java/ANTLR
   , [ javaParams { tpName = "Java (with antlr)"
                  , tpBnfcOptions = ["--java", "--antlr"] }

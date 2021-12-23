@@ -1,17 +1,17 @@
 .PHONY: build license test usage
 
 test: build
-	bnfc-system-tests
+	cabal run
 
 usage: build
-	bnfc-system-tests --help
+	cabal run --help
 
 license: build
-	bnfc-system-tests --license
+	cabal run --license
 
 build:
 	make -C src
-	cabal v1-install
+	cabal build
 #--allow-newer
 
 # EOF
