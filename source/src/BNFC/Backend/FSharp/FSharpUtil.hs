@@ -104,6 +104,14 @@ reservedFsLex =
   , "refill"
   , "rule"
   , "shortest"
+  
+  ,"letter" 
+  ,"upper"
+  ,"lower"
+  ,"digit"
+  ,"idchar"
+  ,"universal"
+  ,"rsyms"
   ]
 
 -- | Heuristics to produce name for fslex token definition that
