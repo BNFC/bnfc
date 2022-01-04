@@ -15,11 +15,12 @@ module BNFC.Backend.OCaml.CFtoOCamlYacc
         where
 
 import Data.Char
-import Data.Foldable (toList)
+import Data.Foldable ( toList )
+import Data.List     ( intercalate )
 
 import BNFC.CF
-import BNFC.Options ( OCamlParser(..) )
-import BNFC.Utils   ( (+++) )
+import BNFC.Options  ( OCamlParser(..) )
+import BNFC.Utils    ( (+++), mapHead )
 import BNFC.Backend.Common
 import BNFC.Backend.OCaml.OCamlUtil
 
@@ -32,13 +33,13 @@ type MetaVar     = String
 -- The main function, that given a CF
 -- generates a ocamlyacc module.
 cf2ocamlyacc :: OCamlParser -> String -> String -> String -> CF -> String
-cf2ocamlyacc ocamlParser name absName lexName cf
- = unlines
-    [header name absName lexName cf,
-    declarations absName cf,
-    "%%",
-    rules ocamlParser cf
-    ]
+cf2ocamlyacc ocamlParser name absName lexName cf = unlines
+  [ header name absName lexName cf
+  , declarations absName cf
+  , "%%"
+  , ""
+  , rules ocamlParser cf
+  ]
 
 
 header :: String -> String -> String -> CF -> String
@@ -53,17 +54,21 @@ header _ absName _ _ = unlines
 
 declarations :: String -> CF -> String
 declarations absName cf =
-  unlines
+  unlines $ intercalate [""]
     [ tokens (unicodeAndSymbols cf) (asciiKeywords cf)
     , specialTokens cf
     , entryPoints absName cf
+    , map (catTyping . fst)      $ ruleGroups cf
+    , map (catTyping . TokenCat) $ literals cf
     ]
+  where
+    catTyping c = typing absName c (nonterminal c)
 
 -- | Declare keyword and symbol tokens.
 
-tokens :: [String] -> [String] -> String
+tokens :: [String] -> [String] -> [String]
 tokens symbols reswords =
-  unlines $ concat
+  concat
     [ [ unwords $ "%token" : map ("KW_" ++) reswords | hasReserved ]
     , [ "" | hasReserved ]
     , (`map` zip symbols [1::Int ..]) $ \ (s, n) ->
@@ -93,8 +98,8 @@ nonterminal c = map spaceToUnderscore (fixType c)
     where spaceToUnderscore ' ' = '_'
           spaceToUnderscore x = x
 
-specialTokens :: CF -> String
-specialTokens cf = unlines $ concat $
+specialTokens :: CF -> [String]
+specialTokens cf = concat $
   [ [ "%token TOK_EOF" ]
   , [ prToken (ty n)      n | n                 <- specialCatsP  ]
   , [ prToken (posTy pos) n | TokenReg n0 pos _ <- cfgPragmas cf, let n = wpThing n0 ]
@@ -112,15 +117,18 @@ specialTokens cf = unlines $ concat $
     True  -> "<(int * int) * string>"
     False -> "<string>"
 
+entryPoints :: String -> CF -> [String]
+entryPoints absName cf =
+  concat
+    [ [ unwords $ "%start" : map epName eps ]
+    , map (\ c -> typing absName c (epName c)) eps
+    ]
+  where
+    eps = toList $ allEntryPoints cf
 
-entryPoints :: String -> CF -> String
-entryPoints absName cf = unlines $
-    ("%start" +++ unwords (map epName eps))
-    :
-    (map typing eps)
-    where eps = toList $ allEntryPoints cf
-          typing :: Cat -> String
-          typing c = "%type" +++ "<" ++ qualify (normCat c) ++ ">" +++ epName c
+typing :: String -> Cat -> String -> String
+typing absName c s = "%type" +++ "<" ++ qualify (normCat c) ++ ">" +++ s
+    where
           qualify c = if c `elem` [ TokenCat "Integer", TokenCat "Double", TokenCat "Char",
                                     TokenCat "String", ListCat (TokenCat "Integer"),
                                     ListCat (TokenCat "Double"),
@@ -130,18 +138,15 @@ entryPoints absName cf = unlines $
                       else absName ++ "." ++ fixType c
 
 epName :: Cat -> String
-epName c = "p" ++ capitalize (nonterminal c)
-            where capitalize s = case s of
-                    [] -> []
-                    c:cs -> toUpper c : cs
+epName c = "p" ++ mapHead toUpper (nonterminal c)
 
-entryPointRules :: OCamlParser -> CF -> String
+entryPointRules :: OCamlParser -> CF -> [String]
 entryPointRules ocamlParser cf =
-  unlines $ map mkRule $ toList $ allEntryPoints cf
+  map mkRule $ toList $ allEntryPoints cf
   where
   mkRule :: Cat -> String
-  mkRule s = unlines
-    [ epName s ++ " : " ++ nonterminal s ++ " TOK_EOF { $1 }"
+  mkRule cat = unlines
+    [ epName cat ++ " : " ++ nonterminal cat ++ " TOK_EOF { $1 }"
     , concat
       [ "  | error { raise (BNFC_Util.Parse_error ("
         -- Andreas, 2021-09-16, issue #380
@@ -160,22 +165,22 @@ entryPointRules ocamlParser cf =
     ]
 
 rules :: OCamlParser -> CF -> String
-rules ocamlParser cf = unlines [
-    entryPointRules ocamlParser cf,
-    (unlines $ map (prOne . mkOne) (ruleGroups cf)),
-    specialRules cf
+rules ocamlParser cf = unlines $ concat
+    [ entryPointRules ocamlParser cf
+    , map (prOne . mkOne) $ ruleGroups cf
+    , specialRules cf
     ]
-    where
-        mkOne (cat,rules) = (cat, constructRule (terminal cf) rules cat)
-        prOne (_,[]) = [] -- nt has only internal use
-        prOne (nt,((p,a):ls)) =
-          unwords [nt', ":" , p, "{", a, "}", "\n" ++ pr ls] ++ ";\n"
-         where
-           nt' = nonterminal nt
-           pr [] = []
-           pr ((p,a):ls) =
-             unlines [ unwords [ "  |", p, "{", a , "}" ] ] ++ pr ls
-
+  where
+    mkOne (cat,rules) = (cat, constructRule (terminal cf) rules cat)
+    prOne (_  , []  ) = [] -- nt has only internal use
+    prOne (cat, l:ls) = unlines $ concat
+        [ [ unwords [ nt, ":", rule l ] ]
+        , map (("  | " ++) . rule) ls
+        , [ "  ;" ]
+        ]
+      where
+        rule (p,a) = unwords [ p, "{", a , "}" ]
+        nt = nonterminal cat
 
 
 -- For every non-terminal, we construct a set of rules. A rule is a sequence of
@@ -211,8 +216,8 @@ generatePatterns terminal r = case rhsRule r of
      Right s -> terminal s
    metas its = [ ('$': show i) | (i, Left _c) <- zip [1 ::Int ..] its ]
 
-specialRules :: CF -> String
-specialRules cf = unlines $ (`map` literals cf) $ \case
+specialRules :: CF -> [String]
+specialRules cf = (`map` literals cf) $ \case
   "Ident"   -> "ident : TOK_Ident  { Ident $1 };"
   "String"  -> "string : TOK_String { $1 };"
   "Integer" -> "int :  TOK_Integer  { $1 };"
