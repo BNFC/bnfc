@@ -20,6 +20,7 @@ import BNFC.Backend.OCaml.CFtoOCamlShow
 import BNFC.Backend.OCaml.CFtoOCamlTemplate
 import BNFC.Backend.OCaml.CFtoOCamlTest     (ocamlTestfile)
 import BNFC.Backend.OCaml.CFtoOCamlYacc
+import BNFC.Backend.OCaml.OCamlUtil
 import BNFC.Backend.XML                     (makeXML)
 import BNFC.CF
 import BNFC.Options
@@ -84,7 +85,7 @@ makeOCaml opts cf = do
     mkfile (absFile opts)       comment $ cf2Abstract absMod cf
     mkfile (ocamllexFile opts)  comment $ cf2ocamllex lexMod parMod cf
     mkfile (ocamlyaccFile opts) C.comment $
-      cf2ocamlyacc (ocamlParser opts) parMod absMod lexMod  cf
+      cf2ocamlyacc (ocamlParser opts) absMod cf
     mkfile (templateFile opts)  comment $ cf2Template (templateFileM opts) absMod cf
     mkfile (printerFile opts)   comment $ cf2Printer prMod absMod cf
     mkfile (showFile opts)      comment $ cf2show showMod absMod cf
@@ -111,9 +112,7 @@ codeDir opts = let pref = maybe "" pkgToDir (inPackage opts)
 makefile :: SharedOptions -> String -> Doc
 makefile opts basename = vcat
     [ mkVar "OCAMLC" "ocamlc"
-    , mkVar "OCAMLYACC" $ case ocamlParser opts of
-        OCamlYacc -> "ocamlyacc"
-        Menhir    -> "menhir"
+    , mkVar "OCAMLYACC" $ ocamlParserName opts
     , mkVar "OCAMLLEX" "ocamllex"
     , mkVar "OCAMLCFLAGS" ""
     , mkRule "all" []

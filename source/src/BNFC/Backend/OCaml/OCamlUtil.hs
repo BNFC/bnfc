@@ -8,9 +8,24 @@
 
 module BNFC.Backend.OCaml.OCamlUtil where
 
-import BNFC.CF
-import BNFC.Utils
 import Data.Char (toLower, toUpper)
+
+import BNFC.CF
+import BNFC.Options
+import BNFC.Utils
+
+-- | Name of the parser generator.
+
+class OCamlParserName a where
+  ocamlParserName :: a -> String
+
+instance OCamlParserName OCamlParser where
+  ocamlParserName = \case
+    OCamlYacc -> "ocamlyacc"
+    Menhir    -> "menhir"
+
+instance OCamlParserName SharedOptions where
+  ocamlParserName = ocamlParserName . ocamlParser
 
 -- Translate Haskell types to OCaml types
 -- Note: OCaml (data-)types start with lowercase letter

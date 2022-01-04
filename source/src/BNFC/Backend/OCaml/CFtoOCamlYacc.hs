@@ -20,7 +20,7 @@ import Data.List     ( intercalate )
 
 import BNFC.CF
 import BNFC.Options  ( OCamlParser(..) )
-import BNFC.Utils    ( (+++), mapHead )
+import BNFC.Utils    ( (+++), mapHead, table )
 import BNFC.Backend.Common
 import BNFC.Backend.OCaml.OCamlUtil
 
@@ -32,9 +32,9 @@ type MetaVar     = String
 
 -- The main function, that given a CF
 -- generates a ocamlyacc module.
-cf2ocamlyacc :: OCamlParser -> String -> String -> String -> CF -> String
-cf2ocamlyacc ocamlParser name absName lexName cf = unlines
-  [ header name absName lexName cf
+cf2ocamlyacc :: OCamlParser -> String -> CF -> String
+cf2ocamlyacc ocamlParser absName cf = unlines
+  [ header ocamlParser absName
   , declarations absName cf
   , "%%"
   , ""
@@ -42,15 +42,15 @@ cf2ocamlyacc ocamlParser name absName lexName cf = unlines
   ]
 
 
-header :: String -> String -> String -> CF -> String
-header _ absName _ _ = unlines
-         ["/* Parser definition for use with ocamlyacc */",
-          "%{",
-          "open " ++ absName,
-          "open Lexing",
-          "",
-          "%}"
-         ]
+header :: OCamlParser -> String -> String
+header ocamlParser absName = unlines
+  [ unwords [ "/* Parser definition for use with", ocamlParserName ocamlParser, "*/" ]
+  , ""
+  , "%{"
+  , "open " ++ absName
+  , "open Lexing"
+  , "%}"
+  ]
 
 declarations :: String -> CF -> String
 declarations absName cf =
@@ -101,11 +101,11 @@ nonterminal c = map spaceToUnderscore (fixType c)
 specialTokens :: CF -> [String]
 specialTokens cf = concat $
   [ [ "%token TOK_EOF" ]
-  , [ prToken (ty n)      n | n                 <- specialCatsP  ]
-  , [ prToken (posTy pos) n | TokenReg n0 pos _ <- cfgPragmas cf, let n = wpThing n0 ]
+  , table " " [ prToken (ty n)      n | n                 <- specialCatsP  ]
+  , table " " [ prToken (posTy pos) n | TokenReg n0 pos _ <- cfgPragmas cf, let n = wpThing n0 ]
   ]
   where
-  prToken t n = "%token" +++ t +++ "TOK_" ++ n
+  prToken t n = [ "%token" +++ t, "TOK_" ++ n ]
   ty = \case
     "Ident"   -> "<string>"
     "String"  -> "<string>"
