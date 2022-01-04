@@ -196,9 +196,9 @@ testCases params =
         , "204_InternalToken"
         , "249_unicode"
         , "289_LexerKeywords"
-        , "#100_coercion_lists"
+        , "100_coercion_lists"
         , "comments"
-        , "#149"
+        , "149"
         ]
 
 makeTestCase :: TestParameters -> FilePath -> Test
@@ -371,8 +371,6 @@ parameters = concat
             , tpBnfcOptions = ["--c", "--line-numbers"] }
 
     ]
-    -- OCaml
-  , [ ocaml ]
     -- C++ (basic)
   , [ cBase { tpName = "C++ (no STL)"
             , tpBnfcOptions = ["--cpp-nostl"] }
@@ -393,10 +391,6 @@ parameters = concat
     ]
     -- Haskell/GADT
   , [ haskellGADTParameters ]
-    -- OCaml/Menhir
-  , [ ocaml { tpName = "OCaml/Menhir"
-            , tpBnfcOptions = ["--ocaml", "--menhir"] }
-    ]
     -- Java (basic)
   , [ javaParams { tpName = "Java"
                  , tpBnfcOptions = ["--java"] }
