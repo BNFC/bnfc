@@ -1,0 +1,33 @@
+resolver: ghc-9.2.1
+compiler: ghc-9.2.1
+# compiler-check: match-exact
+
+extra-deps:
+- alex-3.2.6
+- cabal-doctest-1.0.9
+- happy-1.20.0
+- string-qq-0.0.4
+
+# For --test:
+- HUnit-1.6.2.0
+- QuickCheck-2.14.2
+- ansi-terminal-0.11
+- base-compat-0.12.1
+- call-stack-0.4.0
+- clock-0.8.2
+- code-page-0.2.1
+- colour-2.3.6
+- doctest-0.20.0
+- ghc-paths-0.1.0.12@rev:3
+- hspec-2.9.4
+- hspec-core-2.9.4
+- hspec-discover-2.9.4
+- hspec-expectations-0.8.2
+- primitive-0.7.3.0
+- quickcheck-io-0.2.0
+- random-1.2.1
+- setenv-0.1.1.3
+- splitmix-0.1.0.4
+- syb-0.7.2.1
+- temporary-1.3
+- tf-random-0.5
