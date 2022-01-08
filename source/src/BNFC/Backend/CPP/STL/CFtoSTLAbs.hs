@@ -131,17 +131,14 @@ prVisitor mode cf = unlines [
   "public:",
   "  virtual ~Visitor() {}",
   unlines
-  ["  virtual void visit"++c++"("++ wrapUniquePtrIf isBeyondAnsi c +++ vararg ++") = 0;" | c <- allClasses cf, notElem c (defineds cf)],
+  ["  virtual void visit"++c++"("++ c +++ vararg ++") = 0;" | c <- allClasses cf, notElem c (defineds cf)],
   "",
   unlines
   ["  virtual void visit"++c++"("++c++" x) = 0;" | c <- allNonClasses cf],
   "};"
   ]
   where
-    isBeyondAnsi = case mode of
-      CppStdAnsi _       -> False
-      CppStdBeyondAnsi _ -> True
-    vararg = if isBeyondAnsi then "p" else "*p"
+    vararg = "*p"
 
 prAbs :: CppStdMode -> RecordPositions -> String -> String
 prAbs mode rp c =
@@ -349,7 +346,7 @@ prAcceptC mode ty = case mode of {
     CppStdBeyondAnsi _ -> unlines [
         "void " ++ty++ "::accept(Visitor *v)",
         "{",
-        "  v->visit" ++ ty ++ "(std::make_unique<" ++ty++ ">(*this));",
+        "  v->visit" ++ ty ++ "(this);",
         "}"
         ];
     }
