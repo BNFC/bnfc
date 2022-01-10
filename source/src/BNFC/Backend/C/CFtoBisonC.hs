@@ -428,10 +428,11 @@ unionBuiltinTokens =
 declarations :: ParserMode -> CF -> String
 declarations mode cf = unlines $ map typeNT $
   posCats ++
-  filter (not . null . rulesForCat cf) (allParserCats cf) -- don't define internal rules
+  -- don't define internal rules
+  filter (not . null . rulesForCat cf) (allParserCats cf)
   where
     typeNT nt = if isBisonUseVariant mode then
-                  "%type <std::unique_ptr<" ++ identCat nt ++ ">> " ++ identCat nt
+                  "%type <std::unique_ptr<" ++ (identCat $ normCat nt) ++ ">> " ++ identCat nt
                 else
                   "%type <" ++ varName nt ++ "> " ++ identCat nt
     posCats
