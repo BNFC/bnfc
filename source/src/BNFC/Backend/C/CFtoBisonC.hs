@@ -593,7 +593,7 @@ generateActionSTL rp inPackage nt f b mbs = reverses ++
 
 generateActionSTLBeyondAnsi :: IsFun a => RecordPositions -> InPackage -> String -> a -> Bool -> [(MetaVar,Bool)] -> Action
 generateActionSTLBeyondAnsi rp inPackage nt f b mbs = reverses ++
-  if | isCoercion f    -> concat ["$$ = ", unwords ms, ";", loc]
+  if | isCoercion f    -> concat ["$$ = std::move(", unwords ms, ");", loc]
      | isNilFun f      -> concat ["$$ = ", "std::make_unique<", scope, nt, ">();"]
      | isOneFun f      -> concat ["$$ = ", "std::make_unique<", scope, nt, ">(); $$->cons(std::move(", head ms, "));"]
      | isConsFun f     -> concat [lst, "->cons(std::move(", el, "));"]
