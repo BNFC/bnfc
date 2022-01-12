@@ -31,7 +31,7 @@ import BNFC.Utils
 import BNFC.Backend.Common
 import BNFC.Backend.Common.NamedVariables
 import BNFC.Backend.Common.StrUtils (renderCharOrString)
-import BNFC.Backend.CPP.Common      ( CppStdMode(..), wrapUniquePtrIf, wrapPointerIf )
+import BNFC.Backend.CPP.Common      ( CppStdMode(..), wrapUniquePtr, wrapSharedPtrIf, wrapPointerIf )
 import BNFC.Backend.CPP.STL.STLUtils
 import BNFC.PrettyPrint
 
@@ -563,7 +563,7 @@ prPrintItem :: String -> Either (Cat, Doc) String -> String
 prPrintItem _   (Right t)     = "  render(" ++ snd (renderCharOrString t) ++ ");"
 prPrintItem pre (Left (c, nt))
   | Just t <- maybeTokenCat c = "  visit" ++ t ++ "(" ++ pre ++ s ++ ");"
-  | isList c                  = "  " ++ setI (precCat c) ++ "visit" ++ elt ++ "(" ++ pre ++ s ++ ".get());" -- TODO: unique_ptr.get is only beyondAnsi
+  | isList c                  = "  " ++ setI (precCat c) ++ "visit" ++ elt ++ "(" ++ pre ++ s ++ ".get());" -- TODO: shared_ptr.get is only beyondAnsi
   | otherwise                 = "  " ++ setI (precCat c) ++ pre ++ s ++ "->accept(this);"
   where
     s   = render nt

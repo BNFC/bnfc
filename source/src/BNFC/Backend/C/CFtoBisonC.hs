@@ -97,7 +97,7 @@ cf2Bison rp mode cf env = unlines
         -- %token<int>    _     INTEGER_
         -- %token<std::string> _IDENT_
         --
-        -- %type <std::unique_ptr<Program>> Program
+        -- %type <std::shared_ptr<Program>> Program
         --
         False -> unlines [
             unlines $ table " " $ concat
@@ -432,7 +432,7 @@ declarations mode cf = unlines $ map typeNT $
   filter (not . null . rulesForCat cf) (allParserCats cf)
   where
     typeNT nt = if isBisonUseVariant mode then
-                  "%type <std::unique_ptr<" ++ (identCat $ normCat nt) ++ ">> " ++ identCat nt
+                  "%type <std::shared_ptr<" ++ (identCat $ normCat nt) ++ ">> " ++ identCat nt
                 else
                   "%type <" ++ varName nt ++ "> " ++ identCat nt
     posCats
@@ -522,7 +522,7 @@ addResult mode cf nt a =
     -- Andreas, 2021-03-24: But see #350: bison still uses only the @%start@ non-terminal.
     case beyondAnsi mode of
       False -> concat [ a, " result->", varName (normCat nt), " = $$;" ]
-      True  -> concat [ a, " driver.", varName (normCat nt), " = std::move($$);" ]
+      True  -> concat [ a, " driver.", varName (normCat nt), " = $$;" ]
   else a
 
 -- | Switch between STL or not.
@@ -593,12 +593,12 @@ generateActionSTL rp inPackage nt f b mbs = reverses ++
 
 generateActionSTLBeyondAnsi :: IsFun a => RecordPositions -> InPackage -> String -> a -> Bool -> [(MetaVar,Bool)] -> Action
 generateActionSTLBeyondAnsi rp inPackage nt f b mbs = reverses ++
-  if | isCoercion f    -> concat ["$$ = std::move(", unwords ms, ");", loc]
-     | isNilFun f      -> concat ["$$ = ", "std::make_unique<", scope, nt, ">();"]
-     | isOneFun f      -> concat ["$$ = ", "std::make_unique<", scope, nt, ">(); $$->cons(std::move(", head ms, "));"]
-     | isConsFun f     -> concat [lst, "->cons(std::move(", el, "));"]
+  if | isCoercion f    -> concat ["$$ = ", unwords ms, ";", loc]
+     | isNilFun f      -> concat ["$$ = ", "std::make_shared<", scope, nt, ">();"]
+     | isOneFun f      -> concat ["$$ = ", "std::make_shared<", scope, nt, ">(); $$->cons(", head ms, ");"]
+     | isConsFun f     -> concat [lst, "->cons(", el, ");"]
      | isDefinedRule f -> concat ["$$ = ", scope, sanitizeCpp (funName f), "(", intercalate ", " ms, ");" ]
-     | otherwise       -> concat ["$$ = ", "std::make_unique<", scope, funName f, ">(", (intercalate ", " ms), ");", loc]
+     | otherwise       -> concat ["$$ = ", "std::make_shared<", scope, funName f, ">(", (intercalate ", " ms), ");", loc]
   where
     -- ms = ["$1", "$1", ...];
     -- Bison's semantic value of the n-th symbol of the right-hand side of the rule.

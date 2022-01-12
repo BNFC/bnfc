@@ -155,7 +155,7 @@ prAbs mode rp c =
         "class " ++ c ++ " : public Visitable",
           "{",
           "public:",
-          "  virtual" +++ wrapUniquePtrIf True c +++ "clone() const = 0;",
+          "  virtual" +++ wrapSharedPtr c +++ "clone() const = 0;",
           if rp == RecordPositions then "  int line_number, char_number;" else "",
           "};"
         ];
@@ -184,7 +184,7 @@ prCon mode (c,(f,cs)) =
         "class " ++f++ " : public " ++ c,
         "{",
         "public:",
-        unlines ["  " ++ wrapUniquePtrIf isClass typ +++ var ++ ";" | (typ,isClass,var) <- cs],
+        unlines ["  " ++ wrapSharedPtrIf isClass typ +++ var ++ ";" | (typ,isClass,var) <- cs],
         -- "right-hand side" operations; for move
         "  " ++ f ++ "(" ++ f ++ "&& rhs);",
         "  " ++ f ++ "& operator=(" ++ f ++ "&& rhs);",
@@ -193,7 +193,7 @@ prCon mode (c,(f,cs)) =
         "  " ++ f ++ "(" ++ conargs ++ ");",
         "  ~" ++f ++ "();",
         "  virtual void accept(Visitor *v);",
-        "  std::unique_ptr<" ++c++ "> clone() const override;",
+        "  " ++ wrapSharedPtr c +++ " clone() const override;",
         "};"
         ];
       }
@@ -206,7 +206,7 @@ prCon mode (c,(f,cs)) =
        ;
        CppStdBeyondAnsi _ ->
            concat $ intersperse ", "
-           [wrapUniquePtrIf isClass x ++ "& p" ++ show i | ((x,isClass,_),i) <- zip cs [1..]]
+           [wrapSharedPtrIf isClass x ++ "& p" ++ show i | ((x,isClass,_),i) <- zip cs [1..]]
        ;
        }
 
@@ -227,12 +227,12 @@ prList mode (c, b) = case mode of {
       "class " ++c++ " : public Visitable"
       , "{"
       , "public:"
-      , "  std::vector<" ++ wrapUniquePtrIf True childClass++ ">" +++ childClassVarName ++ ";"
+      , "  std::vector<" ++ wrapSharedPtr childClass++ ">" +++ childClassVarName ++ ";"
       , ""
       -- ref: https://stackoverflow.com/questions/51148797/how-can-i-define-iterator-and-const-iterator-in-my-class-while-i-uses-stdvecto
       , "  // define iterator and const_iterator, expose it"
-      , "  using iterator = typename std::vector<" ++ wrapUniquePtrIf True childClass ++ ">::iterator;"
-      , "  using const_iterator = typename std::vector<" ++ wrapUniquePtrIf True childClass++ ">::const_iterator;"
+      , "  using iterator = typename std::vector<" ++ wrapSharedPtr childClass ++ ">::iterator;"
+      , "  using const_iterator = typename std::vector<" ++ wrapSharedPtr childClass++ ">::const_iterator;"
       , "  auto begin() const { return " ++childClassVarName++ ".begin(); }"
       , "  auto begin()       { return " ++childClassVarName++ ".begin(); }"
       , "  auto end()   const { return " ++childClassVarName++ ".end(); }"
@@ -246,8 +246,8 @@ prList mode (c, b) = case mode of {
       , "  " ++ c ++ "();"
       , " ~" ++ c ++ "();"
       , "  virtual void accept(Visitor *v);"
-      , "  std::unique_ptr<" ++ c ++ "> clone() const;"
-      , "  void cons(" ++ wrapUniquePtrIf True childClass ++ ");"
+      , "  " ++ wrapSharedPtr c +++ " clone() const;"
+      , "  void cons(" ++ wrapSharedPtr childClass ++ ");"
       , "  void reverse();"
       , "};"
       , ""
@@ -361,9 +361,9 @@ prCloneC mode f c = case mode of {
       "}"
       ];
   CppStdBeyondAnsi _ -> unlines [
-      wrapUniquePtrIf True f +++ c ++ "::clone() const ",
+      wrapSharedPtr f +++ c ++ "::clone() const ",
       "{",
-      "  return std::make_unique<" ++ c ++ ">(*this);",
+      "  return std::make_shared<" ++ c ++ ">(*this);",
       "}"
       ];
   }
@@ -378,7 +378,7 @@ prConsC mode c b = case mode of {
         , "}"
         ];
     CppStdBeyondAnsi _ -> unlines [
-        concat [ "void ", c, "::cons(std::unique_ptr<", bas, "> x) {" ]
+        concat [ "void ", c, "::cons(", wrapSharedPtr bas, " x) {" ]
         , "  " ++inner++ ".insert(" ++inner++ ".begin(), std::move(x));"
         , "}"
         , ""
@@ -420,7 +420,7 @@ prConstructorC mode (f,cs) = case mode of {
        intercalate ", " [x +++ pointerIf isClass v | ((x,isClass,_),v) <- zip cs pvs]
      ;
      CppStdBeyondAnsi _ ->
-       intercalate ", " [wrapUniquePtrIf isClass x ++ "&" +++ v | ((x,isClass,_),v) <- zip cs pvs]
+       intercalate ", " [wrapSharedPtrIf isClass x ++ "&" +++ v | ((x,isClass,_),v) <- zip cs pvs]
      ;
      }
 

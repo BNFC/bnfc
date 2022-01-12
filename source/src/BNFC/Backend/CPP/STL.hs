@@ -22,7 +22,7 @@ import BNFC.Backend.Base
 import BNFC.Backend.C            ( bufferH, bufferC, comment, testfileHeader )
 import BNFC.Backend.C.CFtoBisonC ( cf2Bison, unionBuiltinTokens, positionCats, varName )
 import BNFC.Backend.C.CFtoFlexC  ( cf2flex, ParserMode(..), beyondAnsi, parserPackage, parserName, stlParser )
-import BNFC.Backend.CPP.Common   ( commentWithEmacsModeHint, wrapUniquePtr, CppStdMode(..) )
+import BNFC.Backend.CPP.Common   ( commentWithEmacsModeHint, wrapSharedPtr, CppStdMode(..) )
 import BNFC.Backend.CPP.Makefile
 import BNFC.Backend.CPP.STL.CFtoSTLAbs
 import BNFC.Backend.CPP.STL.CFtoCVisitSkelSTL
@@ -166,7 +166,7 @@ cpptest mode inPackage cf hExt = unlines $ concat
     , if beyondAnsi mode then
         unlines [
         "    /* The default entry point is used. For other options see Parser.H */"
-        , "    " ++ (wrapUniquePtr $ scope ++ dat) ++ " parse_tree = nullptr;"
+        , "    " ++ (wrapSharedPtr $ scope ++ dat) ++ " parse_tree = nullptr;"
         , "    try { "
         , "        auto driver = std::make_unique<" ++ns++ "::" ++camelCaseName++ "Driver>();"
         , "        parse_tree = driver->p" ++ def ++ "(filename);"
@@ -278,7 +278,7 @@ driverH mode cf cats = unlines
   -- bnfc builtin tokens
   , unlines [ prettyShow ("    " ++ tok) | tok <- unionBuiltinTokens ]
   -- user defined tokens
-  , unlines [ prettyShow ("    std::unique_ptr<" ++ identCat tok ++ ">"+++ varName tok ++";") | tok <- normCats ]
+  , unlines [ prettyShow ("    std::shared_ptr<" ++ identCat tok ++ ">"+++ varName tok ++";") | tok <- normCats ]
   , ""
   , unlines [ mkFileEntry ep | ep <- entryPoints ]
   , unlines [ mkStringEntry ep | ep <- entryPoints ]
@@ -307,8 +307,8 @@ driverH mode cf cats = unlines
   , ""
   , "    void parse_helper( std::istream &stream );"
   , ""
-  , "    std::unique_ptr<" ++camelCaseName++ "Scanner> scanner = nullptr;"
-  , "    std::unique_ptr<" ++camelCaseName++ "Parser>  parser  = nullptr;"
+  , "    std::shared_ptr<" ++camelCaseName++ "Scanner> scanner = nullptr;"
+  , "    std::shared_ptr<" ++camelCaseName++ "Parser>  parser  = nullptr;"
   , "};"
   , ""
   , "} /* end namespace " ++ns++ " */"
@@ -321,9 +321,9 @@ driverH mode cf cats = unlines
     normCats = nub (map normCat cats)
     entryPoints = toList (allEntryPoints cf)
     mkFileEntry s =
-      "    " ++ (wrapUniquePtr $ identCat (normCat s)) +++ "p" ++ identCat s ++ "(const char *filename);"
+      "    " ++ (wrapSharedPtr $ identCat (normCat s)) +++ "p" ++ identCat s ++ "(const char *filename);"
     mkStringEntry s =
-      "    " ++ (wrapUniquePtr $ identCat (normCat s)) +++ "ps" ++ identCat s ++ "(std::istream &stream);"
+      "    " ++ (wrapSharedPtr $ identCat (normCat s)) +++ "ps" ++ identCat s ++ "(std::istream &stream);"
 
 
 -- | C++ lexer/parser driver
@@ -416,7 +416,7 @@ driverC mode cf driverH = unlines
     entryPoints = toList (allEntryPoints cf)
     mkFileEntry s =
       unlines [
-      (wrapUniquePtr $ identCat (normCat s))
+      (wrapSharedPtr $ identCat (normCat s))
       , ns++ "::" ++camelCaseName++ "Driver::p" ++ identCat s ++ "(const char *filename)"
       , "{"
       , "    assert( filename != nullptr );"
@@ -426,12 +426,12 @@ driverC mode cf driverH = unlines
       , "        exit( EXIT_FAILURE );"
       , "    }"
       , "    parse_helper( in_file );"
-      , "    return std::move(this->" ++ varName s++ ");"
+      , "    return this->" ++ varName s++ ";"
       , "}"
       ]
     mkStringEntry s =
       unlines [
-      (wrapUniquePtr $ identCat (normCat s))
+      (wrapSharedPtr $ identCat (normCat s))
       , ns++ "::" ++camelCaseName++ "Driver::ps" ++ identCat s ++ "(std::istream &stream)"
       , "{"
       , "    if( ! stream.good()  && stream.eof() ) {"
