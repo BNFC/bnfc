@@ -307,8 +307,8 @@ driverH mode cf cats = unlines
   , ""
   , "    void parse_helper( std::istream &stream );"
   , ""
-  , "    std::shared_ptr<" ++camelCaseName++ "Scanner> scanner = nullptr;"
-  , "    std::shared_ptr<" ++camelCaseName++ "Parser>  parser  = nullptr;"
+  , "    std::unique_ptr<" ++camelCaseName++ "Scanner> scanner = nullptr;"
+  , "    std::unique_ptr<" ++camelCaseName++ "Parser>  parser  = nullptr;"
   , "};"
   , ""
   , "} /* end namespace " ++ns++ " */"
@@ -438,7 +438,7 @@ driverC mode cf driverH = unlines
       , "        return nullptr;"
       , "    }"
       , "    parse_helper( stream );"
-      , "    return std::move(this->" ++ varName s++ ");"
+      , "    return this->" ++ varName s++ ";"
       , "}"
       ]
 

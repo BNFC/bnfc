@@ -379,7 +379,7 @@ prConsC mode c b = case mode of {
         ];
     CppStdBeyondAnsi _ -> unlines [
         concat [ "void ", c, "::cons(", wrapSharedPtr bas, " x) {" ]
-        , "  " ++inner++ ".insert(" ++inner++ ".begin(), std::move(x));"
+        , "  " ++inner++ ".insert(" ++inner++ ".begin(), x);"
         , "}"
         , ""
         , "void" +++ c ++ "::reverse() {"
