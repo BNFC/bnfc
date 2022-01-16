@@ -210,7 +210,7 @@ rules cf = mkRule "token" $
                 , "|> Option.defaultValue (TOK_" <> t <+> arg "l)"
                 ]
       where
-      arg l | pos       = text $ "((lexeme_start lexbuf, lexeme_end lexbuf), " ++ l ++ ")"
+      arg l | pos       = text $ "((lexbuf.StartPos.AbsoluteOffset, lexbuf.EndPos.AbsoluteOffset), " ++ l ++ ")"
             | otherwise = text l
 
 -------------------------------------------------------------------
