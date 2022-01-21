@@ -114,7 +114,7 @@ integerRule cf = unlines [
     ]
 
 doubleRule cf = unlines [
-    "let rec prtFloat (_:int) (f:float) : Doc = render (sprintf \"%.14f\" f)",
+    "let rec prtFloat (_:int) (f:float) : Doc = render (f.ToString().ToLower())",
     ifList cf (TokenCat catDouble),
     ""
     ]
