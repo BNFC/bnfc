@@ -13,6 +13,7 @@ module BNFC.Backend.FSharp (makeFSharp) where
 import System.FilePath (pathSeparator, (</>))
 
 import BNFC.Backend.Base                    (MkFiles, mkfile)
+import BNFC.Backend.Common.Makefile
 import BNFC.Backend.FSharp.CFtoFSharpAbs
 import BNFC.Backend.FSharp.CFtoFsLex
 import BNFC.Backend.FSharp.CFtoFSharpPrinter
@@ -22,6 +23,7 @@ import BNFC.Backend.FSharp.CFtoFSharpTest     (fsharpTestfile)
 import BNFC.Backend.FSharp.CFtoFsYacc
 import qualified BNFC.Backend.XML as XML
 import BNFC.CF
+import BNFC.PrettyPrint
 import BNFC.Options
 import BNFC.Utils
 
@@ -93,10 +95,31 @@ makeFSharp opts cf = do
     mkfile (tFile opts)         comment $ fsharpTestfile absMod lexMod parMod prMod showMod tFileMod cf
     mkfile (utilFile opts)      comment $ utilM (utilFileM opts)
     mkfile (fsprojFile opts)    XML.comment $ fsprojM opts
+    mkMakefile opts $ makefile opts
     -- case xml opts of
     --   2 -> makeXML opts True cf
     --   1 -> makeXML opts False cf
     --   _ -> return ()
+
+makefile :: SharedOptions -> String -> Doc
+makefile opts basename = vcat
+    [
+     mkRule "clean" []
+        [ "-rm -fr bin obj "] 
+    ,mkRule "distclean" ["clean"]
+        [ "-rm -f " ++ unwords [ mkFile withLang "Lex" "*" opts,
+                                 mkFile withLang "Par" "*" opts,
+                                 mkFile withLang "Layout" "*" opts,
+                                 mkFile withLang "Skel" "*" opts,
+                                 mkFile withLang "Print" "*" opts,
+                                 mkFile withLang "Show" "*" opts,
+                                 mkFile withLang "Test" "*" opts,
+                                 mkFile withLang "Abs" "*" opts,
+                                 mkFile withLang "Test" "" opts,
+                                 mkFile withLang  "" "fsproj" opts,
+                                 utilFile opts,
+                                 basename ]]
+    ]
 
 comment :: String -> String
 comment x = unwords [ "(*", x, "*)" ]
