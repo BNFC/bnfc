@@ -150,8 +150,7 @@ header mode cf = unlines $ concat [
   , "%defines \"" ++ ("Bison" <.> hExt) ++ "\""
   ]
   , when (beyondAnsi mode)
-    [ "%define parse.trace"
-      , "%define api.namespace {" ++ ns ++ "}"
+    [ "%define api.namespace {" ++ ns ++ "}"
       , "/* Specify the namespace for the C++ parser class. */"]
   , whenJust (parserPackage mode) $ \ ns ->
       [ "%name-prefix = \"" ++ ns ++ "\""
@@ -596,7 +595,7 @@ generateActionSTLBeyondAnsi rp inPackage nt f b mbs = reverses ++
   if | isCoercion f    -> concat ["$$ = ", unwords ms, ";", loc]
      | isNilFun f      -> concat ["$$ = ", "std::make_shared<", scope, nt, ">();"]
      | isOneFun f      -> concat ["$$ = ", "std::make_shared<", scope, nt, ">(); $$->cons(", head ms, ");"]
-     | isConsFun f     -> concat [lst, "->cons(", el, ");"]
+     | isConsFun f     -> concat [lst, "->cons(", el, "); $$ = ", lst, ";"]
      | isDefinedRule f -> concat ["$$ = ", scope, sanitizeCpp (funName f), "(", intercalate ", " ms, ");" ]
      | otherwise       -> concat ["$$ = ", "std::make_shared<", scope, funName f, ">(", (intercalate ", " ms), ");", loc]
   where
@@ -609,9 +608,7 @@ generateActionSTLBeyondAnsi rp inPackage nt f b mbs = reverses ++
       = " $$->line_number = @$.first_line; $$->char_number = @$.first_column;"
         | otherwise
       = ""
-    -- TODO: temporary commented reverse()
-    -- reverses  = unwords [m ++"->reverse();" | (m, True) <- mbs]
-    reverses  = unwords ["/*" ++m++ "->reverse(); */" | (m, True) <- mbs]
+    reverses  = unwords [m ++"->reverse();" | (m, True) <- mbs]
     scope     = nsScope inPackage
 
 
