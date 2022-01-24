@@ -596,7 +596,7 @@ generateActionSTLBeyondAnsi rp inPackage nt f b mbs = reverses ++
   if | isCoercion f    -> concat ["$$ = ", unwords ms, ";", loc]
      | isNilFun f      -> concat ["$$ = ", "std::make_shared<", scope, nt, ">();"]
      | isOneFun f      -> concat ["$$ = ", "std::make_shared<", scope, nt, ">(); $$->cons(", head ms, ");"]
-     | isConsFun f     -> concat [lst, "->cons(", el, ");"]
+     | isConsFun f     -> concat [lst, "->cons(", el, "); $$ = ", lst, ";"]
      | isDefinedRule f -> concat ["$$ = ", scope, sanitizeCpp (funName f), "(", intercalate ", " ms, ");" ]
      | otherwise       -> concat ["$$ = ", "std::make_shared<", scope, funName f, ">(", (intercalate ", " ms), ");", loc]
   where

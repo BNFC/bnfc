@@ -427,7 +427,7 @@ genPrintVisitorList (mode, cat@(ListCat _), rules) = vcat
       , "else"
       ]
     , unless (null docs1)
-      [ "if (i == j-1)"
+      [ "if (i == std::prev(j, 1))"
       , "{ /* last */"
       , nest 2 $ vcat docs1
       , "}"
@@ -480,7 +480,7 @@ prListRule_ (Rule _ _ items _) = for items $ \case
   Left c
     | Just{} <- maybeTokenCat c
                 -> "visit" <> dat <> "(*i);"
-    | isList c  -> "iter" <> dat <> "(i+1, j);"
+    | isList c  -> "iter" <> dat <> "(std::next(i,1), j);"
     | otherwise -> "(*i)->accept(this);"
     where
     dat = text $ identCat $ normCat c
@@ -583,7 +583,7 @@ prShowData True mode (cat@(ListCat c), _) = unlines
   if isTokenCat c
     then "    visit" ++ baseName cl ++ "(*i) ;"
     else "    (*i)->accept(this);",
-  "    if (i != " ++ vname ++ "->end() - 1) bufAppend(\", \");",
+  "    if (i != std::prev(" ++ vname ++ "->end(), 1)) bufAppend(\", \");",
   "  }",
   "}",
   ""
