@@ -609,9 +609,7 @@ generateActionSTLBeyondAnsi rp inPackage nt f b mbs = reverses ++
       = " $$->line_number = @$.first_line; $$->char_number = @$.first_column;"
         | otherwise
       = ""
-    -- TODO: temporary commented reverse()
-    -- reverses  = unwords [m ++"->reverse();" | (m, True) <- mbs]
-    reverses  = unwords ["/*" ++m++ "->reverse(); */" | (m, True) <- mbs]
+    reverses  = unwords [m ++"->reverse();" | (m, True) <- mbs]
     scope     = nsScope inPackage
 
 

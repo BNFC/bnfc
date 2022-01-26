@@ -185,9 +185,18 @@ prCon mode (c,(f,cs)) =
         "{",
         "public:",
         unlines ["    " ++ wrapSharedPtrIf isClass typ +++ var ++ ";" | (typ,isClass,var) <- cs],
-        "    " ++f++ "(" ++ conargs ++ ")",
-        intercalate ", " ["    :" ++ var ++ "{p" ++ show i ++ "}" | ((_,_,var),i) <- zip cs [1..]],
-        "    {}",
+        if length cs > 0 then
+          -- Generate following initiliazer;
+          --
+          -- Prog(std::shared_ptr<ListStatement> p1)
+          --     : Program(), liststatement_{p1} {};
+          unlines
+          [ "    " ++f++ "(" ++ conargs ++ ")",
+            "    :" +++ c ++ "(), " ++ intercalate ", " [var ++ "{p" ++ show i ++ "}" | ((_,_,var),i) <- zip cs [1..]],
+            "    {};"
+          ]
+        else
+          "    " ++f++ "(" ++ conargs ++ "):" +++ c +++ "(){};",
         "",
         "    virtual void accept(Visitor *v);",
         "    " ++ wrapSharedPtr c +++ " clone() const override;",
@@ -212,8 +221,6 @@ prList mode (c, b) = case mode of {
       "class " ++c++ " : public Visitable, public std::vector<" ++bas++ ">"
       , "{"
       , "public:"
-
-
       , "    virtual void accept(Visitor *v);"
       , "    virtual " ++ c ++ " *clone() const;"
       , "};"
@@ -291,12 +298,6 @@ prConC mode c fcs@(f,_) = unlines [
 prListC :: CppStdMode -> (String,Bool) -> String
 prListC mode (c,b) = unlines
   [ "/********************   " ++ c ++ "    ********************/"
-  , case mode of {
-      CppStdAnsi _ -> []
-      ;
-      CppStdBeyondAnsi _ -> []
-      ;
-      }
   , prAcceptC mode c
   , prCloneC mode c c
   , prConsC mode c b
