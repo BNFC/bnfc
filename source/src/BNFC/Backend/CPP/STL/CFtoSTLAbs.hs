@@ -24,7 +24,7 @@ import Data.Char        ( toLower )
 
 import BNFC.Backend.Common.OOAbstract
 import BNFC.CF
-import BNFC.Options     ( RecordPositions(..), Ansi(..) )
+import BNFC.Options     ( RecordPositions(..) )
 import BNFC.TypeChecker ( ListConstructors(..) )
 import BNFC.Utils       ( (+++), applyWhen )
 
@@ -90,7 +90,7 @@ mkHFile rp mode inPackage cabs cf = unlines
     },
   "",
   "/********************   Visitor Interfaces    ********************/",
-  prVisitor mode cabs,
+  prVisitor cabs,
   "",
   prVisitable,
   "",
@@ -124,8 +124,8 @@ prVisitable = unlines [
   "};"
   ]
 
-prVisitor :: CppStdMode -> CAbs -> String
-prVisitor mode cf = unlines [
+prVisitor :: CAbs -> String
+prVisitor cf = unlines [
   "class Visitor",
   "{",
   "public:",
@@ -192,7 +192,7 @@ prCon mode (c,(f,cs)) =
           --     : Program(), liststatement_{p1} {};
           unlines
           [ "    " ++f++ "(" ++ conargs ++ ")",
-            "    :" +++ c ++ "(), " ++ intercalate ", " [var ++ "{p" ++ show i ++ "}" | ((_,_,var),i) <- zip cs [1..]],
+            "    :" +++ c ++ "(), " ++ intercalate ", " [var ++ "{p" ++ show i ++ "}" | ((_,_,var),i) <- zip cs [(1::Integer)..]],
             "    {};"
           ]
         else
@@ -208,10 +208,10 @@ prCon mode (c,(f,cs)) =
      case mode of {
        CppStdAnsi _ ->
            concat $ intersperse ", "
-           [x +++ pointerIf st ("p" ++ show i) | ((x,st,_),i) <- zip cs [1..]]
+           [x +++ pointerIf st ("p" ++ show i) | ((x,st,_),i) <- zip cs [(1::Integer)..]]
        ;
        CppStdBeyondAnsi _ ->
-           intercalate ", " [wrapSharedPtrIf isClass x ++ " p" ++ show i | ((x,isClass,_),i) <- zip cs [1..]]
+           intercalate ", " [wrapSharedPtrIf isClass x ++ " p" ++ show i | ((x,isClass,_),i) <- zip cs [(1::Integer)..]]
        ;
        }
 
@@ -302,9 +302,6 @@ prListC mode (c,b) = unlines
   , prCloneC mode c c
   , prConsC mode c b
   ]
-  where
-    inner = map toLower c ++ "_"
-
 
 --The standard accept function for the Visitor pattern
 prAcceptC :: CppStdMode -> String -> String
@@ -380,12 +377,14 @@ prConstructorC mode (f,cs) = case mode of {
     }
  where
    cvs = [c | (_,_,c) <- cs]
-   isClasses = [isClass | (_,isClass,_) <- cs]
-   pvs = ['p' : show i | ((_,_,_),i) <- zip cs [1..]]
+   pvs = ['p' : show i | ((_,_,_),i) <- zip cs [(1::Integer)..]]
 
    conargs = case mode of {
      CppStdAnsi _ ->
-       intercalate ", " [x +++ pointerIf isClass v | ((x,isClass,_),v) <- zip cs pvs]
+         intercalate ", " [x +++ pointerIf isClass v | ((x,isClass,_),v) <- zip cs pvs]
+     ;
+     CppStdBeyondAnsi _ ->
+         ""
      ;
      }
 
