@@ -175,7 +175,7 @@ prCon mode (c,(f,cs)) =
         "    " ++ f ++ "(" ++ conargs ++ ");",
         -- Typ *p1, PIdent *p2, ListStm *p3);
         "    ~" ++f ++ "();",
-        "    virtual void accept(Visitor *v);",
+        "    virtual void accept(Visitor *v) override;",
         "    virtual " ++f++ " *clone() const;",
         "    void swap(" ++f++ " &);",
         "};"
@@ -198,7 +198,7 @@ prCon mode (c,(f,cs)) =
         else
           "    " ++f++ "(" ++ conargs ++ "):" +++ c +++ "(){};",
         "",
-        "    virtual void accept(Visitor *v);",
+        "    virtual void accept(Visitor *v) override;",
         "    " ++ wrapSharedPtr c +++ " clone() const override;",
         "};"
         ];

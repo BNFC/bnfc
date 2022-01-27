@@ -150,8 +150,7 @@ header mode cf = unlines $ concat [
   , "%defines \"" ++ ("Bison" <.> hExt) ++ "\""
   ]
   , when (beyondAnsi mode)
-    [ "%define parse.trace"
-      , "%define api.namespace {" ++ ns ++ "}"
+    [ "%define api.namespace {" ++ ns ++ "}"
       , "/* Specify the namespace for the C++ parser class. */"]
   , whenJust (parserPackage mode) $ \ ns ->
       [ "%name-prefix = \"" ++ ns ++ "\""
