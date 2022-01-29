@@ -22,7 +22,7 @@ import BNFC.Backend.Base
 import BNFC.Backend.C            ( bufferH, bufferC, comment, testfileHeader )
 import BNFC.Backend.C.CFtoBisonC ( cf2Bison, unionBuiltinTokens, positionCats, varName )
 import BNFC.Backend.C.CFtoFlexC  ( cf2flex, ParserMode(..), beyondAnsi, parserPackage, parserName, stlParser )
-import BNFC.Backend.CPP.Common   ( commentWithEmacsModeHint, wrapSharedPtr, CppStdMode(..) )
+import BNFC.Backend.CPP.Common   ( commentWithEmacsModeHint, wrapSharedPtr )
 import BNFC.Backend.CPP.Makefile
 import BNFC.Backend.CPP.STL.CFtoSTLAbs
 import BNFC.Backend.CPP.STL.CFtoCVisitSkelSTL
@@ -120,6 +120,7 @@ cpptest mode inPackage cf hExt = unlines $ concat
     , if beyondAnsi mode then
         unlines [
         "#include <memory>"
+        , "#include <fstream>"
         , "#include \"Driver" ++hExt++ "\""
         ]
       else
@@ -137,43 +138,68 @@ cpptest mode inPackage cf hExt = unlines $ concat
     , "}"
     , ""
     , "int main(int argc, char ** argv)"
-    , "{"
-    , "    FILE *input;"
-    , "    int quiet = 0;"
-    , "    char *filename = NULL;"
-    , ""
-    , "    if (argc > 1) {"
-    , "        if (strcmp(argv[1], \"-s\") == 0) {"
-    , "            quiet = 1;"
-    , "            if (argc > 2) {"
-    , "                filename = argv[2];"
-    , "            } else {"
-    , "                input = stdin;"
-    , "            }"
-    , "        } else {"
-    , "            filename = argv[1];"
-    , "        }"
-    , "    }"
-    , ""
-    , "    if (filename) {"
-    , "        input = fopen(filename, \"r\");"
-    , "        if (!input) {"
-    , "            usage();"
-    , "            exit(1);"
-    , "        }"
-    , "    } else input = stdin;"
-    , ""
     , if beyondAnsi mode then
         unlines [
-        "    /* The default entry point is used. For other options see Parser.H */"
+        "{"
+        , "    int quiet = 0;"
+        , "    char *filename = NULL;"
+        , ""
+        , "    if (argc > 1) {"
+        , "        if (strcmp(argv[1], \"-s\") == 0) {"
+        , "            quiet = 1;"
+        , "            if (argc > 2) {"
+        , "                filename = argv[2];"
+        , "            }"
+        , "        } else {"
+        , "            filename = argv[1];"
+        , "        }"
+        , "    }"
+        , ""
+        , "    /* The default entry point is used. For other options see Parser.H */"
         , "    " ++ (wrapSharedPtr $ scope ++ dat) ++ " parse_tree = nullptr;"
         , "    try { "
+        , ""
         , "        auto driver = std::make_unique<" ++ns++ "::" ++camelCaseName++ "Driver>();"
-        , "        parse_tree = driver->p" ++ def ++ "(filename);"
+        , "        if (filename) {"
+        , "            std::ifstream input(filename);"
+        , "            if ( ! input.good() ) {"
+        , "                usage();"
+        , "                exit(1);"
+        , "            }"
+        , "            parse_tree = driver->p" ++ def ++ "(input);"
+        , "        } else {"
+        , "            parse_tree = driver->p" ++ def ++ "(std::cin);"
+        , "        }"
         ]
       else
         unlines [
-        "    /* The default entry point is used. For other options see Parser.H */"
+        "{"
+        , "    FILE *input;"
+        , "    int quiet = 0;"
+        , "    char *filename = NULL;"
+        , ""
+        , "    if (argc > 1) {"
+        , "        if (strcmp(argv[1], \"-s\") == 0) {"
+        , "            quiet = 1;"
+        , "            if (argc > 2) {"
+        , "                filename = argv[2];"
+        , "            } else {"
+        , "                input = stdin;"
+        , "            }"
+        , "        } else {"
+        , "            filename = argv[1];"
+        , "        }"
+        , "    }"
+        , ""
+        , "    if (filename) {"
+        , "        input = fopen(filename, \"r\");"
+        , "        if (!input) {"
+        , "            usage();"
+        , "            exit(1);"
+        , "        }"
+        , "    } else input = stdin;"
+        , ""
+        , "    /* The default entry point is used. For other options see Parser.H */"
         , "    " ++ scope ++ dat ++ " *parse_tree = NULL;"
         , "    try { "
         ,"        parse_tree = " ++ scope ++ "p" ++ def ++ "(input);"
@@ -223,7 +249,7 @@ cpptest mode inPackage cf hExt = unlines $ concat
    camelCaseName = camelCase_ name
    ns = fromMaybe camelCaseName (parserPackage mode)
 
-
+mkHeaderFile :: String -> Maybe String -> CF -> [Cat] -> [Cat] -> [String] -> String
 mkHeaderFile hExt inPackage _cf _cats eps _env = unlines $ concat
   [ [ "#ifndef " ++ hdef
     , "#define " ++ hdef
@@ -245,9 +271,7 @@ mkHeaderFile hExt inPackage _cf _cats eps _env = unlines $ concat
   where
   hdef = nsDefine inPackage "PARSER_HEADER_FILE"
   mkFuncs s =
-    [ identCat (normCat s) ++ "*" +++ "p" ++ identCat s ++ "(FILE *inp);"
-    , identCat (normCat s) ++ "*" +++ "ps" ++ identCat s ++ "(const char *str);"
-    ]
+    [ identCat (normCat s) ++ "*" +++ "p" ++ identCat s ++ "(std::istream &stream);" ]
 
 
 -- | C++ lexer/parser driver
@@ -280,8 +304,7 @@ driverH mode cf cats = unlines
   -- user defined tokens
   , unlines [ prettyShow ("    std::shared_ptr<" ++ identCat tok ++ ">"+++ varName tok ++";") | tok <- normCats ]
   , ""
-  , unlines [ mkFileEntry ep | ep <- entryPoints ]
-  , unlines [ mkStringEntry ep | ep <- entryPoints ]
+  , unlines [ mkStreamEntry ep | ep <- entryPoints ]
   , ""
   , "    /**"
   , "     * parse - parse from a file"
@@ -320,16 +343,14 @@ driverH mode cf cats = unlines
     ns = fromMaybe camelCaseName (parserPackage mode)
     normCats = nub (map normCat cats)
     entryPoints = toList (allEntryPoints cf)
-    mkFileEntry s =
-      "    " ++ (wrapSharedPtr $ identCat (normCat s)) +++ "p" ++ identCat s ++ "(const char *filename);"
-    mkStringEntry s =
-      "    " ++ (wrapSharedPtr $ identCat (normCat s)) +++ "ps" ++ identCat s ++ "(std::istream &stream);"
+    mkStreamEntry s =
+      "    " ++ (wrapSharedPtr $ identCat (normCat s)) +++ "p" ++ identCat s ++ "(std::istream &stream);"
 
 
 -- | C++ lexer/parser driver
 
 driverC :: ParserMode -> CF -> String -> String
-driverC mode cf driverH = unlines
+driverC mode cf _ = unlines
   [ "#include <cctype>"
   , "#include <fstream>"
   , "#include <cassert>"
@@ -406,37 +427,18 @@ driverC mode cf driverH = unlines
   , "    return;"
   , "}"
   , ""
-  , unlines [ mkFileEntry ep | ep <- entryPoints ]
-  , unlines [ mkStringEntry ep | ep <- entryPoints ]
+  , unlines [ mkStreamEntry ep | ep <- entryPoints ]
   ]
   where
     name = parserName mode
     camelCaseName = camelCase_ name
     ns = fromMaybe camelCaseName (parserPackage mode)
     entryPoints = toList (allEntryPoints cf)
-    mkFileEntry s =
+    mkStreamEntry s =
       unlines [
       (wrapSharedPtr $ identCat (normCat s))
-      , ns++ "::" ++camelCaseName++ "Driver::p" ++ identCat s ++ "(const char *filename)"
+      , ns++ "::" ++camelCaseName++ "Driver::p" ++ identCat s ++ "(std::istream &stream)"
       , "{"
-      , "    assert( filename != nullptr );"
-      , "    std::ifstream in_file( filename );"
-      , "    if( ! in_file.good() )"
-      , "    {"
-      , "        exit( EXIT_FAILURE );"
-      , "    }"
-      , "    parse_helper( in_file );"
-      , "    return this->" ++ varName s++ ";"
-      , "}"
-      ]
-    mkStringEntry s =
-      unlines [
-      (wrapSharedPtr $ identCat (normCat s))
-      , ns++ "::" ++camelCaseName++ "Driver::ps" ++ identCat s ++ "(std::istream &stream)"
-      , "{"
-      , "    if( ! stream.good()  && stream.eof() ) {"
-      , "        return nullptr;"
-      , "    }"
       , "    parse_helper( stream );"
       , "    return this->" ++ varName s++ ";"
       , "}"

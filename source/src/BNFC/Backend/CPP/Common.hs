@@ -80,17 +80,8 @@ data CppStdMode
 wrapPointerIf :: Bool -> String -> String
 wrapPointerIf b v = if b then "*" ++ v else v
 
-wrapUniquePtrIf :: Bool -> String -> String
-wrapUniquePtrIf b v = if b then "std::unique_ptr<" ++v++">" else v
-
-wrapUniquePtr :: String -> String
-wrapUniquePtr v = "std::unique_ptr<" ++v++">"
-
 wrapSharedPtrIf :: Bool -> String -> String
 wrapSharedPtrIf b v = if b then "std::shared_ptr<" ++v++">" else v
 
 wrapSharedPtr :: String -> String
 wrapSharedPtr v = "std::shared_ptr<" ++v++">"
-
-wrapMoveIf :: Bool -> String -> String
-wrapMoveIf b v = if b then "std::move(" ++v++")" else v
