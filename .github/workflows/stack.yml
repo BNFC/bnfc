@@ -17,13 +17,13 @@ jobs:
       fail-fast: false
       matrix:
         # Note: check release logic below when changing the matrix!
-        ghc: [9.0.1, 8.10.7, 8.8.4, 8.6.5, 8.4.4, 8.2.2, 8.0.2]
+        ghc: [9.0.2, 8.10.7, 8.8.4, 8.6.5, 8.4.4, 8.2.2, 8.0.2]
         os: [ubuntu-latest]
         include:
           - os: macOS-latest
-            ghc: 9.0.1
+            ghc: 9.0.2
           - os: windows-latest
-            ghc: 9.0.1
+            ghc: 9.0.2
 
 
     # Needed for Windows to make piping (... >> ...) and evaluation ( $(...) ) work.
@@ -112,7 +112,7 @@ jobs:
         # Conditional to ensure this deployment is only run once per action.
         if: >-
           startsWith(github.ref, 'refs/tags/v')
-          && matrix.ghc == '9.0.1'
+          && matrix.ghc == '9.0.2'
         run: |
           export DIST_TGZ=$(cabal sdist source | tail -1)
           echo "DIST_TGZ=${DIST_TGZ}" >> ${GITHUB_ENV}
@@ -120,7 +120,7 @@ jobs:
       - name: Source tarball release.
         if: >-
           startsWith(github.ref, 'refs/tags/v')
-          && matrix.ghc == '9.0.1'
+          && matrix.ghc == '9.0.2'
         uses: softprops/action-gh-release@v1
         with:
           draft: true

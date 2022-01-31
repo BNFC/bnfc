@@ -54,7 +54,7 @@ tested-with:         GHC == 8.2.2
                      GHC == 8.6.5
                      GHC == 8.8.4
                      GHC == 8.10.7
-                     GHC == 9.0.1
+                     GHC == 9.0.2
                      GHC == 9.2.1
 
 executable bnfc-system-tests
@@ -89,7 +89,6 @@ executable bnfc-system-tests
     , HTF         >= 0.14.0.5
       -- HTF-0.14.0.3 does not build with random-1.2
     , random
-      -- random < 1.2
     , string-qq
 
   -- Directories containing source files.
