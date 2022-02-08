@@ -6,6 +6,7 @@ Unreleased
 * Agda: support position information via `--functor` [#405]
 * C/C++: use `size_t` and `-Wsign-conversion` [#391]
 * C++: repair broken `--line-numbers` [#390], regression in 2.9.2 by [#349]
+* Haskell: fix a problem with layout stop words and top-level layout [#399]
 * Ocaml: non-terminals in generated parser are now type-annotated [#407]
 
 Contributors: Michał Radwański

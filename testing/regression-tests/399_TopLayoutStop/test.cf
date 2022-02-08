@@ -7,10 +7,10 @@ layout toplevel                            ;
 Var. Exp ::= Ident;
 Let. Exp ::= "let" "{" [Exp] "}" "in" Exp  ;
 
-layout "in"                                ;
-layout stop "let"                          ;
+layout "let"                               ;
+layout stop "in"                           ;
 
 comment "--"                               ;
 comment "{-" "-}"                          ;
 
--- Input for #399: `let {} in x`.
+-- Input for #399: `let {}\n in x`.
