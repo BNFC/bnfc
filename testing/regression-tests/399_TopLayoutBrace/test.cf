@@ -1,0 +1,16 @@
+-- Andreas, 2022-02-08, PR #399
+-- Small reproducer for layout error "trying to close a top level block".
+
+terminator Exp ";"                         ;
+layout toplevel                            ;
+
+Var. Exp ::= Ident;
+Let. Exp ::= "let" "{" [Exp] "}" "in" Exp  ;
+
+layout "in"                                ;
+layout stop "let"                          ;
+
+comment "--"                               ;
+comment "{-" "-}"                          ;
+
+-- Input for #399: `let {} in x`.
