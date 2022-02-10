@@ -8,6 +8,12 @@ on:
     tags:     [ 'v*' ]
   pull_request:
     types: [ opened, synchronize]
+  workflow_dispatch:
+
+# For making a release, we need write permissions.
+# TODO: if we split out a release job from the build job, we could make permissions more fine-grained.
+permissions:
+  contents: write
 
 jobs:
   build:
@@ -132,6 +138,7 @@ jobs:
         if: >-
           startsWith(github.ref, 'refs/tags/v')
           && runner.os == 'Linux'
+          && matrix.ghc == '9.0.2'
         run: |
           export BNFC_BIN=bnfc-${BNFC_VERSION}-linux.binary
           cp -p ${BNFC_EXE} ${BNFC_BIN}
@@ -142,6 +149,7 @@ jobs:
         if: >-
           startsWith(github.ref, 'refs/tags/v')
           && runner.os == 'Linux'
+          && matrix.ghc == '9.0.2'
         uses: softprops/action-gh-release@v1
         with:
           draft: true
