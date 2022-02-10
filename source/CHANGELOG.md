@@ -1,15 +1,17 @@
 # 2.9.4
 
-Unreleased
+Andreas Abel <andreas.abel@gu.se>  February 2022
 
 * LBNF: empty tokens types are now forbidden [#388]
 * Agda: support position information via `--functor` [#405]
 * C/C++: use `size_t` and `-Wsign-conversion` [#391]
 * C++: repair broken `--line-numbers` [#390], regression in 2.9.2 by [#349]
 * Haskell: fix a problem with layout stop words and top-level layout [#399]
+* Java: use _L_`.valueOf()` instead of deprecated `new `_L_`()` for literal classes _L_ [#402]
 * Ocaml: non-terminals in generated parser are now type-annotated [#407]
+* Ocaml: sanitize bound variables in `define`
 
-Contributors: Michał Radwański
+Contributors: Michał Radwański [#390,#391]
 
 # 2.9.3
 
