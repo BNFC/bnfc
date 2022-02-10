@@ -13,7 +13,6 @@ module BNFC.Options
   , defaultOptions, isDefault, printOptions
   , AlexVersion(..), HappyMode(..), OCamlParser(..), JavaLexerParser(..)
   , RecordPositions(..), TokenText(..)
-  , Ansi(..)
   , InPackage
   , removedIn290
   , translateOldOptions
@@ -29,9 +28,7 @@ import Data.Either     (partitionEithers)
 import qualified Data.Map  as Map
 -- import qualified Data.List as List
 import Data.Maybe      (fromMaybe, maybeToList)
-#if !MIN_VERSION_base(4,11,0)
-import Data.Semigroup  (Semigroup(..))  -- for ghc 7.10 - 8.2
-#endif
+import Data.Semigroup  (Semigroup(..))  -- for ghc 7.10
 import Data.Version    (showVersion )
 
 import System.Console.GetOpt
@@ -98,13 +95,8 @@ data OCamlParser = OCamlYacc | Menhir
 data JavaLexerParser = JLexCup | JFlexCup | Antlr4
     deriving (Eq,Show,Ord)
 
--- | Line numbers or not?
 data RecordPositions = RecordPositions | NoRecordPositions
     deriving (Eq,Show,Ord)
-
--- | Restrict to ANSI standard (C/C++)?
-data Ansi = Ansi | BeyondAnsi
-    deriving (Eq, Ord, Show)
 
 -- | Package name (C++ and Java backends).
 type InPackage = Maybe String
@@ -128,7 +120,6 @@ data SharedOptions = Options
   , make        :: Maybe String    -- ^ The name of the Makefile to generate or Nothing for no Makefile.
   , inPackage   :: InPackage       -- ^ The hierarchical package to put the modules in, or Nothing.
   , linenumbers :: RecordPositions -- ^ Add and set line_number field for syntax classes
-  , ansi        :: Ansi            -- ^ Restrict to the ANSI language standard (C/C++)?
   --- Haskell specific:
   , inDir         :: Bool        -- ^ Option @-d@.
   , functor       :: Bool        -- ^ Option @--functor@.  Make AST functorial?
@@ -162,7 +153,6 @@ defaultOptions = Options
   , make            = Nothing
   , inPackage       = Nothing
   , linenumbers     = NoRecordPositions
-  , ansi            = BeyondAnsi
   -- Haskell specific
   , inDir           = False
   , functor         = False
@@ -219,7 +209,6 @@ printOptions opts = unwords . concat $
   , [ "--makefile=" ++ m  | m <- maybeToList $ make opts        ]
   , [ "-p " ++ p          | p <- maybeToList $ inPackage opts   ]
   , unlessDefault linenumbers opts $ const [ "-l" ]
-  , unlessDefault ansi opts $ const [ "--ansi" ]
   -- Haskell options:
   , [ "-d"                | inDir opts                          ]
   , [ "--functor"         | functor opts                        ]
@@ -322,10 +311,6 @@ specificOptions =
         , "(Note: Java requires cup version 0.11b-2014-06-11 or greater.)"
         ]
     , [TargetC, TargetCpp, TargetJava] )
-  , ( Option [] ["ansi"] (NoArg (\o -> o{ ansi = Ansi })) $ unlines
-        [ "Restrict to ANSI language standard"
-        ]
-    , [TargetCpp] )  -- In the future maybe also: TargetC
   , ( Option ['p'] ["name-space"]
       (ReqArg (\n o -> o {inPackage = Just n}) "NAMESPACE")
           "Prepend NAMESPACE to the package/module name"
