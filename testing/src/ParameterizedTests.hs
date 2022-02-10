@@ -85,7 +85,10 @@ currentRegressionTest = makeTestSuite "Current parameterized test" $
 -- | Layout currently only works for Haskell (even Agda) and Haskell/GADT.
 layoutTest :: Test
 layoutTest = makeTestSuite "Layout parsing test" $ concat
-  [ map (`makeTestCase` ("regression-tests" </> "356_LayoutSnocList")) $
+  [ map (`makeTestCase` ("regression-tests" </> "399_TopLayoutStop")) $
+    [ haskellFunctorParameters
+    ]
+  , map (`makeTestCase` ("regression-tests" </> "356_LayoutSnocList")) $
     [ haskellParameters
     ]
   , map (`makeTestCase` ("regression-tests" </> "194_layout")) $
@@ -340,6 +343,12 @@ haskellRunTestProg _lang args = do
 parameters :: [TestParameters]
 parameters = concat
   [ []
+    -- OCaml/Menhir
+  , [ ocaml { tpName = "OCaml/Menhir"
+            , tpBnfcOptions = ["--ocaml", "--menhir"] }
+    ]
+    -- OCaml
+  , [ ocaml ]
     -- Functor (Haskell & Agda)
   , [ haskellAgdaFunctorParameters]
     -- C++ (extras)
