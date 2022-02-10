@@ -1,5 +1,4 @@
-[![Hackage version](https://img.shields.io/hackage/v/BNFC.svg?label=Hackage)](http://hackage.haskell.org/package/BNFC)
-[![Hackage CI](https://matrix.hackage.haskell.org/api/v2/packages/BNFC/badge)](https://matrix.hackage.haskell.org/package/BNFC)
+[![Hackage version](https://img.shields.io/hackage/v/BNFC.svg?label=Hackage)](http://hackage.haskell.org/package/BNFC) <!-- [![Hackage CI](https://matrix.hackage.haskell.org/api/v2/packages/BNFC/badge)](https://matrix.hackage.haskell.org/package/BNFC) -->
 [![BNFC on Stackage Nightly](https://stackage.org/package/BNFC/badge/nightly)](https://stackage.org/nightly/package/BNFC)
 [![Stackage LTS version](https://www.stackage.org/package/BNFC/badge/lts?label=Stackage)](https://www.stackage.org/package/BNFC)
 [![Build status](https://github.com/BNFC/bnfc/workflows/Haskell-CI/badge.svg)](https://github.com/BNFC/bnfc/actions)
@@ -12,10 +11,10 @@ What is the BNF Converter?
 --------------------------
 
 The BNF Converter (bnfc) is a compiler construction tool generating a compiler
-front-end from a Labelled BNF grammar. It is currently able to generate Haskell,
+front-end from a Labelled BNF (LBNF) grammar. It is currently able to generate Haskell,
 Agda, C, C++, Java, and OCaml, as well as XML representations.
 
-Given a Labelled BNF grammar the tool produces:
+Given a LBNF grammar the tool produces:
 - an abstract syntax implementation
 - a case skeleton for the abstract syntax in the same language
 - an Alex, Ocamllex, JLex, or Flex lexer generator file
@@ -150,3 +149,12 @@ The project is licensed under the [BSD 3-clause license](https://raw.githubuserc
 
 BNFC versions until 2.8.4 released under the
 [GNU General Public License](https://www.gnu.org/licenses/gpl-2.0.html).
+
+Example uses of the BNF Converter
+---------------------------------
+
+In research:
+- NASA's [OGMA](https://github.com/nasa/ogma) tool uses LBNF for its grammars, e.g. for a [subset of C 99](https://github.com/nasa/ogma/blob/49e78e4d6fa7558d09d36a284648087df48714e4/ogma-language-c/grammar/C.cf).
+
+In teaching:
+- Course [Programming Language Technology](http://www.cse.chalmers.se/edu/course/DAT151/) at Chalmers / Gothenburg University.
