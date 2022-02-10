@@ -1,22 +1,25 @@
 # 2.9.4
 
-Andreas Abel <andreas.abel@gu.se>  February 2022
+Andreas Abel <andreas.abel@gu.se>,  February 2022
 
 * LBNF: empty tokens types are now forbidden [#388]
 * Agda: support position information via `--functor` [#405]
 * C/C++: use `size_t` and `-Wsign-conversion` [#391]
 * C++: repair broken `--line-numbers` [#390], regression in 2.9.2 by [#349]
-* Haskell: fix a problem with layout stop words and top-level layout [#399]
+* Haskell: fix a problem with layout stop words and top-level layout [#399,#413]
+* Haskell: generated test parser can parse several files now [#400]
 * Java: use _L_`.valueOf()` instead of deprecated `new `_L_`()` for literal classes _L_ [#402]
 * Ocaml: non-terminals in generated parser are now type-annotated [#407]
 * Ocaml: sanitize bound variables in `define`
 * Ocaml/Menhir: update parse error mechanism to Menhir 2021/12/30 [#414]
 
-Contributors: Michał Radwański [#390,#391]
+Contributors:
+* Michał Radwański [#390,#391]
+* Beatrice Vergani [#399,#400]
 
 # 2.9.3
 
-Andreas Abel <andreas.abel@gu.se>  September 2021
+Andreas Abel <andreas.abel@gu.se>,  September 2021
 
 * BNFC now uniformly signs generated files with its version number [#373]
 * C/C++: include `stdio.h` in parser header files [#381]
@@ -27,7 +30,7 @@ Andreas Abel <andreas.abel@gu.se>  September 2021
 
 # 2.9.2
 
-Andreas Abel <andreas.abel@gu.se>  June 2021
+Andreas Abel <andreas.abel@gu.se>,  June 2021
 
 ## Major improvements
 
@@ -58,7 +61,7 @@ Andreas Abel <andreas.abel@gu.se>  June 2021
 
 # 2.9.1
 
-Andreas Abel <andreas.abel@gu.se>  March 2021
+Andreas Abel <andreas.abel@gu.se>,  March 2021
 
 ## Main new feature
 
@@ -78,7 +81,7 @@ Andreas Abel <andreas.abel@gu.se>  March 2021
 
 # 2.9.0
 
-Andreas Abel <andreas.abel@gu.se>  December 2020
+Andreas Abel <andreas.abel@gu.se>,  December 2020
 
 ## Major changes
 
@@ -100,7 +103,7 @@ Andreas Abel <andreas.abel@gu.se>  December 2020
 
 # 2.8.4
 
-Andreas Abel <andreas.abel@gu.se>  October 2020
+Andreas Abel <andreas.abel@gu.se>,  October 2020
 
 * GHC versions 7.10 - 8.10 supported, dropped GHC 7.6 and 7.8
 * LBNF: whitespace list separators are now accepted; treated like "" [#70]
@@ -123,7 +126,7 @@ Andreas Abel <andreas.abel@gu.se>  October 2020
 
 # 2.8.3
 
-Andreas Abel <andreas.abel@gu.se>  August 2019
+Andreas Abel <andreas.abel@gu.se>,  August 2019
 
 * GHC 8.8 compatibility
 * Stack installation supported by provided .yaml files [#198]
@@ -143,7 +146,7 @@ Andreas Abel <andreas.abel@gu.se>  August 2019
 
 # 2.8.2
 
-Andreas Abel <andreas.abel@gu.se>  November 2018
+Andreas Abel <andreas.abel@gu.se>,  November 2018
 
 * GHC 8.4 compatibility [#227,#236]
 * bnfc now puts current timestamp on all created files, even unchanged ones [#219]
@@ -168,14 +171,14 @@ Andreas Abel <andreas.abel@gu.se>  November 2018
 
 # 2.8.1
 
-Grégoire Détrez <gregoire.detrez@gu.se>  February 2016
+Grégoire Détrez <gregoire.detrez@gu.se>,  February 2016
 
 * Fix compatibility with GHC 7.10.2 and Alex 3.14
 * Fixed #160
 
 # 2.8
 
-Grégoire Détrez <gregoire.detrez@gu.se>  May 2015
+Grégoire Détrez <gregoire.detrez@gu.se>,  May 2015
 
 * Builds with ghc 7.10.1
 * Add support for JFlex (java)
@@ -186,7 +189,7 @@ Grégoire Détrez <gregoire.detrez@gu.se>  May 2015
 
 # 2.7.1
 
-Grégoire Détrez <gregoire.detrez@gu.se> October 2014
+Grégoire Détrez <gregoire.detrez@gu.se>, October 2014
 
 * Generated haskell code is now warning free
 * Removed unused terminal in happy
@@ -197,7 +200,7 @@ Grégoire Détrez <gregoire.detrez@gu.se> October 2014
 
 # 2.7.0.0
 
-Grégoire Détrez <gregoire.detrez@gu.se> September 2014
+Grégoire Détrez <gregoire.detrez@gu.se>, September 2014
 
 * Add token support for Ocaml
 * New option parser
@@ -223,12 +226,12 @@ Grégoire Détrez, January 2013
 
 # 2.4.2.1
 
-Andreas Abel <andreas.abel@ifi.lmu.de> July 2012
+Andreas Abel <andreas.abel@ifi.lmu.de>, July 2012
 
 # 2.4.2.0
 
-Thomas Hallgren September 2010
+Thomas Hallgren, September 2010
 
 # 2.4.1.1
 
-Markus Forsberg September 2010
+Markus Forsberg, September 2010
