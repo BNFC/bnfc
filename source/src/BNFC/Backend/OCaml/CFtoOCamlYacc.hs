@@ -142,27 +142,34 @@ epName c = "p" ++ mapHead toUpper (nonterminal c)
 
 entryPointRules :: OCamlParser -> CF -> [String]
 entryPointRules ocamlParser cf =
-  map mkRule $ toList $ allEntryPoints cf
+  map (unlines . mkRule) $ toList $ allEntryPoints cf
   where
-  mkRule :: Cat -> String
-  mkRule cat = unlines
-    [ epName cat ++ " : " ++ nonterminal cat ++ " TOK_EOF { $1 }"
-    , concat
-      [ "  | error { raise (BNFC_Util.Parse_error ("
-        -- Andreas, 2021-09-16, issue #380
-        -- menhir has dedicated macros for position info,
-        -- the use of the @Parsing@ structure is deprecated
-        -- (and does not seem to work).
-      , case ocamlParser of
-          OCamlYacc -> "Parsing.symbol_start_pos ()"
-          Menhir    -> "$symbolstartpos"
-      , ", "
-      , case ocamlParser of
-          OCamlYacc -> "Parsing.symbol_end_pos ()"
-          Menhir    -> "$endpos"
-      , ")) };"
+  mkRule :: Cat -> [String]
+  mkRule = case ocamlParser of
+    Menhir    -> \ cat ->
+      [ epRule cat ++ ";" ]
+    OCamlYacc -> \ cat ->
+      [ epRule cat
+          -- Andreas, 2022-02-10, issue 414:
+          -- We keep the 'error' token rule, throwing BNFC_Util.Parse_error,
+          -- for API stability.
+          -- It would be more uniform with the Menhir backend to just drop this rule
+          -- and let the user catch the Parsing.Parse_error exception.
+      , "  /* Delete this error clause to get a Parsing.Parse_error exception instead: */"
+      , ocamlYaccErrorCase
+      , "  ;"
       ]
-    ]
+  epRule :: Cat -> String
+  epRule cat = epName cat ++ " : " ++ nonterminal cat ++ " TOK_EOF { $1 }"
+
+ocamlYaccErrorCase :: String
+ocamlYaccErrorCase = concat
+  [ "  | error { raise (BNFC_Util.Parse_error ("
+  , "Parsing.symbol_start_pos ()"
+  , ", "
+  , "Parsing.symbol_end_pos ()"
+  , ")) }"
+  ]
 
 rules :: OCamlParser -> CF -> String
 rules ocamlParser cf = unlines $ concat

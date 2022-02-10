@@ -10,6 +10,7 @@ Andreas Abel <andreas.abel@gu.se>  February 2022
 * Java: use _L_`.valueOf()` instead of deprecated `new `_L_`()` for literal classes _L_ [#402]
 * Ocaml: non-terminals in generated parser are now type-annotated [#407]
 * Ocaml: sanitize bound variables in `define`
+* Ocaml/Menhir: update parse error mechanism to Menhir 2021/12/30 [#414]
 
 Contributors: Michał Radwański [#390,#391]
 

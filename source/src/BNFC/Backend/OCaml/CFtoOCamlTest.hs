@@ -14,6 +14,7 @@ import Prelude hiding ((<>))
 import Text.PrettyPrint
 
 import BNFC.CF
+import BNFC.Options                        (OCamlParser(..))
 import BNFC.Backend.OCaml.OCamlUtil
 import BNFC.Backend.OCaml.CFtoOCamlYacc    (epName)
 import BNFC.Backend.OCaml.CFtoOCamlPrinter (prtFun)
@@ -26,8 +27,8 @@ comment :: Doc -> Doc
 comment d = "(*" <+> d <+> "*)"
 
 -- | Generate a test program in OCaml
-ocamlTestfile :: String -> String -> String -> String -> String -> CF -> Doc
-ocamlTestfile absM lexM parM printM showM cf =
+ocamlTestfile :: OCamlParser -> String -> String -> String -> String -> String -> CF -> Doc
+ocamlTestfile ocamlParser absM lexM parM printM showM cf =
     let
         cat         = firstEntry cf
         qualify q x = concat [ q, ".", x ]
@@ -40,11 +41,26 @@ ocamlTestfile absM lexM parM printM showM cf =
           , parens $ text (showsFunQual (qualify showM) cat) <+> "x"
           ]
         topType     = text (fixTypeQual absM $ normCat cat)
+        exc         = case ocamlParser of
+          OCamlYacc -> "Parsing.Parse_error"
+          Menhir    -> text $ qualify parM "Error"
     in vcat
         [ "open Lexing"
         , ""
         , "let parse (c : in_channel) :" <+> topType <+> "="
-        , nest 4 (parserName <+> lexerName <+> "(Lexing.from_channel c)")
+        , nest 4 $ vcat
+            [ "let lexbuf = Lexing.from_channel c"
+            , "in"
+            , "try"
+            , nest 2 $ hsep [ parserName, lexerName, "lexbuf" ]
+            , "with"
+            , nest 2 $ hsep [ exc, "->" ]
+            , nest 4 $ vcat
+                [ "let start_pos = Lexing.lexeme_start_p lexbuf"
+                , "and end_pos   = Lexing.lexeme_end_p   lexbuf"
+                , "in  raise (BNFC_Util.Parse_error (start_pos, end_pos))"
+                ]
+            ]
         , ";;"
         , ""
         , "let showTree (t : " <> topType <> ") : string ="
