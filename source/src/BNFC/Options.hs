@@ -28,7 +28,9 @@ import Data.Either     (partitionEithers)
 import qualified Data.Map  as Map
 -- import qualified Data.List as List
 import Data.Maybe      (fromMaybe, maybeToList)
-import Data.Semigroup  (Semigroup(..))  -- for ghc 7.10
+#if !MIN_VERSION_base(4,11,0)
+import Data.Semigroup  (Semigroup(..))  -- for ghc 7.10 - 8.2
+#endif
 import Data.Version    (showVersion )
 
 import System.Console.GetOpt
