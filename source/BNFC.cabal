@@ -1,5 +1,5 @@
 Name: BNFC
-Version: 2.9.4
+Version: 2.9.5
 cabal-version: 2.0
   -- >=1.24 for the custom-setup section
   -- >=2.0  for the build-tools: hspec-discover
@@ -70,7 +70,7 @@ Source-repository this
   type:     git
   location: git://github.com/BNFC/bnfc.git
   subdir:   source
-  tag:      v2.9.4
+  tag:      v2.9.5
 
 -- Setup using https://github.com/haskellari/cabal-doctest
 custom-setup

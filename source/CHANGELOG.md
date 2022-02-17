@@ -1,8 +1,12 @@
+# 2.9.5
+
+Unreleased
+
 # 2.9.4
 
 Andreas Abel <andreas.abel@gu.se>,  February 2022
 
-* LBNF: empty tokens types are now forbidden [#388]
+* LBNF: empty token types are now forbidden [#388]
 * Agda: support position information via `--functor` [#405]
 * C/C++: use `size_t` and `-Wsign-conversion` [#391]
 * C++: repair broken `--line-numbers` [#390], regression in 2.9.2 by [#349]
