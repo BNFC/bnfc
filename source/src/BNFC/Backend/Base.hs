@@ -16,9 +16,11 @@ module BNFC.Backend.Base
   ) where
 
 import Control.Arrow    ( (&&&) )
+import Control.Monad.IO.Class ( liftIO )
 import Control.Monad.Writer
 
 import Data.Char        ( isSpace )
+import Data.Foldable    ( forM_ )
 import Data.Function    ( on )
 import qualified Data.List as List
 
