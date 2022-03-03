@@ -104,8 +104,8 @@ reservedFsLex =
   , "refill"
   , "rule"
   , "shortest"
-  
-  ,"letter" 
+
+  ,"letter"
   ,"upper"
   ,"lower"
   ,"digit"

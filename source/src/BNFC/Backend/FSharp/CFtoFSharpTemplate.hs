@@ -61,6 +61,6 @@ case_fun cat xs = unlines $
          [
           "trans" ++ show cat +++ "(x : " ++ fixType cat ++ ") : Result =",
            indent 1 "match x with"
-         ] ++ 
+         ] ++
          (map (indent 1) . insertBar . map (++ " -> failure x")) xs
-         
+

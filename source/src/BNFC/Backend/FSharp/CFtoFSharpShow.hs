@@ -1,6 +1,6 @@
 {-
     TODO: Check if printing fot native fsharp objects like choice types or algebraic types can handle this (it would allow to remove most of the code here)
-    BNF Converter: Non-pretty-printer generator 
+    BNF Converter: Non-pretty-printer generator
     Copyright (C) 2021  Author:  Grzegorz Dziadkiewicz
 
 -}
@@ -130,5 +130,4 @@ mkRhs args its =
   mk (arg:args) (Left c : items)  = (showsFun c +++ arg)        : mk args items
   mk args       (Right _ : items) = mk args items
   mk _ _ = []
-
 

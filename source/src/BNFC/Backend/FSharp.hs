@@ -72,7 +72,7 @@ showFile      = mkFile withLang "Show" "fs"
 showFileM     = mkMod  withLang "Show"
 tFileM         = mkMod withLang "Test"
 tFile         = mkFile withLang "Test" "fs"
-utilFileM     = mkMod  noLang   "BnfcUtil" 
+utilFileM     = mkMod  noLang   "BnfcUtil"
 utilFile      = mkFile noLang   "BnfcUtil" "fs"
 fsprojFile    = mkFile withLang  "" "fsproj"
 
@@ -105,7 +105,7 @@ makefile :: SharedOptions -> String -> Doc
 makefile opts basename = vcat
     [
      mkRule "clean" []
-        [ "-rm -fr bin obj "] 
+        [ "-rm -fr bin obj "]
     ,mkRule "distclean" ["clean"]
         [ "-rm -f " ++ unwords [ mkFile withLang "Lex" "*" opts,
                                  mkFile withLang "Par" "*" opts,

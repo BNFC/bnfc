@@ -168,7 +168,7 @@ rules cf = mkRule "token" $
     ++
     -- reserved keywords
     [ ( "rsyms"
-      , vcat 
+      , vcat
         [ "let x = lexeme lexbuf"
         , "match Map.tryFind x symbol_table with"
         , "| Some result -> result"
@@ -204,7 +204,7 @@ rules cf = mkRule "token" $
     (multilineC, singleLineC) = comments cf
     tokenAction pos t = case asciiKeywords cf of
         [] -> "TOK_" <> t <+> arg "(lexeme lexbuf)"
-        _  -> vcat 
+        _  -> vcat
                 [ "let l = lexeme lexbuf"
                 , "Map.tryFind l resword_table"
                 , "|> Option.defaultValue (TOK_" <> t <+> arg "l)"

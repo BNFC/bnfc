@@ -227,4 +227,3 @@ mkRhs args its =
   mk _ _ = []
   prt c = prtFun c +++ show (precCat c)
 
-
