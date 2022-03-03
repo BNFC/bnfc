@@ -48,7 +48,7 @@ runAllTests = do
     succeedLBNFTests :
     failLBNFTests :
     -- ParameterizedTests.layoutTest :
-    ParameterizedTests.current :  -- Uncomment for prioritized test case.
+    -- ParameterizedTests.current :  -- Uncomment for prioritized test case.
     -- RegressionTests.current :
     ParameterizedTests.all :
     RegressionTests.all    :
