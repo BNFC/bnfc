@@ -5,3 +5,7 @@ compiler-check: match-exact
 packages:
 - source
 - testing
+
+# `testing` depends on more recent `HTF`
+extra-deps:
+- HTF-0.15.0.0
