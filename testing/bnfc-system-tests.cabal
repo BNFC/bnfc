@@ -55,7 +55,7 @@ tested-with:         GHC == 8.2.2
                      GHC == 8.8.4
                      GHC == 8.10.7
                      GHC == 9.0.2
-                     GHC == 9.2.1
+                     GHC == 9.2.2
 
 executable bnfc-system-tests
   -- .hs or .lhs file containing the Main module.
@@ -86,8 +86,9 @@ executable bnfc-system-tests
     , filepath
       -- filepath >= 1.4.2.1
     , text
-    , HTF         >= 0.14.0.5
+    , HTF         >= 0.14.0.5 && < 0.15
       -- HTF-0.14.0.3 does not build with random-1.2
+      -- bnfc-system-tests does not build with HTF-0.15 (issue #416)
     , random
     , string-qq
 
