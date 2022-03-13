@@ -24,7 +24,7 @@ import Text.Regex.Posix
 import Shelly
 
 -- htf
-import Test.Framework (assertEqualPretty_, assertEqual_)
+import qualified Test.Framework as HTF (assertEqualPretty, assertEqual)
 import Test.Framework.Location (unknownLocation)
 import Test.Framework.Pretty (Pretty(..), text, vcat)
 import qualified Test.Framework.TestManager as HTF
@@ -45,8 +45,8 @@ makeUnitTest :: TestID -> IO () -> Test
 makeUnitTest id = HTF.makeUnitTest id unknownLocation
 
 -- Lift HTF's version of assertEqual in MonadIO
-assertEqual a b = liftIO $ assertEqual_ unknownLocation a b
-assertEqualPretty a b = liftIO $ assertEqualPretty_ unknownLocation a b
+assertEqual a b = liftIO $ HTF.assertEqual a b
+assertEqualPretty a b = liftIO $ HTF.assertEqualPretty a b
 
 -- | Pretty instance for Text (to use with assertEquals)
 instance Pretty T.Text where
