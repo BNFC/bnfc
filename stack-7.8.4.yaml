@@ -1,5 +1,0 @@
-resolver: lts-2.22
-packages:
-- source
-# - testing
-# extra-deps: mtl-2.2.2@sha256:1050fb71acd9f5d67da7d992583f5bd0eb14407b9dc7acc122af1b738b706ca3

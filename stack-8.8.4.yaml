@@ -8,4 +8,4 @@ packages:
 
 # `testing` depends on more recent `HTF`
 extra-deps:
-- HTF-0.14.0.5
+- HTF-0.15.0.0

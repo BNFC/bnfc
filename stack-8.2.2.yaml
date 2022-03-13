@@ -5,5 +5,5 @@ packages:
 
 # `testing` depends on more recent `HTF` and `shelly`
 extra-deps:
-- HTF-0.14.0.5
+- HTF-0.15.0.0
 - shelly-1.9.0
