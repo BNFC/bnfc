@@ -236,7 +236,6 @@ header mode cf = unlines $ concat [
       , "typedef void* yyscan_t;"
       , "#endif"
       , ""
-      , "typedef struct " ++ name ++ "_buffer_state *YY_BUFFER_STATE;"
       , "typedef struct yy_buffer_state *YY_BUFFER_STATE;"
       , "extern YY_BUFFER_STATE " ++ name ++ "_scan_string(const char *str, yyscan_t scanner);"
       , "extern void " ++ name ++ "_delete_buffer(YY_BUFFER_STATE buf, yyscan_t scanner);"
@@ -605,7 +604,7 @@ generateActionSTLBeyondAnsi rp inPackage nt f b mbs = reverses ++
     -- The following match only happens in the cons case:
     [el, lst] = applyWhen b reverse ms -- b: left-recursion transformed?
     loc | RecordPositions <- rp
-      = " $$->line_number = @$.first_line; $$->char_number = @$.first_column;"
+      = " $$->line_number = @$.begin.line; $$->char_number = @$.begin.column;"
         | otherwise
       = ""
     reverses  = unwords [m ++"->reverse();" | (m, True) <- mbs]

@@ -43,7 +43,7 @@ makeCppStl opts cf = do
   -- Generate xxx.yy file
   mkCppFileWithHint (name ++ parserExt) $ cf2Bison (linenumbers opts) parserMode cf env
   mkCppFile ("Parser" ++ hExt) $
-    mkHeaderFile hExt (inPackage opts) cf (allParserCats cf) (toList $ allEntryPoints cf) (Map.elems env)
+    mkHeaderFile parserMode hExt (inPackage opts) cf (allParserCats cf) (toList $ allEntryPoints cf) (Map.elems env)
   mkCppFile ("ParserError" ++ hExt) $ printParseErrHeader (inPackage opts)
   let (skelH, skelC) = cf2CVisitSkel opts True (inPackage opts) cf
   mkCppFile ("Skeleton" ++ hExt) skelH
@@ -249,17 +249,19 @@ cpptest mode inPackage cf hExt = unlines $ concat
    camelCaseName = camelCase_ name
    ns = fromMaybe camelCaseName (parserPackage mode)
 
-mkHeaderFile :: String -> Maybe String -> CF -> [Cat] -> [Cat] -> [String] -> String
-mkHeaderFile hExt inPackage _cf _cats eps _env = unlines $ concat
+mkHeaderFile :: ParserMode -> String -> Maybe String -> CF -> [Cat] -> [Cat] -> [String] -> String
+mkHeaderFile mode hExt inPackage _cf _cats eps _env = unlines $ concat
   [ [ "#ifndef " ++ hdef
     , "#define " ++ hdef
     , ""
     , "#include <vector>"
     , "#include <string>"
     , "#include <cstdio>"
-    , "#include \"Bison" ++ hExt ++ "\""
     , "#include \"Absyn" ++ hExt ++ "\""
-    , ""
+    , if beyondAnsi mode then
+        "#include \"Bison" ++ hExt ++ "\""
+      else
+        ""
     , nsStart inPackage
     ]
   , concatMap mkFuncs eps
@@ -270,8 +272,13 @@ mkHeaderFile hExt inPackage _cf _cats eps _env = unlines $ concat
   ]
   where
   hdef = nsDefine inPackage "PARSER_HEADER_FILE"
-  mkFuncs s =
-    [ identCat (normCat s) ++ "*" +++ "p" ++ identCat s ++ "(std::istream &stream);" ]
+  mkFuncs s = if beyondAnsi mode then
+                [ identCat (normCat s) ++ "*" +++ "p" ++ identCat s ++ "(std::istream &stream);" ]
+              else
+                [ identCat (normCat s) ++ "*" +++ "p" ++ identCat s ++ "(FILE *inp);"
+                , identCat (normCat s) ++ "*" +++ "p" ++ identCat s ++ "(const char *str);"
+                ]
+
 
 
 -- | C++ lexer/parser driver
