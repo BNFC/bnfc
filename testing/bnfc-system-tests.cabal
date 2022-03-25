@@ -86,7 +86,7 @@ executable bnfc-system-tests
     , filepath
       -- filepath >= 1.4.2.1
     , text
-    , HTF         >= 0.15.0.0
+    , HTF         >= 0.14.0.5
       -- API change in HTF-0.15.0.0 (issue #416)
     , random
     , string-qq
