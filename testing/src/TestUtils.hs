@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE LambdaCase #-}
 
 module TestUtils
@@ -15,6 +16,7 @@ module TestUtils
 -- base, text, filepath
 import Control.Exception (handle, throwIO, SomeException)
 import Control.Monad
+import Control.Monad.IO.Class (MonadIO(..))
 import Data.Maybe (listToMaybe)
 import qualified Data.Text as T
 import System.FilePath (normalise, takeFileName)
@@ -24,7 +26,7 @@ import Text.Regex.Posix
 import Shelly
 
 -- htf
-import qualified Test.Framework as HTF (assertEqualPretty, assertEqual)
+import qualified Test.Framework as HTF -- (assertEqualPretty, assertEqual)
 import Test.Framework.Location (unknownLocation)
 import Test.Framework.Pretty (Pretty(..), text, vcat)
 import qualified Test.Framework.TestManager as HTF
@@ -32,6 +34,10 @@ import Test.Framework.TestTypes
 
 -- hunit
 import qualified Test.HUnit as HUnit
+
+#if MIN_VERSION_HTF(0,15,0)
+import GHC.Stack (HasCallStack)
+#endif
 
 -- | Replate the makeTestSuite function from HTF. This one returns a Test
 -- object instead of a TestSuite which makes it easier to mix single test
@@ -45,8 +51,16 @@ makeUnitTest :: TestID -> IO () -> Test
 makeUnitTest id = HTF.makeUnitTest id unknownLocation
 
 -- Lift HTF's version of assertEqual in MonadIO
-assertEqual a b = liftIO $ HTF.assertEqual a b
+#if MIN_VERSION_HTF(0,15,0)
+assertEqual       :: (MonadIO m, Eq a, Show   a, HasCallStack) => a -> a -> m ()
+assertEqualPretty :: (MonadIO m, Eq a, Pretty a, HasCallStack) => a -> a -> m ()
+
+assertEqual       a b = liftIO $ HTF.assertEqual       a b
 assertEqualPretty a b = liftIO $ HTF.assertEqualPretty a b
+#else
+assertEqual       a b = liftIO $ HTF.assertEqual_       unknownLocation a b
+assertEqualPretty a b = liftIO $ HTF.assertEqualPretty_ unknownLocation a b
+#endif
 
 -- | Pretty instance for Text (to use with assertEquals)
 instance Pretty T.Text where
