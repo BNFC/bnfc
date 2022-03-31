@@ -41,6 +41,7 @@ prelude name tokenText = concat
     , "{-# OPTIONS_GHC -w #-}"
     , ""
     , "{-# LANGUAGE PatternSynonyms #-}"
+    , "{-# LANGUAGE Trustworthy #-}"
     , ""
     , "module " ++ name ++ " where"
     , ""

@@ -60,17 +60,15 @@ prologue :: TokenText -> Bool -> String -> [AbsMod] -> CF -> [Doc]
 prologue tokenText useGadt name absMod cf = map text $ concat
   [ [ "{-# LANGUAGE CPP #-}"
     , "{-# LANGUAGE FlexibleInstances #-}"
-    , "{-# LANGUAGE LambdaCase #-}"
     ]
   , [ "{-# LANGUAGE GADTs #-}"                | useGadt ]
+  , [ "{-# LANGUAGE LambdaCase #-}" ]
   , [ "#if __GLASGOW_HASKELL__ <= 708"
     , "{-# LANGUAGE OverlappingInstances #-}"
     , "#endif"
     ]
+  , languageSafe
   , [ ""
-    -- -- WAS: Needed for precedence category lists, e.g. @[Exp2]@:
-    -- , "{-# OPTIONS_GHC -fno-warn-incomplete-patterns #-}"
-    -- , ""
     , "-- | Pretty-printer for " ++ takeWhile ('.' /=) name ++ "."
     , ""
     , "module " ++ name +++ "where"

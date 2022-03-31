@@ -22,13 +22,14 @@ import qualified Data.List as List
 import BNFC.CF
 import BNFC.Options               ( SharedOptions(..), TokenText(..) )
 import BNFC.PrettyPrint
-import BNFC.Utils                 ( when, applyWhen )
+import BNFC.Utils                 ( when, unless, applyWhen )
 
 import BNFC.Backend.Haskell.Utils
   ( avoidReservedWords, catToType, mkDefName
   , tokenTextImport, tokenTextType, typeToHaskell'
   , posType, posConstr, noPosConstr
   , hasPositionClass, hasPositionMethod
+  , languageSafe
   )
 
 -- | Create a Haskell module containing data type definitions for the abstract syntax.
@@ -50,10 +51,11 @@ cf2Abstract Options{ lang, tokenText, generic, functor } name cf = vsep . concat
         , [ "{-# LANGUAGE DeriveGeneric #-}"              | gen ]
         , [ "{-# LANGUAGE DeriveTraversable #-}"          | fun ]
         , [ "{-# LANGUAGE FlexibleInstances #-}"          | fun ]
-        , [ "{-# LANGUAGE GeneralizedNewtypeDeriving #-}" | hasIdentLikeNoPos ] -- for IsString
+        -- , [ "{-# LANGUAGE GeneralizedNewtypeDeriving #-}" | hasIdentLikeNoPos ] -- for IsString
         , [ "{-# LANGUAGE LambdaCase #-}"                 | fun ]
         , [ "{-# LANGUAGE PatternSynonyms #-}"            | defPosition ]
         , [ "{-# LANGUAGE OverloadedStrings #-}"          | not (null definitions), tokenText /= StringToken ]
+        , languageSafe
         ]
       ]
     , [ "-- | The abstract syntax of language" <+> text lang <> "." ]
@@ -61,8 +63,8 @@ cf2Abstract Options{ lang, tokenText, generic, functor } name cf = vsep . concat
 
     -- Imports
     , [ vcat . concat $
-        [ [ text $ "import Prelude (" ++ List.intercalate ", " typeImports ++ ")"
-            | not $ null typeImports ]
+        [ [ text $ "import Prelude (" ++ List.intercalate ", " preludeImports ++ ")"
+            | not $ null preludeImports ]
         , [ prettyList 2 "import qualified Prelude as C" "(" ")" "," $ qualifiedPreludeImports
             | not $ null qualifiedPreludeImports ]
         , [ "import qualified Data.String"
@@ -85,7 +87,7 @@ cf2Abstract Options{ lang, tokenText, generic, functor } name cf = vsep . concat
     -- Token definition types
     , (`map` specialCats cf) $ \ c ->
         let hasPos = isPositionCat cf c
-        in  prSpecialData tokenText hasPos (derivingClassesTokenType hasPos) c
+        in  prSpecialData tokenText hasPos (derivingClasses False) c
 
     -- BNFC'Position type
       -- We generate these synonyms for position info when --functor,
@@ -146,15 +148,20 @@ cf2Abstract Options{ lang, tokenText, generic, functor } name cf = vsep . concat
       , when functor funClasses
       , when generic genClasses
       ]
-    derivingClassesTokenType hasPos = concat
-      [ derivingClasses False
-      , [ "Data.String.IsString" | not hasPos ]
-      ]
+    -- derivingClassesTokenType hasPos = concat
+    --   [ derivingClasses False
+    --   , [ "Data.String.IsString" | not hasPos ]
+    --   ]
+
     -- import Prelude (Char, Double, Integer, String)
     typeImports =
       filter (\ s -> hasData        && s `elem` cfgLiterals cf
                   || hasTextualToks && tokenText == StringToken && s == "String")
         baseTokenCatNames
+    preludeImports = concat
+      [ typeImports
+      , [ "(.)" | hasTextualToks && tokenText /= StringToken ]
+      ]
     qualifiedPreludeImports = concat
       [ [ text $ List.intercalate ", " stdClasses | hasTextualToks || hasData ]
       , [ text $ List.intercalate ", " funClasses | fun ]
@@ -235,21 +242,30 @@ instanceHasPositionData (cat, rules) = vcat . concat $
 
 -- | Generate a newtype declaration for Ident types
 --
--- >>> prSpecialData StringToken False ["Show","Data.String.IsString"] catIdent
+-- >>> prSpecialData StringToken False ["Show","Eq"] catIdent
 -- newtype Ident = Ident String
---   deriving (Show, Data.String.IsString)
+--   deriving (Show, Eq)
+-- <BLANKLINE>
+-- instance Data.String.IsString Ident where
+--   fromString = Ident
 --
--- >>> prSpecialData StringToken True ["Show"] catIdent
+-- >>> prSpecialData StringToken True ["Show","Eq","Ord"] catIdent
 -- newtype Ident = Ident ((C.Int, C.Int), String)
---   deriving (Show)
+--   deriving (Show, Eq, Ord)
 --
 -- >>> prSpecialData TextToken False ["Show"] catIdent
 -- newtype Ident = Ident Data.Text.Text
 --   deriving (Show)
+-- <BLANKLINE>
+-- instance Data.String.IsString Ident where
+--   fromString = Ident . Data.String.fromString
 --
 -- >>> prSpecialData ByteStringToken False ["Show"] catIdent
 -- newtype Ident = Ident BS.ByteString
 --   deriving (Show)
+-- <BLANKLINE>
+-- instance Data.String.IsString Ident where
+--   fromString = Ident . Data.String.fromString
 --
 -- >>> prSpecialData ByteStringToken True ["Show"] catIdent
 -- newtype Ident = Ident ((C.Int, C.Int), BS.ByteString)
@@ -261,14 +277,25 @@ prSpecialData
   -> [String]   -- ^ Derived classes.
   -> TokenCat   -- ^ Token category name.
   -> Doc
-prSpecialData tokenText position classes cat = vcat
-    [ hsep [ "newtype", text cat, "=", text cat, contentSpec ]
+prSpecialData tokenText position classes cat = vcat $ concat
+  [ [ hsep [ "newtype", ident, "=", ident, contentSpec ]
     , nest 2 $ deriving_ classes
     ]
+  , unless position
+    [ ""
+    , hsep [ "instance", "Data.String.IsString", ident, "where" ]
+    , nest 2 $ hsep [ "fromString", "=", fromString ]
+    ]
+  ]
   where
+    ident = text cat
     contentSpec | position    = parens ( "(C.Int, C.Int), " <> stringType)
                 | otherwise   = stringType
     stringType = text $ tokenTextType tokenText
+    fromString
+      | tokenText == StringToken = ident
+      | otherwise                = hsep [ ident, ".", "Data.String.fromString" ]
+
 
 -- | Generate 'deriving' clause
 --

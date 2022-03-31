@@ -12,7 +12,7 @@ module BNFC.Backend.HaskellGADT (makeHaskellGadt) where
 import BNFC.Options
 import BNFC.Backend.Base hiding (Backend)
 import BNFC.Backend.Haskell.HsOpts
-import BNFC.Backend.Haskell.Utils (comment, commentWithEmacsModeHint)
+import BNFC.Backend.Haskell.Utils (comment, commentWithEmacsModeHint, languageSafe)
 import BNFC.CF
 import BNFC.Backend.Haskell.CFtoHappy
 import BNFC.Backend.Haskell.CFtoAlex3
@@ -61,7 +61,7 @@ makeHaskellGadt opts cf = do
   mkHsFileHint x = mkfile x commentWithEmacsModeHint
 
 composOp :: String -> String
-composOp composOpMod = unlines
+composOp composOpMod = unlines $ languageSafe ++
     [
      "{-# LANGUAGE Rank2Types, PolyKinds #-}",
      "module " ++ composOpMod ++ " (Compos(..),composOp,composOpM,composOpM_,composOpMonoid,",

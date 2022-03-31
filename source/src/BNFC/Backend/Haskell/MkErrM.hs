@@ -10,12 +10,14 @@
 
 module BNFC.Backend.Haskell.MkErrM where
 
+import BNFC.Backend.Haskell.Utils (languageSafe)
 import BNFC.PrettyPrint
 
 mkErrM :: String -> Doc
-mkErrM errMod = vcat
-    [ "{-# LANGUAGE CPP #-}"
-    , ""
+mkErrM errMod = vcat $ concat
+  [ [ "{-# LANGUAGE CPP #-}" ]
+  , languageSafe
+  , [ ""
     , "#if __GLASGOW_HASKELL__ >= 708"
     , "---------------------------------------------------------------------------"
     , "-- Pattern synonyms exist since ghc 7.8."
@@ -104,3 +106,4 @@ mkErrM errMod = vcat
     , ""
     , "#endif"
     ]
+  ]

@@ -1,6 +1,7 @@
 # 2.9.5
 
 Unreleased
+* Haskell: label produced code as `Safe` (and parser as `Trustworthy`)
 
 # 2.9.4
 
