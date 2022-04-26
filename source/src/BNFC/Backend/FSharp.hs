@@ -26,6 +26,7 @@ import BNFC.CF
 import BNFC.PrettyPrint
 import BNFC.Options
 import BNFC.Utils
+import qualified BNFC.Backend.Common.Makefile as Makefile
 
 import qualified BNFC.Backend.C as C
 
@@ -57,7 +58,7 @@ sanitizedLang = camelCase_ . lang
 
 absFile, absFileM, fslexFile, fslexFileM, fsyaccFile, fsyaccFileM,
   utilFile, utilFileM, templateFile, templateFileM, printerFile, printerFileM,
-  tFile, tFileM, showFile, showFileM, fsprojFile :: SharedOptions -> String
+  tFile, tFileM, showFile, showFileM, fsprojFile, buildTarget :: SharedOptions -> String
 absFile       = mkFile withLang "Abs" "fs"
 absFileM      = mkMod  withLang "Abs"
 fslexFile     = mkFile withLang "Lex" "fsl"
@@ -70,11 +71,12 @@ printerFile   = mkFile withLang "Print" "fs"
 printerFileM  = mkMod  withLang "Print"
 showFile      = mkFile withLang "Show" "fs"
 showFileM     = mkMod  withLang "Show"
-tFileM         = mkMod withLang "Test"
+tFileM        = mkMod  withLang "Test"
 tFile         = mkFile withLang "Test" "fs"
 utilFileM     = mkMod  noLang   "BnfcUtil"
 utilFile      = mkFile noLang   "BnfcUtil" "fs"
 fsprojFile    = mkFile withLang  "" "fsproj"
+buildTarget   = mkFile withLang  "" ""
 
 makeFSharp :: SharedOptions -> CF -> MkFiles ()
 makeFSharp opts cf = do
@@ -101,25 +103,97 @@ makeFSharp opts cf = do
     --   1 -> makeXML opts False cf
     --   _ -> return ()
 
-makefile :: SharedOptions -> String -> Doc
-makefile opts basename = vcat
-    [
-     mkRule "clean" []
-        [ "-rm -fr bin obj "]
-    ,mkRule "distclean" ["clean"]
-        [ "-rm -f " ++ unwords [ mkFile withLang "Lex" "*" opts,
-                                 mkFile withLang "Par" "*" opts,
-                                 mkFile withLang "Layout" "*" opts,
-                                 mkFile withLang "Skel" "*" opts,
-                                 mkFile withLang "Print" "*" opts,
-                                 mkFile withLang "Show" "*" opts,
-                                 mkFile withLang "Test" "*" opts,
-                                 mkFile withLang "Abs" "*" opts,
-                                 mkFile withLang "Test" "" opts,
-                                 mkFile withLang  "" "fsproj" opts,
-                                 utilFile opts,
-                                 basename ]]
+-- | Generate the makefile.
+makefile
+  :: SharedOptions
+  -> String    -- ^ Filename of the makefile.
+  -> Doc       -- ^ Content of the makefile.
+makefile opts makeFile = vcat
+  [ "# Makefile for building the parser and test program."
+  , phonyRule
+  , defaultRule
+  , vcat [ "# Rules for building the parser." , "" ]
+  -- If option -o was given, we have no access to the grammar file
+  -- from the Makefile.  Thus, we have to drop the rule for
+  -- reinvokation of bnfc.
+  , when (isDefault outDir opts) $ bnfcRule
+  , testParserRule
+  , vcat [ "# Rules for cleaning generated files." , "" ]
+  , cleanRule
+  , distCleanRule
+  , "# EOF"
+  ]
+  where
+  -- | List non-file targets here.
+  phonyRule :: Doc
+  phonyRule = vcat
+    [ "# List of goals not corresponding to file names."
+    , ""
+    , Makefile.mkRule ".PHONY" [ "all", "clean", "distclean" ] []
     ]
+  -- | Default: build test parser(s).
+  defaultRule :: Doc
+  defaultRule = vcat
+     [ "# Default goal."
+     , ""
+     , Makefile.mkRule "all" tgts []
+     ]
+     where
+     tgts = [ buildTarget opts ]
+
+  -- | Rule to build F# test parser.
+  testParserRule :: Doc
+  testParserRule = Makefile.mkRule tgt deps [ "dotnet build" ]
+    where
+    tgt :: String
+    tgt = buildTarget opts
+    deps :: [String]
+    deps = map ($ opts)
+      [   absFile
+        , printerFile
+        , tFile
+        , fslexFile
+        , fsyaccFile
+        , templateFile
+        , showFile
+        , utilFile
+        , fsprojFile
+      ]
+  cleanRule =
+      mkRule "clean" []
+          [ "-rm -fr bin obj "]
+
+  distCleanRule =
+       mkRule "distclean" ["clean"]
+          [ "-rm -f " ++ unwords [ mkFile withLang "Lex" "*" opts,
+                                   mkFile withLang "Par" "*" opts,
+                                   mkFile withLang "Layout" "*" opts,
+                                   mkFile withLang "Skel" "*" opts,
+                                   mkFile withLang "Print" "*" opts,
+                                   mkFile withLang "Show" "*" opts,
+                                   mkFile withLang "Test" "*" opts,
+                                   mkFile withLang "Abs" "*" opts,
+                                   mkFile withLang "Test" "" opts,
+                                   mkFile withLang  "" "fsproj" opts,
+                                   utilFile opts,
+                                   makeFile ]]
+
+  -- | Rule to reinvoke @bnfc@ to updated parser.
+  --   Reinvokation should not recreate @Makefile@!
+  bnfcRule :: Doc
+  bnfcRule = Makefile.mkRule tgts [ lbnfFile opts ] [ recipe ]
+      where
+      recipe    = unwords [ "bnfc", printOptions opts{ make = Nothing } ]
+      tgts      = unwords . map ($ opts) $
+        [ absFile
+        , fslexFile
+        , fsyaccFile
+        , utilFile
+        , templateFile
+        , printerFile
+        , tFile
+        , showFile
+        ]
 
 comment :: String -> String
 comment x = unwords [ "(*", x, "*)" ]

@@ -258,6 +258,7 @@ printTargetOption = ("--" ++) . \case
   TargetLatex       -> "latex"
   TargetJava        -> "java"
   TargetOCaml       -> "ocaml"
+  TargetFSharp      -> "fsharp"
   TargetPygments    -> "pygments"
   TargetCheck       -> "check"
 
