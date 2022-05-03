@@ -12,12 +12,13 @@ module BNFC.Backend.CPP.STL (makeCppStl,) where
 import Data.Foldable (toList)
 import Data.List       ( nub )
 import qualified Data.Map as Map
-import Data.Maybe      ( fromMaybe )
+import Data.Maybe()
 
 import BNFC.Utils
 import BNFC.CF
 import BNFC.Options
 import BNFC.PrettyPrint
+import BNFC.Backend.Common.OOAbstract
 import BNFC.Backend.Base
 import BNFC.Backend.C            ( bufferH, bufferC, comment, testfileHeader )
 import BNFC.Backend.C.CFtoBisonC ( cf2Bison, unionBuiltinTokens, positionCats, varName )
@@ -159,7 +160,7 @@ cpptest mode inPackage cf hExt = unlines $ concat
         , "    " ++ (wrapSharedPtr $ scope ++ dat) ++ " parse_tree = nullptr;"
         , "    try { "
         , ""
-        , "        auto driver = std::make_unique<" ++ns++ "::" ++camelCaseName++ "Driver>();"
+        , "        auto driver = std::make_unique<" ++nsScope driverNS++camelCaseName++ "Driver>();"
         , "        if (filename) {"
         , "            std::ifstream input(filename);"
         , "            if ( ! input.good() ) {"
@@ -202,7 +203,7 @@ cpptest mode inPackage cf hExt = unlines $ concat
         , "    /* The default entry point is used. For other options see Parser.H */"
         , "    " ++ scope ++ dat ++ " *parse_tree = NULL;"
         , "    try { "
-        ,"        parse_tree = " ++ scope ++ "p" ++ def ++ "(input);"
+        ,"        parse_tree = p" ++ def ++ "(input);"
         ]
     , "    } catch( " ++ scope ++ "parse_error &e) {"
     , "        std::cerr << \"Parse error on line \" << e.getLine() << \"\\n\"; "
@@ -213,23 +214,23 @@ cpptest mode inPackage cf hExt = unlines $ concat
     , "        printf(\"\\nParse Successful!\\n\");"
     , if beyondAnsi mode then
         unlines [
-        "        if (!quiet) {"
+          "        if (!quiet) {"
         , "            printf(\"\\n[Abstract Syntax]\\n\");"
-        , "            auto s = std::make_unique<" ++ scope ++ "ShowAbsyn>(" ++ scope ++ "ShowAbsyn());"
+        , "            auto s = std::make_unique<" ++nsScope ns++"ShowAbsyn>(" ++nsScope ns++"ShowAbsyn());"
         , "            printf(\"%s\\n\\n\", s->show(parse_tree.get()));"
         , "            printf(\"[Linearized Tree]\\n\");"
-        , "            auto p = std::make_unique<" ++ scope ++ "PrintAbsyn>(" ++ scope ++ "PrintAbsyn());"
+        , "            auto p = std::make_unique<" ++nsScope ns++"PrintAbsyn>(" ++nsScope ns++"PrintAbsyn());"
         , "            printf(\"%s\\n\\n\", p->print(parse_tree.get()));"
         , "      }"
         ]
       else
         unlines [
-        "        if (!quiet) {"
+          "        if (!quiet) {"
         , "            printf(\"\\n[Abstract Syntax]\\n\");"
-        , "           "++ scope ++ "ShowAbsyn *s = new " ++ scope ++ "ShowAbsyn();"
+        , "            " ++nsScope ns++"ShowAbsyn *s = new " ++nsScope ns++"ShowAbsyn();"
         , "            printf(\"%s\\n\\n\", s->show(parse_tree));"
         , "            printf(\"[Linearized Tree]\\n\");"
-        , "           " ++ scope ++ "PrintAbsyn *p = new " ++ scope ++ "PrintAbsyn();"
+        , "            " ++nsScope ns++"PrintAbsyn *p = new " ++nsScope ns++"PrintAbsyn();"
         , "            printf(\"%s\\n\\n\", p->print(parse_tree));"
         , "      }"
         , "      delete(parse_tree);"
@@ -247,7 +248,8 @@ cpptest mode inPackage cf hExt = unlines $ concat
    scope = nsScope inPackage
    name = parserName mode
    camelCaseName = camelCase_ name
-   ns = fromMaybe camelCaseName (parserPackage mode)
+   ns = inPackage
+   driverNS = inPackage
 
 mkHeaderFile :: ParserMode -> String -> Maybe String -> CF -> [Cat] -> [Cat] -> [String] -> String
 mkHeaderFile mode hExt inPackage _cf _cats eps _env = unlines $ concat
@@ -296,7 +298,7 @@ driverH mode cf cats = unlines
   , "#include \"Scanner.hh\""
   , "#include \"Parser.hh\""
   , ""
-  , "namespace " ++ns++ "{"
+  , nsStart ns
   , ""
   , "class  " ++camelCaseName++ "Driver{"
   , "public:"
@@ -323,9 +325,8 @@ driverH mode cf cats = unlines
   , "     * @param is - std::istream&, valid input stream"
   , "     */"
   , "    void parse(std::istream &iss);"
-  , "    /** Error handling with associated line number. This can be modified to"
-  , "     * output the error. */"
-  , "    void error(const class location& l, const std::string& m);"
+  , "    /** Error handling with associated line number. This can be modified to output the error. */"
+  , "    void error(const " ++nsScope parserNs++camelCaseName++ "Parser::location_type& l, const std::string& m);"
   , ""
   , "    std::ostream& print(std::ostream &stream);"
   , ""
@@ -333,21 +334,24 @@ driverH mode cf cats = unlines
   , "    bool trace_scanning = false;"
   , "    bool trace_parsing = false;"
   , ""
-  , "private:"
+  , "    std::unique_ptr<" ++camelCaseName++ "Scanner> scanner = nullptr;"
+  , "    std::unique_ptr<" ++ nsScope parserNs ++camelCaseName++ "Parser>  parser  = nullptr;"
   , ""
+  , "private:"
   , "    void parse_helper( std::istream &stream );"
   , ""
-  , "    std::unique_ptr<" ++camelCaseName++ "Scanner> scanner = nullptr;"
-  , "    std::unique_ptr<" ++camelCaseName++ "Parser>  parser  = nullptr;"
   , "};"
   , ""
-  , "} /* end namespace " ++ns++ " */"
+  , nsEnd ns
   , "#endif /* END __DRIVER_H__ */"
   ]
   where
     name = parserName mode
     camelCaseName = camelCase_ name
-    ns = fromMaybe camelCaseName (parserPackage mode)
+    ns = parserPackage mode -- bnfc -p "package"
+    parserNs = case ns of
+      Just ns -> Just ns;   -- Using above namespace
+      Nothing -> Just name; -- Using namespace generated by bison (see Makefile)
     normCats = nub (map normCat cats)
     entryPoints = toList (allEntryPoints cf)
     mkStreamEntry s =
@@ -361,15 +365,16 @@ driverC mode cf _ = unlines
   [ "#include <cctype>"
   , "#include <fstream>"
   , "#include <cassert>"
-  , " "
+  , ""
   , "#include \"Driver.hh\""
-  , " "
-  , "" ++ns++ "::" ++camelCaseName++ "Driver::~" ++camelCaseName++ "Driver()"
+  , nsStart ns
+  , ""
+  , "" ++camelCaseName++ "Driver::~" ++camelCaseName++ "Driver()"
   , "{"
   , "}"
   , " "
   , "void "
-  , ns++ "::" ++camelCaseName++ "Driver::parse( const char * const filename )"
+  , camelCaseName++ "Driver::parse( const char * const filename )"
   , "{"
   , "    /**"
   , "     * Remember, if you want to have checks in release mode"
@@ -386,7 +391,7 @@ driverC mode cf _ = unlines
   , "}"
   , " "
   , "void"
-  , ns++ "::" ++camelCaseName++ "Driver::parse( std::istream &stream )"
+  , camelCaseName++ "Driver::parse( std::istream &stream )"
   , "{"
   , "    if( ! stream.good()  && stream.eof() ) {"
   , "        return;"
@@ -396,18 +401,23 @@ driverC mode cf _ = unlines
   , "}"
   , " "
   , "void"
-  , ns++ "::" ++camelCaseName++ "Driver::error( const class location& l, const std::string& m )"
+  , camelCaseName++ "Driver::error( const " ++nsScope parserNs++camelCaseName++ "Parser::location_type& l, const std::string& m )"
   , "{"
-  , "    std::cerr << l << \": \" << m << std::endl;"
+  , "    std::cerr << \"error: \""
+  , "              << scanner->loc->begin.line << \",\" << scanner->loc->begin.column"
+  , "              << \": \""
+  , "              << m"
+  , "              << \" at \" << std::string(scanner->YYText())"
+  , "              << std::endl;"
   , "}"
-  , " "
+  , ""
   , "void "
-  , ns++ "::" ++camelCaseName++ "Driver::parse_helper( std::istream &stream )"
+  , camelCaseName++ "Driver::parse_helper( std::istream &stream )"
   , "{"
   , ""
   , "    scanner.reset();"
   , "    try {"
-  , "        scanner = std::make_unique<" ++ns++ "::" ++camelCaseName++ "Scanner>( &stream );"
+  , "        scanner = std::make_unique<" ++camelCaseName++ "Scanner>( &stream );"
   , "        scanner->set_debug(trace_scanning);"
   , "    } catch( std::bad_alloc &ba ) {"
   , "        std::cerr << \"Failed to allocate scanner: (\""
@@ -418,7 +428,7 @@ driverC mode cf _ = unlines
   , ""
   , "    parser.reset(); "
   , "    try {"
-  , "        parser = std::make_unique<" ++ns++ "::" ++camelCaseName++ "Parser>((*scanner), (*this));"
+  , "        parser = std::make_unique<" ++nsScope parserNs++camelCaseName++ "Parser>((*scanner), (*this));"
   , "    } catch( std::bad_alloc &ba ) {"
   , "        std::cerr << \"Failed to allocate parser: (\""
   , "                  << ba.what() "
@@ -429,29 +439,39 @@ driverC mode cf _ = unlines
   , ""
   , "    parser->set_debug_level (trace_parsing);"
   , "    if( parser->parse() != accept ) {"
-  , "        std::cerr << \"Parse failed!!\\n\";"
+  , "        exit( EXIT_FAILURE );"
   , "    }"
   , "    return;"
   , "}"
   , ""
   , unlines [ mkStreamEntry ep | ep <- entryPoints ]
+  , nsEnd ns
   ]
   where
     name = parserName mode
     camelCaseName = camelCase_ name
-    ns = fromMaybe camelCaseName (parserPackage mode)
+    ns = parserPackage mode -- bnfc -p "package"
+    parserNs = case ns of
+      Just _ -> ns;         -- Using above namespace, so not necessary parser name namespace
+      Nothing -> Just name; -- Using namespace generated by bison (see Makefile)
     entryPoints = toList (allEntryPoints cf)
+    reversibleCats = cfgReversibleCats cf
+
     mkStreamEntry s =
       unlines [
       (wrapSharedPtr $ identCat (normCat s))
-      , ns++ "::" ++camelCaseName++ "Driver::p" ++ identCat s ++ "(std::istream &stream)"
+      , camelCaseName++ "Driver::p" ++ identCat s ++ "(std::istream &stream)"
       , "{"
       , "    parse_helper( stream );"
+      , if isList s && not (s `elem` reversibleCats) then
+          "    this->" ++ varName s++ "->reverse();"
+        else
+          ""
       , "    return this->" ++ varName s++ ";"
       , "}"
       ]
 
--- | C++ lexer def
+-- | C++ lexer def (scanner.hh)
 
 scannerH :: ParserMode -> String
 scannerH mode = unlines
@@ -463,48 +483,48 @@ scannerH mode = unlines
   , "#ifndef YY_DECL"
   , "#define YY_DECL \\"
   , "    int         \\"
-  , "    " ++ns++ "::" ++camelCaseName++ "Scanner::lex(                        \\"
-  , "    " ++ns++ "::" ++camelCaseName++ "Parser::semantic_type* const yylval, \\"
-  , "    " ++ns++ "::" ++camelCaseName++ "Parser::location_type* yylloc        \\"
+  , "    " ++ nsScope ns ++camelCaseName++ "Scanner::lex(                        \\"
+  , "    " ++ nsScope parserNs ++camelCaseName++ "Parser::semantic_type* const yylval, \\"
+  , "    " ++ nsScope parserNs ++camelCaseName++ "Parser::location_type* yylloc        \\"
   , "    )"
   , "#endif"
   , ""
-  , "#ifndef __FLEX_LEXER_H"
-  , "#define yyFlexLexer BnfcFlexLexer" -- This name is dummy
-  , "#include \"FlexLexer.h\""
-  , "#undef yyFlexLexer"
+  -- Inherit from yyFlexLexer, create a subclass with naming "XXXScanner"
+  -- https://stackoverflow.com/a/40665154/2565527
+  , "#if !defined(yyFlexLexerOnce)"
+  , "#   include \"FlexLexer.h\""
   , "#endif"
   , ""
   , "#include \"Bison.hh\""
   , "#include \"location.hh\""
   , ""
-  , "namespace " ++ns++ "{"
+  , nsStart ns
   , ""
-  , "class " ++camelCaseName++ "Scanner : public BnfcFlexLexer {"
+  , "class " ++camelCaseName++ "Scanner : public yyFlexLexer {"
   , "public:"
   , ""
   , "    " ++camelCaseName++ "Scanner(std::istream *in);"
   , "    virtual ~" ++camelCaseName++ "Scanner();"
   , ""
   , "    virtual"
-  , "    int lex( " ++ns++ "::" ++camelCaseName++ "Parser::semantic_type * const lval,"
-  , "             " ++ns++ "::" ++camelCaseName++ "Parser::location_type *location );"
-  , "    // YY_DECL defined in mc_lexer.l"
-  , "    // Method body created by flex in mc_lexer.yy.cc"
+  , "    int lex( " ++ nsScope parserNs ++camelCaseName++ "Parser::semantic_type * const lval,"
+  , "             " ++ nsScope parserNs ++camelCaseName++ "Parser::location_type *location );"
+  , "    // YY_DECL defined in .ll file. Method body created by flex in Lexer.cc"
   , ""
-  , ""
-  , "private:"
   , "    /* yyval ptr */"
-  , "    " ++ns++ "::" ++camelCaseName++ "Parser::semantic_type *yylval = nullptr;"
+  , "    " ++ nsScope parserNs ++camelCaseName++ "Parser::semantic_type *yylval = nullptr;"
   , "    /* location ptr */"
-  , "    " ++ns++ "::" ++camelCaseName++ "Parser::location_type *loc    = nullptr;"
+  , "    " ++ nsScope parserNs ++camelCaseName++ "Parser::location_type *loc    = nullptr;"
   , "};"
   , ""
-  , "} /* end namespace " ++ns++ " */"
+  , nsEnd ns
   ,  ""
   , "#endif /* END __SCANNER_H__ */"
   ]
   where
     name = parserName mode
     camelCaseName = camelCase_ name
-    ns = fromMaybe camelCaseName (parserPackage mode)
+    ns = parserPackage mode  -- bnfc -p "package"
+    parserNs = case ns of
+      Just _ -> Nothing;     -- Using above namespace, so not necessary parser name namespace
+      Nothing -> Just name;  -- Using namespace generated by bison (see Makefile)

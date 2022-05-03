@@ -35,9 +35,9 @@ import BNFC.Backend.CPP.STL.STLUtils
 --The result is two files (.H file, .C file)
 
 cf2CPPAbs :: RecordPositions -> CppStdMode -> Maybe String -> String -> CF -> (String, String)
-cf2CPPAbs rp mode inPackage _ cf = (mkHFile rp mode inPackage cab cf, mkCFile mode inPackage cab cf)
+cf2CPPAbs rp mode inPackage _ cf = (mkHFile rp mode inPackage cabs cf, mkCFile mode inPackage cabs cf)
   where
-    cab = cf2cabs cf
+    cabs = cf2cabs cf
 
 
 -- **** Header (.H) File Functions **** --
@@ -100,9 +100,9 @@ mkHFile rp mode inPackage cabs cf = unlines
   "",
   unlines [prCon mode (c,r) | (c,rs) <- signatures cabs, r <- rs],
   "",
-  unlines [prList mode c | c <- listtypes cabs],
+  unlines [prList mode primitives c | c <- listtypes cabs],
   "",
-  definedRules Nothing cf
+  definedRules mode Nothing cf
   "/********************   Defined Constructors    ********************/",
   nsEnd inPackage,
   "#endif"
@@ -110,6 +110,7 @@ mkHFile rp mode inPackage cabs cf = unlines
  where
   classes = allClasses cabs
   hdef = nsDefine inPackage "ABSYN_HEADER"
+  primitives = [c | (c,_) <- basetypes] ++ tokentypes cabs
 
 -- auxiliaries
 
@@ -199,7 +200,7 @@ prCon mode (c,(f,cs)) =
           "    " ++f++ "(" ++ conargs ++ "):" +++ c +++ "(){};",
         "",
         "    virtual void accept(Visitor *v) override;",
-        "    " ++ wrapSharedPtr c +++ " clone() const override;",
+        "    " ++ wrapSharedPtr c +++ " clone() const;",
         "};"
         ];
       }
@@ -215,8 +216,8 @@ prCon mode (c,(f,cs)) =
        ;
        }
 
-prList :: CppStdMode -> (String, Bool) -> String
-prList mode (c, b) = case mode of {
+prList :: CppStdMode -> [String] -> (String, Bool) -> String
+prList mode primitives (c, b) = case mode of {
   CppStdAnsi _ -> unlines [
       "class " ++c++ " : public Visitable, public std::vector<" ++bas++ ">"
       , "{"
@@ -248,7 +249,7 @@ prList mode (c, b) = case mode of {
       , ""
       , "    virtual void accept(Visitor *v);"
       , "    " ++ wrapSharedPtr c +++ " clone() const;"
-      , "    void cons(" ++ wrapSharedPtr childClass ++ ");"
+      , "    void cons(" ++ wrapSharedPtrIf isNotBaseClass childClass ++ ");"
       , "    void reverse();"
       , "};"
       , ""
@@ -258,6 +259,8 @@ prList mode (c, b) = case mode of {
     childClass = drop 4 c
     childClassVarName = "list" ++ map toLower childClass ++ "_"
     bas = applyWhen b (++ "*") $ drop 4 c {- drop "List" -}
+    -- if list element is primitive type, not to use smart-ptr for argument type
+    isNotBaseClass = not $ elem childClass primitives
 
 
 -- **** Implementation (.C) File Functions **** --
@@ -271,17 +274,22 @@ mkCFile mode inPackage cabs cf = unlines $ [
   "#include \"Absyn"++hExt++"\"",
   nsStart inPackage,
   unlines [prConC  mode c r  | (c,rs) <- signatures cabs, r <- rs],
-  unlines [prListC mode l | l <- listtypes cabs],
-  definedRules (Just $ LC nil cons) cf
+  unlines [prListC mode primitives l | l <- listtypes cabs],
+  definedRules mode (Just $ LC nil cons) cf
   "/********************   Defined Constructors    ********************/",
   nsEnd inPackage
   ]
   where
-  nil  t = (,dummyType) $ concat [ "new List", identType t, "()" ]
-  cons t = (,dummyType) $ concat [ "consList", identType t ]
-  hExt = case mode of
-    CppStdAnsi _ -> ".h";
-    CppStdBeyondAnsi _ -> ".hh";
+    primitives = [c | (c,_) <- basetypes] ++ tokentypes cabs
+    nil  t = case mode of
+      CppStdAnsi _ -> (,dummyType) $ concat [ "new List", identType t, "()" ]
+      CppStdBeyondAnsi _ -> (,dummyType) $ wrapMakeShared ("List" ++ identType t) ++ "()"
+    cons t = case mode of
+      CppStdAnsi _ -> (,dummyType) $ concat [ "consList", identType t ]
+      CppStdBeyondAnsi _ -> (,dummyType) $ concat [ "consList", identType t ]
+    hExt = case mode of
+      CppStdAnsi _ -> ".h"
+      CppStdBeyondAnsi _ -> ".hh"
 
 
 prConC :: CppStdMode -> String -> CAbsRule -> String
@@ -295,12 +303,12 @@ prConC mode c fcs@(f,_) = unlines [
   ""
  ]
 
-prListC :: CppStdMode -> (String,Bool) -> String
-prListC mode (c,b) = unlines
+prListC :: CppStdMode -> [String] -> (String,Bool) -> String
+prListC mode primitives (c,b) = unlines
   [ "/********************   " ++ c ++ "    ********************/"
   , prAcceptC mode c
   , prCloneC mode c c
-  , prConsC mode c b
+  , prConsC mode primitives c b
   ]
 
 --The standard accept function for the Visitor pattern
@@ -338,8 +346,8 @@ prCloneC mode f c = case mode of {
   }
 
 -- | Make a list constructor definition.
-prConsC :: CppStdMode -> String -> Bool -> String
-prConsC mode c b = case mode of {
+prConsC :: CppStdMode -> [String] -> String -> Bool -> String
+prConsC mode primitives c b = case mode of {
     CppStdAnsi _ -> unlines [
         concat [ c, "* ", "cons", c, "(", bas, " x, ", c, "* xs) {" ]
         , "    xs->insert(xs->begin(), x);"
@@ -347,8 +355,22 @@ prConsC mode c b = case mode of {
         , "}"
         ];
     CppStdBeyondAnsi _ -> unlines [
-        concat [ "void ", c, "::cons(", wrapSharedPtr bas, " x) {" ]
-        , "    " ++inner++ ".push_front(x);"
+        -- Append a element into list tail (In C ++ term, "push_back")
+        concat [ "void ", c, "::cons(", consArg, " x) {" ]
+        , if isNotBaseClass then
+            "    " ++inner++ ".push_back(x);"
+          else
+            "    " ++inner++ ".push_back(std::make_unique<" ++bas++ ">(x));"
+        , "}"
+        , ""
+        -- Insert a element into list head (In C ++ term, "push_front" / in lisp term ? "cons")
+        -- This implementation is required in definedRules
+        , concat [wrapSharedPtr c, " cons", c, "(", consArg, " x, ", wrapSharedPtr c, " xs) {"]
+        , if isNotBaseClass then
+            "    xs->" ++inner++ ".push_front(x);"
+          else
+            "    xs->" ++inner++ ".push_front(std::make_unique<" ++bas++ ">(x));"
+        , "    return xs;"
         , "}"
         , ""
         , "void" +++ c ++ "::reverse() {"
@@ -362,6 +384,10 @@ prConsC mode c b = case mode of {
       CppStdBeyondAnsi _ -> drop 4 c;
       }
     inner = map toLower c ++ "_"
+    -- if list element is primitive type, not to use smart-ptr for argument type
+    isNotBaseClass = not $ elem bas primitives
+    consArg = wrapSharedPtrIf isNotBaseClass bas
+
 
 --The constructor assigns the parameters to the corresponding instance variables.
 prConstructorC :: CppStdMode -> CAbsRule -> String

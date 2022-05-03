@@ -21,23 +21,27 @@ import BNFC.Options
 import BNFC.Utils ((+++), unless)
 import BNFC.Backend.Common.OOAbstract
 import BNFC.Backend.CPP.Naming
+import BNFC.Backend.CPP.Common (CppStdMode(..))
 import BNFC.Backend.CPP.STL.STLUtils
 
---Produces (.H file, .C file)
+--Produces (header file, c/c++ file)
 cf2CVisitSkel :: SharedOptions -> Bool -> Maybe String -> CF -> (String, String)
 cf2CVisitSkel opts useSTL inPackage cf =
- ( mkHFile useSTL hExt inPackage cab
- , mkCFile useSTL hExt inPackage cab
+ ( mkHFile mode useSTL hExt inPackage cab
+ , mkCFile mode useSTL hExt inPackage cab
  )
  where
    cab = cf2cabs cf
-   hExt = if Ansi == ansi opts then ".h" else ".hh"
+   (mode, hExt) = case (ansi opts, useSTL) of
+     (BeyondAnsi, True ) -> ( CppStdBeyondAnsi (ansi opts), ".hh" )
+     (      Ansi, True ) -> ( CppStdAnsi (ansi opts)      , ".h"  )
+     (_         , False) -> ( CppStdAnsi (ansi opts)      , ".H"  )
 
 -- **** Header (.H) File Functions ****
 
 --Generates the Header File
-mkHFile :: Bool -> String -> Maybe String -> CAbs -> String
-mkHFile useSTL hExt inPackage cf = unlines [
+mkHFile :: CppStdMode -> Bool -> String -> Maybe String -> CAbs -> String
+mkHFile _ useSTL hExt inPackage cf = unlines [
   "#ifndef " ++ hdef,
   "#define " ++ hdef,
   "/* You might want to change the above name. */",
@@ -72,14 +76,14 @@ basics useSTL cf = concat
 -- **** Implementation (.C) File Functions ****
 
 --Makes the .C File
-mkCFile :: Bool -> String -> Maybe String -> CAbs -> String
-mkCFile useSTL hExt inPackage cf = unlines [
+mkCFile :: CppStdMode -> Bool -> String -> Maybe String -> CAbs -> String
+mkCFile mode useSTL hExt inPackage cf = unlines [
   headerC hExt,
   nsStart inPackage,
   unlines [
       "void Skeleton::visit" ++ t ++ "(" ++ t ++ " *t) {} //abstract class" | t <- absclasses cf],
     unlines [ prCon   r  | (_,rs)  <- signatures cf, r <- rs, useSTL || not (posRule r) ],
-    unlines [ prList useSTL cb | cb <- listtypes cf ],
+    unlines [ prList mode useSTL cb | cb <- listtypes cf ],
     unlines [ prBasic b  | b  <- base ],
     nsEnd inPackage
  ]
@@ -103,6 +107,7 @@ mkCFile useSTL hExt inPackage cf = unlines [
        | otherwise = "visit" ++ cat ++ "(" ++ field ++ ");"
        where field = v ++ "->" ++ var
 
+headerC :: [Char] -> String
 headerC hExt = unlines [
       "/*** Visitor Design Pattern Skeleton. ***/",
       "/* This implements the common visitor design pattern.",
@@ -114,6 +119,7 @@ headerC hExt = unlines [
       ""
       ]
 
+prBasic :: [Char] -> String
 prBasic c = unlines [
   "void Skeleton::visit" ++ c ++ "(" ++ c ++ " x)",
   "{",
@@ -121,7 +127,11 @@ prBasic c = unlines [
   "}"
   ]
 
-prList True (cl,b) = unlines [
+
+prList :: CppStdMode -> Bool -> (String, Bool) -> String
+
+-- useSTL = True
+prList mode True (cl,b) = unlines [
   "void Skeleton::visit" ++ cl ++ "("++ cl +++ "*" ++ vname ++ ")",
   "{",
   "  for ("++ cl ++"::iterator i = " ++
@@ -129,14 +139,20 @@ prList True (cl,b) = unlines [
   "  {",
   if b
     then "    (*i)->accept(this);"
-    else "    visit" ++ drop 4 cl ++ "(*i) ;",
+    else "    visit" ++ drop 4 cl ++ "(" ++visitArg++ ") ;",
   "  }",
   "}"
   ]
  where
    vname = mkVariable cl
+   childCl = drop 4 cl  -- drop "List"
+   visitArg = case mode of
+     CppStdBeyondAnsi _ -> "*i->get()"
+     _                  -> "*i"
 
-prList False (cl,b) = unlines
+
+-- useSTL = False
+prList _ False (cl,b) = unlines
   [ "void Skeleton::visit" ++ cl ++ "("++ cl +++ "*" ++ vname ++ ")"
   , "{"
   , "  while (" ++ vname ++ ")"
