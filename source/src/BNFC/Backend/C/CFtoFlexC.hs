@@ -317,6 +317,8 @@ restOfFlex mode cf env = unlines $ concat
       , ""
       , "" ++camelCaseName++ "Scanner::~" ++camelCaseName++ "Scanner()"
       , "{"
+      , "    delete loc;"
+      , "    delete yylval;"
       , "}"
       , ""
       , "/* This implementation of " ++camelCaseName++ "FlexLexer::yylex() is required to fill the"
