@@ -33,7 +33,7 @@ import qualified BNFC.Backend.Common.Makefile as Makefile
 import BNFC.CF
 import BNFC.Options
   ( SharedOptions(..), TokenText(..), AlexVersion(..), HappyMode(..)
-  , isDefault, printOptions
+  , isDefault, printOptions, ErrorType (..)
   )
 import BNFC.Utils (when, table, getZonedTimeTruncatedToSeconds)
 
@@ -68,12 +68,12 @@ makeHaskell opts cf = do
     -- Generate Happy parser and matching test program.
     do
       mkfile (happyFile opts) commentWithEmacsModeHint $
-        cf2Happy parMod absMod lexMod (glr opts) (tokenText opts) (functor opts) cf
+        cf2Happy parMod absMod lexMod (glr opts) (tokenText opts) (functor opts) (errorType opts) cf
       -- liftIO $ printf "%s Tested with Happy 1.15\n" (happyFile opts)
       mkfile (tFile opts) comment $ testfile opts cf
 
     -- Both Happy parser and skeleton (template) rely on Err.
-    mkfile (errFile opts) comment $ mkErrM errMod
+    mapM_ (mkfile (errFile opts) comment) $ mkErrM errMod (errorType opts)
     mkfile (templateFile opts) comment $ cf2Template (templateFileM opts) absMod (functor opts) cf
 
     -- Generate txt2tags documentation.
@@ -335,7 +335,7 @@ testfile opts cf = unlines $ concat $
     [ [ [ "import " , absFileM      opts , " (" ++ if_glr impTopCat ++ ")" ] ]
     , [ [ "import " , layoutFileM   opts , " ( resolveLayout )"      ] | lay     ]
     , [ [ "import " , alexFileM     opts , " ( Token, mkPosToken )"              ]
-      , [ "import " , happyFileM    opts , " ( " ++ impParser ++ ", myLexer" ++ impParGLR ++ " )" ]
+      , [ "import " , happyFileM    opts , " ( " ++ impParser ++ ", myLexer" ++ impParGLR ++ ", Err )" ]
       , [ "import " , printerFileM  opts , " ( Print, printTree )"               ]
       , [ "import " , templateFileM opts , " ()"                                 ]
       ]
@@ -344,7 +344,6 @@ testfile opts cf = unlines $ concat $
   , [ "import qualified Data.Map ( Map, lookup, toList )" | use_glr ]
   , [ "import Data.Maybe ( fromJust )"                    | use_glr ]
   , [ ""
-    , "type Err        = Either String"
     , if use_glr
       then "type ParseFun a = [[Token]] -> (GLRResult, GLR_Output (Err a))"
       else "type ParseFun a = [Token] -> Err a"
@@ -357,7 +356,7 @@ testfile opts cf = unlines $ concat $
     , "runFile v p f = putStrLn f >> readFile f >>= run v p"
     , ""
     , "run :: (" ++ xpr ++ if_glr "TreeDecode a, " ++ "Print a, Show a) => Verbosity -> ParseFun a -> " ++ tokenTextType (tokenText opts) ++ " -> IO ()"
-    , (if use_glr then runGlr else runStd use_xml) myLLexer
+    , if use_glr then runGlr myLLexer else runStd use_xml myLLexer (errorType opts)
     , "showTree :: (Show a, Print a) => Int -> a -> IO ()"
     , "showTree v tree = do"
     , "  putStrV v $ \"\\n[Abstract Syntax]\\n\\n\" ++ show tree"
@@ -408,8 +407,8 @@ testfile opts cf = unlines $ concat $
     (hasTopLevelLayout, layoutKeywords, _) = layoutPragmas cf
     useTopLevelLayout = isJust hasTopLevelLayout
 
-runStd :: Bool -> (String -> String) -> String
-runStd xml myLLexer = unlines $ concat
+runStd :: Bool -> (String -> String) -> ErrorType -> String
+runStd xml myLLexer errorType = unlines $ concat
  [ [ "run v p s ="
    , "  case p ts of"
    , "    Left err -> do"
@@ -417,8 +416,11 @@ runStd xml myLLexer = unlines $ concat
    , "      putStrV v \"Tokens:\""
    , "      mapM_ (putStrV v . showPosToken . mkPosToken) ts"
    -- , "      putStrV v $ show ts"
-   , "      putStrLn err"
-   , "      exitFailure"
+   ]
+ , case errorType of
+     ErrorTypeString ->     [ "      putStrLn err" ]
+     ErrorTypeStructured -> [ "      putStrLn $ \"Error: \" ++ show err" ]
+ , [ "      exitFailure"
    , "    Right tree -> do"
    , "      putStrLn \"\\nParse Successful!\""
    , "      showTree v tree"

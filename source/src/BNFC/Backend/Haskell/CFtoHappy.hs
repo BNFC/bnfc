@@ -17,7 +17,7 @@ import Data.List (intersperse)
 import BNFC.CF
 import BNFC.Backend.Common.StrUtils (escapeChars)
 import BNFC.Backend.Haskell.Utils
-import BNFC.Options (HappyMode(..), TokenText(..))
+import BNFC.Options (HappyMode(..), TokenText(..), ErrorType(..))
 import BNFC.PrettyPrint
 import BNFC.Utils
 
@@ -42,9 +42,10 @@ cf2Happy
   -> HappyMode  -- ^ Happy mode.
   -> TokenText  -- ^ Use @ByteString@ or @Text@?
   -> Bool       -- ^ AST is a functor?
+  -> ErrorType  -- ^ The error type in the parser result type.
   -> CF         -- ^ Grammar.
   -> String     -- ^ Generated code.
-cf2Happy name absName lexName mode tokenText functor cf = unlines
+cf2Happy name absName lexName mode tokenText functor errorType cf = unlines
   [ header name absName lexName tokenText eps
   , render $ declarations mode functor eps
   , render $ tokens cf functor
@@ -52,7 +53,7 @@ cf2Happy name absName lexName mode tokenText functor cf = unlines
   , specialRules absName functor tokenText cf
   , render $ prRules absName functor (rulesForHappy absName functor cf)
   , ""
-  , footer absName tokenText functor eps cf
+  , footer absName tokenText functor eps errorType cf
   ]
   where
   eps = toList $ allEntryPoints cf
@@ -66,7 +67,14 @@ header modName absName lexName tokenText eps = unlines $ concat
     , "{-# LANGUAGE PatternSynonyms #-}"
     , ""
     , "module " ++ modName
-    , "  ( happyError"
+    , "  ( Err"
+    , "  , Failure(..)"
+    , "  , InvalidTokenFailure(..)"
+    , "  , UnexpectedTokenFailure(..)"
+    , "  , UnexpectedEofFailure(..)"
+    -- TODO: maybe we should stop exporting happyError, since there is no reason
+    -- to use it outside and its type can vary?
+    , "  , happyError"
     , "  , myLexer"
     ]
   , map (("  , " ++) . render . parserName) eps
@@ -91,6 +99,8 @@ header modName absName lexName tokenText eps = unlines $ concat
 -- -- no lexer declaration
 -- %monad { Err } { (>>=) } { return }
 -- %tokentype {Token}
+-- %errorhandlertype explist
+-- %error { happyError }
 --
 -- >>> declarations Standard True [Cat "A", Cat "B", ListCat (Cat "B")]
 -- %name pA_internal A
@@ -99,14 +109,18 @@ header modName absName lexName tokenText eps = unlines $ concat
 -- -- no lexer declaration
 -- %monad { Err } { (>>=) } { return }
 -- %tokentype {Token}
+-- %errorhandlertype explist
+-- %error { happyError }
 declarations :: HappyMode -> Bool -> [Cat] -> Doc
 declarations mode functor ns = vcat
     [ vcat $ map generateP ns
     , case mode of
         Standard -> "-- no lexer declaration"
-        GLR      -> "%lexer { myLexer } { Err _ }",
-      "%monad { Err } { (>>=) } { return }",
-      "%tokentype" <+> braces (text tokenName)
+        GLR      -> "%lexer { myLexer } { Err _ }"
+    , "%monad { Err } { (>>=) } { return }"
+    , "%tokentype" <+> braces (text tokenName)
+    , "%errorhandlertype explist"
+    , "%error { happyError }"
     ]
   where
   generateP n = "%name" <+> parserName n <> (if functor then "_internal" else "") <+> text (identCat n)
@@ -255,24 +269,88 @@ prRules absM functor = vsep . map prOne
 
 -- Finally, some haskell code.
 
-footer :: ModuleName -> TokenText -> Bool -> [Cat] -> CF -> String
-footer absName tokenText functor eps _cf = unlines $ concat
+footer :: ModuleName -> TokenText -> Bool -> [Cat] -> ErrorType -> CF -> String
+footer absName tokenText functor eps errorType _cf = unlines $ concat
   [ [ "{"
     , ""
-    , "type Err = Either String"
+    , "-- | The parser failure type."
+    , "--"
+    , "-- It contains values of more specific failure record types, so that they"
+    , "-- could easily be extended with new fields."
+    , "data Failure"
+    , "  = FailureInvalidToken !InvalidTokenFailure"
+    , "  | FailureUnexpectedToken !UnexpectedTokenFailure"
+    , "  | FailureUnexpectedEof !UnexpectedEofFailure"
+    , "  deriving (Show, Eq)"
     , ""
-    , "happyError :: [" ++ tokenName ++ "] -> Err a"
-    , "happyError ts = Left $"
-    , "  \"syntax error at \" ++ tokenPos ts ++ "
-    , "  case ts of"
-    , "    []      -> []"
-    , "    [Err _] -> \" due to lexer error\""
-    , unwords
-      [ "    t:_     -> \" before `\" ++"
-      , "(prToken t)"
-      -- , tokenTextUnpack tokenText "(prToken t)"
-      , "++ \"'\""
-      ]
+    , "-- | The lexer error type."
+    , "newtype InvalidTokenFailure = InvalidTokenFailure"
+    , "  { itfPosn :: Posn  -- ^ The position of the beginning of an invalid token."
+    , "  } deriving (Show, Eq)"
+    , ""
+    , "-- | The parser error: no production is found to match a token."
+    , "data UnexpectedTokenFailure = UnexpectedTokenFailure"
+    , "  { utfPosn           :: !Posn  -- ^ The position of the beginning of the unexpected token."
+    , "  , utfTokenText      :: !(" ++ tokenTextType tokenText ++ ")"
+    , "  , utfExpectedTokens :: [String]  -- ^ Names of possible tokens at this position according to the grammar."
+    , "  } deriving (Show, Eq)"
+    , ""
+    , "-- | The parser error: the end of file is encountered but a token is expected."
+    , "newtype UnexpectedEofFailure = UnexpectedEofFailure"
+    , "  { ueofExpectedTokens :: [String]  -- ^ Names of possible tokens at this position according to the grammar."
+    , "  } deriving (Show, Eq)"
+    , ""
+    ]
+  , case errorType of
+      ErrorTypeStructured ->
+        [ "type Err = Either Failure"
+        , ""
+        , "happyError :: ([" ++ tokenName ++ "], [String]) -> Err a"
+        , "happyError = Left . uncurry mkFailure"
+        ]
+      ErrorTypeString ->
+        [ "type Err = Either String"
+        , ""
+        , "happyError :: ([" ++ tokenName ++ "], [String]) -> Err a"
+        , "happyError = Left . failureToString . uncurry mkFailure"
+        , ""
+        , "failureToString :: Failure -> String"
+        , "failureToString f ="
+        , "  \"syntax error at \" ++ pos ++ "
+        , "  case f of"
+        , "    FailureUnexpectedEof   _  -> []"
+        , "    FailureInvalidToken    _  -> \" due to lexer error\""
+        , unwords
+          [ "    FailureUnexpectedToken ut -> \" before `\" ++"
+          , tokenTextUnpack tokenText "(utfTokenText ut)"
+          , "++ \"'\""
+          ]
+        , "  where"
+        , "    pos = case f of"
+        , "      FailureInvalidToken    it -> printPosn (itfPosn it)"
+        , "      FailureUnexpectedToken ut -> printPosn (utfPosn ut)"
+        , "      FailureUnexpectedEof   _  -> \"end of file\""
+        ]
+  , [ ""
+    , "mkFailure :: [" ++ tokenName ++ "] -> [String] -> Failure"
+    , "mkFailure ts expectedTokens = case ts of"
+    , "  [] ->"
+    , "    FailureUnexpectedEof"
+    , "      UnexpectedEofFailure"
+    , "      { ueofExpectedTokens = expectedTokens"
+    , "      }"
+    , "  [Err pos] ->"
+    , "    FailureInvalidToken"
+    , "      InvalidTokenFailure"
+    , "      { itfPosn = pos"
+    , "      }"
+    , "  t : _ ->"
+    , "    FailureUnexpectedToken"
+    , "      UnexpectedTokenFailure"
+    , "      { utfPosn = tokenPosn t"
+    , "      , utfTokenText = tokenText t"
+    , "      , utfExpectedTokens = expectedTokens"
+    , "      }"
     , ""
     , "myLexer :: " ++ tokenTextType tokenText ++ " -> [" ++ tokenName ++ "]"
     , "myLexer = tokens"

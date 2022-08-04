@@ -21,3 +21,13 @@ backend `shouldGenerate` file = do
   let filenames = map fileName files
   file `elem` filenames
     @? printf "file %s not found in %s" file (show filenames)
+
+shouldNotGenerate
+  :: Backend   -- ^ Backend to run.
+  -> String    -- ^ Name of file that should be created during that run.
+  -> Expectation
+backend `shouldNotGenerate` file = do
+  files <- execBackend backend
+  let filenames = map fileName files
+  file `notElem` filenames
+    @? printf "unexpected file %s found in %s" file (show filenames)

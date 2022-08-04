@@ -11,9 +11,16 @@
 module BNFC.Backend.Haskell.MkErrM where
 
 import BNFC.PrettyPrint
+import BNFC.Options (ErrorType(..))
 
-mkErrM :: String -> Doc
-mkErrM errMod = vcat
+-- | Creates @ErrM.hs@ file if needed.
+--
+-- It returns 'Nothing' if there is no need to create it.
+mkErrM :: String -> ErrorType -> Maybe Doc
+mkErrM _      ErrorTypeStructured = Nothing
+   -- ErrM.hs is only for backward compatibility with old code using string
+   -- errors, so that we don't create it in case of structured errors.
+mkErrM errMod ErrorTypeString = Just $ vcat
     [ "{-# LANGUAGE CPP #-}"
     , ""
     , "#if __GLASGOW_HASKELL__ >= 708"
