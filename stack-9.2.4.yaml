@@ -1,5 +1,5 @@
-resolver: lts-19.29
-compiler: ghc-9.0.2
+resolver: nightly-2022-10-18
+compiler: ghc-9.2.4
 compiler-check: match-exact
 
 packages:

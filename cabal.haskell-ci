@@ -31,8 +31,10 @@ no-tests-no-benchmarks: >= 9.0.1
 -- end
 ---------------------------------------------------------------------------
 
--- -- Switch of tests for 9.2 (doctest not yet supported)
+-- -- Switch off tests for 9.2 (doctest not yet supported)
 -- tests: < 9.2
 
-allow-failures: >= 9.2
+-- allow-failures: >= 9.2
 
+-- New in Haskell-CI of Sep 2022
+haddock-components: libs
