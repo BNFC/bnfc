@@ -17,7 +17,7 @@ module BNFC.Backend.Base
 
 import Control.Arrow    ( (&&&) )
 import Control.Monad.IO.Class ( liftIO )
-import Control.Monad.Writer
+import Control.Monad.Writer   ( WriterT, execWriterT, tell )
 
 import Data.Char        ( isSpace )
 import Data.Foldable    ( forM_ )
