@@ -262,7 +262,7 @@ makefile opts cf makeFile = vcat
 
   -- | Rule to build Haskell test parser.
   testParserRule :: Doc
-  testParserRule = Makefile.mkRule tgt deps [ "${GHC} ${GHC_OPTS} $@" ]
+  testParserRule = Makefile.mkRule tgt deps [ "${GHC} -lpthread ${GHC_OPTS} $@" ]
     where
     tgt :: String
     tgt = tFileExe opts
