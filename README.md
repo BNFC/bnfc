@@ -34,8 +34,8 @@ Installation from the Haskell sources is possible via `stack` or `cabal`.
 
 You need a running installation of
 [stack](https://docs.haskellstack.org/en/stable/install_and_upgrade/).
-To install and run the latest version of [bnfc from
-stackage](https://www.stackage.org/package/BNFC),
+To install and run the latest version of
+[bnfc from stackage](https://www.stackage.org/package/BNFC),
 enter at the command line:
 
 ```
@@ -48,7 +48,7 @@ enter at the command line:
 You need a running installation of a recent version of
 [GHC](https://www.haskell.org/ghc/) and
 [Cabal](https://www.haskell.org/cabal/), most easily available via the
-[Haskell Platform](https://www.haskell.org/platform/).  To install and
+[GHCup](https://www.haskell.org/ghcup/).  To install
 [bnfc from hackage](https://hackage.haskell.org/package/BNFC),
 enter at the command line:
 ```
@@ -58,9 +58,9 @@ enter at the command line:
 
 ### Installing the development version
 
-To install the [development version of
-bnfc](https://github.com/BNFC/bnfc) with the latest bugfixes (and
-regressions ;-)):
+To install the
+[development version of bnfc](https://github.com/BNFC/bnfc)
+with the latest bugfixes (and regressions ;-)):
 ```
   git clone https://github.com/BNFC/bnfc.git
   cd bnfc/source
@@ -71,9 +71,9 @@ and then either
 ```
 or
 ```
-  stack install --stack-yaml stack-8.10.3.yaml
+  stack install --stack-yaml stack-8.10.7.yaml
 ```
-(replace `8.10.3` with your GHC version, and if you want to build with
+(replace `8.10.7` with your GHC version, and if you want to build with
 your installed GHC then add flag `--system-ghc`).
 
 Mini tutorial
