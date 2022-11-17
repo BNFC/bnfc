@@ -27,8 +27,8 @@ Description:
   a LaTeX file containing a readable specification of the language.
 
 tested-with:
-  GHC == 9.4.2
-  GHC == 9.2.4
+  GHC == 9.4.3
+  GHC == 9.2.5
   GHC == 9.0.2
   GHC == 8.10.7
   GHC == 8.8.4
@@ -45,7 +45,7 @@ Extra-source-files:
   Makefile
   src/BNFC.cf
   src/Makefile
-  stack-9.2.4.yaml
+  stack-9.2.5.yaml
   stack-9.0.2.yaml
   stack-8.10.7.yaml
   stack-8.8.4.yaml
@@ -70,7 +70,7 @@ Source-repository this
 custom-setup
  setup-depends:
    base >= 4 && <5,
-   Cabal >= 2.0,
+   Cabal >= 2.0 && < 4,
    cabal-doctest >= 1 && < 1.1
 
 executable bnfc
