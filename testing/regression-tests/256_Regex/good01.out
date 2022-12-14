@@ -3,8 +3,8 @@ Parse Successful!
 
 [Abstract Syntax]
 
-Start (Name "[x:4]") (Name "'funky+identifier-umlaute:\228\246\252\223//\\%#FOO") (Triple "Un]'")
+Start (SpaceInAlts "' x10 0'") (Name "[x:4]") (Name "'funky+identifier-umlaute:\228\246\252\223//\\%#FOO") (Triple "Un]'")
 
 [Linearized tree]
 
-[x:4] /\ 'funky+identifier-umlaute:äöüß//\%#FOO and Un]'
+' x10 0' [x:4] /\ 'funky+identifier-umlaute:äöüß//\%#FOO and Un]'

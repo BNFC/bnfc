@@ -81,4 +81,4 @@ escapeChar c
   | otherwise               = showLitChar c ""
   where
   reserved :: String
-  reserved = "$+-*=<>[](){}!?.,;:^~|&%#/\\$_@\""
+  reserved = " $+-*=<>[](){}!?.,;:^~|&%#/\\$_@\""

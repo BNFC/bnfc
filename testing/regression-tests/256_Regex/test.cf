@@ -1,6 +1,10 @@
 -- Issue #110: backslash in keyword
 
-Start. Main ::= Name "/\\" Name "and" Triple;
+Start. Main ::= SpaceInAlts Name "/\\" Name "and" Triple;
+
+-- Issue #431: whitespace in character alternatives
+
+token SpaceInAlts '\'' ["01x "]* '\'' ;
 
 -- Issue #319: quotation rule in ANTLR lexer definition
 
