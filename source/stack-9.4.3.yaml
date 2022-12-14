@@ -1,0 +1,3 @@
+resolver: nightly-2022-12-12
+compiler: ghc-9.4.3
+compiler-check: match-exact

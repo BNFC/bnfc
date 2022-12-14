@@ -45,6 +45,7 @@ Extra-source-files:
   Makefile
   src/BNFC.cf
   src/Makefile
+  stack-9.4.3.yaml
   stack-9.2.5.yaml
   stack-9.0.2.yaml
   stack-8.10.7.yaml
