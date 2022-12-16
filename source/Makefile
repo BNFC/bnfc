@@ -22,7 +22,7 @@ BDIST_TAG=bnfc-${BNFC_VERSION}-$(shell uname -s)-$(shell uname -m)
 
 .PHONY: default build install doc test bdist show-version debug weed TAGS
 
-default: build test
+default: build cabal-test doctest-quick
 
 build:
 	$(CABAL_BUILD)
@@ -30,10 +30,23 @@ build:
 install:
 	$(CABAL_INSTALL)
 
-test:
+test: build cabal-test doctest
+
+cabal-test:
 	$(CABAL_TEST)
 
-haddock doc:
+doctest: build doctest-install doctest-quick
+
+doctest-install:
+	cabal install doctest --program-suffix=-${GHC_VERSION}
+
+doctest-quick:
+	cabal repl -w doctest-${GHC_VERSION}
+# --ghc-options=-Wno-type-defaults needed due to OverloadedStrings.
+# But it does not get used here, needs to go into cabal file.
+# see: https://github.com/sol/doctest/issues/390
+
+haddock:
 	$(CABAL) haddock
 
 # See https://hackage.haskell.org/package/weeder
