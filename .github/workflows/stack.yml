@@ -87,7 +87,15 @@ jobs:
         with:
           path: ${{ steps.haskell-setup.outputs.stack-root }}
           # A unique cache is used for each stack.yaml.
+          # Append the commit sha to ensure the cache is always written.
+          key: ${{ env.key }}-${{ github.sha }}
+          restore-keys: ${{ env.key }}-
+        env:
           key: ${{ runner.os }}-${{ env.STACK_VER }}-${{ hashFiles(format('stack-{0}.yaml', env.GHC_VER)) }}
+          ## Just stack.yaml is actually not correct, better would be stack.yaml.lock,
+          ## but we do not commit this file.  As a workaround, one could include the .cabal file,
+          ## which tracks the dependencies (albeit in our case not precisely).
+          # key: ${{ runner.os }}-${{ env.STACK_VER }}-${{ hashFiles('source/BNFC.cabal', format('stack-{0}.yaml', env.GHC_VER)) }}
 
       - name: Build dependencies.
         run: stack build ${{ env.TARGET }} ${{ env.STACK_FLAGS }} --only-dependencies
