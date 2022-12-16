@@ -13,4 +13,9 @@ internal-tests :
 test :
 	make -C testing test
 
+# regenerate CI
+ci :
+	haskell-ci github cabal.project
+	cd .github/workflows ; patch -i haskell-ci.diff
+
 #EOF
