@@ -5,26 +5,27 @@ BNFC_VERSION=$(shell sed -ne "s/^[Vv]ersion: *\([0-9.]*\).*/\1/p" BNFC.cabal)
 # Cabal options (to be overwritten from the command line)
 CABAL_OPTS           =
 CABAL_BUILDDIR_SUFFIX=
-CABAL_BUILD_OPTS     = --builddir=dist-ghc-$(GHC_VERSION)$(CABAL_BUILDDIR_SUFFIX)
+CABAL_BUILD_OPTS     = --enable-tests
+# --builddir=dist-ghc-$(GHC_VERSION)$(CABAL_BUILDDIR_SUFFIX)
 CABAL_CONFIGURE_OPTS = --enable-tests
-CABAL_INSTALL_OPTS   = $(CABAL_CONFIGURE_OPTS) $(CABAL_BUILD_OPTS)
+CABAL_INSTALL_OPTS   = $(CABAL_CONFIGURE_OPTS) $(CABAL_BUILD_OPTS) --overwrite-policy=always
 CABAL_TEST_OPTS      = $(CABAL_BUILD_OPTS)
 
 CABAL                = cabal $(CABAL_OPTS)
-CABAL_CONFIGURE      = $(CABAL) v1-configure $(CABAL_CONFIGURE_OPTS)
-CABAL_BUILD          = $(CABAL) v1-build     $(CABAL_BUILD_OPTS)
-CABAL_INSTALL        = $(CABAL) v1-install   $(CABAL_INSTALL_OPTS)
-CABAL_TEST           = $(CABAL) v1-test      $(CABAL_TEST_OPTS)
+CABAL_CONFIGURE      = $(CABAL) configure $(CABAL_CONFIGURE_OPTS)
+CABAL_BUILD          = $(CABAL) build     $(CABAL_BUILD_OPTS)
+CABAL_INSTALL        = $(CABAL) install   $(CABAL_INSTALL_OPTS)
+CABAL_TEST           = $(CABAL) test      $(CABAL_TEST_OPTS)
 
 # Name for binary distribution (e.g. bnfc-2.4.5-linux32)
 BDIST_TAG=bnfc-${BNFC_VERSION}-$(shell uname -s)-$(shell uname -m)
 
 .PHONY: default build install doc test bdist show-version debug weed TAGS
 
-default: install test
+default: build test
 
 build:
-	$(CABAL_CONFIGURE) && $(CABAL_BUILD)
+	$(CABAL_BUILD)
 
 install:
 	$(CABAL_INSTALL)
@@ -33,8 +34,7 @@ test:
 	$(CABAL_TEST)
 
 haddock doc:
-	$(CABAL) v1-haddock --hyperlink-source
-# --executables --internal
+	$(CABAL) haddock
 
 # See https://hackage.haskell.org/package/weeder
 # weeder can find dead code starting from the .hie files
