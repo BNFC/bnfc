@@ -23,7 +23,7 @@ jobs:
       fail-fast: false
       matrix:
         # Note: check release logic below when changing the matrix!
-        ghc: [9.4.3, 9.2.5, 9.0.2, 8.10.7, 8.8.4, 8.6.5, 8.4.4, 8.2.2, 8.0.2]
+        ghc: [9.4.3, 9.2.5, 9.0.2, 8.10.7, 8.8.4, 8.6.5, 8.4.4, 8.2.2]
         os: [ubuntu-latest]
         include:
           - os: macOS-latest
@@ -99,8 +99,7 @@ jobs:
         run: stack build ${{ env.TARGET }} ${{ env.STACK_FLAGS }} --test
         # # matrix.ghc != '8.4.4' &&
         # if: >-
-        #   matrix.ghc != '8.2.2' &&
-        #   matrix.ghc != '8.0.2'
+        #   matrix.ghc != '8.2.2'
         # Fall back to string comparison as version-comparison does not seem to work.
         # Exclude the versions that do not support bnfc-system-tests
 

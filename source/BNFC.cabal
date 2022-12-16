@@ -1,8 +1,12 @@
 Name: BNFC
 Version: 2.9.5
 cabal-version: 2.0
-  -- >=1.24 for the custom-setup section
-  -- >=2.0  for the build-tools: hspec-discover
+  -- >=2.0  for build-tool-depends: hspec-discover
+  -- Andreas, 2022-12-16, issue #429:
+  -- Putting cabal-version: x.y could mean putting extra-deps: [Cabal-x.y]
+  -- into stack-a.b.c.yaml if that snapshot does not have Cabal at least x.y.
+  -- This will then require a Setup.[l]hs file with stack even for build-type: Simple.
+  -- Shunning this extra effort, we only support stack snapshot that have a sufficient Cabal.
 build-type: Simple
 category: Parsing
 Copyright: (c) Andreas Abel, Jonas Almström Duregård, Krasimir Angelov, Jean-Philippe Bernardy, Björn Bringert, Johan Broberg, Kyle Butt, Paul Callaghan, Grégoire Détrez, Markus Forsberg, Ola Frid, Peter Gammie, Thomas Hallgren, Pascal Hof, Simon Huber, Patrik Jansson, Kristofer Johannisson, Antti-Juhani Kaijanaho, Andreas Lööw, Justin Meiners, Kent Mein, Ulf Norell, Gabriele Paganelli, Michael Pellauer, Fabian Ruch, and Aarne Ranta 2002 - 2021. Free software under the BSD 3-clause license.
@@ -26,6 +30,7 @@ Description:
   an XML representation,
   a LaTeX file containing a readable specification of the language.
 
+-- Support range when build with cabal
 tested-with:
   GHC == 9.4.3
   GHC == 9.2.5
@@ -45,6 +50,7 @@ Extra-source-files:
   Makefile
   src/BNFC.cf
   src/Makefile
+  -- Support range when build with stack
   stack-9.4.3.yaml
   stack-9.2.5.yaml
   stack-9.0.2.yaml
@@ -53,8 +59,6 @@ Extra-source-files:
   stack-8.6.5.yaml
   stack-8.4.4.yaml
   stack-8.2.2.yaml
-  stack-8.0.2.yaml
-  stack-7.10.3.yaml
 
 Source-repository head
   type:     git

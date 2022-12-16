@@ -1,9 +1,0 @@
-resolver: lts-6.35
-
-extra-deps:
-- alex-3.2.5
-- happy-1.20.0
-
-packages:
-- source
-# - testing
