@@ -130,7 +130,7 @@ library
   if impl(ghc >= 8.0)
     ghc-options:
       -Wcompat
-  if impl(ghc == 9.2.1)
+  if impl(ghc >= 9.2)
     ghc-options:
       -Wno-incomplete-uni-patterns
   default-extensions:
@@ -149,6 +149,7 @@ library
     RecordWildCards
     ScopedTypeVariables
     TupleSections
+    TypeOperators
   -- 2021-01-22 The following autogen section seems wrong, breaks Haskell CI:
   -- E.g. https://github.com/BNFC/bnfc/runs/1750769442?check_suite_focus=true
   -- autogen-modules:
