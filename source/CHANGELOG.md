@@ -1,7 +1,3 @@
-# 2.9.5
-
-Unreleased
-
 # 2.9.4
 
 Andreas Abel <andreas.abel@gu.se>,  February 2022
