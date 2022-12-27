@@ -8,9 +8,9 @@
 #
 # For more information, see https://github.com/haskell-CI/haskell-ci
 #
-# version: 0.15.202211107
+# version: 0.15.20221225
 #
-# REGENDATA ("0.15.202211107",["github","cabal.project"])
+# REGENDATA ("0.15.20221225",["github","cabal.project"])
 #
 name: Haskell-CI
 on:
@@ -260,7 +260,7 @@ jobs:
           $CABAL v2-install $ARG_COMPILER doctest --overwrite-policy=always
       - name: doctests
         run: |
-          $CABAL v2-repl BNFC --with-ghc-pkg=$HCPKG -w doctest
+          $CABAL v2-repl BNFC --with-ghc-pkg=$HCPKG -w doctest --repl-options=-fno-warn-type-defaults
       - name: tests
         run: |
           $CABAL v2-test $ARG_COMPILER $ARG_TESTS $ARG_BENCH all --test-show-details=direct

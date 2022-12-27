@@ -41,10 +41,11 @@ doctest-install:
 	cabal install doctest --program-suffix=-${GHC_VERSION}
 
 doctest-quick:
-	cabal repl -w doctest-${GHC_VERSION}
+	cabal repl -w doctest-${GHC_VERSION} --repl-options=-Wno-type-defaults
 # --ghc-options=-Wno-type-defaults needed due to OverloadedStrings.
 # But it does not get used here, needs to go into cabal file.
 # see: https://github.com/sol/doctest/issues/390
+# --repl-options seems to work, though
 
 haddock:
 	$(CABAL) haddock

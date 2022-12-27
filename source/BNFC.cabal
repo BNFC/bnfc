@@ -119,7 +119,7 @@ library
     -fno-warn-dodgy-imports
     -fno-warn-name-shadowing
     -- for cabal repl -w doctest :
-    -fno-warn-type-defaults
+    -- -fno-warn-type-defaults
   if impl(ghc >= 8.0)
     ghc-options:
       -Wcompat
