@@ -8,9 +8,9 @@
 #
 # For more information, see https://github.com/haskell-CI/haskell-ci
 #
-# version: 0.15.20221225
+# version: 0.15.20230115
 #
-# REGENDATA ("0.15.20221225",["github","cabal.project"])
+# REGENDATA ("0.15.20230115",["github","cabal.project"])
 #
 name: Haskell-CI
 on:
@@ -34,9 +34,9 @@ jobs:
     strategy:
       matrix:
         include:
-          - compiler: ghc-9.4.3
+          - compiler: ghc-9.4.4
             compilerKind: ghc
-            compilerVersion: 9.4.3
+            compilerVersion: 9.4.4
             setup-method: ghcup
             allow-failure: false
           - compiler: ghc-9.2.5
@@ -135,7 +135,7 @@ jobs:
           echo "HCNUMVER=$HCNUMVER" >> "$GITHUB_ENV"
           echo "ARG_TESTS=--enable-tests" >> "$GITHUB_ENV"
           echo "ARG_BENCH=--enable-benchmarks" >> "$GITHUB_ENV"
-          if [ $((HCNUMVER > 90403)) -ne 0 ] ; then echo "HEADHACKAGE=true" >> "$GITHUB_ENV" ; else echo "HEADHACKAGE=false" >> "$GITHUB_ENV" ; fi
+          if [ $((HCNUMVER > 90404)) -ne 0 ] ; then echo "HEADHACKAGE=true" >> "$GITHUB_ENV" ; else echo "HEADHACKAGE=false" >> "$GITHUB_ENV" ; fi
           echo "ARG_COMPILER=--$HCKIND --with-compiler=$HC" >> "$GITHUB_ENV"
           echo "GHCJSARITH=0" >> "$GITHUB_ENV"
         env:
