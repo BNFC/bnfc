@@ -9,7 +9,7 @@ branches: master ci*
 --
 -- By default `installed` constraints are used for packages
 -- in global db. We can modify which constraints are used.
-installed: +all -Cabal
+installed: +all
 
 -- Configure haskell-ci's behavior when presented multiple packages (e.g., a
 -- cabal.project file that specifies multiple .cabal files), each of which
@@ -26,15 +26,14 @@ jobs-selection: any
 -- As of 2021-02-27, these settings are ignored by github
 
 -- Additional jobs
-ghc-head: True
-macos-jobs: == 8.10.7
+-- macos-jobs: == 8.10.7
 
-no-tests-no-benchmarks: >= 9.0.1
+-- no-tests-no-benchmarks: >= 9.0.1
 -- end
 ---------------------------------------------------------------------------
 
--- -- Switch off tests for 9.2 (doctest not yet supported)
--- tests: < 9.2
+-- Switch off tests for 9.6.0 (HTF not available yet)
+-- tests: < 9.5
 
 -- allow-failures: >= 9.2
 

@@ -8,9 +8,9 @@
 #
 # For more information, see https://github.com/haskell-CI/haskell-ci
 #
-# version: 0.15.20230115
+# version: 0.15.20230227
 #
-# REGENDATA ("0.15.20230115",["github","cabal.project"])
+# REGENDATA ("0.15.20230227",["github","cabal.project"])
 #
 name: Haskell-CI
 on:
@@ -34,14 +34,19 @@ jobs:
     strategy:
       matrix:
         include:
+          - compiler: ghc-9.6.0.20230210
+            compilerKind: ghc
+            compilerVersion: 9.6.0.20230210
+            setup-method: ghcup
+            allow-failure: true
           - compiler: ghc-9.4.4
             compilerKind: ghc
             compilerVersion: 9.4.4
             setup-method: ghcup
             allow-failure: false
-          - compiler: ghc-9.2.5
+          - compiler: ghc-9.2.7
             compilerKind: ghc
-            compilerVersion: 9.2.5
+            compilerVersion: 9.2.7
             setup-method: ghcup
             allow-failure: false
           - compiler: ghc-9.0.2
@@ -96,7 +101,7 @@ jobs:
             chmod a+x "$HOME/.ghcup/bin/ghcup"
             "$HOME/.ghcup/bin/ghcup" config add-release-channel https://raw.githubusercontent.com/haskell/ghcup-metadata/master/ghcup-prereleases-0.0.7.yaml;
             "$HOME/.ghcup/bin/ghcup" install ghc "$HCVER" || (cat "$HOME"/.ghcup/logs/*.* && false)
-            "$HOME/.ghcup/bin/ghcup" install cabal 3.6.2.0 || (cat "$HOME"/.ghcup/logs/*.* && false)
+            "$HOME/.ghcup/bin/ghcup" install cabal 3.9.0.0 || (cat "$HOME"/.ghcup/logs/*.* && false)
           else
             apt-add-repository -y 'ppa:hvr/ghc'
             apt-get update
@@ -104,7 +109,8 @@ jobs:
             mkdir -p "$HOME/.ghcup/bin"
             curl -sL https://downloads.haskell.org/ghcup/0.1.18.0/x86_64-linux-ghcup-0.1.18.0 > "$HOME/.ghcup/bin/ghcup"
             chmod a+x "$HOME/.ghcup/bin/ghcup"
-            "$HOME/.ghcup/bin/ghcup" install cabal 3.6.2.0 || (cat "$HOME"/.ghcup/logs/*.* && false)
+            "$HOME/.ghcup/bin/ghcup" config add-release-channel https://raw.githubusercontent.com/haskell/ghcup-metadata/master/ghcup-prereleases-0.0.7.yaml;
+            "$HOME/.ghcup/bin/ghcup" install cabal 3.9.0.0 || (cat "$HOME"/.ghcup/logs/*.* && false)
           fi
         env:
           HCKIND: ${{ matrix.compilerKind }}
@@ -122,20 +128,20 @@ jobs:
             echo "HC=$HC" >> "$GITHUB_ENV"
             echo "HCPKG=$HOME/.ghcup/bin/$HCKIND-pkg-$HCVER" >> "$GITHUB_ENV"
             echo "HADDOCK=$HOME/.ghcup/bin/haddock-$HCVER" >> "$GITHUB_ENV"
-            echo "CABAL=$HOME/.ghcup/bin/cabal-3.6.2.0 -vnormal+nowrap" >> "$GITHUB_ENV"
+            echo "CABAL=$HOME/.ghcup/bin/cabal-3.9.0.0 -vnormal+nowrap" >> "$GITHUB_ENV"
           else
             HC=$HCDIR/bin/$HCKIND
             echo "HC=$HC" >> "$GITHUB_ENV"
             echo "HCPKG=$HCDIR/bin/$HCKIND-pkg" >> "$GITHUB_ENV"
             echo "HADDOCK=$HCDIR/bin/haddock" >> "$GITHUB_ENV"
-            echo "CABAL=$HOME/.ghcup/bin/cabal-3.6.2.0 -vnormal+nowrap" >> "$GITHUB_ENV"
+            echo "CABAL=$HOME/.ghcup/bin/cabal-3.9.0.0 -vnormal+nowrap" >> "$GITHUB_ENV"
           fi
 
           HCNUMVER=$(${HC} --numeric-version|perl -ne '/^(\d+)\.(\d+)\.(\d+)(\.(\d+))?$/; print(10000 * $1 + 100 * $2 + ($3 == 0 ? $5 != 1 : $3))')
           echo "HCNUMVER=$HCNUMVER" >> "$GITHUB_ENV"
           echo "ARG_TESTS=--enable-tests" >> "$GITHUB_ENV"
           echo "ARG_BENCH=--enable-benchmarks" >> "$GITHUB_ENV"
-          if [ $((HCNUMVER > 90404)) -ne 0 ] ; then echo "HEADHACKAGE=true" >> "$GITHUB_ENV" ; else echo "HEADHACKAGE=false" >> "$GITHUB_ENV" ; fi
+          if [ $((HCNUMVER >= 90600)) -ne 0 ] ; then echo "HEADHACKAGE=true" >> "$GITHUB_ENV" ; else echo "HEADHACKAGE=false" >> "$GITHUB_ENV" ; fi
           echo "ARG_COMPILER=--$HCKIND --with-compiler=$HC" >> "$GITHUB_ENV"
           echo "GHCJSARITH=0" >> "$GITHUB_ENV"
         env:
@@ -176,6 +182,10 @@ jobs:
           active-repositories: hackage.haskell.org, head.hackage.ghc.haskell.org:override
           EOF
           fi
+          cat >> $CABAL_CONFIG <<EOF
+          program-default-options
+            ghc-options: $GHCJOBS +RTS -M3G -RTS
+          EOF
           cat $CABAL_CONFIG
       - name: versions
         run: |
@@ -202,7 +212,7 @@ jobs:
         run: |
           touch cabal.project
           echo "packages: $GITHUB_WORKSPACE/source/source" >> cabal.project
-          if [ $((HCNUMVER >= 80200)) -ne 0 ] ; then echo "packages: $GITHUB_WORKSPACE/source/testing" >> cabal.project ; fi
+          if [ $((HCNUMVER >= 80200 && HCNUMVER < 90600)) -ne 0 ] ; then echo "packages: $GITHUB_WORKSPACE/source/testing" >> cabal.project ; fi
           cat cabal.project
       - name: sdist
         run: |
@@ -222,25 +232,25 @@ jobs:
           touch cabal.project
           touch cabal.project.local
           echo "packages: ${PKGDIR_BNFC}" >> cabal.project
-          if [ $((HCNUMVER >= 80200)) -ne 0 ] ; then echo "packages: ${PKGDIR_bnfc_system_tests}" >> cabal.project ; fi
+          if [ $((HCNUMVER >= 80200 && HCNUMVER < 90600)) -ne 0 ] ; then echo "packages: ${PKGDIR_bnfc_system_tests}" >> cabal.project ; fi
           if [ $((HCNUMVER >= 80200)) -ne 0 ] ; then echo "package BNFC" >> cabal.project ; fi
           if [ $((HCNUMVER >= 80200)) -ne 0 ] ; then echo "    ghc-options: -Werror=missing-methods" >> cabal.project ; fi
-          if [ $((HCNUMVER >= 80200)) -ne 0 ] ; then echo "package bnfc-system-tests" >> cabal.project ; fi
-          if [ $((HCNUMVER >= 80200)) -ne 0 ] ; then echo "    ghc-options: -Werror=missing-methods" >> cabal.project ; fi
+          if [ $((HCNUMVER >= 80200 && HCNUMVER < 90600)) -ne 0 ] ; then echo "package bnfc-system-tests" >> cabal.project ; fi
+          if [ $((HCNUMVER >= 80200 && HCNUMVER < 90600)) -ne 0 ] ; then echo "    ghc-options: -Werror=missing-methods" >> cabal.project ; fi
           cat >> cabal.project <<EOF
           EOF
           if $HEADHACKAGE; then
           echo "allow-newer: $($HCPKG list --simple-output | sed -E 's/([a-zA-Z-]+)-[0-9.]+/*:\1,/g')" >> cabal.project
           fi
-          $HCPKG list --simple-output --names-only | perl -ne 'for (split /\s+/) { print "constraints: $_ installed\n" unless /^(BNFC|Cabal|bnfc-system-tests)$/; }' >> cabal.project.local
+          $HCPKG list --simple-output --names-only | perl -ne 'for (split /\s+/) { print "constraints: $_ installed\n" unless /^(BNFC|bnfc-system-tests)$/; }' >> cabal.project.local
           cat cabal.project
           cat cabal.project.local
       - name: dump install plan
         run: |
           $CABAL v2-build $ARG_COMPILER $ARG_TESTS $ARG_BENCH --dry-run all
           cabal-plan
-      - name: cache
-        uses: actions/cache@v3
+      - name: restore cache
+        uses: actions/cache/restore@v3
         with:
           key: ${{ runner.os }}-${{ matrix.compiler }}-${{ github.sha }}
           path: ~/.cabal/store
@@ -255,12 +265,6 @@ jobs:
       - name: build
         run: |
           $CABAL v2-build $ARG_COMPILER $ARG_TESTS $ARG_BENCH all --write-ghc-environment-files=always
-      - name: install doctest
-        run: |
-          $CABAL v2-install $ARG_COMPILER doctest --overwrite-policy=always
-      - name: doctests
-        run: |
-          $CABAL v2-repl BNFC --with-ghc-pkg=$HCPKG -w doctest --repl-options=-fno-warn-type-defaults
       - name: tests
         run: |
           $CABAL v2-test $ARG_COMPILER $ARG_TESTS $ARG_BENCH all --test-show-details=direct
@@ -268,12 +272,18 @@ jobs:
         run: |
           cd ${PKGDIR_BNFC} || false
           ${CABAL} -vnormal check
-          if [ $((HCNUMVER >= 80200)) -ne 0 ] ; then cd ${PKGDIR_bnfc_system_tests} || false ; fi
-          if [ $((HCNUMVER >= 80200)) -ne 0 ] ; then ${CABAL} -vnormal check ; fi
+          if [ $((HCNUMVER >= 80200 && HCNUMVER < 90600)) -ne 0 ] ; then cd ${PKGDIR_bnfc_system_tests} || false ; fi
+          if [ $((HCNUMVER >= 80200 && HCNUMVER < 90600)) -ne 0 ] ; then ${CABAL} -vnormal check ; fi
       - name: haddock
         run: |
-          $CABAL v2-haddock $ARG_COMPILER --with-haddock $HADDOCK $ARG_TESTS $ARG_BENCH all
+          $CABAL v2-haddock --disable-documentation $ARG_COMPILER --with-haddock $HADDOCK $ARG_TESTS $ARG_BENCH all
       - name: unconstrained build
         run: |
           rm -f cabal.project.local
           $CABAL v2-build $ARG_COMPILER --disable-tests --disable-benchmarks all
+      - name: save cache
+        uses: actions/cache/save@v3
+        if: always()
+        with:
+          key: ${{ runner.os }}-${{ matrix.compiler }}-${{ github.sha }}
+          path: ~/.cabal/store
