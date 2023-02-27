@@ -2,6 +2,8 @@
 
 Unreleased
 
+* Haskell/GADT: generated `ComposOp.hs` no longer needs `mtl` library [[#438](https://github.com/BNFC/bnfc/pull/438)]
+
 # 2.9.4.1
 
 Andreas Abel <andreas.abel@gu.se>,  December 2022
