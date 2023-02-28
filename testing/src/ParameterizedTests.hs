@@ -30,7 +30,12 @@ import Shelly
   , ls
   , readfile, run_
   , setStdin
-  , test_f, toTextArg
+  , test_f
+#if MIN_VERSION_shelly(1,12,0)
+  , toTextArgs
+#else
+  , toTextArg
+#endif
   , when, withTmpDir, writefile
   -- , print_stdout, print_stderr
   )
@@ -444,7 +449,12 @@ parameters = concat
 
 tpBnfc :: TestParameters -> FilePath -> Sh ()
 tpBnfc params grammar = run_ "bnfc" args
-  where args = ["-m" <> toTextArg tpMakefile] ++ tpBnfcOptions params ++ [toTextArg grammar]
+  where
+#if MIN_VERSION_shelly(1,12,0)
+  args = toTextArgs ("-m" <> tpMakefile) ++ tpBnfcOptions params ++ toTextArgs grammar
+#else
+  args = ["-m" <> toTextArg tpMakefile] ++ tpBnfcOptions params ++ [toTextArg grammar]
+#endif
 
 -- | Default test parameter specifying the makefile name to be used
 --   by 'tpBnfc' and 'tpMake'.
