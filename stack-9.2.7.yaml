@@ -1,5 +1,5 @@
-resolver: nightly-2023-03-04
-compiler: ghc-9.4.4
+resolver: lts-20.13
+compiler: ghc-9.2.7
 compiler-check: match-exact
 
 packages:
