@@ -60,21 +60,21 @@ jobs:
           echo "cabal-exe   = ${{ steps.haskell-setup.outputs.cabal-exe   }}"
           echo "stack-exe   = ${{ steps.haskell-setup.outputs.stack-exe   }}"
           echo "stack-root  = ${{ steps.haskell-setup.outputs.stack-root  }}"
-          export GHC_VER=$(ghc --numeric-version)
-          export CABAL_VER=$(cabal --numeric-version)
-          export STACK_VER=$(stack --numeric-version)
-          export STACK_FLAGS="--stack-yaml stack-${GHC_VER}.yaml --system-ghc --no-terminal --color always"
-          export TARGET=$(if [ "${{ runner.os }}" == "Windows" ]; then echo ":bnfc"; fi)
+          GHC_VER=$(ghc --numeric-version)
+          CABAL_VER=$(cabal --numeric-version)
+          STACK_VER=$(stack --numeric-version)
+          STACK_FLAGS="--stack-yaml stack-${GHC_VER}.yaml --system-ghc --no-terminal --color always"
+          TARGET=$(if [ "${{ runner.os }}" == "Windows" ]; then echo ":bnfc"; fi)
           echo "GHC_VER     = ${GHC_VER}"
           echo "CABAL_VER   = ${CABAL_VER}"
           echo "STACK_VER   = ${STACK_VER}"
           echo "STACK_FLAGS = ${STACK_FLAGS}"
           echo "TARGET      = ${TARGET}"
-          echo "GHC_VER=${GHC_VER}"          >> ${GITHUB_ENV}
-          echo "CABAL_VER=${CABAL_VER}"      >> ${GITHUB_ENV}
-          echo "STACK_VER=${STACK_VER}"      >> ${GITHUB_ENV}
-          echo "STACK_FLAGS=${STACK_FLAGS}"  >> ${GITHUB_ENV}
-          echo "TARGET=${TARGET}"            >> ${GITHUB_ENV}
+          echo "GHC_VER=${GHC_VER}"          >> "${GITHUB_ENV}"
+          echo "CABAL_VER=${CABAL_VER}"      >> "${GITHUB_ENV}"
+          echo "STACK_VER=${STACK_VER}"      >> "${GITHUB_ENV}"
+          echo "STACK_FLAGS=${STACK_FLAGS}"  >> "${GITHUB_ENV}"
+          echo "TARGET=${TARGET}"            >> "${GITHUB_ENV}"
         # Stack build TARGET restriction on Windows as it cannot build the 'testing' package.
         # From now on, use env.{GHC|CABAL}_VER rather than matrix.{ghc|cabal}-ver!
 
@@ -110,11 +110,11 @@ jobs:
 
       - name: Run bnfc.
         run: |
-          export BNFC_EXE=$(stack path --local-install-root ${{ env.STACK_FLAGS }})/bin/bnfc
-          export BNFC_VERSION=$(${BNFC_EXE} --numeric-version)
+          BNFC_EXE=$(stack path --local-install-root ${{ env.STACK_FLAGS }})/bin/bnfc
+          BNFC_VERSION=$("${BNFC_EXE}" --numeric-version)
           # Save env variables for the next steps
-          echo "BNFC_EXE=${BNFC_EXE}"         >> ${GITHUB_ENV}
-          echo "BNFC_VERSION=${BNFC_VERSION}" >> ${GITHUB_ENV}
+          echo "BNFC_EXE=${BNFC_EXE}"         >> "${GITHUB_ENV}"
+          echo "BNFC_VERSION=${BNFC_VERSION}" >> "${GITHUB_ENV}"
 
       ## Release
       ########################################################################
@@ -125,8 +125,8 @@ jobs:
           startsWith(github.ref, 'refs/tags/v')
           && matrix.ghc == '9.4.4'
         run: |
-          export DIST_TGZ=$(cabal sdist source | tail -1)
-          echo "DIST_TGZ=${DIST_TGZ}" >> ${GITHUB_ENV}
+          DIST_TGZ=$(cabal sdist source | tail -1)
+          echo "DIST_TGZ=${DIST_TGZ}" >> "${GITHUB_ENV}"
 
       - name: Source tarball release.
         if: >-
@@ -145,10 +145,10 @@ jobs:
           && runner.os == 'Linux'
           && matrix.ghc == '9.4.4'
         run: |
-          export BNFC_BIN=bnfc-${BNFC_VERSION}-linux.binary
-          cp -p ${BNFC_EXE} ${BNFC_BIN}
+          BNFC_BIN=bnfc-${BNFC_VERSION}-linux.binary
+          cp -p "${BNFC_EXE}" "${BNFC_BIN}"
           # Save env variables for the next step
-          echo "BNFC_BIN=${BNFC_BIN}" >> ${GITHUB_ENV}
+          echo "BNFC_BIN=${BNFC_BIN}" >> "${GITHUB_ENV}"
 
       - name: Linux release.
         if: >-
@@ -167,23 +167,23 @@ jobs:
           startsWith(github.ref, 'refs/tags/v')
           && runner.os == 'macOS'
         run: |
-          export BNFC_BIN=bnfc-${BNFC_VERSION}-mac.binary
-          export BNFC_PKG=bnfc-${BNFC_VERSION}-mac.pkg
+          BNFC_BIN=bnfc-${BNFC_VERSION}-mac.binary
+          BNFC_PKG=bnfc-${BNFC_VERSION}-mac.pkg
           # Raw Mac binary
-          cp -p ${BNFC_EXE} ${BNFC_BIN}
+          cp -p "${BNFC_EXE}" "${BNFC_BIN}"
           # Build Mac package
           mkdir -p tmp/usr/local/bin
-          cp -p ${BNFC_EXE} tmp/usr/local/bin/bnfc
+          cp -p "${BNFC_EXE}" tmp/usr/local/bin/bnfc
           pkgbuild \
             --root tmp \
             --identifier com.digitalgrammars.bnfc.pkg \
-            --version ${BNFC_VERSION} \
+            --version "${BNFC_VERSION}" \
             --install-location / \
             --ownership recommended \
-            ${BNFC_PKG}
+            "${BNFC_PKG}"
           # Save env variables for the next step
-          echo "BNFC_BIN=${BNFC_BIN}" >> ${GITHUB_ENV}
-          echo "BNFC_PKG=${BNFC_PKG}" >> ${GITHUB_ENV}
+          echo "BNFC_BIN=${BNFC_BIN}" >> "${GITHUB_ENV}"
+          echo "BNFC_PKG=${BNFC_PKG}" >> "${GITHUB_ENV}"
 
       - name: Mac release.
         if: >-
@@ -204,10 +204,10 @@ jobs:
           && runner.os == 'Windows'
         shell: bash
         run: |
-          export BNFC_VER_EXE=bnfc-${BNFC_VERSION}.exe
-          cp -p ${BNFC_EXE}.exe ${BNFC_VER_EXE}
+          BNFC_VER_EXE=bnfc-${BNFC_VERSION}.exe
+          cp -p "${BNFC_EXE}.exe" "${BNFC_VER_EXE}"
           # Save env variables for the next step
-          echo "BNFC_VER_EXE=${BNFC_VER_EXE}" >> ${GITHUB_ENV}
+          echo "BNFC_VER_EXE=${BNFC_VER_EXE}" >> "${GITHUB_ENV}"
 
       - name: Windows release.
         if: >-
