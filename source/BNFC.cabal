@@ -32,7 +32,7 @@ Description:
 
 -- Support range when build with cabal
 tested-with:
-  GHC == 9.6.0
+  GHC == 9.6.1
   GHC == 9.4.4
   GHC == 9.2.7
   GHC == 9.0.2
