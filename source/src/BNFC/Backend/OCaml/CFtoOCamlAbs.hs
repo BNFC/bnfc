@@ -14,7 +14,7 @@ import Text.PrettyPrint
 
 import BNFC.CF
 import BNFC.Utils ( (+++), unless, parensIf )
-import Data.List  ( intersperse )
+import Data.List  ( intercalate, intersperse )
 import BNFC.Backend.OCaml.OCamlUtil
 
 -- to produce an OCaml module
@@ -65,7 +65,7 @@ mutualRecDefs ss = case ss of
 prData :: Data -> String
 prData (cat,rules) =
   fixType cat +++ "=\n   " ++
-  concat (intersperse "\n | " (map prRule rules)) ++
+  intercalate "\n | " (map prRule rules) ++
   "\n"
 
 prRule :: (String, [Cat]) -> String
