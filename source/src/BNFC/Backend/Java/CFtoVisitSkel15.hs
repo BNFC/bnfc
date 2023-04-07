@@ -14,7 +14,6 @@
 
 -}
 
-{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module BNFC.Backend.Java.CFtoVisitSkel15 (cf2VisitSkel) where

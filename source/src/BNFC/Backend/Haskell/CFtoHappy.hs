@@ -4,7 +4,6 @@
 
 -}
 
-{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module BNFC.Backend.Haskell.CFtoHappy (cf2Happy, convert) where
