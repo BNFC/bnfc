@@ -18,7 +18,7 @@
 
 module BNFC.Backend.CPP.STL.CFtoSTLAbs (cf2CPPAbs) where
 
-import Data.List        ( intercalate, intersperse )
+import Data.List        ( intercalate )
 
 import BNFC.Backend.Common.OOAbstract
 import BNFC.CF
@@ -139,7 +139,7 @@ prCon (c,(f,cs)) = unlines [
   "};"
   ]
  where
-   conargs = concat $ intersperse ", "
+   conargs = intercalate ", "
      [x +++ pointerIf st ("p" ++ show i) | ((x,st,_),i) <- zip cs [1::Int ..]]
 
 prList :: (String, Bool) -> String
