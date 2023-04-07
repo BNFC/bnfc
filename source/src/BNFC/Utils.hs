@@ -32,7 +32,7 @@ import Control.Arrow   ((&&&))
 import Control.DeepSeq (rnf)
 
 import Data.Char
-import Data.List          (intercalate)
+import Data.List          (intercalate, transpose)
 import Data.List.NonEmpty (pattern (:|))
 import Data.Map           (Map)
 #if !MIN_VERSION_base(4,11,0)
@@ -171,13 +171,7 @@ table sep m = map (intercalate sep . zipWith pad widths) m
   widths = columns maximum $ map (map length) m
   -- Aggregate columns (works even for a ragged matrix with rows of different length).
   columns :: ([a] -> b) -> [[a]] -> [b]
-  columns f rows =
-    -- Take the values of the first column
-    case concat (map (take 1) rows) of
-      -- Matrix was empty:
-      [] -> []
-      -- Matrix was non-empty:
-      col -> f col : columns f (map (drop 1) rows)
+  columns f = map f . transpose
 
 -- * List utilities
 
