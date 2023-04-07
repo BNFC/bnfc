@@ -51,12 +51,12 @@ prelude jflex rp packageBase = vcat
     , "%%"
     , "%cup"
     , "%unicode"
-    , (if rp == RecordPositions
+    , if rp == RecordPositions
       then vcat
         [ "%line"
-        , (if jflex == JFlexCup then "%column" else "")
+        , if jflex == JFlexCup then "%column" else ""
         , "%char" ]
-      else "")
+      else ""
     , "%public"
     , "%{"
     , nest 2 $ vcat
@@ -74,9 +74,9 @@ prelude jflex rp packageBase = vcat
         , "}"
         , "public ComplexSymbolFactory.Location right_loc() {"
         , "  ComplexSymbolFactory.Location left = left_loc();"
-        , (if rp == RecordPositions
+        , if rp == RecordPositions
             then "return new ComplexSymbolFactory.Location(left.getLine(), left.getColumn()+yylength(), left.getOffset()+yylength());"
-            else "return left;")
+            else "return left;"
         , "}"
         , "public String buff()" <+> braces
             (if jflex == JFlexCup

@@ -265,7 +265,7 @@ prCopyC (c,cs) = unlines [
   "}"
   ]
  where
-   cloneIf st cv = if st then (cv ++ "->clone()") else cv
+   cloneIf st cv = if st then cv ++ "->clone()" else cv
 
 --The destructor deletes all a class's members.
 prDestructorC :: CAbsRule -> String

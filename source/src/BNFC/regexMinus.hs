@@ -27,15 +27,15 @@ string s = foldr Seq Lambda (map Term s)
 -- Simple function used below
 removeFirst p []  = []
 removeFirst p (a:as) | p a = as
-                     | otherwise = a:(removeFirst p as)
+                     | otherwise = a:removeFirst p as
 
 -- Takes a Regex and returns it without Subs.
 removeMinuses (Term a) = Term a
 removeMinuses Lambda = Lambda
 removeMinuses Phi = Phi
 removeMinuses (Rep a)= Rep a
-removeMinuses (Or a b)= (Or a b)
-removeMinuses (Seq a b)= (Seq a b)
+removeMinuses (Or a b)= Or a b
+removeMinuses (Seq a b)= Seq a b
 removeMinuses e@(Sub a b) =
  let
    symbs = symbols e
@@ -45,7 +45,7 @@ removeMinuses e@(Sub a b) =
    deltae = delta e
    -- Whether or not a (symbol,derivative)'s derivitive component is
    -- equal to our original formula
-   loopCondition = (\(a,b) -> b == (simplify e))
+   loopCondition = \(a,b) -> b == simplify e
    -- Maybe a (symbol,derivative) pair where the derivative is the same as our
    -- original expression
    loopedDerivative = find loopCondition derivatives
@@ -56,21 +56,21 @@ removeMinuses e@(Sub a b) =
    -- The loop condition recalls that if DaR = R then
    --   R = aDaR + stuff -> R = aR + stuff -> R = a*(stuff)
    result = case loopedDerivative of
-     Nothing -> Or (foldr Or Phi [ (Seq (Term sym) (removeMinuses reg)) | (sym,reg) <- derivatives ]) deltae
-     Just (sym,_) -> (Seq (Rep (Term sym))
-                          (Or (foldr Or Phi [ (Seq (Term sym) (removeMinuses reg)) | (sym,reg) <- derivativesMinusLooped ]) deltae ) )
+     Nothing -> Or (foldr Or Phi [ Seq (Term sym) (removeMinuses reg) | (sym,reg) <- derivatives ]) deltae
+     Just (sym,_) -> Seq (Rep (Term sym))
+                         (Or (foldr Or Phi [ Seq (Term sym) (removeMinuses reg) | (sym,reg) <- derivativesMinusLooped ]) deltae )
  in
    simplify result
 
 -- Takes a Regex and returns an equivalent one somewhat simplified.
-simplify (Term a) = (Term a)
+simplify (Term a) = Term a
 simplify Lambda = Lambda
 simplify Phi = Phi
 simplify (Rep a) = let a_s = simplify a
                    in case a_s of
                         Lambda -> Lambda
                         Phi -> Lambda
-                        _ -> (Rep a_s)
+                        _ -> Rep a_s
 simplify (Or a b) = let a_s = simplify a
                         b_s = simplify b
                     in case (a_s,b_s) of
@@ -78,10 +78,10 @@ simplify (Or a b) = let a_s = simplify a
                          (Phi,_) -> b_s
                          (Lambda,Lambda) -> Lambda
                          (_,Lambda) | delta a_s == Lambda -> a_s
-                                    | otherwise -> (Or a_s b_s)
+                                    | otherwise -> Or a_s b_s
                          (Lambda,_) | delta b_s == Lambda -> b_s
-                                    | otherwise -> (Or a_s b_s)
-                         _ -> (Or a_s b_s)
+                                    | otherwise -> Or a_s b_s
+                         _ -> Or a_s b_s
 simplify (Seq a b) = let a_s = simplify a
                          b_s = simplify b
                      in case (a_s,b_s) of
@@ -89,47 +89,47 @@ simplify (Seq a b) = let a_s = simplify a
                           (Lambda,_) -> b_s
                           (_,Phi)-> Phi
                           (Phi,_) -> Phi
-                          _ -> (Seq a_s b_s)
+                          _ -> Seq a_s b_s
 simplify (Sub a b) = let a_s = simplify a
                          b_s = simplify b
                      in case (a_s,b_s) of
                           (Lambda,Lambda) -> Phi
                           (_,Lambda) | delta a_s == Phi -> a_s
-                                     | otherwise -> (Sub a_s b_s)
+                                     | otherwise -> Sub a_s b_s
                           (Lambda,_) | delta b_s == Phi -> Lambda
                                      | otherwise -> Phi
                           (Phi,_) -> Phi
                           (_,Phi) -> a_s
-                          _ -> (Sub a_s b_s)
+                          _ -> Sub a_s b_s
 
 -- Special Regex delta function.
 -- See http://home.chello.no/~mgrsby/sgmlintr/file0004.htm
-delta :: (Eq a) => (Regex a) -> (Regex a)
+delta :: Eq a => Regex a -> Regex a
 delta (Term a) = Phi
-delta (Lambda) = Lambda
-delta (Phi) = Phi
-delta (Or a b) | ((delta a) == Phi) &&
-                 ((delta b) == Phi) = Phi
+delta Lambda = Lambda
+delta Phi = Phi
+delta (Or a b) | (delta a == Phi) &&
+                 (delta b == Phi) = Phi
                | otherwise = Lambda
-delta (Sub a b) | ((delta a) == Lambda) &&
-                  ((delta b) == Phi) = Lambda
+delta (Sub a b) | (delta a == Lambda) &&
+                  (delta b == Phi) = Lambda
                 | otherwise = Phi
-delta (Seq a b) | ((delta a) == Lambda) &&
-                  ((delta b) == Lambda) = Lambda
+delta (Seq a b) | (delta a == Lambda) &&
+                  (delta b == Lambda) = Lambda
                 | otherwise = Phi
 delta (Rep _) = Lambda
 
 -- Special Regex derivative function.
 -- See http://home.chello.no/~mgrsby/sgmlintr/file0004.htm
-derivative :: (Eq a) => a -> Regex a -> Regex a
+derivative :: Eq a => a -> Regex a -> Regex a
 derivative a (Term b) | a == b = Lambda
                       | otherwise = Phi
 derivative a Lambda = Phi
 derivative a Phi = Phi
 derivative a (Or b c) = Or (derivative a b) (derivative a c)
 derivative a (Sub b c) = Sub (derivative a b) (derivative a c)
-derivative a (Seq b c) = let dab = (derivative a b)
-                             dac = (derivative a c)
+derivative a (Seq b c) = let dab = derivative a b
+                             dac = derivative a c
                          in Or (Seq dab c)
                                (Seq (delta b) dac)
 derivative a (Rep b) = Seq (derivative a b) (Rep b)
@@ -148,19 +148,19 @@ compactShow (Term a) = [a]
 compactShow Lambda = "\\"
 compactShow Phi = "0"
 compactShow (Rep (Term a)) = a:"*"
-compactShow (Rep a) = "(" ++ (compactShow a) ++ ")*"
-compactShow (Sub a b ) = (compactShow a) ++ "-" ++ (compactShow b)
+compactShow (Rep a) = "(" ++ compactShow a ++ ")*"
+compactShow (Sub a b ) = compactShow a ++ "-" ++ compactShow b
 compactShow (Or (Term a) (Term b) ) = [a] ++ "+" ++ [b]
-compactShow (Or (Term a) b@(Or _ _) ) = [a] ++ "+" ++ (compactShow b)
-compactShow (Or a@(Or _ _) (Term b) ) = (compactShow a) ++ "+" ++ [b]
-compactShow (Or a@(Or _ _) b@(Or _ _) ) = (compactShow a) ++ "+" ++ (compactShow b)
-compactShow (Or a b@(Or _ _) ) = "(" ++ (compactShow a) ++ ")+" ++ (compactShow b)
-compactShow (Or a b ) = "(" ++ (compactShow a) ++ ")+(" ++ (compactShow b) ++ ")"
-compactShow (Seq (Term a) (Term b) ) = [a] ++ [b]
-compactShow (Seq (Term a) b@(Seq _ _) ) = [a] ++ (compactShow b)
-compactShow (Seq (Term a) b@(Rep _) ) = [a] ++ (compactShow b)
-compactShow (Seq a@(Seq _ _) b@(Seq _ _) ) = (compactShow a) ++ (compactShow b)
-compactShow (Seq a b ) = "(" ++ (compactShow a) ++ ")" ++ "(" ++ (compactShow b) ++ ")"
+compactShow (Or (Term a) b@(Or _ _) ) = [a] ++ "+" ++ compactShow b
+compactShow (Or a@(Or _ _) (Term b) ) = compactShow a ++ "+" ++ [b]
+compactShow (Or a@(Or _ _) b@(Or _ _) ) = compactShow a ++ "+" ++ compactShow b
+compactShow (Or a b@(Or _ _) ) = "(" ++ compactShow a ++ ")+" ++ compactShow b
+compactShow (Or a b ) = "(" ++ compactShow a ++ ")+(" ++ compactShow b ++ ")"
+compactShow (Seq (Term a) (Term b) ) = [a, b]
+compactShow (Seq (Term a) b@(Seq _ _) ) = [a] ++ compactShow b
+compactShow (Seq (Term a) b@(Rep _) ) = [a] ++ compactShow b
+compactShow (Seq a@(Seq _ _) b@(Seq _ _) ) = compactShow a ++ compactShow b
+compactShow (Seq a b ) = "(" ++ compactShow a ++ ")" ++ "(" ++ compactShow b ++ ")"
 
 -- Example that requires loop detection. Taken From:
 --  http://home.chello.no/~mgrsby/sgmlintr/file0005.htm

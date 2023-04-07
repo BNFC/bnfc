@@ -126,7 +126,7 @@ makeJava' options@Options{..} cf = do
     parsefun     = cf2parse $ parser parselexspec
     parmake      = makeparserdetails (parser parselexspec)
     lexmake      = makelexerdetails  (lexer parselexspec)
-    rp           = (Options.linenumbers options)
+    rp           = Options.linenumbers options
     commentWithEmacsModeHint = comment . ("-*- Java -*- " ++)
 
 makefile ::  FilePath -> FilePath -> [String] -> ParserLexerSpecification -> String -> Doc
@@ -240,15 +240,15 @@ data JavaTestParams = JavaTestParams
       -- ^ List of imported packages.
   , jtpErr                :: String
       -- ^ Name of the exception thrown in case of parsing failure.
-  , jtpErrHand            :: (String -> [Doc])
+  , jtpErrHand            :: String -> [Doc]
       -- ^ Handler for the exception thrown.
-  , jtpLexerConstruction  :: (Doc -> Doc -> Doc)
+  , jtpLexerConstruction  :: Doc -> Doc -> Doc
       -- ^ Function formulating the construction of the lexer object.
-  , jtpParserConstruction :: (Doc -> Doc -> Doc)
+  , jtpParserConstruction :: Doc -> Doc -> Doc
       -- ^ As above, for parser object.
-  , jtpShowAlternatives   :: ([Cat] -> [Doc])
+  , jtpShowAlternatives   :: [Cat] -> [Doc]
       -- ^ Pretty-print the names of the methods corresponding to entry points to the user.
-  , jtpInvocation         :: (Doc -> Doc -> Doc -> Doc -> Doc)
+  , jtpInvocation         :: Doc -> Doc -> Doc -> Doc -> Doc
       -- ^ Function formulating the invocation of the parser tool within Java.
   , jtpErrMsg             :: String
       -- ^ Error string output in consequence of a parsing failure.

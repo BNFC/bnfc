@@ -103,7 +103,7 @@ prRuleH user c (fun, cats) =
      render $ nest 2 $ prInstVars user vs,
      "  " ++ c' ++ "(const" +++ c' +++ "&);",
      "  " ++ c' ++ " &operator=(const" +++ c' +++ "&);",
-     "  " ++ c' ++ "(" ++ (prConstructorH 1 vs) ++ ");",
+     "  " ++ c' ++ "(" ++ prConstructorH 1 vs ++ ");",
      "  " ++ c' ++ "(" ++ mem +++ memstar ++ "p);",
      prDestructorH c',
      "  " ++ c' ++ "* reverse();",

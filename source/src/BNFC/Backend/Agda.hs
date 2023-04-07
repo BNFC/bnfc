@@ -757,7 +757,7 @@ printers :: ModuleName -> [Cat] -> Doc
 printers _amod []   = empty
 printers  amod cats = vsep
   [ "-- Binding the pretty printers."
-  , vcat $ "postulate" : mkTSTable (map (prettyTySig) cats)
+  , vcat $ "postulate" : mkTSTable (map prettyTySig cats)
   , vcat $ map pragmaBind cats
   ]
   where
@@ -983,7 +983,7 @@ agdaMainContents mod lmod amod pmod layout c = vcat
   , "module" <+> text mod <+> "where"
   , when layout "\nopen import Agda.Builtin.Bool using (true)"
   , "open import" <+> text lmod
-  , "open import" <+> text amod <+> "using" <+> parens (printer)
+  , "open import" <+> text amod <+> "using" <+> parens printer
   , "open import" <+> text pmod <+> "using" <+> parens ("Err;" <+> parser)
   , ""
   , "main : IO ⊤"

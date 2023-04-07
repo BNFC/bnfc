@@ -190,7 +190,7 @@ buildSignature rules = do
 buildContext :: CF -> Context
 buildContext cf = Ctx
     { ctxLabels = cfgSignature cf
-    , ctxTokens = ("Ident" : tokenNames cf)
+    , ctxTokens = "Ident" : tokenNames cf
     , ctxLocals = []
     }
 

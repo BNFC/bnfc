@@ -221,7 +221,7 @@ generatePatterns terminal r = case rhsRule r of
    mkIt i = case i of
      Left c -> nonterminal c
      Right s -> terminal s
-   metas its = [ ('$': show i) | (i, Left _c) <- zip [1 ::Int ..] its ]
+   metas its = [ '$': show i | (i, Left _c) <- zip [1 ::Int ..] its ]
 
 specialRules :: CF -> [String]
 specialRules cf = (`map` literals cf) $ \case

@@ -147,7 +147,7 @@ distCleanRule opts makeFile = Makefile.mkRule "distclean" ["clean"] $
       , agdaParserFile -- Parser.agda
       , agdaLibFile    -- IOLib.agda
       , agdaMainFile   -- Main.agda
-      , (\ opts -> dir ++ lang opts ++ ".dtd")
+      , \ opts -> dir ++ lang opts ++ ".dtd"
       ]
       -- Files that have no .bak variant
     , map (\ (file, ext) -> mkFile withLang file ext opts)

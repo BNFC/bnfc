@@ -226,7 +226,7 @@ prDataH rp (cat, rules)
     mem = identCat (normCatOfList cat)
     prKind (fun, _) = "is_" ++ fun
     prUnion (_, []) = ""
-    prUnion (fun, cats) = "    struct { " ++ (render $ prInstVars (getVars cats)) ++ " } " ++ (memName fun) ++ ";\n"
+    prUnion (fun, cats) = "    struct { " ++ (render $ prInstVars (getVars cats)) ++ " } " ++ memName fun ++ ";\n"
 
 
 -- | Interface definitions for rules vary on the type of rule.
