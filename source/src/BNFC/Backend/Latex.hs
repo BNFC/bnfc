@@ -112,7 +112,7 @@ prtIdentifiers =
 
 prtLiterals :: String -> CF -> String
 prtLiterals _ cf =
-  unlines . concat . List.intersperse [""] . map stringLit . filter (/= catIdent) $ literals cf
+  unlines . List.intercalate [""] . map stringLit . filter (/= catIdent) $ literals cf
 
 stringLit :: TokenCat -> [String]
 stringLit = \case
