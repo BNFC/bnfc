@@ -582,7 +582,6 @@ prettyData style d cs = vcat $ concat
   [ [ hsep [ "data", text d, colon, "Set", "where" ] ]
   , mkTSTable $ map (prettyConstructor style d) cs
   ]
-  where
 
 mkTSTable :: [(Doc,Doc)] -> [Doc]
 mkTSTable = map (nest 2 . text) . table " : " . map mkRow
