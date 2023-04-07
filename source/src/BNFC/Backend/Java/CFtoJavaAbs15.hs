@@ -308,7 +308,7 @@ prAssigns [] _ = []
 prAssigns _ [] = []
 prAssigns ((t,n,nm):vs) (p:ps) =
  if n == 1 then
-  case findIndices (\x -> case x of (l,_,_) -> l == t) vs of
+  case findIndices (\(l,_,_) -> l == t) vs of
     [] -> varName nm +++ "=" +++ p ++ ";" +++ prAssigns vs ps
     _ -> varName nm ++ showNum n +++ "=" +++ p ++ ";" +++ prAssigns vs ps
  else varName nm ++ showNum n +++ "=" +++ p ++ ";" +++ prAssigns vs ps
