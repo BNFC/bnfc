@@ -168,10 +168,7 @@ table sep m = map (intercalate sep . zipWith pad widths) m
   where
   -- Column widths.
   widths :: [Int]
-  widths = columns maximum $ map (map length) m
-  -- Aggregate columns (works even for a ragged matrix with rows of different length).
-  columns :: ([a] -> b) -> [[a]] -> [b]
-  columns f = map f . transpose
+  widths = map maximum $ transpose $ map (map length) m
 
 -- * List utilities
 
