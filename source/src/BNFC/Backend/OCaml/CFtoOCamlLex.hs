@@ -248,7 +248,7 @@ parenth ss = ["("] ++ ss ++ [")"]
 class Print a where
   prt :: Int -> a -> [String]
   prtList :: [a] -> [String]
-  prtList = concat . map (prt 0)
+  prtList = concatMap (prt 0)
 
 instance Print a => Print [a] where
   prt _ = prtList
