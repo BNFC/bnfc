@@ -127,7 +127,7 @@ prCompos cf =
     prComposCons c
         | isRecursive c = [consFun c +++ unwords (map snd (consVars c)) +++ "->" +++ rhs c]
         | otherwise = []
-    isRecursive c = any (isTreeType cf) (map fst (consVars c))
+    isRecursive c = any (isTreeType cf . fst) (consVars c)
     rhs c = "r" +++ consFun c +++ unwords (map prRec (consVars c))
       where prRec (cat,var) | not (isTreeType cf cat) = "`a`" +++ "r" +++ var
                             | isList cat = "`a` P.foldr (\\ x z -> r (:) `a` f x `a` z) (r [])" +++ var
