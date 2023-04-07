@@ -89,7 +89,7 @@ hashtables cf =
   ht table syms = unless (null syms) $
     [ unwords [ "let", table, "= Hashtbl.create", show (length syms)                  ]
     , unwords [ "let _ = List.iter (fun (kwd, tok) -> Hashtbl.add", table, "kwd tok)" ]
-    , concat  [ "                  [", concat (List.intersperse ";" keyvals), "]"     ]
+    , concat  [ "                  [", List.intercalate ";" keyvals, "]"     ]
     ]
     where
     keyvals = map (\ s -> concat [ "(", mkEsc s, ", ", terminal cf s, ")" ]) syms
