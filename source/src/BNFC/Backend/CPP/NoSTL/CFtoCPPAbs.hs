@@ -90,11 +90,11 @@ prDataH  user (cat, rules) =
 
 --Interface definitions for rules vary on the type of rule.
 prRuleH :: [UserDef] -> Cat -> (Fun, [Cat]) -> String
-prRuleH user c (fun, cats) =
-    if isNilFun fun || isOneFun fun
-    then ""  --these are not represented in the AbSyn
-    else if isConsFun fun
-    then --this is the linked list case.
+prRuleH user c (fun, cats)
+  | isNilFun fun || isOneFun fun
+  = ""  --these are not represented in the AbSyn
+  | isConsFun fun
+  = --this is the linked list case.
     unlines
     [
      "class" +++ c' +++ ": public Visitable",
@@ -113,8 +113,8 @@ prRuleH user c (fun, cats) =
      "  void swap(" ++ c' +++ "&);",
      "};"
     ]
-    else --a standard rule
-    unlines
+  | otherwise --a standard rule
+  = unlines
     [
      "class" +++ fun +++ ": public" +++ super,
      "{",
@@ -249,11 +249,11 @@ prDataC user (cat, rules) = concatMap (prRuleC user cat) rules
 
 --Classes for rules vary based on the type of rule.
 prRuleC :: [UserDef] -> Cat -> (String, [Cat]) -> String
-prRuleC user c (fun, cats) =
-    if isNilFun fun || isOneFun fun
-    then ""  --these are not represented in the AbSyn
-    else if isConsFun fun
-    then --this is the linked list case.
+prRuleC user c (fun, cats)
+  | isNilFun fun || isOneFun fun
+  = ""  --these are not represented in the AbSyn
+  | isConsFun fun
+  = --this is the linked list case.
     unlines
     [
      "/********************   " ++ c' ++ "    ********************/",
@@ -265,8 +265,8 @@ prRuleC user c (fun, cats) =
      prCloneC user c' vs,
      ""
     ]
-    else --a standard rule
-    unlines
+  | otherwise --a standard rule
+  = unlines
     [
      "/********************   " ++ fun ++ "    ********************/",
      render $ prConstructorC user fun vs cats,
