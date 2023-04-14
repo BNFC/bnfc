@@ -37,8 +37,8 @@ WORKDIR /bnfc/testing
 COPY testing/LICENSE LICENSE
 COPY testing/Setup.hs Setup.hs
 COPY testing/bnfc-system-tests.cabal bnfc-system-tests.cabal
-RUN cabal install --only-dependencies
-RUN cabal install hlint
+RUN cabal install --only-dependencies \
+    && cabal install hlint
 
 # install bnfc
 WORKDIR /bnfc/source
