@@ -23,13 +23,13 @@ jobs:
       fail-fast: false
       matrix:
         # Note: check release logic below when changing the matrix!
-        ghc: [9.4.4, 9.2.7, 9.0.2, 8.10.7, 8.8.4, 8.6.5, 8.4.4, 8.2.2]
+        ghc: [9.6.2, 9.4.5, 9.2.8, 9.0.2, 8.10.7, 8.8.4, 8.6.5, 8.4.4, 8.2.2]
         os: [ubuntu-latest]
         include:
           - os: macOS-latest
-            ghc: 9.4.4
+            ghc: 9.6.2
           - os: windows-latest
-            ghc: 9.4.4
+            ghc: 9.6.2
 
 
     # Needed for Windows to make piping (... >> ...) and evaluation ( $(...) ) work.
@@ -81,7 +81,7 @@ jobs:
       - name: Cache dependencies
         uses: actions/cache@v3
         env:
-          key: ${{ runner.os }}-stack-${{ env.STACK_VER }}-ghc-${{ env.GHC_VER }}-
+          key: ${{ runner.os }}-stack-${{ env.STACK_VER }}-ghc-${{ env.GHC_VER }}
           ## Just stack.yaml is actually not correct, better would be stack.yaml.lock,
           ## but we do not commit this file.  As a workaround, one could include the .cabal file,
           ## which tracks the dependencies (albeit in our case not precisely).
@@ -120,7 +120,7 @@ jobs:
         # Conditional to ensure this deployment is only run once per action.
         if: >-
           startsWith(github.ref, 'refs/tags/v')
-          && matrix.ghc == '9.4.4'
+          && matrix.ghc == '9.6.2'
         run: |
           DIST_TGZ=$(cabal sdist source | tail -1)
           echo "DIST_TGZ=${DIST_TGZ}" >> "${GITHUB_ENV}"
@@ -128,7 +128,7 @@ jobs:
       - name: Source tarball release.
         if: >-
           startsWith(github.ref, 'refs/tags/v')
-          && matrix.ghc == '9.4.4'
+          && matrix.ghc == '9.6.2'
         uses: softprops/action-gh-release@v1
         with:
           draft: true
@@ -140,7 +140,7 @@ jobs:
         if: >-
           startsWith(github.ref, 'refs/tags/v')
           && runner.os == 'Linux'
-          && matrix.ghc == '9.4.4'
+          && matrix.ghc == '9.6.2'
         run: |
           BNFC_BIN=bnfc-${BNFC_VERSION}-linux.binary
           cp -p "${BNFC_EXE}" "${BNFC_BIN}"
@@ -151,7 +151,7 @@ jobs:
         if: >-
           startsWith(github.ref, 'refs/tags/v')
           && runner.os == 'Linux'
-          && matrix.ghc == '9.4.4'
+          && matrix.ghc == '9.6.2'
         uses: softprops/action-gh-release@v1
         with:
           draft: true
