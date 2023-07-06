@@ -605,7 +605,7 @@ javaTest (JavaTestParams
                   ]
                 , [ invocation px (text packageAbsyn) dat absentity
                   , printOuts
-                     [ "\"Parse Succesful!\""
+                     [ "\"Parse Successful!\""
                      , "\"[Abstract Syntax]\""
                      , "PrettyPrinter.show(ast)"
                      , "\"[Linearized Tree]\""
