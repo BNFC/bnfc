@@ -348,6 +348,18 @@ haskellRunTestProg _lang args = do
 parameters :: [TestParameters]
 parameters = concat
   [ []
+    -- C++ (extras)
+  , [ cBase { tpName = "C++ (with line numbers)"
+            , tpBnfcOptions = ["--cpp", "-l"] }
+    , cBase { tpName = "C++ (with namespace)"
+            , tpBnfcOptions = ["--cpp", "-p foobar"] }
+    ]
+    -- C++ (basic)
+  , [ cBase { tpName = "C++ (no STL)"
+            , tpBnfcOptions = ["--cpp-nostl"] }
+    , cBase { tpName = "C++ (ANSI)"
+            , tpBnfcOptions = ["--cpp", "--ansi"] }
+    ]
     -- OCaml/Menhir
   , [ ocaml { tpName = "OCaml/Menhir"
             , tpBnfcOptions = ["--ocaml", "--menhir"] }
@@ -356,12 +368,6 @@ parameters = concat
   , [ ocaml ]
     -- Functor (Haskell & Agda)
   , [ haskellAgdaFunctorParameters]
-    -- C++ (extras)
-  , [ cBase { tpName = "C++ (with line numbers)"
-            , tpBnfcOptions = ["--cpp", "-l"] }
-    , cBase { tpName = "C++ (with namespace)"
-            , tpBnfcOptions = ["--cpp", "-p foobar"] }
-    ]
     -- C
   , [ TP { tpName = "C"
          , tpBnfcOptions = ["--c"]
@@ -384,12 +390,6 @@ parameters = concat
     , cBase { tpName = "C (with line numbers)"
             , tpBnfcOptions = ["--c", "--line-numbers"] }
 
-    ]
-    -- C++ (basic)
-  , [ cBase { tpName = "C++ (no STL)"
-            , tpBnfcOptions = ["--cpp-nostl"] }
-    , cBase { tpName = "C++"
-            , tpBnfcOptions = ["--cpp"] }
     ]
     -- Agda
   , [ haskellAgdaParameters ]

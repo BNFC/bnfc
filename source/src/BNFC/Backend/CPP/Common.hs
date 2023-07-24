@@ -9,7 +9,7 @@ import Data.List  ( intercalate )
 
 import BNFC.CF
 import BNFC.TypeChecker
-
+import BNFC.Options            ( Ansi )
 import BNFC.Backend.C          ( comment )
 import BNFC.Backend.CPP.Naming
 
@@ -21,8 +21,8 @@ commentWithEmacsModeHint = comment . ("-*- c++ -*- " ++)
 -- | C++ code for the @define@d constructors.
 --
 -- @definedRules Nothing@ only prints the header.
-definedRules :: Maybe ListConstructors -> CF -> String -> String
-definedRules mlc cf banner
+definedRules :: CppStdMode -> Maybe ListConstructors -> CF -> String -> String
+definedRules mode mlc cf banner
   | null theLines = []
   | otherwise     = unlines $ banner : "" : theLines
   where
@@ -42,13 +42,26 @@ definedRules mlc cf banner
         header = cppType t ++ " " ++ sanitizeCpp (funName f) ++ "(" ++
                   intercalate ", " (map cppArg args) ++ ")"
 
+        -- if ansi mode: T*
+        -- if beyond ansi mode: shared_ptr<T>
+        wrapSharedPtrByMode :: String -> String
+        wrapSharedPtrByMode x = case mode of
+                                  CppStdAnsi _       -> x ++ "*"
+                                  CppStdBeyondAnsi _ -> wrapSharedPtr x
+        -- ansi mode: new T
+        -- beyond ansi mode: std::make_shared<T>
+        wrapInstantiateByMode :: String -> String
+        wrapInstantiateByMode x = case mode of
+                                    CppStdAnsi _       -> "new " ++ x
+                                    CppStdBeyondAnsi _ -> wrapMakeShared x
+
         cppType :: Base -> String
-        cppType (ListT (BaseT x)) = "List" ++ x ++ "*"
-        cppType (ListT t)         = cppType t ++ "*"
+        cppType (ListT (BaseT x)) = wrapSharedPtrByMode ("List" ++ x)
+        cppType (ListT t)         = wrapSharedPtrByMode (cppType t)
         cppType (BaseT x)
             | x `elem` baseTokenCatNames = x
             | isToken x ctx = "String"
-            | otherwise     = x ++ "*"
+            | otherwise     = wrapSharedPtrByMode x
 
         cppArg :: (String, Base) -> String
         cppArg (x,t) = cppType t ++ " " ++ x ++ "_"
@@ -63,7 +76,7 @@ definedRules mlc cf banner
             App t _ [e]
               | isToken t ctx    -> loop e
             App x _ es
-              | isUpper (head x) -> call ("new " ++ x) es
+              | isUpper (head x) -> call (wrapInstantiateByMode x) es
               | x `elem` args    -> call (x ++ "_") es
               | otherwise        -> call (sanitizeCpp x) es
             LitInt n       -> show n
@@ -72,3 +85,20 @@ definedRules mlc cf banner
             LitString s    -> show s
 
           call x es = x ++ "(" ++ intercalate ", " (map loop es) ++ ")"
+
+
+data CppStdMode
+  = CppStdAnsi Ansi -- ^ @Ansi@ mode.
+  | CppStdBeyondAnsi Ansi -- ^ @BeyondAnsi@ mode.
+
+wrapPointerIf :: Bool -> String -> String
+wrapPointerIf b v = if b then "*" ++ v else v
+
+wrapSharedPtrIf :: Bool -> String -> String
+wrapSharedPtrIf b v = if b then "std::shared_ptr<" ++v++">" else v
+
+wrapSharedPtr :: String -> String
+wrapSharedPtr v = "std::shared_ptr<" ++v++">"
+
+wrapMakeShared :: String -> String
+wrapMakeShared v = "std::make_shared<" ++v++">"

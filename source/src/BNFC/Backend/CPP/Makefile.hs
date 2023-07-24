@@ -1,14 +1,17 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module BNFC.Backend.CPP.Makefile (makefile) where
-
+import BNFC.Options
 import BNFC.Backend.Common.Makefile
 import BNFC.PrettyPrint
+import BNFC.Utils                (when)
 
-makefile :: String -> String -> String -> Doc
-makefile prefix name basename = vcat
+
+makefile :: String -> String -> SharedOptions -> String -> Doc
+makefile prefix name opts basename =
+  vcat $
     [ mkVar "CC" "g++ -g"
-    , mkVar "CCFLAGS" "--ansi -W -Wall -Wsign-conversion -Wno-unused-parameter -Wno-unused-function -Wno-unneeded-internal-declaration"
+    , mkVar "CCFLAGS" (compileOpt ++ " -W -Wall -Wsign-conversion -Wno-unused-parameter -Wno-unused-function -Wno-unneeded-internal-declaration")
     , ""
     , mkVar "FLEX" "flex"
     , mkVar "FLEX_OPTS" ("-P" ++ prefix)
@@ -16,7 +19,10 @@ makefile prefix name basename = vcat
     , mkVar "BISON" "bison"
     , mkVar "BISON_OPTS" ("-t -p" ++ prefix)
     , ""
-    , mkVar "OBJS" "Absyn.o Buffer.o Lexer.o Parser.o Printer.o"
+    , if isBeyondAnsiCpp then
+        mkVar "OBJS" "Absyn.o Buffer.o Lexer.o Parser.o Driver.o Printer.o"
+      else
+        mkVar "OBJS" "Absyn.o Buffer.o Lexer.o Parser.o Printer.o"
     , ""
     , mkRule ".PHONY" ["clean", "distclean"]
         []
@@ -28,13 +34,16 @@ makefile prefix name basename = vcat
             [ name ++ e | e <- [".aux", ".log", ".pdf",".dvi", ".ps", ""]] ]
     , mkRule "distclean" ["clean"]
         [ "rm -f " ++ unwords
-            [ "Absyn.C", "Absyn.H"
-            , "Buffer.C", "Buffer.H"
-            , "Test.C"
-            , "Bison.H", "Parser.C", "Parser.H", "ParserError.H", name ++ ".y"
-            , "Lexer.C", name ++ ".l"
-            , "Skeleton.C", "Skeleton.H"
-            , "Printer.C", "Printer.H"
+            [ "Absyn" ++ cppExt, "Absyn" ++ hExt
+            , "Buffer" ++ cppExt, "Buffer" ++ hExt
+            , "Test" ++ cppExt
+            , "Bison" ++ hExt, "Parser" ++ cppExt, "Parser" ++ hExt, "ParserError" ++ hExt, name ++ parserExt
+            , "Lexer" ++ cppExt, name ++ lexerExt
+            , "Skeleton" ++ cppExt, "Skeleton" ++ hExt
+            , "Printer" ++ cppExt, "Printer" ++ hExt
+            , "Driver" ++ cppExt, "Driver" ++ hExt
+            , "Scanner" ++ hExt
+            , "location" ++ hExt
             , basename
             , name ++ ".tex"
             ]
@@ -42,25 +51,36 @@ makefile prefix name basename = vcat
     , mkRule testName [ "${OBJS}", "Test.o" ]
         [ "@echo \"Linking " ++ testName ++ "...\""
         , "${CC} ${OBJS} Test.o -o " ++ testName ]
-    , mkRule "Absyn.o" [ "Absyn.C", "Absyn.H" ]
-        [ "${CC} ${CCFLAGS} -c Absyn.C" ]
-    , mkRule "Buffer.o" [ "Buffer.C", "Buffer.H" ]
-        [ "${CC} ${CCFLAGS} -c Buffer.C " ]
-    , mkRule "Lexer.C" [ name ++ ".l" ]
-        [ "${FLEX} ${FLEX_OPTS} -oLexer.C " ++ name ++ ".l" ]
-    , mkRule "Parser.C Bison.H" [ name ++ ".y" ]
-      [ "${BISON} ${BISON_OPTS} " ++ name ++ ".y -o Parser.C" ]
+    , mkRule "Absyn.o" [ "Absyn" ++ cppExt, "Absyn" ++ hExt ]
+        [ "${CC} ${CCFLAGS} -c Absyn" ++ cppExt ]
+    , when isBeyondAnsiCpp
+      mkRule "Driver.o" [ "Driver" ++ cppExt, "Driver" ++ hExt ]
+      [ "${CC} ${CCFLAGS} -c Driver" ++ cppExt ]
+    , mkRule "Buffer.o" [ "Buffer" ++ cppExt, "Buffer" ++ hExt ]
+        [ "${CC} ${CCFLAGS} -c Buffer" ++ cppExt ]
+    , mkRule ("Lexer" ++ cppExt) [ name ++ lexerExt ]
+        [ "${FLEX} ${FLEX_OPTS} -oLexer" ++ cppExt ++ " " ++ name ++ lexerExt ]
+    , mkRule ("Parser"  ++ cppExt++ " Bison" ++ hExt) [ name ++ parserExt ]
+      [ "${BISON} ${BISON_OPTS} " ++ name ++ parserExt ++ " -o Parser" ++ cppExt ]
     , mkRule "Lexer.o" [ "CCFLAGS+=-Wno-sign-conversion" ]
         []
-    , mkRule "Lexer.o" [ "Lexer.C", "Bison.H" ]
-        [ "${CC} ${CCFLAGS} -c Lexer.C " ]
-    , mkRule "Parser.o" [ "Parser.C", "Absyn.H", "Bison.H" ]
-        [ "${CC} ${CCFLAGS} -c Parser.C" ]
-    , mkRule "Printer.o" [ "Printer.C", "Printer.H", "Absyn.H" ]
-        [ "${CC} ${CCFLAGS} -c Printer.C" ]
-    , mkRule "Skeleton.o" [ "Skeleton.C", "Skeleton.H", "Absyn.H" ]
-       [ "${CC} ${CCFLAGS} -Wno-unused-parameter -c Skeleton.C" ]
-    , mkRule "Test.o" [ "Test.C", "Parser.H", "Printer.H", "Absyn.H" ]
-        [ "${CC} ${CCFLAGS} -c Test.C" ]
+    , mkRule "Lexer.o" [ "Lexer" ++ cppExt, "Bison" ++ hExt ]
+        [ "${CC} ${CCFLAGS} -c Lexer" ++ cppExt ]
+    , mkRule "Parser.o" [ "Parser" ++ cppExt, "Absyn" ++ hExt, "Bison" ++ hExt ]
+        [ "${CC} ${CCFLAGS} -c Parser" ++ cppExt ]
+    , mkRule "Printer.o" [ "Printer" ++ cppExt, "Printer" ++ hExt, "Absyn" ++ hExt ]
+        [ "${CC} ${CCFLAGS} -c Printer" ++ cppExt ]
+    , mkRule "Skeleton.o" [ "Skeleton" ++ cppExt, "Skeleton" ++ hExt, "Absyn" ++ hExt ]
+       [ "${CC} ${CCFLAGS} -Wno-unused-parameter -c Skeleton" ++ cppExt ]
+    , mkRule "Test.o" [ "Test" ++ cppExt, "Parser" ++ hExt, "Printer" ++ hExt, "Absyn" ++ hExt ]
+        [ "${CC} ${CCFLAGS} -c Test" ++ cppExt ]
     ]
-  where testName = "Test" ++ name
+  where
+    testName = "Test" ++ name
+    isBeyondAnsiCpp = and [ansi opts == BeyondAnsi, target opts == TargetCpp]
+    (compileOpt, lexerExt, parserExt, cppExt, hExt) =
+      case (ansi opts, target opts) of
+        (_, TargetCppNoStl)    -> ("--ansi"    , ".l" , ".y" , ".C ", ".H" )
+        (Ansi, TargetCpp)      -> ("--ansi"    , ".l" , ".y" , ".c ", ".h" )
+        (BeyondAnsi, _)        -> ("-std=c++14", ".ll", ".yy", ".cc", ".hh")
+        (_, _)                 -> ("", "", "", "", "")

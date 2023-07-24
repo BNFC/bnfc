@@ -31,12 +31,11 @@ import BNFC.Utils       ( (+++), (++++) )
 import BNFC.Backend.Common.NamedVariables
 import BNFC.Backend.Common.OOAbstract
 import BNFC.Backend.CPP.Common
-
+import BNFC.Options
 
 --The result is two files (.H file, .C file)
 cf2CPPAbs :: String -> CF -> (String, String)
 cf2CPPAbs _ cf = (mkHFile cf, mkCFile cf)
-
 
 {- **** Header (.H) File Functions **** -}
 
@@ -58,7 +57,7 @@ mkHFile cf = unlines
   "/********************   Abstract Syntax Classes    ********************/\n",
   concatMap (prDataH user) (getAbstractSyntax cf),
   "",
-  definedRules Nothing cf
+  definedRules (CppStdAnsi Ansi) Nothing cf
   "/********************   Defined Constructors    ********************/",
   "",
   "#endif"
@@ -229,7 +228,7 @@ mkCFile cf = unlines
  [
   header,
   concatMap (prDataC user) (getAbstractSyntax cf),
-  definedRules (Just $ LC nil cons) cf
+  definedRules (CppStdAnsi Ansi) (Just $ LC nil cons) cf
   "/********************   Defined Constructors    ********************/"
  ]
  where

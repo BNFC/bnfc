@@ -114,7 +114,7 @@ makefile :: SharedOptions -> String -> Doc
 makefile opts basename = vcat
     [ mkVar "OCAMLC" "ocamlc"
     , mkVar "OCAMLYACC" $ ocamlParserName opts
-    , mkVar "OCAMLLEX" "ocamllex"
+    , mkVar "OCAMLLEX" "ocamllex -ml" -- prevent error of "transition table overflow, automaton is too big" https://stackoverflow.com/a/63461031/2565527
     , mkVar "OCAMLCFLAGS" ""
     , mkRule "all" []
         [ "$(OCAMLYACC) " ++ ocamlyaccFile opts

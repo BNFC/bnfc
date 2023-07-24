@@ -18,4 +18,6 @@ ci :
 	haskell-ci github cabal.project
 	cd .github/workflows ; patch -i haskell-ci.diff
 
+tag :
+	cd ./source && hasktags --etags .
 #EOF
