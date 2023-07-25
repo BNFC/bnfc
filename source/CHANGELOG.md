@@ -4,6 +4,7 @@ Unreleased
 
 * Haskell/GADT: generated `ComposOp.hs` no longer needs `mtl` library [[#438](https://github.com/BNFC/bnfc/pull/438)]
 * Ocaml: fixed a crash in printer with unbalanced `}` [[#439](https://github.com/BNFC/bnfc/issues/439)]
+* Ocaml: removed superfluous `let rec` in the printers for token categories
 
 # 2.9.4.1
 

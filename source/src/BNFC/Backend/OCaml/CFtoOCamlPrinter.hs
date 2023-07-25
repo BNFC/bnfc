@@ -105,40 +105,40 @@ prologue = unlines [
   ]
 
 charRule :: CF -> String
-charRule cf = unlines [
-    "let rec prtChar (_:int) (c:char) : doc = render (\"'\" ^ Char.escaped c ^ \"'\")",
-    ifList cf (TokenCat catChar),
-    ""
-    ]
+charRule cf = unlines
+  [ "let prtChar (_:int) (c:char) : doc = render (\"'\" ^ Char.escaped c ^ \"'\")"
+  , ifList' cf (TokenCat catChar)
+  , ""
+  ]
 
 integerRule :: CF -> String
-integerRule cf = unlines [
-    "let rec prtInt (_:int) (i:int) : doc = render (string_of_int i)",
-    ifList cf (TokenCat catInteger),
-    ""
-    ]
+integerRule cf = unlines
+  [ "let prtInt (_:int) (i:int) : doc = render (string_of_int i)"
+  , ifList' cf (TokenCat catInteger)
+  , ""
+  ]
 
 doubleRule :: CF -> String
-doubleRule cf = unlines [
-    "let rec prtFloat (_:int) (f:float) : doc = render (sprintf \"%.15g\" f)",
-    ifList cf (TokenCat catDouble),
-    ""
-    ]
+doubleRule cf = unlines
+  [ "let prtFloat (_:int) (f:float) : doc = render (sprintf \"%.15g\" f)"
+  , ifList' cf (TokenCat catDouble)
+  , ""
+  ]
 
 stringRule :: CF -> String
-stringRule cf = unlines [
-    "let rec prtString (_:int) (s:string) : doc = render (\"\\\"\" ^ String.escaped s ^ \"\\\"\")",
-    ifList cf (TokenCat catString),
-    ""
-    ]
+stringRule cf = unlines
+  [ "let prtString (_:int) (s:string) : doc = render (\"\\\"\" ^ String.escaped s ^ \"\\\"\")"
+  , ifList' cf (TokenCat catString)
+  , ""
+  ]
 
 identRule :: ModuleName -> CF -> String
 identRule absMod cf = ownPrintRule absMod cf catIdent
 
 ownPrintRule :: ModuleName -> CF -> TokenCat -> String
-ownPrintRule absMod cf own = unlines $ [
-  "let rec" +++ prtFun (TokenCat own) +++ "_ (" ++ absMod ++ "." ++ own ++ posn ++ ") : doc = render i",
-  ifList cf (TokenCat own)
+ownPrintRule absMod cf own = unlines
+  [ "let" +++ prtFun (TokenCat own) +++ "_ (" ++ absMod ++ "." ++ own ++ posn ++ ") : doc = render i"
+  , ifList' cf (TokenCat own)
   ]
  where
    posn = if isPositionCat cf own then " (_,i)" else " i"
@@ -185,12 +185,18 @@ case_fun absMod cat xs = unlines [
 --   mkListRule rs = unlines $ ("and prt" ++ fixTypeUpper cat ++ "ListBNFC" +++ "_ es : doc = match es with"):rs
 
 ifList :: CF -> Cat -> String
-ifList cf cat
+ifList = ifListP "and"
+
+ifList' :: CF -> Cat -> String
+ifList' = ifListP "let rec"
+
+ifListP :: Doc -> CF -> Cat -> String
+ifListP letrec cf cat
   | null rules = ""
   | otherwise  = render $ case cases of
     []         -> empty  -- IMPOSSIBLE CASE when (rules /= [])
     first:rest -> vcat
-        [ "and prt" <> text (fixTypeUpper cat)  <> "ListBNFC i es : doc = match (i, es) with"
+        [ letrec <+> "prt" <> text (fixTypeUpper cat)  <> "ListBNFC i es : doc = match (i, es) with"
         , nest 4 first
         , nest 2 $ vcat (map ("|" <+>) rest)
         ]
