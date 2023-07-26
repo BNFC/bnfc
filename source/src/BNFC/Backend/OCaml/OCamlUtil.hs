@@ -8,7 +8,7 @@
 
 module BNFC.Backend.OCaml.OCamlUtil where
 
-import Data.Char (toLower, toUpper)
+import Data.Char (toLower)
 
 import BNFC.CF
 import BNFC.Options
@@ -49,10 +49,7 @@ fixTypeQual m = \case
 
 -- as fixType, but leave first character in upper case
 fixTypeUpper :: Cat -> String
-fixTypeUpper c = case fixType c of
-    [] -> []
-    c:cs -> toUpper c : cs
-
+fixTypeUpper = capitalize . fixType
 
 reservedOCaml :: [String]
 reservedOCaml = [

@@ -17,10 +17,10 @@ module BNFC.Backend.C.CFtoCSkel (cf2CSkel) where
 import Prelude hiding ((<>))
 
 import BNFC.CF
-import BNFC.Utils                       ( (+++) )
+import BNFC.Utils                         ( (+++), capitalize )
 import BNFC.Backend.Common.NamedVariables
-import Data.Char                ( toLower, toUpper )
-import Data.Either (lefts)
+import Data.Char                          ( toLower )
+import Data.Either                        ( lefts )
 
 import Text.PrettyPrint
 
@@ -218,5 +218,4 @@ basicFunName :: Cat -> Doc
 basicFunName = text . basicFunNameS . catToStr
 
 basicFunNameS :: String -> String
-basicFunNameS (c:cs) = toUpper c : cs
-basicFunNameS []     = error "impossible: empty string in CFtoCSkel.basicFunNameS"
+basicFunNameS = capitalize

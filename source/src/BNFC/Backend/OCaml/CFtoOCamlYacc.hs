@@ -14,13 +14,12 @@ module BNFC.Backend.OCaml.CFtoOCamlYacc
        )
         where
 
-import Data.Char
 import Data.Foldable ( toList )
 import Data.List     ( intercalate )
 
 import BNFC.CF
 import BNFC.Options  ( OCamlParser(..) )
-import BNFC.Utils    ( (+++), mapHead, table )
+import BNFC.Utils    ( (+++), capitalize, table )
 import BNFC.Backend.Common
 import BNFC.Backend.OCaml.OCamlUtil
 
@@ -138,7 +137,7 @@ typing absName c s = "%type" +++ "<" ++ qualify (normCat c) ++ ">" +++ s
                       else absName ++ "." ++ fixType c
 
 epName :: Cat -> String
-epName c = "p" ++ mapHead toUpper (nonterminal c)
+epName c = "p" ++ capitalize (nonterminal c)
 
 entryPointRules :: OCamlParser -> CF -> [String]
 entryPointRules ocamlParser cf =
