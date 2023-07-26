@@ -401,16 +401,16 @@ disambiguateNames = disamb []
 -- >>> parseIdent "abc"
 -- ["abc"]
 --
--- >>> parseIdent "Abc"
+-- >>> parseIdent "Abc123"
 -- ["Abc"]
 --
 -- >>> parseIdent "WhySoSerious"
 -- ["Why","So","Serious"]
 --
--- >>> parseIdent "why_so_serious"
+-- >>> parseIdent "why_so_serious_123"
 -- ["why","so","serious"]
 --
--- >>> parseIdent "why-so-serious"
+-- >>> parseIdent "why-so-serious123"
 -- ["why","so","serious"]
 --
 -- Some corner cases:
