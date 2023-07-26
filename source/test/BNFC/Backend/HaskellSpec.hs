@@ -50,6 +50,11 @@ spec = do
       calc <- getCalc
       makeHaskell calcOptions calc `shouldGenerate` "ErrM.hs"
 
+    it "does not generate a error module file for structured errors" $ do
+      let options = calcOptions { errorType = ErrorTypeStructured }
+      calc <- getCalc
+      makeHaskell options calc `shouldNotGenerate` "ErrM.hs"
+
   context "with option -mMyMakefile and the Calc grammar" $ do
     it "generates a Makefile" $ do
       calc <- getCalc
