@@ -38,11 +38,7 @@ cf2AntlrLex packageBase cf = (vcat
     , restOfLexerGrammar cf
     ], env)
   where
-    env                    = makeSymEnv (cfgSymbols cf ++ reservedWords cf)
-        (0 :: Int)
-    makeSymEnv [] _        = []
-    makeSymEnv (s:symbs) n = (s, "Surrogate_id_SYMB_" ++ show n)
-        : makeSymEnv symbs (n+1)
+    env = zip (cfgSymbols cf ++ reservedWords cf) $ map (("Surrogate_id_SYMB_" ++) . show) [0 :: Int ..]
 
 
 -- | File prelude
