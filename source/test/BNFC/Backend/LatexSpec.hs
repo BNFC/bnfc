@@ -26,7 +26,7 @@ spec = do
 
     it "creates the Makefile" $ do
       calc <- getCalc
-      let options = calcOptions { make = Just "Makefile" }
+      let options = calcOptions { optMake = Just "Makefile" }
       makeLatex options calc `shouldGenerate` "Makefile"
 
   describe "prt" $ do

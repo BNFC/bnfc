@@ -92,7 +92,7 @@ makeOCaml opts cf = do
     mkfile (tFile opts)         comment $
       ocamlTestfile (ocamlParser opts) absMod lexMod parMod prMod showMod cf
     mkfile (utilFile opts)      comment $ utilM
-    mkMakefile opts $ makefile opts
+    mkMakefile (optMake opts) $ makefile opts
     case xml opts of
       2 -> makeXML opts True cf
       1 -> makeXML opts False cf

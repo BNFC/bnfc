@@ -51,7 +51,7 @@ makeHaskellGadt opts cf = do
       cf2Layout layMod lexMod cf
     mkHsFile (tFile opts)        $ Haskell.testfile opts cf
     mkHsFile (errFile opts) $ mkErrM errMod
-    Makefile.mkMakefile opts $ Haskell.makefile opts cf
+    Makefile.mkMakefile (optMake opts) $ Haskell.makefile opts cf
     case xml opts of
       2 -> makeXML opts True cf
       1 -> makeXML opts False cf

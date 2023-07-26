@@ -40,7 +40,7 @@ makeCppNoStl opts cf = do
     mkCppFile "Printer.H" prinH
     mkCppFile "Printer.C" prinC
     mkCppFile "Test.C" (cpptest cf)
-    Makefile.mkMakefile opts $ makefile prefix name
+    Makefile.mkMakefile (optMake opts) $ makefile prefix name
   where
     name :: String
     name = lang opts

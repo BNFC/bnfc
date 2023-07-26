@@ -25,7 +25,7 @@ makeLatex :: SharedOptions -> CF -> Backend
 makeLatex opts cf = do
     let texfile = name <.> "tex"
     mkfile texfile comment (cfToLatex name cf)
-    Makefile.mkMakefile opts (makefile texfile)
+    Makefile.mkMakefile (optMake opts) (makefile texfile)
   where name = lang opts
 
 -- | Create a makefile for the given tex file

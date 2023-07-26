@@ -21,6 +21,5 @@ spec =
   describe "C backend" $
     it "respect the makefile option" $ do
       calc <- getCalc
-      let opts = calcOptions { make = Just "MyMakefile" }
+      let opts = calcOptions { optMake = Just "MyMakefile" }
       makeHaskellGadt opts calc `shouldGenerate` "MyMakefile"
-

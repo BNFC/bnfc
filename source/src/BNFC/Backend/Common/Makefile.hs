@@ -4,7 +4,6 @@ module BNFC.Backend.Common.Makefile where
 
 import Prelude hiding ((<>))
 
-import BNFC.Options (SharedOptions(..))
 import BNFC.Backend.Base (mkfile, Backend)
 import BNFC.PrettyPrint
 
@@ -59,6 +58,6 @@ refVar m = "${" ++ m ++ "}"
 
 -- | Create the Makefile file using the name specified in the option record.
 --
-mkMakefile :: SharedOptions -> (String -> Doc) -> Backend
-mkMakefile Options{make = Just m } mkContent = mkfile m ("## " ++) (mkContent m)
-mkMakefile Options{make = Nothing} _         = return ()
+mkMakefile :: Maybe String -> (String -> Doc) -> Backend
+mkMakefile (Just m) mkContent = mkfile m ("## " ++) (mkContent m)
+mkMakefile Nothing  _         = return ()

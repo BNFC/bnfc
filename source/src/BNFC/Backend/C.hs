@@ -45,7 +45,7 @@ makeC opts cf = do
     mkCFile "Printer.h" prinH
     mkCFile "Printer.c" prinC
     mkCFile "Test.c" (ctest cf)
-    Makefile.mkMakefile opts $ makefile name prefix
+    Makefile.mkMakefile (optMake opts) $ makefile name prefix
   where
     name :: String
     name = lang opts

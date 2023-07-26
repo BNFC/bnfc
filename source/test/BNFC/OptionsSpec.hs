@@ -50,7 +50,7 @@ spec = do
       parseMode_ ["-haskell", "-m", "-glr", "file.cf"]
         `shouldSet` (target, TargetHaskell)
       parseMode_ ["-haskell", "-m", "-glr", "file.cf"]
-        `shouldSet` (make, Just "Makefile")
+        `shouldSet` (optMake, Just "Makefile")
       parseMode_ ["-haskell", "-m", "-glr", "file.cf"]
         `shouldSet` (glr, GLR)
 
@@ -66,15 +66,15 @@ spec = do
     describe "--makefile" $ do
 
       it "is off by default" $
-        parseMode_ ["--c", "foo.cf"] `shouldSet` (make, Nothing)
+        parseMode_ ["--c", "foo.cf"] `shouldSet` (optMake, Nothing)
 
       it "uses the file name 'Makefile' by default" $
-        parseMode_ ["--c", "-m", "foo.cf"] `shouldSet` (make, Just "Makefile")
+        parseMode_ ["--c", "-m", "foo.cf"] `shouldSet` (optMake, Just "Makefile")
 
       context "when using the option with an argument" $
         it "uses the argument as Makefile name" $
           parseMode_ ["--c", "-mMyMakefile", "foo.cf"]
-            `shouldSet` (make, Just "MyMakefile")
+            `shouldSet` (optMake, Just "MyMakefile")
   where
   parseMode_ = fst . parseMode
 

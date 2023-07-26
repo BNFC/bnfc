@@ -20,5 +20,5 @@ spec = do
   describe "Java backend" $
     it "respect the makefile option" $ do
       calc <- getCalc
-      let opts = calcOptions { make = Just "MyMakefile" }
+      let opts = calcOptions { optMake = Just "MyMakefile" }
       makeJava opts calc `shouldGenerate` "MyMakefile"

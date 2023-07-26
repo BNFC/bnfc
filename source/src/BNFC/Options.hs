@@ -125,7 +125,7 @@ data SharedOptions = Options
   , outDir      :: FilePath        -- ^ Target directory for generated files.
   , force       :: Bool            -- ^ Ignore errors as much as possible?
   , target      :: Target          -- ^ E.g. @--haskell@.
-  , make        :: Maybe String    -- ^ The name of the Makefile to generate or Nothing for no Makefile.
+  , optMake     :: Maybe String    -- ^ The name of the Makefile to generate or Nothing for no Makefile.
   , inPackage   :: InPackage       -- ^ The hierarchical package to put the modules in, or Nothing.
   , linenumbers :: RecordPositions -- ^ Add and set line_number field for syntax classes
   , ansi        :: Ansi            -- ^ Restrict to the ANSI language standard (C/C++)?
@@ -159,7 +159,7 @@ defaultOptions = Options
   , outDir          = "."
   , force           = False
   , target          = TargetHaskell
-  , make            = Nothing
+  , optMake         = Nothing
   , inPackage       = Nothing
   , linenumbers     = NoRecordPositions
   , ansi            = BeyondAnsi
@@ -216,7 +216,7 @@ printOptions opts = unwords . concat $
   [ [ printTargetOption tgt ]
   -- General and shared options:
   , unlessDefault outDir opts $ \ o -> [ "--outputdir=" ++ o ]
-  , [ "--makefile=" ++ m  | m <- maybeToList $ make opts        ]
+  , [ "--makefile=" ++ m  | m <- maybeToList $ optMake opts        ]
   , [ "-p " ++ p          | p <- maybeToList $ inPackage opts   ]
   , unlessDefault linenumbers opts $ const [ "-l" ]
   , unlessDefault ansi opts $ const [ "--ansi" ]
@@ -400,7 +400,7 @@ commonOptions =
   , Option ""  ["force"]     (NoArg (\ o -> o { force = True }))
       "Ignore errors in the grammar (may produce ill-formed output or crash)"
   ]
-  where setMakefile mf o = o { make = Just mf }
+  where setMakefile mf o = o { optMake = Just mf }
 
 allOptions :: [OptDescr (SharedOptions -> SharedOptions)]
 allOptions = targetOptions ++ commonOptions ++ map fst specificOptions

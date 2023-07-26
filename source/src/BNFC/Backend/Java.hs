@@ -111,7 +111,7 @@ makeJava' options@Options{..} cf = do
        else "   (Parser created only for category " ++ prettyShow (firstEntry cf) ++ ")"
     liftIO $ putStrLn $ "   (Tested with"  +++ toolname parmake
                                            +++ toolversion parmake ++ ")"
-    Makefile.mkMakefile options $
+    Makefile.mkMakefile optMake $
         makefile dirBase dirAbsyn absynFileNames parselexspec
   where
     remDups [] = []

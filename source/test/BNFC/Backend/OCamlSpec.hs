@@ -21,6 +21,5 @@ spec =
   describe "OCaml backend" $
     it "respect the makefile option" $ do
       calc <- getCalc
-      let opts = calcOptions { make = Just "MyMakefile" }
+      let opts = calcOptions { optMake = Just "MyMakefile" }
       makeOCaml opts calc `shouldGenerate` "MyMakefile"
-

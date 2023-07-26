@@ -53,5 +53,5 @@ spec = do
   context "with option -mMyMakefile and the Calc grammar" $ do
     it "generates a Makefile" $ do
       calc <- getCalc
-      let options = calcOptions { make = Just "MyMakefile" }
+      let options = calcOptions { optMake = Just "MyMakefile" }
       makeHaskell options calc `shouldGenerate` "MyMakefile"
