@@ -20,7 +20,6 @@ import Prelude hiding ((<>))
 import Text.PrettyPrint
 import BNFC.CF
 import BNFC.Backend.Java.RegToAntlrLexer
-import BNFC.Backend.Java.Utils
 import BNFC.Backend.Common.NamedVariables
 
 -- | Creates a lexer grammar.
@@ -30,24 +29,23 @@ import BNFC.Backend.Common.NamedVariables
 -- user defined tokens. This is not handled.
 -- returns the environment because the parser uses it.
 cf2AntlrLex :: String -> CF -> (Doc, KeywordEnv)
-cf2AntlrLex packageBase cf = (vcat
-    [ prelude packageBase
+cf2AntlrLex lang cf = (,env) $ vcat
+    [ prelude lang
     , cMacros
     -- unnamed symbols (those in quotes, not in token definitions)
     , lexSymbols env
     , restOfLexerGrammar cf
-    ], env)
+    ]
   where
     env = zip (cfgSymbols cf ++ reservedWords cf) $ map (("Surrogate_id_SYMB_" ++) . show) [0 :: Int ..]
 
 
 -- | File prelude
-prelude ::  String -> Doc
-prelude packageBase = vcat
+prelude :: String -> Doc
+prelude lang = vcat
     [ "// Lexer definition for use with Antlr4"
-    , "lexer grammar" <+> text name <> "Lexer;"
+    , "lexer grammar" <+> text lang <> "Lexer;"
     ]
-    where name = getLastInPackage packageBase
 
 --For now all categories are included.
 --Optimally only the ones that are used should be generated.

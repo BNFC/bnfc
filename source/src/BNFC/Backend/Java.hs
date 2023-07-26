@@ -57,14 +57,21 @@ import BNFC.PrettyPrint
 
 -- | This creates the Java files.
 makeJava :: SharedOptions -> CF -> MkFiles ()
-makeJava opt = makeJava' opt{ lang = mkName javaReserved SnakeCase $ lang opt }
+makeJava opt = makeJava' pkg opt{ lang = lang' }
   -- issue #212: make a legal package name, see also
   -- https://docs.oracle.com/javase/tutorial/java/package/namingpkgs.html
+  where
+    pkg   = mkName javaReserved SnakeCase $ lang opt
+    lang' = capitalize $ mkName javaReserved CamelCase $ lang opt
 
-makeJava' :: SharedOptions -> CF -> MkFiles ()
-makeJava' options@Options{..} cf = do
+makeJava' ::
+     String         -- ^ Legal package name derived from language name.
+  -> SharedOptions
+  -> CF
+  -> MkFiles ()
+makeJava' pkg options@Options{..} cf = do
      -- Create the package directories if necessary.
-    let packageBase  = maybe id (+.+) inPackage lang
+    let packageBase  = maybe id (+.+) inPackage pkg
         packageAbsyn = packageBase +.+ "Absyn"
         dirBase      = pkgToDir packageBase
         dirAbsyn     = pkgToDir packageAbsyn
@@ -364,7 +371,7 @@ cf2JFlex rp = CF2Lex
 
 cf2AntlrLex' :: String -> CFToLexer
 cf2AntlrLex' l = CF2Lex
-  { cf2lex           = cf2AntlrLex
+  { cf2lex           = const $ cf2AntlrLex l
   , makelexerdetails = antlrmakedetails $ l ++ "Lexer"
   }
 
@@ -387,7 +394,7 @@ cf2cup rp = CF2Parse
 
 cf2AntlrParse' :: String -> CFToParser
 cf2AntlrParse' l = CF2Parse
-  { cf2parse          = cf2AntlrParse
+  { cf2parse          = const $ cf2AntlrParse l
   , makeparserdetails = antlrmakedetails $ l ++ "Parser"
   }
 

@@ -79,10 +79,6 @@ getRuleName z
 getLabelName :: Fun -> String
 getLabelName = mkName ["Rule"] CamelCase
 
-getLastInPackage :: String -> String
-getLastInPackage =
-    last . words . map (\c -> if c == '.' then ' ' else c)
-
 -- | Make a new entrypoint NT for an existing NT.
 
 startSymbol :: String -> String

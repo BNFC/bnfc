@@ -47,7 +47,7 @@ type MetaVar     = (String, Cat)
 -- | Creates the ANTLR parser grammar for this CF.
 --The environment comes from CFtoAntlr4Lexer
 cf2AntlrParse :: String -> String -> CF -> RecordPositions -> KeywordEnv -> String
-cf2AntlrParse packageBase packageAbsyn cf _ env = unlines $ concat
+cf2AntlrParse lang packageAbsyn cf _ env = unlines $ concat
   [ [ header
     , tokens
     , ""
@@ -62,15 +62,14 @@ cf2AntlrParse packageBase packageAbsyn cf _ env = unlines $ concat
     header :: String
     header = unlines
         [ "// Parser definition for use with ANTLRv4"
-        , "parser grammar" +++ identifier ++ "Parser;"
+        , "parser grammar" +++ lang ++ "Parser;"
         ]
     tokens :: String
     tokens = unlines
         [ "options {"
-        , "  tokenVocab = "++identifier++"Lexer;"
+        , "  tokenVocab = " ++ lang ++ "Lexer;"
         , "}"
         ]
-    identifier = getLastInPackage packageBase
 
 -- | Generate start rule to help ANTLR.
 --
