@@ -132,7 +132,7 @@ mkHFile useStl inPackage cf groups = unlines
     "",
     "  void inline bufEscape(const char *s)",
     "  {",
-    "    while (*s) bufEscape(*s++);",
+    "    if (s) while (*s) bufEscape(*s++);",
     "  }",
     "",
     if useStl then render (nest 2 $ bufAppendString "bufEscape") else "",

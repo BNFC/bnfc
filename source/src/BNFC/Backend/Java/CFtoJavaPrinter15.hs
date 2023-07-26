@@ -87,6 +87,7 @@ cf2JavaPrinter packageBase packageAbsyn cf =
       "  private static void printQuoted(String s) { render(\"\\\"\" + escape(s) + \"\\\"\"); }",
       "",
       "  public static String escape(String s) {",
+      "    if (s == null) return null;",
       "    return s.replace(\"\\\\\", \"\\\\\\\\\")",
       "            .replace(\"\\t\", \"\\\\t\")",
       "            .replace(\"\\b\", \"\\\\b\")",

@@ -270,7 +270,7 @@ mkCFile cf groups = concat
      [
       "void bufEscapeS(const char *s)",
       "{",
-      "  while (*s) bufEscapeC(*s++);",
+      "  if (s) while (*s) bufEscapeC(*s++);",
       "}",
       "void bufEscapeC(const char c)",
       "{",
