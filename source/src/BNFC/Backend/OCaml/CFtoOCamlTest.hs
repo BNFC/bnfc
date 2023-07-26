@@ -35,10 +35,9 @@ ocamlTestfile ocamlParser absM lexM parM printM showM cf =
         lexerName   = text $ qualify lexM "token"
         parserName  = text $ qualify parM $ epName cat
         printerName = hsep $ map (text . qualify printM) [ "printTree", prtFun cat ]
-        showFun     = parens . hsep $
-          [ "fun x ->"
-          , text $ qualify showM "show"
-          , parens $ text (showsFunQual (qualify showM) cat) <+> "x"
+        showFun x   = hsep $
+          [ text $ qualify showM "show"
+          , parens $ text (showsFunQual (qualify showM) cat) <+> x
           ]
         topType     = text (fixTypeQual absM $ normCat cat)
         exc         = case ocamlParser of
@@ -66,7 +65,7 @@ ocamlTestfile ocamlParser absM lexM parM printM showM cf =
         , "let showTree (t : " <> topType <> ") : string ="
         , nest 4 (fsep ( punctuate "^"
             [ doubleQuotes "[Abstract syntax]\\n\\n"
-            , showFun <+> "t"
+            , showFun "t"
             , doubleQuotes "\\n\\n"
             , doubleQuotes "[Linearized tree]\\n\\n"
             , printerName <+> "t"
