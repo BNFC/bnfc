@@ -9,11 +9,11 @@ cabal-version: 2.0
   -- Shunning this extra effort, we only support stack snapshot that have a sufficient Cabal.
 build-type: Simple
 category: Parsing
-Copyright: (c) Andreas Abel, Jonas Almström Duregård, Krasimir Angelov, Jean-Philippe Bernardy, Björn Bringert, Johan Broberg, Kyle Butt, Paul Callaghan, Grégoire Détrez, Markus Forsberg, Ola Frid, Peter Gammie, Thomas Hallgren, Pascal Hof, Simon Huber, Patrik Jansson, Kristofer Johannisson, Antti-Juhani Kaijanaho, Andreas Lööw, Justin Meiners, Kent Mein, Ulf Norell, Gabriele Paganelli, Michael Pellauer, Fabian Ruch, and Aarne Ranta 2002 - 2021. Free software under the BSD 3-clause license.
+Copyright: (c) Andreas Abel, Jonas Almström Duregård, Krasimir Angelov, Jean-Philippe Bernardy, Björn Bringert, Johan Broberg, Kyle Butt, Paul Callaghan, Grégoire Détrez, Markus Forsberg, Ola Frid, Peter Gammie, Thomas Hallgren, Pascal Hof, Simon Huber, Patrik Jansson, Kristofer Johannisson, Antti-Juhani Kaijanaho, Andreas Lööw, Justin Meiners, Kent Mein, Ulf Norell, Gabriele Paganelli, Michael Pellauer, Michał Radwański, Fabian Ruch, and Aarne Ranta 2002 - 2023. Free software under the BSD 3-clause license.
 License: BSD3
 License-File: LICENSE
 Maintainer: bnfc-dev@googlegroups.com
-Homepage: http://bnfc.digitalgrammars.com/
+Homepage: https://bnfc.digitalgrammars.com/
 bug-reports: https://github.com/BNFC/bnfc/issues
 Synopsis: A compiler front-end generator.
 Description:
@@ -22,10 +22,10 @@ Description:
   but can also be used for generating Agda, C, C++, Java, Ocaml and XML code.
   .
   Given a Labelled BNF grammar the tool produces:
-  an abstract syntax as a Haskell, Agda, C, C++, Ocaml module or Java directory,
+  an abstract syntax as a Haskell, Agda, C, C++, Ocaml module or Java package,
   a case skeleton for the abstract syntax in the same language,
-  an Alex, JLex, or Flex lexer generator file,
-  a Happy, CUP, Bison, or Antlr parser generator file,
+  an Alex, Flex, JLex, JFlex, or ocamllex lexer generator file,
+  a Happy, CUP, Bison, Antlr, ocamlyacc or menhir parser generator file,
   a pretty-printer as a Haskell, Agda, C, C++, Java, or Ocaml module,
   an XML representation,
   a LaTeX file containing a readable specification of the language.
@@ -64,9 +64,9 @@ extra-source-files:
   stack-8.4.4.yaml
   stack-8.2.2.yaml
 
-Source-repository head
+source-repository head
   type:     git
-  location: git://github.com/BNFC/bnfc.git
+  location: https://github.com/BNFC/bnfc.git
   subdir:   source
 
 executable bnfc
@@ -129,7 +129,7 @@ library
   default-extensions:
     -- Keep the list of language extensions in sync with its other occurrences.
     -- Keep in alphabetical order.
-    -- No CPP since doctests doesn't like it.
+    -- No CPP since doctest doesn't like it.
     DefaultSignatures
     DoAndIfThenElse
     FlexibleContexts

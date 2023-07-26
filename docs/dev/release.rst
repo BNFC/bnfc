@@ -5,7 +5,7 @@ Releasing
 This document concerns the developers and contributors of BNFC only.
 
 ☐ Write changes
-    In `source/changelog`. Write an overview of the important changes: features
+    In `source/CHANGELOG.md`. Write an overview of the important changes: features
     added, deprecated and removed.
 
     The format of the first line is::
@@ -14,7 +14,7 @@ This document concerns the developers and contributors of BNFC only.
       ├┄┘ └┄┄┄┄┄┄┄┄┄┄┄┄┬┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┘ ├┄┄┄┄┄┄┄┄┘
       ┕ version number ┕ Releaser name and email ┕ Date
 
-☐ Bumb version
+☐ Bump version
     The version increment should be based on the changes listed in the
     changelog, according to `semantic versioning`_.
 
