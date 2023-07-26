@@ -137,7 +137,8 @@ generateAction packageAbsyn nt f ms rev
      p_1               = resultvalue $ ms!!0
      p_2               = resultvalue $ ms!!1
      add               = if rev then "addLast" else "addFirst"
-     unescape x        = concat [ "org.antlr.v4.misc.CharSupport.getStringFromGrammarStringLiteral(", x, ")" ]
+     removeQuotes x    = x +.+ "substring(1, " ++ x +.+ "length()-1)"
+     unescape x        = removeQuotes x +.+ "translateEscapes()"  -- Java 15 and higher
      resultvalue (n,c) = case c of
                           TokenCat "Double"  -> concat [ "Double.parseDouble(", txt, ")" ]
                           TokenCat "Integer" -> concat [ "Integer.parseInt("  , txt, ")" ]

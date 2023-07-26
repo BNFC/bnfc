@@ -13,6 +13,7 @@ foo
 "B".
 "QED".
 "line1\n\tline2".
+"\"%s\" is not an int".
 semi-exprs:
 1+1;
 2+2;

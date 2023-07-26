@@ -69,6 +69,7 @@ thus ignored.
 
 Make sure that your system's Java classpath variable points to an ANTLRv4 jar
 (`download here <http://www.antlr.org/download.html>`_).
+Since 2.9.5 BNFC generates code for ``String`` parsing that needs Java 15 or higher.
 
 You can use the ANTLR parser generator as follows:
 
