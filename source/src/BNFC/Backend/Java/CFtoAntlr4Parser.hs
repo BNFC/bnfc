@@ -138,19 +138,16 @@ generateAction packageAbsyn nt f ms rev
      p_1               = resultvalue $ ms!!0
      p_2               = resultvalue $ ms!!1
      add               = if rev then "addLast" else "addFirst"
-     gettext           = "getText()"
-     removeQuotes x    = "substring(1, "++ x +.+ gettext +.+ "length()-1)"
-     parseint x        = "Integer.parseInt("++x++")"
-     parsedouble x     = "Double.parseDouble("++x++")"
-     charat            = "charAt(1)"
+     unescape x        = concat [ "org.antlr.v4.misc.CharSupport.getStringFromGrammarStringLiteral(", x, ")" ]
      resultvalue (n,c) = case c of
-                          TokenCat "Ident"   -> n'+.+gettext
-                          TokenCat "Integer" -> parseint $ n'+.+gettext
-                          TokenCat "Char"    -> n'+.+gettext+.+charat
-                          TokenCat "Double"  -> parsedouble $ n'+.+gettext
-                          TokenCat "String"  -> n'+.+gettext+.+removeQuotes n'
-                          _         -> (+.+) n' (if isTokenCat c then gettext else "result")
-                          where n' = '$':n
+                          TokenCat "Double"  -> concat [ "Double.parseDouble(", txt, ")" ]
+                          TokenCat "Integer" -> concat [ "Integer.parseInt("  , txt, ")" ]
+                          TokenCat "Char"    -> unescape txt +.+ "charAt(0)"
+                          TokenCat "String"  -> unescape txt
+                          TokenCat "Ident"   -> txt
+                          c | isTokenCat c   -> txt
+                            | otherwise      -> concat [ "$", n, ".result" ]
+                          where txt = '$':n +.+ "getText()"
 
 -- | Generate patterns and a set of metavariables indicating
 -- where in the pattern the non-terminal

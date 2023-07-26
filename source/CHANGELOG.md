@@ -2,8 +2,8 @@
 
 Unreleased
 
-* C/C++/Java: escape newline etc. when printing `String` and `Char` literals
-  [[#449](https://github.com/BNFC/bnfc/issues/449)]
+* C/C++/Java: escape newline etc. when printing `String` and `Char` literals [[#449](https://github.com/BNFC/bnfc/issues/449)]
+* Java/ANTLR: unescape `String` and `Char` literals in parser [[#451](https://github.com/BNFC/bnfc/issues/451)]
 * Haskell/GADT: generated `ComposOp.hs` no longer needs `mtl` library [[#438](https://github.com/BNFC/bnfc/pull/438)]
 * Ocaml: fixed a crash in printer with unbalanced `}` [[#439](https://github.com/BNFC/bnfc/issues/439)]
 * Ocaml: lex escape sequences in `Char` [[#452](https://github.com/BNFC/bnfc/issues/452)]
