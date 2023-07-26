@@ -2,7 +2,7 @@
 -- Issue #361, C++ list parsing.
 -- Issue #366, render } on new line.
 -- Issue #359, Haskell: print Char lists.
--- Issue #449  C/C++/Java: print escape characters in String.
+-- Issue #449  C/C++/Java: print escape characters in String and Char.
 -- Issue #452  Ocaml: lex escape characters in Char.
 
 Top.   S ::= Char
