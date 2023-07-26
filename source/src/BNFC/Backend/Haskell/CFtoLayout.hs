@@ -14,6 +14,7 @@ import Data.Maybe                 ( fromMaybe, mapMaybe )
 import BNFC.CF
 import BNFC.PrettyPrint
 import BNFC.Utils                 ( caseMaybe, for, whenJust )
+import BNFC.Backend.Haskell.Utils ( languageSafe )
 
 data TokSymbol = TokSymbol String Int
   deriving Show
@@ -28,7 +29,9 @@ cf2Layout layName lexName cf = unlines $ concat
     , "{-# LANGUAGE LambdaCase #-}"
     , "{-# LANGUAGE PatternGuards #-}"
     , "{-# LANGUAGE OverloadedStrings #-}"
-    , ""
+    ]
+  , languageSafe
+  , [ ""
     , "module " ++ layName ++ " where"
     , ""
     , "import Prelude"

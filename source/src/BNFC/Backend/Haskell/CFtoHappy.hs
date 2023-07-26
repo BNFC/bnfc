@@ -63,7 +63,9 @@ header modName absName lexName tokenText eps = unlines $ concat
   [ [ "-- Parser definition for use with Happy"
     , "{"
     , "{-# OPTIONS_GHC -fno-warn-incomplete-patterns -fno-warn-overlapping-patterns #-}"
+    , ""
     , "{-# LANGUAGE PatternSynonyms #-}"
+    , "{-# LANGUAGE Trustworthy #-}"
     , ""
     , "module " ++ modName
     , "  ( happyError"

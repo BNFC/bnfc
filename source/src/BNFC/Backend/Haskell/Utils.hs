@@ -5,7 +5,7 @@ module BNFC.Backend.Haskell.Utils
   ( comment, commentWithEmacsModeHint
   , posType, posConstr, noPosConstr
   , hasPositionClass, hasPositionMethod
-  , noWarnUnusedMatches
+  , languageSafe, noWarnUnusedMatches
   , parserName
   , hsReservedWords, avoidReservedWords, mkDefName
   , typeToHaskell, typeToHaskell'
@@ -42,6 +42,13 @@ noWarnUnusedMatches =
   "{-# OPTIONS_GHC -fno-warn-unused-matches #-}"
   -- ALT: only from GHC 8
   -- "{-# OPTIONS_GHC -Wno-unused-matches #-}"
+
+languageSafe :: IsString a => [a]
+languageSafe =
+  [ "{-# LANGUAGE Safe #-}"
+  , "{-# LANGUAGE NoGeneralizedNewtypeDeriving #-}"
+  , "  -- needed with Safe in language GHC2021, GHC 9.2 issue #19605"
+  ]
 
 -- * Names for position data type.
 

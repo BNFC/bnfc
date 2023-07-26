@@ -12,14 +12,16 @@ import Data.List  ( groupBy )
 import BNFC.CF
 import BNFC.Utils ( ModuleName, (+++) )
 
-import BNFC.Backend.Haskell.Utils ( noWarnUnusedMatches )
+import BNFC.Backend.Haskell.Utils ( languageSafe, noWarnUnusedMatches )
 import BNFC.Backend.HaskellGADT.HaskellGADTCommon
 
 cf2Template :: ModuleName -> ModuleName -> CF -> String
 cf2Template skelName absName cf = unlines $ concat
-  [ [ "{-# LANGUAGE GADTs #-}"
-    , "{-# LANGUAGE EmptyCase #-}"
-    , ""
+  [ [ "{-# LANGUAGE EmptyCase #-}"
+    , "{-# LANGUAGE GADTs #-}"
+    ]
+  , languageSafe
+  , [ ""
     , noWarnUnusedMatches
     , ""
     , "module "++ skelName ++ " where"

@@ -1,6 +1,7 @@
 # 2.9.5
 
 Unreleased
+* Haskell: label produced code as `Safe` (and parser as `Trustworthy`)
 
 * Haskell/GADT: generated `ComposOp.hs` no longer needs `mtl` library [[#438](https://github.com/BNFC/bnfc/pull/438)]
 * Ocaml: fixed a crash in printer with unbalanced `}` [[#439](https://github.com/BNFC/bnfc/issues/439)]

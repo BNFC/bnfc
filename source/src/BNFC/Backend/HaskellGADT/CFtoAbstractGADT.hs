@@ -22,11 +22,15 @@ cf2Abstract :: TokenText -> String -> CF -> String -> String
 cf2Abstract tokenText name cf composOpMod = unlines $ concat $
   [ [ "-- For GHC version 7.10 or higher"
     , ""
-    , "{-# LANGUAGE GADTs, KindSignatures, DataKinds #-}"
+    , "{-# LANGUAGE DataKinds #-}"
     ]
   , [ "{-# LANGUAGE EmptyCase #-}" | emptyTree ]
-  , [ "{-# LANGUAGE LambdaCase #-}"
-    , ""
+  , [ "{-# LANGUAGE GADTs #-}"
+    , "{-# LANGUAGE KindSignatures #-}"
+    , "{-# LANGUAGE LambdaCase #-}"
+    ]
+  , languageSafe
+  , [ ""
     , "{-# OPTIONS_GHC -fno-warn-unused-binds #-}"
       -- unused-local-binds would be sufficient, but parses only from GHC 8.0
     , "{-# OPTIONS_GHC -fno-warn-unused-imports #-}"

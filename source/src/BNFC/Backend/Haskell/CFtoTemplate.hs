@@ -13,7 +13,7 @@ import Prelude hiding ((<>))
 import BNFC.CF
 import BNFC.PrettyPrint
 import BNFC.Utils                 ( ModuleName )
-import BNFC.Backend.Haskell.Utils ( catvars, noWarnUnusedMatches )
+import BNFC.Backend.Haskell.Utils ( catvars, languageSafe, noWarnUnusedMatches )
 
 cf2Template :: ModuleName -> ModuleName -> Bool -> CF -> String
 cf2Template skelName absName functor cf = unlines $ concat
@@ -21,6 +21,9 @@ cf2Template skelName absName functor cf = unlines $ concat
     , ""
     , noWarnUnusedMatches
     , ""
+    ]
+  , languageSafe
+  , [ ""
     , "module "++ skelName ++ " where"
     , ""
     , "import Prelude (($), Either(..), String, (++), Show, show)"

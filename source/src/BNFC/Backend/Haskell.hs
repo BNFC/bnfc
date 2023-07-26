@@ -298,7 +298,9 @@ makefile opts cf makeFile = vcat
 
 testfile :: Options -> CF -> String
 testfile opts cf = unlines $ concat $
-  [ [ "-- | Program to test parser."
+  [ languageSafe
+  , [ ""
+    , "-- | Program to test parser."
     , ""
     , "module Main where"
     , ""
