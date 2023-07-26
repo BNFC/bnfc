@@ -457,7 +457,7 @@ jlexmakedetails = MakeDetails
 jflexmakedetails = jlexmakedetails
     { executable  = "jflex"
     , toolname    = "JFlex"
-    , toolversion = "1.4.3 - 1.7.0"
+    , toolversion = "1.4.3 - 1.9.1"
     }
 
 cupmakedetails rp = MakeDetails

@@ -47,7 +47,8 @@ prelude jflex rp packageBase = vcat
     [ hsep [ "// Lexer definition for use with", lexerName ]
     , "package" <+> text packageBase <> ";"
     , ""
-    , "import java_cup.runtime.*;"
+    , "import java_cup.runtime.SymbolFactory;"
+    , "import java_cup.runtime.ComplexSymbolFactory;"
     , "%%"
     , "%cup"
     , "%unicode"
@@ -69,13 +70,13 @@ prelude jflex rp packageBase = vcat
         , "public int line_num() { return (yyline+1); }"
         , "public ComplexSymbolFactory.Location left_loc() {"
         , if rp == RecordPositions
-            then "  return new ComplexSymbolFactory.Location(yyline+1, yycolumn+1, yychar);"
+            then "  return new ComplexSymbolFactory.Location(yyline+1, yycolumn+1, (int)yychar);"
             else "  return left;"
         , "}"
         , "public ComplexSymbolFactory.Location right_loc() {"
         , "  ComplexSymbolFactory.Location left = left_loc();"
         , (if rp == RecordPositions
-            then "return new ComplexSymbolFactory.Location(left.getLine(), left.getColumn()+yylength(), left.getOffset()+yylength());"
+            then "return new ComplexSymbolFactory.Location(left.getLine(), left.getColumn()+yylength(), (int)(left.getOffset()+yylength()));"
             else "return left;")
         , "}"
         , "public String buff()" <+> braces
