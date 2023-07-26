@@ -54,6 +54,7 @@ header parserMod cf = List.intercalate [""] . filter (not . null) $ concat
       , "    | '\\\\'::'r'::cs  -> '\\r' :: unesc cs"
         -- "    | '\\\\'::'f'::cs  -> '\\f' :: unesc cs",  -- \f not supported by ocaml
       , "    | '\\\"'::[]    -> []"
+      , "    | '\\\''::[]    -> []"
       , "    | c::cs      -> c :: unesc cs"
       , "    | _         -> []"
       , "  (* explode/implode from caml FAQ *)"
@@ -197,7 +198,7 @@ rules cf = mkRule "token" $
       , "TOK_String (unescapeInitTail (lexeme lexbuf))" )
     -- chars
     , ( "'\\'' (([^ '\\\'' '\\\\']) | ('\\\\' ('\\\\' | '\\\'' | 'n' | 't' | 'r'))) '\\\''"
-      , "TOK_Char (lexeme lexbuf).[1]")
+      , "TOK_Char (unescapeInitTail (lexeme lexbuf)).[0]")
     -- spaces
     , ( "[' ' '\\t' '\\r']", "token lexbuf")
     -- new lines

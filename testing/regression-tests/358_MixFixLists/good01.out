@@ -4,11 +4,11 @@ Parse Successful!
 
 [Abstract Syntax]
 
-Top [1,2,3] [Foo,Bar,Baz] ["A","B","QED","line1\nline2"] [EPlus (EInt 1) (EInt 1),EPlus (EInt 2) (EInt 2)] [EInt 3,EPlus (EInt 4) (EInt 4)] "ABC"
+Top '\t' [1,2,3] [Foo,Bar,Baz] ["A","B","QED","line1\n\tline2"] [EPlus (EInt 1) (EInt 1),EPlus (EInt 2) (EInt 2)] [EInt 3,EPlus (EInt 4) (EInt 4)] "ABC\t"
 
 [Linearized tree]
 
-
+'\t'
 {
   - 1;
   - 2;
@@ -21,6 +21,6 @@ foo
     finally baz
   }
 }
-"A" . "B" . "QED" . "line1\nline2" . semi-exprs: 1 + 1;
+"A" . "B" . "QED" . "line1\n\tline2" . semi-exprs: 1 + 1;
 2 + 2;
-comma-exprs: 3, (4 + 4), chars: 'A' !, 'B' !, 'C' .
+comma-exprs: 3, (4 + 4), chars: 'A' !, 'B' !, 'C' !, '\t' .

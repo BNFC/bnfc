@@ -3,8 +3,10 @@
 -- Issue #366, render } on new line.
 -- Issue #359, Haskell: print Char lists.
 -- Issue #449  C/C++/Java: print escape characters in String.
+-- Issue #452  Ocaml: lex escape characters in Char.
 
-Top.   S ::= "{" [Integer]
+Top.   S ::= Char
+             "{" [Integer]
              [FooBar]
              [String]
              "semi-exprs:" [Exp]
