@@ -11,6 +11,7 @@ foo
 "A".
 "B".
 "QED".
+"line1\nline2".
 semi-exprs:
 1+1;
 2+2;

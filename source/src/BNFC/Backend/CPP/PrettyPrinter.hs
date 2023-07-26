@@ -114,6 +114,28 @@ mkHFile useStl inPackage cf groups = unlines
     "  char *buf_;",
     "  size_t cur_, buf_size;",
     "",
+    "  void inline bufEscape(const char c)",
+    "  {",
+    "    switch(c)",
+    "    {",
+    "      case '\\f': bufAppend(\"\\\\f\" ); break;",
+    "      case '\\n': bufAppend(\"\\\\n\" ); break;",
+    "      case '\\r': bufAppend(\"\\\\r\" ); break;",
+    "      case '\\t': bufAppend(\"\\\\t\" ); break;",
+    "      case '\\v': bufAppend(\"\\\\v\" ); break;",
+    "      case '\\\\': bufAppend(\"\\\\\\\\\"); break;",
+    "      case '\\'': bufAppend(\"\\\\'\" ); break;",
+    "      case '\\\"': bufAppend(\"\\\\\\\"\"); break;",
+    "      default:   bufAppend(c);",
+    "    }",
+    "  }",
+    "",
+    "  void inline bufEscape(const char *s)",
+    "  {",
+    "    while (*s) bufEscape(*s++);",
+    "  }",
+    "",
+    if useStl then render (nest 2 $ bufAppendString "bufEscape") else "",
     "  void inline bufAppend(const char *s)",
     "  {",
     "    size_t end = cur_ + strlen(s);",
@@ -137,7 +159,7 @@ mkHFile useStl inPackage cf groups = unlines
     "    buf_[++cur_] = 0;",
     "  }",
     "",
-    if useStl then render (nest 2 bufAppendString) else "",
+    if useStl then render (nest 2 $ bufAppendString "bufAppend") else "",
     "  void inline bufReset(void)",
     "  {",
     "    if (buf_) delete[] buf_;",
@@ -160,12 +182,12 @@ mkHFile useStl inPackage cf groups = unlines
     "};",
     ""
    ]
-  bufAppendString :: Doc
-  bufAppendString =
-      "void inline bufAppend(String str)"
+  bufAppendString :: Doc -> Doc
+  bufAppendString f =
+      "void inline" <+> f <> "(String str)"
       $$ codeblock 2
           [ "const char *s = str.c_str();"
-          , "bufAppend(s);"
+          , f <> "(s);"
           ]
   showHeader = unlines
    [
@@ -303,7 +325,7 @@ mkCFile useStl inPackage cf groups = concat
       "void PrintAbsyn::visitString(String s)",
       "{",
       "  bufAppend('\\\"');",
-      "  bufAppend(s);",
+      "  bufEscape(s);",
       "  bufAppend('\\\"');",
       "  bufAppend(' ');",
       "}",
@@ -342,13 +364,13 @@ mkCFile useStl inPackage cf groups = concat
       "void ShowAbsyn::visitChar(Char c)",
       "{",
       "  bufAppend('\\'');",
-      "  bufAppend(c);",
+      "  bufEscape(c);",
       "  bufAppend('\\'');",
       "}",
       "void ShowAbsyn::visitString(String s)",
       "{",
       "  bufAppend('\\\"');",
-      "  bufAppend(s);",
+      "  bufEscape(s);",
       "  bufAppend('\\\"');",
       "}",
       "void ShowAbsyn::visitIdent(String s)",
