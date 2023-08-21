@@ -170,10 +170,6 @@ jobs:
           repository hackage.haskell.org
             url: http://hackage.haskell.org/
           EOF
-          cat >> $CABAL_CONFIG <<EOF
-          program-default-options
-            ghc-options: $GHCJOBS +RTS -M3G -RTS
-          EOF
           cat $CABAL_CONFIG
       - name: versions
         run: |
@@ -250,6 +246,12 @@ jobs:
       - name: build
         run: |
           $CABAL v2-build $ARG_COMPILER $ARG_TESTS $ARG_BENCH all --write-ghc-environment-files=always
+      - name: install doctest
+        run: |
+          $CABAL v2-install $ARG_COMPILER doctest --overwrite-policy=always
+      - name: doctests
+        run: |
+          $CABAL v2-repl BNFC --with-ghc-pkg=$HCPKG -w doctest --repl-options=-fno-warn-type-defaults
       - name: tests
         run: |
           $CABAL v2-test $ARG_COMPILER $ARG_TESTS $ARG_BENCH all --test-show-details=direct
