@@ -38,7 +38,7 @@ jobs:
         shell: bash
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Setup Haskell
         uses: haskell/actions/setup@v2
