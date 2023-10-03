@@ -25,6 +25,7 @@ import BNFC.Backend.Java
 import BNFC.Backend.Latex
 import BNFC.Backend.OCaml
 import BNFC.Backend.Pygments
+import BNFC.Backend.Antlr
 import BNFC.CF (CF)
 import BNFC.GetCF
 import BNFC.Options hiding (make, Backend)
@@ -80,4 +81,5 @@ maketarget = \case
     TargetJava         -> makeJava
     TargetOCaml        -> makeOCaml
     TargetPygments     -> makePygments
+    TargetAntlr       -> makeAntlr
     TargetCheck        -> error "impossible"
