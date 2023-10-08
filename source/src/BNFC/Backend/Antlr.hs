@@ -32,4 +32,4 @@ makeAntlr Options{..} cf = do
       mkG4Name name = lang ++ name ++ ".g4"
 
 mkAntlrComment :: String -> String
-mkAntlrComment = ("// -*- Antlr4 -*- " ++)
+mkAntlrComment = ("// -*- ANTLRv4 -*- " ++)

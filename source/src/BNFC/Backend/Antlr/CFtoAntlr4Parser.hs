@@ -14,8 +14,7 @@ import BNFC.Backend.Common.NamedVariables
 
 -- Type declarations
 
--- | A definition of a non-terminal by all its rhss,
---   together with parse actions.
+-- | A definition of a non-terminal by all its rhss 
 data PDef = PDef
   { _pdNT   :: Maybe String
       -- ^ If given, the name of the lhss.  Usually computed from 'pdCat'.
@@ -27,7 +26,6 @@ data PDef = PDef
   }
 type Rules       = [PDef]
 type Pattern     = String
-type IndexedCat = (Cat, Int)
 
 -- | Creates the ANTLR parser grammar for this CF.
 --The environment comes from CFtoAntlr4Lexer
@@ -36,9 +34,8 @@ cf2AntlrParse lang cf _ env = unlines
   [ header
     , tokens
     , ""
-    -- Generate start rules [#272]
-    -- _X returns [ dX result ] : x=X EOF { $result = $x.result; }
-    , prRules $ map entrypoint catsWithIdx 
+    -- Generate start rules
+    , prRules $ map entrypoint $ toList $ allEntryPoints cf 
     -- Generate regular rules
     , prRules $ rulesForAntlr4 cf env
   ]
@@ -55,20 +52,18 @@ cf2AntlrParse lang cf _ env = unlines
         , "  tokenVocab = " ++ lang ++ "Lexer;"
         , "}"
         ]
-    catsWithIdx :: [IndexedCat]
-    catsWithIdx = zip (toList $ allEntryPoints cf) [1..]
 
 -- | Generate start rule to help ANTLR.
 --
---   @start_X returns [ X result ] : x=X EOF { $result = $x.result; } # Start_X@
+--   @start_X : X EOF
 --
-entrypoint :: IndexedCat -> PDef
-entrypoint (cat, idx) =
+entrypoint :: Cat -> PDef
+entrypoint cat =
   PDef (Just nt) cat [(pat, fun)]
   where
   nt  = firstLowerCase $ startSymbol $ identCat cat
   pat = catToNT cat +++ "EOF"
-  fun = Just (startSymbol $ identCat cat ++ show idx)
+  fun = Nothing
 
 --The following functions are a (relatively) straightforward translation
 --of the ones in CFtoHappy.hs
