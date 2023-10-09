@@ -409,16 +409,16 @@ specificOptions =
           "Also generate Agda bindings for the abstract syntax"
     , [TargetHaskell] )
   , (Option  []    ["listener"] (NoArg (\o -> o { listener = True }))
-          "Generate visitor for ANTLR result"
+          "Generate parse tree listener for ANTLR result. True by default"
     ,  [TargetAntlr])
   , (Option  []    ["no-listener"] (NoArg (\o -> o { listener = False }))
-          "Generate visitor for ANTLR result"
+          "Do NOT generate parse tree listener"
     ,  [TargetAntlr])
   , (Option  []    ["visitor"] (NoArg (\o -> o { visitor = True }))
-          "Generate visitor for ANTLR result"
+          "Generate parse tree visitor for ANTLR result. False by default"
     ,  [TargetAntlr])
   , (Option  []    ["no-visitor"] (NoArg (\o -> o { visitor = False }))
-          "Generate visitor for ANTLR result"
+          "Do NOT generate parse tree visitor"
     ,  [TargetAntlr])
   , (Option  []    ["Werror"] (NoArg (\o -> o { wError = True }))
           "Make ANTLR treat warnings as errors"
