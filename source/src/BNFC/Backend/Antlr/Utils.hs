@@ -19,21 +19,6 @@ getLabelName = mkName ["Rule"] CamelCase
 startSymbol :: String -> String
 startSymbol = ("Start_" ++)
 
-getAntlrFlags :: SharedOptions -> String
-getAntlrFlags Options{..} = unwords $ getFlags
-  [ ("no-listener", not listener)
-  , ("visitor",     visitor)
-  , ("Werror",      wError)
-  , ("Xlog",        xlog)
-  ]
-
-getFlags :: [(String, Bool)] -> [String]
-getFlags (x : xs) = case x of
-  (flag, True) -> ("-" ++ flag) : getFlags xs
-  (_, False)   -> getFlags xs
-
-getFlags [] = []
-
 dotG4 :: String -> String
 dotG4 = (<.> "g4")
 
@@ -42,8 +27,10 @@ getAntlrOptions :: SharedOptions -> String
 getAntlrOptions Options{..} = unwords $ map ("-" ++) parsedOpts
   where
     parsedOpts = getAntlrOptions'
-      [ ("no-listener", Left $ not listener)
+      [ ("listener",    Left listener)
+      , ("no-listener", Left $ not listener)
       , ("visitor",     Left visitor)
+      , ("no-visitor",  Left $ not visitor)
       , ("Werror",      Left wError)
       , ("Dlanguage",   Right $ parseAntlrTarget dLanguage)
       , ("Xlog",        Left xlog)

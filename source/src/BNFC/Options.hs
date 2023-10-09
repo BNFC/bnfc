@@ -406,10 +406,16 @@ specificOptions =
   , ( Option []    ["agda"] (NoArg (\o -> o { agda = True, tokenText = TextToken }))
           "Also generate Agda bindings for the abstract syntax"
     , [TargetHaskell] )
+  , (Option  []    ["listener"] (NoArg (\o -> o { listener = True }))
+          "Generate visitor for ANTLR result"
+    ,  [TargetAntlr])
   , (Option  []    ["no-listener"] (NoArg (\o -> o { listener = False }))
           "Generate visitor for ANTLR result"
     ,  [TargetAntlr])
   , (Option  []    ["visitor"] (NoArg (\o -> o { visitor = True }))
+          "Generate visitor for ANTLR result"
+    ,  [TargetAntlr])
+  , (Option  []    ["no-visitor"] (NoArg (\o -> o { visitor = False }))
           "Generate visitor for ANTLR result"
     ,  [TargetAntlr])
   , (Option  []    ["Werror"] (NoArg (\o -> o { wError = True }))

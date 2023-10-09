@@ -12,7 +12,7 @@ import BNFC.Options as Options
 import BNFC.Backend.Base
 import BNFC.Backend.Antlr.CFtoAntlr4Lexer
 import BNFC.Backend.Antlr.CFtoAntlr4Parser
-import BNFC.Backend.Antlr.Utils (getAntlrFlags, dotG4, parseAntlrTarget)
+import BNFC.Backend.Antlr.Utils (dotG4, getAntlrOptions)
 import BNFC.Backend.Common.Makefile as MakeFile
 
 makeAntlr :: SharedOptions -> CF -> MkFiles ()
@@ -36,8 +36,6 @@ makeAntlr opts@Options{..} cf = do
       makeVars x = [MakeFile.mkVar n v | (n,v) <- x]
       makeRules x = [MakeFile.mkRule tar dep recipe  | (tar, dep, recipe) <- x]
 
-      antlrFlags = getAntlrFlags opts
-
       langRef = MakeFile.refVar "LANG"
 
       lexerVarName = "LEXER_FILENAME"
@@ -57,11 +55,10 @@ makeAntlr opts@Options{..} cf = do
         , (prefixedLexerVarName, langRef </> MakeFile.refVar lexerVarName)
         , (prefixedParserVarName, langRef </> MakeFile.refVar parserVarName)
         , ("ANTLR4", "java org.antlr.v4.Tool")
-        , ("DLANGUAGE", parseAntlrTarget dLanguage)
-        , ("OTHER_FLAGS", antlrFlags)
+        , ("ANTLR_OPTIONS", getAntlrOptions opts)
         ]
 
-      genAntlrRecipe = dotG4 . ((MakeFile.refVar "ANTLR4" +++ "-Dlanguage=" ++ MakeFile.refVar "DLANGUAGE" +++ MakeFile.refVar "OTHER_FLAGS") +++) . MakeFile.refVar
+      genAntlrRecipe = dotG4 . ((MakeFile.refVar "ANTLR4" +++ MakeFile.refVar "ANTLR_OPTIONS" )+++) . MakeFile.refVar
 
       rmFileRecipe refVar ext = "rm -f" +++ MakeFile.refVar refVar ++ ext
 
