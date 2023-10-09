@@ -157,6 +157,7 @@ data SharedOptions = Options
   , wError        :: Bool
   , dLanguage     :: AntlrTarget
   , xlog          :: Bool
+  , xDbgST        :: Bool
   } deriving (Eq, Ord, Show)
 
 -- We take this opportunity to define the type of the backend functions.
@@ -197,6 +198,7 @@ defaultOptions = Options
   , wError          = False
   , dLanguage       = Java
   , xlog            = False
+  , xDbgST          = False
   }
 
 -- | Check whether an option is unchanged from the default.
@@ -424,8 +426,13 @@ specificOptions =
   , (Option  []    ["language"] (ReqArg (\lang o -> o { dLanguage = mkAntlrTarget lang  }) "Dlanguage")
           "Specify target language for ANTLR"
     ,  [TargetAntlr])
-  , (Option  []    ["Xlog"] (NoArg (\o -> o {  xlog = True }))
+  , (Option  []    ["Xlog"] (NoArg (\o -> o { xlog = True }))
           "Create log file with information of grammar processing"
+    ,  [TargetAntlr])
+  , (Option  []    ["XdbgST"] (NoArg (\o -> o { xDbgST = True })) $ unlines
+        [ "Open window with generated code and templates used to generate this code"
+        , "It invokes the StringTemplate inspector window."
+        ]
     ,  [TargetAntlr])
   ]
 
