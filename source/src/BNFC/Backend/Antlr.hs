@@ -3,7 +3,7 @@
 module BNFC.Backend.Antlr ( makeAntlr ) where
 
 import Prelude hiding ((<>))
-import System.FilePath ((</>), pathSeparator, (<.>))
+import System.FilePath ((</>), pathSeparator)
 import Text.PrettyPrint.HughesPJ (vcat)
 
 import BNFC.Utils
@@ -12,34 +12,31 @@ import BNFC.Options as Options
 import BNFC.Backend.Base
 import BNFC.Backend.Antlr.CFtoAntlr4Lexer
 import BNFC.Backend.Antlr.CFtoAntlr4Parser
+import BNFC.Backend.Antlr.Utils (getAntlrFlags, dotG4)
 import BNFC.Backend.Common.Makefile as MakeFile
 
 makeAntlr :: SharedOptions -> CF -> MkFiles ()
-makeAntlr Options{..} cf = do
+makeAntlr opts@Options{..} cf = do
   let packageBase = maybe id (+.+) inPackage pkg
       dirBase = pkgToDir packageBase
 
-  let (lex, env) = lexerFun packageBase cf
+  let (lex, env) = cf2AntlrLex packageBase cf
     -- Where the lexer file is created. lex is the content!
-  mkfile (dirBase </> mkG4Name "Lexer") mkAntlrComment lex
-  -- liftIO $ putStrLn $ "   (Tested with" +++ toolname lexmake
-  --                                       +++ toolversion lexmake  ++ ")"
-  let parserContent = parserFun packageBase cf linenumbers env
-  mkfile (dirBase </> mkG4Name "Parser") mkAntlrComment parserContent
+  mkfile (dirBase </> mkG4Filename "Lexer") mkAntlrComment lex
+
+  let parserContent = cf2AntlrParse packageBase cf linenumbers env
+  mkfile (dirBase </> mkG4Filename "Parser") mkAntlrComment parserContent
 
   MakeFile.mkMakefile optMake makefileContent
     where
-      lexerFun = cf2AntlrLex
-      parserFun = cf2AntlrParse
       pkg = mkName [] CamelCase lang
       pkgToDir = replace '.' pathSeparator
-      mkG4Name name = lang ++ name <.> "g4"
+      mkG4Filename = dotG4 . (lang ++)
 
       makeVars x = [MakeFile.mkVar n v | (n,v) <- x]
       makeRules x = [MakeFile.mkRule tar dep recipe  | (tar, dep, recipe) <- x]
 
-      otherFlags = unwords $ getFlags [("no-listener", not listener), ("visitor", visitor), ("Werror", wError)]
-
+      otherFlags = getAntlrFlags opts
       langRef = MakeFile.refVar "LANG"
 
       makefileVars = vcat $ makeVars
@@ -51,23 +48,23 @@ makeAntlr Options{..} cf = do
         , ("OTHER_FLAGS", otherFlags)
         ]
 
-      refVarWithPrefix :: String -> String
-      refVarWithPrefix refVar = langRef </> MakeFile.refVar refVar
+      refVarWithPrefix = (langRef </>) . MakeFile.refVar
 
-      rmFile :: String -> String -> String
-      rmFile refVar ext = "rm -f" +++ refVarWithPrefix refVar ++ ext
+      genAntlrRecipe = dotG4 . ((MakeFile.refVar "ANTLR4" +++ "-Dlanguage=" ++ MakeFile.refVar "DLANGUAGE" +++ MakeFile.refVar "OTHER_FLAGS") +++) . refVarWithPrefix
+
+      rmFileRecipe refVar ext = "rm -f" +++ refVarWithPrefix refVar ++ ext
 
       makefileRules =  vcat $ makeRules
         [ (".PHONY", ["all", "clean-g4", "remove"], [])
         , ("all", [langRef], [])
-        , ("lexer", [refVarWithPrefix "LEXER_NAME" <.> "g4"], [MakeFile.refVar "ANTLR4" +++ "-Dlanguage=" ++ MakeFile.refVar "DLANGUAGE" +++ MakeFile.refVar "OTHER_FLAGS" +++ refVarWithPrefix "LEXER_NAME" <.> "g4"])
-        , ("parser", [refVarWithPrefix "PARSER_NAME" <.> "g4"], [MakeFile.refVar "ANTLR4" +++ "-Dlanguage=" ++ MakeFile.refVar "DLANGUAGE" +++ MakeFile.refVar "OTHER_FLAGS" +++ refVarWithPrefix "PARSER_NAME" <.> "g4"])
+        , ("lexer", [dotG4 $ refVarWithPrefix "LEXER_NAME"], [genAntlrRecipe "LEXER_NAME"])
+        , ("parser", [dotG4 $ refVarWithPrefix "PARSER_NAME"], [genAntlrRecipe "PARSER_NAME"])
         , (langRef, ["lexer", "parser"], [])
         , ("clean-g4", [],
-          [ rmFile "LEXER_NAME" ".interp"
-          , rmFile "LEXER_NAME" ".tokens"
-          , rmFile "PARSER_NAME" ".interp"
-          , rmFile "PARSER_NAME" ".tokens"
+          [ rmFileRecipe "LEXER_NAME" ".interp"
+          , rmFileRecipe "LEXER_NAME" ".tokens"
+          , rmFileRecipe "PARSER_NAME" ".interp"
+          , rmFileRecipe "PARSER_NAME" ".tokens"
           ])
         , ("remove", [], ["rm -rf" +++ langRef])
         ]
@@ -88,10 +85,3 @@ parseAntlrTarget Python3 = "Python3"
 parseAntlrTarget PHP = "PHP"
 parseAntlrTarget Go = "Go"
 parseAntlrTarget Swift = "Swift"
-
-getFlags :: [(String, Bool)] -> [String]
-getFlags (x : xs) = case x of
-  (flag, True) -> ("-" ++ flag) : getFlags xs
-  (_, False)   -> getFlags xs
-
-getFlags [] = []
