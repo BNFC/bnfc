@@ -22,8 +22,9 @@ startSymbol = ("Start_" ++)
 getAntlrFlags :: SharedOptions -> String
 getAntlrFlags Options{..} = unwords $ getFlags
   [ ("no-listener", not listener)
-  , ("visitor", visitor)
-  , ("Werror", wError)
+  , ("visitor",     visitor)
+  , ("Werror",      wError)
+  , ("Xlog",        xlog)
   ]
 
 getFlags :: [(String, Bool)] -> [String]
@@ -42,9 +43,10 @@ getAntlrOptions Options{..} = unwords $ map ("-" ++) parsedOpts
   where
     parsedOpts = getAntlrOptions'
       [ ("no-listener", Left $ not listener)
-      , ("visitor", Left visitor)
-      , ("Werror", Left wError)
-      , ("Dlanguage", Right $ parseAntlrTarget dLanguage)
+      , ("visitor",     Left visitor)
+      , ("Werror",      Left wError)
+      , ("Dlanguage",   Right $ parseAntlrTarget dLanguage)
+      , ("Xlog",        Left xlog)
       ]
 
 getAntlrOptions' :: [(String, Either Bool String)] -> [String]
