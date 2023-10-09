@@ -36,35 +36,46 @@ makeAntlr opts@Options{..} cf = do
       makeVars x = [MakeFile.mkVar n v | (n,v) <- x]
       makeRules x = [MakeFile.mkRule tar dep recipe  | (tar, dep, recipe) <- x]
 
-      otherFlags = getAntlrFlags opts
+      antlrFlags = getAntlrFlags opts
+
       langRef = MakeFile.refVar "LANG"
+
+      lexerVarName = "LEXER_FILENAME"
+      lexerFilename = langRef ++ "Lexer"
+
+      parserVarName = "PARSER_FILENAME"
+      parserFilename = langRef ++ "Parser"
+
+      prefix = "PREFIXED_"
+      prefixedLexerVarName = prefix ++ lexerVarName
+      prefixedParserVarName = prefix ++ parserVarName
 
       makefileVars = vcat $ makeVars
         [ ("LANG", lang)
-        , ("LEXER_NAME", langRef ++ "Lexer")
-        , ("PARSER_NAME", langRef ++ "Parser")
+        , (lexerVarName, lexerFilename)
+        , (parserVarName, parserFilename)
+        , (prefixedLexerVarName, langRef </> MakeFile.refVar lexerVarName)
+        , (prefixedParserVarName, langRef </> MakeFile.refVar parserVarName)
         , ("ANTLR4", "java org.antlr.v4.Tool")
         , ("DLANGUAGE", parseAntlrTarget dLanguage)
-        , ("OTHER_FLAGS", otherFlags)
+        , ("OTHER_FLAGS", antlrFlags)
         ]
 
-      refVarWithPrefix = (langRef </>) . MakeFile.refVar
+      genAntlrRecipe = dotG4 . ((MakeFile.refVar "ANTLR4" +++ "-Dlanguage=" ++ MakeFile.refVar "DLANGUAGE" +++ MakeFile.refVar "OTHER_FLAGS") +++) . MakeFile.refVar
 
-      genAntlrRecipe = dotG4 . ((MakeFile.refVar "ANTLR4" +++ "-Dlanguage=" ++ MakeFile.refVar "DLANGUAGE" +++ MakeFile.refVar "OTHER_FLAGS") +++) . refVarWithPrefix
-
-      rmFileRecipe refVar ext = "rm -f" +++ refVarWithPrefix refVar ++ ext
+      rmFileRecipe refVar ext = "rm -f" +++ MakeFile.refVar refVar ++ ext
 
       makefileRules =  vcat $ makeRules
         [ (".PHONY", ["all", "clean-g4", "remove"], [])
         , ("all", [langRef], [])
-        , ("lexer", [dotG4 $ refVarWithPrefix "LEXER_NAME"], [genAntlrRecipe "LEXER_NAME"])
-        , ("parser", [dotG4 $ refVarWithPrefix "PARSER_NAME"], [genAntlrRecipe "PARSER_NAME"])
+        , ("lexer", [dotG4 $ MakeFile.refVar prefixedLexerVarName], [genAntlrRecipe prefixedLexerVarName])
+        , ("parser", [dotG4 $ MakeFile.refVar prefixedParserVarName], [genAntlrRecipe prefixedParserVarName])
         , (langRef, ["lexer", "parser"], [])
         , ("clean-g4", [],
-          [ rmFileRecipe "LEXER_NAME" ".interp"
-          , rmFileRecipe "LEXER_NAME" ".tokens"
-          , rmFileRecipe "PARSER_NAME" ".interp"
-          , rmFileRecipe "PARSER_NAME" ".tokens"
+          [ rmFileRecipe prefixedLexerVarName ".interp"
+          , rmFileRecipe prefixedLexerVarName ".tokens"
+          , rmFileRecipe prefixedParserVarName ".interp"
+          , rmFileRecipe prefixedParserVarName ".tokens"
           ])
         , ("remove", [], ["rm -rf" +++ langRef])
         ]
