@@ -35,3 +35,35 @@ getFlags [] = []
 
 dotG4 :: String -> String
 dotG4 = (<.> "g4")
+
+-- maybe should use instead of "getAntlrFlags"
+getAntlrOptions :: SharedOptions -> String
+getAntlrOptions Options{..} = unwords $ map ("-" ++) parsedOpts
+  where
+    parsedOpts = getAntlrOptions'
+      [ ("no-listener", Left $ not listener)
+      , ("visitor", Left visitor)
+      , ("Werror", Left wError)
+      , ("Dlanguage", Right $ parseAntlrTarget dLanguage)
+      ]
+
+getAntlrOptions' :: [(String, Either Bool String)] -> [String]
+getAntlrOptions' [] = []
+getAntlrOptions' (opt : opts) = case opt of
+    (_, Left False)     -> otherOpts
+    (flag, Left True)   -> flag : otherOpts
+    (flag, Right value) -> (flag ++ "=" ++ value) : otherOpts
+  where
+    otherOpts = getAntlrOptions' opts
+
+parseAntlrTarget :: AntlrTarget -> String
+parseAntlrTarget Java = "Java"
+parseAntlrTarget CPP = "Cpp"
+parseAntlrTarget CSharp = "CSharp"
+parseAntlrTarget JS = "JavaScript"
+parseAntlrTarget TS = "TypeScript"
+parseAntlrTarget Dart = "Dart"
+parseAntlrTarget Python3 = "Python3"
+parseAntlrTarget PHP = "PHP"
+parseAntlrTarget Go = "Go"
+parseAntlrTarget Swift = "Swift"

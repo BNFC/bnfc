@@ -12,7 +12,7 @@ import BNFC.Options as Options
 import BNFC.Backend.Base
 import BNFC.Backend.Antlr.CFtoAntlr4Lexer
 import BNFC.Backend.Antlr.CFtoAntlr4Parser
-import BNFC.Backend.Antlr.Utils (getAntlrFlags, dotG4)
+import BNFC.Backend.Antlr.Utils (getAntlrFlags, dotG4, parseAntlrTarget)
 import BNFC.Backend.Common.Makefile as MakeFile
 
 makeAntlr :: SharedOptions -> CF -> MkFiles ()
@@ -84,15 +84,3 @@ makeAntlr opts@Options{..} cf = do
 
 mkAntlrComment :: String -> String
 mkAntlrComment = ("// -*- ANTLRv4 -*- " ++)
-
-parseAntlrTarget :: AntlrTarget -> String
-parseAntlrTarget Java = "Java"
-parseAntlrTarget CPP = "Cpp"
-parseAntlrTarget CSharp = "CSharp"
-parseAntlrTarget JS = "JavaScript"
-parseAntlrTarget TS = "TypeScript"
-parseAntlrTarget Dart = "Dart"
-parseAntlrTarget Python3 = "Python3"
-parseAntlrTarget PHP = "PHP"
-parseAntlrTarget Go = "Go"
-parseAntlrTarget Swift = "Swift"
