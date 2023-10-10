@@ -115,6 +115,19 @@ type InPackage = Maybe String
 data AntlrTarget = CPP | CSharp | Dart | Java | JS | PHP | Python3 | Swift | TS | Go
     deriving (Eq, Ord, Show)
 
+mkAntlrTarget :: String -> AntlrTarget
+mkAntlrTarget "java"       = Java
+mkAntlrTarget "cpp"        = CPP
+mkAntlrTarget "typescript" = TS
+mkAntlrTarget "javascript" = JS
+mkAntlrTarget "dart"       = Dart
+mkAntlrTarget "go"         = Go
+mkAntlrTarget "php"        = PHP
+mkAntlrTarget "swift"      = Swift
+mkAntlrTarget "python"     = Python3
+mkAntlrTarget "csharp"     = CSharp
+mkAntlrTarget _            = Java
+
 -- | How to represent token content in the Haskell backend?
 
 data TokenText
@@ -447,19 +460,6 @@ specificOptions =
         ]
     ,  [TargetAntlr])
   ]
-
-mkAntlrTarget :: String -> AntlrTarget
-mkAntlrTarget "java" = Java
-mkAntlrTarget "cpp" = CPP
-mkAntlrTarget "typescript" = TS
-mkAntlrTarget "javascript" = JS
-mkAntlrTarget "dart" = Dart
-mkAntlrTarget "go" = Go
-mkAntlrTarget "php" = PHP
-mkAntlrTarget "swift" = Swift
-mkAntlrTarget "python" = Python3
-mkAntlrTarget "csharp" = CSharp
-mkAntlrTarget _ = Java
 
 -- | The list of specific options for a target.
 specificOptions' :: Target -> [OptDescr (SharedOptions -> SharedOptions)]
