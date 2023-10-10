@@ -35,6 +35,7 @@ getAntlrOptions Options{..} = unwords $ map ("-" ++) parsedOpts
       , ("Xlog",        Left xlog)
       , ("XdbgST",      Left xDbgST)
       , ("XdbgSTWait",  Left xDbgSTWait)
+      , ("atn",         Left atn)
       ]
 
 getAntlrOptions' :: [(String, Either Bool String)] -> [String]

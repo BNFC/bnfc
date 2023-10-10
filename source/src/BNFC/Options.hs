@@ -159,6 +159,7 @@ data SharedOptions = Options
   , xlog          :: Bool
   , xDbgST        :: Bool
   , xDbgSTWait    :: Bool
+  , atn          :: Bool
   } deriving (Eq, Ord, Show)
 
 -- We take this opportunity to define the type of the backend functions.
@@ -201,6 +202,7 @@ defaultOptions = Options
   , xlog            = False
   , xDbgST          = False
   , xDbgSTWait      = False
+  , atn             = False
   }
 
 -- | Check whether an option is unchanged from the default.
@@ -438,6 +440,11 @@ specificOptions =
     ,  [TargetAntlr])
   , (Option  []    ["XdbgSTWait"] (NoArg (\o -> o { xDbgSTWait = True }))
           "Wait for ST visualizer to close before continuing"
+    ,  [TargetAntlr])
+  , (Option  []    ["atn"] (NoArg (\o -> o { atn = True })) $ unlines
+        [ "Generate DOT graph files that represent the internal ATN (augmented transition network) data structures that ANTLR uses to represent grammars."
+        , "The files come out as Grammar.rule .dot. If the grammar is a combined grammar, the lexer rules are named Grammar Lexer.rule .dot."
+        ]
     ,  [TargetAntlr])
   ]
 
