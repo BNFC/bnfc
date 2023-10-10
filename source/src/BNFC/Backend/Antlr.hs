@@ -56,9 +56,10 @@ makeAntlr opts@Options{..} cf = do
         , (prefixedParserVarName, langRef </> MakeFile.refVar parserVarName)
         , ("ANTLR4", "java org.antlr.v4.Tool")
         , ("ANTLR_OPTIONS", getAntlrOptions opts)
+        , ("DIRECT_OPTIONS", antlrOpts)
         ]
 
-      genAntlrRecipe = dotG4 . ((MakeFile.refVar "ANTLR4" +++ MakeFile.refVar "ANTLR_OPTIONS" )+++) . MakeFile.refVar
+      genAntlrRecipe = dotG4 . ((MakeFile.refVar "ANTLR4" +++ MakeFile.refVar "ANTLR_OPTIONS" +++ MakeFile.refVar "DIRECT_OPTIONS") +++) . MakeFile.refVar
 
       rmFileRecipe refVar ext = "rm -f" +++ MakeFile.refVar refVar ++ ext
 

@@ -172,7 +172,8 @@ data SharedOptions = Options
   , xlog          :: Bool
   , xDbgST        :: Bool
   , xDbgSTWait    :: Bool
-  , atn          :: Bool
+  , atn           :: Bool
+  , antlrOpts     :: String
   } deriving (Eq, Ord, Show)
 
 -- We take this opportunity to define the type of the backend functions.
@@ -216,6 +217,7 @@ defaultOptions = Options
   , xDbgST          = False
   , xDbgSTWait      = False
   , atn             = False
+  , antlrOpts       = ""
   }
 
 -- | Check whether an option is unchanged from the default.
@@ -457,6 +459,12 @@ specificOptions =
   , (Option  []    ["atn"] (NoArg (\o -> o { atn = True })) $ unlines
         [ "Generate DOT graph files that represent the internal ATN (augmented transition network) data structures that ANTLR uses to represent grammars."
         , "The files come out as Grammar.rule .dot. If the grammar is a combined grammar, the lexer rules are named Grammar Lexer.rule .dot."
+        ]
+    ,  [TargetAntlr])
+  , (Option  []    ["opts"] (ReqArg (\strOpts o -> o { antlrOpts = strOpts }) "OPTIONS") $ unlines
+        [ "String of ANTLRv4 options which will be directly embedded to Makefile ANTLR call"
+        , "Options from this string override directly specified options"
+        , "Usage: --opts=\"-no-listener -visitor -Xlog\""
         ]
     ,  [TargetAntlr])
   ]
