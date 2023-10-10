@@ -22,7 +22,6 @@ startSymbol = ("Start_" ++)
 dotG4 :: String -> String
 dotG4 = (<.> "g4")
 
--- maybe should use instead of "getAntlrFlags"
 getAntlrOptions :: SharedOptions -> String
 getAntlrOptions Options{..} = unwords $ map ("-" ++) parsedOpts
   where
@@ -35,6 +34,7 @@ getAntlrOptions Options{..} = unwords $ map ("-" ++) parsedOpts
       , ("Dlanguage",   Right $ parseAntlrTarget dLanguage)
       , ("Xlog",        Left xlog)
       , ("XdbgST",      Left xDbgST)
+      , ("XdbgSTWait",  Left xDbgSTWait)
       ]
 
 getAntlrOptions' :: [(String, Either Bool String)] -> [String]
