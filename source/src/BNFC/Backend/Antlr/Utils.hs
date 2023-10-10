@@ -2,10 +2,11 @@
 
 module BNFC.Backend.Antlr.Utils where
 
+import Prelude hiding (Either, Left, Right)
 import System.FilePath ((<.>))
 
 import BNFC.CF (Fun)
-import BNFC.Utils ( mkName, NameStyle(..))
+import BNFC.Utils ( mkName, NameStyle(..), (+++))
 import BNFC.Options as Options
 
 getRuleName :: String -> String
@@ -22,28 +23,36 @@ startSymbol = ("Start_" ++)
 dotG4 :: String -> String
 dotG4 = (<.> "g4")
 
+-- Left | Middle | Rigth
+data Either3 a b c = L a | M b | R c
+
+-- There are three variants of ANTLRv4 options:
+-- "-OptName", "-OptName=OptValue", "-OptName Optvalue"
+type OptionType = Either3 Bool String String
+
 getAntlrOptions :: SharedOptions -> String
 getAntlrOptions Options{..} = unwords $ map ("-" ++) parsedOpts
   where
     parsedOpts = getAntlrOptions'
-      [ ("listener",    Left listener)
-      , ("no-listener", Left $ not listener)
-      , ("visitor",     Left visitor)
-      , ("no-visitor",  Left $ not visitor)
-      , ("Werror",      Left wError)
-      , ("Dlanguage",   Right $ parseAntlrTarget dLanguage)
-      , ("Xlog",        Left xlog)
-      , ("XdbgST",      Left xDbgST)
-      , ("XdbgSTWait",  Left xDbgSTWait)
-      , ("atn",         Left atn)
+      [ ("listener",    L listener)
+      , ("no-listener", L $ not listener)
+      , ("visitor",     L visitor)
+      , ("no-visitor",  L $ not visitor)
+      , ("Werror",      L wError)
+      , ("Dlanguage",   M $ parseAntlrTarget dLanguage)
+      , ("Xlog",        L xlog)
+      , ("XdbgST",      L xDbgST)
+      , ("XdbgSTWait",  L xDbgSTWait)
+      , ("atn",         L atn)
       ]
 
-getAntlrOptions' :: [(String, Either Bool String)] -> [String]
+getAntlrOptions' :: [(String, OptionType)] -> [String]
 getAntlrOptions' [] = []
 getAntlrOptions' (opt : opts) = case opt of
-    (_, Left False)     -> otherOpts
-    (flag, Left True)   -> flag : otherOpts
-    (flag, Right value) -> (flag ++ "=" ++ value) : otherOpts
+    (_, L False)         -> otherOpts
+    (optName, L True)    -> optName : otherOpts
+    (optName, M value)   -> (optName ++ "=" ++ value) : otherOpts
+    (optName, R value)   -> (optName +++ value) : otherOpts
   where
     otherOpts = getAntlrOptions' opts
 
