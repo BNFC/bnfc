@@ -329,7 +329,7 @@ targetOptions :: [ OptDescr (SharedOptions -> SharedOptions)]
 targetOptions =
   [ Option "" ["java"]          (NoArg (\o -> o {target = TargetJava}))
     "Output Java code [default: for use with JLex and CUP]"
-  , Option "" ["java-antlr"]    (NoArg (\ o -> o{ target = TargetJava, javaLexerParser = Antlr4 }))
+  , Option "" ["java-antlr"]    (NoArg (\o -> o {target = TargetJava, javaLexerParser = Antlr4}))
     "Output Java code for use with ANTLR (short for --java --antlr)"
   , Option "" ["haskell"]       (NoArg (\o -> o {target = TargetHaskell}))
     "Output Haskell code for use with Alex and Happy (default)"
@@ -345,14 +345,14 @@ targetOptions =
     "Output C++ code (without STL) for use with FLex and Bison"
   , Option "" ["ocaml"]         (NoArg (\o -> o {target = TargetOCaml}))
     "Output OCaml code for use with ocamllex and ocamlyacc"
-  , Option "" ["ocaml-menhir"]  (NoArg (\ o -> o{ target = TargetOCaml, ocamlParser = Menhir }))
+  , Option "" ["ocaml-menhir"]  (NoArg (\o -> o {target = TargetOCaml, ocamlParser = Menhir}))
     "Output OCaml code for use with ocamllex and menhir (short for --ocaml --menhir)"
   , Option "" ["pygments"]      (NoArg (\o -> o {target = TargetPygments}))
     "Output a Python lexer for Pygments"
-  , Option "" ["check"]         (NoArg (\ o -> o{target = TargetCheck }))
+  , Option "" ["check"]         (NoArg (\o -> o {target = TargetCheck}))
     "No output. Just check input LBNF file"
-  , Option "" ["antlr"]         (NoArg (\o -> o{target = TargetAntlr}))
-    "Not implemented yet."
+  , Option "" ["antlr"]         (NoArg (\o -> o {target = TargetAntlr}))
+    "Output lexer and parser grammars for ANTLRv4"
   ]
 
 -- | A list of the options and for each of them, the target language
