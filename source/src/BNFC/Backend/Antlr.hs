@@ -49,7 +49,7 @@ makeAntlr opts@Options{..} cf = do
       prefixedParserVarName = prefix ++ parserVarName
 
       makefileVars = vcat $ makeVars
-        [ ("LANG", lang)
+        [ ("LANG", pkg)
         , (lexerVarName, lexerFilename)
         , (parserVarName, parserFilename)
         , (prefixedLexerVarName, langRef </> MakeFile.refVar lexerVarName)
