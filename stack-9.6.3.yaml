@@ -1,0 +1,7 @@
+resolver: nightly-2023-10-09
+compiler: ghc-9.6.3
+compiler-check: match-exact
+
+packages:
+- source
+- testing
