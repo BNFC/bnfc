@@ -2,12 +2,14 @@
 
 module BNFC.Backend.Antlr.Utils where
 
+import Text.PrettyPrint.HughesPJ (Doc, text, vcat)
 import Prelude hiding (Either, Left, Right)
-import System.FilePath ((<.>))
+import System.FilePath ((<.>), (</>))
 
 import BNFC.CF (Fun)
 import BNFC.Utils ( mkName, NameStyle(..), (+++))
 import BNFC.Options as Options
+import BNFC.Backend.Common.Makefile as MakeFile
 
 getRuleName :: String -> String
 getRuleName z = if z == "grammar" then z ++ "_" else z
@@ -57,13 +59,13 @@ getAntlrOptions' (opt : opts) = case opt of
     otherOpts = getAntlrOptions' opts
 
 parseAntlrTarget :: AntlrTarget -> String
-parseAntlrTarget Java = "Java"
-parseAntlrTarget CPP = "Cpp"
-parseAntlrTarget CSharp = "CSharp"
-parseAntlrTarget JS = "JavaScript"
-parseAntlrTarget TS = "TypeScript"
-parseAntlrTarget Dart = "Dart"
+parseAntlrTarget Java    = "Java"
+parseAntlrTarget CPP     = "Cpp"
+parseAntlrTarget CSharp  = "CSharp"
+parseAntlrTarget JS      = "JavaScript"
+parseAntlrTarget TS      = "TypeScript"
+parseAntlrTarget Dart    = "Dart"
 parseAntlrTarget Python3 = "Python3"
-parseAntlrTarget PHP = "PHP"
-parseAntlrTarget Go = "Go"
-parseAntlrTarget Swift = "Swift"
+parseAntlrTarget PHP     = "PHP"
+parseAntlrTarget Go      = "Go"
+parseAntlrTarget Swift   = "Swift"

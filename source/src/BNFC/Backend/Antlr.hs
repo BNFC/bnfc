@@ -69,7 +69,7 @@ makeAntlr opts@Options{..} cf = do
         , ("lexer", [dotG4 $ MakeFile.refVar prefixedLexerVarName], [genAntlrRecipe prefixedLexerVarName])
         , ("parser", [dotG4 $ MakeFile.refVar prefixedParserVarName], [genAntlrRecipe prefixedParserVarName])
         , (langRef, ["lexer", "parser"], [])
-        , ("clean-g4", [],
+        , ("clean-antlr", [],
           [ rmFileRecipe prefixedLexerVarName ".interp"
           , rmFileRecipe prefixedLexerVarName ".tokens"
           , rmFileRecipe prefixedParserVarName ".interp"
@@ -78,7 +78,7 @@ makeAntlr opts@Options{..} cf = do
         , ("remove", [], ["rm -rf" +++ langRef])
         ]
 
-      makefileContent _ = vcat [makefileVars, "", makefileRules, ""]
+      makefileContent _ = vcat [makefileVars, "", makefileRules]
 
 mkAntlrComment :: String -> String
 mkAntlrComment = ("// -*- ANTLRv4 -*- " ++)
