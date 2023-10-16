@@ -31,7 +31,7 @@ makeAntlr opts@Options{..} cf = do
     where
       pkg = mkName [] CamelCase lang
       pkgToDir = replace '.' pathSeparator
-      mkG4Filename = dotG4 . (lang ++)
+      mkG4Filename = dotG4 . (pkg ++)
 
       makeVars x = [MakeFile.mkVar n v | (n,v) <- x]
       makeRules x = [MakeFile.mkRule tar dep recipe  | (tar, dep, recipe) <- x]
@@ -64,7 +64,7 @@ makeAntlr opts@Options{..} cf = do
       rmFileRecipe refVar ext = "rm -f" +++ MakeFile.refVar refVar ++ ext
 
       makefileRules =  vcat $ makeRules
-        [ (".PHONY", ["all", "clean-g4", "remove"], [])
+        [ (".PHONY", ["all", "clean-antlr", "remove"], [])
         , ("all", [langRef], [])
         , ("lexer", [dotG4 $ MakeFile.refVar prefixedLexerVarName], [genAntlrRecipe prefixedLexerVarName])
         , ("parser", [dotG4 $ MakeFile.refVar prefixedParserVarName], [genAntlrRecipe prefixedParserVarName])
