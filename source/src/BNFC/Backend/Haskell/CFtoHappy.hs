@@ -157,7 +157,7 @@ rulesForHappy absM functor cf = for (ruleGroups cf) $ \ (cat, rules) ->
 -- Coercion are much simpler:
 --
 -- >>> constructRule "Foo" True (npRule "_" (Cat "Exp") [Right "(", Left (Cat "Exp"), Right ")"] Parsable)
--- ("'(' Exp ')'","(uncurry Foo.BNFC'Position (tokenLineCol $1), (snd $2))")
+-- ("'(' Exp ')'","(uncurry Foo.BNFC'Position (tokenSpan $1), (snd $2))")
 --
 constructRule :: IsFun f => String -> Bool -> Rul f -> (Pattern, Action)
 constructRule absName functor (Rule fun0 _cat rhs Parsable) = (pat, action)
@@ -167,10 +167,26 @@ constructRule absName functor (Rule fun0 _cat rhs Parsable) = (pat, action)
     action
       | functor   = "(" ++ actionPos id ++ ", " ++ actionValue ++ ")"
       | otherwise = actionValue
-    actionPos paren = case rhs of
-      []          -> qualify noPosConstr
-      (Left _:_)  -> paren "fst $1"
-      (Right _:_) -> paren $ unwords [ "uncurry", qualify posConstr , "(tokenLineCol $1)" ]
+    actionPos paren = case headAndLast rhs of
+      Nothing                 -> qualify noPosConstr
+      Just (startTok, endTok) -> paren $ unwords
+        [ qualify ("span" ++ posConstr)
+        , startOf startTok
+        , endOf endTok
+        ]
+      where
+        startOf :: Either a b -> String
+        startOf Left{} = "(fst $1)"
+        startOf Right{} = unwords [ "(uncurry", qualify posConstr , "(tokenSpan $1))" ]
+        endOf :: Either a b -> String
+        endOf Left{} = "(fst $" ++ show (length rhs) ++ ")"
+        endOf Right{} = unwords [ "(uncurry", qualify posConstr , "(tokenSpan $" ++ show (length rhs) ++"))" ]
+
+        headAndLast :: [a] -> Maybe (a, a)
+        headAndLast xs =
+          case (xs, reverse xs) of
+            (x:_, z:_) -> Just (x, z)
+            _          -> Nothing
     actionValue
       | isCoercion fun = unwords metavars
       | isNilCons  fun = unwords (qualify fun : metavars)
@@ -323,7 +339,7 @@ specialRules absName functor tokenText cf = unlines . intersperse "" . (`map` li
   where
     mkTypePart tokenCat = if functor then concat [ "(", qualify posType, ", ", tokenCat, ")" ] else tokenCat
     mkBodyPart tokenCat
-      | functor   = "(" ++ unwords ["uncurry", qualify posConstr, "(tokenLineCol $1)"] ++ ", " ++ mkValPart tokenCat ++ ")"
+      | functor   = "(" ++ unwords ["uncurry", qualify posConstr, "(tokenSpan $1)"] ++ ", " ++ mkValPart tokenCat ++ ")"
       | otherwise = mkValPart tokenCat
     mkValPart tokenCat =
       case tokenCat of
