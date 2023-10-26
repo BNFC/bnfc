@@ -1,6 +1,6 @@
 cabal-version: >= 1.10
 Name: BNFC
-Version: 2.7.0.1
+Version: 2.7.0.2
 build-type: Simple
 category: Development
 Copyright: (c) Krasimir Angelov, Jean-Philippe Bernardy, Bjorn Bringert, Johan Broberg, Paul Callaghan, Markus Forsberg, Ola Frid, Peter Gammie, Patrik Jansson, Kristofer Johannisson, Antti-Juhani Kaijanaho, Ulf Norell, Michael Pellauer and Aarne Ranta 2002 - 2012. Free software under GNU General Public License (GPL).
@@ -22,7 +22,7 @@ Description:
   a Happy, CUP, or Bison parser generator file,
   a pretty-printer as a Haskell/Java/C++/C module,
   a Latex file containing a readable specification of the language.
-Extra-source-files: src/BNF.cf TODO
+Extra-source-files: src/BNF.cf CHANGELOG.md
 
 Source-repository head
   type: git
