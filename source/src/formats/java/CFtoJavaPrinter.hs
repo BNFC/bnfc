@@ -18,7 +18,7 @@
 -}
 
 
-{- 
+{-
    **************************************************************
     BNF Converter Module
 
@@ -28,7 +28,7 @@
                     count) in Java, it generates a method that
                     displays the Abstract Syntax in a way similar
                     to Haskell.
-                    
+
                     This uses Appel's method and may serve as a
                     useful example to those who wish to use it.
 
@@ -36,20 +36,20 @@
 
     License       : GPL (GNU General Public License)
 
-    Created       : 24 April, 2003                           
+    Created       : 24 April, 2003
 
-    Modified      : 2 September, 2003                          
+    Modified      : 2 September, 2003
 
     Added string buffer for efficiency (Michael, August 03)
-   ************************************************************** 
+   **************************************************************
 -}
 module CFtoJavaPrinter ( cf2JavaPrinter ) where
 
 import CF
 import NamedVariables
 import Utils		( (+++) )
-import List
-import Char		( toLower )
+import Data.List
+import Data.Char		( toLower )
 
 --Produces the PrettyPrinter class.
 --It will generate two methods "print" and "show"
@@ -58,8 +58,8 @@ import Char		( toLower )
 --especially for testing parser correctness.
 
 cf2JavaPrinter :: String -> String -> CF -> String
-cf2JavaPrinter packageBase packageAbsyn cf = 
-  unlines 
+cf2JavaPrinter packageBase packageAbsyn cf =
+  unlines
    [
     header,
     prEntryPoints packageAbsyn cf,
@@ -198,7 +198,7 @@ prEntryPoints packageAbsyn cf =
   prEntryPoint _ = ""
 
 prData :: String -> (Cat, [Rule]) -> String
-prData packageAbsyn (cat, rules) = 
+prData packageAbsyn (cat, rules) =
  if isList cat
  then unlines
  [
@@ -229,10 +229,10 @@ prRule packageAbsyn r@(fun, (_c, cats))
   ]
    where
     p = precRule r
-    (lparen, rparen) = 
+    (lparen, rparen) =
      ("       if (_i_ > " ++ (show p) ++ ") render(_L_PAREN);\n",
       "       if (_i_ > " ++ (show p) ++ ") render(_R_PAREN);\n")
-    cats' = case cats of 
+    cats' = case cats of
         [] -> ""
     	_  -> concatMap (prCat fnm) (zip (fixOnes (numVars [] cats)) (map getPrec cats))
     fnm = '_' : map toLower fun
@@ -283,7 +283,7 @@ hasOneFunc ((f, (_, _cats)):rs) =
     then True
     else hasOneFunc rs
 
-prCat fnm (c, p) = 
+prCat fnm (c, p) =
     case c of
 	   Right t -> "       render(\"" ++ escapeChars t ++ "\");\n"
 	   Left nt | "string" `isPrefixOf` nt
@@ -295,7 +295,7 @@ prCat fnm (c, p) =
 --The following methods generate the Show function.
 
 shData :: String -> (Cat, [Rule]) -> String
-shData packageAbsyn (cat, rules) = 
+shData packageAbsyn (cat, rules) =
  if isList cat
  then unlines
  [
@@ -303,7 +303,7 @@ shData packageAbsyn (cat, rules) =
   "  {",
   (shList cat rules) ++ "  }"
  ]
- else unlines 
+ else unlines
  [
   "  private static void sh(" ++ packageAbsyn ++ "." ++ identCat (normCat cat) +++ "foo)",
   "  {",
@@ -325,13 +325,13 @@ shRule packageAbsyn (fun, (_c, cats))
      [
       lparen,
       "       render(\"" ++ (escapeChars fun) ++ "\");\n",
-      cats', 
+      cats',
       rparen
      ]
-    cats' = if allTerms cats 
+    cats' = if allTerms cats
         then ""
     	else (concat (map (shCat fnm) (fixOnes (numVars [] cats))))
-    (lparen, rparen) = 
+    (lparen, rparen) =
       if allTerms cats
          then ("","")
  	 else ("       render(\"(\");\n","       render(\")\");\n")
@@ -366,7 +366,7 @@ shList c _rules = unlines
 shCat fnm c =
     case c of
     Right {} -> ""
-    Left nt | "list" `isPrefixOf` nt 
+    Left nt | "list" `isPrefixOf` nt
                 -> unlines ["       render(\"[\");",
 		            "       sh(" ++ fnm ++ "." ++ nt ++ ");",
 		            "       render(\"]\");"]

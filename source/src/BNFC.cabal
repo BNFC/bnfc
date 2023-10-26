@@ -1,17 +1,17 @@
+cabal-version: >=1.10
 Name: BNFC
-Version: 2.4.2.0
-cabal-version: >= 1.2
+Version: 2.4.3
 build-type: Simple
 category: Development
 Copyright: (c) Krasimir Angelov, Bjorn Bringert, Johan Broberg, Paul Callaghan, Markus Forsberg, Ola Frid, Peter Gammie, Patrik Jansson, Kristofer Johannisson, Antti-Juhani Kaijanaho, Ulf Norell, Michael Pellauer and Aarne Ranta 2002 - 2010. Free software under GNU General Public License (GPL).
 License: GPL
 License-File: COPYING
-Maintainer: Markus Forsberg <markus.forsberg@gu.se> Aarne Ranta <aarne@chalmers.se>
-Homepage: http://www.cse.chalmers.se/research/group/Language-technology/BNFC/
+Maintainer: Andreas Abel
+Homepage: https://bnfc.digitalgrammars.com
 Synopsis: A compiler front-end generator.
 Description:
-  The BNF Converter is a compiler construction tool generating a compiler front-end 
-  from a Labelled BNF grammar. It was originally written to generate Haskell, 
+  The BNF Converter is a compiler construction tool generating a compiler front-end
+  from a Labelled BNF grammar. It was originally written to generate Haskell,
   but starting from Version 2.0, it can also be used for generating Java, C++, and C.
   .
   Given a Labelled BNF grammar the tool produces:
@@ -21,10 +21,12 @@ Description:
   a Happy, CUP, or Bison parser generator file,
   a pretty-printer as a Haskell/Java/C++/C module,
   a Latex file containing a readable specification of the language.
-Extra-source-files: BNF.cf 
+Extra-source-files: BNF.cf
 
 Executable bnfc
-  Build-Depends: haskell98, base>=4 && <5, mtl, directory, array, process
+  default-language: Haskell2010
+  Build-Depends: base>=4.8 && <5, mtl, directory, array, process
+  build-tools: alex, happy
   Main-is: Main.hs
   HS-source-dirs: . formats
     formats/haskell2
@@ -54,7 +56,7 @@ Executable bnfc
     OOAbstract,
     CFtoLatex,
     CFtoXML,
-    CFtoTxt,	
+    CFtoTxt,
     -- Haskell
     HaskellTop,
     RegToAlex,

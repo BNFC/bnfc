@@ -29,16 +29,15 @@ import CFtoBisonSTL
 import CFtoCVisitSkelSTL
 import CFtoSTLPrinter
 import CFtoLatex
-import System
+import System.Exit
 import GetCF
-import Char
-import System
+import Data.Char
 import STLUtils
 
 makeSTL :: Bool -> Bool -> Maybe String -> String -> FilePath -> IO ()
 makeSTL make linenumbers inPackage name file = do
   (cf, isOK) <- tryReadCF file
-  if isOK then do 
+  if isOK then do
     let (hfile, cfile) = cf2CPPAbs linenumbers inPackage name cf
     writeFileRep "Absyn.H" hfile
     writeFileRep "Absyn.C" cfile
@@ -65,7 +64,7 @@ makeSTL make linenumbers inPackage name file = do
 	   exitFailure
 
 makefile :: String -> String
-makefile name = unlines 
+makefile name = unlines
   [
    "CC = g++",
    "CCFLAGS = -g",
@@ -118,7 +117,7 @@ makefile name = unlines
    "\t${DVIPS} " ++ name ++ ".dvi -o " ++ name ++ ".ps",
    ""
   ]
-  
+
 cpptest :: Maybe String -> CF -> String
 cpptest inPackage cf =
   unlines
@@ -203,19 +202,19 @@ mkHeaderFile inPackage cf cats eps env = unlines
   mkVar _ = ""
   mkDefines n [] = mkString n
   mkDefines n ((_,s):ss) = ("#define " ++ s +++ (show n) ++ "\n") ++ (mkDefines (n+1) ss) -- "nsDefine inPackage s" not needed (see cf2flex::makeSymEnv)
-  mkString n =  if isUsedCat cf "String" 
+  mkString n =  if isUsedCat cf "String"
    then ("#define " ++ nsDefine inPackage "_STRING_ " ++ show n ++ "\n") ++ mkChar (n+1)
    else mkChar n
-  mkChar n =  if isUsedCat cf "Char" 
+  mkChar n =  if isUsedCat cf "Char"
    then ("#define " ++ nsDefine inPackage "_CHAR_ " ++ show n ++ "\n") ++ mkInteger (n+1)
    else mkInteger n
-  mkInteger n =  if isUsedCat cf "Integer" 
+  mkInteger n =  if isUsedCat cf "Integer"
    then ("#define " ++ nsDefine inPackage "_INTEGER_ " ++ show n ++ "\n") ++ mkDouble (n+1)
    else mkDouble n
-  mkDouble n =  if isUsedCat cf "Double" 
+  mkDouble n =  if isUsedCat cf "Double"
    then ("#define " ++ nsDefine inPackage "_DOUBLE_ " ++ show n ++ "\n") ++ mkIdent(n+1)
    else mkIdent n
-  mkIdent n =  if isUsedCat cf "Ident" 
+  mkIdent n =  if isUsedCat cf "Ident"
    then ("#define " ++ nsDefine inPackage "_IDENT_ " ++ show n ++ "\n")
    else ""
   mkFuncs s | (normCat s == s) = (identCat s) ++ "*" +++ "p" ++ (identCat s) ++ "(FILE *inp);\n" ++

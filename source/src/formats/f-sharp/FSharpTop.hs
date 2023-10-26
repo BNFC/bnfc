@@ -21,7 +21,7 @@
 -- based on BNFC O'Caml backend
 
 
-module FSharpTop (makeFSharp) where 
+module FSharpTop (makeFSharp) where
 
 import CF
 import CFtoOCamlYacc
@@ -36,10 +36,10 @@ import CFtoXML
 import GetCF
 import Utils
 
-import Char
+import Data.Char
 import Data.Maybe (fromMaybe,maybe)
-import System
-import Monad(when)
+import System.Exit
+import Control.Monad(when)
 
 -- naming conventions
 
@@ -50,12 +50,12 @@ withLang :: Options -> String -> String
 withLang opts name = name ++ lang opts
 
 mkMod :: (Options -> String -> String) -> String -> Options -> String
-mkMod addLang name opts = 
+mkMod addLang name opts =
     pref ++ if inDir opts then lang opts ++ "." ++ name else addLang opts name
         where pref = maybe "" (++".") (inPackage opts)
 
 mkFile :: (Options -> String -> String) -> String -> String -> Options -> FilePath
-mkFile addLang name ext opts = 
+mkFile addLang name ext opts =
     pref ++ if inDir opts
        then lang opts ++ [pathSep] ++ name ++ ext'
        else addLang opts name ++ if null ext then "" else ext'
@@ -65,11 +65,11 @@ mkFile addLang name ext opts =
 absFile, absFileM, ocamllexFile, ocamllexFileM, dviFile,
  ocamlyaccFile, ocamlyaccFileM,
  latexFile, utilFile, utilFileM,
- templateFile, templateFileM, 
+ templateFile, templateFileM,
  printerFile, printerFileM,
  psFile, tFile, tFileM :: Options -> String
 absFile       = mkFile withLang "Abs" "ml"
-absFileM      = mkMod  withLang "Abs" 
+absFileM      = mkMod  withLang "Abs"
 ocamllexFile      = mkFile withLang "Lex" "mll"
 ocamllexFileM     = mkMod  withLang "Lex"
 ocamlyaccFile     = mkFile withLang "Par" "mly"
@@ -89,8 +89,8 @@ utilFile       = mkFile noLang   "BNFC_Util" "ml"
 utilFileM      = mkMod  noLang   "BNFC_Util"
 xmlFileM      = mkMod  withLang "XML"
 
-data Options = Options 
-    { 
+data Options = Options
+    {
      make :: Bool,
      alex1 :: Bool,
      inDir :: Bool,
@@ -101,7 +101,7 @@ data Options = Options
     }
 
 -- FIXME: we probably don't need all these arguments
-makeFSharp :: Bool -> Bool -> Bool -> Bool -> Bool -> Int 
+makeFSharp :: Bool -> Bool -> Bool -> Bool -> Bool -> Int
            -> Maybe String -- ^ The hierarchical package to put the modules
                            --   in, or Nothing.
            -> String -> FilePath -> IO ()
@@ -124,14 +124,14 @@ makeFSharp m a1 d ss g x p n file = do
                             prepareDir dir
     writeFileRep (absFile opts) $ cf2Abstract absMod cf
     writeFileRep (ocamllexFile opts) $ cf2ocamllex lexMod parMod cf
-    writeFileRep (ocamlyaccFile opts) $ 
+    writeFileRep (ocamlyaccFile opts) $
                  cf2ocamlyacc parMod absMod lexMod  cf
     writeFileRep (latexFile opts)    $ cfToLatex (lang opts) cf
     writeFileRep (templateFile opts) $ cf2Template (templateFileM opts) absMod cf
     writeFileRep (printerFile opts)  $ cf2Printer prMod absMod cf
     writeFileRep (showFile opts)  $ cf2show showMod absMod cf
     writeFileRep (tFile opts)        $ ocamlTestfile absMod lexMod parMod prMod showMod cf
-    writeFileRep (utilFile opts)      $ utilM 
+    writeFileRep (utilFile opts)      $ utilM
     when (make opts) $ writeFileRep "Makefile" $ makefile opts
     case xml opts of
       2 -> makeXML (lang opts) True cf
@@ -148,19 +148,19 @@ codeDir :: Options -> FilePath
 codeDir opts = let pref = maybe "" pkgToDir (inPackage opts)
                    dir = if inDir opts then lang opts else ""
                    sep = if null pref || null dir then "" else [pathSep]
-                 in pref ++ sep ++ dir 
+                 in pref ++ sep ++ dir
 
 makefile :: Options -> String
 makefile opts = makeA where
   dir = let d = codeDir opts in if null d then "" else d ++ [pathSep]
   cd c = if null dir then c else "(cd " ++ dir ++ "; " ++ c ++ ")"
-  makeA = unlines 
+  makeA = unlines
                 [
                  "all:",
-                 "\tfsyacc " ++ ocamlyaccFile opts, 
+                 "\tfsyacc " ++ ocamlyaccFile opts,
                  "\tfslex "  ++ ocamllexFile opts,
                  "\t" ++ cd ("latex " ++ basename (latexFile opts)
-                             ++ "; " ++ "dvips " ++ basename (dviFile opts) 
+                             ++ "; " ++ "dvips " ++ basename (dviFile opts)
                              ++ " -o " ++ basename (psFile opts)),
                  "\tfsc -o " ++ mkFile withLang "Test" "exe" opts +++
                     utilFile opts +++
@@ -169,11 +169,11 @@ makefile opts = makeA where
                     mkFile withLang "Par" "mli" opts +++
                     mkFile withLang "Par" "ml" opts +++
                     mkFile withLang "Lex" "fs" opts +++
-                    tFile opts, 
+                    tFile opts,
                  "",
                  "clean:",
                  "\t-rm -f " ++ unwords (map (dir++) [
-                                                       "*.log", "*.aux", "*.cmi", 
+                                                       "*.log", "*.aux", "*.cmi",
                                                        "*.cmo", "*.o", "*.dvi"
                                                       ]),
                  "\t-rm -f " ++ psFile opts,
@@ -197,7 +197,7 @@ makefile opts = makeA where
 
 
 utilM :: String
-utilM = unlines 
+utilM = unlines
     ["(* automatically generated by BNFC *)",
      "",
      "open Lexing",
@@ -205,4 +205,3 @@ utilM = unlines
      "(* this should really be in the parser, but ocamlyacc won't put it in the .mli *)",
      "exception Parse_error of Lexing.position * Lexing.position"
     ]
-

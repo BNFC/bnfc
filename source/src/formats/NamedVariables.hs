@@ -19,7 +19,7 @@
 -}
 
 
-{- 
+{-
    **************************************************************
     BNF Converter Module
 
@@ -27,19 +27,19 @@
                     named instance variables. (IE Java, C, C++) It provides
                     a data type to represent the name mapping and utility
                     functions to work with it.
-                    
+
                     Variables are grouped and numbered in a nice way.
 
     Author        : Michael Pellauer (pellauer@cs.chalmers.se)
-   
-   ************************************************************** 
+
+   **************************************************************
 -}
 
 module NamedVariables where
 
 import CF
-import Char (toLower)
-import List (nub)
+import Data.Char (toLower)
+import Data.List (nub)
 
 type IVar = (String, Int)
 --The type of an instance variable
@@ -51,14 +51,14 @@ type UserDef = String --user-defined types
 --A symbol-mapping environment.
 type SymEnv = [(String, String)]
 
---Converts a list of categories into their types to be used as instance variables.		
+--Converts a list of categories into their types to be used as instance variables.
 getVars :: [Cat] -> [IVar]
 getVars [] = []
 getVars cs = foldl addVar [] (map identCat cs)
  where
   addVar vs c = addVar' vs 0 c
   addVar' []  n c = [(c, n)]
-  addVar' (i@(t,x):is) n c = 
+  addVar' (i@(t,x):is) n c =
     if c == t
       then if x == 0
         then (t, 1) : (addVar' is 2 c)
@@ -69,7 +69,7 @@ getVars cs = foldl addVar [] (map identCat cs)
 numVars :: [(String, Int)] -> [Either String b] -> [Either String b]
 numVars _env [] = []
 numVars env ((Right f) : fs) = (Right f) : (numVars env fs)
-numVars env ((Left f) : fs) = 
+numVars env ((Left f) : fs) =
    case lookup f' env of
      Nothing -> (Left f') : (numVars ((f',1):env) fs)
      Just n -> (Left $ f' ++ (show $ n + 1)) : (numVars ((f',n+1):env) fs)
@@ -82,8 +82,8 @@ numVars env ((Left f) : fs) =
 -- is the same.)
 fixOnes [] = []
 fixOnes ((Right f): fs) = (Right f) : (fixOnes fs)
-fixOnes ((Left f) : fs) = 
-  if elem (Left (f ++ "2")) fs 
+fixOnes ((Left f) : fs) =
+  if elem (Left (f ++ "2")) fs
     then (Left (f ++ "1")) : (fixOnes fs)
     else (Left f) : (fixOnes fs)
 

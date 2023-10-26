@@ -17,7 +17,7 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 -}
 
-{- 
+{-
    **************************************************************
     BNF Converter Module
 
@@ -30,12 +30,12 @@
 
     License       : GPL (GNU General Public License)
 
-    Created       : 4 August, 2003                           
+    Created       : 4 August, 2003
 
     Modified      : 22 May, 2004 / Antti-Juhani Kaijanaho
 
-   
-   ************************************************************** 
+
+   **************************************************************
 -}
 
 module CFtoSTLAbs (cf2CPPAbs) where
@@ -43,8 +43,8 @@ module CFtoSTLAbs (cf2CPPAbs) where
 import CF
 import Utils((+++),(++++))
 import NamedVariables
-import List
-import Char(toLower)
+import Data.List
+import Data.Char(toLower)
 
 
 --The result is two files (.H file, .C file)
@@ -88,23 +88,23 @@ mkHFile cf = unlines
   prForward s = ""
   getRules cf = (map testRule (rulesOfCF cf))
   getClasses [] = []
-  getClasses (c:cs) = 
-   if identCat (normCat c) /= c 
+  getClasses (c:cs) =
+   if identCat (normCat c) /= c
    then getClasses cs
    else if elem c rules
      then getClasses cs
      else c : (getClasses cs)
-  
-  testRule (f, (c, r)) = 
+
+  testRule (f, (c, r)) =
    if isList c
-   then if isConsFun f 
+   then if isConsFun f
      then identCat c
      else "_" --ignore this
    else f
 
 --Prints interface classes for all categories.
 prDataH :: [UserDef] -> Data -> String
-prDataH  user (cat, rules) = 
+prDataH  user (cat, rules) =
   case lookup cat rules of
     Just x -> concatMap (prRuleH user cat) rules
     Nothing -> if isList cat
@@ -117,10 +117,10 @@ prDataH  user (cat, rules) =
 	"};\n",
         concatMap (prRuleH user cat) rules
        ]
-       
+
 --Interface definitions for rules vary on the type of rule.
 prRuleH :: [UserDef] -> String -> (Fun, [Cat]) -> String
-prRuleH user c (fun, cats) = 
+prRuleH user c (fun, cats) =
     if isNilFun fun || isOneFun fun
     then ""  --these are not represented in the AbSyn
     else if isConsFun fun
@@ -151,7 +151,7 @@ prRuleH user c (fun, cats) =
      "  void swap(" ++ fun' +++ "&);",
      "};\n"
     ]
-   where 
+   where
      vs = getVars cats
      fun' = identCat (normCat fun)
      c' = identCat (normCat c);
@@ -200,7 +200,7 @@ prVisitor fs = unlines
      "  virtual void visitString(String s) = 0;",
      "};"
     ]
-   prVisitFun f | isProperLabel f = 
+   prVisitFun f | isProperLabel f =
      "  virtual void visit" ++ f' ++ "(" ++ f' ++ " *p) = 0;\n"
     where
        f' = identCat (normCat f)
@@ -219,11 +219,11 @@ prTypeDefs user = unlines
   ]
  where
   prUserDef s = "typedef std::string " ++ s ++ ";\n"
-  
+
 --A class's instance variables.
 prInstVars :: [UserDef] -> [IVar] -> String
 prInstVars _ [] = []
-prInstVars user vars@((t,n):vs) = 
+prInstVars user vars@((t,n):vs) =
   "  " ++ t +++ uniques ++ ";" ++++
   (prInstVars user vs')
  where
@@ -233,7 +233,7 @@ prInstVars user vars@((t,n):vs) =
    prUniques t vs = (prVars (findIndices (\x -> case x of (y,_) ->  y == t) vs) vs, remType t vs)
    prVars (x:[]) vs =  case vs !! x of
    			(t,n) -> ((varLinkName t) ++ (showNum n))
-   prVars (x:xs) vs = case vs !! x of 
+   prVars (x:xs) vs = case vs !! x of
    			(t,n) -> ((varLinkName t) ++ (showNum n)) ++ "," +++
 				 (prVars xs vs)
    varLinkName z = if isBasic user z
@@ -241,11 +241,11 @@ prInstVars user vars@((t,n):vs) =
      else "*" ++ (map toLower z) ++ "_"
    remType :: String -> [IVar] -> [IVar]
    remType _ [] = []
-   remType t ((t2,n):ts) = if t == t2 
-   				then (remType t ts) 
+   remType t ((t2,n):ts) = if t == t2
+   				then (remType t ts)
 				else (t2,n) : (remType t ts)
 
- 
+
 {- **** Implementation (.C) File Functions **** -}
 
 --Makes the .C file
@@ -274,7 +274,7 @@ prDataC :: [UserDef] -> Data -> String
 prDataC user (cat, rules) = concatMap (prRuleC user cat) rules
 
 --Classes for rules vary based on the type of rule.
-prRuleC user c (fun, cats) = 
+prRuleC user c (fun, cats) =
     if isNilFun fun || isOneFun fun
     then ""  --these are not represented in the AbSyn
     else if isConsFun fun
@@ -297,7 +297,7 @@ prRuleC user c (fun, cats) =
      prCloneC user fun' vs,
      ""
     ]
-   where 
+   where
      vs = getVars cats
      fun' = identCat (normCat fun)
      c' = identCat (normCat c)
@@ -346,13 +346,13 @@ prListFuncs user c = unlines
 
 --The standard accept function for the Visitor pattern
 prAcceptC :: String -> String
-prAcceptC ty = 
+prAcceptC ty =
   "\nvoid " ++ ty ++ "::accept(Visitor *v) { v->visit" ++ ty ++ "(this); }"
 
 --The constructor just assigns the parameters to the corresponding instance variables.
 prConstructorC :: [UserDef] -> String -> [IVar] -> [Cat] -> String
-prConstructorC user c vs cats = 
-  c ++ "::" ++ c ++"(" ++ (interleave types params) ++ ")" +++ "{" +++ 
+prConstructorC user c vs cats =
+  c ++ "::" ++ c ++"(" ++ (interleave types params) ++ ")" +++ "{" +++
    prAssigns vs params ++ "}"
   where
    (types, params) = unzip (prParams cats (length cats) ((length cats)+1))
@@ -378,7 +378,7 @@ prCopyC user c vs =
       concatMap swapV vs ++++
       "}\n"
     where  doV :: IVar -> String
-	   doV v@(t, _) 
+	   doV v@(t, _)
 	     | isBasic user t = "  " ++ vn v ++ " = other." ++ vn v ++ ";\n"
 	     | otherwise = "  " ++ vn v ++ " = other." ++ vn v ++ "->clone();\n"
 	   vn :: IVar -> String
@@ -395,8 +395,8 @@ prCloneC user c vs =
 
 --The destructor deletes all a class's members.
 prDestructorC :: [UserDef] -> String -> [IVar] -> String
-prDestructorC user c vs  = 
-  c ++ "::~" ++ c ++"()" +++ "{" +++ 
+prDestructorC user c vs  =
+  c ++ "::~" ++ c ++"()" +++ "{" +++
    (concatMap prDeletes vs) ++ "}"
   where
    prDeletes :: (String, Int) -> String
@@ -406,12 +406,12 @@ prDestructorC user c vs  =
      then "delete(" ++ (varName t) ++ "); "
      else "delete(" ++ (varName t) ++ (show n) ++ "); "
 
---Prints the constructor's parameters.    
+--Prints the constructor's parameters.
 prParams :: [Cat] -> Int -> Int -> [(String,String)]
 prParams [] _ _ = []
 prParams (c:cs) n m = (identCat c,"p" ++ (show (m-n)))
 			: (prParams cs (n-1) m)
-      
+
 --Prints the assignments of parameters to instance variables.
 --This algorithm peeks ahead in the list so we don't use map or fold
 prAssigns :: [IVar] -> [String] -> String
@@ -431,7 +431,7 @@ prAssigns ((t,n):vs) (p:ps) =
 -- These are not treated as classes.
 -- But position tokens are.
 isBasic :: [UserDef] -> String -> Bool
-isBasic user x = 
+isBasic user x =
   if elem x user
     then True
     else case x of

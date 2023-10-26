@@ -22,7 +22,7 @@
 -- Module      :  CFtoAlex2
 -- Copyright   :  (C)opyright 2003, {aarne,markus,peteg} at cs dot chalmers dot se
 -- License     :  GPL (see COPYING for details)
--- 
+--
 -- Maintainer  :  {markus,aarne} at cs dot chalmers dot se
 -- Stability   :  alpha
 -- Portability :  Haskell98
@@ -33,14 +33,14 @@
 module CFtoAlex2 (cf2alex2) where
 
 import CF
-import List
+import Data.List
 
 -- For RegToAlex, see below.
 import AbsBNF
-import Char
+import Data.Char
 
 cf2alex2 :: String -> String -> String -> Bool -> Bool -> CF -> String
-cf2alex2 name errMod shareMod shareStrings byteStrings cf = 
+cf2alex2 name errMod shareMod shareStrings byteStrings cf =
   unlines $ concat $ intersperse [""] [
     prelude name errMod shareMod shareStrings byteStrings,
     cMacros,
@@ -74,7 +74,7 @@ cMacros = [
   ]
 
 rMacros :: CF -> [String]
-rMacros cf = 
+rMacros cf =
   let symbs = symbols cf
   in
   (if null symbs then [] else [
@@ -93,7 +93,7 @@ rMacros cf =
 
 restOfAlex :: String -> Bool -> Bool -> CF -> [String]
 restOfAlex shareMod shareStrings byteStrings cf = [
-  ":-", 
+  ":-",
   lexComments (comments cf),
   "$white+ ;",
   pTSpec (symbols cf),
@@ -114,9 +114,9 @@ restOfAlex shareMod shareStrings byteStrings cf = [
   "share :: "++stringType++" -> "++stringType,
   "share = " ++ if shareStrings then "shareString" else "id",
   "",
-  "data Tok =", 
+  "data Tok =",
   "   TS !"++stringType++" !Int    -- reserved words and symbols",
-  " | TL !"++stringType++"         -- string literals", 
+  " | TL !"++stringType++"         -- string literals",
   " | TI !"++stringType++"         -- integer literals",
   " | TV !"++stringType++"         -- identifiers",
   " | TD !"++stringType++"         -- double precision float literals",
@@ -129,21 +129,21 @@ restOfAlex shareMod shareStrings byteStrings cf = [
   " | Err Posn",
   "  deriving (Eq,Show,Ord)",
   "",
-  "tokenPos (PT (Pn _ l _) _ :_) = \"line \" ++ show l", 
-  "tokenPos (Err (Pn _ l _) :_) = \"line \" ++ show l", 
+  "tokenPos (PT (Pn _ l _) _ :_) = \"line \" ++ show l",
+  "tokenPos (Err (Pn _ l _) :_) = \"line \" ++ show l",
   "tokenPos _ = \"end of file\"",
   "",
   "posLineCol (Pn _ l c) = (l,c)",
   "mkPosToken t@(PT p _) = (posLineCol p, prToken t)",
   "",
-  "prToken t = case t of", 
+  "prToken t = case t of",
   "  PT _ (TS s _) -> s",
   "  PT _ (TL s)   -> s",
   "  PT _ (TI s)   -> s",
   "  PT _ (TV s)   -> s",
   "  PT _ (TD s)   -> s",
   "  PT _ (TC s)   -> s",
-  userDefTokenPrint,  
+  userDefTokenPrint,
   "",
   "data BTree = N | B "++stringType++" Tok BTree BTree deriving (Show)",
   "",
@@ -218,7 +218,7 @@ restOfAlex shareMod shareStrings byteStrings cf = [
        | otherwise   = ("String",        "take",    "",          "id",      "id",        "[]",      "(c:s)"     )
 
    ifC cat s = if isUsedCat cf cat then s else ""
-   lexComments ([],[])           = []    
+   lexComments ([],[])           = []
    lexComments (xs,s1:ys) = '\"' : s1 ++ "\"" ++ " [.]* ; -- Toss single line comments\n" ++ lexComments (xs, ys)
    lexComments (([l1,l2],[r1,r2]):xs,[]) = concat $
 					[
@@ -230,8 +230,8 @@ restOfAlex shareMod shareStrings byteStrings cf = [
 					(r2:"\" ; \n"),
 					lexComments (xs, [])
 					]
-   lexComments ((_:xs),[]) = lexComments (xs,[]) 
----   lexComments (xs,(_:ys)) = lexComments (xs,ys) 
+   lexComments ((_:xs),[]) = lexComments (xs,[])
+---   lexComments (xs,(_:ys)) = lexComments (xs,ys)
 
    -- tokens consisting of special symbols
    pTSpec [] = ""
@@ -247,13 +247,13 @@ restOfAlex shareMod shareStrings byteStrings cf = [
      ["  PT _ (T_" ++ name ++ " s) -> s" | (name,_) <- tokenPragmas cf]
 
    ident =
-     "$l $i*   { tok (\\p s -> PT p (eitherResIdent (TV . share) s)) }" 
-     --ifC "Ident"  "<ident>   ::= ^l ^i*   { ident  p = PT p . eitherResIdent TV }" 
+     "$l $i*   { tok (\\p s -> PT p (eitherResIdent (TV . share) s)) }"
+     --ifC "Ident"  "<ident>   ::= ^l ^i*   { ident  p = PT p . eitherResIdent TV }"
 
    resws = reservedWords cf ++ symbols cf
 
 
-data BTree = N | B String Int BTree BTree 
+data BTree = N | B String Int BTree BTree
 
 instance Show BTree where
     showsPrec _ N = showString "N"

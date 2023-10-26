@@ -24,11 +24,11 @@ import CF
 import CFtoJavaAbs15 (typename)
 import Utils ((+++), (++++))
 import NamedVariables
-import List
-import Char(toLower, toUpper, isDigit)
+import Data.List
+import Data.Char(toLower, toUpper, isDigit)
 
 cf2FoldVisitor :: String -> String -> CF -> String
-cf2FoldVisitor packageBase packageAbsyn cf = 
+cf2FoldVisitor packageBase packageAbsyn cf =
   unlines
     ["package" +++ packageBase ++ ";",
      "",
@@ -50,7 +50,7 @@ cf2FoldVisitor packageBase packageAbsyn cf =
 
 --Traverses a category based on its type.
 prData :: String -> [UserDef] -> (Cat, [Rule]) -> String
-prData packageAbsyn user (cat, rules) = 
+prData packageAbsyn user (cat, rules) =
     unlines [
              "/* " ++ identCat cat ++ " */",
 	     concatMap (prRule packageAbsyn user cat) rules
@@ -58,17 +58,17 @@ prData packageAbsyn user (cat, rules) =
 
 --traverses a standard rule.
 prRule :: String -> [UserDef] -> Cat -> Rule -> String
-prRule packageAbsyn user cat (fun, (_, cats)) 
+prRule packageAbsyn user cat (fun, (_, cats))
     | not (isCoercion fun || isDefinedRule fun) = unlines $
   ["    public R visit(" ++ cls ++ " p, A arg) {",
-   "      R r = leaf(arg);"] 
+   "      R r = leaf(arg);"]
   ++  map ("      "++) visitVars
   ++ ["      return r;",
       "    }"]
    where
     cats' = if allTerms cats
         then []
-    	else [ (c,v) | 
+    	else [ (c,v) |
 	       (Left c, Left v) <- zip cats (fixOnes (numVars [] cats)), c /= internalCat ]
     cls = packageAbsyn ++ "." ++ fun
     allTerms [] = True
@@ -79,11 +79,11 @@ prRule packageAbsyn user cat (fun, (_, cats))
 prRule  _ _ _ _ = ""
 
 --Traverses a class's instance variables.
-prCat :: [UserDef] 
+prCat :: [UserDef]
       -> Cat       -- ^ Variable category
       -> String    -- ^ Variable name
       -> [String]  -- ^ Code for visiting the variable
-prCat user cat nt 
+prCat user cat nt
     | isBasicType user varType || (isListType varType && isBasicType user et) = []
     | isListType varType = listAccept
     | otherwise = ["r = combine(" ++ var ++ ".accept(this, arg), r, arg);"]
@@ -91,7 +91,7 @@ prCat user cat nt
       var = "p." ++ nt
       varType = typename (normCat (identCat cat)) user
       et = typename (normCatOfList cat) user
-      listAccept = ["for (" ++ et ++ " x : " ++ var ++ ") {", 
+      listAccept = ["for (" ++ et ++ " x : " ++ var ++ ") {",
                     "  r = combine(x.accept(this,arg), r, arg);",
 	            "}"]
 
@@ -101,4 +101,3 @@ isListType nt = "List" `isPrefixOf` nt
 --Just checks if something is a basic or user-defined type.
 isBasicType :: [UserDef] -> String -> Bool
 isBasicType user v = v `elem` (user ++ ["Integer","Character","String","Double"])
-

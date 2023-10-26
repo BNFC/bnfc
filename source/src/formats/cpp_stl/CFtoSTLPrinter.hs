@@ -1,23 +1,23 @@
-{- 
+{-
    **************************************************************
     BNF Converter Module
 
     Description   : This module generates the C++ Pretty Printer.
                     It also generates the "show" method for
                     printing an abstract syntax tree.
-                    
+
                     The generated files use the Visitor design pattern.
 
     Author        : Michael Pellauer (pellauer@cs.chalmers.se)
 
     License       : GPL (GNU General Public License)
 
-    Created       : 10 August, 2003                           
+    Created       : 10 August, 2003
 
-    Modified      : 3 September, 2003                          
+    Modified      : 3 September, 2003
                     * Added resizable buffers
-   
-   ************************************************************** 
+
+   **************************************************************
 -}
 
 module CFtoSTLPrinter (cf2CPPPrinter) where
@@ -25,8 +25,8 @@ module CFtoSTLPrinter (cf2CPPPrinter) where
 import CF
 import Utils ((+++), (++++))
 import NamedVariables
-import List
-import Char(toLower, toUpper)
+import Data.List
+import Data.Char(toLower, toUpper)
 import STLUtils
 
 --Produces (.H file, .C file)
@@ -34,9 +34,9 @@ cf2CPPPrinter :: Maybe String -> CF -> (String, String)
 cf2CPPPrinter inPackage cf = (mkHFile inPackage cf groups, mkCFile inPackage cf groups)
  where
     groups = positionRules cf ++ (fixCoercions (ruleGroupsInternals cf))
-    
-positionRules cf = 
-      [(cat,[(cat,(cat,[Left "String", Left "Integer"]))]) | 
+
+positionRules cf =
+      [(cat,[(cat,(cat,[Left "String", Left "Integer"]))]) |
         cat <- filter (isPositionCat cf) $ fst (unzip (tokenPragmas cf))]
 
 {- **** Header (.H) File Methods **** -}
@@ -169,7 +169,7 @@ mkHFile inPackage cf groups = unlines
 
 --Prints all the required method names and their parameters.
 prDataH :: (Cat, [Rule]) -> String
-prDataH (cat, rules) = 
+prDataH (cat, rules) =
  if "List" `isPrefixOf` (identCat cat)
  then concat ["  void visit", cl, "(", cl, "* p);\n"]
  else abstract ++ (concatMap prRuleH rules)
@@ -189,7 +189,7 @@ prRuleH (fun, cats) = ""
 
 --This makes the .C file by a similar method.
 mkCFile :: Maybe String -> CF -> [(Cat,[Rule])] -> String
-mkCFile inPackage cf groups = concat 
+mkCFile inPackage cf groups = concat
    [
     header,
     nsStart inPackage ++ "\n",
@@ -207,7 +207,7 @@ mkCFile inPackage cf groups = concat
   where
     user0 = fst (unzip (tokenPragmas cf))
     (userPos,user) = partition (isPositionCat cf) user0
-    header = unlines 
+    header = unlines
      [
       "/*** BNFC-Generated Pretty Printer and Abstract Syntax Viewer ***/",
       "",
@@ -255,7 +255,7 @@ mkCFile inPackage cf groups = concat
       "  return buf_;",
       "}"
      ]
-    printBasics = unlines 
+    printBasics = unlines
      [
       "void PrintAbsyn::visitInteger(Integer i)",
       "{",
@@ -290,7 +290,7 @@ mkCFile inPackage cf groups = concat
       ""
      ]
 
-    printTokens = unlines 
+    printTokens = unlines
      [unlines [
       "void PrintAbsyn::visit" ++ t ++ "(String s_)",
       "{",
@@ -301,7 +301,7 @@ mkCFile inPackage cf groups = concat
       ] | t <- tokenNames cf
      ]
 
-    showBasics = unlines 
+    showBasics = unlines
      [
       "void ShowAbsyn::visitInteger(Integer i)",
       "{",
@@ -338,7 +338,7 @@ mkCFile inPackage cf groups = concat
       ""
      ]
 
-    showTokens = unlines 
+    showTokens = unlines
      [unlines [
       "void ShowAbsyn::visit" ++ t ++ "(String s_)",
       "{",
@@ -356,7 +356,7 @@ mkCFile inPackage cf groups = concat
 
 --Generates methods for the Pretty Printer
 prPrintData :: Maybe String -> CF -> [UserDef] -> (Cat, [Rule]) -> String
-prPrintData inPackage cf user (cat, rules) = 
+prPrintData inPackage cf user (cat, rules) =
  if "List" `isPrefixOf` (identCat cat)
  then unlines
  [
@@ -393,15 +393,15 @@ prPrintData inPackage cf user (cat, rules) =
      then "'" ++ (escapeChars sep') ++ "'"
      else "\"" ++ (escapeChars sep') ++ "\""
    sep' = getCons rules
-   optsep = 
-     (if hasOneFunc rules 
-       then "    if (i != " ++ vname ++ "->end() - 1) " 
-       else "    "  
+   optsep =
+     (if hasOneFunc rules
+       then "    if (i != " ++ vname ++ "->end() - 1) "
+       else "    "
      )   ++ "render(" ++ sep ++ ");"
    abstract = case lookup cat rules of
     Just x -> ""
     Nothing ->  "void PrintAbsyn::visit" ++ cl ++ "(" ++ cl ++ "*p) {} //abstract class\n\n"
-    
+
 --Pretty Printer methods for a rule.
 prPrintRule :: Maybe String -> [UserDef] -> Rule -> String
 prPrintRule inPackage user r@(fun, (c, cats)) | isProperLabel fun = unlines
@@ -417,7 +417,7 @@ prPrintRule inPackage user r@(fun, (c, cats)) | isProperLabel fun = unlines
   ]
    where
     p = precRule r
-    (lparen, rparen) = 
+    (lparen, rparen) =
       ("  if (oldi > " ++ (show p) ++ ") render(" ++ nsDefine inPackage "_L_PAREN" ++ ");\n",
        "  if (oldi > " ++ (show p) ++ ") render(" ++ nsDefine inPackage "_R_PAREN" ++ ");\n")
     cats' = (concatMap (prPrintCat user fnm) (zip (fixOnes (numVars [] cats)) (map getPrec cats)))
@@ -448,7 +448,7 @@ prPrintCat user fnm (c,p) = case c of
 
 --This prints the functions for Abstract Syntax tree printing.
 prShowData :: [UserDef] -> (Cat, [Rule]) -> String
-prShowData user (cat, rules) = 
+prShowData user (cat, rules) =
  if "List" `isPrefixOf` (identCat cat)
  then unlines
  [
@@ -500,7 +500,7 @@ prShowRule user (fun, (c, cats)) | isProperLabel fun = concat
     	else concat (insertSpaces (map (prShowCat user fnm) (fixOnes (numVars [] cats))))
     insertSpaces [] = []
     insertSpaces (x:[]) = [x]
-    insertSpaces (x:xs) = if x == "" 
+    insertSpaces (x:xs) = if x == ""
       then insertSpaces xs
       else (x : ["  bufAppend(' ');\n"]) ++ (insertSpaces xs)
     allTerms [] = True
@@ -511,10 +511,10 @@ prShowRule _ (fun, cats) = ""
 
 --This recurses to the instance variables of a class.
 prShowCat :: [UserDef] -> String -> Either Cat String -> String
-prShowCat user fnm c = 
+prShowCat user fnm c =
   case c of
     (Right t) -> ""
-    (Left nt) -> 
+    (Left nt) ->
       if isBasic user nt
        then "  visit" ++ (funName nt) ++ "(" ++ fnm ++ "->" ++ nt ++ ");\n"
        else if nt == "#_" --internal category
@@ -536,7 +536,7 @@ prShowCat user fnm c =
 --Just checks if something is a basic or user-defined type.
 --This is because you don't -> a basic non-pointer type.
 isBasic :: [UserDef] -> String -> Bool
-isBasic user v = 
+isBasic user v =
   if elem (init v) user'
     then True
     else if "integer_" `isPrefixOf` v then True
@@ -551,12 +551,12 @@ isBasic user v =
 -- from listident to ident_
 isBase user vn = isBasic user (baseName vn ++ "_")
 -- from ListIdent to Ident
-baseName cl = drop 4 cl 
+baseName cl = drop 4 cl
 
 
 --The visit-function name of a basic type
 funName :: String -> String
-funName v = 
+funName v =
     if "integer_" `isPrefixOf` v then "Integer"
     else if "char_" `isPrefixOf` v then "Char"
     else if "string_" `isPrefixOf` v then "String"
@@ -586,14 +586,14 @@ hasOneFunc ((f, (c, cats)):rs) =
  if (isOneFun f)
     then True
     else hasOneFunc rs
-    
+
 --Helper function that escapes characters in strings
 escapeChars :: String -> String
 escapeChars [] = []
 escapeChars ('\\':xs) = '\\' : ('\\' : (escapeChars xs))
 escapeChars ('\"':xs) = '\\' : ('\"' : (escapeChars xs))
 escapeChars (x:xs) = x : (escapeChars xs)
-    
+
 --An extremely simple renderer for terminals.
 prRender :: String
 prRender = unlines
@@ -668,7 +668,7 @@ prRender = unlines
       "void PrintAbsyn::backup()",
       "{",
       "  if (buf_[cur_ - 1] == ' ')",
-      "  {", 
+      "  {",
       "    buf_[cur_ - 1] = 0;",
       "    cur_--;",
       "  }",

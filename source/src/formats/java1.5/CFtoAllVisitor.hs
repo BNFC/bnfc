@@ -24,11 +24,11 @@ import CF
 import CFtoJavaAbs15 (typename)
 import Utils ((+++), (++++))
 import NamedVariables
-import List
-import Char(toLower, toUpper, isDigit)
+import Data.List
+import Data.Char(toLower, toUpper, isDigit)
 
 cf2AllVisitor :: String -> String -> CF -> String
-cf2AllVisitor packageBase packageAbsyn cf = 
+cf2AllVisitor packageBase packageAbsyn cf =
   unlines [
            "package" +++ packageBase ++ ";",
            "",
@@ -42,10 +42,10 @@ cf2AllVisitor packageBase packageAbsyn cf =
     groups = [ g | g@(c,_) <- fixCoercions (ruleGroupsInternals cf), not (isList c) ]
     is = map (prInterface packageAbsyn) groups
     header = unlines [
-      
+
       ]
 
 prInterface :: String -> (Cat, [Rule]) -> String
-prInterface packageAbsyn (cat, rules) = 
+prInterface packageAbsyn (cat, rules) =
     q ++ ".Visitor<R,A>"
   where q = packageAbsyn ++ "." ++ identCat cat

@@ -1,7 +1,7 @@
 {-
     BNF Converter: C# Pretty Printer Generator
     Copyright (C) 2006  Author:  Johan Broberg
-    
+
     Modified from CFtoSTLPrinter
 
     This program is free software; you can redistribute it and/or modify
@@ -19,7 +19,7 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 -}
 
-{- 
+{-
    **************************************************************
     BNF Converter Module
 
@@ -34,8 +34,8 @@
     Created       : 26 November, 2006
 
     Modified      : 21 January, 2007 by Johan Broberg
-   
-   ************************************************************** 
+
+   **************************************************************
 -}
 
 module CFtoCSharpPrinter (cf2csharpprinter) where
@@ -43,8 +43,8 @@ module CFtoCSharpPrinter (cf2csharpprinter) where
 import CF
 import Utils ((+++), (++++))
 import NamedVariables
-import List
-import Char(toLower, toUpper, isSpace)
+import Data.List
+import Data.Char(toLower, toUpper, isSpace)
 import Data.Maybe
 import CSharpUtils
 
@@ -236,7 +236,7 @@ header namespace cf = unlinesInline [
   "    private static void Backup()",
   "    {",
   "      if(buffer[buffer.Length - 1] == ' ')",
-  "      {", 
+  "      {",
   "        buffer.Length = buffer.Length - 1;",
   "      }",
   "    }",
@@ -311,9 +311,9 @@ entrypoints namespace cf = unlinesInline [
     shEntryPoint _ = ""
 
 prData :: Namespace ->  [UserDef] -> (Cat, [Rule]) -> String
-prData namespace user (cat, rules) 
+prData namespace user (cat, rules)
   -- list
-  | isList cat = unlinesInline [ 
+  | isList cat = unlinesInline [
     "    private static void PrintInternal(" ++ identifier namespace (identCat (normCat cat)) ++ " p, int _i_)",
     "    {",
     (prList user cat rules),
@@ -329,14 +329,14 @@ prData namespace user (cat, rules)
     unlinesInline $ map (prRule namespace (Just "else ")) otherRules,
     "    }"
     ]
-    where 
+    where
       -- Removes the rules at the beginning of the list which won't be used by the prRule function.
       rules' = dropWhile (\(fun, _) -> isCoercion fun || isDefinedRule fun) rules
       firstRule = head rules'
       otherRules = tail rules'
 
 prRule :: Namespace -> Maybe String -> Rule -> String
-prRule namespace maybeElse r@(fun, (_c, cats)) 
+prRule namespace maybeElse r@(fun, (_c, cats))
   | not (isCoercion fun || isDefinedRule fun) = unlinesInline [
     "      " ++ fromMaybe "" maybeElse ++ "if(p is " ++ identifier namespace fun ++ ")",
     "      {",
@@ -348,7 +348,7 @@ prRule namespace maybeElse r@(fun, (_c, cats))
     ]
     where
       p = precRule r
-      cats' = case cats of 
+      cats' = case cats of
         [] -> ""
         _  -> unlinesInline $ map (prCat fnm) (zip (fixOnes (numProps [] cats)) (map getPrec cats))
       fnm = '_' : map toLower fun
@@ -394,10 +394,10 @@ hasOneFunc ((f, (_, _cats)):rs) =
     then True
     else hasOneFunc rs
 
-prCat fnm (c, p) = 
+prCat fnm (c, p) =
   case c of
     Right t -> "        Render(\"" ++ escapeChars t ++ "\");"
-    Left nt 
+    Left nt
       | "string" `isPrefixOf` nt -> "        PrintQuoted(" ++ fnm ++ "." ++ nt ++ ");"
       | isInternalVar nt         -> ""
       | otherwise                -> "        PrintInternal(" ++ fnm ++ "." ++ nt ++ ", " ++ show p ++ ");"
@@ -406,14 +406,14 @@ prCat fnm (c, p) =
 --The following methods generate the Show function.
 
 shData :: Namespace -> [UserDef] -> (Cat, [Rule]) -> String
-shData namespace user (cat, rules) 
+shData namespace user (cat, rules)
   | isList cat = unlinesInline [
     "    private static void ShowInternal(" ++ identifier namespace (identCat (normCat cat)) ++ " p)",
     "    {",
     (shList user cat rules),
     "    }"
     ]
-  | otherwise = unlinesInline [ 
+  | otherwise = unlinesInline [
     "    private static void ShowInternal(" ++ identifier namespace (identCat (normCat cat)) ++ " p)",
     "    {",
     unlinesInline $ map (shRule namespace) rules,
@@ -421,7 +421,7 @@ shData namespace user (cat, rules)
     ]
 
 shRule :: Namespace -> Rule -> String
-shRule namespace (fun, (_c, cats)) 
+shRule namespace (fun, (_c, cats))
   | not (isCoercion fun || isDefinedRule fun) = unlinesInline [
     "      if(p is " ++ identifier namespace fun ++ ")",
     "      {",
@@ -456,11 +456,11 @@ shList user c _rules = unlinesInline [
   ]
   where
     et = typename (normCatOfList c)
- 
+
 shCat fnm c =
   case c of
     Right {} -> ""
-    Left nt 
+    Left nt
       | "list" `isPrefixOf` nt -> unlinesInline [
           "        Render(\"[\");",
           "        ShowInternal(" ++ fnm ++ "." ++ nt ++ ");",

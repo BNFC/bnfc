@@ -18,7 +18,7 @@
     along with this program; if not, write to the Free Software
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 -}
-{- 
+{-
    **************************************************************
     BNF Converter Module
 
@@ -31,9 +31,11 @@
     Created       : 20 November, 2006
 
     Modified      : 8 January, 2007 by Johan Broberg
-   
-   ************************************************************** 
+
+   **************************************************************
 -}
+
+{-# LANGUAGE ScopedTypeVariables #-}
 
 module CSharpTop (makeCSharp) where
 
@@ -48,16 +50,17 @@ import CAbstoCSharpAbstractVisitSkeleton
 import CFtoCSharpPrinter
 import CFtoLatex
 import CSharpUtils
-import System
 import GetCF
-import Char
-import System
+import Data.Char
 import System.Directory
+import System.Exit
+import System.Environment
 import System.IO
 import System.Process
 import Data.Maybe
 import Data.Char
 import Control.Monad.ST
+import Control.Exception (IOException, catch)
 
 -- Control.Monad.State
 
@@ -65,12 +68,12 @@ makeCSharp :: Bool -- Makefile
            -> Bool -- Visual Studio files
            -> Bool -- Windows Communication Foundation support
            -> Maybe Namespace -- C# namespace to use
-           -> FilePath 
+           -> FilePath
            -> IO ()
 makeCSharp make vsfiles wcfSupport maybenamespace file = do
   (cf, isOK) <- tryReadCF file
-  if isOK 
-    then do 
+  if isOK
+    then do
       let namespace    = fromMaybe (filepathtonamespace file) maybenamespace
           cabs         = cf2cabs cf
           absyn        = cabs2csharpabs namespace cabs wcfSupport
@@ -93,12 +96,12 @@ makeCSharp make vsfiles wcfSupport maybenamespace file = do
       if vsfiles then (writeVisualStudioFiles namespace) else return ()
       if make then (writeMakefile namespace) else return ()
       putStrLn "Done!"
-    else do 
+    else do
       putStrLn "Failed"
       exitFailure
 
 writeMakefile :: Namespace -> IO ()
-writeMakefile namespace = do 
+writeMakefile namespace = do
   writeFileRep "Makefile" makefile
   putStrLn ""
   putStrLn "-----------------------------------------------------------------------------"
@@ -110,7 +113,7 @@ writeMakefile namespace = do
   putStrLn "-----------------------------------------------------------------------------"
   putStrLn ""
   where
-    makefile = unlines [ 
+    makefile = unlines [
       "MONO = mono",
       "MONOC = gmcs",
       "MONOCFLAGS = -optimize -reference:${PARSERREF}",
@@ -338,7 +341,7 @@ filepathtonamespace file = take (length file - 3) (basename file)
 projectguid :: IO String
 projectguid = do
   maybeFilePath <- findDirectory
-  guid <- maybe getBadGUID getGoodGUID maybeFilePath 
+  guid <- maybe getBadGUID getGoodGUID maybeFilePath
   return guid
   where
     getBadGUID :: IO String
@@ -349,19 +352,19 @@ projectguid = do
       putStrLn "-----------------------------------------------------------------------------"
       return "{00000000-0000-0000-0000-000000000000}"
     getGoodGUID :: FilePath -> IO String
-    getGoodGUID filepath = do 
+    getGoodGUID filepath = do
       let filepath' = "\"" ++ filepath ++ "\""
       (hIn, hOut, hErr, processHandle) <- runInteractiveCommand filepath'
       guid <- hGetLine hOut
       return ('{' : init guid ++ "}")
     findDirectory :: IO (Maybe FilePath)
     findDirectory = do
-      -- This works with Visual Studio 2005. 
-      -- We will probably have to be modify this to include another environment variable name for Orcas. 
+      -- This works with Visual Studio 2005.
+      -- We will probably have to be modify this to include another environment variable name for Orcas.
       -- I doubt there is any need to support VS2003? (I doubt they have patched it up to have 2.0 support?)
-      toolpath <- catch (getEnv "VS80COMNTOOLS") (\_ -> return "C:\\Program Files\\Microsoft Visual Studio 8\\Common7\\Tools")
+      toolpath <- catch (getEnv "VS80COMNTOOLS") (\ (_ :: IOException) -> return "C:\\Program Files\\Microsoft Visual Studio 8\\Common7\\Tools")
       exists <- doesDirectoryExist toolpath
-      if exists 
+      if exists
         then return (Just (toolpath ++ "\\uuidgen.exe"))
         -- this handles the case when the user was clever enough to add the directory to his/her PATH
         else findExecutable "uuidgen.exe"

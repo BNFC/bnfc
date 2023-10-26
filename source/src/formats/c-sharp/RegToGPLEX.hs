@@ -3,7 +3,7 @@ module RegToGPLEX (printRegGPLEX) where
 -- modified from RegToFlex
 
 import AbsBNF
-import Char
+import Data.Char
 
 -- the top-level printing method
 printRegGPLEX :: Reg -> String

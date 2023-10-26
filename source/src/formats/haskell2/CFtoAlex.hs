@@ -22,7 +22,7 @@ module CFtoAlex (cf2alex) where
 
 import CF
 import RegToAlex
-import List
+import Data.List
 
 cf2alex :: String -> String -> CF -> String
 cf2alex name errMod cf = unlines $ concat $ intersperse [""] [
@@ -73,8 +73,8 @@ cMacros = [
   ]
 
 rMacros :: CF -> [String]
-rMacros cf = 
-  let symbs = symbols cf 
+rMacros cf =
+  let symbs = symbols cf
   in
   (if null symbs then [] else [
    "{ %s =    -- reserved words consisting of special symbols",
@@ -88,7 +88,7 @@ rMacros cf =
 
 restOfAlex :: CF -> [String]
 restOfAlex cf = [
-  "\"tokens_lx\"/\"tokens_acts\":-", 
+  "\"tokens_lx\"/\"tokens_acts\":-",
   lexComments (comments cf),
   "<>         ::= ^w+",
   pTSpec (symbols cf,[]), -- modif Markus 12/02 - 2002
@@ -100,14 +100,14 @@ restOfAlex cf = [
                   "%{ string p = PT p . TL . unescapeInitTail %}",
   ifC "Char"   "<char>    ::= ^\' (^u # [^\'^\\] | ^\\ [^\\ ^\' n t]) ^'  %{ char   p = PT p . TC    %}",
   ifC "Integer" "<int>    ::= ^d+      %{ int    p = PT p . TI    %}",
-  ifC "Double" 
+  ifC "Double"
       "<double>   ::= ^d+ ^. ^d+ (e (^-)? ^d+)? %{ double  p = PT p . TD %}",
   "",
   "%{ ",
   "",
-  "data Tok =", 
+  "data Tok =",
   "   TS String     -- reserved words",
-  " | TL String     -- string literals", 
+  " | TL String     -- string literals",
   " | TI String     -- integer literals",
   " | TV String     -- identifiers",
   " | TD String     -- double precision float literals",
@@ -120,14 +120,14 @@ restOfAlex cf = [
   " | Err Posn",
   "  deriving Show",
   "",
-  "tokenPos (PT (Pn _ l _) _ :_) = \"line \" ++ show l", 
-  "tokenPos (Err (Pn _ l _) :_) = \"line \" ++ show l", 
+  "tokenPos (PT (Pn _ l _) _ :_) = \"line \" ++ show l",
+  "tokenPos (Err (Pn _ l _) :_) = \"line \" ++ show l",
   "tokenPos _ = \"end of file\"",
   "",
   "posLineCol (Pn _ l c) = (l,c)",
   "mkPosToken t@(PT p _) = (posLineCol p, prToken t)",
   "",
-  "prToken t = case t of", 
+  "prToken t = case t of",
   "  PT _ (TS s) -> s",
   "  PT _ (TI s) -> s",
   "  PT _ (TV s) -> s",
@@ -155,7 +155,7 @@ restOfAlex cf = [
   "isInTree :: String -> BTree -> Bool",
   "isInTree x tree = case tree of",
   "  N -> False",
-  "  B a left right", 
+  "  B a left right",
   "   | x < a  -> isInTree x left",
   "   | x > a  -> isInTree x right",
   "   | x == a -> True",
@@ -173,12 +173,12 @@ restOfAlex cf = [
   ]
  where
    ifC cat s = if isUsedCat cf cat then s else ""
-   lexComments ([],[])           = []    
+   lexComments ([],[])           = []
    lexComments (xs,s1:ys) = "<>         ::= " ++ ('^':intersperse '^' s1) ++ " [.]* ^n\n" ++ lexComments (xs,ys)
    lexComments (([l1,l2],[r1,r2]):xs,[]) = concat $
 					[
 					"<>         ::= ",
-					('^':l1:' ':'^':l2:" ([^u # ^"), 
+					('^':l1:' ':'^':l2:" ([^u # ^"),
 					(l2:"] | ^"),
 					(r1:" [^u # ^"),
 					(r2:"])* (^"),
@@ -186,22 +186,22 @@ restOfAlex cf = [
 					(r2:"\n"),
 					lexComments (xs,[])
 					]
-   lexComments ((_:xs),[]) = lexComments (xs,[]) 
----   lexComments (xs,(_:ys)) = lexComments (xs,ys) 
+   lexComments ((_:xs),[]) = lexComments (xs,[])
+---   lexComments (xs,(_:ys)) = lexComments (xs,ys)
    pTSpec ([],[]) = ""
    pTSpec xp =
     "<pTSpec>   ::= " ++ aux xp ++ "%{ pTSpec p = PT p . TS    %}"
    aux (xs,[]) = " %s "
    aux ([],ys) = " %r "
    aux (xs,ys) = " %s | %r "
-   resWs = 
+   resWs =
      "[" ++ concat (intersperse "," [show s | s <- resws]) ++ "]"
      --- show s can be strange for isolatin1 characters
      --- precompile to search tree!
 
    userDefTokenTypes = unlines $
      ["<mk_" ++ name ++ "> ::= " ++ printRegAlex exp ++
-      "%{ mk_" ++ name ++ " p = PT p . eitherResIdent T_"  ++ name ++ " %}" 
+      "%{ mk_" ++ name ++ " p = PT p . eitherResIdent T_"  ++ name ++ " %}"
                                         | (name,exp) <- tokenPragmas cf]
    userDefTokenConstrs = unlines $
      [" | T_" ++ name ++ " String" | (name,_) <- tokenPragmas cf]
@@ -209,8 +209,8 @@ restOfAlex cf = [
      ["  PT _ (T_" ++ name ++ " s) -> s" | (name,_) <- tokenPragmas cf]
 
    identAndRes = --This has to be there for Reserved Words. Michael
-     "<ident>   ::= ^l ^i*   %{ ident  p = PT p . eitherResIdent TV %}" 
-     --ifC "Ident"  "<ident>   ::= ^l ^i*   %{ ident  p = PT p . eitherResIdent TV %}" 
+     "<ident>   ::= ^l ^i*   %{ ident  p = PT p . eitherResIdent TV %}"
+     --ifC "Ident"  "<ident>   ::= ^l ^i*   %{ ident  p = PT p . eitherResIdent TV %}"
 
    resws = reservedWords cf
 
@@ -219,7 +219,7 @@ data BTree = N | B String BTree BTree deriving (Show)
 isInTree :: String -> BTree -> Bool
 isInTree x tree = case tree of
  N -> False
- B a left right 
+ B a left right
    | x < a  -> isInTree x left
    | x > a  -> isInTree x right
    | x == a -> True

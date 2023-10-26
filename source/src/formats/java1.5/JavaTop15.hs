@@ -1,6 +1,6 @@
 {-
     BNF Converter: Java Top File
-    Copyright (C) 2004  Author:  Markus Forsberg, Peter Gammie, 
+    Copyright (C) 2004  Author:  Markus Forsberg, Peter Gammie,
                                  Michael Pellauer, Bjorn Bringert
 
     This program is free software; you can redistribute it and/or modify
@@ -23,7 +23,7 @@
 -- Module      :  JavaTop
 -- Copyright   :  (C)opyright 2003, {markus, aarne, pellauer, peteg, bringert} at cs dot chalmers dot se
 -- License     :  GPL (see COPYING for details)
--- 
+--
 -- Maintainer  :  {markus, aarne} at cs dot chalmers dot se
 -- Stability   :  alpha
 -- Portability :  Haskell98
@@ -33,13 +33,14 @@
 -- > $Id: JavaTop15.hs,v 1.12 2007/01/08 18:20:23 aarne Exp $
 -------------------------------------------------------------------
 
-module JavaTop15 ( makeJava15 ) where 
+module JavaTop15 ( makeJava15 ) where
 
 -------------------------------------------------------------------
 -- Dependencies.
 -------------------------------------------------------------------
-import Directory	( createDirectory )
-import IO		( try, isAlreadyExistsError )
+import System.Directory	( createDirectory )
+import System.IO.Error	( isAlreadyExistsError )
+import Control.Exception	( try )
 
 import Utils
 import CF
@@ -54,17 +55,17 @@ import CFtoAbstractVisitor
 import CFtoFoldVisitor
 import CFtoAllVisitor
 import CFtoLatex
-import System
+import System.Exit
 import GetCF		( tryReadCF, writeFileRep )
-import Char
-import List(intersperse)
+import Data.Char
+import Data.List(intersperse)
 
 -------------------------------------------------------------------
 -- | Build the Java output.
 -- FIXME: get everything to put the files in the right places.
 -- Adapt Makefile to do the business.
 -------------------------------------------------------------------
-makeJava15 :: Bool 
+makeJava15 :: Bool
 	  -> Maybe String -- ^ Java package name to put the classes in
 	  -> String -- ^ Name of grammar
 	  -> FilePath -- ^ Grammar file
@@ -129,7 +130,7 @@ mkFiles make inPackage name cf =
 -- Replace with an ANT script?
 makefile :: String -> FilePath -> FilePath -> [String] -> String
 makefile name dirBase dirAbsyn absynFileNames =
-    unlines 
+    unlines
     [
      "JAVAC = javac",
      "JAVAC_FLAGS = -sourcepath .",
@@ -254,7 +255,7 @@ javaTest packageBase packageAbsyn cf =
      "    /* " ++ (concat (intersperse ", " (showOpts (tail eps)))) ++ " */",
      "    try",
      "    {",
-     "      " ++ packageAbsyn ++ "." ++ def +++ "parse_tree = p.p" 
+     "      " ++ packageAbsyn ++ "." ++ def +++ "parse_tree = p.p"
      ++ def ++ "();",
      "      System.out.println();",
      "      System.out.println(\"Parse Succesful!\");",
@@ -281,5 +282,5 @@ javaTest packageBase packageAbsyn cf =
 	  showOpts [] = []
 
 	  showOpts (x:[]) = if normCat x /= x then [] else ['p' : (identCat x)]
-	  showOpts (x:xs) = if normCat x /= x then (showOpts xs) 
+	  showOpts (x:xs) = if normCat x /= x then (showOpts xs)
 			    else ('p' : (identCat x)) : (showOpts xs)

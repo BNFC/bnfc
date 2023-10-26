@@ -1,6 +1,6 @@
 {-
     BNF Converter: Haskell main file
-    Copyright (C) 2004-2005  Author:  Markus Forberg, Peter Gammie, 
+    Copyright (C) 2004-2005  Author:  Markus Forberg, Peter Gammie,
                                       Aarne Ranta, Björn Bringert
 
     This program is free software; you can redistribute it and/or modify
@@ -18,7 +18,7 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 -}
 
-module HaskellTopGADT (makeAllGADT) where 
+module HaskellTopGADT (makeAllGADT) where
 
 
 
@@ -36,14 +36,13 @@ import CFtoXML
 import MkErrM
 import MkSharedString
 -- import CFtoGF		( cf2AbsGF, cf2ConcGF )
--- import System
 import GetCF
 import Utils
 
-import Char
+import Data.Char
 import Data.Maybe (fromMaybe,maybe)
-import System
-import Monad(when)
+import System.Exit
+import Control.Monad(when)
 
 -- naming conventions
 
@@ -54,12 +53,12 @@ withLang :: Options -> String -> String
 withLang opts name = name ++ lang opts
 
 mkMod :: (Options -> String -> String) -> String -> Options -> String
-mkMod addLang name opts = 
+mkMod addLang name opts =
     pref ++ if inDir opts then lang opts ++ "." ++ name else addLang opts name
 	where pref = maybe "" (++".") (inPackage opts)
 
 mkFile :: (Options -> String -> String) -> String -> String -> Options -> FilePath
-mkFile addLang name ext opts = 
+mkFile addLang name ext opts =
     pref ++ if inDir opts
        then lang opts ++ [pathSep] ++ name ++ ext'
        else addLang opts name ++ if null ext then "" else ext'
@@ -71,12 +70,12 @@ absFile, absFileM, alexFile, alexFileM, dviFile,
  gfAbs, gfConc,
  happyFile, happyFileM,
  latexFile, errFile, errFileM,
- templateFile, templateFileM, 
+ templateFile, templateFileM,
  printerFile, printerFileM,
- layoutFile, layoutFileM, 
+ layoutFile, layoutFileM,
  psFile, tFile, tFileM :: Options -> String
 absFile       = mkFile withLang "Abs" "hs"
-absFileM      = mkMod  withLang "Abs" 
+absFileM      = mkMod  withLang "Abs"
 alexFile      = mkFile withLang "Lex" "x"
 alexFileM     = mkMod  withLang "Lex"
 composOpFile  = mkFile noLang   "ComposOp" "hs"
@@ -102,8 +101,8 @@ layoutFileM   = mkMod  withLang "Layout"
 xmlFileM      = mkMod  withLang "XML"
 layoutFile    = mkFile withLang "Layout" "hs"
 
-data Options = Options 
-    { 
+data Options = Options
+    {
      make :: Bool,
      alex1 :: Bool,
      inDir :: Bool,
@@ -115,13 +114,13 @@ data Options = Options
      lang :: String
     }
 
-makeAllGADT :: Bool -> Bool -> Bool -> Bool -> Bool -> Bool -> Int 
+makeAllGADT :: Bool -> Bool -> Bool -> Bool -> Bool -> Bool -> Int
 	   -> Maybe String -- ^ The hierarchical package to put the modules
 	                   --   in, or Nothing.
 	   -> String -> FilePath -> IO ()
 makeAllGADT m a1 d ss bs g x p n file = do
   let opts = Options { make = m, alex1 = a1, inDir = d, shareStrings = ss, byteStrings = bs,
-		       glr = if g then GLR else Standard, xml = x, 
+		       glr = if g then GLR else Standard, xml = x,
 		       inPackage = p, lang = n }
 
       absMod = absFileM opts
@@ -142,11 +141,11 @@ makeAllGADT m a1 d ss bs g x p n file = do
     writeFileRep (composOpFile opts) $ composOp composOpMod
     if alex1 opts then do
 		    writeFileRep (alexFile opts) $ cf2alex lexMod errMod cf
-		    putStrLn "   (Use Alex 1.1 to compile.)" 
+		    putStrLn "   (Use Alex 1.1 to compile.)"
 	       else do
 		    writeFileRep (alexFile opts) $ cf2alex2 lexMod errMod shareMod (shareStrings opts) (byteStrings opts) cf
                     putStrLn "   (Use Alex 2.0 to compile.)"
-    writeFileRep (happyFile opts) $ 
+    writeFileRep (happyFile opts) $
 		 cf2HappyS parMod absMod lexMod errMod (glr opts) (byteStrings opts) cf
     putStrLn "   (Tested with Happy 1.15)"
     writeFileRep (latexFile opts)    $ cfToLatex (lang opts) cf
@@ -172,25 +171,25 @@ codeDir :: Options -> FilePath
 codeDir opts = let pref = maybe "" pkgToDir (inPackage opts)
 		   dir = if inDir opts then lang opts else ""
 		   sep = if null pref || null dir then "" else [pathSep]
-		 in pref ++ sep ++ dir 
+		 in pref ++ sep ++ dir
 
 makefile :: Options -> String
 makefile opts = makeA where
-  glr_params = if glr opts == GLR then "--glr --decode " else ""  
+  glr_params = if glr opts == GLR then "--glr --decode " else ""
   dir = let d = codeDir opts in if null d then "" else d ++ [pathSep]
   cd c = if null dir then c else "(cd " ++ dir ++ "; " ++ c ++ ")"
-  makeA = unlines 
+  makeA = unlines
                 [
- 		 "all:", 
-                 "\thappy -gca " ++ glr_params ++ happyFile opts, 
+ 		 "all:",
+                 "\thappy -gca " ++ glr_params ++ happyFile opts,
 		 "\talex -g "  ++ alexFile opts,
 		 "\t" ++ cd ("latex " ++ basename (latexFile opts)
-			     ++ "; " ++ "dvips " ++ basename (dviFile opts) 
+			     ++ "; " ++ "dvips " ++ basename (dviFile opts)
 			     ++ " -o " ++ basename (psFile opts)),
 		 "\tghc --make " ++ tFile opts ++ " -o " ++ mkFile withLang "Test" "" opts,
 		 "clean:",
 		 "\t-rm -f " ++ unwords (map (dir++) [
-						       "*.log", "*.aux", "*.hi", 
+						       "*.log", "*.aux", "*.hi",
 						       "*.o", "*.dvi"
 						      ]),
 		 "\t-rm -f " ++ psFile opts,
@@ -210,7 +209,7 @@ makefile opts = makeA where
 					 mkFile noLang   "ErrM" "*" opts,
 					 mkFile noLang   "SharedString" "*" opts,
                                          dir ++ lang opts ++ ".dtd",
-					 mkFile withLang "XML" "*" opts, 
+					 mkFile withLang "XML" "*" opts,
 					 "Makefile*"
 					],
 		 if null dir then "" else "\t-rmdir -p " ++ dir
@@ -219,7 +218,7 @@ makefile opts = makeA where
 
 testfile :: Options -> CF -> String
 testfile opts cf
-        = let lay = hasLayout cf 
+        = let lay = hasLayout cf
 	      use_xml = xml opts > 0
               xpr = if use_xml then "XPrint a, "     else ""
 	      use_glr = glr opts == GLR
@@ -231,8 +230,8 @@ testfile opts cf
 	        ["-- automatically generated by BNF Converter",
 		 "module Main where\n",
 	         "",
-	         "import IO ( stdin, hGetContents )",
-	         "import System ( getArgs, getProgName )",
+	         "import System.IO ( stdin, hGetContents )",
+	         "import System.Environment ( getArgs, getProgName )",
 		 "",
 		 "import " ++ alexFileM     opts,
 		 "import " ++ happyFileM    opts,
@@ -242,14 +241,14 @@ testfile opts cf
 	         if lay then ("import " ++ layoutFileM opts) else "",
 	         if use_xml then ("import " ++ xmlFileM opts) else "",
 	         if_glr "import Data.FiniteMap(FiniteMap, lookupFM, fmToList)",
-	         if_glr "import Maybe(fromJust)",
+	         if_glr "import Data.Maybe(fromJust)",
 	         "import " ++ errFileM      opts,
 		 "",
 		 if use_glr
 		   then "type ParseFun a = [[Token]] -> (GLRResult, GLR_Output (Err a))"
 		   else "type ParseFun a = [Token] -> Err a",
 	         "",
-                 "myLLexer = " ++ if lay then "resolveLayout True . myLexer" 
+                 "myLLexer = " ++ if lay then "resolveLayout True . myLexer"
                                          else "myLexer",
                  "",
                  "type Verbosity = Int",
@@ -283,7 +282,7 @@ testfile opts cf
 		 ]
 
 run_std xml
- = unlines 
+ = unlines
    [ "run v p s = let ts = myLLexer s in case p ts of"
    , "           Bad s    -> do putStrLn \"\\nParse              Failed...\\n\""
    , "                          putStrV v \"Tokens:\""
@@ -297,7 +296,7 @@ run_std xml
    ]
 
 run_glr
- = unlines 
+ = unlines
    [ "run v p s"
    , " = let ts = map (:[]) $ myLLexer s"
    , "       (raw_output, simple_output) = p ts in"
@@ -321,10 +320,10 @@ run_glr
    , "     | (Ok t,n) <- zip trees [1..]"
    , "     ]"
    ]
-   
+
 
 lift_parser
- = unlines 
+ = unlines
    [ "type Forest = FiniteMap ForestId [Branch]      -- omitted in ParX export."
    , "data GLR_Output a"
    , " = GLR_Result { pruned_decode     :: (Forest -> Forest) -> [a]"

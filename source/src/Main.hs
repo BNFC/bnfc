@@ -1,7 +1,7 @@
 {-
     BNF Converter: Main file
-    Copyright (C) 2002-2010  Authors: 
-    Björn Bringert, Johan Broberg, Markus Forberg, Peter Gammie, 
+    Copyright (C) 2002-2010  Authors:
+    Björn Bringert, Johan Broberg, Markus Forberg, Peter Gammie,
     Patrik Jansson, Antti-Juhani Kaijanaho, Ulf Norell,
     Michael Pellauer, Aarne Ranta
 
@@ -41,15 +41,16 @@ import Utils
 
 import MultiView (preprocessMCF, mkTestMulti, mkMakefileMulti)
 
-import System
+import System.Environment
 import System.Exit
-import Char
+import System.Process (system)
+import Data.Char
 import Data.List (elemIndex)
 
 version = "2.4.2.0"
 
 title = unlines [
-  "The BNF Converter, "++version, 
+  "The BNF Converter, "++version,
   "(c) Krasimir Angelov, Bjorn Bringert, Johan Broberg, Paul Callaghan, ",
   "    Markus Forsberg, Ola Frid, Peter Gammie, Patrik Jansson, ",
   "    Kristofer Johannisson, Antti-Juhani Kaijanaho, Ulf Norell, ",
@@ -57,11 +58,11 @@ title = unlines [
   "Free software under GNU General Public License (GPL).",
   "Bug reports to {markus,aarne}@cs.chalmers.se."
  ]
- 
+
 main :: IO ()
 main = do
   xx <- getArgs
-	  
+
   case xx of
     ["--numeric-version"] -> do
       putStrLn version
@@ -100,7 +101,7 @@ mkOne xx = do
           alex2StringSharing = elem "-sharestrings" args
           alex2ByteString    = elem "-bytestrings" args
           glr = "-glr" `elem` args
-      let xml = if elem "-xml"  args then 1 else 
+      let xml = if elem "-xml"  args then 1 else
                 if elem "-xmlt" args then 2 else 0
       let inDir = elem "-d" args
       let vsfiles = elem "-vs" args
@@ -114,8 +115,8 @@ mkOne xx = do
 			      printUsage
       if checkUsage False [c, cpp, cpp_stl, csharp, java, haskell, profile] then
        do
-       if (isCF (reverse file)) then 
-        do 
+       if (isCF (reverse file)) then
+        do
          putStrLn title
          case () of
            _ | c      -> makeC make name file
@@ -129,23 +130,23 @@ mkOne xx = do
            _ | profile-> makeAllProfile make alex1or2 False xml name file
 	   _ | haskellGADT -> makeAllGADT make alex1or2 inDir alex2StringSharing alex2ByteString glr xml inPackage name file
            _          -> makeAll make alex1or2 inDir alex2StringSharing alex2ByteString glr xml inPackage name multi file
-         if (make && multi) 
-            then (system ("cp Makefile Makefile_" ++ name)) >> return ()  
+         if (make && multi)
+            then (system ("cp Makefile Makefile_" ++ name)) >> return ()
             else return ()
 	else endFileErr
        else endLanguageErr
  where isCF ('f':'c':'.':_) = True
        isCF _               = False
-       endFileErr = do 
+       endFileErr = do
                       putStr title
                       putStrLn "Error: the input file must end with .cf"
 		      exitFailure
-       endLanguageErr = do 
+       endLanguageErr = do
                           putStr title
                           putStrLn "Error: only one language mode may be chosen"
 			  exitFailure
-       
-printUsage = do 
+
+printUsage = do
   putStrLn title
   putStrLn "Usage: bnfc <makeoption>* <language>? <special>* file.cf"
   putStrLn ""

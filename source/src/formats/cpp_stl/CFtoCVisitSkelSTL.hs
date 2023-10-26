@@ -17,24 +17,24 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 -}
 
-{- 
+{-
    **************************************************************
     BNF Converter Module
 
     Description   : This module generates the C++ Skeleton functions.
-    
+
                     The generated files use the Visitor design pattern.
 
     Author        : Michael Pellauer (pellauer@cs.chalmers.se)
 
     License       : GPL (GNU General Public License)
 
-    Created       : 9 August, 2003                           
+    Created       : 9 August, 2003
 
     Modified      : 29 August, 2006 Aarne Ranta
 
-   
-   ************************************************************** 
+
+   **************************************************************
 -}
 
 module CFtoCVisitSkelSTL (cf2CVisitSkel) where
@@ -42,8 +42,8 @@ module CFtoCVisitSkelSTL (cf2CVisitSkel) where
 import CF
 import Utils ((+++), (++++))
 import NamedVariables
-import List
-import Char(toLower, toUpper)
+import Data.List
+import Data.Char(toLower, toUpper)
 import OOAbstract
 import STLUtils
 
@@ -68,7 +68,7 @@ mkHFile inPackage cf = unlines [
   "class Skeleton : public Visitor",
   "{",
   "public:",
-  unlines ["  void visit" ++ b ++ "(" ++ b ++ "* p);" | 
+  unlines ["  void visit" ++ b ++ "(" ++ b ++ "* p);" |
                               b <- classes, notElem b (defineds cf)],
   unlines ["  void visit" ++ b ++ "(" ++ b ++  " x);" | b <- basics],
   "};",
@@ -80,17 +80,17 @@ mkHFile inPackage cf = unlines [
    hdef = nsDefine inPackage "SKELETON_HEADER"
    classes = allClasses cf
    basics = tokentypes cf ++ map fst basetypes
-    
+
 
 -- **** Implementation (.C) File Functions ****
 
 --Makes the .C File
 mkCFile :: Maybe String -> CAbs -> String
-mkCFile inPackage cf = unlines [ 
+mkCFile inPackage cf = unlines [
   headerC,
   nsStart inPackage,
   unlines [
-    "void Skeleton::visit" ++ t ++ "(" ++ 
+    "void Skeleton::visit" ++ t ++ "(" ++
        t ++ "* t) {} //abstract class" | t <- absclasses cf],
   unlines [prCon   r  | (_,rs)  <- signatures cf, r <- rs],
   unlines [prList  cb | cb <- listtypes cf],
@@ -141,8 +141,7 @@ prCon fcs@(f,cs) = unlines [
  ]
  where
    v = map toLower f
-   visitArg (cat,isPt,var) = 
-     if isPt 
+   visitArg (cat,isPt,var) =
+     if isPt
        then (v ++ "->" ++ var ++ "->accept(this);")
        else ("visit" ++ cat ++ "(" ++ v ++ "->" ++ var ++ ");")
-

@@ -1,6 +1,6 @@
 {-
     BNF Converter: C# Visit Skeleton Generator
-    
+
     Copyright (C) 2006  Author:  Johan Broberg
 
     This program is free software; you can redistribute it and/or modify
@@ -18,7 +18,7 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 -}
 
-{- 
+{-
    **************************************************************
     BNF Converter Module
 
@@ -32,8 +32,8 @@
     Created       : 30 November, 2006
 
     Modified      : 21 January, 2007 by Johan Broberg
-   
-   ************************************************************** 
+
+   **************************************************************
 -}
 
 module CAbstoCSharpVisitSkeleton (cabs2csharpvisitskeleton) where
@@ -41,7 +41,7 @@ module CAbstoCSharpVisitSkeleton (cabs2csharpvisitskeleton) where
 import CF
 import Utils ((+++), (++++))
 import NamedVariables
-import List
+import Data.List
 import OOAbstract hiding (basetypes)
 import CSharpUtils
 import CAbstoCSharpAbs
@@ -100,7 +100,7 @@ prVisit namespace (f,cs) = unlinesInline [
   ]
 
 prVisitArg :: Namespace -> String -> (Cat, Bool, VariableName, PropertyName) -> String
-prVisitArg namespace vname (cat, isPt, var, prop) 
+prVisitArg namespace vname (cat, isPt, var, prop)
   | cat `elem` (map fst basetypes)            = "      // " ++ vname ++ "." ++ prop
   -- var /= "list_" is a dummy fix to make sure that a category named "List" doesn't get interpreted as a List.
   -- this isn't very good though, and should be fixed somehow.

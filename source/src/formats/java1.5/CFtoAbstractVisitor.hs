@@ -24,11 +24,11 @@ import CF
 import CFtoJavaAbs15 (typename)
 import Utils ((+++), (++++))
 import NamedVariables
-import List
-import Char(toLower, toUpper, isDigit)
+import Data.List
+import Data.Char(toLower, toUpper, isDigit)
 
 cf2AbstractVisitor :: String -> String -> CF -> String
-cf2AbstractVisitor packageBase packageAbsyn cf = 
+cf2AbstractVisitor packageBase packageAbsyn cf =
   unlines [
       "package" +++ packageBase ++ ";",
       "import" +++ packageAbsyn ++ ".*;",
@@ -42,7 +42,7 @@ cf2AbstractVisitor packageBase packageAbsyn cf =
 
 --Traverses a category based on its type.
 prData :: String -> [UserDef] -> (Cat, [Rule]) -> String
-prData packageAbsyn user (cat, rules) = 
+prData packageAbsyn user (cat, rules) =
     unlines $ ["/* " ++ identCat cat ++ " */"]
               ++ map (prRule packageAbsyn user cat) rules
               ++ ["    public R visitDefault(" ++ q ++ " p, A arg) {",
@@ -52,9 +52,8 @@ prData packageAbsyn user (cat, rules) =
 
 --traverses a standard rule.
 prRule :: String -> [UserDef] -> Cat -> Rule -> String
-prRule packageAbsyn user cat (fun, (_, cats)) 
+prRule packageAbsyn user cat (fun, (_, cats))
     | not (isCoercion fun || isDefinedRule fun) =
    "    public R visit(" ++ cls ++ " p, A arg) { return visitDefault(p, arg); }"
    where cls = packageAbsyn ++ "." ++ fun
 prRule  _ _ _ _ = ""
-

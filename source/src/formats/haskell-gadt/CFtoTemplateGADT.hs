@@ -24,7 +24,7 @@ module CFtoTemplateGADT (
 
 import CF
 import Utils((+++))
-import List (delete,groupBy)
+import Data.List (delete,groupBy)
 
 import HaskellGADTCommon
 

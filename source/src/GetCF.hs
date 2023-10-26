@@ -20,17 +20,17 @@
 
 module GetCF where
 
-import Directory	( doesFileExist, renameFile )
-import Monad		( when )
+import System.Directory	( doesFileExist, renameFile )
+import Control.Monad		( when )
 
 import CF
 import Utils
 import ParBNF
-import List(nub,partition)
+import Data.List(nub,partition)
 import qualified AbsBNF as Abs
 -- import LexBNF
 import ErrM
-import Char
+import Data.Char
 import TypeChecker
 
 readCF :: FilePath -> IO CF
@@ -59,7 +59,7 @@ tryReadCFP file = do
 
     let c3s = [(b,e) | (b,e) <- fst (comments cf), length b > 2 || length e > 2]
     if null c3s then return () else do
-      putStrLn 
+      putStrLn
         "Warning: comment delimiters longer than 2 characters ignored in Haskell:"
       mapM_ putStrLn [b +++ "-" +++ e | (b,e) <- c3s]
     case filter (not . isDefinedRule) $ notUniqueFuns cf of
@@ -72,8 +72,8 @@ tryReadCFP file = do
         putStrLn $ "  Labels has the same name as the Category. This will almost"
         putStrLn $ "  certainly cause problems in languages other than Haskell.\n"
         return (ret,True)
-     xs -> do  
-       putStrLn $ "Warning :" 
+     xs -> do
+       putStrLn $ "Warning :"
        putStrLn $ "  Non-unique label name(s) : " ++ unwords xs
        putStrLn $ "  There may be problems with the pretty-printer.\n"
        case (badInheritence cf) of
@@ -134,14 +134,14 @@ conv (Ok (Abs.Grammar defs)) = map Left $ concatMap transDef defs
 
 transDef :: Abs.Def -> [Either Pragma RuleP]
 transDef x = case x of
- Abs.Rule label cat items -> 
+ Abs.Rule label cat items ->
    [Right (transLabel label,(transCat cat,map transItem items))]
  Abs.Comment str               -> [Left $ CommentS str]
  Abs.Comments str0 str         -> [Left $ CommentM (str0,str)]
  Abs.Token ident reg           -> [Left $ TokenReg (transIdent ident) False reg]
  Abs.PosToken ident reg        -> [Left $ TokenReg (transIdent ident) True reg]
  Abs.Entryp idents             -> [Left $ EntryPoints (map transIdent idents)]
- Abs.Internal label cat items  -> 
+ Abs.Internal label cat items  ->
    [Right (transLabel label,(transCat cat,(Left "#":(map transItem items))))]
  Abs.Separator size ident str -> map  (Right . cf2cfpRule) $ separatorRules size ident str
  Abs.Terminator size ident str -> map  (Right . cf2cfpRule) $ terminatorRules size ident str
@@ -157,7 +157,7 @@ separatorRules size c s = if null s then terminatorRules size c s else ifEmpty [
   ("(:[])", (cs,[Left c'])),
   ("(:)",   (cs,[Left c', Right s, Left cs]))
   ]
- where 
+ where
    c' = transCat c
    cs = "[" ++ c' ++ "]"
    ifEmpty rs = if (size == Abs.MNonempty) then rs else (("[]", (cs,[])) : rs)
@@ -167,22 +167,22 @@ terminatorRules size c s = [
   ifEmpty,
   ("(:)",   (cs,Left c' : s' [Left cs]))
   ]
- where 
+ where
    c' = transCat c
    cs = "[" ++ c' ++ "]"
    s' its = if null s then its else (Right s : its)
-   ifEmpty = if (size == Abs.MNonempty) 
+   ifEmpty = if (size == Abs.MNonempty)
                 then ("(:[])",(cs,[Left c'] ++ if null s then [] else [Right s]))
                 else ("[]",   (cs,[]))
 
 coercionRules :: Abs.Ident -> Integer -> [Rule]
-coercionRules (Abs.Ident c) n = 
+coercionRules (Abs.Ident c) n =
    ("_", (c,               [Left (c ++ "1")])) :
   [("_", (c ++ show (i-1), [Left (c ++ show i)])) | i <- [2..n]] ++
   [("_", (c ++ show n,     [Right "(", Left c, Right ")"]))]
 
 ebnfRules :: Abs.Ident -> [Abs.RHS] -> [Rule]
-ebnfRules (Abs.Ident c) rhss = 
+ebnfRules (Abs.Ident c) rhss =
   [(mkFun k c its, (c, map transItem its)) | (k, Abs.RHS its) <- zip [1 :: Int ..] rhss]
  where
    mkFun k c i = case i of
@@ -190,7 +190,7 @@ ebnfRules (Abs.Ident c) rhss =
      [Abs.NTerminal n] -> c' ++ identCat (transCat n)
      _ -> c' ++ "_" ++ show k
    c' = c --- normCat c
-   mkName k s = if all (\c -> isAlphaNum c || elem c "_'") s 
+   mkName k s = if all (\c -> isAlphaNum c || elem c "_'") s
                    then s else show k
 
 transItem :: Abs.Item -> Either Cat String
@@ -216,7 +216,7 @@ transLabel y = case y of
      Abs.ListE     -> "[]"
      Abs.ListCons  -> "(:)"
      Abs.ListOne   -> "(:[])"
-   transProf (Abs.ProfIt bss as) = 
+   transProf (Abs.ProfIt bss as) =
      ([map fromInteger bs | Abs.Ints bs <- bss], map fromInteger as)
 
 transIdent :: Abs.Ident -> String
@@ -239,4 +239,3 @@ transExp e = case e of
   where
     cons e1 e2 = App "(:)" [transExp e1, e2]
     nil	       = App "[]" []
-

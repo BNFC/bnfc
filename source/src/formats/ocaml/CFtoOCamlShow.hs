@@ -26,8 +26,8 @@ module CFtoOCamlShow (cf2show) where
 import CF
 import Utils
 import CFtoTemplate
-import List (intersperse)
-import Char(toLower,isDigit)
+import Data.List (intersperse)
+import Data.Char(toLower,isDigit)
 import OCamlUtil
 
 cf2show :: String -> String -> CF -> String
@@ -78,7 +78,7 @@ prologue name absMod = unlines [
   "        f xs;",
   "        Buffer.add_char buf ']'",
   ""
-  ] 
+  ]
 
 integerRule cf = "let showInt (i:int) : showable = s2s (string_of_int i)"
 
@@ -88,7 +88,7 @@ doubleRule cf = "let showFloat (f:float) : showable = s2s (string_of_float f)"
 identRule cf = ownPrintRule cf "Ident"
 
 ownPrintRule cf own = unlines $ [
-  "let rec" +++ showsFun own +++ "(" ++ own ++ posn ++ ") : showable = s2s \"" 
+  "let rec" +++ showsFun own +++ "(" ++ own ++ posn ++ ") : showable = s2s \""
   ++ own ++ " \" >> showString i"
   ]
  where
@@ -97,10 +97,10 @@ ownPrintRule cf own = unlines $ [
 -- copy and paste from CFtoTemplate
 
 rules :: CF -> String
-rules cf = unlines $ mutualDefs $ 
+rules cf = unlines $ mutualDefs $
   map (\(s,xs) -> case_fun s (map toArgs xs)) $ cf2data cf -- ++ ifList cf s
- where 
-   toArgs (cons,args) = ((cons, names (map (checkRes . var) args) (0 :: Int)), 
+ where
+   toArgs (cons,args) = ((cons, names (map (checkRes . var) args) (0 :: Int)),
                          ruleOf cons)
    names [] _ = []
    names (x:xs) n
@@ -122,20 +122,20 @@ rules cf = unlines $ mutualDefs $
 case_fun cat xs = unlines [
 --  "instance Print" +++ cat +++ "where",
   showsFun cat +++ "(e:" ++ fixType cat ++ ") : showable = match e with",
-  unlines $ insertBar $ map (\ ((c,xx),r) -> 
-    "   " ++ c +++ mkTuple xx +++ "->" +++ 
-    "s2s" +++ show c +++ 
+  unlines $ insertBar $ map (\ ((c,xx),r) ->
+    "   " ++ c +++ mkTuple xx +++ "->" +++
+    "s2s" +++ show c +++
     case mkRhs xx (snd r) of {[] -> []; str -> ">> c2s ' ' >> " ++ str}
-    ) 
+    )
     xs
   ]
 
 
-mkRhs args its = 
+mkRhs args its =
   case unwords (intersperse " >> s2s \", \" >> " (mk args its)) of
     [] -> ""
     str -> "c2s '(' >> " ++ str ++ " >> c2s ')'"
- where 
+ where
   mk args (Left "#" : items)      = mk args items
   mk (arg:args) (Left c : items)  = (showsFun c +++ arg)        : mk args items
   mk args       (Right s : items) = mk args items
@@ -144,10 +144,9 @@ mkRhs args its =
 
 showsFun :: Cat -> String
 showsFun c = case c of
-    '[':xs -> case break (== ']') xs of 
+    '[':xs -> case break (== ']') xs of
         (t,"]") -> "showList" +++ showsFun t -- showFun t ++ "List"
         _ -> c -- should not occur (this means an invariant of the type Cat is broken)
     _ -> if precCat c > 0 -- precedence-level cats are not in abstract syntax
             then "show" ++ (fixTypeUpper $ reverse (dropWhile isDigit (reverse c)))
             else "show" ++ (fixTypeUpper c)
-        

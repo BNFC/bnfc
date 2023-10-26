@@ -20,17 +20,17 @@
 
 module MultiView where
 
-import Directory	( doesFileExist, renameFile )
+import System.Directory	( doesFileExist, renameFile )
 
 import qualified CF as CF
 import Utils
 import ParBNF
 import PrintBNF
-import List(nub,partition)
+import Data.List(nub,partition)
 import AbsBNF
 -- import LexBNF
 import ErrM
-import Char
+import Data.Char
 import TypeChecker
 
 preprocessMCF :: FilePath -> IO ([FilePath],String)
@@ -46,8 +46,8 @@ preprocessMCF f = do
   return $ (map fst grs,entryp)
 
 extract :: String -> LGrammar -> [(FilePath, Grammar)]
-extract name (LGr ldefs) = 
-  [(file lang,Grammar [unldef ldef | ldef <- ldefs, isFor lang ldef]) | 
+extract name (LGr ldefs) =
+  [(file lang,Grammar [unldef ldef | ldef <- ldefs, isFor lang ldef]) |
       lang <- views]
  where
    views = [lang | LDefView langs <- ldefs, Ident lang <- langs]
@@ -63,7 +63,7 @@ extract name (LGr ldefs) =
 --- the entrypoint is the same for all languages - could be different
 
 entrypoint :: LGrammar -> String
-entrypoint (LGr rs0) = head $ 
+entrypoint (LGr rs0) = head $
   [c | Entryp (Ident c:_) <- rs] ++
   [c | Rule _ (IdCat (Ident c)) _ <- rs]
  where
@@ -74,11 +74,11 @@ entrypoint (LGr rs0) = head $
      _ -> [] --- LDefView
 
 writeCF :: (FilePath, Grammar) -> IO ()
-writeCF (file,gr) = do 
+writeCF (file,gr) = do
   writeFile file $ printTree gr
   putStrLn $ "wrote file " ++ file
 
----- These are Haskell specific; 
+---- These are Haskell specific;
 ---- should be generalized by inspecting the options xx
 
 mkTestMulti :: String -> [String] -> FilePath -> [FilePath] -> IO ()
@@ -96,7 +96,7 @@ mkMakefileMulti xx file files = do
   writeFile "Makefile" content
 
 makefile xx abs cncs = unlines $
-  "all:" : 
+  "all:" :
   ["\tmake -f Makefile_" ++ cnc | cnc <- cncs] ++
   ["\tghc --make -o TestTrans" ++ abs ++ " TestTrans" ++ abs,
    ""
@@ -109,7 +109,7 @@ testfile cat xx abs cncs = unlines $
   ["import qualified Print" ++ cnc | cnc <- cncs] ++
   ["import Abs" ++ abs,
    "import ErrM",
-   "import System (getArgs)",
+   "import System.Environment (getArgs)",
    "",
    "main :: IO ()",
    "main = do",

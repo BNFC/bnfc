@@ -17,7 +17,7 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 -}
 
-{- 
+{-
    **************************************************************
     BNF Converter Module
 
@@ -26,7 +26,7 @@
                     naming. It returns a list of file names, and the
                     contents to be written into that file. (In Java
                     public classes must go in their own file.)
-                    
+
                     The generated classes also support the Visitor
                     Design Pattern.
 
@@ -34,12 +34,12 @@
 
     License       : GPL (GNU General Public License)
 
-    Created       : 24 April, 2003                           
+    Created       : 24 April, 2003
 
-    Modified      : 2 September, 2003                          
+    Modified      : 2 September, 2003
 
-   
-   ************************************************************** 
+
+   **************************************************************
 -}
 
 module CFtoJavaAbs (cf2JavaAbs) where
@@ -47,8 +47,8 @@ module CFtoJavaAbs (cf2JavaAbs) where
 import CF
 import Utils((+++),(++++))
 import NamedVariables hiding (IVar, getVars, varName)
-import List
-import Char(toLower)
+import Data.List
+import Data.Char(toLower)
 
 --Produces abstract data types in Java.
 --These follow Appel's "non-object oriented" version.
@@ -82,7 +82,7 @@ prData header name user (cat, rules) =
    where res = prRule h n u c f
 
 --Generates classes for a rule, depending on what type of rule it is.
-prRule h name user c (fun, cats) = 
+prRule h name user c (fun, cats) =
     if isNilFun fun || isOneFun fun
     then ("","")  --these are not represented in the AbSyn
     else if isConsFun fun
@@ -95,7 +95,7 @@ prRule h name user c (fun, cats) =
      (prInstVars vs),
      prConstructor fun' user vs cats,
      prListFuncs fun',
-     prAccept name fun', 
+     prAccept name fun',
      "}"
     ])
     else (fun, --a standard rule
@@ -109,7 +109,7 @@ prRule h name user c (fun, cats) =
      prAccept name fun,
      "}\n"
     ])
-   where 
+   where
      vs = getVars cats user
      fun' = identCat (normCat c)
      --This handles the case where a LBNF label is the same as the category.
@@ -150,13 +150,13 @@ prListFuncs c = unlines
 
 --The standard accept function for the Visitor pattern
 prAccept :: String -> String -> String
-prAccept pack ty = 
+prAccept pack ty =
   "\n  public void accept(" ++ pack ++ ".Visitor v) { v.visit" ++ ty ++ "(this); }"
 
 --A class's instance variables.
 prInstVars :: [IVar] -> String
 prInstVars [] = []
-prInstVars vars@((t,n,nm):vs) = 
+prInstVars vars@((t,n,nm):vs) =
   "  public" +++ t +++ uniques ++ ";" ++++
   (prInstVars vs')
  where
@@ -166,19 +166,19 @@ prInstVars vars@((t,n,nm):vs) =
    prUniques t vs = (prVars (findIndices (\x -> case x of (y,_,_) ->  y == t) vs) vs, remType t vs)
    prVars (x:[]) vs =  case vs !! x of
    			(t,n,nm) -> ((varName t nm) ++ (showNum n))
-   prVars (x:xs) vs = case vs !! x of 
+   prVars (x:xs) vs = case vs !! x of
    			(t,n,nm) -> ((varName t nm) ++ (showNum n)) ++ "," +++
 				 (prVars xs vs)
    remType :: String -> [IVar] -> [IVar]
    remType _ [] = []
-   remType t ((t2,n,nm):ts) = if t == t2 
-   				then (remType t ts) 
+   remType t ((t2,n,nm):ts) = if t == t2
+   				then (remType t ts)
 				else (t2,n,nm) : (remType t ts)
 
 --The constructor just assigns the parameters to the corresponding instance variables.
 prConstructor :: String -> [UserDef] -> [IVar] -> [Cat] -> String
-prConstructor c u vs cats = 
-  "  public" +++ c ++"(" ++ (interleave types params) ++ ")" +++ "{" +++ 
+prConstructor c u vs cats =
+  "  public" +++ c ++"(" ++ (interleave types params) ++ ")" +++ "{" +++
    prAssigns vs params ++ "}"
   where
    (types, params) = unzip (prParams cats u (length cats) ((length cats)+1))
@@ -186,14 +186,14 @@ prConstructor c u vs cats =
    interleave (x:[]) (y:[]) = x +++ y
    interleave (x:xs) (y:ys) = x +++ y ++ "," +++ (interleave xs ys)
 
---Prints the parameters to the constructors.   
+--Prints the parameters to the constructors.
 prParams :: [Cat] -> [UserDef] -> Int -> Int -> [(String,String)]
 prParams [] _ _ _ = []
 prParams (c:cs) u n m = (identCat c',"p" ++ (show (m-n)))
 			: (prParams cs u (n-1) m)
      where
       c' = typename c u
-      
+
 --This algorithm peeks ahead in the list so we don't use map or fold
 prAssigns :: [IVar] -> [String] -> String
 prAssigns [] _ = []
@@ -215,7 +215,7 @@ getVars cs user = foldl (addVar user) [] (map identCat cs)
    where
     c' = typename c user
     nm = if c == c' then "" else c
-  addVar' (i@(t,x,nm):is) u n c = 
+  addVar' (i@(t,x,nm):is) u n c =
     if c == t || c == nm
       then if x == 0
         then (t, 1, nm) : (addVar' is u 2 c)
@@ -228,11 +228,11 @@ varName c s = (map toLower c') ++ "_"
   c' = if s == "" then c else s
 
 --This makes up for the fact that there's no typedef in Java
-typename t user = 
- if t == "Ident" 
-  then "String" 
-  else if t == "Char" 
-  then "Character" 
+typename t user =
+ if t == "Ident"
+  then "String"
+  else if t == "Char"
+  then "Character"
   else if elem t user
   then "String"
   else t

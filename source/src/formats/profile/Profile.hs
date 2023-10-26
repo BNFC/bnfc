@@ -3,8 +3,8 @@ module Profile (postParse) where
 import Trees
 import ErrM
 
-import Monad
-import List (nub)
+import Control.Monad
+import Data.List (nub)
 
 
 -- restoring parse trees for discontinuous constituents, bindings, etc. AR 25/1/2001
@@ -19,8 +19,8 @@ postParse tree = do
 data ITerm = ITerm (Atom, BindVs) [ITerm] | IMeta   deriving (Eq,Show)
 type BindVs = [[Ident]]
 
--- the job is done in two passes: 
--- (1) tree2term: restore constituent order from Profile 
+-- the job is done in two passes:
+-- (1) tree2term: restore constituent order from Profile
 -- (2) term2trm:  restore Bindings from Binds
 
 tree2term :: CFTree -> Err ITerm
@@ -38,15 +38,15 @@ tree2term (CFTree (cff@(CFFun (fun,pro)), trees)) = case fun of
      []  -> return IMeta     -- suppression
      _   -> do               -- reduplication
        trees' <- mapM (trees !?) arg
-       xs1    <- mapM tree2term trees' 
+       xs1    <- mapM tree2term trees'
        xs2    <- checkArity xs1
        unif xs2
 
-   checkArity xs = if length (nub [length xx | ITerm _ xx <- xs']) > 1 
-                   then Bad "arity error" 
+   checkArity xs = if length (nub [length xx | ITerm _ xx <- xs']) > 1
+                   then Bad "arity error"
                    else return xs'
            where xs' = [t | t@(ITerm _ _) <- xs]
-   unif xs = case [t | t@(ITerm _ _) <- xs] of 
+   unif xs = case [t | t@(ITerm _ _) <- xs] of
     [] -> return $ IMeta
     (ITerm fp@(f,_) xx : ts) -> do
       let hs = [h | ITerm (h,_) _ <- ts, h /= f]
@@ -69,7 +69,7 @@ tree2term (CFTree (cff@(CFFun (fun,pro)), trees)) = case fun of
          testErr (all (==y) ys) ("fail to unify bindings of " ++ prt y)
          return y
 
-term2trm :: ITerm -> Exp 
+term2trm :: ITerm -> Exp
 term2trm IMeta = EAtom AM
 term2trm (ITerm (fun, binds) terms) =
   let bterms = zip binds terms
@@ -87,4 +87,3 @@ xs !? i = foldr (const . return) (Bad "too few elements in list") $ drop i xs
 
 testErr :: Bool -> String -> Err ()
 testErr cond msg = if cond then return () else Bad msg
-

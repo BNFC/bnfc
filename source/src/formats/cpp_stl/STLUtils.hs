@@ -19,7 +19,7 @@
 
 module STLUtils where
 
-import Char
+import Data.Char
 
 nsDefine :: Maybe String -> String -> String
 nsDefine inPackage h = maybe h (\ns -> map toUpper ns ++ "_" ++ h) inPackage

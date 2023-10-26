@@ -17,23 +17,23 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 -}
 
-{- 
+{-
    **************************************************************
     BNF Converter Module
 
     Description   : This module generates the Flex file. It is
                     similar to JLex but with a few peculiarities.
-                    
+
     Author        : Michael Pellauer (pellauer@cs.chalmers.se)
 
     License       : GPL (GNU General Public License)
 
-    Created       : 5 August, 2003                           
+    Created       : 5 August, 2003
 
-    Modified      : 10 August, 2003                          
+    Modified      : 10 August, 2003
 
-   
-   ************************************************************** 
+
+   **************************************************************
 -}
 module CFtoFlexC (cf2flex) where
 
@@ -41,7 +41,7 @@ import CF
 import RegToFlex
 -- import Utils((+++), (++++))
 import NamedVariables
-import List
+import Data.List
 
 --The environment must be returned for the parser to use.
 cf2flex :: String -> CF -> (String, SymEnv)
@@ -103,7 +103,7 @@ cMacros = unlines
 lexSymbols :: SymEnv -> String
 lexSymbols ss = concatMap transSym ss
   where
-    transSym (s,r) = 
+    transSym (s,r) =
       "<YYINITIAL>\"" ++ s' ++ "\"      \t return " ++ r ++ ";\n"
         where
          s' = escapeChars s
@@ -126,7 +126,7 @@ restOfFlex cf env = concat
   where
    ifC cat s = if isUsedCat cf cat then s else ""
    userDefTokens = unlines $
-     ["<YYINITIAL>" ++ printRegFlex exp ++ 
+     ["<YYINITIAL>" ++ printRegFlex exp ++
       "     \t yylval.string_ = strdup(yytext); return " ++ sName name ++ ";"
        | (name, exp) <- tokenPragmas cf]
       where
@@ -158,12 +158,12 @@ restOfFlex cf env = concat
    footer = "void initialize_lexer(FILE *inp) { yyin = inp; BEGIN YYINITIAL; }"
 
 lexComments :: ([(String, String)], [String]) -> String
-lexComments (m,s) = 
-  (unlines (map lexSingleComment s)) 
+lexComments (m,s) =
+  (unlines (map lexSingleComment s))
   ++ (unlines (map lexMultiComment m))
 
 lexSingleComment :: String -> String
-lexSingleComment c = 
+lexSingleComment c =
   "<YYINITIAL>\"" ++ c ++ "\"[^\\n]*\\n      \t /* BNFC single-line comment */;"
 
 --There might be a possible bug here if a language includes 2 multi-line comments.
@@ -176,7 +176,7 @@ lexMultiComment (b,e) = unlines [
   "<COMMENT>.      \t /* BNFC multi-line comment */;",
   "<COMMENT>[\\n]      \t /* BNFC multi-line comment */;"
   ]
-  
+
 lexReserved :: String -> String
 lexReserved s = "<YYINITIAL>\"" ++ s ++ "\" \t yylval.string_ = strdup(yytext); return TS;"
 

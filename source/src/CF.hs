@@ -90,7 +90,7 @@ module CF (
 
             CFP,            -- CF with profiles
             RuleP,
-	    FunP, 
+	    FunP,
             Prof,
             cf2cfpRule,
             cf2cfp,
@@ -101,11 +101,11 @@ module CF (
            ) where
 
 import Utils (prParenth,(+++))
-import List (nub, intersperse, partition, sort,sort,group)
-import Char
+import Data.List (nub, intersperse, partition, sort,sort,group)
+import Data.Char
 import AbsBNF (Reg())
 
--- A context free grammar consists of a set of rules and some extended 
+-- A context free grammar consists of a set of rules and some extended
 -- information (e.g. pragmas, literals, symbols, keywords)
 type CF = (Exts,[Rule])
 
@@ -162,7 +162,7 @@ instance Show Exp where
 	    listView e	= Left e
 
 -- pragmas for single line comments and for multiple-line comments.
-data Pragma = CommentS  String        
+data Pragma = CommentS  String
             | CommentM (String,String)
             | TokenReg String Bool Reg
             | EntryPoints [Cat]
@@ -197,7 +197,7 @@ type KeyWord = String
 
 -- Cat is the Non-terminals of the grammar.
 type Cat     = String
--- Fun is the function name of a rule. 
+-- Fun is the function name of a rule.
 type Fun     = String
 
 internalCat :: Cat
@@ -214,7 +214,7 @@ firstCat :: CF -> Cat
 firstCat = valCat . head . rulesOfCF
 
 firstEntry :: CF -> Cat
-firstEntry cf = case allEntryPoints cf of 
+firstEntry cf = case allEntryPoints cf of
 		 (x:_) -> x
 		 _     -> firstCat cf
 
@@ -250,11 +250,11 @@ commentPragmas = filter isComment
 
 -- returns all normal rules that constructs the given Cat.
 rulesForCat :: CF -> Cat -> [Rule]
-rulesForCat cf cat = [normRuleFun r | r <- rulesOfCF cf, isParsable r, valCat r == cat] 
+rulesForCat cf cat = [normRuleFun r | r <- rulesOfCF cf, isParsable r, valCat r == cat]
 
 --This version doesn't exclude internal rules.
 rulesForCat' :: CF -> Cat -> [Rule]
-rulesForCat' cf cat = [normRuleFun r | r <- rulesOfCF cf, valCat r == cat] 
+rulesForCat' cf cat = [normRuleFun r | r <- rulesOfCF cf, valCat r == cat]
 
 valCat :: Rul f -> Cat
 valCat = fst . snd
@@ -287,7 +287,7 @@ ruleGroupsInternals cf = [(c, rulesForCat' cf c) | c <- allCats cf]
 
 literals :: CFG f -> [Cat]
 literals cf = lits ++ owns
- where 
+ where
    (lits,_,_,_) = infoOfCF cf
    owns = map fst $ tokenPragmas cf
 
@@ -300,7 +300,7 @@ reservedWords cf = sort keywords
  where (_,_,keywords,_) = infoOfCF cf
 
 reversibleCats :: CFG f -> [Cat]
-reversibleCats cf = cats 
+reversibleCats cf = cats
   where (_,_,_,cats) = infoOfCF cf
 
 -- Comments can be defined by the 'comment' pragma
@@ -331,35 +331,35 @@ specialCatsP = words "Ident Integer String Char Double"
 
 -- to print parse trees
 prTree :: Tree -> String
-prTree (Tree (fun,[])) = fun 
+prTree (Tree (fun,[])) = fun
 prTree (Tree (fun,trees)) = fun +++ unwords (map pr2 trees) where
   pr2 t@(Tree (_,ts)) = (if (null ts) then id else prParenth) (prTree t)
 
 -- abstract syntax trees: data type definitions
 
 cf2data :: CF -> [Data]
-cf2data cf = 
-  [(cat, nub (map mkData [r | r@(f,_) <- rulesOfCF cf, 
+cf2data cf =
+  [(cat, nub (map mkData [r | r@(f,_) <- rulesOfCF cf,
 			      not (isDefinedRule f),
-                              not (isCoercion f), eqCat cat (valCat r)])) 
-      | cat <- allNormalCats cf] 
+                              not (isCoercion f), eqCat cat (valCat r)]))
+      | cat <- allNormalCats cf]
  where
   mkData (f,(_,its)) = (normFun f,[normCat c | Left c <- its, c /= internalCat])
 
 --This version includes lists in the returned data.
 --Michael 4/03
 cf2dataLists :: CF -> [Data]
-cf2dataLists cf = 
-  [(cat, nub (map mkData [r | r@(f,_) <- rulesOfCF cf, 
+cf2dataLists cf =
+  [(cat, nub (map mkData [r | r@(f,_) <- rulesOfCF cf,
 			      not (isDefinedRule f),
-                              not (isCoercion f), eqCat cat (valCat r)])) 
-      | cat <- (filter (\x -> not $ isDigit $ last x) (allCats cf))] 
+                              not (isCoercion f), eqCat cat (valCat r)]))
+      | cat <- (filter (\x -> not $ isDigit $ last x) (allCats cf))]
  where
   mkData (f,(_,its)) = (normFun f,[normCat c | Left c <- its, c /= internalCat])
 
 specialData :: CF -> [Data]
 specialData cf = [(c,[(c,[arg c])]) | c <- specialCats cf] where
-  arg c = case c of 
+  arg c = case c of
     _ -> "String"
 
 allNormalCats :: CF -> [Cat]
@@ -415,7 +415,7 @@ isParsable (_,(_, Left "#":_)) = False
 isParsable _ = True
 
 isList :: Cat -> Bool
-isList c = head c == '[' 
+isList c = head c == '['
 
 unList :: Cat -> Cat
 unList c = c
@@ -427,9 +427,9 @@ catOfList c = case c of
 
 isNilFun, isOneFun, isConsFun, isNilCons :: Fun -> Bool
 isNilCons f = isNilFun f || isOneFun f || isConsFun f
-isNilFun f  = f == "[]"    
-isOneFun f  = f == "(:[])" 
-isConsFun f = f == "(:)"   
+isNilFun f  = f == "[]"
+isOneFun f  = f == "(:[])"
+isConsFun f = f == "(:)"
 
 isEmptyListCat :: CF -> Cat -> Bool
 isEmptyListCat cf c = elem "[]" $ map fst $ rulesForCat' cf c
@@ -440,19 +440,19 @@ isNonterm = either (const True) (const False)
 -- applies only if the [] rule has no terminals
 revSepListRule :: Rul f -> Rul f
 revSepListRule r@(f,(c, ts)) = (f, (c, xs : x : sep)) where
-  (x,sep,xs) = (head ts, init (tail ts), last ts) 
+  (x,sep,xs) = (head ts, init (tail ts), last ts)
 -- invariant: test in findAllReversibleCats have been performed
 
 findAllReversibleCats :: CF -> [Cat]
 findAllReversibleCats cf = [c | (c,r) <- ruleGroups cf, isRev c r] where
   isRev c rs = case rs of
-     [r1,r2] | isList c -> if isConsFun (funRule r2) 
+     [r1,r2] | isList c -> if isConsFun (funRule r2)
                              then tryRev r2 r1
-                           else if isConsFun (funRule r1) 
+                           else if isConsFun (funRule r1)
                              then tryRev r1 r2
                            else False
      _ -> False
-  tryRev (f,(_,ts@(x:_:xs))) r = isEmptyNilRule r && 
+  tryRev (f,(_,ts@(x:_:xs))) r = isEmptyNilRule r &&
                                  isConsFun f && isNonterm x && isNonterm (last ts)
   tryRev _ _ = False
 
@@ -481,7 +481,7 @@ analyseCat c = if (isList c) then list c else noList c
 	        ([],c') -> (reverse c', 0)
 	        (d,c') ->  (reverse c', read (reverse d))
 
--- we should actually check that 
+-- we should actually check that
 -- (1) coercions are always between variants
 -- (2) no other digits are used
 
@@ -506,15 +506,15 @@ checkRule cf r@((f,_),(cat,rhs))
    badNil      = isNilFun f   && not (isList c && null cs)
    badOne      = isOneFun f   && not (isList c && cs == [catOfList c])
    badCons     = isConsFun f  && not (isList c && cs == [catOfList c, c])
-   badList     = isList c     && 
+   badList     = isList c     &&
                  not (isCoercion f || isNilFun f || isOneFun f || isConsFun f)
    badSpecial  = elem c specialCatsP && not (isCoercion f)
 
    badMissing  = not (null missing)
-   missing     = filter nodef [c | Left c <- rhs] 
+   missing     = filter nodef [c | Left c <- rhs]
    nodef t = notElem t defineds
-   defineds = 
-    "#" : map fst (tokenPragmas cf) ++ specialCatsP ++ map valCat (rulesOfCF cf) 
+   defineds =
+    "#" : map fst (tokenPragmas cf) ++ specialCatsP ++ map valCat (rulesOfCF cf)
    badTypeName = not (null badtypes)
    badtypes = filter isBadType $ cat : [c | Left c <- rhs]
    isBadType c = not (isUpper (head c) || isList c || c == "#")
@@ -555,7 +555,7 @@ ruleGroupsP :: CFP -> [(Cat,[RuleP])]
 ruleGroupsP cf = [(c, rulesForCatP cf c) | c <- allCatsP cf]
 
 rulesForCatP :: CFP -> Cat -> [RuleP]
-rulesForCatP cf cat = [r | r <- rulesOfCFP cf, isParsable r, valCat r == cat] 
+rulesForCatP cf cat = [r | r <- rulesOfCFP cf, isParsable r, valCat r == cat]
 
 allCatsP :: CFP -> [Cat]
 allCatsP = nub . map valCat . rulesOfCFP -- no cats w/o production

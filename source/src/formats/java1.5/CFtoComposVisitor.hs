@@ -24,11 +24,11 @@ import CF
 import CFtoJavaAbs15 (typename)
 import Utils ((+++), (++++))
 import NamedVariables
-import List
-import Char(toLower, toUpper, isDigit)
+import Data.List
+import Data.Char(toLower, toUpper, isDigit)
 
 cf2ComposVisitor :: String -> String -> CF -> String
-cf2ComposVisitor packageBase packageAbsyn cf = 
+cf2ComposVisitor packageBase packageAbsyn cf =
   concat [
     header,
     concatMap (prData packageAbsyn user) groups,
@@ -50,7 +50,7 @@ cf2ComposVisitor packageBase packageAbsyn cf =
 
 
 prInterface :: String -> (Cat, [Rule]) -> String
-prInterface packageAbsyn (cat, rules) = 
+prInterface packageAbsyn (cat, rules) =
     q ++ ".Visitor<" ++ q ++ ",A>"
   where q = packageAbsyn ++ "." ++ identCat cat
 
@@ -59,14 +59,14 @@ commaList = concat . intersperse ", "
 
 --Traverses a category based on its type.
 prData :: String -> [UserDef] -> (Cat, [Rule]) -> String
-prData packageAbsyn user (cat, rules) = 
+prData packageAbsyn user (cat, rules) =
     unlines [
              "/* " ++ identCat cat ++ " */",
 	     concatMap (prRule packageAbsyn user cat) rules
 	    ]
 --traverses a standard rule.
 prRule :: String -> [UserDef] -> Cat -> Rule -> String
-prRule packageAbsyn user cat (fun, (_, cats)) 
+prRule packageAbsyn user cat (fun, (_, cats))
     | not (isCoercion fun || isDefinedRule fun) = unlines
   [
    "    public " ++ identCat cat ++ " visit(" ++ cls ++ " p, A arg)",
@@ -78,7 +78,7 @@ prRule packageAbsyn user cat (fun, (_, cats))
    where
     cats' = if allTerms cats
         then []
-    	else [ (c,v) | 
+    	else [ (c,v) |
 	       (Left c, Left v) <- zip cats (fixOnes (numVars [] cats)), c /= internalCat ]
     cls = packageAbsyn ++ "." ++ fun
     allTerms [] = True
@@ -89,11 +89,11 @@ prRule packageAbsyn user cat (fun, (_, cats))
 prRule  _ _ _ _ = ""
 
 --Traverses a class's instance variables.
-prCat :: [UserDef] 
+prCat :: [UserDef]
       -> Cat       -- ^ Variable category
       -> String    -- ^ Variable name
       -> [String]  -- ^ Code for visiting the variable
-prCat user cat nt 
+prCat user cat nt
     | isBasicType user varType || (isListType varType && isBasicType user et) = [decl var]
     | isListType varType = listAccept
     | otherwise = [decl (var ++ ".accept(this, arg)")]
@@ -104,7 +104,7 @@ prCat user cat nt
       et = typename (normCatOfList cat) user
       decl v = varType +++ nt +++ "=" +++ v ++ ";"
       listAccept = [decl ("new"+++varType++"()"),
-                    "for (" ++ et ++ " x : " ++ var ++ ") {", 
+                    "for (" ++ et ++ " x : " ++ var ++ ") {",
                     "  " ++ nt ++ ".add(x.accept(this,arg));",
 	            "}"]
 
@@ -114,4 +114,3 @@ isListType nt = "List" `isPrefixOf` nt
 --Just checks if something is a basic or user-defined type.
 isBasicType :: [UserDef] -> String -> Bool
 isBasicType user v = v `elem` (user ++ ["Integer","Character","String","Double"])
-

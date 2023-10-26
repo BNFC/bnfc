@@ -22,7 +22,7 @@
 -- Module      :  JavaTop
 -- Copyright   :  (C)opyright 2003, {markus, aarne, pellauer, peteg} at cs dot chalmers dot se
 -- License     :  GPL (see COPYING for details)
--- 
+--
 -- Maintainer  :  {markus, aarne} at cs dot chalmers dot se
 -- Stability   :  alpha
 -- Portability :  Haskell98
@@ -32,13 +32,14 @@
 -- > $Id: JavaTop.hs,v 1.10 2005/09/21 13:06:10 bringert Exp $
 -------------------------------------------------------------------
 
-module JavaTop ( makeJava ) where 
+module JavaTop ( makeJava ) where
 
 -------------------------------------------------------------------
 -- Dependencies.
 -------------------------------------------------------------------
-import Directory	( createDirectory )
-import IO		( try, isAlreadyExistsError )
+import System.Directory	( createDirectory )
+import System.IO.Error	( isAlreadyExistsError )
+import Control.Exception  ( try )
 
 import Utils
 import CF
@@ -49,10 +50,10 @@ import CFtoJavaPrinter
 import CFtoJavaSkeleton
 import CFtoVisitSkel
 import CFtoLatex
-import System
+import System.Exit
 import GetCF		( tryReadCF, writeFileRep )
-import Char
-import List(intersperse)
+import Data.Char
+import Data.List(intersperse)
 
 -------------------------------------------------------------------
 -- | Build the Java output.
@@ -125,7 +126,7 @@ mkFiles make name cf =
 -- Replace with an ANT script?
 makefile :: String -> FilePath -> FilePath -> [String] -> String
 makefile name dirBase dirAbsyn absynFileNames =
-    unlines 
+    unlines
     [
      "JAVAC = javac",
      "JAVAC_FLAGS = -sourcepath .",
@@ -197,7 +198,7 @@ makefile name dirBase dirAbsyn absynFileNames =
      "\t rm -f " ++ unwords (map (dirBase ++) ["Yylex",
 					       name ++ ".cup",
 					       "Yylex.java",
-					       "sym.java", 
+					       "sym.java",
 					       "parser.java",
 					       "Visitor.java",
 					       "Visitable.java",
@@ -236,7 +237,7 @@ prVisitor packageBase packageAbsyn funs user =
     ]
  where
    prUser u = "  public void visit" ++ u' ++ "(String p);\n"
-    where 
+    where
      u' = ((toUpper (head u)) : (map toLower (tail u))) --this is a hack to fix a potential capitalization problem.
    footer = unlines
     [  --later only include used categories
@@ -282,7 +283,7 @@ javaTest packageBase packageAbsyn cf =
      "    /* " ++ (concat (intersperse ", " (showOpts (tail eps)))) ++ " */",
      "    try",
      "    {",
-     "      " ++ packageAbsyn ++ "." ++ def +++ "parse_tree = p.p" 
+     "      " ++ packageAbsyn ++ "." ++ def +++ "parse_tree = p.p"
      ++ def ++ "();",
      "      System.out.println();",
      "      System.out.println(\"Parse Succesful!\");",
@@ -309,5 +310,5 @@ javaTest packageBase packageAbsyn cf =
 	  showOpts [] = []
 
 	  showOpts (x:[]) = if normCat x /= x then [] else ['p' : (identCat x)]
-	  showOpts (x:xs) = if normCat x /= x then (showOpts xs) 
+	  showOpts (x:xs) = if normCat x /= x then (showOpts xs)
 			    else ('p' : (identCat x)) : (showOpts xs)

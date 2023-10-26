@@ -17,7 +17,7 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 -}
 
-{- 
+{-
    **************************************************************
     BNF Converter Module
 
@@ -31,12 +31,12 @@
 
     License       : GPL (GNU General Public License)
 
-    Created       : 29 August, 2006            
+    Created       : 29 August, 2006
 
     Modified      : 29 August, 2006 / Aarne Ranta
-	            
-   
-   ************************************************************** 
+
+
+   **************************************************************
 -}
 
 module OOAbstract where
@@ -44,8 +44,8 @@ module OOAbstract where
 import CF
 import Utils((+++),(++++))
 import NamedVariables
-import List
-import Char(toLower)
+import Data.List
+import Data.Char(toLower)
 
 -- A datastructure more appropriate than CF
 
@@ -56,20 +56,20 @@ data CAbs = CAbs {
   conclasses :: [Fun],               -- constructors, except list ones
   signatures :: [(Cat,[CAbsRule])],  -- rules for each class, incl. pos tokens
   postokens  :: [Cat],               -- position token types
-  defineds   :: [Fun]                -- defined (non-)constructors  
+  defineds   :: [Fun]                -- defined (non-)constructors
   }
 
 -- (valcat,(constr,args)), True = is class (not basic), class variable stored
-type CAbsRule = (Fun,[(Cat,Bool,String)]) 
+type CAbsRule = (Fun,[(Cat,Bool,String)])
 
 -- all those names that denote classes in C++
 allClasses :: CAbs -> [Cat]
-allClasses ca = 
-  absclasses ca ++ conclasses ca ++ map fst (listtypes ca) ++ postokens ca 
+allClasses ca =
+  absclasses ca ++ conclasses ca ++ map fst (listtypes ca) ++ postokens ca
 
 -- all those names that denote non-class types in C++
 allNonClasses :: CAbs -> [Cat]
-allNonClasses ca = 
+allNonClasses ca =
   map fst basetypes ++ tokentypes ca
 
 cf2cabs :: CF -> CAbs
@@ -79,7 +79,7 @@ cf2cabs cf@((pragmas,_),_) = CAbs {
                   c <- map (normCat . identCat) lists],
   absclasses = nub $ map normCat cats,
   conclasses = [f | Just f <- map testRule (rulesOfCF cf)],
-  signatures = posdata ++ map normSig (cf2data cf), 
+  signatures = posdata ++ map normSig (cf2data cf),
   postokens  = pos,
   defineds   = defs
   }
@@ -91,16 +91,16 @@ cf2cabs cf@((pragmas,_),_) = CAbs {
    | isList c  = Nothing
    | f == "_"  = Nothing
    | otherwise = Just f
-  normSig (c,fcs) = 
+  normSig (c,fcs) =
     (identCat c,[(f, classVars (map (status . identCat) cs)) | (f,cs) <- fcs])
-  posdata = 
+  posdata =
     [("Visitable",  -- to give superclass
      [(c,[("String",False,"string_"),("Integer",False,"integer_")])]) | c<-pos]
   status cat = (cat, notElem cat (map fst basetypes ++ toks))
   defs = [f | FunDef f _ _ <- pragmas]
 
   classVars :: [(Cat,Bool)] -> [(Cat,Bool,String)]
-  classVars cs = 
+  classVars cs =
     [(c,b,s) | ((c,b),s) <- zip cs (vars [] (map (classVar . fst) cs))]
   --- creating new names is quadratic, but parameter lists are short
   --- this should conform with Michael's naming
