@@ -31,7 +31,7 @@ Source-repository head
 
 Library
   hs-source-dirs: runtime, src
-  Build-Depends: base>=4.4 && <5, array
+  Build-Depends: base>=4.8 && <5, array
   default-language: Haskell2010
   exposed-modules:
    Algebra.RingUtils
@@ -43,7 +43,7 @@ Library
 
 Executable bnfc
   Build-Depends:
-    base>=4.4 && <5,
+    base>=4.8 && <5,
     mtl,
     directory,
     array,
@@ -178,9 +178,10 @@ Executable bnfc
 -- --- Testing --------------------------------------------------------------
 Test-suite unit-tests
   Type: exitcode-stdio-1.0
-  Build-Depends: base>=4 && <5, mtl, directory, array, process, filepath, pretty,
+  Build-Depends: base>=4.8 && <5, mtl, directory, array, process, filepath, pretty,
                  hspec, QuickCheck >= 2.5, HUnit,
                  temporary, containers, deepseq
+  build-tools:   alex, happy, hspec-discover
   Main-is: unit-tests.hs
   HS-source-dirs: src test/
   default-language: Haskell2010
