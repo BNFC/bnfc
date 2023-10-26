@@ -88,4 +88,4 @@ main = do
         make TargetLatex        opts cf = writeFiles "." $ makeLatex opts cf
         make TargetJava         opts cf = writeFiles "." $ makeJava opts cf
         make TargetOCaml        opts cf = writeFiles "." $ makeOCaml opts cf
-        make TargetProfile      opts cf = fail "" opts cf
+        make TargetProfile      opts cf = undefined
