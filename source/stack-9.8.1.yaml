@@ -1,7 +1,6 @@
 resolver: nightly-2023-10-26
-compiler: ghc-9.6.3
+compiler: ghc-9.8.1
 compiler-check: match-exact
 
 packages:
-- source
-- testing
+- .
