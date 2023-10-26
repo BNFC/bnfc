@@ -1,6 +1,6 @@
+cabal-version: >= 1.10
 Name: BNFC
-Version: 2.5
-cabal-version: >= 1.8
+Version: 2.5.0.1
 build-type: Simple
 category: Development
 Copyright: (c) Krasimir Angelov, Jean-Philippe Bernardy, Bjorn Bringert, Johan Broberg, Paul Callaghan, Markus Forsberg, Ola Frid, Peter Gammie, Patrik Jansson, Kristofer Johannisson, Antti-Juhani Kaijanaho, Ulf Norell, Michael Pellauer and Aarne Ranta 2002 - 2012. Free software under GNU General Public License (GPL).
@@ -22,11 +22,26 @@ Description:
   a Happy, CUP, or Bison parser generator file,
   a pretty-printer as a Haskell/Java/C++/C module,
   a Latex file containing a readable specification of the language.
-Extra-source-files: src/BNF.cf
+Extra-source-files: src/BNF.cf CHANGELOG.md
+
+tested-with:
+  GHC == 9.8.1
+  GHC == 9.6.3
+  GHC == 9.4.7
+  GHC == 9.2.8
+  GHC == 9.0.2
+  GHC == 8.10.7
+  GHC == 8.8.4
+  GHC == 8.6.5
+  GHC == 8.4.4
+  GHC == 8.2.2
+  GHC == 8.0.2
+  GHC == 7.10.3
 
 Library
   hs-source-dirs: runtime, src
-  Build-Depends: base>=4.4 && <5, array
+  default-language: Haskell2010
+  Build-Depends: base>=4.8 && <5, array
   exposed-modules:
    Algebra.RingUtils
    Data.Pair
@@ -36,7 +51,9 @@ Library
    Parsing.TestProgram
 
 Executable bnfc
-  Build-Depends: base>=4.4 && <5, mtl, directory, array, process, containers, pretty >=1.1 && <1.2, filepath
+  default-language: Haskell2010
+  Build-Depends: base>=4.8 && <5, mtl, directory, array, process, containers, pretty >=1.1 && <1.2, filepath
+  build-tools: alex, happy
   Main-is: Main.hs
   HS-source-dirs: src src/formats
     src/formats/haskell2
@@ -70,6 +87,8 @@ Executable bnfc
     CFtoTxt,
     Options,
     ToCNF,
+    Common.Makefile,
+    Data.Pair,
     -- Haskell
     HaskellTop,
     RegToAlex,
@@ -166,7 +185,8 @@ Flag haskell-tests
 
 Test-suite system-tests-haskell
   Type: exitcode-stdio-1.0
-  Build-Depends:  base>=4 && <5,
+  default-language: Haskell2010
+  Build-Depends:  base>=4.8 && <5,
     HUnit, test-framework, test-framework-hunit,
     shelly, system-filepath, text
   Main-is: system-tests-haskell.hs
@@ -183,7 +203,8 @@ Flag java-tests
 
 Test-suite system-tests-java
   Type: exitcode-stdio-1.0
-  Build-Depends:  base>=4 && <5,
+  default-language: Haskell2010
+  Build-Depends:  base>=4.8 && <5,
     HUnit, test-framework, test-framework-hunit,
     shelly, system-filepath, text
   Main-is: system-tests-java.hs
@@ -199,7 +220,8 @@ Flag c-tests
 
 Test-suite system-tests-c
   Type: exitcode-stdio-1.0
-  Build-Depends:  base>=4 && <5,
+  default-language: Haskell2010
+  Build-Depends:  base>=4.8 && <5,
     HUnit, test-framework, test-framework-hunit,
     shelly, system-filepath, text
   Main-is: system-tests-c.hs
@@ -212,7 +234,8 @@ Test-suite system-tests-c
 
 Test-suite unit-tests
   Type: exitcode-stdio-1.0
-  Build-Depends: base>=4 && <5, mtl, directory, array, process, filepath,
+  default-language: Haskell2010
+  Build-Depends: base>=4.8 && <5, mtl, directory, array, process, filepath,
                  HUnit, test-framework, test-framework-hunit
   Main-is: unit-tests.hs
   HS-source-dirs: src test/src src/formats
@@ -228,4 +251,3 @@ Test-suite unit-tests
     src/formats/cpp_stl
     src/formats/c-sharp
     src/formats/f-sharp
-
