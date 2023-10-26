@@ -23,6 +23,20 @@ Description:
   a Latex file containing a readable specification of the language.
 Extra-source-files: BNF.cf
 
+tested-with:
+  GHC == 9.8.1
+  GHC == 9.6.3
+  GHC == 9.4.7
+  GHC == 9.2.8
+  GHC == 9.0.2
+  GHC == 8.10.7
+  GHC == 8.8.4
+  GHC == 8.6.5
+  GHC == 8.4.4
+  GHC == 8.2.2
+  GHC == 8.0.2
+  GHC == 7.10.3
+
 Executable bnfc
   default-language: Haskell2010
   Build-Depends: base>=4.8 && <5, mtl, directory, array, process
