@@ -24,6 +24,21 @@ Description:
   a Latex file containing a readable specification of the language.
 Extra-source-files: src/BNF.cf CHANGELOG.md
 
+tested-with:
+  GHC == 9.8.1
+  GHC == 9.6.3
+  GHC == 9.4.7
+  GHC == 9.2.8
+  GHC == 9.0.2
+  GHC == 8.10.7
+  GHC == 8.8.4
+  GHC == 8.6.5
+  GHC == 8.4.4
+  GHC == 8.2.2
+  GHC == 8.0.2
+  GHC == 7.10.3
+  -- Build failures with older GHCs
+
 Source-repository head
   type: git
   location: https://github.com/BNFC/bnfc.git
