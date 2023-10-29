@@ -254,6 +254,10 @@ library
     BNFC.Backend.Java.RegToAntlrLexer
     BNFC.Backend.Java.Utils
 
+    -- Dart backend
+    BNFC.Backend.Dart
+    BNFC.Backend.Dart.CFtoDartAbs
+
     -- XML backend
     BNFC.Backend.XML
 
