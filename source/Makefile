@@ -62,6 +62,15 @@ TAGS :
 # Binary package (tgz, for linux)
 bdist: dist/${BDIST_TAG}.tar.gz
 
+# Source package
+# Andreas, 2023-11-03, PR #466: need to remove BNFC/{Lex,Par}.hs,
+# otherwise they will be shipped in the sdist package
+# and cause compilation to fail.
+sdist:
+	make -C src clean
+	cabal sdist
+
+# OLD goal
 dist/%.tar.gz:
 	cabal v1-clean
 	cabal v1-install ${CABAL_OPTS} --only-dependencies
