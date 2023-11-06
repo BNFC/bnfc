@@ -21,6 +21,7 @@ import BNFC.Backend.Java.CFtoJLex15
 import BNFC.Backend.Java.CFtoAntlr4Lexer
 import BNFC.Backend.Java.CFtoAntlr4Parser
 import BNFC.Backend.Dart.CFtoDartAbs ( cf2DartAbs )
+import BNFC.Backend.Dart.CFtoDartBuilder ( cf2DartBuilder )
 import BNFC.Backend.Java.CFtoJavaPrinter15
 import BNFC.Backend.Java.CFtoVisitSkel15
 import BNFC.Backend.Java.CFtoComposVisitor
@@ -42,7 +43,7 @@ makeDart' :: String -> SharedOptions -> CF -> MkFiles ()
 makeDart' pkg options@Options{..} cf = do
      -- Create the package directories if necessary.
     let packageBase  = maybe id (+.+) inPackage pkg
-        packageAbsyn = packageBase +.+ "Absyn"
+        packageAbsyn = packageBase +.+ "ast"
         dirBase      = pkgToDir packageBase
         dirAbsyn     = pkgToDir packageAbsyn
         javaex str   = dirBase </> str <.> "dart"
@@ -66,7 +67,10 @@ makeDart' pkg options@Options{..} cf = do
     let absynContent = cf2DartAbs cf rp
         absynDir = dirAbsyn ++ ".dart"
         absynFileNames = [ absynDir ]
+        builderContent = cf2DartBuilder cf
+        builderDir = dirAbsyn ++ "Builder.dart"
     mkfile absynDir comment absynContent
+    mkfile builderDir comment builderContent
     -- makebnfcfile bprettyprinter
     -- makebnfcfile bskel
     -- makebnfcfile bcompos

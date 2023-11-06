@@ -257,6 +257,8 @@ library
     -- Dart backend
     BNFC.Backend.Dart
     BNFC.Backend.Dart.CFtoDartAbs
+    BNFC.Backend.Dart.CFtoDartBuilder
+    BNFC.Backend.Dart.Common
 
     -- XML backend
     BNFC.Backend.XML

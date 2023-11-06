@@ -4,26 +4,16 @@
 
 module BNFC.Backend.Dart.CFtoDartAbs (cf2DartAbs) where
 
-import qualified Data.Char as Char
 import Data.Maybe      ( mapMaybe )
-import qualified Data.Map as Map
 
 import BNFC.CF
 import BNFC.Options     ( RecordPositions(..) )
 import BNFC.Utils       ( (+++) )
 
 import BNFC.Backend.Common.NamedVariables ( UserDef )
+import BNFC.Backend.Dart.Common 
 
 --Produces abstract data types in Dart
-
--- The type of an instance variable.
--- Variable type, and its name
-type DartVar = (String, DartVarName)
-
--- The name of a variable.
--- the name generated from the type, 
--- and the number making this variable unique
-type DartVarName = (String, Int)
 
 
 cf2DartAbs :: CF -> RecordPositions -> String
@@ -74,37 +64,16 @@ prRule rp cat (fun, cats)
       vars = getVars cats
     in Just . unlines $ 
       [ unwords [ "class", className, extending, "{" ] ] ++
-      concatMap addIndent [
+      concatMap (indent 1) [
         prInstanceVariables rp vars,
         prConstructor className vars,
         prEquals className vars,
         prHashCode vars
       ] ++ [ "}" ] 
   where
-    addIndent line = map ("  " ++) line
     extending 
       | fun == catToStr cat = ""
       | otherwise = "extends" +++ cat2DartClassName cat
-
-
--- Because of the different type representing variables, a different `getVars` is used.
-getVars :: [Cat] -> [DartVar]
-getVars cats = concatMap mapEntryToVariable $ 
-  Map.toList $ 
-  foldl countVariables Map.empty $ 
-  map toNames cats 
-  where
-    toNames cat = ((cat2DartType cat), (cat2DartName cat))
-    countVariables varsMap entry = 
-      let current = Map.findWithDefault 0 entry varsMap
-          next = 1 + current
-      in Map.insert entry next varsMap
-    mapEntryToVariable ((varType, name), amount) 
-      | amount <= 1 = [ toDartVar varType name 0 ]
-      | otherwise = 
-        let variableNameBase = toDartVar varType name
-        in map variableNameBase $ [1..amount]
-    toDartVar varType name number = (varType, (name, number))
 
 
 -- Override the equality `==`
@@ -146,8 +115,10 @@ prInstanceVariables rp vars = case rp of
   NoRecordPositions -> generateVariables
   where
     generateVariables = map variableLine vars
-    variableLine variable@(varType, _) =
-      "final" +++ varType +++ buildVariableName variable ++ ";"
+    variableLine variable =
+      let vType = buildVariableType variable
+          vName = buildVariableName variable
+      in "final" +++ vType +++ vName ++ ";"
        
 
 -- Generate the class constructor
@@ -157,63 +128,3 @@ prConstructor className vars =
   where 
     variablesAssignment = concatMap assignment vars
     assignment variable = "this." ++ buildVariableName variable ++ ", "
-
-
--- From a DartVar build its string representation
-buildVariableName :: DartVar -> String
-buildVariableName (_, (name, num)) = lowerFirst appendNumber
-  where
-    appendNumber 
-      | num <= 0 = name
-      | otherwise = name ++ show num
-
-
--- Prevent some type or variable name to be called as some built-in Dart type
-censorName :: String -> String
-censorName name 
-  | name `elem` builtInTypes = "My" ++ upperFirst name
-  | otherwise = name
-  where
-    builtInTypes = [ "int", "double", "String", "bool", "List", "Set", "Map", 
-      "Runes", "Symbol", "null", "Null" ]
-
-
-cat2DartClassName :: Cat -> String
-cat2DartClassName cat = str2DartClassName $ identCat $ normCat cat
-
-
-str2DartClassName :: String -> String
-str2DartClassName str = upperFirst $ censorName str
-
-
-cat2DartType :: Cat -> String
-cat2DartType cat = toList $ normCat cat
-  where
-    toList (ListCat name) = "List<" ++ toList name ++ ">"
-    toList name = name2DartBuiltIn $ censorName $ catToStr name
-
-
-cat2DartName :: Cat -> String
-cat2DartName cat = toList $ normCat cat
-  where
-    toList (ListCat name) = toList name ++ "List"
-    toList name = censorName $ catToStr name
-
-
-name2DartBuiltIn :: String -> String
-name2DartBuiltIn name
-  | name == "Integer" = "int"
-  | name == "Double" = "double"
-  | name == "Ident" = "String"
-  | name == "Char" = "String" -- TODO
-  | otherwise = name
-
-
-upperFirst :: [Char] -> [Char]
-upperFirst [] = []
-upperFirst (letter:rest) = Char.toUpper letter : rest
-
-
-lowerFirst :: [Char] -> [Char]
-lowerFirst [] = []
-lowerFirst (letter:rest) = Char.toLower letter : rest
