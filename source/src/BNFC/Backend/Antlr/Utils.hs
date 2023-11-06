@@ -2,14 +2,12 @@
 
 module BNFC.Backend.Antlr.Utils where
 
-import Text.PrettyPrint.HughesPJ (Doc, text, vcat)
-import Prelude hiding (Either, Left, Right)
-import System.FilePath ((<.>), (</>))
+import Prelude
+import System.FilePath ((<.>))
 
 import BNFC.CF (Fun)
 import BNFC.Utils ( mkName, NameStyle(..), (+++))
 import BNFC.Options as Options
-import BNFC.Backend.Common.Makefile as MakeFile
 
 getRuleName :: String -> String
 getRuleName z = if z == "grammar" then z ++ "_" else z

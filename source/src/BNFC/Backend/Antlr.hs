@@ -5,16 +5,13 @@ module BNFC.Backend.Antlr ( makeAntlr ) where
 import Prelude hiding ((<>))
 import System.FilePath ((</>), pathSeparator, (<.>))
 import Text.PrettyPrint.HughesPJ (vcat)
-import Data.Bifunctor (second)
-import Data.Char (toUpper, toLower)
 
 import BNFC.Utils
-    ( NameStyle(CamelCase, SnakeCase),
+    ( NameStyle(CamelCase),
       mkName,
       replace,
       (+.+),
-      (+++),
-      mkNames )
+      (+++) )
 import BNFC.CF
 import BNFC.Options as Options
 import BNFC.Backend.Base
@@ -53,9 +50,7 @@ makeAntlr opts@Options{..} cf = do
       parserVarName = "PARSER_GRAMMAR_FILENAME"
       parserGrammarFile = (langRef </>) . dotG4 $ langRef ++ "Parser"
 
-      generatedFilesVars = map (second (langRef </>)) $ getVars dLanguage pkg
-
-      makefileVars = vcat $ makeVars $ 
+      makefileVars = vcat $ makeVars 
         [ ("LANG", pkg)
         , (lexerVarName, lexerGrammarFile)
         , (parserVarName, parserGrammarFile)
@@ -63,17 +58,14 @@ makeAntlr opts@Options{..} cf = do
         , ("ANTLR_OPTIONS", getAntlrOptions opts)
         , ("DIRECT_OPTIONS", antlrOpts)
         ]
-        ++ generatedFilesVars
 
       genAntlrRecipe = ((MakeFile.refVar "ANTLR4" +++ MakeFile.refVar "ANTLR_OPTIONS" +++ MakeFile.refVar "DIRECT_OPTIONS") +++) . MakeFile.refVar
 
-      rmFile refVar = "rm -f" +++ MakeFile.refVar refVar
-
       antlrFiles = map (langRef </>)
-        [ (mkName [] CamelCase $ pkg +++ "Lexer") <.> "interp"
-        , (mkName [] CamelCase $ pkg +++ "Parser") <.> "interp"
-        , (mkName [] CamelCase $ pkg +++ "Lexer") <.> "tokens"
-        , (mkName [] CamelCase $ pkg +++ "Parser") <.> "tokens"
+        [ mkName [] CamelCase (pkg +++ "Lexer") <.> "interp"
+        , mkName [] CamelCase (pkg +++ "Parser") <.> "interp"
+        , mkName [] CamelCase (pkg +++ "Lexer") <.> "tokens"
+        , mkName [] CamelCase (pkg +++ "Parser") <.> "tokens"
         ]
 
       makefileRules =  vcat $ makeRules
@@ -83,8 +75,6 @@ makeAntlr opts@Options{..} cf = do
         , ("parser", [MakeFile.refVar parserVarName], [genAntlrRecipe parserVarName])
         , (langRef, ["lexer", "parser"], [])
         , ("clean-antlr", [],
-          map rmFile targetLanguageFiles
-          ++
           map ("rm -f" +++) antlrFiles )
         , ("remove", [], ["rm -rf" +++ langRef])
         ]
@@ -93,46 +83,3 @@ makeAntlr opts@Options{..} cf = do
 
 mkAntlrComment :: String -> String
 mkAntlrComment = ("// ANTLRv4 " ++)
-
-targetLanguageFiles :: [String]
-targetLanguageFiles = ["LEXER", "PARSER", "LISTENER", "VISITOR", "BASE_LISTENER", "BASE_VISITOR"]
-
-getVars :: AntlrTarget -> [Char] -> [(String, FilePath)]
-getVars target lang = zip targetLanguageFiles files
-  where
-    files = map (<.> ext) names
-    names = mkNames [] namestyle
-      [ filename "lexer"
-      , filename "parser"
-      , filename "parser listener"
-      , filename "parser visitor"
-      , filename "parser base listener"
-      , filename "parser base visitor"
-      ]
-    
-    filename = case target of
-      Go -> (toLowerCase lang ++)
-      _  -> (lang +++)
-
-    namestyle = case target of
-      Go -> SnakeCase
-      _ -> CamelCase
-
-    ext = getExt target
-
--- file ext. depending on target
-getExt :: AntlrTarget -> String
-getExt Java    = "java"
-getExt CPP     = "cpp"
-getExt CSharp  = "cs"
-getExt JS      = "js"
-getExt TS      = "ts"
-getExt Dart    = "dart"
-getExt Python3 = "py"
-getExt PHP     = "php"
-getExt Go      = "go"
-getExt Swift   = "swift"
-
-toUppercase :: [Char] -> [Char]
-toUppercase = map toUpper
-toLowerCase = map toLower
