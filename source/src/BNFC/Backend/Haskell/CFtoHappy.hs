@@ -141,10 +141,10 @@ rulesForHappy absM functor cf = for (ruleGroups cf) $ \ (cat, rules) ->
 -- >>> constructRule "Foo" False (npRule "EPlus" (Cat "Exp") [Left (Cat "Exp"), Right "+", Left (Cat "Exp")] Parsable)
 -- ("Exp '+' Exp","Foo.EPlus $1 $3")
 --
--- If we're using functors, it adds position value:
+-- If we're using functors, it adds position range value:
 --
 -- >>> constructRule "Foo" True (npRule "EPlus" (Cat "Exp") [Left (Cat "Exp"), Right "+", Left (Cat "Exp")] Parsable)
--- ("Exp '+' Exp","(fst $1, Foo.EPlus (fst $1) (snd $1) (snd $3))")
+-- ("Exp '+' Exp","(Foo.spanBNFC'Position (fst $1) (fst $3), Foo.EPlus (Foo.spanBNFC'Position (fst $1) (fst $3)) (snd $1) (snd $3))")
 --
 -- List constructors should not be prefixed by the abstract module name:
 --
@@ -157,7 +157,7 @@ rulesForHappy absM functor cf = for (ruleGroups cf) $ \ (cat, rules) ->
 -- Coercion are much simpler:
 --
 -- >>> constructRule "Foo" True (npRule "_" (Cat "Exp") [Right "(", Left (Cat "Exp"), Right ")"] Parsable)
--- ("'(' Exp ')'","(uncurry Foo.BNFC'Position (tokenSpan $1), (snd $2))")
+-- ("'(' Exp ')'","(Foo.spanBNFC'Position (uncurry Foo.BNFC'Position (tokenSpan $1)) (uncurry Foo.BNFC'Position (tokenSpan $3)), (snd $2))")
 --
 constructRule :: IsFun f => String -> Bool -> Rul f -> (Pattern, Action)
 constructRule absName functor (Rule fun0 _cat rhs Parsable) = (pat, action)
