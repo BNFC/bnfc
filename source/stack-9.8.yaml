@@ -1,0 +1,6 @@
+resolver: nightly-2023-11-10
+compiler: ghc-9.8.1
+compiler-check: newer-minor
+
+packages:
+- .

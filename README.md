@@ -71,9 +71,9 @@ and then either
 ```
 or
 ```
-  stack install --stack-yaml stack-8.10.7.yaml
+  stack install --stack-yaml stack-9.4.yaml
 ```
-(replace `8.10.7` with your GHC version, and if you want to build with
+(replace `9.4` with your GHC major version, and if you want to build with
 your installed GHC then add flag `--system-ghc`).
 
 Mini tutorial
