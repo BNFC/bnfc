@@ -24,6 +24,7 @@ import BNFC.Backend.HaskellGADT
 import BNFC.Backend.Java
 import BNFC.Backend.Latex
 import BNFC.Backend.OCaml
+import BNFC.Backend.FSharp
 import BNFC.Backend.Pygments
 import BNFC.CF (CF)
 import BNFC.GetCF
@@ -79,5 +80,6 @@ maketarget = \case
     TargetLatex        -> makeLatex
     TargetJava         -> makeJava
     TargetOCaml        -> makeOCaml
+    TargetFSharp       -> makeFSharp
     TargetPygments     -> makePygments
     TargetCheck        -> error "impossible"

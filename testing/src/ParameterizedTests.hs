@@ -385,6 +385,8 @@ parameters = concat
             , tpBnfcOptions = ["--c", "--line-numbers"] }
 
     ]
+    -- F#
+  , [ fsharp ]
     -- C++ (basic)
   , [ cBase { tpName = "C++ (no STL)"
             , tpBnfcOptions = ["--cpp-nostl"] }
@@ -441,6 +443,14 @@ parameters = concat
         , tpBuild       = tpMake ["OCAMLCFLAGS=-safe-string"]
         , tpBnfcOptions = ["--ocaml"]
         , tpRunTestProg = haskellRunTestProg
+        }
+    fsharp = TP
+        { tpName        = "F#"
+        , tpBuild       = do
+            cmd "dotnet" ["build"]
+        , tpBnfcOptions = ["--fsharp"]
+        , tpRunTestProg = \ _lang args -> do
+            cmd "dotnet" $ "run" : "--" : args
         }
 
 -- | Helper function that runs bnfc with the context's options and an

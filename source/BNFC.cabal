@@ -238,6 +238,17 @@ library
     BNFC.Backend.CPP.STL.STLUtils
     BNFC.Backend.CPP.STL.CFtoCVisitSkelSTL
 
+    -- F# backend
+    BNFC.Backend.FSharp,
+    BNFC.Backend.FSharp.FSharpUtil,
+    BNFC.Backend.FSharp.CFtoFSharpTest,
+    BNFC.Backend.FSharp.CFtoFSharpShow,
+    BNFC.Backend.FSharp.CFtoFSharpPrinter,
+    BNFC.Backend.FSharp.CFtoFSharpTemplate,
+    BNFC.Backend.FSharp.CFtoFSharpAbs,
+    BNFC.Backend.FSharp.CFtoFsYacc,
+    BNFC.Backend.FSharp.CFtoFsLex,
+
     -- Java backend
     BNFC.Backend.Java
     BNFC.Backend.Java.CFtoAntlr4Lexer
