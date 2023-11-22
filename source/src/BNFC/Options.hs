@@ -14,6 +14,7 @@ module BNFC.Options
   , AlexVersion(..), HappyMode(..), OCamlParser(..), JavaLexerParser(..)
   , RecordPositions(..), TokenText(..)
   , Ansi(..)
+  , AntlrTarget(..)
   , InPackage
   , removedIn290
   , translateOldOptions
@@ -63,7 +64,7 @@ data Mode
 data Target = TargetC | TargetCpp | TargetCppNoStl
             | TargetHaskell | TargetHaskellGadt | TargetLatex
             | TargetJava | TargetOCaml | TargetPygments
-            | TargetCheck
+            | TargetCheck | TargetAntlr
   deriving (Eq, Bounded, Enum, Ord)
 
 -- | List of Haskell target.
@@ -81,6 +82,7 @@ instance Show Target where
   show TargetOCaml        = "OCaml"
   show TargetPygments     = "Pygments"
   show TargetCheck        = "Check LBNF file"
+  show TargetAntlr        = "ANTLRv4"
 
 -- | Which version of Alex is targeted?
 data AlexVersion = Alex3
@@ -108,6 +110,23 @@ data Ansi = Ansi | BeyondAnsi
 
 -- | Package name (C++ and Java backends).
 type InPackage = Maybe String
+
+-- | ANTLRv4 targets
+data AntlrTarget = CPP | CSharp | Dart | Java | JS | PHP | Python3 | Swift | TS | Go
+    deriving (Eq, Ord, Show)
+
+mkAntlrTarget :: String -> AntlrTarget
+mkAntlrTarget "java"       = Java
+mkAntlrTarget "cpp"        = CPP
+mkAntlrTarget "typescript" = TS
+mkAntlrTarget "javascript" = JS
+mkAntlrTarget "dart"       = Dart
+mkAntlrTarget "go"         = Go
+mkAntlrTarget "php"        = PHP
+mkAntlrTarget "swift"      = Swift
+mkAntlrTarget "python"     = Python3
+mkAntlrTarget "csharp"     = CSharp
+mkAntlrTarget _            = Java
 
 -- | How to represent token content in the Haskell backend?
 
@@ -145,6 +164,16 @@ data SharedOptions = Options
   --- C# specific
   , visualStudio  :: Bool        -- ^ Generate Visual Studio solution/project files.
   , wcf           :: Bool        -- ^ Windows Communication Foundation.
+  --- ANTLRv4 specific
+  , listener      :: Bool
+  , visitor       :: Bool
+  , wError        :: Bool
+  , dLanguage     :: AntlrTarget
+  , xlog          :: Bool
+  , xDbgST        :: Bool
+  , xDbgSTWait    :: Bool
+  , atn           :: Bool
+  , antlrOpts     :: String
   } deriving (Eq, Ord, Show)
 
 -- We take this opportunity to define the type of the backend functions.
@@ -179,6 +208,16 @@ defaultOptions = Options
   -- C# specific
   , visualStudio    = False
   , wcf             = False
+  -- ANTLRv4 specific
+  , listener        = True
+  , visitor         = False
+  , wError          = False
+  , dLanguage       = Java
+  , xlog            = False
+  , xDbgST          = False
+  , xDbgSTWait      = False
+  , atn             = False
+  , antlrOpts       = ""
   }
 
 -- | Check whether an option is unchanged from the default.
@@ -259,6 +298,7 @@ printTargetOption = ("--" ++) . \case
   TargetOCaml       -> "ocaml"
   TargetPygments    -> "pygments"
   TargetCheck       -> "check"
+  TargetAntlr       -> "antlr4"
 
 printAlexOption :: AlexVersion -> String
 printAlexOption = ("--" ++) . \case
@@ -289,7 +329,7 @@ targetOptions :: [ OptDescr (SharedOptions -> SharedOptions)]
 targetOptions =
   [ Option "" ["java"]          (NoArg (\o -> o {target = TargetJava}))
     "Output Java code [default: for use with JLex and CUP]"
-  , Option "" ["java-antlr"]    (NoArg (\ o -> o{ target = TargetJava, javaLexerParser = Antlr4 }))
+  , Option "" ["java-antlr"]    (NoArg (\o -> o {target = TargetJava, javaLexerParser = Antlr4}))
     "Output Java code for use with ANTLR (short for --java --antlr)"
   , Option "" ["haskell"]       (NoArg (\o -> o {target = TargetHaskell}))
     "Output Haskell code for use with Alex and Happy (default)"
@@ -305,12 +345,14 @@ targetOptions =
     "Output C++ code (without STL) for use with FLex and Bison"
   , Option "" ["ocaml"]         (NoArg (\o -> o {target = TargetOCaml}))
     "Output OCaml code for use with ocamllex and ocamlyacc"
-  , Option "" ["ocaml-menhir"]  (NoArg (\ o -> o{ target = TargetOCaml, ocamlParser = Menhir }))
+  , Option "" ["ocaml-menhir"]  (NoArg (\o -> o {target = TargetOCaml, ocamlParser = Menhir}))
     "Output OCaml code for use with ocamllex and menhir (short for --ocaml --menhir)"
   , Option "" ["pygments"]      (NoArg (\o -> o {target = TargetPygments}))
     "Output a Python lexer for Pygments"
-  , Option "" ["check"]         (NoArg (\ o -> o{target = TargetCheck }))
+  , Option "" ["check"]         (NoArg (\o -> o {target = TargetCheck}))
     "No output. Just check input LBNF file"
+  , Option "" ["antlr"]         (NoArg (\o -> o {target = TargetAntlr}))
+    "Output lexer and parser grammars for ANTLRv4"
   ]
 
 -- | A list of the options and for each of them, the target language
@@ -385,6 +427,46 @@ specificOptions =
   , ( Option []    ["agda"] (NoArg (\o -> o { agda = True, tokenText = TextToken }))
           "Also generate Agda bindings for the abstract syntax"
     , [TargetHaskell] )
+  , (Option  []    ["listener"] (NoArg (\o -> o { listener = True }))
+          "Generate parse tree listener for ANTLR result. True by default"
+    ,  [TargetAntlr])
+  , (Option  []    ["no-listener"] (NoArg (\o -> o { listener = False }))
+          "Do NOT generate parse tree listener"
+    ,  [TargetAntlr])
+  , (Option  []    ["visitor"] (NoArg (\o -> o { visitor = True }))
+          "Generate parse tree visitor for ANTLR result. False by default"
+    ,  [TargetAntlr])
+  , (Option  []    ["no-visitor"] (NoArg (\o -> o { visitor = False }))
+          "Do NOT generate parse tree visitor"
+    ,  [TargetAntlr])
+  , (Option  []    ["Werror"] (NoArg (\o -> o { wError = True }))
+          "Make ANTLR treat warnings as errors"
+    ,  [TargetAntlr])
+  , (Option  []    ["language"] (ReqArg (\lang o -> o { dLanguage = mkAntlrTarget lang  }) "Dlanguage")
+          "Specify target language for ANTLR"
+    ,  [TargetAntlr])
+  , (Option  []    ["Xlog"] (NoArg (\o -> o { xlog = True }))
+          "Create log file with information of grammar processing"
+    ,  [TargetAntlr])
+  , (Option  []    ["XdbgST"] (NoArg (\o -> o { xDbgST = True })) $ unlines
+        [ "Open window with generated code and templates used to generate this code"
+        , "It invokes the StringTemplate inspector window."
+        ]
+    ,  [TargetAntlr])
+  , (Option  []    ["XdbgSTWait"] (NoArg (\o -> o { xDbgSTWait = True }))
+          "Wait for ST visualizer to close before continuing"
+    ,  [TargetAntlr])
+  , (Option  []    ["atn"] (NoArg (\o -> o { atn = True })) $ unlines
+        [ "Generate DOT graph files that represent the internal ATN (augmented transition network) data structures that ANTLR uses to represent grammars."
+        , "The files come out as Grammar.rule .dot. If the grammar is a combined grammar, the lexer rules are named Grammar Lexer.rule .dot."
+        ]
+    ,  [TargetAntlr])
+  , (Option  []    ["opts"] (ReqArg (\strOpts o -> o { antlrOpts = strOpts }) "OPTIONS") $ unlines
+        [ "String of ANTLRv4 options which will be directly embedded to Makefile ANTLR call"
+        , "Options from this string override directly specified options"
+        , "Usage: --opts=\"-no-listener -visitor -Xlog\""
+        ]
+    ,  [TargetAntlr])
   ]
 
 -- | The list of specific options for a target.
@@ -447,7 +529,7 @@ help = unlines $ title ++
     , usageInfo "TARGET languages" targetOptions
     ] ++ map targetUsage helpTargets
   where
-  helpTargets = [ TargetHaskell, TargetJava, TargetC, TargetCpp ]
+  helpTargets = [ TargetHaskell, TargetJava, TargetC, TargetCpp, TargetAntlr ]
   targetUsage t = usageInfo
     (printf "Special options for the %s backend" (show t))
     (specificOptions' t)
@@ -525,6 +607,7 @@ instance Maintained Target where
     TargetOCaml       -> True
     TargetPygments    -> True
     TargetCheck       -> True
+    TargetAntlr       -> True
 
 instance Maintained AlexVersion where
   printFeature = printAlexOption

@@ -254,6 +254,13 @@ library
     BNFC.Backend.Java.RegToAntlrLexer
     BNFC.Backend.Java.Utils
 
+    -- Antlr4 backend
+    BNFC.Backend.Antlr
+    BNFC.Backend.Antlr.CFtoAntlr4Lexer
+    BNFC.Backend.Antlr.CFtoAntlr4Parser
+    BNFC.Backend.Antlr.RegToAntlrLexer
+    BNFC.Backend.Antlr.Utils
+
     -- XML backend
     BNFC.Backend.XML
 
