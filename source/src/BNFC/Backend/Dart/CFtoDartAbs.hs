@@ -124,7 +124,7 @@ prInstanceVariables rp vars = case rp of
 -- Generate the class constructor
 prConstructor :: String -> [DartVar] -> [String]
 prConstructor className vars = 
-  [ className ++ "(" ++ variablesAssignment ++ ");" ]
+  [ className ++ "({" ++ variablesAssignment ++ "});" ]
   where 
     variablesAssignment = concatMap assignment vars
-    assignment variable = "this." ++ buildVariableName variable ++ ", "
+    assignment variable = "required this." ++ buildVariableName variable ++ ", "

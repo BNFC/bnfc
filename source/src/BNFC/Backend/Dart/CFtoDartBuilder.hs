@@ -32,7 +32,7 @@ cf2DartBuilder cf =
 
 generateBuilders :: Data -> [String]
 generateBuilders (cat, rules) = 
-  runtimeTypeMapping ++ concatMap (generateConcreteMapping cat) rules
+  runtimeTypeMapping ++ concatMap generateConcreteMapping (zip [1..] rules)
     where
     funs = map fst rules
     runtimeTypeMapping
@@ -42,7 +42,7 @@ generateBuilders (cat, rules) =
 
 generateRuntimeTypeMapping :: Cat -> [(Fun, [Cat])] -> [String]
 generateRuntimeTypeMapping cat rules = 
-  let className = upperFirst $ cat2DartClassName cat 
+  let className = cat2DartClassName cat 
   in 
     generateFunctionHeader className ++ 
     indent 2 (
@@ -56,36 +56,38 @@ generateRuntimeTypeMapping cat rules =
 
 
 
-generateConcreteMapping :: Cat -> (Fun, [Cat]) -> [String]
-generateConcreteMapping cat (fun, cats)
+generateConcreteMapping :: (Int, (Fun, [Cat])) -> [String]
+generateConcreteMapping (index, (fun, cats))
   | isNilFun fun || 
     isOneFun fun || 
     isConsFun fun = []  -- these are not represented in the ast
   | otherwise = -- a standard rule
     let 
-      className = upperFirst $ cat2DartClassName cat
+      className = str2DartClassName fun
       vars = getVars cats
     in 
       generateFunctionHeader className ++ 
       indent 2 (
         [ className ++ "(" ] ++ 
-        (indent 1 $ generateArgumentsMapping vars) ++ 
+        (indent 1 $ generateArgumentsMapping index vars) ++ 
         [ ");" ]
       )
 
 
-generateArgumentsMapping :: [DartVar] -> [String]
-generateArgumentsMapping vars = map convertArgument vars
+generateArgumentsMapping :: Int -> [DartVar] -> [String]
+generateArgumentsMapping index vars = map convertArgument vars
   where 
     convertArgument var@(vType, _) = 
       let name = buildVariableName var
-          field = "ctx." ++ name  -- TODO
+          field = "ctx.p_" ++ show index ++ "_" ++ "1"
       in name ++ ":" +++ buildArgument vType field
     buildArgument :: DartVarType -> String -> String
     buildArgument (0, typeName) name = 
       "build" ++ upperFirst typeName ++ "(" ++ name ++ "),"
     buildArgument (n, typeName) name = 
-      "name.iMap((e" ++ show n ++ ") =>" +++ buildArgument (n - 1, typeName) name ++ "),"
+      let nextName = "e" ++ show n
+          argument = buildArgument (n - 1, typeName) nextName
+      in name ++ ".iMap((" ++ nextName ++ ") =>" +++ argument ++ "),"
 
 
 generateFunctionHeader :: String -> [String]

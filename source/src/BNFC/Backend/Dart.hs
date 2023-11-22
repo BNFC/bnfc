@@ -19,7 +19,7 @@ import BNFC.Backend.Java.Utils
 import BNFC.Backend.Java.CFtoCup15 ( cf2Cup )
 import BNFC.Backend.Java.CFtoJLex15
 import BNFC.Backend.Java.CFtoAntlr4Lexer
-import BNFC.Backend.Java.CFtoAntlr4Parser
+import BNFC.Backend.Dart.CFtoAntlr4Parser
 import BNFC.Backend.Dart.CFtoDartAbs ( cf2DartAbs )
 import BNFC.Backend.Dart.CFtoDartBuilder ( cf2DartBuilder )
 import BNFC.Backend.Java.CFtoJavaPrinter15
@@ -64,36 +64,35 @@ makeDart' pkg options@Options{..} cf = do
             )
         makebnfcfile x = mkfile (javaex (fst $ x bnfcfiles)) comment
                                         (snd $ x bnfcfiles)
-    let absynContent = cf2DartAbs cf rp
-        absynDir = dirAbsyn ++ ".dart"
-        absynFileNames = [ absynDir ]
-        builderContent = cf2DartBuilder cf
-        builderDir = dirAbsyn ++ "Builder.dart"
-    mkfile absynDir comment absynContent
-    mkfile builderDir comment builderContent
-    -- makebnfcfile bprettyprinter
-    -- makebnfcfile bskel
-    -- makebnfcfile bcompos
-    -- makebnfcfile babstract
-    -- makebnfcfile bfold
-    -- makebnfcfile ball
-    -- makebnfcfile btest
-    -- let (lex, env) = lexfun packageBase cf
-    -- -- Where the lexer file is created. lex is the content!
-    -- mkfile (dirBase </> inputfile lexmake ) commentWithEmacsModeHint lex
-    -- liftIO $ putStrLn $ "   (Tested with" +++ toolname lexmake
-    --                                       +++ toolversion lexmake  ++ ")"
-    -- -- where the parser file is created.
-    -- mkfile (dirBase </> inputfile parmake) commentWithEmacsModeHint
-    --       $ parsefun packageBase packageAbsyn cf rp env
-    -- liftIO $ putStrLn $
-    --   if supportsEntryPoints parmake
-    --    then "(Parser created for all categories)"
-    --    else "   (Parser created only for category " ++ prettyShow (firstEntry cf) ++ ")"
-    -- liftIO $ putStrLn $ "   (Tested with"  +++ toolname parmake
-    --                                        +++ toolversion parmake ++ ")"
+    let locate str ext = dirBase </> str <.> ext 
+        -- (lex, env) = cf2AntlrLex "Stella" cf
+    mkfile (locate "ast" "dart") comment (cf2DartAbs cf rp)
+    mkfile (locate "builder" "dart") comment (cf2DartBuilder cf)
+    -- mkfile (locate "StellaLexer" "g4") comment lex
+    -- mkfile (locate "StellaParser" "g4") comment (cf2AntlrParse lang dirBase cf rp env)
+    makebnfcfile bprettyprinter
+    makebnfcfile bskel
+    makebnfcfile bcompos
+    makebnfcfile babstract
+    makebnfcfile bfold
+    makebnfcfile ball
+    makebnfcfile btest
+    let (lex, env) = lexfun packageBase cf
+    -- Where the lexer file is created. lex is the content!
+    mkfile (dirBase </> inputfile lexmake ) commentWithEmacsModeHint lex
+    liftIO $ putStrLn $ "   (Tested with" +++ toolname lexmake
+                                          +++ toolversion lexmake  ++ ")"
+    -- where the parser file is created.
+    mkfile (dirBase </> inputfile parmake) commentWithEmacsModeHint
+          $ parsefun packageBase packageAbsyn cf rp env
+    liftIO $ putStrLn $
+      if supportsEntryPoints parmake
+       then "(Parser created for all categories)"
+       else "   (Parser created only for category " ++ prettyShow (firstEntry cf) ++ ")"
+    liftIO $ putStrLn $ "   (Tested with"  +++ toolname parmake
+                                           +++ toolversion parmake ++ ")"
     -- Makefile.mkMakefile optMake $
-    --     makefile dirBase dirAbsyn absynFileNames parselexspec
+    --     makefile dirBase dirAbsyn ["stella/ast.dart"] parselexspec
   where
     remDups [] = []
     remDups ((a,b):as) = case lookup a as of
@@ -102,7 +101,7 @@ makeDart' pkg options@Options{..} cf = do
     pkgToDir :: String -> FilePath
     pkgToDir = replace '.' pathSeparator
 
-    parselexspec = parserLexerSelector lang javaLexerParser rp
+    parselexspec = parserLexerSelector lang Antlr4 rp
     lexfun       = cf2lex $ lexer parselexspec
     parsefun     = cf2parse $ parser parselexspec
     parmake      = makeparserdetails (parser parselexspec)
