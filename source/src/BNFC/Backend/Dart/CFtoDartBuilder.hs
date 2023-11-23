@@ -18,7 +18,8 @@ cf2DartBuilder cf =
       helperFunctions ++
       concatMap generateBuilders rules
   where 
-    rules  = getAbstractSyntax cf
+    rules = ruleGroups cf
+      -- getAbstractSyntax cf
     imports = [
       "import 'package:antlr4/antlr4.dart';",
       "import 'ast.dart';",
@@ -30,34 +31,55 @@ cf2DartBuilder cf =
       "}" ]
 
 
-generateBuilders :: Data -> [String]
-generateBuilders (cat, rules) = 
-  runtimeTypeMapping ++ concatMap generateConcreteMapping (zip [1..] rules)
-    where
+generateBuilders :: (Cat, [Rule]) -> [String]
+generateBuilders (cat, rawRules) = 
+  let 
+    rules = map reformatRule rawRules
     funs = map fst rules
-    runtimeTypeMapping
-      | catToStr cat `elem` funs || isList cat = [] -- the category is also a function or a list
+  in
+    runtimeTypeMapping funs rules ++ concatMap concreteMapping (zip [1..] rawRules)
+  where
+    
+    -- funs = map funRule rawRules
+    -- cats = map 
+    -- runtimeTypeMapping = generateRuntimeTypeMapping cat rules
+    runtimeTypeMapping funs rules
+      | isList cat || catToStr cat `elem` funs = [] -- the category is also a function or a list
       | otherwise = generateRuntimeTypeMapping cat rules
+    concreteMapping (index, rule) = generateConcreteMapping index rule
 
 
-generateRuntimeTypeMapping :: Cat -> [(Fun, [Cat])] -> [String]
+reformatRule :: Rule -> (String, [Cat])
+reformatRule rule = (wpThing $ funRule rule, [normCat c | Left c <- rhsRule rule ])
+
+
+generateRuntimeTypeMapping :: Cat -> [(String, [Cat])] -> [String]
 generateRuntimeTypeMapping cat rules = 
   let className = cat2DartClassName cat 
-  in 
-    generateFunctionHeader className ++ 
-    indent 2 (
-      [ "switch (ctx.runtimeType) {" ] ++ 
-      (indent 1 $ map buildChild $ map buildClassName rules) ++ 
-      [ "};" ]
-    )
+  in [
+    "extension on" +++ contextName className +++ "{"
+  ] ++ indent 1 [
+    className ++ "?" +++ "build" ++ className ++ "() =>"
+  ] ++ indent 2 (
+    [ "switch (runtimeType) {" ] ++ 
+    (indent 1 $ addDefaultCase $ map buildChild $ map buildClassName rules) ++ 
+    [ "};" ]
+  ) ++ [
+    "}"
+  ]
   where
     buildClassName (fun, _) = str2DartClassName fun
-    buildChild name = (contextName name) +++ "c => build" ++ name ++ "(c),"
+    buildChild name = (contextName name) +++ "c => c.build" ++ name ++ "(),"
+    addDefaultCase cases = cases ++ [ "_ => null," ]
 
 
+generateConcreteMapping :: Int -> Rule -> [String]
+generateConcreteMapping index rule = 
+  generateConcreteMappingHelper index rule $ reformatRule rule
 
-generateConcreteMapping :: (Int, (Fun, [Cat])) -> [String]
-generateConcreteMapping (index, (fun, cats))
+
+generateConcreteMappingHelper :: Int -> Rule -> (String, [Cat]) -> [String]
+generateConcreteMappingHelper index rule (fun, cats)
   | isNilFun fun || 
     isOneFun fun || 
     isConsFun fun = []  -- these are not represented in the ast
@@ -65,37 +87,67 @@ generateConcreteMapping (index, (fun, cats))
     let 
       className = str2DartClassName fun
       vars = getVars cats
-    in 
-      generateFunctionHeader className ++ 
-      indent 2 (
-        [ className ++ "(" ] ++ 
-        (indent 1 $ generateArgumentsMapping index vars) ++ 
-        [ ");" ]
-      )
+    in [
+      "extension on" +++ contextName className +++ "{"
+    ] ++ indent 1 [
+      className +++ "build" ++ className ++ "() =>"
+    ] ++ indent 2 (
+      [ className ++ "(" ] ++ 
+      (indent 1 $ generateArgumentsMapping index rule vars) ++ 
+      [ ");" ]
+    ) ++ [
+      "}"
+    ]
 
 
-generateArgumentsMapping :: Int -> [DartVar] -> [String]
-generateArgumentsMapping index vars = map convertArgument vars
-  where 
-    convertArgument var@(vType, _) = 
-      let name = buildVariableName var
-          field = "ctx.p_" ++ show index ++ "_" ++ "1"
-      in name ++ ":" +++ buildArgument vType field
+generateArgumentsMapping :: Int -> Rule -> [DartVar] -> [String]
+generateArgumentsMapping index r vars = 
+  case rhsRule r of
+    [] -> ["/* empty */"]
+    its -> traverseRule index 1 its vars []
+  --     unwords $ mapMaybe (uncurry mkIt) $ zip [1 :: Int ..] $ zip its
+  -- where
+  --   var i  = "p_" ++ show index ++"_"++ show i 
+  --   mkIt i = \case
+  --     Left  c -> Just $ var i ++ "=" ++ catToNT c
+  --     Right s -> lookup s env
+
+
+traverseRule :: Int -> Int -> [Either Cat String] -> [DartVar] -> [String] -> [String]
+traverseRule _ _ _ [] lines = lines
+traverseRule _ _ [] _ lines = lines
+traverseRule ind1 ind2 (terminal:restTerminals) (variable@(vType, _):restVariables) lines = 
+  case terminal of 
+    Left cat -> traverseRule ind1 (ind2 + 1) restTerminals restVariables lines ++ [
+      buildVariableName variable ++ ":" +++ buildArgument vType field ] 
+    Right _ -> traverseRule ind1 (ind2 + 1) restTerminals (variable:restVariables) lines
+  where
+    field = "p_" ++ show ind1 ++ "_" ++ show ind2
     buildArgument :: DartVarType -> String -> String
     buildArgument (0, typeName) name = 
-      "build" ++ upperFirst typeName ++ "(" ++ name ++ "),"
+      name ++ ".build" ++ upperFirst typeName ++ "(),"
+      -- "build" ++ upperFirst typeName ++ "(" ++ name ++ "),"
     buildArgument (n, typeName) name = 
       let nextName = "e" ++ show n
           argument = buildArgument (n - 1, typeName) nextName
       in name ++ ".iMap((" ++ nextName ++ ") =>" +++ argument ++ "),"
 
 
-generateFunctionHeader :: String -> [String]
-generateFunctionHeader className = [
-    className +++ "build" ++ className ++ "(",
-    "  " ++ contextName className +++ "ctx,",
-    ") =>"
-  ]
+
+-- generateArgumentsMapping :: Int -> [DartVar] -> [String]
+-- generateArgumentsMapping index vars = map convertArgument vars
+--   where 
+--     convertArgument var@(vType, _) = 
+--       let name = buildVariableName var
+--           field = "ctx.p_" ++ show index ++ "_" ++ "1"
+--       in name ++ ":" +++ buildArgument vType field
+--     buildArgument :: DartVarType -> String -> String
+--     buildArgument (0, typeName) name = 
+--       "build" ++ upperFirst typeName ++ "(" ++ name ++ "),"
+--     buildArgument (n, typeName) name = 
+--       let nextName = "e" ++ show n
+--           argument = buildArgument (n - 1, typeName) nextName
+--       in name ++ ".iMap((" ++ nextName ++ ") =>" +++ argument ++ "),"
 
 
 contextName :: String -> String

@@ -64,8 +64,7 @@ data Mode
 data Target = TargetC | TargetCpp | TargetCppNoStl
             | TargetHaskell | TargetHaskellGadt | TargetLatex
             | TargetJava | TargetOCaml | TargetPygments
-            | TargetCheck | TargetDart
-            | TargetCheck | TargetAntlr
+            | TargetCheck | TargetDart | TargetAntlr
   deriving (Eq, Bounded, Enum, Ord)
 
 -- | List of Haskell target.

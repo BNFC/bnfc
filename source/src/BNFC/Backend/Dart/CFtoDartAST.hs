@@ -2,7 +2,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TupleSections #-}
 
-module BNFC.Backend.Dart.CFtoDartAbs (cf2DartAbs) where
+module BNFC.Backend.Dart.CFtoDartAST (cf2DartAST) where
 
 import Data.Maybe      ( mapMaybe )
 
@@ -16,8 +16,8 @@ import BNFC.Backend.Dart.Common
 --Produces abstract data types in Dart
 
 
-cf2DartAbs :: CF -> RecordPositions -> String
-cf2DartAbs cf rp = 
+cf2DartAST :: CF -> RecordPositions -> String
+cf2DartAST cf rp = 
   let userTokens = [ n | (n,_) <- tokenPragmas cf ]
   in unlines $ 
     imports ++  -- import some libraries if needed
@@ -124,7 +124,9 @@ prInstanceVariables rp vars = case rp of
 -- Generate the class constructor
 prConstructor :: String -> [DartVar] -> [String]
 prConstructor className vars = 
-  [ className ++ "({" ++ variablesAssignment ++ "});" ]
+  [ className ++ "(" ++ variablesAssignment ++ ");" ]
   where 
-    variablesAssignment = concatMap assignment vars
+    variablesAssignment
+      | null vars = ""
+      | otherwise = "{" ++ (concatMap assignment vars) ++ "}"
     assignment variable = "required this." ++ buildVariableName variable ++ ", "

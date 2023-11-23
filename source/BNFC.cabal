@@ -256,11 +256,10 @@ library
 
     -- Dart backend
     BNFC.Backend.Dart
-    BNFC.Backend.Dart.CFtoDartAbs
+    BNFC.Backend.Dart.CFtoDartAST
     BNFC.Backend.Dart.CFtoDartBuilder
-    BNFC.Backend.Dart.CFtoAntlr4Parser
     BNFC.Backend.Dart.Common
-    
+
     -- Antlr4 backend
     BNFC.Backend.Antlr
     BNFC.Backend.Antlr.CFtoAntlr4Lexer
