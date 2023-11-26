@@ -63,6 +63,7 @@ data Mode
 data Target = TargetC | TargetCpp | TargetCppNoStl
             | TargetHaskell | TargetHaskellGadt | TargetLatex
             | TargetJava | TargetOCaml | TargetPygments
+            | TargetTreeSitter
             | TargetCheck
   deriving (Eq, Bounded, Enum, Ord)
 
@@ -80,6 +81,7 @@ instance Show Target where
   show TargetJava         = "Java"
   show TargetOCaml        = "OCaml"
   show TargetPygments     = "Pygments"
+  show TargetTreeSitter   = "Tree-sitter"
   show TargetCheck        = "Check LBNF file"
 
 -- | Which version of Alex is targeted?
@@ -258,6 +260,7 @@ printTargetOption = ("--" ++) . \case
   TargetJava        -> "java"
   TargetOCaml       -> "ocaml"
   TargetPygments    -> "pygments"
+  TargetTreeSitter  -> "tree-sitter"
   TargetCheck       -> "check"
 
 printAlexOption :: AlexVersion -> String
@@ -309,6 +312,8 @@ targetOptions =
     "Output OCaml code for use with ocamllex and menhir (short for --ocaml --menhir)"
   , Option "" ["pygments"]      (NoArg (\o -> o {target = TargetPygments}))
     "Output a Python lexer for Pygments"
+  , Option "" ["tree-sitter"]   (NoArg (\o -> o {target = TargetTreeSitter}))
+    "Output grammar.js file for use with tree-sitter"
   , Option "" ["check"]         (NoArg (\ o -> o{target = TargetCheck }))
     "No output. Just check input LBNF file"
   ]
@@ -524,6 +529,7 @@ instance Maintained Target where
     TargetJava        -> True
     TargetOCaml       -> True
     TargetPygments    -> True
+    TargetTreeSitter  -> True
     TargetCheck       -> True
 
 instance Maintained AlexVersion where

@@ -264,6 +264,11 @@ library
     -- Agda backend
     BNFC.Backend.Agda
 
+    -- Tree-sitter backend
+    BNFC.Backend.TreeSitter
+    BNFC.Backend.TreeSitter.CFtoTreeSitter
+    BNFC.Backend.TreeSitter.RegToJSReg
+
 ----- Testing --------------------------------------------------------------
 
 test-suite unit-tests

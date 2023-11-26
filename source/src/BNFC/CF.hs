@@ -783,6 +783,9 @@ hasPositionTokens cf = or [ b | TokenReg _ b _ <- cfgPragmas cf ]
 isPositionCat :: CFG f -> TokenCat -> Bool
 isPositionCat cf cat = or [ b | TokenReg name b _ <- cfgPragmas cf, wpThing name == cat]
 
+-- | Is there a explicitly defined @entrypoint@ pragma?
+hasEntryPoint :: CFG f -> Bool
+hasEntryPoint cf = or [ True | EntryPoints{} <- cfgPragmas cf]
 
 -- | Categories that are entry points to the parser.
 --

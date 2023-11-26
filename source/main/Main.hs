@@ -25,6 +25,7 @@ import BNFC.Backend.Java
 import BNFC.Backend.Latex
 import BNFC.Backend.OCaml
 import BNFC.Backend.Pygments
+import BNFC.Backend.TreeSitter
 import BNFC.CF (CF)
 import BNFC.GetCF
 import BNFC.Options hiding (make, Backend)
@@ -81,3 +82,4 @@ maketarget = \case
     TargetOCaml        -> makeOCaml
     TargetPygments     -> makePygments
     TargetCheck        -> error "impossible"
+    TargetTreeSitter   -> makeTreeSitter
