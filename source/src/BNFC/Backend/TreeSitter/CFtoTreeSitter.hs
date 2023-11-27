@@ -10,7 +10,6 @@
     Created       : 08 Nov, 2023
 
 -}
-{-# LANGUAGE BlockArguments #-}
 
 module BNFC.Backend.TreeSitter.CFtoTreeSitter where
 
@@ -224,9 +223,9 @@ refName = ("$." ++)
 -- | Format right hand side into list of strings
 formatRhs :: SentForm -> [Doc]
 formatRhs =
-  map \case
+  map (\case
     Left c -> text $ refName $ formatCatName False c
-    Right term -> quoted term
+    Right term -> quoted term)
 
 quoted :: String -> Doc
 quoted s = text "\"" <> text s <> text "\""
