@@ -8,6 +8,7 @@ import BNFC.CF
 import BNFC.Backend.Dart.Common
 import Data.Maybe      ( mapMaybe )
 import BNFC.Utils       ( (+++) )
+import Data.List ( intercalate )
 
 cf2DartBuilder :: CF -> String
 cf2DartBuilder cf = 
@@ -56,20 +57,16 @@ reformatRule rule = (wpThing $ funRule rule, [normCat c | Left c <- rhsRule rule
 generateRuntimeTypeMapping :: Cat -> [(String, [Cat])] -> [String]
 generateRuntimeTypeMapping cat rules = 
   let className = cat2DartClassName cat 
-  in [
-    "extension on" +++ contextName className +++ "{"
-  ] ++ indent 1 [
-    className ++ "?" +++ "build" ++ className ++ "() =>"
-  ] ++ indent 2 (
-    [ "switch (runtimeType) {" ] ++ 
+  in [  
+    className ++ "?" +++ "build" ++ className ++ "(" ++ contextName className ++ "?" +++ "ctx" ++ ") =>" 
+  ] ++ indent 1 (
+    [ "switch (ctx?.runtimeType) {" ] ++ 
     (indent 1 $ addDefaultCase $ map buildChild $ map buildClassName rules) ++ 
     [ "};" ]
-  ) ++ [
-    "}"
-  ]
+  )
   where
     buildClassName (fun, _) = str2DartClassName fun
-    buildChild name = (contextName name) +++ "c => c.build" ++ name ++ "(),"
+    buildChild name = (contextName name) +++ "c => build" ++ name ++ "(c),"
     addDefaultCase cases = cases ++ [ "_ => null," ]
 
 
@@ -88,29 +85,26 @@ generateConcreteMappingHelper index rule (fun, cats)
       className = str2DartClassName fun
       vars = getVars cats
     in [
-      "extension on" +++ contextName className +++ "{"
-    ] ++ indent 1 [
-      className +++ "build" ++ className ++ "() =>"
-    ] ++ indent 2 (
-      [ className ++ "(" ] ++ 
-      (indent 1 $ generateArgumentsMapping index rule vars) ++ 
-      [ ");" ]
-    ) ++ [
+      className ++ "?" +++ "build" ++ className ++ "(" ++ contextName className ++ "?" +++ "ctx) {"
+    ] ++ (
+      indent 1 $ 
+        (generateArguments index rule vars) ++ 
+        (generateNullCheck vars) ++ 
+        [ "return" +++ className ++ "(" ]
+    ) ++ (
+      indent 2 $ generateArgumentsMapping vars 
+    ) ++ indent 1 [
+      ");"
+    ] ++ [
       "}"
     ]
+      
 
-
-generateArgumentsMapping :: Int -> Rule -> [DartVar] -> [String]
-generateArgumentsMapping index r vars = 
+generateArguments :: Int -> Rule -> [DartVar] -> [String]
+generateArguments index r vars = 
   case rhsRule r of
-    [] -> ["/* empty */"]
+    [] -> []
     its -> traverseRule index 1 its vars []
-  --     unwords $ mapMaybe (uncurry mkIt) $ zip [1 :: Int ..] $ zip its
-  -- where
-  --   var i  = "p_" ++ show index ++"_"++ show i 
-  --   mkIt i = \case
-  --     Left  c -> Just $ var i ++ "=" ++ catToNT c
-  --     Right s -> lookup s env
 
 
 traverseRule :: Int -> Int -> [Either Cat String] -> [DartVar] -> [String] -> [String]
@@ -119,35 +113,38 @@ traverseRule _ _ [] _ lines = lines
 traverseRule ind1 ind2 (terminal:restTerminals) (variable@(vType, _):restVariables) lines = 
   case terminal of 
     Left cat -> traverseRule ind1 (ind2 + 1) restTerminals restVariables lines ++ [
-      buildVariableName variable ++ ":" +++ buildArgument vType field ] 
+      "final" +++ buildVariableName variable +++ "=" +++ buildArgument vType field ++ ";" ] 
     Right _ -> traverseRule ind1 (ind2 + 1) restTerminals (variable:restVariables) lines
   where
-    field = "p_" ++ show ind1 ++ "_" ++ show ind2
+    field = "ctx?.p_" ++ show ind1 ++ "_" ++ show ind2
     buildArgument :: DartVarType -> String -> String
     buildArgument (0, typeName) name = 
-      name ++ ".build" ++ upperFirst typeName ++ "(),"
-      -- "build" ++ upperFirst typeName ++ "(" ++ name ++ "),"
+      "build" ++ upperFirst typeName ++ "(" ++ name ++ ")"
     buildArgument (n, typeName) name = 
       let nextName = "e" ++ show n
           argument = buildArgument (n - 1, typeName) nextName
-      in name ++ ".iMap((" ++ nextName ++ ") =>" +++ argument ++ "),"
+      in name ++ "?.iMap((" ++ nextName ++ ") =>" +++ argument ++ ")"
 
 
+generateNullCheck :: [DartVar] -> [String]
+generateNullCheck [] = []
+generateNullCheck vars = 
+  [ "if (" ] ++ 
+  (indent 1 [ intercalate " || " $ map condition vars ]) ++
+  [ ") {" ] ++
+  (indent 1 [ "return null;" ]) ++
+  [ "}" ]
+  where
+    condition :: DartVar -> String
+    condition var = buildVariableName var +++ "==" +++ "null"
 
--- generateArgumentsMapping :: Int -> [DartVar] -> [String]
--- generateArgumentsMapping index vars = map convertArgument vars
---   where 
---     convertArgument var@(vType, _) = 
---       let name = buildVariableName var
---           field = "ctx.p_" ++ show index ++ "_" ++ "1"
---       in name ++ ":" +++ buildArgument vType field
---     buildArgument :: DartVarType -> String -> String
---     buildArgument (0, typeName) name = 
---       "build" ++ upperFirst typeName ++ "(" ++ name ++ "),"
---     buildArgument (n, typeName) name = 
---       let nextName = "e" ++ show n
---           argument = buildArgument (n - 1, typeName) nextName
---       in name ++ ".iMap((" ++ nextName ++ ") =>" +++ argument ++ "),"
+
+generateArgumentsMapping :: [DartVar] -> [String]
+generateArgumentsMapping vars = map mapArgument vars
+  where
+    mapArgument variable = 
+      let name = buildVariableName variable
+      in name ++ ":" +++ name ++ ","
 
 
 contextName :: String -> String
