@@ -13,16 +13,22 @@ cat2DartClassName :: Cat -> String
 cat2DartClassName cat = str2DartClassName $ identCat $ normCat cat
 
 
+-- Pick a class name that is appropriate for the Dart
 str2DartClassName :: String -> String
 str2DartClassName str = upperFirst $ censorName str
 
 
-cat2DartType :: Cat -> (Int, String)
-cat2DartType cat = toList (0, normCat cat)
+-- Pick a class name that is appropriate for the Antlr
+str2AntlrClassName :: String -> String
+str2AntlrClassName str = upperFirst str
+
+
+cat2DartType :: Cat -> DartVarType
+cat2DartType cat = toList (0, cat)
   where
-    toList :: (Int, Cat) -> (Int, String)
+    toList :: (Int, Cat) -> DartVarType
     toList (n, (ListCat name)) = toList (n + 1, name)
-    toList (n, name) = (n, (name2DartBuiltIn $ censorName $ catToStr name))
+    toList (n, name) = (n, (name2DartBuiltIn $ catToStr name))
 
 
 cat2DartName :: Cat -> String
@@ -64,8 +70,8 @@ type DartVar = (DartVarType, DartVarName)
 
 
 -- The type of a variable type in Dart.
--- The amount of nestings, and the underlying type name.
--- Example: List<List<Point>> is (2, Point).
+-- The amount of nestings, and the underlying type name without precedence.
+-- Example: List<List<Expr1>> is (2, Expr).
 -- This helps to build the AST builder
 type DartVarType = (Int, String)
 
@@ -78,22 +84,27 @@ type DartVarName = (String, Int)
 
 -- Because of the different type representing variables, a different `getVars` is used.
 getVars :: [Cat] -> [DartVar]
-getVars cats = concatMap mapEntryToVariable $ 
-  Map.toList $ 
-  foldl countVariables Map.empty $ 
-  map toNames cats 
+getVars cats = 
+  let variables = map toUnnamedVariable cats 
+      namesMap = foldl countNames Map.empty variables
+      scoreMap = Map.map addScore namesMap
+      (_, vars) = foldl toDartVar (scoreMap, []) variables
+  in vars
   where
-    toNames cat = ((cat2DartType cat), (cat2DartName cat))
-    countVariables varsMap entry = 
-      let current = Map.findWithDefault 0 entry varsMap
+    toUnnamedVariable cat = ((cat2DartType cat), (cat2DartName cat))
+    countNames namesMap (_, name) = 
+      let current = Map.findWithDefault 0 name namesMap
           next = 1 + current
-      in Map.insert entry next varsMap
-    mapEntryToVariable ((varType, name), amount) 
-      | amount <= 1 = [ toDartVar varType name 0 ]
-      | otherwise = 
-        let variableNameBase = toDartVar varType name
-        in map variableNameBase $ [1..amount]
-    toDartVar varType name number = (varType, (name, number))
+      in Map.insert name next namesMap
+    addScore n = (1, n)
+    toDartVar (namesMap, vars) (vType, name) =
+      case (Map.lookup name namesMap) of
+        Nothing            -> (namesMap, vars ++ [(vType, (name, 0))])
+        Just (seen, total) -> if total <= 1 
+          then (namesMap, vars ++ [(vType, (name, 0))])
+          else (
+            Map.insert name (seen + 1, total) namesMap, 
+            vars ++ [(vType, (name, seen))])
 
 
 -- From a DartVar build its string representation
@@ -105,6 +116,7 @@ buildVariableName (_, (name, num)) = lowerFirst appendNumber
       | otherwise = name ++ show num
 
 
+-- From a DartVar make a name for the AST
 buildVariableType :: DartVar -> String 
 buildVariableType (vType, _) = unpack vType
   where 
@@ -115,7 +127,7 @@ buildVariableType (vType, _) = unpack vType
 -- Prevent some type or variable name to be called as some built-in Dart type
 censorName :: String -> String
 censorName name 
-  | name `elem` builtInTypes = "My" ++ upperFirst name
+  | (lowerFirst name) `elem` (map lowerFirst builtInTypes) = "My" ++ upperFirst name
   | otherwise = name
   where
     builtInTypes = [ "int", "double", "String", "bool", "List", "Set", "Map", 
