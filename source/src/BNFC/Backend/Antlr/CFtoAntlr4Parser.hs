@@ -1,6 +1,6 @@
 {-# LANGUAGE LambdaCase #-}
 
-module BNFC.Backend.Antlr.CFtoAntlr4Parser ( cf2AntlrParse ) where
+module BNFC.Backend.Antlr.CFtoAntlr4Parser ( cf2AntlrParse, antlrRuleLabel ) where
 
 import Data.Foldable ( toList )
 import Data.Maybe
@@ -136,14 +136,17 @@ prRules = concatMap $ \case
     , [ "  ;" ]
     ]
     where
-    alternative sep (p, label) = unwords [ sep , p ] : [ unwords [ "    #" , antlrRuleLabel l ] | Just l <- [label] ]
+    alternative sep (p, label) = unwords [ sep , p ] : [ unwords [ "    #" , antlrRuleLabel nt l] | Just l <- [label] ]
       
     catid              = identCat nt
     nt'                = getRuleName $ firstLowerCase catid
-    antlrRuleLabel :: Fun -> String
-    antlrRuleLabel fnc
-      | isNilFun fnc   = catid ++ "_Empty"
-      | isOneFun fnc   = catid ++ "_AppendLast"
-      | isConsFun fnc  = catid ++ "_PrependFirst"
-      | isCoercion fnc = "Coercion_" ++ catid
-      | otherwise      = getLabelName fnc
+
+antlrRuleLabel :: Cat -> Fun -> String
+antlrRuleLabel cat fnc
+  | isNilFun fnc   = catid ++ "_Empty"
+  | isOneFun fnc   = catid ++ "_AppendLast"
+  | isConsFun fnc  = catid ++ "_PrependFirst"
+  | isCoercion fnc = "Coercion_" ++ catid
+  | otherwise      = getLabelName fnc
+  where
+    catid = identCat cat
