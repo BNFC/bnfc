@@ -1,7 +1,5 @@
 {-
     BNF Converter: TreeSitter Grammar Generator
-    Copyright (C) 2004  Author:  Markus Forsberg, Michael Pellauer,
-                                 Bjorn Bringert
 
     Description   : This module generates the grammar.js input file for
                     tree-sitter.
