@@ -46,9 +46,10 @@ generateBuilders (cat, rawRules) =
     runtimeTypeMapping numeratedRawRules ++ 
     concatMap (\(index, rule) -> generateConcreteMapping index rule) numeratedRawRules
   where
+    funs numeratedRawRules = (map (\(_, rule) -> wpThing $ funRule rule) numeratedRawRules)
     runtimeTypeMapping numeratedRawRules
       | isList cat || 
-        catToStr cat `elem` (map (\(_, rule) -> wpThing $ funRule rule) numeratedRawRules) = [] -- the category is also a function or a list
+        (catToStr cat) `elem` (funs numeratedRawRules) = [] -- the category is also a function or a list
       | otherwise = generateRuntimeTypeMapping cat [
         (index, wpThing $ funRule rule, rhsRule rule) | 
         (index, rule) <- numeratedRawRules ]
