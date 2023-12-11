@@ -129,7 +129,7 @@ stringRenderer = [
   "final _renderer = StringRenderer();" ]
 
 buildUserToken :: String -> String
-buildUserToken token = "extension on ast." ++ token +++ "{\n  String get show => value;\n}"
+buildUserToken token = "extension on ast." ++ token +++ "{\n  String get show" ++ token +++ "=> value;\n}"
 
 generatePrettifiers :: (Cat, [Rule]) -> [String]
 generatePrettifiers (cat, rawRules) = 
@@ -171,22 +171,22 @@ generateConcreteMapping cat (label, tokens)
       ["]);"]
 
 generateRuleRHS :: [Either Cat String] -> [DartVar] -> [String] -> [String]
-generateRuleRHS [] _ _ = []
-generateRuleRHS _ [] _ = []
+generateRuleRHS [] _ lines = lines
+generateRuleRHS _ [] lines = lines
 generateRuleRHS (token:rTokens) (variable@(vType, _):rVariables) lines = case token of
   Right terminal -> 
-    generateRuleRHS rTokens (variable:rVariables) $ lines ++ [terminal ++ ","]
+    generateRuleRHS rTokens (variable:rVariables) $ lines ++ ["\"" ++ terminal ++ "\","]
   Left _ -> generateRuleRHS rTokens rVariables $ 
     lines ++ [ buildArgument vType ("a." ++ buildVariableName variable) ]
     
 buildArgument :: DartVarType -> String -> String
-buildArgument (0, typeName) name = name ++ ".show"
+buildArgument (0, typeName) name = name ++ ".show" ++ typeName ++ ","
 -- TODO add correct separators from the CF
 buildArgument (n, typeName) name = 
   "..." ++ name ++ ".expand((e" ++ show n ++ ") => [\'\', " ++ (buildArgument (n-1, typeName) ("e" ++ show n)) ++ "]).skip(1),"
 
 generateExtensionShow :: String -> [String]
 generateExtensionShow name = [
-  "extension on ast." ++ name +++ "{",
-  "  String get show => _renderer.show(_prettify" ++ name ++ "(this));",
+  "extension" +++ name ++ "Show" +++ "on ast." ++ name +++ "{",
+  "  String get show" ++ name +++ "=> _renderer.show(_prettify" ++ name ++ "(this));",
   "}" ]
