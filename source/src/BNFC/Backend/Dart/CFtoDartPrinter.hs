@@ -163,7 +163,7 @@ generateConcreteMapping cat (label, tokens)
   | otherwise = -- a standard rule
     let 
       className = str2DartClassName label
-      cats = [ cat | Left cat <- tokens ]
+      cats = [ normCat cat | Left cat <- tokens ]
       vars = getVars cats
     in Just . unlines $ [ 
       "IList<String> _prettify" ++ className ++ "(ast." ++ className ++ " a) => IList([" ] ++
