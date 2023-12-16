@@ -1,6 +1,6 @@
 {-# LANGUAGE LambdaCase #-}
 
-module BNFC.Backend.Antlr.CFtoAntlr4Parser ( cf2AntlrParse, antlrRuleLabel ) where
+module BNFC.Backend.Antlr.CFtoAntlr4Parser ( cf2AntlrParse, antlrRuleLabel, makeLeftRecRule ) where
 
 import Data.Foldable ( toList )
 import Data.Maybe
@@ -80,11 +80,15 @@ constructRule cf env rules nt =
   PDef Nothing nt $
     [ ( p, Just label )
     | (index, r0) <- zip [1..] rules
-    , let b      = isConsFun (funRule r0) && elem (valCat r0) (cfgReversibleCats cf)
-    , let r      = applyWhen b revSepListRule r0
+    , let r = makeLeftRecRule cf r0
     , let p = generatePattern index env r
     , let label  = wpThing (funRule r)
     ]
+
+makeLeftRecRule :: CF -> Rule -> Rule
+makeLeftRecRule cf rule = applyWhen canBeLeftRecursive revSepListRule rule
+  where
+    canBeLeftRecursive = isConsFun (funRule rule) && elem (valCat rule) (cfgReversibleCats cf)
 
 -- | Generate patterns and a set of metavariables indicating
 -- where in the pattern the non-terminal
