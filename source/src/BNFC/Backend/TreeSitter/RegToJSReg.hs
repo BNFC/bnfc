@@ -10,7 +10,7 @@
 -}
 {-# LANGUAGE LambdaCase #-}
 
-module BNFC.Backend.TreeSitter.RegToJSReg (printRegJSReg) where
+module BNFC.Backend.TreeSitter.RegToJSReg (printRegJSReg, escapeCharFrom) where
 
 import BNFC.Abs
 

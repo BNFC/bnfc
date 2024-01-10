@@ -17,6 +17,7 @@ import BNFC.CF
 import BNFC.Lexing (mkRegMultilineComment)
 import BNFC.PrettyPrint
 import Prelude hiding ((<>))
+import Data.Maybe (catMaybes, isNothing, fromMaybe)
 
 -- | Indent one level of 2 spaces
 indent :: Doc -> Doc
@@ -78,23 +79,13 @@ prExtras cf =
 --   into this list. This will require integration of a regex engine.
 prWord :: CF -> Doc
 prWord cf =
-  if wordNeeded
-    then
-      defineSymbol "word"
-        $+$ indent
-          ( wrapChoice
-              ( usrTokensFormatted
-                  ++ [text "$.token_Ident" | identUsed]
-              )
-          )
-          <> ","
-    else empty
+  maybe empty (\word_list -> defineSymbol "word" $+$ indent word_list <> ",") $
+    wrapChoiceStrict $ map Just $ usrTokensFormatted ++ [text "$.token_Ident" | identUsed]
   where
-    wordNeeded = identUsed || usrTokens /= []
     identUsed = isUsedCat cf (TokenCat catIdent)
     usrTokens = tokenPragmas cf
     usrTokensFormatted =
-      map (text . refName . formatCatName False . TokenCat . fst) $ usrTokens
+      map (text . refName . formatCatName False . TokenCat . fst) usrTokens
 
 -- | Print builtin token rules according to their usage
 prBuiltinTokenRules :: CF -> Doc
@@ -152,6 +143,16 @@ prUsrTokenRules cf = vcat' $ map prOneToken tokens
 hasInternal :: [Rule] -> Bool
 hasInternal = not . all isParsable
 
+-- Tree Sitter does not support empty strings well enough
+-- (Ref: https://github.com/tree-sitter/tree-sitter/issues/98), thus we need to
+-- handle empty strings differently using the optional keyword
+-- Rules with only an empty string as RHS is not supported by tree-sitter, but if
+-- RHS choices contains one option of empty string, we remove it and wrap entire
+-- RHS in optional()
+-- e.g. choice(seq(), "literal", seq($.tokenA, $.ruleB))
+--     => optional("literal", seq($.tokenA, $.ruleB))
+type RhsItem = Maybe Doc
+
 -- | Generates one or two tree-sitter rule(s) for one non-terminal from CF.
 -- Uses choice function from tree-sitter to combine rules for the non-terminal
 -- If the non-terminal has internal rules, an internal version of the non-terminal
@@ -168,9 +169,10 @@ prOneCat rules nt =
       if int
         then defineSymbol (formatCatName True nt) $+$ indent (appendComma intRhs)
         else empty
-    parRhs = wrapChoice $ transChoice ++ genChoice (filter isParsable rules)
-    transChoice = [text $ refName $ formatCatName True nt | int]
-    intRhs = wrapChoice $ genChoice (filter (not . isParsable) rules)
+    parRhs = unwrapRhsItem $ wrapChoiceOptional $ transChoice ++ genChoice (filter isParsable rules)
+    transChoice = [Just $ text $ refName $ formatCatName True nt | int]
+    intRhs = unwrapRhsItem $ wrapChoiceOptional $ genChoice (filter (not . isParsable) rules)
+    unwrapRhsItem = fromMaybe (error "Tree sitter does not allow RHS of a rule to be one empty string only")
     genChoice = map (wrapSeq . formatRhs . rhsRule)
 
 -- | Generate one tree-sitter rule for one defined token
@@ -195,19 +197,31 @@ commaJoin newline =
       | isEmpty b = a
       | otherwise = (if newline then ($+$) else (<>)) (a <> ",") b
 
-wrapSeq :: [Doc] -> Doc
-wrapSeq = wrapOptListFun "seq" False
+-- Empty strings in a sequence can just be dropped and ignored
+wrapSeq :: [RhsItem] -> RhsItem
+wrapSeq = wrapOptListFun "seq" False . catMaybes
 
-wrapChoice :: [Doc] -> Doc
-wrapChoice = wrapOptListFun "choice" True
+-- Strictly forbids empty strings
+-- If any of the choice is empty string, returning empty
+wrapChoiceStrict :: [RhsItem] -> RhsItem
+wrapChoiceStrict items = wrapOptListFun "choice" True =<< sequence items
+
+-- Use optional keyword to handle empty strings
+-- If empty string is present, all else is wrapped in optional
+wrapChoiceOptional :: [RhsItem] -> RhsItem
+wrapChoiceOptional items = if hasEmpty
+  then wrapped >>= \w -> Just $ text "optional" <> text "(" <> w <> text ")"
+  else wrapped
+  where
+    hasEmpty = any isNothing items
+    wrapped = wrapOptListFun "choice" True $ catMaybes items
 
 -- | Wrap list using tree-sitter fun if the list contains multiple items
 -- Returns the only item without wrapping otherwise
-wrapOptListFun :: String -> Bool -> [Doc] -> Doc
-wrapOptListFun fun newline list =
-  if length list == 1
-    then head list
-    else wrapFun fun newline (commaJoin newline list)
+wrapOptListFun :: String -> Bool -> [Doc] -> RhsItem 
+wrapOptListFun _ _ [] = Nothing
+wrapOptListFun _ _ [oneItem] = Just oneItem
+wrapOptListFun fun newline list = Just $ wrapFun fun newline (commaJoin newline list)
 
 wrapFun :: String -> Bool -> Doc -> Doc
 wrapFun fun newline arg = joinOp [text fun <> text "(", indent arg, text ")"]
@@ -219,14 +233,21 @@ refName :: String -> String
 refName = ("$." ++)
 
 -- | Format right hand side into list of strings
-formatRhs :: SentForm -> [Doc]
+formatRhs :: SentForm -> [RhsItem]
 formatRhs =
   map (\case
-    Left c -> text $ refName $ formatCatName False c
-    Right term -> quoted term)
+    Left c -> Just$ text $ refName $ formatCatName False c
+    Right "" -> Nothing
+    Right term -> Just $ quoted term)
+
+stringLiteralReserved:: String
+stringLiteralReserved = "\"\\"
+
+escapeStringLiteral:: String -> String
+escapeStringLiteral = concatMap $ escapeCharFrom stringLiteralReserved
 
 quoted :: String -> Doc
-quoted s = text "\"" <> text s <> text "\""
+quoted s = text "\"" <> text (escapeStringLiteral s) <> text "\""
 
 -- | Format string for cat name, prefix "_" if the name is for internal rules
 formatCatName :: Bool -> Cat -> String
