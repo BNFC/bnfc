@@ -79,7 +79,7 @@ jobs:
         # From now on, use env.{GHC|CABAL}_VER rather than matrix.{ghc|cabal}-ver!
 
       - name: Cache dependencies
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         env:
           key: ${{ runner.os }}-stack-${{ env.STACK_VER }}-ghc-${{ env.GHC_VER }}
           ## Just stack.yaml is actually not correct, better would be stack.yaml.lock,
