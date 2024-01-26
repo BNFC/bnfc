@@ -8,16 +8,21 @@
     Created       : 08 Nov, 2023
 
 -}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE FlexibleInstances #-}
 
 module BNFC.Backend.TreeSitter.CFtoTreeSitter where
 
 import BNFC.Abs (Reg (RSeq, RSeqs, RStar, RAny))
 import BNFC.Backend.TreeSitter.RegToJSReg
+    ( escapeCharFrom, printRegJSReg )
 import BNFC.CF
 import BNFC.Lexing (mkRegMultilineComment)
 import BNFC.PrettyPrint
+
 import Prelude hiding ((<>))
-import Data.Maybe (catMaybes, isNothing, fromMaybe)
+import qualified Data.Map as Map
+import Data.Map (Map)
 
 -- | Indent one level of 2 spaces
 indent :: Doc -> Doc
@@ -79,9 +84,19 @@ prExtras cf =
 --   into this list. This will require integration of a regex engine.
 prWord :: CF -> Doc
 prWord cf =
-  maybe empty (\word_list -> defineSymbol "word" $+$ indent word_list <> ",") $
-    wrapChoiceStrict $ map Just $ usrTokensFormatted ++ [text "$.token_Ident" | identUsed]
+  if wordNeeded
+    then
+      defineSymbol "word"
+        $+$ indent
+          ( wrapChoice
+              ( usrTokensFormatted
+                  ++ [text "$.token_Ident" | identUsed]
+              )
+          )
+          <> ","
+    else empty
   where
+    wordNeeded = identUsed || usrTokens /= []
     identUsed = isUsedCat cf (TokenCat catIdent)
     usrTokens = tokenPragmas cf
     usrTokensFormatted =
@@ -109,6 +124,87 @@ stringRule =
 identRule =
   defineSymbol "token_Ident" <+> text "/[a-zA-Z][a-zA-Z\\d_']*/" <> ","
 
+-- Tree Sitter does not support empty strings well enough
+-- (Ref: https://github.com/tree-sitter/tree-sitter/issues/98), thus we need to
+-- handle empty strings differently using the optional keyword
+-- Crucially, any named symbols in Tree Sitter cannot have a zero width match,
+-- unless it is the start symbol
+-- Thus, we look for all categories that match zero width, tag them as "optional"
+-- And when that cat is referred to, we use `optional($.cat_name)` in place of
+-- `$.cat_name` to circumvent this issue
+
+-- | Cat with a tag indicating if it is optional
+data OCat a = Always a | Optional a
+type Cat' = OCat Cat
+
+  -- | unwrap to original Cat
+unwrap:: Cat' -> Cat
+unwrap (Always c) = c
+unwrap (Optional c) = c
+
+-- | Rule with RHS tagged
+data Rule' = Rule' {srcRule::Rule, taggedRhs::SentForm'}
+type SentForm' = [Either Cat' String]
+
+-- | type class for wrapped or unwrapped rules
+class GetRule a where
+  getRule:: a -> Rule
+
+instance GetRule Rule where
+  getRule = id
+
+instance GetRule Rule' where
+  getRule = srcRule
+
+-- | Format right hand side of a rule into list of Docs
+formatRuleRhs:: Rule' -> [Doc]
+formatRuleRhs r = 
+  map (\case
+    Left (Always c) -> text $ refName $ formatCatName False c
+    Left (Optional c) -> wrapFun "optional" False $
+      text (refName $ formatCatName False c)
+    Right term -> quoted term) $ taggedRhs r
+
+-- | Analyzes the grammar with the entrance symbol. This function
+-- groups all remaining categories with their rules including internal rules,
+-- with optional flags determined and tagged for all returning Cats and rules
+-- Returns (list of remaining tagged categories and tagged rules, tagged entrance rules)
+analyzeCF :: CF -> Cat -> ([(Cat', [Rule'])], [Rule'])
+analyzeCF cf entryCat =
+  (
+    -- Empty rules are excluded from normal categories since they are handled by
+    -- "optional()" keywords in tree-sitter
+    [(wrapCat c, 
+      map wrapRule $ filter (not . ruleIsEmpty) $ rulesForCat' cf c)
+      | c <- allCats, c /= entryCat],
+    -- Tree-sitter should support zero-width matches with root (i.e. entrance) symbol
+    -- thus no need to filter them out
+    map wrapRule $ rulesForCat' cf entryCat
+  )
+  where
+    allCats = reallyAllCats cf
+    -- Stores mapping from Cat to optional flag
+    -- Currently we only recognize optional rules if any RHS of the rules is empty
+    -- list, and ignore more complex cases.
+    -- Complex optional cases may trigger tree-sitter to fail or bug out.
+    catOptMap = Map.fromList $
+      map (\c -> (c, any ruleIsEmpty (rulesForCat' cf c)))
+      -- Always format entrance symbols as non-optional since
+      -- tree-sitter should support zero-width matches on them 
+      $ filter (/= entryCat) allCats
+    -- Tags Cat to Cat' using catOptMap
+    wrapCat:: Cat -> Cat'
+    wrapCat c = if Map.findWithDefault False c catOptMap
+      then Optional c
+      else Always c
+    wrapRule r = Rule' {srcRule = r, 
+      taggedRhs = map wrapSentFormItem $ rhsRule r
+    }
+    wrapSentFormItem :: Either Cat String -> Either Cat' String
+    wrapSentFormItem (Left c) = Left $ wrapCat c
+    wrapSentFormItem (Right s) = Right s
+    ruleIsEmpty = null . rhsRule . getRule
+
 -- | First print the entrypoint rule, tree-sitter always use the
 --   first rule as entrypoint and does not support multi-entrypoint.
 --   Then print rest of the rules
@@ -116,8 +212,10 @@ prRules :: CF -> Doc
 prRules cf =
   if onlyOneEntry
     then
+      -- entry rules are formatted without optional
+      -- tree-sitter should support zero-width (a.k.a empty) matches for top level symbols
       prOneCat entryRules entryCat
-        $+$ prOtherRules entryCat cf
+        $+$ prOtherRules otherCatRules
     else error "Tree-sitter only supports one entrypoint"
   where
     --If entrypoint is defined, there must be only one entrypoint
@@ -125,14 +223,13 @@ prRules cf =
     onlyOneEntry = not (hasEntryPoint cf) || onlyOneEntryDefined
     onlyOneEntryDefined = length (allEntryPoints cf) == 1
     entryCat = firstEntry cf
-    entryRules = rulesForCat' cf entryCat
+    (otherCatRules, entryRules) = analyzeCF cf entryCat
 
 -- | Print all other rules except the entrypoint
-prOtherRules :: Cat -> CF -> Doc
-prOtherRules entryCat cf = vcat' $ map mkOne rules
+prOtherRules :: [(Cat', [Rule'])] -> Doc
+prOtherRules otherRules = vcat' $ map mkOne otherRules
   where
-    rules = [(c, r) | (c, r) <- ruleGroupsInternals cf, c /= entryCat]
-    mkOne (cat, rules) = prOneCat rules cat
+    mkOne (cat, rules) = prOneCat rules $ unwrap cat
 
 prUsrTokenRules :: CF -> Doc
 prUsrTokenRules cf = vcat' $ map prOneToken tokens
@@ -140,27 +237,17 @@ prUsrTokenRules cf = vcat' $ map prOneToken tokens
     tokens = tokenPragmas cf
 
 -- | Check if a set of rules contains internal rules
-hasInternal :: [Rule] -> Bool
-hasInternal = not . all isParsable
-
--- Tree Sitter does not support empty strings well enough
--- (Ref: https://github.com/tree-sitter/tree-sitter/issues/98), thus we need to
--- handle empty strings differently using the optional keyword
--- Rules with only an empty string as RHS is not supported by tree-sitter, but if
--- RHS choices contains one option of empty string, we remove it and wrap entire
--- RHS in optional()
--- e.g. choice(seq(), "literal", seq($.tokenA, $.ruleB))
---     => optional("literal", seq($.tokenA, $.ruleB))
-type RhsItem = Maybe Doc
+hasInternal :: (GetRule a) => [a] -> Bool
+hasInternal = not . all (isParsable . getRule)
 
 -- | Generates one or two tree-sitter rule(s) for one non-terminal from CF.
 -- Uses choice function from tree-sitter to combine rules for the non-terminal
 -- If the non-terminal has internal rules, an internal version of the non-terminal
 -- will be created (prefixed with "_" in tree-sitter), and all internal rules will
 -- be sectioned as such.
-prOneCat :: [Rule] -> NonTerminal -> Doc
+prOneCat :: [Rule'] -> NonTerminal -> Doc
 prOneCat rules nt =
-  defineSymbol (formatCatName False nt)
+  defineSymbol (formatCatName False $ nt)
     $+$ indent (appendComma parRhs)
     $+$ internalRules
   where
@@ -169,11 +256,10 @@ prOneCat rules nt =
       if int
         then defineSymbol (formatCatName True nt) $+$ indent (appendComma intRhs)
         else empty
-    parRhs = unwrapRhsItem $ wrapChoiceOptional $ transChoice ++ genChoice (filter isParsable rules)
-    transChoice = [Just $ text $ refName $ formatCatName True nt | int]
-    intRhs = unwrapRhsItem $ wrapChoiceOptional $ genChoice (filter (not . isParsable) rules)
-    unwrapRhsItem = fromMaybe (error "Tree sitter does not allow RHS of a rule to be one empty string only")
-    genChoice = map (wrapSeq . formatRhs . rhsRule)
+    parRhs = wrapChoice $ transChoice ++ genChoice (filter (isParsable . getRule) rules)
+    transChoice = [text $ refName $ formatCatName True nt | int]
+    intRhs = wrapChoice $ genChoice (filter (not . isParsable. getRule) rules)
+    genChoice = map (wrapSeq . formatRuleRhs)
 
 -- | Generate one tree-sitter rule for one defined token
 prOneToken :: (TokenCat, Reg) -> Doc
@@ -197,31 +283,19 @@ commaJoin newline =
       | isEmpty b = a
       | otherwise = (if newline then ($+$) else (<>)) (a <> ",") b
 
--- Empty strings in a sequence can just be dropped and ignored
-wrapSeq :: [RhsItem] -> RhsItem
-wrapSeq = wrapOptListFun "seq" False . catMaybes
+wrapSeq :: [Doc] -> Doc
+wrapSeq = wrapOptListFun "seq" False
 
--- Strictly forbids empty strings
--- If any of the choice is empty string, returning empty
-wrapChoiceStrict :: [RhsItem] -> RhsItem
-wrapChoiceStrict items = wrapOptListFun "choice" True =<< sequence items
-
--- Use optional keyword to handle empty strings
--- If empty string is present, all else is wrapped in optional
-wrapChoiceOptional :: [RhsItem] -> RhsItem
-wrapChoiceOptional items = if hasEmpty
-  then wrapped >>= \w -> Just $ text "optional" <> text "(" <> w <> text ")"
-  else wrapped
-  where
-    hasEmpty = any isNothing items
-    wrapped = wrapOptListFun "choice" True $ catMaybes items
+wrapChoice :: [Doc] -> Doc
+wrapChoice = wrapOptListFun "choice" True
 
 -- | Wrap list using tree-sitter fun if the list contains multiple items
 -- Returns the only item without wrapping otherwise
-wrapOptListFun :: String -> Bool -> [Doc] -> RhsItem 
-wrapOptListFun _ _ [] = Nothing
-wrapOptListFun _ _ [oneItem] = Just oneItem
-wrapOptListFun fun newline list = Just $ wrapFun fun newline (commaJoin newline list)
+wrapOptListFun :: String -> Bool -> [Doc] -> Doc
+wrapOptListFun fun newline list =
+  if length list == 1
+    then head list
+    else wrapFun fun newline (commaJoin newline list)
 
 wrapFun :: String -> Bool -> Doc -> Doc
 wrapFun fun newline arg = joinOp [text fun <> text "(", indent arg, text ")"]
@@ -231,14 +305,6 @@ wrapFun fun newline arg = joinOp [text fun <> text "(", indent arg, text ")"]
 -- | Helper for referring to non-terminal names in tree-sitter
 refName :: String -> String
 refName = ("$." ++)
-
--- | Format right hand side into list of strings
-formatRhs :: SentForm -> [RhsItem]
-formatRhs =
-  map (\case
-    Left c -> Just$ text $ refName $ formatCatName False c
-    Right "" -> Nothing
-    Right term -> Just $ quoted term)
 
 stringLiteralReserved:: String
 stringLiteralReserved = "\"\\"
