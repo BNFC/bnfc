@@ -35,7 +35,9 @@ cf2DartBuilder cf =
       "String? buildString(Token? t) => t?.text;" ]
     buildUserToken token =
       let name = censorName token
-      in token ++ "? build" ++ token ++ "(Token? t) =>" +++ "t?.text != null ?" +++ token ++ "(t!.text!) : null;"
+      in token ++ "? build" ++ token ++ "(Token? t) {\n" ++
+        "  final text = t?.text;\n" ++
+        "  return text != null ?" +++ token ++ "(text) : null;\n}"
 
 
 generateBuilders :: (Cat, [Rule]) -> [String]
@@ -90,9 +92,10 @@ generateRuntimeTypeMapping cat rules =
               let prec = precCat cat in (cat2DartClassName cat) ++ (if prec == 0 then "" else show prec), 
               show i )
             otherwise -> (className, "") -- error, no category for the coercion
-          argument = "p_" ++ (show index) ++ "_" ++ ind2
+          lineIndex = show index
+          argument = "p_" ++ lineIndex ++ "_" ++ ind2
         in 
-          buildUniversalChild ("Coercion_" ++ contextName className) coercionType ("c." ++ argument)
+          buildUniversalChild ("Coercion_" ++ contextName (className ++ "_" ++ lineIndex)) coercionType ("c." ++ argument)
       | otherwise = 
         buildUniversalChild (contextName $ str2AntlrClassName name) (str2DartClassName name) "c"
     addDefaultCase cases = cases ++ [ "_ => null," ]
