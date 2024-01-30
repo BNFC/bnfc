@@ -53,7 +53,7 @@ stringRenderer = [
   "  // Change this value if you want to change the indentation length",
   "  static const _indentInSpaces = 2;",
   "",
-  "  String show(IList<String> tokens) => tokens",
+  "  String print(IList<String> tokens) => tokens",
   "      .fold(IList<Token>(), _render)",
   "      .fold(IList<(int, IList<Token>)>(), _split)",
   "      .map((line) => (line.$1, line.$2.map(_tokenToString).join()))",
@@ -127,30 +127,56 @@ stringRenderer = [
   "      isNotEmpty && last is Space ? removeLast().removeTrailingSpaces : this;",
   "}",
   "",
-  "final _renderer = StringRenderer();" ]
+  "extension PrintableInt on int {",
+  "  String get print => toString();",
+  "}",
+  "",
+  "extension PrintableDouble on double {",
+  "  String get print => toString();",
+  "}",
+  "",
+  "final _renderer = StringRenderer();",
+  "",
+  "mixin Printable {",
+  "  String get print => \'[not implemented]\';",
+  "}" ]
 
 buildUserToken :: String -> String
-buildUserToken token = "extension on ast." ++ token +++ "{\n  String get show" ++ token +++ "=> value;\n}"
+buildUserToken token = "String print" ++ token ++ "(x) => x.value;"
 
 generateLabelPrettifiers :: (Cat, [Rule]) -> [String]
 generateLabelPrettifiers (cat, rawRules) = 
   let rules = [ (wpThing $ funRule rule, rhsRule rule) | rule <- rawRules ]
       funs = [ fst rule | rule <- rules ]
   in  mapMaybe (generateConcreteMapping cat) rules ++
-      concatMap generateExtensionShow funs
+      (concatMap generatePrintFunction $ map str2DartClassName $ filter representedInAst funs)
+  where
+    representedInAst :: String -> Bool
+    representedInAst fun = not (
+      isNilFun fun ||
+      isOneFun fun ||
+      isConsFun fun ||
+      isConcatFun fun ||
+      isCoercion fun )
 
 generateRulePrettifiers :: Data -> [String]
 generateRulePrettifiers (cat, rules) = 
   let funs = map fst rules
+      fun = catToStr cat
   in  if 
         isList cat || 
-        (catToStr cat) `elem` funs 
+        isNilFun fun ||
+        isOneFun fun ||
+        isConsFun fun ||
+        isConcatFun fun ||
+        isCoercion fun ||
+        fun `elem` funs 
       then 
         [] -- the category is not presented in the AST
       else 
         let className = cat2DartClassName cat
         in  (generateRuntimeMapping className $ map fst rules) ++
-            (generateExtensionShow className)
+            (generatePrintFunction className)
 
 generateRuntimeMapping :: String -> [String] -> [String]
 generateRuntimeMapping name ruleNames = [ 
@@ -162,9 +188,11 @@ generateRuntimeMapping name ruleNames = [
 
 generateConcreteMapping :: Cat -> (String, [Either Cat String]) -> Maybe (String)
 generateConcreteMapping cat (label, tokens) 
-  | isNilFun label || 
-    isOneFun label || 
-    isConsFun label = Nothing  -- these are not represented in the AST
+  | isNilFun label ||
+    isOneFun label ||
+    isConsFun label ||
+    isConcatFun label ||
+    isCoercion label = Nothing  -- these are not represented in the AST
   | otherwise = -- a standard rule
     let 
       className = str2DartClassName label
@@ -185,13 +213,11 @@ generateRuleRHS (token:rTokens) (variable@(vType, _):rVariables) lines = case to
     lines ++ [ buildArgument vType ("a." ++ buildVariableName variable) ]
     
 buildArgument :: DartVarType -> String -> String
-buildArgument (0, typeName) name = name ++ ".show" ++ typeName ++ ","
+buildArgument (0, typeName) name = name ++ ".print" ++ ","
 -- TODO add correct separators from the CF
 buildArgument (n, typeName) name = 
   "..." ++ name ++ ".expand((e" ++ show n ++ ") => [\'\', " ++ (buildArgument (n-1, typeName) ("e" ++ show n)) ++ "]).skip(1),"
 
-generateExtensionShow :: String -> [String]
-generateExtensionShow name = [
-  "extension" +++ name ++ "Show" +++ "on ast." ++ name +++ "{",
-  "  String get show" ++ name +++ "=> _renderer.show(_prettify" ++ name ++ "(this));",
-  "}" ]
+generatePrintFunction :: String -> [String]
+generatePrintFunction name = [ 
+  "String print" ++ name ++ "(ast." ++ name +++ "x)" +++  "=> _renderer.print(_prettify" ++ name ++ "(x));" ]

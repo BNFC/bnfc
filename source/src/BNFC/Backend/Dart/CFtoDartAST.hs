@@ -25,7 +25,9 @@ cf2DartAST cf rp =
     concatMap (prData rp) rules
   where
   rules  = getAbstractSyntax cf
-  imports = []
+  imports = [
+    "import 'package:fast_immutable_collections/fast_immutable_collections.dart';",
+    "import \'pretty_printer.dart\' as pp;" ]
 
 
 generateTokens :: [UserDef] -> [String]
@@ -34,14 +36,17 @@ generateTokens tokens = map toClass tokens
     toClass token = 
       let name = censorName token
       in unlines [
-        "final class" +++ name +++ "{",  -- A user defined type is a wrapper around the String
+        "final class" +++ name +++ "with pp.Printable {",  -- A user defined type is a wrapper around the String
         "  final String value;",
         "  const" +++ name ++ "(this.value);",
+        "",
+        "  @override",
+        "  String get print => pp.print" ++ name ++ "(this);",
         "}"
       ]
 
 
--- | Generates a (possibly abstract) category class, and classes for all its rules.
+-- | Generates a category class, and classes for all its rules.
 prData :: RecordPositions -> Data -> [String]
 prData rp (cat, rules) =
   categoryClass ++ mapMaybe (prRule rp cat) rules
@@ -49,7 +54,13 @@ prData rp (cat, rules) =
     funs = map fst rules
     categoryClass
       | catToStr cat `elem` funs || isList cat = [] -- the category is also a function or a list
-      | otherwise = [ "sealed class" +++ cat2DartClassName cat +++ "{}" ]
+      | otherwise =
+        let name = cat2DartClassName cat
+        in [ 
+          "sealed class" +++ name +++ "with pp.Printable {",
+          "  @override",
+          "  String get print => pp.print" ++ name ++ "(this);",
+          "}" ]
 
 
 -- | Generates classes for a rule, depending on what type of rule it is.
@@ -63,12 +74,13 @@ prRule rp cat (fun, cats)
       className = str2DartClassName fun
       vars = getVars cats
     in Just . unlines $ 
-      [ unwords [ "class", className, extending, "{" ] ] ++
+      [ unwords [ "class", className, extending, "with pp.Printable {" ] ] ++
       concatMap (indent 1) [
         prInstanceVariables rp vars,
         prConstructor className vars,
         prEquals className vars,
-        prHashCode vars
+        prHashCode vars,
+        prPrettyPrint className
       ] ++ [ "}" ] 
   where
     extending 
@@ -130,3 +142,8 @@ prConstructor className vars =
       | null vars = ""
       | otherwise = "{" ++ (concatMap assignment vars) ++ "}"
     assignment variable = "required this." ++ buildVariableName variable ++ ", "
+
+prPrettyPrint :: String -> [String]
+prPrettyPrint name = [
+  "@override",
+  "String get print => pp.print" ++ name ++ "(this);" ]
