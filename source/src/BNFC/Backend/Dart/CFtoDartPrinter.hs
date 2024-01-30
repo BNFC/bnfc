@@ -20,7 +20,8 @@ cf2DartPrinter cf =
       helperFunctions ++
       stringRenderer ++
       (map buildUserToken userTokens) ++
-      (concatMap generatePrettifiers $ ruleGroups cf)
+      (concatMap generateRulePrettifiers $ getAbstractSyntax cf) ++
+      (concatMap generateLabelPrettifiers $ ruleGroups cf)
 
 imports :: [String]
 imports = [
@@ -131,26 +132,30 @@ stringRenderer = [
 buildUserToken :: String -> String
 buildUserToken token = "extension on ast." ++ token +++ "{\n  String get show" ++ token +++ "=> value;\n}"
 
-generatePrettifiers :: (Cat, [Rule]) -> [String]
-generatePrettifiers (cat, rawRules) = 
+generateLabelPrettifiers :: (Cat, [Rule]) -> [String]
+generateLabelPrettifiers (cat, rawRules) = 
   let rules = [ (wpThing $ funRule rule, rhsRule rule) | rule <- rawRules ]
       funs = [ fst rule | rule <- rules ]
-  in  categoryClass rules funs ++ 
-      mapMaybe (generateConcreteMapping cat) rules ++
+  in  mapMaybe (generateConcreteMapping cat) rules ++
       concatMap generateExtensionShow funs
-  where
-    categoryClass rules funs
-      | isList cat || 
-        (catToStr cat) `elem` funs = [] -- the category is not presented in the AST
-      | otherwise = 
+
+generateRulePrettifiers :: Data -> [String]
+generateRulePrettifiers (cat, rules) = 
+  let funs = map fst rules
+  in  if 
+        isList cat || 
+        (catToStr cat) `elem` funs 
+      then 
+        [] -- the category is not presented in the AST
+      else 
         let className = cat2DartClassName cat
-        in  (genrateRuntimeMapping className rules) ++
+        in  (generateRuntimeMapping className $ map fst rules) ++
             (generateExtensionShow className)
 
-genrateRuntimeMapping :: String -> [(String, [Either Cat String])] -> [String]
-genrateRuntimeMapping name rules = [ 
+generateRuntimeMapping :: String -> [String] -> [String]
+generateRuntimeMapping name ruleNames = [ 
   "IList<String> _prettify" ++ name ++ "(ast." ++ name +++ "a) => switch (a) {" ] ++
-  (indent 2 $ map mapRule $ map str2DartClassName $ map fst rules) ++ 
+  (indent 2 $ map mapRule $ map str2DartClassName ruleNames) ++ 
   (indent 1 [ "};" ]) 
   where
     mapRule name = "ast." ++ name +++ "a => _prettify" ++ name ++ "(a),"
