@@ -1,6 +1,6 @@
 {-# LANGUAGE LambdaCase #-}
 
-module BNFC.Backend.Antlr.CFtoAntlr4Parser ( cf2AntlrParse ) where
+module BNFC.Backend.Antlr.CFtoAntlr4Parser ( cf2AntlrParse, antlrRuleLabel, makeLeftRecRule ) where
 
 import Data.Foldable ( toList )
 import Data.Maybe
@@ -80,11 +80,15 @@ constructRule cf env rules nt =
   PDef Nothing nt $
     [ ( p, Just label )
     | (index, r0) <- zip [1..] rules
-    , let b      = isConsFun (funRule r0) && elem (valCat r0) (cfgReversibleCats cf)
-    , let r      = applyWhen b revSepListRule r0
+    , let r = makeLeftRecRule cf r0
     , let p = generatePattern index env r
     , let label  = wpThing (funRule r)
     ]
+
+makeLeftRecRule :: CF -> Rule -> Rule
+makeLeftRecRule cf rule = applyWhen canBeLeftRecursive revSepListRule rule
+  where
+    canBeLeftRecursive = isConsFun (funRule rule) && elem (valCat rule) (cfgReversibleCats cf)
 
 -- | Generate patterns and a set of metavariables indicating
 -- where in the pattern the non-terminal
@@ -123,27 +127,33 @@ prRules = concatMap $ \case
   PDef _mlhs _nt []         -> ""
 
   -- At least one rule: print!
-  PDef mlhs nt (rhs : rhss) -> unlines $ concat
+  PDef mlhs nt rhss -> unlines $ concat
 
     -- The definition header: lhs and type.
     [ [ unwords [fromMaybe nt' mlhs]
       ]
     -- The first rhs.
-    , alternative "  :" rhs
+    , alternative "  :" $ head indexedRhss
     -- The other rhss.
-    , concatMap (alternative "  |") rhss
+    , concatMap (alternative "  |") $ tail indexedRhss
     -- The definition footer.
     , [ "  ;" ]
     ]
     where
-    alternative sep (p, label) = unwords [ sep , p ] : [ unwords [ "    #" , antlrRuleLabel l ] | Just l <- [label] ]
+    alternative sep ((p, label), idx) = unwords [ sep , p ] : [ unwords [ "    #" , antlrRuleLabel nt l idx] | Just l <- [label] ]
+    indexedRhss = zipWith (\rule idx -> if (maybe False isCoercion (snd rule)) then (rule, Just idx) else (rule, Nothing)) rhss [1..]
       
     catid              = identCat nt
     nt'                = getRuleName $ firstLowerCase catid
-    antlrRuleLabel :: Fun -> String
-    antlrRuleLabel fnc
-      | isNilFun fnc   = catid ++ "_Empty"
-      | isOneFun fnc   = catid ++ "_AppendLast"
-      | isConsFun fnc  = catid ++ "_PrependFirst"
-      | isCoercion fnc = "Coercion_" ++ catid
-      | otherwise      = getLabelName fnc
+
+-- we use rule's index as prefix for ANTLR label
+-- in order to avoid name collisions for coercion types
+antlrRuleLabel :: Cat -> Fun -> Maybe Integer -> String
+antlrRuleLabel cat fnc int
+  | isNilFun fnc   = catid ++ "_Empty"
+  | isOneFun fnc   = catid ++ "_AppendLast"
+  | isConsFun fnc  = catid ++ "_PrependFirst"
+  | isCoercion fnc = "Coercion_" ++ catid ++ maybe "" (("_" ++) . show) int
+  | otherwise      = getLabelName fnc
+  where
+    catid = identCat cat
