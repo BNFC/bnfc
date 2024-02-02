@@ -20,11 +20,13 @@ import BNFC.PrettyPrint
 -- | Entry point: create grammar.js file
 makeTreeSitter :: SharedOptions -> CF -> Backend
 makeTreeSitter opts cf = do
-  mkfile "grammar.js" comment (render $ cfToTreeSitter name cf)
+  -- Always remove zero width match for now, if needed, can be changed
+  -- to remove on flag in the future
+  mkfile "grammar.js" comment (render $ cfToTreeSitter name cf True)
   where
     name = lang opts
 
 comment :: String -> String
 comment = ("// " ++)
 
--- | TODO: Add Makefile generation for tree-sitter
+-- TODO: Add Makefile generation for tree-sitter

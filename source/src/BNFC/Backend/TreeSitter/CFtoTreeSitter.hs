@@ -29,8 +29,11 @@ indent :: Doc -> Doc
 indent = nest 2
 
 -- | Create content of grammar.js file
-cfToTreeSitter :: String -> CF -> Doc
-cfToTreeSitter name cf =
+cfToTreeSitter :: String -- ^ Name of the language
+                -> CF    -- ^ Context-Free grammar of the language
+                -> Bool  -- ^ Flags to enable zero-width match elimination
+                -> Doc   -- ^ grammar.js file generated
+cfToTreeSitter name cf removeZero =
   -- Overall structure of grammar.js
   text "module.exports = grammar({"
     $+$ indent
@@ -46,7 +49,7 @@ cfToTreeSitter name cf =
     rulesSection =
       text "rules: {"
         $+$ indent
-          ( prRules cf
+          ( prRules cf removeZero
               $+$ prUsrTokenRules cf
               $+$ prBuiltinTokenRules cf
           )
@@ -134,43 +137,67 @@ identRule =
 -- `$.cat_name` to circumvent this issue
 
 -- | Cat with a tag indicating if it is optional
-data OCat a = Always a | Optional a
-type Cat' = OCat Cat
+data CatOpt' a = Always a | Optional a
+type CatOpt = CatOpt' Cat
 
-  -- | unwrap to original Cat
-unwrap:: Cat' -> Cat
-unwrap (Always c) = c
-unwrap (Optional c) = c
+-- | type class for OCat or Cat
+class UnwrapCat a where
+  unwrap:: a -> Cat
+
+instance UnwrapCat Cat where
+  unwrap = id
+
+instance UnwrapCat CatOpt where
+    -- | unwrap to original Cat
+  unwrap (Always c) = c
+  unwrap (Optional c) = c
 
 -- | Rule with RHS tagged
-data Rule' = Rule' {srcRule::Rule, taggedRhs::SentForm'}
-type SentForm' = [Either Cat' String]
+data RuleOpt = Rule' {srcRule::Rule, taggedRhs::SentFormOpt}
+type SentFormOpt = [Either CatOpt String]
 
--- | type class for wrapped or unwrapped rules
-class GetRule a where
+-- | type class for a rule data type that can be formatted
+class FormatRule a where
+  -- | get the original rule
   getRule:: a -> Rule
+  -- | format the RHS of the rule
+  formatRuleRhs:: a -> [Doc]
 
-instance GetRule Rule where
+instance FormatRule Rule where
   getRule = id
 
-instance GetRule Rule' where
+  formatRuleRhs r = 
+    map (\case
+      Left c -> text $ refName $ formatCatName False c
+      Right term -> quoted term) $ rhsRule r
+
+
+instance FormatRule RuleOpt where
   getRule = srcRule
 
--- | Format right hand side of a rule into list of Docs
-formatRuleRhs:: Rule' -> [Doc]
-formatRuleRhs r = 
-  map (\case
-    Left (Always c) -> text $ refName $ formatCatName False c
-    Left (Optional c) -> wrapFun "optional" False $
-      text (refName $ formatCatName False c)
-    Right term -> quoted term) $ taggedRhs r
+  formatRuleRhs r = 
+    map (\case
+      Left (Always c) -> text $ refName $ formatCatName False c
+      Left (Optional c) -> wrapFun "optional" False $
+        text (refName $ formatCatName False c)
+      Right term -> quoted term) $ taggedRhs r
 
--- | Analyzes the grammar with the entrance symbol. This function
--- groups all remaining categories with their rules including internal rules,
--- with optional flags determined and tagged for all returning Cats and rules
+-- | Analyzes the grammar with the entrance symbol.
+-- This function finds all rules for the entrance symbol, and groups
+-- all remaining categories with their rules, including internal rules.
+analyzeCF :: CF -- ^ Context-free grammar of the language
+  -> Cat -- ^ Category object for the entrance symbol
+  -> ([(Cat, [Rule])], [Rule]) -- ^ (groups of remaining categories and rules, entrance rules)
+analyzeCF _ _ = ([], [])
+
+-- | Analyzes the grammar with the entrance symbol.
+-- This version of analyze function performs zero-width match analysis on all symbols and
+-- returns with optional flags determined and tagged for all returning Cats and rules.
 -- Returns (list of remaining tagged categories and tagged rules, tagged entrance rules)
-analyzeCF :: CF -> Cat -> ([(Cat', [Rule'])], [Rule'])
-analyzeCF cf entryCat =
+analyzeCFOptional :: CF  -- ^ Context-free grammar of the language
+  -> Cat -- ^ Category object of the entrance symbol
+  -> ([(CatOpt, [RuleOpt])], [RuleOpt]) -- ^ (groups of tagged remaining categories and tagged rules, tagged entrance rules)
+analyzeCFOptional cf entryCat =
   (
     -- Empty rules are excluded from normal categories since they are handled by
     -- "optional()" keywords in tree-sitter
@@ -193,14 +220,14 @@ analyzeCF cf entryCat =
       -- tree-sitter should support zero-width matches on them 
       $ filter (/= entryCat) allCats
     -- Tags Cat to Cat' using catOptMap
-    wrapCat:: Cat -> Cat'
+    wrapCat:: Cat -> CatOpt
     wrapCat c = if Map.findWithDefault False c catOptMap
       then Optional c
       else Always c
     wrapRule r = Rule' {srcRule = r, 
       taggedRhs = map wrapSentFormItem $ rhsRule r
     }
-    wrapSentFormItem :: Either Cat String -> Either Cat' String
+    wrapSentFormItem :: Either Cat String -> Either CatOpt String
     wrapSentFormItem (Left c) = Left $ wrapCat c
     wrapSentFormItem (Right s) = Right s
     ruleIsEmpty = null . rhsRule . getRule
@@ -208,14 +235,19 @@ analyzeCF cf entryCat =
 -- | First print the entrypoint rule, tree-sitter always use the
 --   first rule as entrypoint and does not support multi-entrypoint.
 --   Then print rest of the rules
-prRules :: CF -> Doc
-prRules cf =
+prRules :: CF -> Bool -> Doc
+prRules cf removeZero =
   if onlyOneEntry
     then
       -- entry rules are formatted without optional
       -- tree-sitter should support zero-width (a.k.a empty) matches for top level symbols
-      prOneCat entryRules entryCat
-        $+$ prOtherRules otherCatRules
+      if removeZero
+        then
+          prOneCat entryRulesOpt entryCat
+            $+$ prOtherRules otherCatRulesOpt
+        else
+          prOneCat entryRules entryCat
+            $+$ prOtherRules otherCatRules
     else error "Tree-sitter only supports one entrypoint"
   where
     --If entrypoint is defined, there must be only one entrypoint
@@ -223,10 +255,11 @@ prRules cf =
     onlyOneEntry = not (hasEntryPoint cf) || onlyOneEntryDefined
     onlyOneEntryDefined = length (allEntryPoints cf) == 1
     entryCat = firstEntry cf
+    (otherCatRulesOpt, entryRulesOpt) = analyzeCFOptional cf entryCat
     (otherCatRules, entryRules) = analyzeCF cf entryCat
 
 -- | Print all other rules except the entrypoint
-prOtherRules :: [(Cat', [Rule'])] -> Doc
+prOtherRules :: (UnwrapCat a, FormatRule b) => [(a, [b])] -> Doc
 prOtherRules otherRules = vcat' $ map mkOne otherRules
   where
     mkOne (cat, rules) = prOneCat rules $ unwrap cat
@@ -237,7 +270,7 @@ prUsrTokenRules cf = vcat' $ map prOneToken tokens
     tokens = tokenPragmas cf
 
 -- | Check if a set of rules contains internal rules
-hasInternal :: (GetRule a) => [a] -> Bool
+hasInternal :: (FormatRule a) => [a] -> Bool
 hasInternal = not . all (isParsable . getRule)
 
 -- | Generates one or two tree-sitter rule(s) for one non-terminal from CF.
@@ -245,7 +278,7 @@ hasInternal = not . all (isParsable . getRule)
 -- If the non-terminal has internal rules, an internal version of the non-terminal
 -- will be created (prefixed with "_" in tree-sitter), and all internal rules will
 -- be sectioned as such.
-prOneCat :: [Rule'] -> NonTerminal -> Doc
+prOneCat :: FormatRule a => [a] -> NonTerminal -> Doc
 prOneCat rules nt =
   defineSymbol (formatCatName False $ nt)
     $+$ indent (appendComma parRhs)
