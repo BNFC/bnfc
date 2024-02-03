@@ -188,7 +188,9 @@ instance FormatRule RuleOpt where
 analyzeCF :: CF -- ^ Context-free grammar of the language
   -> Cat -- ^ Category object for the entrance symbol
   -> ([(Cat, [Rule])], [Rule]) -- ^ (groups of remaining categories and rules, entrance rules)
-analyzeCF _ _ = ([], [])
+analyzeCF cf entryCat = ([(c, rulesForCat' cf c)| c <- allCats, c /= entryCat],
+  rulesForCat' cf entryCat)
+  where allCats = reallyAllCats cf
 
 -- | Analyzes the grammar with the entrance symbol.
 -- This version of analyze function performs zero-width match analysis on all symbols and
