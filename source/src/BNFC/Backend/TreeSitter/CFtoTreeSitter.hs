@@ -142,16 +142,15 @@ type CatOpt = CatOpt' Cat
 
 -- | type class for OCat or Cat
 class UnwrapCat a where
+  -- | unwrap to original Cat
   unwrap:: a -> Cat
 
 instance UnwrapCat Cat where
   unwrap = id
 
 instance UnwrapCat CatOpt where
-    -- | unwrap to original Cat
-  unwrap c = case c of
-    Always ct -> ct
-    Optional ct -> ct
+  unwrap (Always c) = c
+  unwrap (Optional c) = c
 
 -- | Rule with RHS tagged
 data RuleOpt = Rule' {srcRule::Rule, taggedRhs::SentFormOpt}
