@@ -149,8 +149,9 @@ instance UnwrapCat Cat where
 
 instance UnwrapCat CatOpt where
     -- | unwrap to original Cat
-  unwrap (Always c) = c
-  unwrap (Optional c) = c
+  unwrap c = case c of
+    Always ct -> ct
+    Optional ct -> ct
 
 -- | Rule with RHS tagged
 data RuleOpt = Rule' {srcRule::Rule, taggedRhs::SentFormOpt}
