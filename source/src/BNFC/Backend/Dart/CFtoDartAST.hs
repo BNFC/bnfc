@@ -25,9 +25,7 @@ cf2DartAST cf rp =
     concatMap (prData rp) rules
   where
   rules  = getAbstractSyntax cf
-  imports = [
-    "import 'package:fast_immutable_collections/fast_immutable_collections.dart';",
-    "import \'pretty_printer.dart\' as pp;" ]
+  imports = [ "import \'pretty_printer.dart\' as pp;" ]
 
 
 generateTokens :: [UserDef] -> [String]

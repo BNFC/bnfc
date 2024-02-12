@@ -69,7 +69,7 @@ makeDart' pkg options@Options{..} cf = do
     let locate str ext = dirBase </> str <.> ext 
         (lex, env) = cf2AntlrLex "Stella" cf
     mkfile (locate "ast" "dart") comment (cf2DartAST cf rp)
-    mkfile (locate "builder" "dart") comment (cf2DartBuilder cf)
+    mkfile (locate "builder" "dart") comment (cf2DartBuilder cf lang)
     mkfile (locate "pretty_printer" "dart") comment (cf2DartPrinter cf)
     mkfile (locate (lang ++ "Lexer") "g4") comment lex
     mkfile (locate (lang ++ "Parser") "g4") comment (cf2AntlrParse lang cf rp env)
