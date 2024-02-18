@@ -28,7 +28,7 @@ cat2DartType cat = toList (0, cat)
   where
     toList :: (Int, Cat) -> DartVarType
     toList (n, (ListCat name)) = toList (n + 1, name)
-    toList (n, name) = (n, (name2DartBuiltIn $ catToStr name))
+    toList (n, name) = (n, (name2DartBuiltIn $ catToStr $ normCat name))
 
 
 cat2DartName :: Cat -> String
@@ -118,7 +118,10 @@ buildVariableName (_, (name, num)) = lowerFirst appendNumber
 
 -- From a DartVar make a name for the AST
 buildVariableType :: DartVar -> String 
-buildVariableType (vType, _) = unpack vType
+buildVariableType (vType, _) = buildVariableTypeFromDartType vType
+  
+buildVariableTypeFromDartType :: DartVarType -> String
+buildVariableTypeFromDartType vType = unpack vType
   where 
     unpack (0, name) = name
     unpack (n, name) = "List<" ++ unpack (n - 1, name) ++ ">"

@@ -10,21 +10,21 @@ import BNFC.Utils       ( (+++) )
 import Data.List ( intercalate, find )
 import Data.Either ( isLeft )
 
-cf2DartBuilder :: CF -> String
-cf2DartBuilder cf = 
+cf2DartBuilder :: CF -> String -> String
+cf2DartBuilder cf lang = 
   let userTokens = [ n | (n,_) <- tokenPragmas cf ]
   in 
     unlines $
-      imports ++
+      imports lang ++
       helperFunctions ++
       map buildUserToken userTokens ++
       concatMap generateBuilders rules
   where 
     rules = ruleGroups cf
-    imports = [
+    imports lang = [
       "import 'package:antlr4/antlr4.dart';",
       "import 'ast.dart';",
-      "import 'stellaParser.dart';  // fix this line depending on where the stellaParser is being lcated" ]
+      "import '" ++ lang ++ "Parser.dart';  // fix this line depending on where the stellaParser is being lcated" ]
     helperFunctions = [
       "extension IList<E> on List<E> {",
       "  List<T> iMap<T>(T Function(E e) toElement) =>",

@@ -20,8 +20,8 @@ cf2DartPrinter cf =
       helperFunctions ++
       stringRenderer ++
       (map buildUserToken userTokens) ++
-      (concatMap generateRulePrettifiers $ getAbstractSyntax cf) ++
-      (concatMap generateLabelPrettifiers $ ruleGroups cf)
+      (concatMap generateRulePrinters $ getAbstractSyntax cf) ++
+      (concatMap generateLabelPrinters $ ruleGroups cf)
 
 imports :: [String]
 imports = [
@@ -144,12 +144,23 @@ stringRenderer = [
 buildUserToken :: String -> String
 buildUserToken token = "String print" ++ token ++ "(x) => x.value;"
 
-generateLabelPrettifiers :: (Cat, [Rule]) -> [String]
-generateLabelPrettifiers (cat, rawRules) = 
+generateLabelPrinters :: (Cat, [Rule]) -> [String]
+generateLabelPrinters (cat, rawRules) = 
   let rules = [ (wpThing $ funRule rule, rhsRule rule) | rule <- rawRules ]
-      funs = [ fst rule | rule <- rules ]
-  in  mapMaybe (generateConcreteMapping cat) rules ++
-      (concatMap generatePrintFunction $ map str2DartClassName $ filter representedInAst funs)
+  in if isList cat 
+    then 
+      let 
+        sep = findSep rules
+        term = findTerm rules
+        vType = cat2DartType $ normCat cat
+        precedence = precCat cat
+      in [
+        generateListPrettifier vType precedence sep term,
+        generateListPrintFunction vType precedence ]
+    else 
+      let funs = [ fst rule | rule <- rules ]
+      in mapMaybe (generateConcreteMapping cat) rules ++
+        (concatMap generatePrintFunction $ map str2DartClassName $ filter representedInAst funs) 
   where
     representedInAst :: String -> Bool
     representedInAst fun = not (
@@ -158,25 +169,40 @@ generateLabelPrettifiers (cat, rawRules) =
       isConsFun fun ||
       isConcatFun fun ||
       isCoercion fun )
+    findSep :: [(String, [Either Cat String])] -> String
+    findSep [] = ""
+    findSep ((name, rhs):rest) 
+      | isConsFun name = case [ sep | Right sep <- rhs ] of
+        (a:_) -> a
+        []    -> findSep rest
+      | otherwise = findSep rest
+    findTerm :: [(String, [Either Cat String])] -> String
+    findTerm [] = ""
+    findTerm ((name, rhs):rest) 
+      | isOneFun name = case [ sep | Right sep <- rhs ] of
+        (a:_) -> a
+        []    -> findTerm rest
+      | otherwise = findTerm rest
 
-generateRulePrettifiers :: Data -> [String]
-generateRulePrettifiers (cat, rules) = 
+generateRulePrinters :: Data -> [String]
+generateRulePrinters (cat, rules) = 
   let funs = map fst rules
       fun = catToStr cat
-  in  if 
-        isList cat || 
-        isNilFun fun ||
-        isOneFun fun ||
-        isConsFun fun ||
-        isConcatFun fun ||
-        isCoercion fun ||
-        fun `elem` funs 
-      then 
-        [] -- the category is not presented in the AST
-      else 
-        let className = cat2DartClassName cat
-        in  (generateRuntimeMapping className $ map fst rules) ++
-            (generatePrintFunction className)
+  in 
+    if 
+      isList cat || 
+      isNilFun fun ||
+      isOneFun fun ||
+      isConsFun fun ||
+      isConcatFun fun ||
+      isCoercion fun ||
+      fun `elem` funs 
+    then 
+      [] -- the category is not presented in the AST
+    else 
+      let className = cat2DartClassName cat
+      in  (generateRuntimeMapping className $ map fst rules) ++
+          (generatePrintFunction className)
 
 generateRuntimeMapping :: String -> [String] -> [String]
 generateRuntimeMapping name ruleNames = [ 
@@ -196,28 +222,48 @@ generateConcreteMapping cat (label, tokens)
   | otherwise = -- a standard rule
     let 
       className = str2DartClassName label
-      cats = [ normCat cat | Left cat <- tokens ]
-      vars = getVars cats
+      cats = [ cat | Left cat <- tokens ]
+      vars = zip (map precCat cats) (getVars cats)
     in Just . unlines $ [ 
-      "IList<String> _prettify" ++ className ++ "(ast." ++ className ++ " a) => IList([" ] ++
+      "IList<String> _prettify" ++ className ++ "(ast." ++ className +++ "a) => IList([" ] ++
       (indent 1 $ generateRuleRHS tokens vars []) ++
       ["]);"]
 
-generateRuleRHS :: [Either Cat String] -> [DartVar] -> [String] -> [String]
+generateListPrettifier :: DartVarType -> Integer -> String -> String -> String 
+generateListPrettifier vType@(n, name) prec separator terminator = 
+  "IList<String> _prettify" ++ printerListName vType prec ++ "(" ++ 
+  printerListType vType +++ "a) => IList([...a.expand((e" ++ show n ++ 
+  ") => [\'" ++ separator ++ "\'," +++ 
+  (buildArgument (n - 1, name) prec ("e" ++ show n)) ++
+   "],).skip(1)," +++ "\'" ++ terminator ++ "\',]);"
+
+generateRuleRHS :: [Either Cat String] -> [(Integer, DartVar)] -> [String] -> [String]
 generateRuleRHS [] _ lines = lines
 generateRuleRHS _ [] lines = lines
-generateRuleRHS (token:rTokens) (variable@(vType, _):rVariables) lines = case token of
+generateRuleRHS (token:rTokens) ((prec, variable@(vType, _)):rVariables) lines = case token of
   Right terminal -> 
-    generateRuleRHS rTokens (variable:rVariables) $ lines ++ ["\"" ++ terminal ++ "\","]
+    generateRuleRHS rTokens ((prec, variable):rVariables) $ lines ++ ["\"" ++ terminal ++ "\","]
   Left _ -> generateRuleRHS rTokens rVariables $ 
-    lines ++ [ buildArgument vType ("a." ++ buildVariableName variable) ]
-    
-buildArgument :: DartVarType -> String -> String
-buildArgument (0, typeName) name = name ++ ".print" ++ ","
--- TODO add correct separators from the CF
-buildArgument (n, typeName) name = 
-  "..." ++ name ++ ".expand((e" ++ show n ++ ") => [\'\', " ++ (buildArgument (n-1, typeName) ("e" ++ show n)) ++ "]).skip(1),"
+    lines ++ [ buildArgument vType prec ("a." ++ buildVariableName variable) ++ "," ]
+
+buildArgument :: DartVarType -> Integer -> String -> String
+buildArgument (0, _) prec argument = argument ++ ".print"
+buildArgument vType@(n, name) prec argument = 
+  "print" ++ printerListName vType prec ++ "(" ++ argument ++ ")"
 
 generatePrintFunction :: String -> [String]
 generatePrintFunction name = [ 
-  "String print" ++ name ++ "(ast." ++ name +++ "x)" +++  "=> _renderer.print(_prettify" ++ name ++ "(x));" ]
+  "String print" ++ name ++ "(ast." ++ name +++ "x)" +++ "=> _renderer.print(_prettify" ++ name ++ "(x));" ]
+
+generateListPrintFunction :: DartVarType -> Integer -> String
+generateListPrintFunction dvt prec = 
+  "String print" ++ printerListName dvt prec ++ "(" ++ printerListType dvt +++ "x)" +++ "=> _renderer.print(_prettify" ++ printerListName dvt prec ++ "(x));" 
+
+printerListName :: DartVarType -> Integer -> String
+printerListName (0, name) prec = 
+  (str2DartClassName name) ++ if prec <= 0 then "" else (show prec)
+printerListName (n, name) prec = "List" ++ (printerListName (n - 1, name) prec)
+
+printerListType :: DartVarType -> String
+printerListType (0, name) = "ast." ++ (str2DartClassName name)
+printerListType (n, name) = "List<" ++ printerListType (n - 1, name) ++ ">"
