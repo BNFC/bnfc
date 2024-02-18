@@ -153,11 +153,10 @@ generateLabelPrinters (cat, rawRules) =
         sep = findSep rules
         term = findTerm rules
         vType = cat2DartType $ normCat cat
-      in if sep == "" && term == ""
-        then []
-        else [
-          generateListPrettifier vType sep term,
-          generateListPrintFunction vType ]
+        precedence = precCat cat
+      in [
+        generateListPrettifier vType precedence sep term,
+        generateListPrintFunction vType precedence ]
     else 
       let funs = [ fst rule | rule <- rules ]
       in mapMaybe (generateConcreteMapping cat) rules ++
@@ -223,47 +222,47 @@ generateConcreteMapping cat (label, tokens)
   | otherwise = -- a standard rule
     let 
       className = str2DartClassName label
-      cats = [ normCat cat | Left cat <- tokens ]
-      vars = getVars cats
+      cats = [ cat | Left cat <- tokens ]
+      vars = zip (map precCat cats) (getVars cats)
     in Just . unlines $ [ 
       "IList<String> _prettify" ++ className ++ "(ast." ++ className +++ "a) => IList([" ] ++
       (indent 1 $ generateRuleRHS tokens vars []) ++
       ["]);"]
 
-generateListPrettifier :: DartVarType -> String -> String -> String 
-generateListPrettifier vType@(n, name) separator terminator = 
-  "IList<String> _prettify" ++ printerListName vType ++ "(" ++ 
+generateListPrettifier :: DartVarType -> Integer -> String -> String -> String 
+generateListPrettifier vType@(n, name) prec separator terminator = 
+  "IList<String> _prettify" ++ printerListName vType prec ++ "(" ++ 
   printerListType vType +++ "a) => IList([...a.expand((e" ++ show n ++ 
   ") => [\'" ++ separator ++ "\'," +++ 
-  (buildArgument (n - 1, name) ("e" ++ show n)) ++
+  (buildArgument (n - 1, name) prec ("e" ++ show n)) ++
    "],).skip(1)," +++ "\'" ++ terminator ++ "\',]);"
 
-generateRuleRHS :: [Either Cat String] -> [DartVar] -> [String] -> [String]
+generateRuleRHS :: [Either Cat String] -> [(Integer, DartVar)] -> [String] -> [String]
 generateRuleRHS [] _ lines = lines
 generateRuleRHS _ [] lines = lines
-generateRuleRHS (token:rTokens) (variable@(vType, _):rVariables) lines = case token of
+generateRuleRHS (token:rTokens) ((prec, variable@(vType, _)):rVariables) lines = case token of
   Right terminal -> 
-    generateRuleRHS rTokens (variable:rVariables) $ lines ++ ["\"" ++ terminal ++ "\","]
+    generateRuleRHS rTokens ((prec, variable):rVariables) $ lines ++ ["\"" ++ terminal ++ "\","]
   Left _ -> generateRuleRHS rTokens rVariables $ 
-    lines ++ [ buildArgument vType ("a." ++ buildVariableName variable) ++ "," ]
+    lines ++ [ buildArgument vType prec ("a." ++ buildVariableName variable) ++ "," ]
 
-buildArgument :: DartVarType -> String -> String
-buildArgument (0, _) argument = 
-  argument ++ ".print"
-buildArgument vType@(n, name) argument = 
-  "print" ++ printerListName vType ++ "(" ++ argument ++ ")"
+buildArgument :: DartVarType -> Integer -> String -> String
+buildArgument (0, _) prec argument = argument ++ ".print"
+buildArgument vType@(n, name) prec argument = 
+  "print" ++ printerListName vType prec ++ "(" ++ argument ++ ")"
 
 generatePrintFunction :: String -> [String]
 generatePrintFunction name = [ 
   "String print" ++ name ++ "(ast." ++ name +++ "x)" +++ "=> _renderer.print(_prettify" ++ name ++ "(x));" ]
 
-generateListPrintFunction :: DartVarType -> String
-generateListPrintFunction dvt = 
-  "String print" ++ printerListName dvt ++ "(" ++ printerListType dvt +++ "x)" +++ "=> _renderer.print(_prettify" ++ printerListName dvt ++ "(x));" 
+generateListPrintFunction :: DartVarType -> Integer -> String
+generateListPrintFunction dvt prec = 
+  "String print" ++ printerListName dvt prec ++ "(" ++ printerListType dvt +++ "x)" +++ "=> _renderer.print(_prettify" ++ printerListName dvt prec ++ "(x));" 
 
-printerListName :: DartVarType -> String
-printerListName (0, name) = str2DartClassName name
-printerListName (n, name) = "List" ++ (printerListName (n - 1, name))
+printerListName :: DartVarType -> Integer -> String
+printerListName (0, name) prec = 
+  (str2DartClassName name) ++ if prec <= 0 then "" else (show prec)
+printerListName (n, name) prec = "List" ++ (printerListName (n - 1, name) prec)
 
 printerListType :: DartVarType -> String
 printerListType (0, name) = "ast." ++ (str2DartClassName name)

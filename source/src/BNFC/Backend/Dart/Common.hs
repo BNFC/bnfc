@@ -28,7 +28,7 @@ cat2DartType cat = toList (0, cat)
   where
     toList :: (Int, Cat) -> DartVarType
     toList (n, (ListCat name)) = toList (n + 1, name)
-    toList (n, name) = (n, (name2DartBuiltIn $ catToStr name))
+    toList (n, name) = (n, (name2DartBuiltIn $ catToStr $ normCat name))
 
 
 cat2DartName :: Cat -> String
