@@ -6,6 +6,7 @@ module BNFC.Backend.Dart.CFtoDartBuilder (cf2DartBuilder) where
 
 import BNFC.CF
 import BNFC.Backend.Dart.Common
+import BNFC.Backend.Antlr.CFtoAntlr4Parser (makeLeftRecRule)
 import BNFC.Utils       ( (+++) )
 import Data.List ( intercalate, find )
 import Data.Either ( isLeft )
@@ -20,16 +21,14 @@ cf2DartBuilder cf lang =
       map buildUserToken userTokens ++
       concatMap generateBuilders rules
   where 
-    rules = ruleGroups cf
+    leftRecRuleMaker = (makeLeftRecRule cf)
+    rules = map 
+      (\(cat, rules) -> (cat, (map leftRecRuleMaker rules))) $ ruleGroups cf
     imports lang = [
       "import 'package:antlr4/antlr4.dart';",
       "import 'ast.dart';",
       "import '" ++ lang ++ "Parser.dart';  // fix this line depending on where the stellaParser is being lcated" ]
     helperFunctions = [
-      "extension IList<E> on List<E> {",
-      "  List<T> iMap<T>(T Function(E e) toElement) =>",
-      "      map(toElement).toList(growable: false);",
-      "}",
       "int? buildInt(Token? t) => t?.text != null ? int.tryParse(t!.text!) : null;",
       "double? buildDouble(Token? t) => t?.text != null ? double.tryParse(t!.text!) : null;",
       "String? buildString(Token? t) => t?.text;" ]
@@ -50,55 +49,47 @@ generateBuilders (cat, rawRules) =
   where
     funs numeratedRawRules = (map (\(_, rule) -> wpThing $ funRule rule) numeratedRawRules)
     runtimeTypeMapping numeratedRawRules
-      | isList cat || 
-        (catToStr cat) `elem` (funs numeratedRawRules) = [] -- the category is also a function or a list
+      | (catToStr cat) `elem` (funs numeratedRawRules) = [] -- the category is also a function or a list
       | otherwise = generateRuntimeTypeMapping cat [
         (index, wpThing $ funRule rule, rhsRule rule) | 
         (index, rule) <- numeratedRawRules ]
 
 
--- TODO get rid of this reformating and pass the actual sturcture everywhere
 reformatRule :: Rule -> (String, [Cat])
 reformatRule rule = (wpThing $ funRule rule, [normCat c | Left c <- rhsRule rule ])
 
 
 generateRuntimeTypeMapping :: Cat -> [(Int, String, [Either Cat String])] -> [String]
 generateRuntimeTypeMapping cat rules = 
-  let astName = cat2DartClassName cat 
+  let ctxName = cat2DartClassName cat 
+      astName = buildVariableTypeFromDartType $ cat2DartType cat 
       prec = precCat cat
-      precedencedName = astName ++ (if prec == 0 then "" else show prec)
+      precedencedName = ctxName ++ (if prec == 0 then "" else show prec)
   in [  
-    astName ++ "?" +++ "build" ++ precedencedName ++ "(" ++ contextName precedencedName ++ "?" +++ "ctx" ++ ") =>" 
+    astName ++ "?" +++ "build" ++ precedencedName ++ "(" ++ (contextName precedencedName) ++ "?" +++ "ctx" ++ ") {" 
   ] ++ indent 1 (
-    [ "switch (ctx?.runtimeType) {" ] ++ 
-    (indent 1 $ addDefaultCase $ map (buildChild precedencedName) rules) ++ 
-    [ "};" ]
-  )
+    (map (buildChild precedencedName) rules) ++
+    ["return null;"]
+  ) ++ ["}"]
   where
-    -- TODO FIX make this synchronized with the parser generator
-    -- TODO one antlr context class may have multiple arguments from different rules
-    buildUniversalChild name fun arg = name +++ "c => build" ++ fun ++ "(" ++ arg ++ "),"
-    buildChild className (index, name, rhs)
-      | isNilFun name = 
-        buildUniversalChild (contextName className ++ "_Empty") className "c"
-      | isOneFun name = 
-        buildUniversalChild (contextName className ++ "_AppendLast") className "c"
-      | isConsFun name = 
-        buildUniversalChild (contextName className ++ "_PrependFirst") className "c"
-      | isCoercion name = 
-        let 
-          (coercionType, ind2) = case (find (\(_, value) -> isLeft value) $ zip [1..] rhs) of 
-            Just (i, Left cat) -> (
-              let prec = precCat cat in (cat2DartClassName cat) ++ (if prec == 0 then "" else show prec), 
-              show i )
-            otherwise -> (className, "") -- error, no category for the coercion
-          lineIndex = show index
-          argument = "p_" ++ lineIndex ++ "_" ++ ind2
-        in 
-          buildUniversalChild ("Coercion_" ++ contextName (className ++ "_" ++ lineIndex)) coercionType ("c." ++ argument)
-      | otherwise = 
-        buildUniversalChild (contextName $ str2AntlrClassName name) (str2DartClassName name) "c"
-    addDefaultCase cases = cases ++ [ "_ => null," ]
+    buildUniversalChild name fun arg = 
+      "if (ctx is" +++ name ++ ") return build" ++ fun ++ "(" ++ arg ++ ");"
+    buildChild className (index, name, rhs) = case (antlrListSuffix name) of
+      "" -> if (isCoercion name)
+        then 
+          let (coercionType, ind2) = case (find (\(_, value) -> isLeft value) $ zip [1..] rhs) of 
+                Just (i, Left cat) -> (
+                  let prec = precCat cat in (cat2DartClassName cat) ++ (if prec == 0 then "" else show prec), 
+                  show i )
+                otherwise -> (className, "") -- error, no category for the coercion
+              lineIndex = show index
+              argument = "p_" ++ lineIndex ++ "_" ++ ind2
+          in 
+            buildUniversalChild ("Coercion_" ++ contextName (className ++ "_" ++ lineIndex)) coercionType ("ctx." ++ argument)
+        else 
+          buildUniversalChild (contextName $ str2AntlrClassName name) (str2DartClassName name) "ctx"
+      suffix -> 
+        buildUniversalChild (contextName (className ++ "_" ++ suffix)) (className ++ suffix) "ctx"
 
 
 generateConcreteMapping :: Int -> Rule -> [String]
@@ -108,29 +99,47 @@ generateConcreteMapping index rule =
 
 generateConcreteMappingHelper :: Int -> Rule -> (String, [Cat]) -> [String]
 generateConcreteMappingHelper index rule (fun, cats)
-  | isCoercion fun ||
-    isNilFun fun || 
-    isOneFun fun || 
-    isConsFun fun = []  -- these are not represented in the ast
-  | otherwise = -- a standard rule
+  | isCoercion fun = []
+  | otherwise =
     let 
-      className = str2DartClassName fun
-      antlrContextName = contextName $ str2AntlrClassName fun
+      (typeName, className, ctxName) = 
+        if (isNilFun fun ||
+            isOneFun fun ||
+            isConsFun fun)
+        then 
+          let cat = valCat rule
+              prec = case (precCat cat) of 
+                0 -> ""
+                i -> show i
+              ctxName = (cat2DartClassName cat) ++ prec
+              suffix = antlrListSuffix fun
+              precedencedName = ctxName ++ suffix
+              suffixedCtxName = contextName (ctxName ++ "_" ++ suffix)
+              astName = buildVariableTypeFromDartType $ cat2DartType cat
+          in (astName, precedencedName, suffixedCtxName)
+        else 
+          let name = str2DartClassName fun
+              ctxName = contextName $ str2AntlrClassName fun
+          in (name, name, ctxName)
       vars = getVars cats
     in [
-      className ++ "?" +++ "build" ++ className ++ "(" ++ antlrContextName ++ "?" +++ "ctx) {"
+      typeName ++ "?" +++ "build" ++ className ++ "(" ++ ctxName ++ "?" +++ "ctx) {"
     ] ++ (
       indent 1 $ 
         (generateArguments index rule vars) ++ 
         (generateNullCheck vars) ++ 
-        [ "return" +++ className ++ "(" ]
-    ) ++ (
-      indent 2 $ generateArgumentsMapping vars 
-    ) ++ indent 1 [
-      ");"
-    ] ++ [
+        (generateReturnStatement fun vars typeName)
+    ) ++ [
       "}"
     ]
+  where
+    generateReturnStatement :: Fun -> [DartVar] -> String -> [String]
+    generateReturnStatement fun vars typeName
+      | isNilFun fun = ["return [];"]
+      | isOneFun fun = generateOneArgumentListReturn vars
+      | isConsFun fun = generateTwoArgumentsListReturn vars
+      | otherwise =  [ "return" +++ typeName ++ "(" ] ++
+        (indent 1 $ generateArgumentsMapping vars ) ++ [");"] 
       
 
 generateArguments :: Int -> Rule -> [DartVar] -> [String]
@@ -155,10 +164,9 @@ traverseRule ind1 ind2 (terminal:restTerminals) (variable@(vType, _):restVariabl
     buildArgument prec (0, typeName) name = 
       let precedence = if prec == 0 then "" else show prec
       in "build" ++ upperFirst typeName ++ precedence ++ "(" ++ name ++ ")"
-    buildArgument prec (n, typeName) name = 
-      let nextName = "e" ++ show n
-          argument = buildArgument prec (n - 1, typeName) nextName
-      in name ++ "?.iMap((" ++ nextName ++ ") =>" +++ argument ++ ")"
+    buildArgument prec (_, typeName) name = 
+      let precedence = if prec == 0 then "" else show prec
+      in "buildList" ++ upperFirst typeName ++ precedence ++ "(" ++ name ++ ")"
 
 
 generateNullCheck :: [DartVar] -> [String]
@@ -182,5 +190,27 @@ generateArgumentsMapping vars = map mapArgument vars
       in name ++ ":" +++ name ++ ","
 
 
+generateOneArgumentListReturn :: [DartVar] -> [String]
+generateOneArgumentListReturn (v:_) = 
+  ["return [" ++ buildVariableName v ++ "];"]
+
+
+generateTwoArgumentsListReturn :: [DartVar] -> [String]
+generateTwoArgumentsListReturn (x:y:_) = 
+  let (a, b) = putListSecond x y
+  in ["return [" ++ buildVariableName a ++ ", ..." ++ buildVariableName b ++ ",];"]
+  where 
+    putListSecond x@((0,_),_) y = (x, y)
+    putListSecond x y = (y, x)
+
+
 contextName :: String -> String
 contextName className = className ++ "Context"
+
+
+antlrListSuffix :: Fun -> String
+antlrListSuffix fun
+  | isNilFun fun = "Empty"
+  | isOneFun fun = "AppendLast"
+  | isConsFun fun = "PrependFirst"
+  | otherwise = ""
