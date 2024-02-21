@@ -19,7 +19,7 @@ cf2DartPrinter cf =
       imports ++
       helperFunctions ++
       stringRenderer ++
-      (map buildUserToken userTokens) ++
+      (concatMap buildUserToken userTokens) ++
       (concatMap generateRulePrinters $ getAbstractSyntax cf) ++
       (concatMap generateLabelPrinters $ ruleGroups cf)
 
@@ -54,31 +54,31 @@ stringRenderer = [
   "  static const _indentInSpaces = 2;",
   "",
   "  String print(IList<String> tokens) => tokens",
+  "      .map((element) => element.trim())",
   "      .fold(IList<Token>(), _render)",
   "      .fold(IList<(int, IList<Token>)>(), _split)",
   "      .map((line) => (line.$1, line.$2.map(_tokenToString).join()))",
   "      .fold(IList<(int, String)>(), _convertIndentation)",
   "      .map(_addIndentation)",
-  "      .join();",
+  "      .join('\\n');",
   "",
   "  IList<(int, IList<Token>)> _split(",
   "    IList<(int, IList<Token>)> lists,",
   "    Token token,",
   "  ) =>",
   "      switch (token) {",
-  "        NewLine nl => lists.add(",
-  "            (",
-  "              nl.indentDifference,",
-  "              IList([]),",
-  "            ),",
-  "          ),",
-  "        _ => lists.put(",
-  "            lists.length - 1,",
-  "            (",
-  "              lists.last.$1,",
-  "              lists.last.$2.add(token),",
-  "            ),",
-  "          )",
+  "        NewLine nl => lists.add((",
+  "            nl.indentDifference,",
+  "            IList([]),",
+  "          )),",
+  "        _ => lists.isEmpty",
+  "            ? IList([",
+  "                (0, IList([token]))",
+  "              ])",
+  "            : lists.put(",
+  "                lists.length - 1,",
+  "                (lists.last.$1, lists.last.$2.add(token)),",
+  "              ),",
   "      };",
   "",
   "  String _tokenToString(Token t) => switch (t) {",
@@ -91,12 +91,10 @@ stringRenderer = [
   "    IList<(int, String)> lines,",
   "    (int, String) line,",
   "  ) =>",
-  "      lines.add(",
-  "        (",
-  "          line.$1 + (lines.lastOrNull?.$1 ?? 0),",
-  "          line.$2,",
-  "        ),",
-  "      );",
+  "      lines.add((",
+  "        line.$1 + (lines.lastOrNull?.$1 ?? 0),",
+  "        line.$2,",
+  "      ));",
   "",
   "  String _addIndentation((int, String) indentedLine) =>",
   "      ' ' * (_indentInSpaces * indentedLine.$1) + indentedLine.$2;",
@@ -104,25 +102,31 @@ stringRenderer = [
   "  // This function is supposed to be edited",
   "  // in order to adjust the pretty printer behavior",
   "  IList<Token> _render(IList<Token> tokens, String token) => switch (token) {",
+  "        '' || ' ' => tokens,",
   "        '{' => tokens.addAll([Text(token), NewLine.nest()]),",
-  "        '}' => tokens.addAll([NewLine.unnest(), Text(token)]),",
-  "        ';' => tokens.addAll([NewLine(), Text(token)]),",
-  "        ',' ||",
-  "        '.' ||",
-  "        ':' ||",
-  "        '<' ||",
-  "        '>' ||",
-  "        '[' ||",
-  "        ']' ||",
+  "        '}' => tokens.removeTrailingLines",
+  "            .addAll([NewLine.unnest(), Text(token), NewLine()]),",
+  "        ';' => tokens.removeTrailingSpaces.addAll([Text(token), NewLine()]),",
+  "        ')' || ']' || '>' || ',' => tokens",
+  "            .removeTrailingSpaces.removeTrailingLines",
+  "            .addAll([Text(token), Space()]),",
+  "        '\\$' ||",
+  "        '&' ||",
+  "        '@' ||",
+  "        '!' ||",
+  "        '#' ||",
   "        '(' ||",
-  "        ')' =>",
-  "          tokens.removeTrailingSpaces.addAll([Text(token), Space()]),",
-  "        '\\$' || '&' || '@' || '!' || '#' => tokens.add(Text(token)),",
+  "        '[' ||",
+  "        '<' ||",
+  "        '.' =>",
+  "          tokens.removeTrailingLines.add(Text(token)),",
   "        _ => tokens.addAll([Text(token), Space()])",
   "      };",
   "}",
   "",
   "extension TokensList on IList<Token> {",
+  "  IList<Token> get removeTrailingLines =>",
+  "      isNotEmpty && last is NewLine ? removeLast().removeTrailingLines : this;",
   "  IList<Token> get removeTrailingSpaces =>",
   "      isNotEmpty && last is Space ? removeLast().removeTrailingSpaces : this;",
   "}",
@@ -141,8 +145,10 @@ stringRenderer = [
   "  String get print => \'[not implemented]\';",
   "}" ]
 
-buildUserToken :: String -> String
-buildUserToken token = "String print" ++ token ++ "(x) => x.value;"
+buildUserToken :: String -> [String]
+buildUserToken token = [ 
+  "String print" ++ token ++ "(x) => x.value;", 
+  "IList<String> _prettify" ++ token ++ "(x) => IList([x.value]);"]
 
 generateLabelPrinters :: (Cat, [Rule]) -> [String]
 generateLabelPrinters (cat, rawRules) = 
@@ -239,7 +245,11 @@ generateListPrettifier vType@(n, name) prec separator terminator =
 
 generateRuleRHS :: [Either Cat String] -> [(Integer, DartVar)] -> [String] -> [String]
 generateRuleRHS [] _ lines = lines
-generateRuleRHS _ [] lines = lines
+generateRuleRHS (token:rTokens) [] lines = case token of 
+  Right terminal -> 
+    generateRuleRHS rTokens [] $ lines ++ ["\"" ++ terminal ++ "\","]
+  Left _ ->
+    generateRuleRHS rTokens [] lines
 generateRuleRHS (token:rTokens) ((prec, variable@(vType, _)):rVariables) lines = case token of
   Right terminal -> 
     generateRuleRHS rTokens ((prec, variable):rVariables) $ lines ++ ["\"" ++ terminal ++ "\","]
@@ -247,9 +257,11 @@ generateRuleRHS (token:rTokens) ((prec, variable@(vType, _)):rVariables) lines =
     lines ++ [ buildArgument vType prec ("a." ++ buildVariableName variable) ++ "," ]
 
 buildArgument :: DartVarType -> Integer -> String -> String
-buildArgument (0, _) prec argument = argument ++ ".print"
+buildArgument (0, name) prec argument = if (censorName name) /= name 
+  then argument ++ ".print"
+  else "..._prettify" ++ (str2DartClassName name) ++ "(" ++ argument ++ ")"
 buildArgument vType@(n, name) prec argument = 
-  "print" ++ printerListName vType prec ++ "(" ++ argument ++ ")"
+  "..._prettify" ++ printerListName vType prec ++ "(" ++ argument ++ ")"
 
 generatePrintFunction :: String -> [String]
 generatePrintFunction name = [ 
