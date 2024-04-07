@@ -65,6 +65,7 @@ data Target = TargetC | TargetCpp | TargetCppNoStl
             | TargetJava | TargetOCaml | TargetPygments
             | TargetTreeSitter
             | TargetCheck
+            | TargetSwift
   deriving (Eq, Bounded, Enum, Ord)
 
 -- | List of Haskell target.
@@ -83,6 +84,7 @@ instance Show Target where
   show TargetPygments     = "Pygments"
   show TargetTreeSitter   = "Tree-sitter"
   show TargetCheck        = "Check LBNF file"
+  show TargetSwift        = "Swift"
 
 -- | Which version of Alex is targeted?
 data AlexVersion = Alex3
@@ -262,6 +264,7 @@ printTargetOption = ("--" ++) . \case
   TargetPygments    -> "pygments"
   TargetTreeSitter  -> "tree-sitter"
   TargetCheck       -> "check"
+  TargetSwift       -> "swift"
 
 printAlexOption :: AlexVersion -> String
 printAlexOption = ("--" ++) . \case
@@ -316,6 +319,8 @@ targetOptions =
     "Output grammar.js file for use with tree-sitter"
   , Option "" ["check"]         (NoArg (\ o -> o{target = TargetCheck }))
     "No output. Just check input LBNF file"
+  , Option "" ["swift"]         (NoArg (\o -> o{target = TargetSwift}))
+    "Not implemented yet."
   ]
 
 -- | A list of the options and for each of them, the target language
@@ -527,6 +532,7 @@ instance Maintained Target where
     TargetHaskellGadt -> True
     TargetLatex       -> True
     TargetJava        -> True
+    TargetSwift       -> True
     TargetOCaml       -> True
     TargetPygments    -> True
     TargetTreeSitter  -> True
@@ -637,6 +643,7 @@ translateOldOptions = mapM $ \ o -> do
   translation = Map.fromList $
     [ ("-agda"         , "--agda")
     , ("-java"         , "--java")
+    , ("-swift"         , "--swift")
     , ("-java1.5"      , "--java")
     , ("-c"            , "--c")
     , ("-cpp"          , "--cpp")
