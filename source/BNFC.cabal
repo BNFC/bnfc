@@ -32,8 +32,9 @@ Description:
 
 -- Support range when build with cabal
 tested-with:
-  GHC == 9.8.1
-  GHC == 9.6.3
+  GHC == 9.10.0
+  GHC == 9.8.2
+  GHC == 9.6.5
   GHC == 9.4.8
   GHC == 9.2.8
   GHC == 9.0.2
@@ -43,7 +44,7 @@ tested-with:
   GHC == 8.4.4
   GHC == 8.2.2
   GHC == 8.0.2
-  GHC == 7.10.3
+  -- GHC == 7.10.3
 
 extra-doc-files:
   README.md

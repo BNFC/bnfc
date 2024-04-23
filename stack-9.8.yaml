@@ -1,11 +1,11 @@
-resolver: nightly-2023-12-19
-compiler: ghc-9.8.1
+resolver: nightly-2024-04-22
+compiler: ghc-9.8.2
 compiler-check: newer-minor
 
 packages:
 - source
 - testing
 
-extra-deps:
-- aeson-2.2.1.0
-- th-abstraction-0.6.0.0
+# extra-deps:
+# - aeson-2.2.1.0
+# - th-abstraction-0.6.0.0

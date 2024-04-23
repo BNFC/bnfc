@@ -1,0 +1,10 @@
+
+Parse Successful!
+
+[Abstract Syntax]
+
+Eexp (EInt 2) (EExp (EInt 2) (EInt 2))
+
+[Linearized tree]
+
+2 ^ (2 ** 2)
