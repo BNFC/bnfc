@@ -1,10 +1,12 @@
 -- | Common definitions for the modules of the C backend.
 
 module BNFC.Backend.C.Common
-  ( posixC
+  ( memName
+  , posixC
   ) where
 
 import Prelude
+import BNFC.Backend.Common.NamedVariables
 
 -- | Switch C to language variant that has @strdup@.
 
@@ -16,3 +18,8 @@ posixC =
   , " */"
   , "#define _POSIX_C_SOURCE 200809L"
   ]
+
+-- | Variant names in unions.
+
+memName :: String -> String
+memName s = firstLowerCase s ++ "_"

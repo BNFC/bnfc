@@ -72,11 +72,12 @@ currentRegressionTest :: Test
 currentRegressionTest = makeTestSuite "Current parameterized test" $
   map (`makeTestCase` ("regression-tests" </> cur)) parameters
   where
+  cur = "479_LabelsCaseSensitive"
   -- cur = "comments"
   -- cur = "358_MixFixLists"
   -- cur = "289_LexerKeywords"
   -- cur = "249_unicode"
-  cur = "266_define"
+  -- cur = "266_define"
   -- cur = "235_SymbolsOverlapTokens"
   -- cur = "202_comments"
   -- cur = "278_Keywords"
@@ -192,7 +193,8 @@ testCases :: TestParameters -> [Test]
 testCases params =
     map (makeTestCase params) $
       map ("regression-tests/" ++) $
-        [ "266_define"
+        [ "479_LabelsCaseSensitive"
+        , "266_define"
         , "358_MixFixLists"
         , "235_SymbolsOverlapTokens"
         , "278_Keywords"
