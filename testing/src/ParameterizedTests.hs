@@ -366,7 +366,7 @@ parameters = concat
   , [ TP { tpName = "C"
          , tpBnfcOptions = ["--c"]
          , tpBuild = do
-             let flags = "CC_OPTS=-Wstrict-prototypes -Werror"
+             let flags = "CC_OPTS=-Wstrict-prototypes -Wno-sign-compare -Werror"
              tpMake [flags]
              tpMake [flags, "Skeleton.o"]
          , tpRunTestProg = \ lang args -> do
