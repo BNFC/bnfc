@@ -13,9 +13,7 @@ import BNFC.Utils       ( (+++) )
 import BNFC.Backend.Common.NamedVariables ( UserDef )
 import BNFC.Backend.Dart.Common 
 
---Produces abstract data types in Dart
-
-
+-- Produces abstract data types in Dart
 cf2DartAST :: CF -> RecordPositions -> String
 cf2DartAST cf rp = 
   let userTokens = [ n | (n,_) <- tokenPragmas cf ]
@@ -25,7 +23,9 @@ cf2DartAST cf rp =
     concatMap (prData rp) rules
   where
   rules  = getAbstractSyntax cf
-  imports = [ "import \'pretty_printer.dart\' as pp;" ]
+  imports = [ 
+    "import 'pretty_printer.dart' as pp;",
+    "import 'package:fast_immutable_collections/fast_immutable_collections.dart';" ]
 
 
 generateTokens :: [UserDef] -> [String]

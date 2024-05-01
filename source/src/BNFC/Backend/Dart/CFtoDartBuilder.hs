@@ -26,6 +26,7 @@ cf2DartBuilder cf lang =
       (\(cat, rules) -> (cat, (map leftRecRuleMaker rules))) $ ruleGroups cf
     imports lang = [
       "import 'package:antlr4/antlr4.dart';",
+      "import 'package:fast_immutable_collections/fast_immutable_collections.dart' show IList;",
       "import 'ast.dart';",
       "import '" ++ lang ++ "Parser.dart';  // fix this line depending on where the stellaParser is being lcated" ]
     helperFunctions = [
@@ -135,7 +136,7 @@ generateConcreteMappingHelper index rule (fun, cats)
   where
     generateReturnStatement :: Fun -> [DartVar] -> String -> [String]
     generateReturnStatement fun vars typeName
-      | isNilFun fun = ["return [];"]
+      | isNilFun fun = ["return IList();"]
       | isOneFun fun = generateOneArgumentListReturn vars
       | isConsFun fun = generateTwoArgumentsListReturn vars
       | otherwise =  [ "return" +++ typeName ++ "(" ] ++
@@ -192,13 +193,13 @@ generateArgumentsMapping vars = map mapArgument vars
 
 generateOneArgumentListReturn :: [DartVar] -> [String]
 generateOneArgumentListReturn (v:_) = 
-  ["return [" ++ buildVariableName v ++ "];"]
+  ["return IList([" ++ buildVariableName v ++ "]);"]
 
 
 generateTwoArgumentsListReturn :: [DartVar] -> [String]
 generateTwoArgumentsListReturn (x:y:_) = 
   let (a, b) = putListSecond x y
-  in ["return [" ++ buildVariableName a ++ ", ..." ++ buildVariableName b ++ ",];"]
+  in ["return IList([" ++ buildVariableName a ++ ", ..." ++ buildVariableName b ++ ",]);"]
   where 
     putListSecond x@((0,_),_) y = (x, y)
     putListSecond x y = (y, x)

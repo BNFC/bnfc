@@ -24,6 +24,7 @@ import BNFC.Backend.Antlr.CFtoAntlr4Parser
 import BNFC.Backend.Dart.CFtoDartAST ( cf2DartAST )
 import BNFC.Backend.Dart.CFtoDartBuilder ( cf2DartBuilder )
 import BNFC.Backend.Dart.CFtoDartPrinter ( cf2DartPrinter )
+import BNFC.Backend.Dart.CFtoDartSkeleton ( cf2DartSkeleton )
 import BNFC.Backend.Java.CFtoJavaPrinter15
 import BNFC.Backend.Java.CFtoVisitSkel15
 import BNFC.Backend.Java.CFtoComposVisitor
@@ -72,6 +73,7 @@ makeDart' pkg options@Options{..} cf = do
     mkfile (locate "ast" "dart") comment (cf2DartAST cf rp)
     mkfile (locate "builder" "dart") comment (cf2DartBuilder cf lang)
     mkfile (locate "pretty_printer" "dart") comment (cf2DartPrinter cf)
+    mkfile (locate "skeleton" "dart") comment (cf2DartSkeleton cf)
     makeAntlr (options {dLanguage = TS, optMake = Nothing}) cf
     -- mkfile (locate (lang ++ "Lexer") "g4") comment lex
     -- mkfile (locate (lang ++ "Parser") "g4") comment (cf2AntlrParse lang cf rp env)

@@ -53,7 +53,7 @@ stringRenderer = [
   "  // Change this value if you want to change the indentation length",
   "  static const _indentInSpaces = 2;",
   "",
-  "  String print(IList<String> tokens) => tokens",
+  "  String print(Iterable<String> tokens) => tokens",
   "      .map((element) => element.trim())",
   "      .fold(IList<Token>(), _render)",
   "      .fold(IList<(int, IList<Token>)>(), _split)",
@@ -69,7 +69,7 @@ stringRenderer = [
   "      switch (token) {",
   "        NewLine nl => lists.add((",
   "            nl.indentDifference,",
-  "            IList([]),",
+  "            IList(),",
   "          )),",
   "        _ => lists.isEmpty",
   "            ? IList([",
@@ -148,7 +148,7 @@ stringRenderer = [
 buildUserToken :: String -> [String]
 buildUserToken token = [ 
   "String print" ++ token ++ "(x) => x.value;", 
-  "IList<String> _prettify" ++ token ++ "(x) => IList([x.value]);"]
+  "Iterable<String> _prettify" ++ token ++ "(ast." ++ token +++ "x) => [x.value];"]
 
 generateLabelPrinters :: (Cat, [Rule]) -> [String]
 generateLabelPrinters (cat, rawRules) = 
@@ -212,7 +212,7 @@ generateRulePrinters (cat, rules) =
 
 generateRuntimeMapping :: String -> [String] -> [String]
 generateRuntimeMapping name ruleNames = [ 
-  "IList<String> _prettify" ++ name ++ "(ast." ++ name +++ "a) => switch (a) {" ] ++
+  "Iterable<String> _prettify" ++ name ++ "(ast." ++ name +++ "a) => switch (a) {" ] ++
   (indent 2 $ map mapRule $ map str2DartClassName ruleNames) ++ 
   (indent 1 [ "};" ]) 
   where
@@ -231,17 +231,17 @@ generateConcreteMapping cat (label, tokens)
       cats = [ cat | Left cat <- tokens ]
       vars = zip (map precCat cats) (getVars cats)
     in Just . unlines $ [ 
-      "IList<String> _prettify" ++ className ++ "(ast." ++ className +++ "a) => IList([" ] ++
+      "Iterable<String> _prettify" ++ className ++ "(ast." ++ className +++ "a) => [" ] ++
       (indent 1 $ generateRuleRHS tokens vars []) ++
-      ["]);"]
+      ["];"]
 
 generateListPrettifier :: DartVarType -> Integer -> String -> String -> String 
 generateListPrettifier vType@(n, name) prec separator terminator = 
-  "IList<String> _prettify" ++ printerListName vType prec ++ "(" ++ 
-  printerListType vType +++ "a) => IList([...a.expand((e" ++ show n ++ 
+  "Iterable<String> _prettify" ++ printerListName vType prec ++ "(" ++ 
+  printerListType vType +++ "a) => [...a.expand((e" ++ show n ++ 
   ") => [\'" ++ separator ++ "\'," +++ 
   (buildArgument (n - 1, name) prec ("e" ++ show n)) ++
-   "],).skip(1)," +++ "\'" ++ terminator ++ "\',]);"
+   "],).skip(1)," +++ "\'" ++ terminator ++ "\',];"
 
 generateRuleRHS :: [Either Cat String] -> [(Integer, DartVar)] -> [String] -> [String]
 generateRuleRHS [] _ lines = lines
@@ -278,4 +278,4 @@ printerListName (n, name) prec = "List" ++ (printerListName (n - 1, name) prec)
 
 printerListType :: DartVarType -> String
 printerListType (0, name) = "ast." ++ (str2DartClassName name)
-printerListType (n, name) = "List<" ++ printerListType (n - 1, name) ++ ">"
+printerListType (n, name) = "Iterable<" ++ printerListType (n - 1, name) ++ ">"
