@@ -7,20 +7,19 @@ module BNFC.Backend.Dart.CFtoDartAST (cf2DartAST) where
 import Data.Maybe      ( mapMaybe )
 
 import BNFC.CF
-import BNFC.Options     ( RecordPositions(..) )
 import BNFC.Utils       ( (+++) )
 
 import BNFC.Backend.Common.NamedVariables ( UserDef )
 import BNFC.Backend.Dart.Common 
 
 -- Produces abstract data types in Dart
-cf2DartAST :: CF -> RecordPositions -> String
-cf2DartAST cf rp = 
+cf2DartAST :: CF -> String
+cf2DartAST cf = 
   let userTokens = [ n | (n,_) <- tokenPragmas cf ]
   in unlines $ 
     imports ++  -- import some libraries if needed
     generateTokens userTokens ++  -- generate user-defined types
-    concatMap (prData rp) rules
+    concatMap prData rules
   where
   rules  = getAbstractSyntax cf
   imports = [ 
@@ -45,9 +44,9 @@ generateTokens tokens = map toClass tokens
 
 
 -- | Generates a category class, and classes for all its rules.
-prData :: RecordPositions -> Data -> [String]
-prData rp (cat, rules) =
-  categoryClass ++ mapMaybe (prRule rp cat) rules
+prData :: Data -> [String]
+prData (cat, rules) =
+  categoryClass ++ mapMaybe (prRule cat) rules
     where
     funs = map fst rules
     categoryClass
@@ -62,8 +61,8 @@ prData rp (cat, rules) =
 
 
 -- | Generates classes for a rule, depending on what type of rule it is.
-prRule :: RecordPositions -> Cat -> (Fun, [Cat]) -> Maybe (String)
-prRule rp cat (fun, cats)
+prRule :: Cat -> (Fun, [Cat]) -> Maybe (String)
+prRule cat (fun, cats)
   | isNilFun fun || 
     isOneFun fun || 
     isConsFun fun = Nothing  -- these are not represented in the Absyn
@@ -74,7 +73,7 @@ prRule rp cat (fun, cats)
     in Just . unlines $ 
       [ unwords [ "class", className, extending, "with pp.Printable {" ] ] ++
       concatMap (indent 1) [
-        prInstanceVariables rp vars,
+        prInstanceVariables vars,
         prConstructor className vars,
         prEquals className vars,
         prHashCode vars,
@@ -119,12 +118,9 @@ prHashCode vars = [
 
 
 -- Generate variable definitions for the class
-prInstanceVariables :: RecordPositions -> [DartVar] -> [String]
-prInstanceVariables rp vars = case rp of 
-  RecordPositions -> ["int? line_num, col_num, offset;"] ++ generateVariables
-  NoRecordPositions -> generateVariables
+prInstanceVariables :: [DartVar] -> [String]
+prInstanceVariables vars = map variableLine vars
   where
-    generateVariables = map variableLine vars
     variableLine variable =
       let vType = buildVariableType variable
           vName = buildVariableName variable
