@@ -21,7 +21,7 @@ cf2DartSkeleton cf =
     ++ (map buildUserToken [ n | (n,_) <- tokenPragmas cf ]) -- generate user-defined types
     ++ (concatMap genData $ getAbstractSyntax cf)
   where
-    imports = [ "import \'ast.dart\';" ]
+    imports = [ "import 'package:stella/stella.dart';" ]
     identityFn = [ "A identityFn<A>(A a) => a;" ]
 
 buildUserToken :: UserDef -> String

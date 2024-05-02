@@ -12,14 +12,13 @@ import Data.Char (toLower)
 import BNFC.Backend.Base (MkFiles, mkfile,liftIO)
 import BNFC.CF (CF, getAbstractSyntax)
 import BNFC.Options (SharedOptions (Options, inPackage, lang, optMake, dLanguage, antlrOpts, outDir), AntlrTarget (Dart))
-import BNFC.Utils (mkName, NameStyle (CamelCase), replace, (+.+), (+++))
+import BNFC.Utils (mkName, NameStyle (SnakeCase), replace, (+.+), (+++))
 import BNFC.Backend.Common.Makefile as MakeFile
 import BNFC.Backend.Antlr (makeAntlr)
 import BNFC.Backend.Dart.CFtoDartAST ( cf2DartAST )
 import BNFC.Backend.Dart.CFtoDartBuilder ( cf2DartBuilder )
 import BNFC.Backend.Dart.CFtoDartPrinter ( cf2DartPrinter )
 import BNFC.Backend.Dart.CFtoDartSkeleton ( cf2DartSkeleton )
-import BNFC.Backend.Common.NamedVariables (firstUpperCase)
 
 makeDart :: SharedOptions -> CF -> MkFiles ()
 makeDart opts@Options{..} cf = do
@@ -45,6 +44,7 @@ makeDart opts@Options{..} cf = do
           ("A module with the AST, Pretty-Printer and AST-builder for" +++ lang) 
           []
     mkfile (libBase </> "runner.dart") makeDartComment runnerContent
+    mkfile (libBase </> "skeleton.dart") makeDartComment skeletonContent
     mkfile (binBase </> "main.dart") makeDartComment mainContent
     mkfile (dirBase </> "pubspec.yaml" ) makeDartCommentYaml 
       $ pubspecContent 
@@ -56,6 +56,7 @@ makeDart opts@Options{..} cf = do
     astContent = cf2DartAST cf
     builderContent = cf2DartBuilder cf lang
     printerContent = cf2DartPrinter cf
+    skeletonContent = cf2DartSkeleton cf
     stellaExportsContent = unlines
       [ "export 'src/ast.dart';"
       , "export 'src/builder.dart';" 
@@ -110,13 +111,10 @@ makeDart opts@Options{..} cf = do
       , ("all", [MakeFile.refVar "LANG"], [])
       , ("lexer", [refVarWithPrefix "LEXER_NAME" ++ ".g4"], [MakeFile.refVar "ANTLR4" +++ "-Dlanguage=Dart" +++ refVarWithPrefix "LEXER_NAME" ++ ".g4"])
       , ("parser", [refVarWithPrefix "PARSER_NAME" ++ ".g4"], [MakeFile.refVar "ANTLR4" +++ "-Dlanguage=Dart" +++ refVarWithPrefix "PARSER_NAME" ++ ".g4"])
-      -- , ("install-deps", [MakeFile.refVar "LANG" </> "package.json"], ["npm --prefix ./" ++ MakeFile.refVar "LANG" +++ "install" +++ MakeFile.refVar "LANG"])
-      -- , ("init-ts-project", [MakeFile.refVar "LANG" </> "package.json"], ["cd" +++ MakeFile.refVar "LANG" +++ "&& npm run init" ])
-      , (MakeFile.refVar "LANG", ["lexer", "parser", "install-deps", "init-ts-project"], [])
+      , ("install-deps", [MakeFile.refVar "LANG" </> "pubspec.yaml"], ["cd" +++ (MakeFile.refVar "LANG") ++ "; dart pub get"])
+      , (MakeFile.refVar "LANG", ["lexer", "parser", "install-deps"], [])
       , ("clean", [],
         [ 
-        --   "rm -rf" +++ MakeFile.refVar "LANG" </> "node_modules"
-        -- , 
           rmFile "LEXER_NAME" ".interp"
         , rmFile "LEXER_NAME" ".tokens"
         , rmFile "PARSER_NAME" ".interp"
