@@ -29,8 +29,8 @@ type Pattern     = String
 
 -- | Creates the ANTLR parser grammar for this CF.
 --The environment comes from CFtoAntlr4Lexer
-cf2AntlrParse :: String -> CF -> RecordPositions -> KeywordEnv -> String
-cf2AntlrParse lang cf _ env = unlines
+cf2AntlrParse :: String -> String -> CF -> RecordPositions -> KeywordEnv -> String
+cf2AntlrParse lexerName parserName cf _ env = unlines
   [ header
     , tokens
     , ""
@@ -44,12 +44,12 @@ cf2AntlrParse lang cf _ env = unlines
     header :: String
     header = unlines
         [ "// Parser definition for use with ANTLRv4"
-        , "parser grammar" +++ lang ++ "Parser;"
+        , "parser grammar" +++ parserName ++ ";"
         ]
     tokens :: String
     tokens = unlines
         [ "options {"
-        , "  tokenVocab = " ++ lang ++ "Lexer;"
+        , "  tokenVocab =" +++ lexerName ++ ";"
         , "}"
         ]
 

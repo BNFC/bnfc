@@ -1,10 +1,11 @@
 {-# LANGUAGE RecordWildCards #-}
 
-module BNFC.Backend.Antlr ( makeAntlr ) where
+module BNFC.Backend.Antlr ( makeAntlr, makeAntlr', DirectoryOptions(..) ) where
 
 import Prelude hiding ((<>))
 import System.FilePath ((</>), pathSeparator, (<.>))
 import Text.PrettyPrint.HughesPJ (vcat)
+import Data.Maybe (fromMaybe)
 
 import BNFC.Utils
     ( NameStyle(CamelCase),
@@ -21,23 +22,36 @@ import BNFC.Backend.Antlr.Utils (dotG4, getAntlrOptions)
 import BNFC.Backend.Common.Makefile as MakeFile
     ( mkMakefile, mkVar, mkRule, refVar )
 
+data DirectoryOptions = DirectoryOptions
+  { baseDirectory :: Maybe String
+  , nameStyle :: Maybe NameStyle }
+
 makeAntlr :: SharedOptions -> CF -> MkFiles ()
-makeAntlr opts@Options{..} cf = do
+makeAntlr opts cf = makeAntlr' opts cf DirectoryOptions {
+    baseDirectory=Nothing
+  , nameStyle=Nothing }
+
+makeAntlr' :: SharedOptions -> CF -> DirectoryOptions -> MkFiles ()
+makeAntlr' opts@Options{..} cf DirectoryOptions{..} = do
   let packageBase = maybe id (+.+) inPackage pkg
-      dirBase = pkgToDir packageBase
+      dirBase = fromMaybe (pkgToDir packageBase) baseDirectory
 
-  let (lex, env) = cf2AntlrLex packageBase cf
+  let lexerName = mkFilename "Lexer"
+      lexerFile = dotG4 lexerName
+      (lex, env) = cf2AntlrLex lexerName cf
     -- Where the lexer file is created. lex is the content!
-  mkfile (dirBase </> mkG4Filename "Lexer") mkAntlrComment lex
+  mkfile (dirBase </> lexerFile) mkAntlrComment lex
 
-  let parserContent = cf2AntlrParse packageBase cf linenumbers env
-  mkfile (dirBase </> mkG4Filename "Parser") mkAntlrComment parserContent
+  let parserName = mkFilename "Parser"
+      parserFile = dotG4 parserName
+      parserContent = cf2AntlrParse lexerName parserName cf linenumbers env
+  mkfile (dirBase </> parserFile) mkAntlrComment parserContent
 
   MakeFile.mkMakefile optMake makefileContent
     where
-      pkg = mkName [] CamelCase lang
+      pkg = mkName [] (fromMaybe CamelCase nameStyle) lang
       pkgToDir = replace '.' pathSeparator
-      mkG4Filename = dotG4 . (pkg ++)
+      mkFilename ending = mkName [] (fromMaybe CamelCase nameStyle) (pkg ++ ending)
 
       makeVars x = [MakeFile.mkVar n v | (n,v) <- x]
       makeRules x = [MakeFile.mkRule tar dep recipe  | (tar, dep, recipe) <- x]
@@ -61,12 +75,14 @@ makeAntlr opts@Options{..} cf = do
 
       genAntlrRecipe = ((MakeFile.refVar "ANTLR4" +++ MakeFile.refVar "ANTLR_OPTIONS" +++ MakeFile.refVar "DIRECT_OPTIONS") +++) . MakeFile.refVar
 
-      antlrFiles = map (langRef </>)
-        [ mkName [] CamelCase (pkg +++ "Lexer") <.> "interp"
-        , mkName [] CamelCase (pkg +++ "Parser") <.> "interp"
-        , mkName [] CamelCase (pkg +++ "Lexer") <.> "tokens"
-        , mkName [] CamelCase (pkg +++ "Parser") <.> "tokens"
-        ]
+      antlrFiles = 
+        let ns = fromMaybe CamelCase nameStyle 
+        in map (langRef </>)
+          [ mkName [] ns (pkg +++ "Lexer") <.> "interp"
+          , mkName [] ns (pkg +++ "Parser") <.> "interp"
+          , mkName [] ns (pkg +++ "Lexer") <.> "tokens"
+          , mkName [] ns (pkg +++ "Parser") <.> "tokens"
+          ]
 
       makefileRules =  vcat $ makeRules
         [ (".PHONY", ["all", "clean-antlr", "remove"], [])
