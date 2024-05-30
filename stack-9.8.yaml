@@ -1,4 +1,4 @@
-resolver: nightly-2024-04-22
+resolver: nightly-2024-05-30
 compiler: ghc-9.8.2
 compiler-check: newer-minor
 
