@@ -8,7 +8,7 @@ CABAL_BUILDDIR_SUFFIX=
 CABAL_BUILD_OPTS     = --enable-tests
 # --builddir=dist-ghc-$(GHC_VERSION)$(CABAL_BUILDDIR_SUFFIX)
 CABAL_CONFIGURE_OPTS = --enable-tests
-CABAL_INSTALL_OPTS   = $(CABAL_CONFIGURE_OPTS) $(CABAL_BUILD_OPTS) --overwrite-policy=always
+CABAL_INSTALL_OPTS   = --overwrite-policy=always
 CABAL_TEST_OPTS      = $(CABAL_BUILD_OPTS)
 
 CABAL                = cabal $(CABAL_OPTS)
@@ -38,7 +38,7 @@ cabal-test:
 doctest: build doctest-install doctest-quick
 
 doctest-install:
-	cabal install doctest --program-suffix=-${GHC_VERSION}
+	cabal install doctest --ignore-project --program-suffix=-${GHC_VERSION}
 
 doctest-quick:
 	cabal repl -w doctest-${GHC_VERSION} --repl-options=-Wno-type-defaults
@@ -62,6 +62,15 @@ TAGS :
 # Binary package (tgz, for linux)
 bdist: dist/${BDIST_TAG}.tar.gz
 
+# Source package
+# Andreas, 2023-11-03, PR #466: need to remove BNFC/{Lex,Par}.hs,
+# otherwise they will be shipped in the sdist package
+# and cause compilation to fail.
+sdist:
+	make -C src clean
+	cabal sdist
+
+# OLD goal
 dist/%.tar.gz:
 	cabal v1-clean
 	cabal v1-install ${CABAL_OPTS} --only-dependencies

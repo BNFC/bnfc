@@ -33,7 +33,8 @@ import BNFC.Utils     ( (+++), uniqOn, unless, unlessNull )
 
 import BNFC.Backend.Common
 import BNFC.Backend.Common.NamedVariables
-import BNFC.Backend.Common.StrUtils (renderCharOrString)
+import BNFC.Backend.Common.StrUtils       ( renderCharOrString )
+import BNFC.Backend.C.Common              ( memName )
 
 -- | Produces (.h file, .c file).
 
@@ -446,7 +447,7 @@ prPrintRule r@(Rule fun _ _ _) = unless (isCoercion fun) $ concat
   where
     p   = precRule r
     fnm = funName fun
-    pre = concat [ "p->u.", map toLower fnm, "_." ]
+    pre = concat [ "p->u.", memName fnm, "." ]
 
 -- | Only render the rhs (items) of a rule.
 
@@ -567,8 +568,8 @@ prShowCat fnm (cat, nt) = concat
   [ "    sh"
   , maybe (identCat $ normCat cat) basicFunName $ maybeTokenCat cat
   , "(p->u."
-  , map toLower fnm
-  , "_."
+  , memName fnm
+  , "."
   , render nt
   , ");\n"
   ]

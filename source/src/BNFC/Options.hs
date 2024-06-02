@@ -64,7 +64,9 @@ data Mode
 data Target = TargetC | TargetCpp | TargetCppNoStl
             | TargetHaskell | TargetHaskellGadt | TargetLatex
             | TargetJava | TargetOCaml | TargetPygments
-            | TargetCheck | TargetAntlr
+            | TargetAntlr
+            | TargetTreeSitter
+            | TargetCheck
   deriving (Eq, Bounded, Enum, Ord)
 
 -- | List of Haskell target.
@@ -81,6 +83,7 @@ instance Show Target where
   show TargetJava         = "Java"
   show TargetOCaml        = "OCaml"
   show TargetPygments     = "Pygments"
+  show TargetTreeSitter   = "Tree-sitter"
   show TargetCheck        = "Check LBNF file"
   show TargetAntlr        = "ANTLRv4"
 
@@ -297,6 +300,7 @@ printTargetOption = ("--" ++) . \case
   TargetJava        -> "java"
   TargetOCaml       -> "ocaml"
   TargetPygments    -> "pygments"
+  TargetTreeSitter  -> "tree-sitter"
   TargetCheck       -> "check"
   TargetAntlr       -> "antlr4"
 
@@ -349,7 +353,9 @@ targetOptions =
     "Output OCaml code for use with ocamllex and menhir (short for --ocaml --menhir)"
   , Option "" ["pygments"]      (NoArg (\o -> o {target = TargetPygments}))
     "Output a Python lexer for Pygments"
-  , Option "" ["check"]         (NoArg (\o -> o {target = TargetCheck}))
+  , Option "" ["tree-sitter"]   (NoArg (\o -> o {target = TargetTreeSitter}))
+    "Output grammar.js file for use with tree-sitter"
+  , Option "" ["check"]         (NoArg (\o -> o{target = TargetCheck }))
     "No output. Just check input LBNF file"
   , Option "" ["antlr"]         (NoArg (\o -> o {target = TargetAntlr}))
     "Output lexer and parser grammars for ANTLRv4"
@@ -606,6 +612,7 @@ instance Maintained Target where
     TargetJava        -> True
     TargetOCaml       -> True
     TargetPygments    -> True
+    TargetTreeSitter  -> True
     TargetCheck       -> True
     TargetAntlr       -> True
 

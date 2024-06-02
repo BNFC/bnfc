@@ -35,7 +35,7 @@ import BNFC.PrettyPrint
 import BNFC.Options  ( RecordPositions(..) )
 import BNFC.Utils    ( (+++), unless )
 import BNFC.Backend.Common.NamedVariables
-import BNFC.Backend.C.Common ( posixC )
+import BNFC.Backend.C.Common ( posixC, memName )
 
 
 -- | The result is two files (.H file, .C file)
@@ -304,12 +304,12 @@ mkCFile datas _cf = concat
 --   switch(p->kind)
 --   {
 --   case is_EInt:
---     return make_EInt (p->u.eint_.integer_);
+--     return make_EInt (p->u.eInt_.integer_);
 -- <BLANKLINE>
 --   case is_EAdd:
 --     return make_EAdd
---       ( clone_Exp(p->u.eadd_.exp_1)
---       , clone_Exp(p->u.eadd_.exp_2)
+--       ( clone_Exp(p->u.eAdd_.exp_1)
+--       , clone_Exp(p->u.eAdd_.exp_2)
 --       );
 -- <BLANKLINE>
 --   default:
@@ -375,7 +375,7 @@ prCloneC (cat, rules)
   prCloneCat :: String -> (Cat, Doc) -> String
   prCloneCat fnm (cat, nt) = cloner cat member
     where
-    member = concat [ "p->u.", map toLower fnm, "_.", render nt ]
+    member = concat [ "p->u.", memName fnm, ".", render nt ]
 
 -- | Clone or not depending on the category.
 --   Only pointers need to be cloned.
@@ -401,8 +401,8 @@ cloner cat x =
 --     break;
 -- <BLANKLINE>
 --   case is_EAdd:
---     free_Exp(p->u.eadd_.exp_1);
---     free_Exp(p->u.eadd_.exp_2);
+--     free_Exp(p->u.eAdd_.exp_1);
+--     free_Exp(p->u.eAdd_.exp_2);
 --     break;
 -- <BLANKLINE>
 --   default:
@@ -482,8 +482,8 @@ prDestructorC (cat, rules)
   prFreeCat fnm (cat, nt) = Just $ concat
       [ maybe ("free_" ++ identCat (normCat cat)) (const "free") $ maybeTokenCat cat
       , "(p->u."
-      , map toLower fnm
-      , "_.", render nt, ");"
+      , memName fnm
+      , ".", render nt, ");"
       ]
 
 
@@ -614,21 +614,15 @@ prParams = zipWith prParam [1::Int ..]
     prParam n c = (text (identCat c), text ("p" ++ show n))
 
 -- | Prints the assignments of parameters to instance variables.
--- >>> prAssigns "A" [("A",1),("B",2)] [text "abc", text "def"]
+-- >>> prAssigns "A" [("A",1),("BA",2)] [text "abc", text "def"]
 -- tmp->u.a_.a_ = abc;
--- tmp->u.a_.b_2 = def;
+-- tmp->u.a_.ba_2 = def;
 prAssigns :: String -> [IVar] -> [Doc] -> Doc
 prAssigns c vars params = vcat $ zipWith prAssign vars params
   where
     prAssign (t,n) p =
-        text ("tmp->u." ++ c' ++ "_." ++ vname t n) <+> char '=' <+> p <> semi
+        text ("tmp->u." ++ memName c ++ "." ++ vname t n) <+> char '=' <+> p <> semi
     vname t n
       | n == 1, [_] <- filter ((t ==) . fst) vars
                   = varName t
       | otherwise = varName t ++ showNum n
-    c' = map toLower c
-
-{- **** Helper Functions **** -}
-
-memName :: String -> String
-memName s = map toLower s ++ "_"

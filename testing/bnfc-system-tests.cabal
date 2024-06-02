@@ -50,9 +50,10 @@ build-type:          Simple
 cabal-version:       >=1.10
 
 tested-with:
-    GHC == 9.8.1
-    GHC == 9.6.3
-    GHC == 9.4.7
+    GHC == 9.10.0
+    GHC == 9.8.2
+    GHC == 9.6.5
+    GHC == 9.4.8
     GHC == 9.2.8
     GHC == 9.0.2
     GHC == 8.10.7
@@ -88,10 +89,9 @@ executable bnfc-system-tests
     , HUnit       >= 1.2
     , shelly      >= 1.9
     , filepath
-      -- filepath >= 1.4.2.1
     , text
-    , HTF         >= 0.14.0.5
-      -- API change in HTF-0.15.0.0 (issue #416)
+    , HTF         >= 0.15.0.0
+      -- API change in HTF-0.15 (issue #416)
     , random
     , string-qq
 

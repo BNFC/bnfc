@@ -1,7 +1,7 @@
 -- -- The name of GitHub Action
 -- github-action-name:
 
-branches: master ci*
+branches: master
 
 -- 2021-01-22 if cabal-version is greater than shipped Cabal, allow newer Cabal version
 -- https://github.com/haskell-CI/haskell-ci/issues/468#issuecomment-761865807
