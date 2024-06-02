@@ -43,7 +43,7 @@ name2DartBuiltIn name
   | name == "Integer" = "int"
   | name == "Double" = "double"
   | name == "Ident" = "String"
-  | name == "Char" = "String" -- TODO
+  | name == "Char" = "String"
   | otherwise = name
 
 
@@ -99,9 +99,13 @@ getVars cats =
     addScore n = (1, n)
     toDartVar (namesMap, vars) (vType, name) =
       case (Map.lookup name namesMap) of
-        Nothing            -> (namesMap, vars ++ [(vType, (name, 0))])
+        Nothing -> (
+          namesMap, 
+          vars ++ [(vType, (name, 0))])
         Just (seen, total) -> if total <= 1 
-          then (namesMap, vars ++ [(vType, (name, 0))])
+          then (
+            namesMap, 
+            vars ++ [(vType, (name, 0))])
           else (
             Map.insert name (seen + 1, total) namesMap, 
             vars ++ [(vType, (name, seen))])

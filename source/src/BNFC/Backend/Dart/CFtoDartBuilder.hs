@@ -29,10 +29,11 @@ cf2DartBuilder cf lang =
       "import 'package:fast_immutable_collections/fast_immutable_collections.dart' show IList;",
       "import 'ast.dart';",
       "import '" ++ lang ++ "_parser.dart';  // fix this line depending on where the stellaParser is being lcated" ]
-    helperFunctions = [
-      "int? buildInt(Token? t) => t?.text != null ? int.tryParse(t!.text!) : null;",
-      "double? buildDouble(Token? t) => t?.text != null ? double.tryParse(t!.text!) : null;",
-      "String? buildString(Token? t) => t?.text;" ]
+    helperFunctions = 
+      [ "int? buildInteger(Token? t) => t?.text != null ? int.tryParse(t!.text!) : null;"
+      , "double? buildMyDouble(Token? t) => t?.text != null ? double.tryParse(t!.text!) : null;"
+      , "String? buildMyString(Token? t) => t?.text;"
+      , "String? buildChar(Token? t) => t?.text;" ]
     buildUserToken token =
       let name = censorName token
       in token ++ "? build" ++ token ++ "(Token? t) {\n" ++
@@ -127,7 +128,7 @@ generateConcreteMappingHelper index rule (fun, cats)
       typeName ++ "?" +++ "build" ++ className ++ "(" ++ ctxName ++ "?" +++ "ctx) {"
     ] ++ (
       indent 1 $ 
-        (generateArguments index rule vars) ++ 
+        (generateArguments index rule $ zip vars cats) ++ 
         (generateNullCheck vars) ++ 
         (generateReturnStatement fun vars typeName)
     ) ++ [
@@ -143,31 +144,33 @@ generateConcreteMappingHelper index rule (fun, cats)
         (indent 1 $ generateArgumentsMapping vars ) ++ [");"] 
       
 
-generateArguments :: Int -> Rule -> [DartVar] -> [String]
+generateArguments :: Int -> Rule -> [(DartVar, Cat)] -> [String]
 generateArguments index r vars = 
   case rhsRule r of
     [] -> []
     its -> traverseRule index 1 its vars []
 
 
-traverseRule :: Int -> Int -> [Either Cat String] -> [DartVar] -> [String] -> [String]
+traverseRule :: Int -> Int -> [Either Cat String] -> [(DartVar, Cat)] -> [String] -> [String]
 traverseRule _ _ _ [] lines = lines
 traverseRule _ _ [] _ lines = lines
-traverseRule ind1 ind2 (terminal:restTerminals) (variable@(vType, _):restVariables) lines = 
+traverseRule ind1 ind2 (terminal:restTs) (var@(varDart, varCat):restVars) lines = 
   case terminal of 
-    Left cat -> [
-        "final" +++ buildVariableName variable +++ "=" +++ buildArgument (precCat cat) vType field ++ ";" 
-      ] ++ traverseRule ind1 (ind2 + 1) restTerminals restVariables lines
-    Right _ -> traverseRule ind1 (ind2 + 1) restTerminals (variable:restVariables) lines
+    Left cat -> 
+      let lhs = buildVariableName varDart
+          rhs = buildArgument (precCat cat) (cat2DartClassName varCat) field 
+      in [ "final" +++ lhs +++ "=" +++ rhs ++ ";" ] 
+          ++ traverseRule ind1 (ind2 + 1) restTs restVars lines
+    Right _ -> traverseRule ind1 (ind2 + 1) restTs (var:restVars) lines
   where
     field = "ctx?.p_" ++ show ind1 ++ "_" ++ show ind2
-    buildArgument :: Integer -> DartVarType -> String -> String
-    buildArgument prec (0, typeName) name = 
+    buildArgument :: Integer -> String -> String -> String
+    buildArgument prec typeName name = 
       let precedence = if prec == 0 then "" else show prec
       in "build" ++ upperFirst typeName ++ precedence ++ "(" ++ name ++ ")"
-    buildArgument prec (_, typeName) name = 
-      let precedence = if prec == 0 then "" else show prec
-      in "buildList" ++ upperFirst typeName ++ precedence ++ "(" ++ name ++ ")"
+    -- buildArgument prec (_, _) typeName name = 
+    --   let precedence = if prec == 0 then "" else show prec
+    --   in "buildList" ++ upperFirst typeName ++ precedence ++ "(" ++ name ++ ")"
 
 
 generateNullCheck :: [DartVar] -> [String]
