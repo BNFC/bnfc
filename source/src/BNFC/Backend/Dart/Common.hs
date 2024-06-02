@@ -124,14 +124,16 @@ buildVariableTypeFromDartType :: DartVarType -> String
 buildVariableTypeFromDartType vType = unpack vType
   where 
     unpack (0, name) = name
-    unpack (n, name) = "List<" ++ unpack (n - 1, name) ++ ">"
+    unpack (n, name) = "IList<" ++ unpack (n - 1, name) ++ ">"
 
 
 -- Prevent some type or variable name to be called as some built-in Dart type
 censorName :: String -> String
 censorName name 
-  | (lowerFirst name) `elem` (map lowerFirst builtInTypes) = "My" ++ upperFirst name
+  | (lowerFirst name) `elem` (map lowerFirst builtIn) = "My" ++ upperFirst name
   | otherwise = name
   where
-    builtInTypes = [ "int", "double", "String", "bool", "List", "Set", "Map", 
-      "Runes", "Symbol", "null", "Null" ]
+    builtIn = [ "int", "double", "String", "bool", "List", "Set", "Map", 
+      "Runes", "Symbol", "Record", "Future", "null", "Null", "if", "else", 
+      "return", "throw", "try", "catch", "on", "switch", "var", "final", "sync", 
+      "async", "for", "while", "continue", "break" ]
