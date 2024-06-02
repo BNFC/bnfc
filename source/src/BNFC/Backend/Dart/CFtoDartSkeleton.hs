@@ -13,16 +13,13 @@ import BNFC.Backend.Common.NamedVariables ( UserDef )
 import BNFC.Backend.Dart.Common 
 
 
-cf2DartSkeleton :: CF -> String
-cf2DartSkeleton cf = 
+cf2DartSkeleton :: CF -> String -> String
+cf2DartSkeleton cf importLang = 
   unlines $ 
-    imports
-    ++ identityFn
+    [ importLang
+    , "A identityFn<A>(A a) => a;" ]
     ++ (map buildUserToken [ n | (n,_) <- tokenPragmas cf ]) -- generate user-defined types
     ++ (concatMap genData $ getAbstractSyntax cf)
-  where
-    imports = [ "import 'package:stella/stella.dart';" ]
-    identityFn = [ "A identityFn<A>(A a) => a;" ]
 
 buildUserToken :: UserDef -> String
 buildUserToken token = 

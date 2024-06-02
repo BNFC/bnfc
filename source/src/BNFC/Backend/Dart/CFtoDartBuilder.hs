@@ -28,7 +28,7 @@ cf2DartBuilder cf lang =
       "import 'package:antlr4/antlr4.dart';",
       "import 'package:fast_immutable_collections/fast_immutable_collections.dart' show IList;",
       "import 'ast.dart';",
-      "import '" ++ lang ++ "Parser.dart';  // fix this line depending on where the stellaParser is being lcated" ]
+      "import '" ++ lang ++ "_parser.dart';  // fix this line depending on where the stellaParser is being lcated" ]
     helperFunctions = [
       "int? buildInt(Token? t) => t?.text != null ? int.tryParse(t!.text!) : null;",
       "double? buildDouble(Token? t) => t?.text != null ? double.tryParse(t!.text!) : null;",
