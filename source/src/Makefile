@@ -62,4 +62,8 @@ fake-cabal :
 rm-fake-cabal :
 	rm inferior-haskell-find-project-root.cabal
 
+.PHONY: clean
+clean :
+	rm BNFC/Lex.hs BNFC/Par.hs BNFC/*.bak
+
 #EOF

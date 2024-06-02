@@ -19,6 +19,7 @@ import Prelude hiding ((<>))
 import BNFC.CF
 import BNFC.Utils                         ( (+++), capitalize )
 import BNFC.Backend.Common.NamedVariables
+import BNFC.Backend.C.Common              ( memName )
 import Data.Char                          ( toLower )
 import Data.Either                        ( lefts )
 
@@ -166,11 +167,11 @@ prData (cat, rules)
 
 -- | Visits all the instance variables of a category.
 -- >>> let ab = Cat "Ab"
--- >>> prPrintRule (Rule "Abc" undefined [Left ab, Left ab] Parsable)
---   case is_Abc:
---     /* Code for Abc Goes Here */
---     visitAb(p->u.abc_.ab_1);
---     visitAb(p->u.abc_.ab_2);
+-- >>> prPrintRule (Rule "ABC" undefined [Left ab, Left ab] Parsable)
+--   case is_ABC:
+--     /* Code for ABC Goes Here */
+--     visitAb(p->u.aBC_.ab_1);
+--     visitAb(p->u.aBC_.ab_2);
 --     break;
 -- <BLANKLINE>
 -- >>> let ab = TokenCat "Ab"
@@ -209,8 +210,7 @@ prCat fnm (cat, vname) =
       let visitf = "visit" <> if isTokenCat cat
                        then basicFunName cat
                        else text (identCat (normCat cat))
-      in visitf <> parens ("p->u." <> text v <> "_." <> vname ) <> ";"
-    where v = map toLower fnm
+      in visitf <> parens ("p->u." <> text (memName fnm) <> "." <> vname ) <> ";"
 
 -- | The visit-function name of a basic type
 

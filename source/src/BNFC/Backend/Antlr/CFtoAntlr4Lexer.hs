@@ -29,8 +29,8 @@ import BNFC.Backend.Common.NamedVariables
 -- user defined tokens. This is not handled.
 -- returns the environment because the parser uses it.
 cf2AntlrLex :: String -> CF -> (Doc, KeywordEnv)
-cf2AntlrLex lang cf = (,env) $ vcat
-    [ prelude lang
+cf2AntlrLex lexerName cf = (,env) $ vcat
+    [ prelude lexerName
     , cMacros
     -- unnamed symbols (those in quotes, not in token definitions)
     , lexSymbols env
@@ -42,9 +42,9 @@ cf2AntlrLex lang cf = (,env) $ vcat
 
 -- | File prelude
 prelude :: String -> Doc
-prelude lang = vcat
+prelude lexerName = vcat
     [ "// Lexer definition for use with Antlr4"
-    , "lexer grammar" <+> text lang <> "Lexer;"
+    , "lexer grammar" <+> text lexerName <> ";"
     ]
 
 --For now all categories are included.

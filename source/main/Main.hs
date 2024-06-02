@@ -27,6 +27,7 @@ import BNFC.Backend.OCaml
 import BNFC.Backend.Pygments
 import BNFC.Backend.Dart (makeDart)
 import BNFC.Backend.Antlr
+import BNFC.Backend.TreeSitter
 import BNFC.CF (CF)
 import BNFC.GetCF
 import BNFC.Options hiding (make, Backend)
@@ -85,3 +86,4 @@ maketarget = \case
     TargetDart         -> makeDart
     TargetAntlr        -> makeAntlr
     TargetCheck        -> error "impossible"
+    TargetTreeSitter   -> makeTreeSitter

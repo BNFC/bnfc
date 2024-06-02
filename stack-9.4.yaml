@@ -1,0 +1,7 @@
+resolver: lts-21.25
+compiler: ghc-9.4.8
+compiler-check: newer-minor
+
+packages:
+- source
+- testing

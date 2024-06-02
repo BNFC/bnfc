@@ -1,0 +1,10 @@
+-- Andreas, 2024-04-23, issue #479:
+-- Support case-variants in labels also in the C backend.
+
+Eexp.  Exp  ::= Exp "^"  Exp1 ;
+EExp.  Exp  ::= Exp "**" Exp1 ;
+EInt.  Exp1 ::= Integer       ;
+
+coercions Exp 1               ;
+
+comment "--"                  ;
