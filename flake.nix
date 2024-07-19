@@ -18,17 +18,10 @@
         overlays = [ haskellNix.overlay
           (final: _prev: {
             bnfc-project =
-              final.haskell-nix.project' {
-                src = ./nix;
-                compiler-nix-name = "ghc982"; # Version of GHC to use
+              final.haskell-nix.hix.project {
+                src = ./.;
                 # uncomment with your current system for `nix flake show` to work:
                 evalSystem = "x86_64-linux";
-                # Tools to include in the development shell
-                shell.tools = {
-                  cabal = "latest";
-                  hlint = "latest";
-                  haskell-language-server = "lastest";
-                };
               };
           })
         ];
