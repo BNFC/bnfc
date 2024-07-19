@@ -18,7 +18,7 @@
         overlays = [ haskellNix.overlay
           (final: _prev: {
             bnfc-project =
-              final.haskell-nix.project' {
+              final.haskell-nix.stackProject' {
                 src = ./.;
                 # name = "project-name";
                 compiler-nix-name = "ghc982"; # Version of GHC to use
