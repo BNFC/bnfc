@@ -5,6 +5,7 @@
   outputs = { self, nixpkgs, flake-utils, haskellNix }:
     let
       supportedSystems = [
+        # Note: Only Linux on x6_64 is tested to work for now
         "x86_64-linux"
         "x86_64-darwin"
         "aarch64-linux"
@@ -15,18 +16,24 @@
       let
         overlays = [ haskellNix.overlay
           (final: _prev: {
-            bnfc =
+            bnfc-project =
               final.haskell-nix.hix.project {
                 src = ./.;
                 # uncomment with your current system for `nix flake show` to work:
-                #evalSystem = "x86_64-linux";
+                evalSystem = "x86_64-linux";
               };
           })
         ];
         pkgs = import nixpkgs { inherit system overlays; inherit (haskellNix) config; };
-        flake = pkgs.bnfc.flake {};
+        flake = pkgs.bnfc-project.flake {};
       in flake // {
         legacyPackages = pkgs;
+        apps.default = flake.apps."BNFC:exe:bnfc";
+        packages = rec {
+          bnfc = flake.packages."BNFC:exe:bnfc";
+          default = bnfc;
+          libBNFC = flake.packages."BNFC:lib:BNFC";
+        };
       });
 
   # --- Flake Local Nix Configuration ----------------------------
