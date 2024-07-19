@@ -78,7 +78,7 @@
         ) supportedGHCStackFile)
         // (lib.attrsets.mapAttrs' (
           name: _value: {
-            name = "bnfc-${name}";
+            name = "libBNFC-${name}";
             value = allVersions.${name}.packages."BNFC:lib:BNFC";
           }
         ) supportedGHCStackFile);
