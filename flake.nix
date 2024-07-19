@@ -44,7 +44,7 @@
                 shell.tools = {
                   cabal = "latest";
                   hlint = "latest";
-                  haskell-language-server = "lastest";
+                  haskell-language-server = "latest";
                 };
               };
             }) supportedGHCStackFile
