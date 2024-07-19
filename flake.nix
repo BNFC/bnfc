@@ -15,15 +15,29 @@
     in
       flake-utils.lib.eachSystem supportedSystems (system:
       let
+        lib = nixpkgs.lib;
+        supportedGHCStackFile = {
+          # Haskell.nix does not support GHC versions older than 8.10
+          # Note: only GHC 9.8.2 is tested to work for now
+          ghc8107 = "stack-8.10.yaml";
+          ghc902 = "stack-9.0.yaml";
+          ghc928 = "stack-9.2.yaml";
+          ghc948 = "stack-9.4.yaml";
+          ghc965 = "stack-9.6.yaml";
+          ghc982 = "stack-9.8.yaml";
+        };
+        defaultVersion = "ghc982";
+
         overlays = [ haskellNix.overlay
-          (final: _prev: {
-            bnfc-project =
-              final.haskell-nix.stackProject' {
+          (final: _prev: lib.attrsets.mapAttrs' (
+            name: value: {
+              name = "bnfc-project-${name}";
+              value = final.haskell-nix.stackProject' {
                 src = ./.;
                 # name = "project-name";
-                compiler-nix-name = "ghc982"; # Version of GHC to use
+                compiler-nix-name = name; # Version of GHC to use
                 # Use the corresponding stack configuration as well
-                stackYaml = "stack-9.8.yaml";
+                stackYaml = value;
                 # put your current system for `nix flake show` to work:
                 evalSystem = "x86_64-linux";
                 # Tools to include in the development shell
@@ -33,18 +47,41 @@
                   haskell-language-server = "lastest";
                 };
               };
-          })
+            }) supportedGHCStackFile
+          )
         ];
         pkgs = import nixpkgs { inherit system overlays; inherit (haskellNix) config; };
-        flake = pkgs.bnfc-project.flake {};
+        allVersions = builtins.mapAttrs (
+          name: _value: pkgs."bnfc-project-${name}".flake {}
+        ) supportedGHCStackFile;
+
+        flake = allVersions.${defaultVersion};
       in flake // {
         legacyPackages = pkgs;
-        apps.default = flake.apps."BNFC:exe:bnfc";
+        apps = {
+          default = flake.apps."BNFC:exe:bnfc";
+        } // (lib.attrsets.mapAttrs' (
+          name: _value: {
+            name = "bnfc-${name}";
+            value = allVersions.${defaultVersion}.apps."BNFC:exe:bnfc";
+          }
+        ) supportedGHCStackFile);
         packages = rec {
           bnfc = flake.packages."BNFC:exe:bnfc";
           default = bnfc;
           libBNFC = flake.packages."BNFC:lib:BNFC";
-        };
+        } // (lib.attrsets.mapAttrs' (
+          name: _value: {
+            name = "bnfc-${name}";
+            value = allVersions.${defaultVersion}.packages."BNFC:exe:bnfc";
+          }
+        ) supportedGHCStackFile)
+        // (lib.attrsets.mapAttrs' (
+          name: _value: {
+            name = "bnfc-${name}";
+            value = allVersions.${defaultVersion}.packages."BNFC:lib:BNFC";
+          }
+        ) supportedGHCStackFile);
       });
 
   # --- Flake Local Nix Configuration ----------------------------
