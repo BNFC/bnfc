@@ -63,7 +63,7 @@
         } // (lib.attrsets.mapAttrs' (
           name: _value: {
             name = "bnfc-${name}";
-            value = allVersions.${defaultVersion}.apps."BNFC:exe:bnfc";
+            value = allVersions.${name}.apps."BNFC:exe:bnfc";
           }
         ) supportedGHCStackFile);
         packages = rec {
@@ -73,13 +73,21 @@
         } // (lib.attrsets.mapAttrs' (
           name: _value: {
             name = "bnfc-${name}";
-            value = allVersions.${defaultVersion}.packages."BNFC:exe:bnfc";
+            value = allVersions.${name}.packages."BNFC:exe:bnfc";
           }
         ) supportedGHCStackFile)
         // (lib.attrsets.mapAttrs' (
           name: _value: {
             name = "bnfc-${name}";
-            value = allVersions.${defaultVersion}.packages."BNFC:lib:BNFC";
+            value = allVersions.${name}.packages."BNFC:lib:BNFC";
+          }
+        ) supportedGHCStackFile);
+        devShells = {
+          default = flake.devShells.default;
+        } // (lib.attrsets.mapAttrs' (
+          name: _value: {
+            name = "bnfc-${name}";
+            value = allVersions.${name}.devShells.default;
           }
         ) supportedGHCStackFile);
       });
