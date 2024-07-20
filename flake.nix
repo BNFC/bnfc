@@ -11,9 +11,6 @@
         "aarch64-linux"
         "aarch64-darwin"
       ];
-      # For `nix flake show` and `nix flake check`
-      # Requires --impure, on pure evaluation we default to x86_64-linux
-      currentPlatform = builtins.currentSystem or "x86_64-linux";
     in
       flake-utils.lib.eachSystem supportedSystems (system:
       let
@@ -40,8 +37,6 @@
                 compiler-nix-name = ghcVersion; # Version of GHC to use
                 # Use the corresponding stack configuration as well
                 stackYaml = value;
-                # For `nix flake show` to work:
-                evalSystem = currentPlatform;
                 # Tools to include in the development shell
                 shell.tools = {
                   cabal = "latest";
@@ -61,7 +56,8 @@
                   # Disable check for doctests
                   packages.BNFC.components.tests.doctests.doCheck = false;
                 }];
-              };
+              # For `nix flake show --impure` and `nix flake check --impure` to work
+              } // ( if (builtins ? currentSystem) then {evalSystem = builtins.currentSystem;} else {});
             }) supportedGHCStackFile
           )
         ];
@@ -75,7 +71,7 @@
         # defined for all platforms, which can cause check failures (see issue NixOS/nix#6453)
         # For `nix flake check` to work, filter out all hydrajobs that are not for the current platform 
         # Note that on non x86_64-linux platforms --impure is required to pick up the correct platform names
-        flake = if system == currentPlatform
+        flake = if system == (builtins.currentSystem or "x86_64-linux")
           then allFlake
           else builtins.removeAttrs allFlake ["hydraJobs"];
       in flake // {
