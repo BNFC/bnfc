@@ -6,12 +6,14 @@
   outputs = { self, nixpkgs, flake-utils, haskellNix, ... }:
     let
       supportedSystems = [
-        # Note: Only Linux on x6_64 is tested to work for now
         "x86_64-linux"
         "x86_64-darwin"
         "aarch64-linux"
         "aarch64-darwin"
       ];
+      # For `nix flake show` and `nix flake check`
+      # Requires --impure, on pure evaluation we default to x86_64-linux
+      currentPlatform = builtins.currentSystem or "x86_64-linux";
     in
       flake-utils.lib.eachSystem supportedSystems (system:
       let
@@ -30,20 +32,35 @@
 
         overlays = [ haskellNix.overlay
           (final: _prev: lib.attrsets.mapAttrs' (
-            name: value: {
-              name = "bnfc-project-${name}";
+            ghcVersion: value: {
+              name = "bnfc-project-${ghcVersion}";
               value = final.haskell-nix.stackProject' {
                 src = ./.;
-                # name = "project-name";
-                compiler-nix-name = name; # Version of GHC to use
+                name = "bnfc-project-${ghcVersion}";
+                compiler-nix-name = ghcVersion; # Version of GHC to use
                 # Use the corresponding stack configuration as well
                 stackYaml = value;
+                # For `nix flake show` to work:
+                evalSystem = currentPlatform;
                 # Tools to include in the development shell
                 shell.tools = {
                   cabal = "latest";
-                  hlint = "latest";
-                  haskell-language-server = "latest";
+                  hlint = {
+                    ghc8107 = "3.4";
+                    ghc902 = "3.5";
+                    ghc928 = "3.6.1";
+                    ghc948 = "3.8";
+                    ghc965 = "3.8";
+                    ghc982 = "3.8";
+                  }.${ghcVersion};
+                  haskell-language-server = if ghcVersion == "ghc8107" then "2.2.0.0"
+                    else if ghcVersion == "ghc902" then "2.4.0.0"
+                    else "latest";
                 };
+                modules = [{
+                  # Disable check for doctests
+                  packages.BNFC.components.tests.doctests.doCheck = false;
+                }];
               };
             }) supportedGHCStackFile
           )
@@ -53,7 +70,14 @@
           name: _value: pkgs."bnfc-project-${name}".flake {}
         ) supportedGHCStackFile;
 
-        flake = allVersions.${defaultVersion};
+        allFlake = allVersions.${defaultVersion};
+        # `nix flake check` currently does not support custom check logics, and will check hydrajobs
+        # defined for all platforms, which can cause check failures (see issue NixOS/nix#6453)
+        # For `nix flake check` to work, filter out all hydrajobs that are not for the current platform 
+        # Note that on non x86_64-linux platforms --impure is required to pick up the correct platform names
+        flake = if system == currentPlatform
+          then allFlake
+          else builtins.removeAttrs allFlake ["hydraJobs"];
       in flake // {
         legacyPackages = pkgs;
         apps = {
