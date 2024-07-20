@@ -40,4 +40,4 @@ jobs:
     #   run: nix-shell --run echo
 
     - continue-on-error: false
-      run: nix flake check
+      run: nix flake check --allow-import-from-derivation
