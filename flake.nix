@@ -38,8 +38,6 @@
                 compiler-nix-name = name; # Version of GHC to use
                 # Use the corresponding stack configuration as well
                 stackYaml = value;
-                # put your current system for `nix flake show` to work:
-                evalSystem = "x86_64-linux";
                 # Tools to include in the development shell
                 shell.tools = {
                   cabal = "latest";
