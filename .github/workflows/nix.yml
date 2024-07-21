@@ -1,0 +1,43 @@
+name: "Test Nix Integration"
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+jobs:
+  nix:
+    strategy:
+      fail-fast: true
+      matrix:
+        os:
+        - ubuntu-latest
+        - macos-latest
+    name: Nix on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    steps:
+    - uses: actions/checkout@v4
+    - uses: cachix/install-nix-action@V27
+      with:
+        extra_nix_config: |
+          trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY= cache.ngi0.nixos.org-1:KqH5CBLNSyX184S9BKZJo1LxrxJ9ltnY2uAs5c/f1MA= hydra.iohk.io:f/Ea+s+dFdN+3Y/G+FDgSq+a5NEWhJGzdjvKNGv0/EQ=
+          substituters = https://cache.nixos.org https://cache.ngi0.nixos.org/ https://cache.iog.io/
+        nix_path: nixpkgs=channel:nixos-unstable
+
+    - name: "Test Nix flakes build"
+      run: nix build
+
+    # Development shells will require building of hls and take a lot of time
+    # Let's not do that in the actions for now
+    # - name: "Test Nix flakes development shell"
+    #   run: nix develop --check
+    
+    - name: "Test Nix flake-compact build"
+      run: nix-build
+
+    # - name: "Test Nix flake-compact development shell"
+    #   run: nix-shell --run echo
+
+    - continue-on-error: false
+      run: nix flake check --allow-import-from-derivation --impure
