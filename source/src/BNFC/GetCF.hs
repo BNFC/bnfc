@@ -18,7 +18,7 @@
 -- | Check LBNF input file and turn it into the 'CF' internal representation.
 
 module BNFC.GetCF
-  ( parseCF
+  ( parseCF, parseRawCF
   , checkRule, transItem
   ) where
 
@@ -63,18 +63,23 @@ type Err = Either String
 -- $setup
 -- >>> import BNFC.Print
 
--- | Entrypoint.
+-- | Parse raw CF from LBNF file without checking backend requirements
+
+parseRawCF :: FilePath -> String -> Err CF
+parseRawCF fileName content = pGrammar (myLexer content)
+                    -- <&> expandRules -- <&> from ghc 8.4
+                    >>= return . expandRules
+                    >>= getCF fileName
+                    >>= return . markTokenCategories
+                    -- Construct the typing information in 'define' expressions.
+                    >>= runTypeChecker . checkDefinitions
+
+-- | Entrypoint. Parses full CF from LBNF file and checks against
+--   all backend requirements
 
 parseCF :: SharedOptions -> Target -> String -> IO CF
 parseCF opts target content = do
-  cf <- runErr $ pGrammar (myLexer content)
-                    -- <&> expandRules -- <&> from ghc 8.4
-                    >>= return . expandRules
-                    >>= getCF (lbnfFile opts)
-                    >>= return . markTokenCategories
-
-  -- Construct the typing information in 'define' expressions.
-  cf <- either die return $ runTypeChecker $ checkDefinitions cf
+  cf <- runErr $ parseRawCF (lbnfFile opts) content
 
   -- Some backends do not allow the grammar name to coincide with
   -- one of the category or constructor names.
