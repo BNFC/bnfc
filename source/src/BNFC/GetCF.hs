@@ -18,12 +18,12 @@
 -- | Check LBNF input file and turn it into the 'CF' internal representation.
 
 module BNFC.GetCF
-  ( parseCF
+  ( parseCF, parseRawCF
   , checkRule, transItem
   ) where
 
 import Control.Arrow (left)
-import Control.Monad.Reader (ReaderT, runReaderT, MonadReader(..), asks)
+import Control.Monad.Reader (ReaderT, runReaderT, MonadReader(..), ask)
 import Control.Monad.State (State, evalState, get, modify)
 import Control.Monad.Except (MonadError(..))
 
@@ -63,18 +63,23 @@ type Err = Either String
 -- $setup
 -- >>> import BNFC.Print
 
--- | Entrypoint.
+-- | Parse raw CF from LBNF file without checking backend requirements
+
+parseRawCF :: FilePath -> String -> Err CF
+parseRawCF fileName content = pGrammar (myLexer content)
+                    -- <&> expandRules -- <&> from ghc 8.4
+                    >>= return . expandRules
+                    >>= getCF fileName
+                    >>= return . markTokenCategories
+                    -- Construct the typing information in 'define' expressions.
+                    >>= runTypeChecker . checkDefinitions
+
+-- | Entrypoint. Parses full CF from LBNF file and checks against
+--   all backend requirements
 
 parseCF :: SharedOptions -> Target -> String -> IO CF
 parseCF opts target content = do
-  cf <- runErr $ pGrammar (myLexer content)
-                    -- <&> expandRules -- <&> from ghc 8.4
-                    >>= return . expandRules
-                    >>= getCF opts
-                    >>= return . markTokenCategories
-
-  -- Construct the typing information in 'define' expressions.
-  cf <- either die return $ runTypeChecker $ checkDefinitions cf
+  cf <- runErr $ parseRawCF (lbnfFile opts) content
 
   -- Some backends do not allow the grammar name to coincide with
   -- one of the category or constructor names.
@@ -263,9 +268,9 @@ die msg = do
 -- | Translate the parsed grammar file into a context-free grammar 'CF'.
 --   Desugars and type-checks.
 
-getCF :: SharedOptions -> Abs.Grammar -> Err CF
-getCF opts (Abs.Grammar defs) = do
-    (pragma, rules) <- partitionEithers . concat <$> mapM transDef defs `runTrans` opts
+getCF :: FilePath -> Abs.Grammar -> Err CF
+getCF inputFile (Abs.Grammar defs) = do
+    (pragma, rules) <- partitionEithers . concat <$> mapM transDef defs `runTrans` inputFile
     let reservedWords      = nub [ t | r <- rules, isParsable r, Right t <- rhsRule r, not $ all isSpace t ]
           -- Issue #204: exclude keywords from internal rules
           -- Issue #70: whitespace separators should be treated like "", at least in the parser
@@ -349,10 +354,10 @@ instance FixTokenCats (CFG f) where
     }
 
 -- | Translation monad.
-newtype Trans a = Trans { unTrans :: ReaderT SharedOptions Err a }
-  deriving (Functor, Applicative, Monad, MonadReader SharedOptions, MonadError String)
+newtype Trans a = Trans { unTrans :: ReaderT FilePath Err a }
+  deriving (Functor, Applicative, Monad, MonadReader FilePath, MonadError String)
 
-runTrans :: Trans a -> SharedOptions -> Err a
+runTrans :: Trans a -> FilePath -> Err a
 runTrans m opts = unTrans m `runReaderT` opts
 
 transDef :: Abs.Def -> Trans [Either Pragma Rule]
@@ -451,7 +456,7 @@ coercionRules c0 n = do
 
 ebnfRules :: Abs.Identifier -> [Abs.RHS] -> Trans [Rule]
 ebnfRules (Abs.Identifier ((line, col), c)) rhss = do
-  file <- asks lbnfFile
+  file <- ask
   let wp = WithPosition $ Position file line col
   let rule x rhs = Rule (wp x) (wp $ strToCat c) rhs Parsable
   return
@@ -491,7 +496,7 @@ transCat :: Abs.Cat -> Trans (WithPosition Cat)
 transCat = \case
     Abs.ListCat cat                             -> fmap ListCat <$> transCat cat
     Abs.IdCat (Abs.Identifier ((line, col), c)) -> do
-      file <- asks lbnfFile
+      file <- ask
       return $ WithPosition (Position file line col) $ strToCat c
 
 transLabel :: Abs.Label -> Trans RFun
@@ -504,7 +509,7 @@ transLabel = \case
 
 transIdent :: Abs.Identifier -> Trans RString
 transIdent (Abs.Identifier ((line, col), str)) = do
-  file <- asks lbnfFile
+  file <- ask
   return $ WithPosition (Position file line col) str
 
 transArg :: Abs.Arg -> (String, Base)
