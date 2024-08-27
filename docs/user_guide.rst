@@ -318,7 +318,7 @@ Example usage: ::
    * - skele.py
      - Provides skeleton code to deconstruct an AST, using structural pattern matching.
 
-Optionally one may with ``-m``` also create a makefile that contains the target
+Optionally one may with ``-m`` also create a makefile that contains the target
 "distclean" to remove the generated files.
 
 Testing the frontend
