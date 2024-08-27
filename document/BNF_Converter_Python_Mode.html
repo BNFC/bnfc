@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<head>
+  <meta http-equiv="content-type"
+ content="text/html; charset=ISO-8859-1">
+  <title>BNF Converter Python Mode</title>
+</head>
+<style>
+  table {
+    font-family: arial, sans-serif;
+    border-collapse: collapse;
+    width: 100%;
+  }
+  
+  td, th {
+    text-align: left;
+    padding: 4px;
+  }
+  
+  </style>
+<body>
+<div style="text-align: center;">
+<h2>BNF Converter</h2>
+<h2>Python Mode</h2>
+</div> 
+<h3>By Björn Werner</h3>
+
+<h3>2024</h3>
+<p>
+  The BNF Converter's Python Backend generates a Python frontend, that uses 
+  PLY (Python Lex Yacc), to parse input into an AST (abstract syntax tree).
+</p>
+<p>
+  BNFC on Github:<br>
+  <a href="https://github.com/BNFC/bnfc">https://github.com/BNFC/bnfc</a>
+</p>
+<p>
+  PLY homepage:<br>
+  <a href="https://www.dabeaz.com/ply/ply.html">https://www.dabeaz.com/ply/ply.html</a>
+</p>
+<p>
+  Python 3.10 or higher is needed.
+</p>
+<h3>Usage</h3>
+<div style="margin-left: 40px; "><big><span style="font-family: monospace; ">
+    bnfc --python NAME.cf</span></big><br style="font-family: monospace; ">
+</div>
+<p>
+The result is a set of files:
+</p>
+<table style="padding: 1cm;">
+  <tr>
+    <th>Filename:</th><th>Description:</th>
+  </tr>
+  <tr>
+    <td>bnfcGenNAME/LexTokens.py</td><td>Provides PLY with the information needed to build the lexer.</td>
+  </tr>
+  <tr>
+    <td>bnfcGenNAME/Absyn.py</td><td>Provides the classes for the abstract syntax.</td>
+  </tr>
+  <tr>
+    <td>bnfcGenNAME/ParserDefs.py</td><td>Provides PLY with the information needed to build the parser.</td>
+  </tr>
+  <tr>
+    <td>bnfcGenNAME/PrettyPrinter.py</td><td>Provides printing for both the AST and the linearized tree.</td>
+  </tr>
+  <tr>
+    <td>genTest.py</td><td>A ready test-file, that uses the generated frontend to convert input into an AST.</td>
+  </tr>
+  <tr>
+    <td>skele.py</td><td>Provides skeleton code to deconstruct an AST, using structural pattern matching.</td>
+  </tr>
+</table>
+
+<h3>Testing the frontend</h3>
+<p>
+  The following example uses a frontend that is generated from a C-like grammar.
+</p>
+<p style="font-family: monospace;">
+  $ python3.10 genTest.py < hello.c
+</p>
+<p style="font-family: monospace;">
+  Generating LALR tables<br>
+  Parse Successful!<br>
+  <br>
+  [Abstract Syntax]<br>
+  (PDefs [(DFun Type_int "main" [] [(SExp (EApp "printString" [(EString "Hello world")])), (SReturn (EInt 0))])])<br>
+  <br>
+  [Linearized Tree]<br>
+  int main ()<br>
+  {<br>
+    &nbsp;printString ("Hello world");<br>
+    &nbsp;return 0;<br>
+  }<br>
+</p>
+<p>
+  The LALR tables are cached in a file called "parsetab.py", and a description by PLY of the grammar is stored in a file called "parser.out".
+</p>
+<h3>The Abstract Syntax Tree</h3>
+<p>
+  The AST is built up using instances of Python classes, using the dataclass decorator, such as:
+</p>
+<p style="font-family: monospace;">
+@dataclass<br>
+class EAdd:<br>
+&nbsp;exp_1: Exp<br>
+&nbsp;exp_2: Exp<br>
+&nbsp;_ann_type: _AnnType = field(default_factory=_AnnType)
+</p>
+<p>
+  The "_ann_type" variable is a placeholder that can be used to store useful information,
+  for example type-information in order to create a type-annotated AST.
+</p>
+<h3>Using the skeleton file</h3>
+<p>
+  The skeleton file serves as a template, to create an interpreter for example.
+  Two different types of matchers are generated: the first with all the value
+  categories together, and a second type where each matcher only has one
+  individual value category, as in the example below:
+</p>
+<p style="font-family: monospace;">
+def matcherExp(exp_: Exp):<br>
+&nbsp;match exp_:<br>
+&nbsp;&nbsp;case EAdd(exp_1, exp_2, _ann_type):<br>
+&nbsp;&nbsp;&nbsp;# Exp "+" Exp1<br>
+&nbsp;&nbsp;&nbsp;raise Exception('EAdd not implemented')<br>
+&nbsp;&nbsp;case ESub(exp_1, exp_2, _ann_type):<br>
+&nbsp;&nbsp;&nbsp;...
+</p>
+<p>
+  This can be modified, in order to return the addition of each evaluated argument
+  category, into:
+</p>
+<p style="font-family: monospace;">
+  def matcherExp(exp_: Exp):<br>
+  &nbsp;match exp_:<br>
+  &nbsp;&nbsp;case EAdd(exp_1, exp_2, _ann_type):<br>
+  &nbsp;&nbsp;&nbsp;# Exp "+" Exp1<br>
+  &nbsp;&nbsp;&nbsp;return matcherExp(exp_1) + matcherExp(exp_2)<br>
+  &nbsp;&nbsp;case ESub(exp_1, exp_2, _ann_type):<br>
+  &nbsp;&nbsp;&nbsp;...
+</p>
+<p>
+  The function can now be imported and used in the generated test file 
+  (similarly to how the pretty printer is imported and used):
+</p>
+<p style="font-family: monospace;">
+  from skele import matcherExp<br>
+  ...<br>
+  print(matcherExp(ast))
+</p>
+  
+<h3>Known issues</h3>
+<h4>
+  Presentation of conflicts in a grammar:
+</h4>
+<p>
+  A symbol-to-unicode transformation is made for the terminals in the grammar,
+  for example from "++" to "S_43_43". This however obfuscates PLYs generated
+  information of the grammar, inside the "parser.out" file. Users are hence
+  encouraged to use say the Haskell backend to debug their
+  grammars and identify conflicts.
+</p>
+<h4>
+  Several entrypoints:
+</h4>
+<p>
+  At the top of the ParserDefs.py file an additional rule is added, that has
+  every defined entrypoint as a possible production. This may create warnings 
+  for conflicts if it introduces ambiguity, and warnings for unused rules if 
+  the "_Start" category is not used as the entrypoint. Therefore the added
+  parsing rule is by default removed beneath the function, "del p__Start",
+  and included if the user comments out the removal:
+</p>
+<h4>
+  Skeleton code for using lists as entrypoints:
+</h4>
+<p>
+  Matchers for using lists, such as [Exp], are not generated in the
+  skeleton code as it may confuse users if the grammar uses several different 
+  list categories. Users are instead encouraged to use a non-list entrypoint. 
+</p>
+<p>
+  The improper way to iterate over lists, as the value category is unknown:
+</p>
+<p style="font-family: monospace;">
+  &nbsp;case list():<br>
+  &nbsp;&nbsp;for ele in ast:<br>
+  &nbsp;&nbsp;&nbsp;...
+</p>
+<p>
+  The proper way to deconstruct lists, where we know the value category:
+</p>
+<p style="font-family: monospace;">
+  &nbsp;case RuleName(listexp_):<br>
+  &nbsp;&nbsp;for exp in listexp_:<br>
+  &nbsp;&nbsp;&nbsp;...
+</p>
+<h4>
+  Special cases for special characters
+</h4>
+<p>
+  Using non-special characters instead of say parentheses when defining rules, may not yield the expected
+  behaviour. Using the below rule, an expression such as "a1+2a" can not be parsed.
+</p>
+<p style="font-family: monospace;">
+  _. Exp1 ::= "a" Exp "a" ;
+</p>
+<h4>
+  Using multiple separators
+</h4>
+<p>
+  Using multiple separators for the same category, such as below, generates
+  Python functions with overlapping names, causing runtime errors.
+</p>
+<p style="font-family: monospace;">
+  separator Exp1 "," ;<br>
+  separator Exp1 ";" ;
+</p>

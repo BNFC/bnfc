@@ -284,3 +284,90 @@ BNFC adds the grammar name as a file extension. So if the grammar file is
 named ``Calc.cf``, the lexer will be associated to the file extension
 ``.calc``. To associate other file extensions to a generated lexer, you need to
 modify (or subclass) the lexer.
+
+Python Backend
+===============
+
+The BNF Converter's Python Backend generates a Python frontend, that uses 
+`PLY <https://www.dabeaz.com/ply/ply.html>`_ (Python Lex Yacc), to parse
+input into an AST (abstract syntax tree).
+
+Python 3.10 or higher is needed.
+
+Example usage: ::
+
+    bnfc --python Calc.cf
+
+
+.. list-table:: The result is a set of files:
+   :widths: 25 25
+   :header-rows: 1
+
+   * - Filename
+     - Description
+   * - bnfcPyGenCalc/Absyn.py
+     - Provides the classes for the abstract syntax.
+   * - bnfcPyGenCalc/LexTokens.py
+     - Provides PLY with the information needed to build the lexer.
+   * - bnfcPyGenCalc/ParserDefs.py
+     - Provides PLY with the information needed to build the parser.
+   * - bnfcPyGenCalc/PrettyPrinter.py
+     - Provides printing for both the AST and the linearized tree.
+   * - genTest.py
+     - A ready test-file, that uses the generated frontend to convert input into an AST.
+   * - skele.py
+     - Provides skeleton code to deconstruct an AST, using structural pattern matching.
+
+Optionally one may with ``-m``` also create a makefile that contains the target
+"distclean" to remove the generated files.
+
+Testing the frontend
+....................
+
+It's possible to pipe input, like::
+
+    echo "(1 + 2) * 3" | python3.10 genTest.py
+
+or::
+
+    python3.10 genTest.py < file.txt
+
+and it's possible to just use an argument::
+
+    python3.10 genTest.py file.txt
+
+
+Caveats
+.......
+
+Presentation of conflicts in a grammar:
+
+  A symbol-to-unicode transformation is made for the terminals in the grammar,
+  for example from "++" to "S_43_43". This however obfuscates PLYs generated
+  information of the grammar in the "parser.out" file. Users are hence
+  encouraged to use the Haskell backend to debug grammars and identify
+  conflicts.
+
+Several entrypoints:
+
+  At the top of the ParserDefs.py file an additional rule is added, that has
+  every defined entrypoint as a possible production. This may create warnings 
+  for conflicts, as it may introduce ambiguity. Therefore the added
+  parsing rule is by default removed beneath the function, with the statement
+  "del p__Start", and included if the user comments out the removal of
+  "p__Start".
+
+Special cases for special characters:
+
+  Using non-special characters, instead of say parentheses when defining rules,
+  may not yield the expected behaviour. Using the below rule, an expression
+  such as "a1+2a" can not be parsed since the a's are classified as reserved
+  keywords, like "int", instead of symbols like "+"::
+
+    _. Exp1 ::= "a" Exp "a" ;
+
+Results from the parameterized tests:
+
+  While the Python backend generates working frontends for the example
+  grammars, four "failures" and six "errors" among the regression
+  tests are reported.
