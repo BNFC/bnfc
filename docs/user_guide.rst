@@ -326,15 +326,15 @@ Testing the frontend
 
 It's possible to pipe input, like::
 
-    echo "(1 + 2) * 3" | python3.10 genTest.py
+    echo "(1 + 2) * 3" | python3 genTest.py
 
 or::
 
-    python3.10 genTest.py < file.txt
+    python3 genTest.py < file.txt
 
 and it's possible to just use an argument::
 
-    python3.10 genTest.py file.txt
+    python3 genTest.py file.txt
 
 
 Caveats

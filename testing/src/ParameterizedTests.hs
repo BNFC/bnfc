@@ -454,7 +454,7 @@ parameters = concat
         ,
           tpRunTestProg = \ _lang args -> do
             pyFile_ <- findFile "genTest.py"
-            cmd "python3.10" $ pyFile_ : args
+            cmd "python3" $ pyFile_ : args
         }
 
 -- | Helper function that runs bnfc with the context's options and an
