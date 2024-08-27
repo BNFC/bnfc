@@ -290,7 +290,7 @@ Python Backend
 
 The BNF Converter's Python Backend generates a Python frontend, that uses 
 `PLY <https://www.dabeaz.com/ply/ply.html>`_ (Python Lex Yacc), to parse
-input into an AST (abstract syntax tree).
+input into an abstract syntax tree.
 
 Python 3.10 or higher is needed.
 
