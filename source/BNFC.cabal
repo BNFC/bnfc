@@ -272,6 +272,14 @@ library
     BNFC.Backend.Dart.CFtoDartPrinter
     BNFC.Backend.Dart.CFtoDartSkeleton
 
+    -- Swift backend
+    BNFC.Backend.Swift
+    BNFC.Backend.Swift.CFtoSwiftAST
+    -- BNFC.Backend.Swift.CFtoSwiftBuilder
+    BNFC.Backend.Swift.Common
+    -- BNFC.Backend.Swift.CFtoSwiftPrinter
+    -- BNFC.Backend.Swift.CFtoSwiftSkeleton
+
     -- Antlr4 backend
     BNFC.Backend.Antlr
     BNFC.Backend.Antlr.CFtoAntlr4Lexer

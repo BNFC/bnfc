@@ -366,7 +366,7 @@ targetOptions =
   , Option "" ["dart"]          (NoArg (\ o -> o{target = TargetDart }))
     "Output Dart code for use with ANTLR"
   , Option "" ["swift"]         (NoArg (\o -> o{target = TargetSwift}))
-     "Not implemented yet."
+     "Output Swift code for use with ANTLR"
   , Option "" ["antlr"]         (NoArg (\o -> o {target = TargetAntlr}))
     "Output lexer and parser grammars for ANTLRv4"
   ]
