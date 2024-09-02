@@ -32,7 +32,7 @@ cf2SwiftAST langName cf =
     str2SwiftClassName' = str2SwiftClassName langName
     str2SwiftCaseName' = str2SwiftCaseName langName
     cat2SwiftClassName' = cat2SwiftClassName langName
-    getVars' = getVars langName
+    getVars' = getVars_ langName
 
 
     generateTokens :: [UserDef] -> [String]
@@ -53,7 +53,7 @@ cf2SwiftAST langName cf =
             let name = cat2SwiftClassName' cat
             in 
               [ "indirect enum" +++ name +++ "{"
-              ] ++ indent 1 cases ++ ["}\n"]
+              ] ++ indent_ 1 cases ++ ["}\n"]
 
 
     -- | Generates classes for a rule, depending on what type of rule it is.
@@ -65,9 +65,10 @@ cf2SwiftAST langName cf =
       | otherwise = -- a standard rule
          Just result
       where
-        caseName = str2SwiftCaseName' fun
+        caseName = str2SwiftClassName' fun
         vars = getVars' cats
-        caseAssociatedValues = map (\var -> buildVariableName var ++ ": " ++ buildVariableType var) vars
+        -- caseAssociatedValues = map (\var -> buildVariableName var ++ ": " ++ buildVariableType var) vars
+        caseAssociatedValues = map (\var -> buildVariableType var) vars
         resultAssociatedValuesConcatenated
           | null vars = ""
           | otherwise = "(" ++ (intercalate ", " caseAssociatedValues) ++ ")"

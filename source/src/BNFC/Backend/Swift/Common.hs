@@ -4,10 +4,15 @@
 
 module BNFC.Backend.Swift.Common where
 
+import Text.PrettyPrint (Doc, text)
 import qualified Data.Map as Map
 import BNFC.CF
 import Data.Maybe
 import qualified Data.Char as Char
+import Data.Char (toLower)
+import BNFC.CF (Cat (TokenCat, ListCat), catToStr, normCat, Data, CF, isList, getAbstractSyntax, literals)
+import BNFC.Utils (mkName, NameStyle (OrigCase, MixedCase), mkNames)
+import BNFC.Backend.Common.NamedVariables (getVars, firstLowerCase, firstUpperCase)
 
 
 cat2SwiftClassName :: String -> Cat -> String
@@ -68,8 +73,15 @@ lowerFirst [] = []
 lowerFirst (letter:rest) = Char.toLower letter : rest
 
 
-indent :: Int -> [String] -> [String]
-indent n lines = map addSpaces lines
+indent_ :: Int -> [String] -> [String]
+indent_ n lines = map addSpaces lines
+  where
+    addSpaces :: String -> String
+    addSpaces line = (replicate (2 * n) ' ') ++ line
+
+
+indentString :: Int -> String -> String
+indentString n line = addSpaces line
   where
     addSpaces :: String -> String
     addSpaces line = (replicate (2 * n) ' ') ++ line
@@ -94,8 +106,8 @@ type SwiftVarName = (String, Int)
 
 
 -- Because of the different type representing variables, a different `getVars` is used.
-getVars :: String -> [Cat] -> [SwiftVar]
-getVars langName cats = 
+getVars_ :: String -> [Cat] -> [SwiftVar]
+getVars_ langName cats = 
   let variables = map toUnnamedVariable cats 
       namesMap = foldl countNames Map.empty variables
       scoreMap = Map.map addScore namesMap
@@ -244,3 +256,56 @@ keywords = [ "abstract"
           , "with"
           , "while"
           , "yield" ]
+
+-- from TS implementation
+
+reservedKeywords :: [String]
+reservedKeywords = builtIn ++ keywords
+
+toMixedCase :: String -> String
+-- toMixedCase = firstLowerCase . mkName reservedKeywords MixedCase
+toMixedCase = firstUpperCase . mkName reservedKeywords MixedCase
+
+-- | wrap string into single quotes.
+wrapSQ :: String -> String
+wrapSQ str = "'" ++ str ++ "'"
+
+-- | indent string with N spaces.
+indentStr :: Int -> String -> String
+indentStr size = (replicate size ' ' ++)
+
+mkTokenNodeName :: String -> String
+mkTokenNodeName tokenName = wrapSQ (tokenName ++ "Token")
+
+-- | derive name for TS type from category.
+catToSwiftType :: Cat -> String
+catToSwiftType (ListCat c) = "[" ++ catToSwiftType c ++ "]"
+catToSwiftType (TokenCat c) = toMixedCase (c ++ "Token")
+catToSwiftType cat = toMixedCase (catToStr cat)
+
+-- | get variable names which will be used in node structure
+-- for categories used in production rule.
+getVarsFromCats :: [Cat] -> [String]
+getVarsFromCats cats = mkNames ["type"] OrigCase normalizedVars
+  where
+    normalizedCats = map normCat cats
+    indexedVars = getVars normalizedCats
+
+    normalizeVar :: (String, Int) -> String
+    normalizeVar (varName, idx) = map toLower varName ++ varNameSuffix
+      where
+        varNameSuffix = if idx == 0 then "" else show idx
+    
+    normalizedVars = map normalizeVar indexedVars
+
+-- | indent string with N spaces and transform to Doc.
+indent :: Int -> String -> Doc
+indent size str = text (indentStr size str)
+
+-- | get used tokens represented as cats
+getAllTokenCats :: CF -> [Cat]
+getAllTokenCats cf = map TokenCat (literals cf)
+
+-- | get TS type names for all tokens
+getAllTokenTypenames :: CF -> [String]
+getAllTokenTypenames cf = map catToSwiftType (getAllTokenCats cf)

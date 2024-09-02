@@ -15,29 +15,35 @@ import BNFC.Options (SharedOptions (Options, inPackage, lang, optMake, dLanguage
 import BNFC.Utils (mkName, NameStyle (SnakeCase), replace, (+.+), (+++))
 import BNFC.Backend.Common.Makefile as MakeFile 
 import BNFC.Backend.Common.NamedVariables (firstUpperCase, firstLowerCase) 
-import BNFC.Backend.Antlr (makeAntlr', DirectoryOptions (DirectoryOptions, baseDirectory, nameStyle))
+import BNFC.Backend.Antlr (makeAntlr, makeAntlr', DirectoryOptions (DirectoryOptions, baseDirectory, nameStyle))
 import BNFC.Backend.Swift.CFtoSwiftAST ( cf2SwiftAST )
+import BNFC.Backend.Swift.CFtoSwiftBuilder ( cf2SwiftBuilder )
 import BNFC.Backend.Swift.Common ( indent, buildVariableTypeFromSwiftType, cat2SwiftType, cat2SwiftClassName )
 
 makeSwift :: SharedOptions -> CF -> MkFiles ()
 makeSwift opts@Options{..} cf = do
     let dirBase = replace '.' pathSeparator $ packageName
-        langBase = dirBase </> (langName ++ "_generated")
-        libLang = langBase </> "lib"
-        srcLang = libLang </> "src"
-        libBase = dirBase </> "lib"
-        binBase = dirBase </> "bin"
-        directoryOptions = DirectoryOptions{baseDirectory = Just srcLang, nameStyle = Just SnakeCase}
+        -- langBase = dirBase </> (langName ++ "_generated")
+        -- libLang = langBase </> "lib"
+        -- srcLang = libLang </> "src"
+        -- libBase = dirBase </> "lib"
+        -- binBase = dirBase </> "bin"
+
+        -- directoryOptions = DirectoryOptions{baseDirectory = Just dirBase, nameStyle = Just SnakeCase}
  
     -- Generates files in an incorrect place
 
-    makeAntlr' (opts {dLanguage = Swift, optMake = Nothing}) cf directoryOptions
-    MakeFile.mkMakefile optMake $ makefileContent srcLang
+    makeAntlr (opts {dLanguage = Swift, optMake = Nothing}) cf
+    -- makeAntlr (opts {dLanguage = Swift, optMake = Nothing}) cf
+    MakeFile.mkMakefile optMake $ makefileContent dirBase
 
-    mkfile (srcLang </> "ast.swift") makeSwiftComment astContent
+    mkfile (dirBase </> "ast.swift") makeSwiftComment astContent
+    mkfile (dirBase </> "builder.swift") makeSwiftComment builderContent
 
   where
     astContent = cf2SwiftAST (firstUpperCase langName) cf
+    -- builderContent = cf2SwiftBuilder (firstUpperCase langName) cf
+    builderContent = cf2SwiftBuilder cf opts
     mainContent = unlines 
       [ "import '../lib/test.swift';"
       , "void main(List<String> args) {"
@@ -46,7 +52,8 @@ makeSwift opts@Options{..} cf = do
       , "}" ]
     packageName = maybe id (+.+) inPackage $ mkName [] SnakeCase lang
     langName = firstLowerCase $ mkName [] SnakeCase lang
-    importLangName = "import 'package:" ++ langName ++ "_generated/" ++ langName ++ "_generated.Swift';"
+    langNameUpperCased = firstUpperCase langName
+    importLangName = "import 'package:" ++ langName ++ "_generated/" ++ langName ++ "_generated.swift';"
 
     pubspecContent moduleName desc deps = unlines (
       [ "name:" +++ moduleName 
@@ -58,7 +65,7 @@ makeSwift opts@Options{..} cf = do
       , "dependencies:"
       , "  antlr4: ^4.13.1"
       , "  fast_immutable_collections: ^10.2.2" 
-      ] ++ (indent 1 deps) ++ [ "dev_dependencies:"
+      ] ++ deps ++ [ "dev_dependencies:"
       , "  lints: ^4.0.0" ])
 
     lexerClassName = lang ++ "GrammarLexer"
@@ -68,13 +75,14 @@ makeSwift opts@Options{..} cf = do
     makeRules x = [MakeFile.mkRule tar dep recipe  | (tar, dep, recipe) <- x]
 
     makefileVars = vcat $ makeVars
-      [("LANG", langName)
-      , ("LEXER_NAME", langName ++ "_lexer")
-      , ("PARSER_NAME", langName ++ "_parser")
-      , ("ANTLR4", "java -Xmx500M -cp \"/usr/local/lib/antlr-4.13.1-complete.jar:$CLASSPATH\" org.antlr.v4.Tool")
+      [("LANG", langNameUpperCased)
+      , ("LEXER_NAME", langNameUpperCased ++ "Lexer")
+      , ("PARSER_NAME", langNameUpperCased ++ "Parser")
+      -- , ("ANTLR4", "java -Xmx500M -cp \"/usr/local/lib/antlr-4.13.1-complete.jar:$CLASSPATH\" org.antlr.v4.Tool")
+      , ("ANTLR4", "antlr4") -- installed using pip
       ]
 
-    refVarInSrc srcLang refVar = srcLang </> MakeFile.refVar refVar
+    refVarInSrc dirBase refVar = dirBase </> MakeFile.refVar refVar
 
     rmFile :: (String -> String) -> String -> String -> String
     rmFile refSrcVar refVar ext = "rm -f" +++ refSrcVar refVar ++ ext
@@ -109,7 +117,7 @@ makeSwift opts@Options{..} cf = do
         , ("remove", [], ["rm -rf" +++ MakeFile.refVar "LANG"])
         ]
 
-    makefileContent srcLang _ = vcat [makefileVars, "", makefileRules $ refVarInSrc srcLang, ""]
+    makefileContent dirBase _ = vcat [makefileVars, "", makefileRules $ refVarInSrc dirBase, ""]
 
 makeSwiftComment :: String -> String
 makeSwiftComment = ("// Swift " ++)
