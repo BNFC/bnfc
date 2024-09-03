@@ -42,6 +42,7 @@ makeSwift opts@Options{..} cf = do
 
   where
     astContent = cf2SwiftAST (firstUpperCase langName) cf
+    -- astContent = cf2SwiftAST cf
     -- builderContent = cf2SwiftBuilder (firstUpperCase langName) cf
     builderContent = cf2SwiftBuilder cf opts
     mainContent = unlines 

@@ -15,12 +15,10 @@ import Data.List (intercalate)
 
 -- Produces abstract data types in Swift
 cf2SwiftAST :: String -> CF -> String
-cf2SwiftAST langName cf = 
-  let userTokens = [ n | (n,_) <- tokenPragmas cf ]
-  in unlines 
+cf2SwiftAST langName cf =  unlines
     $ imports ++ [""]-- import some libraries if needed
-    ++ characterTypedef
-    ++ generateTokens userTokens ++ [""]
+    -- ++ characterTypedef
+    ++ map mkTokenDecl allTokenNames
     ++ concatMap prData rules  -- generate user-defined types
   where
     rules  = getAbstractSyntax cf
@@ -33,12 +31,29 @@ cf2SwiftAST langName cf =
     str2SwiftCaseName' = str2SwiftCaseName langName
     cat2SwiftClassName' = cat2SwiftClassName langName
     getVars' = getVars_ langName
-
+    allTokenNames = literals cf
 
     generateTokens :: [UserDef] -> [String]
     generateTokens = map $ \token -> 
         let name = censorName' token 
         in "typealias" +++ name +++ "= String;"
+    
+    -- | valueType is a string which represents Swift basic type.
+    mkTokenDecl :: String -> String
+    mkTokenDecl tokenName = unlines
+        [ "struct" +++ catToSwiftType (TokenCat tokenName) +++ "{"
+        , indentStr 2 $ "let value: " ++ value
+        , ""
+        , indentStr 2 $ "init(_ value:" +++ value ++ ") {"
+        , indentStr 4 $ "self.value = value" 
+        , indentStr 2 $ "}" 
+        , "}"
+        ]
+      where
+        value
+          | tokenName == catInteger = "Int"
+          | tokenName == catDouble  = "Double"
+          | otherwise = "String"
           
 
     -- | Generates a category class, and classes for all its rules.
@@ -68,7 +83,7 @@ cf2SwiftAST langName cf =
         caseName = str2SwiftClassName' fun
         vars = getVars' cats
         -- caseAssociatedValues = map (\var -> buildVariableName var ++ ": " ++ buildVariableType var) vars
-        caseAssociatedValues = map (\var -> buildVariableType var) vars
+        caseAssociatedValues = map (\var -> catToSwiftType var) cats
         resultAssociatedValuesConcatenated
           | null vars = ""
           | otherwise = "(" ++ (intercalate ", " caseAssociatedValues) ++ ")"

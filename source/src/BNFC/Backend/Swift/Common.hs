@@ -275,13 +275,7 @@ indentStr :: Int -> String -> String
 indentStr size = (replicate size ' ' ++)
 
 mkTokenNodeName :: String -> String
-mkTokenNodeName tokenName = wrapSQ (tokenName ++ "Token")
-
--- | derive name for TS type from category.
-catToSwiftType :: Cat -> String
-catToSwiftType (ListCat c) = "[" ++ catToSwiftType c ++ "]"
-catToSwiftType (TokenCat c) = toMixedCase (c ++ "Token")
-catToSwiftType cat = toMixedCase (catToStr cat)
+mkTokenNodeName tokenName = tokenName ++ "Token"
 
 -- | get variable names which will be used in node structure
 -- for categories used in production rule.
@@ -309,3 +303,8 @@ getAllTokenCats cf = map TokenCat (literals cf)
 -- | get TS type names for all tokens
 getAllTokenTypenames :: CF -> [String]
 getAllTokenTypenames cf = map catToSwiftType (getAllTokenCats cf)
+
+catToSwiftType :: Cat -> String
+catToSwiftType (ListCat c) = "[" ++ catToSwiftType c ++ "]"
+catToSwiftType (TokenCat c) = toMixedCase (c ++ "Token")
+catToSwiftType cat = toMixedCase (catToStr cat)

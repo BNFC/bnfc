@@ -53,11 +53,8 @@ mkThrowErrorStmt cat = "throw BuildError.UnexpectedParseContext(\"Error: ctx sho
 -- | generates function code for building appropriate node for TokenCat.
 mkBuildTokenFunction :: Cat -> Doc
 mkBuildTokenFunction tokenCat = vcat
-    [ text $ "func" +++ fnName ++ "(ctx: Token) throws ->" +++ returnType +++ "{"
-    , indent 2 "return {"
-    , indent 4 $ "type:" +++ mkTokenNodeName tokenName ++ ","
-    , indent 4 $ "value:" +++ value
-    , indent 2 "}"
+    [ text $ "func" +++ fnName ++ "(_ ctx: Token) throws ->" +++ returnType +++ "{"
+    , indent 2 $ "return" +++ returnType ++ "(" ++ value ++ ")"
     , "}"
     ]
   where
@@ -65,8 +62,8 @@ mkBuildTokenFunction tokenCat = vcat
     fnName = mkBuildFnName tokenCat
     returnType = catToSwiftType tokenCat
     value = case tokenName of
-      "Integer" -> "Int(ctx.INTEGER()!.getText())!"
-      "Double"  -> "Float(ctx.text)!"
+      "Integer" -> "Int(ctx.getText()!)!"
+      "Double"  -> "Double(ctx.getText()!)!"
       _         -> "ctx.text"
 
 -- | generate name for function which will build node for some cat.
