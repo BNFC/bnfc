@@ -64,7 +64,7 @@ mkBuildTokenFunction tokenCat = vcat
     value = case tokenName of
       "Integer" -> "Int(ctx.getText()!)!"
       "Double"  -> "Double(ctx.getText()!)!"
-      _         -> "ctx.text"
+      _         -> "ctx.getText()!"
 
 -- | generate name for function which will build node for some cat.
 mkBuildFnName :: Cat -> String
@@ -120,18 +120,22 @@ mkBuildFunction lang (cat, rulesWithLabels)  = vcat
                       $ "let" +++ varName
                           +++ "= try" +++ mkBuildFnName cat ++ "(ctx." ++ mkPattern idx ++ ")")
                             rhsRuleWithIdx varNames
-                , [ indentStr 6 "return" +++ "." ++ ruleLabel ++ "(" ++ intercalate ", " varNames ++ ")"]
+                , [ indentStr 6 returnStatement]
                 ]
             where
               varNames = getVarsFromCats rhsCats
               rhsCats = map fst rhsRuleWithIdx
+              returnStatementBase = "return" +++ "." ++ ruleLabel
+              returnStatement
+                | null varNames = returnStatementBase 
+                | otherwise     = returnStatementBase ++ "(" ++ intercalate ", " varNames ++ ")"
 
-        emptyListBody = [indentStr 4 "return []"]
+        emptyListBody = [indentStr 6 "return []"]
         oneListBody = map (\(cat, idx) -> indentStr 6 $ "let data = try" +++ mkBuildFnName cat ++ "(ctx." ++ mkPattern idx ++ ")") rhsRuleWithIdx ++ [ indentStr 4 "return [data]"]
         consListBody =
-            [ indentStr 4 $ "let value1 = try" +++  mkBuildFnName firstCat ++ "(ctx." ++ mkPattern firstIdx ++ ")"
-            , indentStr 4 $ "let value2 = try" +++  mkBuildFnName secondCat ++ "(ctx." ++ mkPattern secondIdx ++ ")"
-            , indentStr 4 $ "let" +++ resultList
+            [ indentStr 6 $ "let value1 = try" +++  mkBuildFnName firstCat ++ "(ctx." ++ mkPattern firstIdx ++ ")"
+            , indentStr 6 $ "let value2 = try" +++  mkBuildFnName secondCat ++ "(ctx." ++ mkPattern secondIdx ++ ")"
+            , indentStr 6 $ "return" +++ resultList
             ]
           where
             (firstCat, firstIdx) = head rhsRuleWithIdx
@@ -139,9 +143,9 @@ mkBuildFunction lang (cat, rulesWithLabels)  = vcat
             (itemVar, listVar) = if isList firstCat then ("value2", "value1") else ("value1", "value2")
             resultList = if isList firstCat
               then
-                "[..." ++ listVar ++ ", " ++ itemVar ++ "]"
+                listVar +++ "+" +++ "[" ++ itemVar ++ "]"
               else
-                "[" ++ itemVar ++ ", ..." ++ listVar ++ "]"
+                "[" ++ itemVar  ++ "]" +++ "+" +++ listVar
 
 cfToGroups :: CF -> [RuleData]
 cfToGroups cf = map (second (map (ruleToData . makeLeftRecRule cf))) $ ruleGroups cf

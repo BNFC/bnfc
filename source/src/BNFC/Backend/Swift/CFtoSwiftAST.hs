@@ -65,9 +65,10 @@ cf2SwiftAST langName cf =  unlines
         categoryClass
           | catToStr cat `elem` funs || isList cat = [] -- the category is also a function or a list
           | otherwise =
-            let name = cat2SwiftClassName' cat
+            let name = catToSwiftType cat
+            -- let name = cat2SwiftClassName' cat // TODO: refactor, merge functions
             in 
-              [ "indirect enum" +++ name +++ "{"
+              [ "indirect enum" +++ wrapIfNeeded name +++ "{"
               ] ++ indent_ 1 cases ++ ["}\n"]
 
 
@@ -83,7 +84,7 @@ cf2SwiftAST langName cf =  unlines
         caseName = str2SwiftClassName' fun
         vars = getVars' cats
         -- caseAssociatedValues = map (\var -> buildVariableName var ++ ": " ++ buildVariableType var) vars
-        caseAssociatedValues = map (\var -> catToSwiftType var) cats
+        caseAssociatedValues = map (\var -> wrapIfNeeded $ catToSwiftType var) cats
         resultAssociatedValuesConcatenated
           | null vars = ""
           | otherwise = "(" ++ (intercalate ", " caseAssociatedValues) ++ ")"

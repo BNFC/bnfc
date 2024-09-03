@@ -21,7 +21,8 @@ cat2SwiftClassName langName cat = str2SwiftClassName langName $ identCat $ normC
 
 -- Pick a class name that is appropriate for the Swift
 str2SwiftClassName :: String -> String -> String
-str2SwiftClassName langName str = upperFirst $ censorName langName str
+-- str2SwiftClassName langName str = upperFirst $ censorName langName str
+str2SwiftClassName langName str = wrapIfNeeded $ upperFirst str
 
 -- Pick a case name that is appropriate for the Swift
 str2SwiftCaseName :: String -> String -> String
@@ -165,9 +166,7 @@ checkBuiltIn name =
 
 checkRegistered :: String -> Bool
 checkRegistered name = 
-  (lowerFirst name) `elem` concatMap 
-      (map lowerFirst) 
-      [ builtIn, keywords, taken ]
+  name `elem` (builtIn ++ keywords)
 
 
 -- Prevent some type or variable name to be called as some already used type or keyword
@@ -176,7 +175,12 @@ censorName langName name
   | checkRegistered name = langName ++ upperFirst name
   | otherwise = name
 
-taken = [ "Character" ]
+wrapIfNeeded :: String -> String
+wrapIfNeeded name
+  | checkRegistered name = "`" ++ name ++ "`"
+  | otherwise            = name 
+
+taken = []
 
 builtIn = [ "Int"
           , "Double"
