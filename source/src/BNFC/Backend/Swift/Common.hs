@@ -7,12 +7,10 @@ module BNFC.Backend.Swift.Common where
 import Text.PrettyPrint (Doc, text)
 import qualified Data.Map as Map
 import BNFC.CF
-import Data.Maybe
 import qualified Data.Char as Char
 import Data.Char (toLower)
-import BNFC.CF (Cat (TokenCat, ListCat), catToStr, normCat, Data, CF, isList, getAbstractSyntax, literals)
 import BNFC.Utils (mkName, NameStyle (OrigCase, MixedCase), mkNames)
-import BNFC.Backend.Common.NamedVariables (getVars, firstLowerCase, firstUpperCase)
+import BNFC.Backend.Common.NamedVariables (getVars, firstUpperCase)
 
 
 cat2SwiftClassName :: String -> Cat -> String
@@ -180,8 +178,10 @@ wrapIfNeeded name
   | checkRegistered name = "`" ++ name ++ "`"
   | otherwise            = name 
 
+taken :: [String]
 taken = []
 
+builtIn :: [String]
 builtIn = [ "Int"
           , "Double"
           , "Float"
@@ -193,6 +193,7 @@ builtIn = [ "Int"
           , "Optional"
           , "Any" ]
 
+keywords :: [String]
 keywords = [ "abstract"
           , "as"
           , "assert"

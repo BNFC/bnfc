@@ -25,18 +25,12 @@ cf2SwiftAST langName cf =  unlines
     imports = [ 
       "import Foundation"
       ]
-    characterTypedef = [ "typealias Character = String"]
     censorName' = censorName langName
     str2SwiftClassName' = str2SwiftClassName langName
     str2SwiftCaseName' = str2SwiftCaseName langName
     cat2SwiftClassName' = cat2SwiftClassName langName
     getVars' = getVars_ langName
     allTokenNames = literals cf
-
-    generateTokens :: [UserDef] -> [String]
-    generateTokens = map $ \token -> 
-        let name = censorName' token 
-        in "typealias" +++ name +++ "= String;"
     
     -- | valueType is a string which represents Swift basic type.
     mkTokenDecl :: String -> String

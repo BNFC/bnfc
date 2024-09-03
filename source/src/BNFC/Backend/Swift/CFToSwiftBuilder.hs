@@ -5,14 +5,14 @@
 module BNFC.Backend.Swift.CFtoSwiftBuilder (cf2SwiftBuilder) where
 
 import Data.Bifunctor (Bifunctor(second))
-import Data.List (intercalate, nub, intersperse)
+import Data.List (intercalate, intersperse)
 import Data.Maybe (mapMaybe)
 
 import Text.PrettyPrint.HughesPJClass (Doc, text, vcat)
 
 import BNFC.Utils ((+++), camelCase_)
-import BNFC.CF (CF, Cat (ListCat, TokenCat, Cat), identCat, isList, IsFun (isNilFun, isOneFun, isConsFun, isCoercion), catToStr, ruleGroups, Rul (rhsRule, funRule), SentForm, WithPosition (wpThing))
-import BNFC.Backend.Swift.Common (indentStr, wrapSQ, catToSwiftType, getVarsFromCats, mkTokenNodeName, indent, getAllTokenCats, getAllTokenTypenames)
+import BNFC.CF
+import BNFC.Backend.Swift.Common
 import BNFC.Options (SharedOptions (lang))
 import BNFC.Backend.Antlr.CFtoAntlr4Parser (antlrRuleLabel, makeLeftRecRule)
 import BNFC.Backend.Common.NamedVariables (firstUpperCase)
@@ -28,7 +28,12 @@ cf2SwiftBuilder cf opts = vcat $ intersperse (text "")
     ]
   where
     language = lang opts
-    importDecls = mkImportDecls cf language
+    
+    importDecls :: Doc
+    importDecls = vcat
+        [ "import Foundation"
+        , "import Antlr4"
+        ]
 
     errorsDecl = buildErrors
     tokenDecls = vcat $ intersperse (text "") buildTokensFuns
@@ -74,13 +79,6 @@ mkBuildFnName cat = "build" ++ firstUpperCase (restName cat)
       ListCat cat  -> restName cat ++ "List"
       TokenCat cat -> cat ++ "Token"
       otherCat     -> catToStr otherCat
-
--- | generates import declarations for antlr nodes and AST nodes.
-mkImportDecls :: CF -> String -> Doc
-mkImportDecls cf lang = vcat
-    [ "import Foundation"
-    , "import Antlr4"
-    ]
 
 mkBuildFunction :: String -> RuleData -> Doc
 mkBuildFunction lang (cat, rulesWithLabels)  = vcat
