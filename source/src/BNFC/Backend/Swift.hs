@@ -23,18 +23,9 @@ import BNFC.Backend.Swift.Common ( indent, buildVariableTypeFromSwiftType, cat2S
 makeSwift :: SharedOptions -> CF -> MkFiles ()
 makeSwift opts@Options{..} cf = do
     let dirBase = replace '.' pathSeparator $ packageName
-        -- langBase = dirBase </> (langName ++ "_generated")
-        -- libLang = langBase </> "lib"
-        -- srcLang = libLang </> "src"
-        -- libBase = dirBase </> "lib"
-        -- binBase = dirBase </> "bin"
-
-        -- directoryOptions = DirectoryOptions{baseDirectory = Just dirBase, nameStyle = Just SnakeCase}
- 
-    -- Generates files in an incorrect place
 
     makeAntlr (opts {dLanguage = Swift, optMake = Nothing}) cf
-    -- makeAntlr (opts {dLanguage = Swift, optMake = Nothing}) cf
+
     MakeFile.mkMakefile optMake $ makefileContent dirBase
 
     mkfile (dirBase </> "ast.swift") makeSwiftComment astContent
@@ -42,35 +33,11 @@ makeSwift opts@Options{..} cf = do
 
   where
     astContent = cf2SwiftAST (firstUpperCase langName) cf
-    -- astContent = cf2SwiftAST cf
-    -- builderContent = cf2SwiftBuilder (firstUpperCase langName) cf
     builderContent = cf2SwiftBuilder cf opts
-    mainContent = unlines 
-      [ "import '../lib/test.swift';"
-      , "void main(List<String> args) {"
-      , "  final test = Test();"
-      , "  test.run(args);"
-      , "}" ]
+
     packageName = maybe id (+.+) inPackage $ mkName [] SnakeCase lang
     langName = firstLowerCase $ mkName [] SnakeCase lang
     langNameUpperCased = firstUpperCase langName
-    importLangName = "import 'package:" ++ langName ++ "_generated/" ++ langName ++ "_generated.swift';"
-
-    pubspecContent moduleName desc deps = unlines (
-      [ "name:" +++ moduleName 
-      , "description:" +++ desc
-      , "version: 1.0.0"
-      , "publish_to: 'none'"
-      , "environment:"
-      , "  sdk: ^3.4.0"
-      , "dependencies:"
-      , "  antlr4: ^4.13.1"
-      , "  fast_immutable_collections: ^10.2.2" 
-      ] ++ deps ++ [ "dev_dependencies:"
-      , "  lints: ^4.0.0" ])
-
-    lexerClassName = lang ++ "GrammarLexer"
-    parserClassName = lang ++ "GrammarParser"
 
     makeVars x = [MakeFile.mkVar n v | (n,v) <- x]
     makeRules x = [MakeFile.mkRule tar dep recipe  | (tar, dep, recipe) <- x]
@@ -99,13 +66,7 @@ makeSwift opts@Options{..} cf = do
         , ("parser"
             , [refSrcVar "PARSER_NAME" ++ ".g4"]
             , [MakeFile.refVar "ANTLR4" +++ "-Dlanguage=Swift" +++ "-no-listener" +++ "-no-visitor" +++ refSrcVar "PARSER_NAME" ++ ".g4"])
-        , ("install-deps-external"
-            , [MakeFile.refVar "LANG" </> "pubspec.yaml"]
-            , ["cd" +++ (MakeFile.refVar "LANG") ++ "; Swift pub get"])
-        , ("install-deps-internal"
-            , [MakeFile.refVar "LANG" </> (MakeFile.refVar "LANG" ++ "_generated") </> "pubspec.yaml"]
-            , ["cd" +++ (MakeFile.refVar "LANG" </> (MakeFile.refVar "LANG" ++ "_generated")) ++ "; Swift pub get"])
-        , (MakeFile.refVar "LANG", ["lexer", "parser", "clean", "install-deps-external", "install-deps-internal"], [])
+        , (MakeFile.refVar "LANG", ["lexer", "parser", "clean"], [])
         , ("clean", [],
           [ 
             rmInSrc "LEXER_NAME" ".interp"
@@ -122,9 +83,3 @@ makeSwift opts@Options{..} cf = do
 
 makeSwiftComment :: String -> String
 makeSwiftComment = ("// Swift " ++)
-
-makeSwiftCommentYaml :: String -> String
-makeSwiftCommentYaml = ("# Swift" ++)
-
-toLowerCase :: String -> String
-toLowerCase = map toLower
