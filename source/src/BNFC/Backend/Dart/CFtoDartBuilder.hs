@@ -139,24 +139,31 @@ cf2DartBuilder lang cf =
               in (name, fun, ctxName)
           vars = getVars' cats
         in [
-          typeName ++ "?" +++ "build" ++ className ++ "(" ++ ctxName ++ "?" +++ "ctx) {"
-        ] ++ (
-          indent 1 $ 
-            (generateArguments index rule $ zip vars cats) ++ 
-            (generateNullCheck vars) ++ 
-            (generateReturnStatement fun vars typeName)
-        ) ++ [
-          "}"
-        ]
-      where
-        generateReturnStatement :: Fun -> [DartVar] -> String -> [String]
-        generateReturnStatement fun vars typeName
-          | isNilFun fun = [ "return IList();" ]
-          | isOneFun fun = generateOneArgumentListReturn vars
-          | isConsFun fun = generateTwoArgumentsListReturn vars
-          | otherwise =  [ "return" +++ typeName ++ "(" ] 
-            ++ (indent 1 $ generateArgumentsMapping vars ) ++ [ ");" ] 
-          
+          typeName ++ "?" +++ "build" ++ className ++ "(" ++ ctxName ++ "?" +++ "ctx) =>"
+        ] ++ ( 
+          indent 1 
+          $ generateSwitch
+              (generateArguments index rule $ zip vars cats) 
+              (generateNullCheck vars) 
+              (generateReturn fun vars typeName) ) 
+
+    generateSwitch :: [String] -> [String] -> [String] -> [String]
+    generateSwitch [] _ x = endListsListWith ";" x
+    generateSwitch arguments matching object =
+      [ "switch ((" ]
+      ++ (indent 1 arguments)
+      ++ [")) {"]
+      ++ ["  ("]
+      ++ (indent 2 matching)
+      ++ ["  ) =>"]
+      ++ (indent 2 $ endListsListWith "," object)
+      ++ ["  _ => null,"]
+      ++ ["};"]
+
+    endListsListWith :: [a] -> [[a]] -> [[a]]
+    endListsListWith _ [] = []
+    endListsListWith s x = init x ++ [(last x) ++ s]
+
 
     generateArguments :: Int -> Rule -> [(DartVar, Cat)] -> [String]
     generateArguments index r vars = 
@@ -166,17 +173,16 @@ cf2DartBuilder lang cf =
 
 
     traverseRule :: Int -> Int -> [Either Cat String] -> [(DartVar, Cat)] -> [String] -> [String]
-    traverseRule _ _ _ [] lines = lines
-    traverseRule _ _ [] _ lines = lines
+    traverseRule _ _ _ [] l = l
+    traverseRule _ _ [] _ l = l
     traverseRule ind1 ind2 (terminal:restTs) (var@(varDart, varCat):restVars) lines = 
       case terminal of 
         Left cat -> 
-          let lhs = buildVariableName varDart
-              rhs = buildArgument 
-                  (precCat cat) 
-                  (upperFirst $ identCat $ normCat varCat)
-                  field 
-          in [ "final" +++ lhs +++ "=" +++ rhs ++ ";" ] 
+          [ ( buildArgument 
+                (precCat cat) 
+                (upperFirst $ identCat $ normCat varCat) 
+                field
+          ) ++ "," ]
               ++ traverseRule ind1 (ind2 + 1) restTs restVars lines
         Right _ -> traverseRule ind1 (ind2 + 1) restTs (var:restVars) lines
       where
@@ -187,16 +193,33 @@ cf2DartBuilder lang cf =
 
 
     generateNullCheck :: [DartVar] -> [String]
-    generateNullCheck [] = []
-    generateNullCheck vars = 
-      [ "if (" ]
-      ++ (indent 1 [ intercalate " || " $ map condition vars ]) 
-      ++ [ ") {" ]
-      ++ (indent 1 [ "return null;" ])
-      ++ [ "}" ]
+    generateNullCheck = map condition 
       where
         condition :: DartVar -> String
-        condition var = buildVariableName var +++ "==" +++ "null"
+        condition var = "final" +++ buildVariableName var ++ "?,"
+    
+    
+    generateReturn :: Fun -> [DartVar] -> String -> [String]
+    generateReturn fun vars typeName
+      | isNilFun fun = [ "IList()" ]
+      | isOneFun fun = generateOneArgumentListReturn vars
+      | isConsFun fun = generateTwoArgumentsListReturn vars
+      | otherwise =  [ typeName ++ "(" ] 
+        ++ (indent 1 $ generateArgumentsMapping vars ) ++ [ ")" ] 
+
+
+    generateOneArgumentListReturn :: [DartVar] -> [String]
+    generateOneArgumentListReturn (v:_) = 
+      ["IList([" ++ buildVariableName v ++ "])"]
+
+
+    generateTwoArgumentsListReturn :: [DartVar] -> [String]
+    generateTwoArgumentsListReturn (x:y:_) = 
+      let (a, b) = putListSecond x y
+      in ["IList([" ++ buildVariableName a ++ ", ..." ++ buildVariableName b ++ ",])"]
+      where 
+        putListSecond x@((0,_),_) y = (x, y)
+        putListSecond x y = (y, x)
 
 
     generateArgumentsMapping :: [DartVar] -> [String]
@@ -205,20 +228,6 @@ cf2DartBuilder lang cf =
         mapArgument variable = 
           let name = buildVariableName variable
           in name ++ ":" +++ name ++ ","
-
-
-    generateOneArgumentListReturn :: [DartVar] -> [String]
-    generateOneArgumentListReturn (v:_) = 
-      ["return IList([" ++ buildVariableName v ++ "]);"]
-
-
-    generateTwoArgumentsListReturn :: [DartVar] -> [String]
-    generateTwoArgumentsListReturn (x:y:_) = 
-      let (a, b) = putListSecond x y
-      in ["return IList([" ++ buildVariableName a ++ ", ..." ++ buildVariableName b ++ ",]);"]
-      where 
-        putListSecond x@((0,_),_) y = (x, y)
-        putListSecond x y = (y, x)
 
 
     contextName :: String -> String
