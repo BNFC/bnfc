@@ -83,43 +83,39 @@ cf2DartAST langName cf =
 
     -- Override the equality `==`
     prEquals :: String -> [DartVar] -> [String]
-    prEquals className variables = [
-        "@override",
-        "bool operator ==(Object o) =>",
-        "  o is" +++ className +++ "&&",
-        "  o.runtimeType == runtimeType" ++ 
-          (if null variables then ";" else " &&")
+    prEquals className variables = 
+      [ "@override"
+      , "bool operator ==(Object o) =>"
+      , "  o is" +++ className +++ "&&"
+      , "  o.runtimeType == runtimeType" 
+        ++ ( case variables of 
+          [] -> ";" 
+          _ -> " &&" )
       ] ++ checkChildren
       where 
-        checkChildren = generateEqualities variables
-        generateEqualities [] = []
-        generateEqualities (variable:rest) = 
-          let name = buildVariableName variable 
-          in [ 
-            "  " ++ name +++ "==" +++ "o." ++ name ++
-              (if null rest then ";" else " &&") 
-          ] ++ generateEqualities rest
+        checkChildren = buildLines $ map (eqCond . buildVariableName) variables 
+        eqCond name = "  " ++ name +++ "==" +++ "o." ++ name 
+        buildLines [] = []
+        buildLines [x] = [x ++ ";"]
+        buildLines (x:xs) = [x ++ " &&"] ++ (buildLines xs)
 
 
     -- Override the hashCode, combining all instance variables
     prHashCode :: [DartVar] -> [String]
-    prHashCode vars = [
-        "@override",
-        "int get hashCode => Object.hashAll([" ++ 
-          concatMap variableHash vars ++ 
-          "]);"
-      ] 
-      where
-        variableHash variable = buildVariableName variable ++ ", "
+    prHashCode vars = 
+      [ "@override"
+      , "int get hashCode => Object.hashAll([" 
+        ++ (concatMap ((++ ", ") . buildVariableName) vars) 
+        ++ "]);" ] 
 
 
     -- Generate variable definitions for the class
     prInstanceVariables :: [DartVar] -> [String]
-    prInstanceVariables vars = map variableLine vars
+    prInstanceVariables vars = map variableAssignment vars
       where
-        variableLine variable =
-          let vType = buildVariableType variable
-              vName = buildVariableName variable
+        variableAssignment v =  
+          let vType = buildVariableType v
+              vName = buildVariableName v
           in "final" +++ vType +++ vName ++ ";"
           
 
@@ -134,6 +130,6 @@ cf2DartAST langName cf =
         assignment variable = "required this." ++ buildVariableName variable ++ ", "
 
     prPrettyPrint :: String -> [String]
-    prPrettyPrint name = [
-      "@override",
-      "String get print => pp.print" ++ name ++ "(this);" ]
+    prPrettyPrint name = 
+      [ "@override"
+      , "String get print => pp.print" ++ name ++ "(this);" ]

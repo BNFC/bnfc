@@ -23,8 +23,8 @@ cf2DartBuilder lang cf =
       concatMap generateBuilders rules
   where 
     leftRecRuleMaker = (makeLeftRecRule cf)
-    rules = map 
-      (\(cat, rules) -> (cat, (map leftRecRuleMaker rules))) $ ruleGroups cf
+    rules = map mkRule $ ruleGroups cf
+    mkRule cat rules = (cat, (map leftRecRuleMaker rules))
     imports lang = 
       [ "import 'package:antlr4/antlr4.dart' show Token;"
       , "import 'package:fast_immutable_collections/fast_immutable_collections.dart' show IList;"
@@ -60,7 +60,8 @@ cf2DartBuilder lang cf =
 
 
     reformatRule :: Rule -> (String, [Cat])
-    reformatRule rule = (wpThing $ funRule rule, [normCat c | Left c <- rhsRule rule ])
+    reformatRule rule = 
+      (wpThing $ funRule rule, [normCat c | Left c <- rhsRule rule ])
 
 
     generateRuntimeTypeMapping :: Cat -> [(Int, String, [Either Cat String])] -> [String]
@@ -106,7 +107,6 @@ cf2DartBuilder lang cf =
                 buildUniversalChild 
                   (contextName $ str2AntlrClassName name) 
                   name
-                  -- (str2DartClassName' name) 
                   "ctx"
           suffix -> buildUniversalChild 
               (contextName (className ++ "_" ++ suffix)) 
@@ -157,11 +157,11 @@ cf2DartBuilder lang cf =
       where
         generateReturnStatement :: Fun -> [DartVar] -> String -> [String]
         generateReturnStatement fun vars typeName
-          | isNilFun fun = ["return IList();"]
+          | isNilFun fun = [ "return IList();" ]
           | isOneFun fun = generateOneArgumentListReturn vars
           | isConsFun fun = generateTwoArgumentsListReturn vars
-          | otherwise =  [ "return" +++ typeName ++ "(" ] ++
-            (indent 1 $ generateArgumentsMapping vars ) ++ [");"] 
+          | otherwise =  [ "return" +++ typeName ++ "(" ] 
+            ++ (indent 1 $ generateArgumentsMapping vars ) ++ [ ");" ] 
           
 
     generateArguments :: Int -> Rule -> [(DartVar, Cat)] -> [String]
@@ -181,7 +181,6 @@ cf2DartBuilder lang cf =
               rhs = buildArgument 
                   (precCat cat) 
                   (upperFirst $ identCat $ normCat varCat)
-                  -- (cat2DartClassName' varCat) 
                   field 
           in [ "final" +++ lhs +++ "=" +++ rhs ++ ";" ] 
               ++ traverseRule ind1 (ind2 + 1) restTs restVars lines
@@ -190,21 +189,20 @@ cf2DartBuilder lang cf =
         field = "ctx?.p_" ++ show ind1 ++ "_" ++ show ind2
         buildArgument :: Integer -> String -> String -> String
         buildArgument prec typeName name = 
-          let precedence = if prec == 0 then "" else show prec
+          let precedence = case prec of 
+            0 -> ""
+            _ -> show prec
           in "build" ++ upperFirst typeName ++ precedence ++ "(" ++ name ++ ")"
-        -- buildArgument prec (_, _) typeName name = 
-        --   let precedence = if prec == 0 then "" else show prec
-        --   in "buildList" ++ upperFirst typeName ++ precedence ++ "(" ++ name ++ ")"
 
 
     generateNullCheck :: [DartVar] -> [String]
     generateNullCheck [] = []
     generateNullCheck vars = 
-      [ "if (" ] ++ 
-      (indent 1 [ intercalate " || " $ map condition vars ]) ++
-      [ ") {" ] ++
-      (indent 1 [ "return null;" ]) ++
-      [ "}" ]
+      [ "if (" ]
+      ++ (indent 1 [ intercalate " || " $ map condition vars ]) 
+      ++ [ ") {" ]
+      ++ (indent 1 [ "return null;" ])
+      ++ [ "}" ]
       where
         condition :: DartVar -> String
         condition var = buildVariableName var +++ "==" +++ "null"
