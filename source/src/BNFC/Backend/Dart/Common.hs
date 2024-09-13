@@ -161,6 +161,11 @@ censorName langName name
   | checkRegistered name = langName ++ upperFirst name
   | otherwise = name
 
+showPrec prec = 
+  case prec of 
+    0 -> ""
+    _ -> show prec
+
 taken = [ "Character" ]
 
 builtIn = [ "int"

@@ -24,7 +24,7 @@ cf2DartBuilder lang cf =
   where 
     leftRecRuleMaker = (makeLeftRecRule cf)
     rules = map mkRule $ ruleGroups cf
-    mkRule cat rules = (cat, (map leftRecRuleMaker rules))
+    mkRule (cat, rules) = (cat, (map leftRecRuleMaker rules))
     imports lang = 
       [ "import 'package:antlr4/antlr4.dart' show Token;"
       , "import 'package:fast_immutable_collections/fast_immutable_collections.dart' show IList;"
@@ -68,9 +68,7 @@ cf2DartBuilder lang cf =
     generateRuntimeTypeMapping cat rules = 
       let ctxName = upperFirst $ identCat $ normCat cat
           astName = buildVariableTypeFromDartType $ cat2DartType' cat 
-          prec = case precCat cat of 
-            0 -> ""
-            x -> show x
+          prec = showPrec $ precCat cat
           precedencedName = ctxName ++ prec
       in 
         [ astName ++ "?" +++ "build" ++ precedencedName ++ "(" 
@@ -89,11 +87,9 @@ cf2DartBuilder lang cf =
                         $ zip [1..] rhs
                     (coercionType, ind2) = case (firstCat) of 
                         Just (i, Left cat) -> 
-                          ( let precStr = case precCat cat of 
-                                  0 -> ""
-                                  x -> show x
-                                catName = upperFirst $ identCat $ normCat cat
-                            in catName ++ precStr
+                          ( let catName = upperFirst $ identCat $ normCat cat
+                                prec = showPrec $ precCat cat
+                            in catName ++ prec
                           , show i )
                         otherwise -> (className, "") -- error, no category in the coercion rule
                     lineIndex = show index
@@ -130,9 +126,7 @@ cf2DartBuilder lang cf =
                 isConsFun fun)
             then 
               let cat = valCat rule
-                  prec = case (precCat cat) of 
-                    0 -> ""
-                    i -> show i
+                  prec = showPrec $ precCat cat
                   ctxName = (++ prec) $ upperFirst $ identCat $ normCat cat
                   suffix = antlrListSuffix fun
                   precedencedName = ctxName ++ suffix
@@ -189,10 +183,7 @@ cf2DartBuilder lang cf =
         field = "ctx?.p_" ++ show ind1 ++ "_" ++ show ind2
         buildArgument :: Integer -> String -> String -> String
         buildArgument prec typeName name = 
-          let precedence = case prec of 
-            0 -> ""
-            _ -> show prec
-          in "build" ++ upperFirst typeName ++ precedence ++ "(" ++ name ++ ")"
+          "build" ++ upperFirst typeName ++ (showPrec prec) ++ "(" ++ name ++ ")"
 
 
     generateNullCheck :: [DartVar] -> [String]
