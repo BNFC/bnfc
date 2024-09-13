@@ -10,7 +10,7 @@ import System.Directory ( createDirectoryIfMissing )
 import Data.Char (toLower)
 
 import BNFC.Backend.Base (MkFiles, mkfile,liftIO)
-import BNFC.CF (CF, getAbstractSyntax, firstEntry, catToStr)
+import BNFC.CF (CF, getAbstractSyntax, firstEntry, catToStr, identCat, normCat )
 import BNFC.Options (SharedOptions (Options, inPackage, lang, optMake, dLanguage, antlrOpts, outDir), AntlrTarget (Dart))
 import BNFC.Utils (mkName, NameStyle (SnakeCase), replace, (+.+), (+++))
 import BNFC.Backend.Common.Makefile as MakeFile 
@@ -20,7 +20,7 @@ import BNFC.Backend.Dart.CFtoDartAST ( cf2DartAST )
 import BNFC.Backend.Dart.CFtoDartBuilder ( cf2DartBuilder )
 import BNFC.Backend.Dart.CFtoDartPrinter ( cf2DartPrinter )
 import BNFC.Backend.Dart.CFtoDartSkeleton ( cf2DartSkeleton )
-import BNFC.Backend.Dart.Common ( indent )
+import BNFC.Backend.Dart.Common ( indent, buildVariableTypeFromDartType, cat2DartType, cat2DartClassName )
 
 makeDart :: SharedOptions -> CF -> MkFiles ()
 makeDart opts@Options{..} cf = do
@@ -46,7 +46,7 @@ makeDart opts@Options{..} cf = do
           (langName ++ "_generated")
           ("A module with the AST, Pretty-Printer and AST-builder for" +++ langName) 
           []
-    mkfile (libBase </> "runner.dart") makeDartComment runnerContent
+    mkfile (libBase </> "test.dart") makeDartComment testContent
     mkfile (libBase </> "skeleton.dart") makeDartComment skeletonContent
     mkfile (binBase </> "main.dart") makeDartComment mainContent
     mkfile (dirBase </> "pubspec.yaml" ) makeDartCommentYaml 
@@ -56,44 +56,51 @@ makeDart opts@Options{..} cf = do
           [ langName ++ "_generated:", "  path:" +++ langName ++ "_generated" ]
 
   where
-    astContent = cf2DartAST cf
-    builderContent = cf2DartBuilder cf langName
-    printerContent = cf2DartPrinter cf
-    skeletonContent = cf2DartSkeleton cf importLangName
+    astContent = cf2DartAST (firstUpperCase langName) cf
+    builderContent = cf2DartBuilder (firstUpperCase langName) cf
+    printerContent = cf2DartPrinter (firstUpperCase langName) cf
+    skeletonContent = cf2DartSkeleton (firstUpperCase langName) cf importLangName
     exportsContent = unlines
       [ "export 'src/ast.dart';"
       , "export 'src/builder.dart';" 
       , "export 'src/pretty_printer.dart';"
       , "export 'src/" ++ langName ++ "_lexer.dart';"
       , "export 'src/" ++ langName ++ "_parser.dart';" ]
-    runnerContent = let firstCat = catToStr $ firstEntry cf in unlines (
-      [ "import 'package:antlr4/antlr4.dart';"
-      , importLangName
-      , "import 'skeleton.dart';"
-      , "class Runner {" 
-      , "  Future<void> run(List<String> arguments) async {" ] 
-      ++ ( indent 2 
-          [ "final input = await InputStream.fromString(arguments[0]);"
-          , "final lexer =" +++ langName ++ "_lexer(input);"
-          , "final tokens = CommonTokenStream(lexer);"
-          , "final parser =" +++ langName ++ "_parser(tokens);"
-          , "parser.addErrorListener(DiagnosticErrorListener());"
-          , "final output = build" ++ (firstUpperCase firstCat) ++ "(parser." ++ (firstLowerCase firstCat) ++ "());"
-          , "print('\"Parse Successful!\"');"
-          , "print('\"[Linearized Tree]\"');"
-          , "print(switch (output) {"
-          , "  null => '" ++ (firstUpperCase firstCat) ++ " is null',"
-          , "  " ++ (firstUpperCase firstCat) ++ " p => interpret" ++ (firstUpperCase firstCat) ++ "(p),"
-          , "});" 
-          , "print('\"[Abstract Syntax]\"');"
-          , "print(output?.print);"
-          ] ) 
-      ++ [ "  }", "}" ] )
+    testContent = 
+      let 
+        firstCat = firstEntry cf 
+        varType = buildVariableTypeFromDartType $ cat2DartType (firstUpperCase langName) firstCat
+        varName = cat2DartClassName langName firstCat
+        rawVarName = firstLowerCase $ identCat $ normCat firstCat
+      in unlines (
+        [ "import 'package:antlr4/antlr4.dart';"
+        , "import 'package:fast_immutable_collections/fast_immutable_collections.dart';"
+        , importLangName
+        , "import 'skeleton.dart';"
+        , "class Test {" 
+        , "  Future<void> run(List<String> arguments) async {" ] 
+        ++ ( indent 2 
+            [ "final input = await InputStream.fromString(arguments[0]);"
+            , "final lexer =" +++ langName ++ "_lexer(input);"
+            , "final tokens = CommonTokenStream(lexer);"
+            , "final parser =" +++ langName ++ "_parser(tokens);"
+            , "parser.addErrorListener(DiagnosticErrorListener());"
+            , "final output = build" ++ varName ++ "(parser." ++ rawVarName ++ "());"
+            , "print('\"Parse Successful!\"\\n');"
+            , "print('\"[Abstract Syntax]\"\\n');"
+            , "print('${output?.print}\\n');"
+            , "print('\"[Linearized Tree]\"\\n');"
+            , "print(switch (output) {"
+            , "  null => '" ++ varType ++ " is null',"
+            , "  " ++ varType ++ " p => interpret" ++ varName ++ "(p),"
+            , "});" 
+            ] ) 
+        ++ [ "  }", "}" ] )
     mainContent = unlines 
-      [ "import '../lib/runner.dart';"
+      [ "import '../lib/test.dart';"
       , "void main(List<String> args) {"
-      , "  final runner = Runner();"
-      , "  runner.run(args);"
+      , "  final test = Test();"
+      , "  test.run(args);"
       , "}" ]
     packageName = maybe id (+.+) inPackage $ mkName [] SnakeCase lang
     langName = firstLowerCase $ mkName [] SnakeCase lang
@@ -105,7 +112,7 @@ makeDart opts@Options{..} cf = do
       , "version: 1.0.0"
       , "publish_to: 'none'"
       , "environment:"
-      , "  sdk: ^3.3.4"
+      , "  sdk: ^3.4.0"
       , "dependencies:"
       , "  antlr4: ^4.13.1"
       , "  fast_immutable_collections: ^10.2.2" 

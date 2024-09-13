@@ -359,9 +359,9 @@ targetOptions =
   , Option "" ["tree-sitter"]   (NoArg (\o -> o {target = TargetTreeSitter}))
     "Output grammar.js file for use with tree-sitter"
   , Option "" ["check"]         (NoArg (\o -> o{target = TargetCheck }))
-  , Option "" ["dart"]         (NoArg (\ o -> o{target = TargetDart }))
-    "Output Dart code for use with ANTLR"
     "No output. Just check input LBNF file"
+  , Option "" ["dart"]          (NoArg (\ o -> o{target = TargetDart }))
+    "Output Dart code for use with ANTLR"
   , Option "" ["antlr"]         (NoArg (\o -> o {target = TargetAntlr}))
     "Output lexer and parser grammars for ANTLRv4"
   ]
