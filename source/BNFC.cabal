@@ -272,6 +272,9 @@ library
     -- Pygments backend
     BNFC.Backend.Pygments
 
+    -- Scala backend
+    BNFC.Backend.Scala
+
     -- Agda backend
     BNFC.Backend.Agda
 

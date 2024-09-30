@@ -64,7 +64,7 @@ data Target = TargetC | TargetCpp | TargetCppNoStl
             | TargetHaskell | TargetHaskellGadt | TargetLatex
             | TargetJava | TargetOCaml | TargetPygments
             | TargetTreeSitter
-            | TargetCheck
+            | TargetCheck | TargetScala
   deriving (Eq, Bounded, Enum, Ord)
 
 -- | List of Haskell target.
@@ -83,6 +83,7 @@ instance Show Target where
   show TargetPygments     = "Pygments"
   show TargetTreeSitter   = "Tree-sitter"
   show TargetCheck        = "Check LBNF file"
+  show TargetScala        = "Scala"
 
 -- | Which version of Alex is targeted?
 data AlexVersion = Alex3
