@@ -313,6 +313,8 @@ targetOptions =
     "Output OCaml code for use with ocamllex and menhir (short for --ocaml --menhir)"
   , Option "" ["pygments"]      (NoArg (\o -> o {target = TargetPygments}))
     "Output a Python lexer for Pygments"
+  , Option "" ["scala"]      (NoArg (\o -> o {target = TargetScala}))
+    "Output a Scala lexer"
   , Option "" ["tree-sitter"]   (NoArg (\o -> o {target = TargetTreeSitter}))
     "Output grammar.js file for use with tree-sitter"
   , Option "" ["check"]         (NoArg (\ o -> o{target = TargetCheck }))
@@ -530,6 +532,7 @@ instance Maintained Target where
     TargetJava        -> True
     TargetOCaml       -> True
     TargetPygments    -> True
+    TargetScala    -> True
     TargetTreeSitter  -> True
     TargetCheck       -> True
 
