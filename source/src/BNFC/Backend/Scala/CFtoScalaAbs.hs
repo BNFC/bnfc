@@ -14,7 +14,7 @@
     Created       : 30 September, 2024
 -}
 
-module BNFC.Backend.C.CFtoCAbs (cf2CAbs) where
+module BNFC.Backend.Scala.CFtoScalaAbs (cf2ScalaAbs) where
 
 import Prelude hiding ((<>))
 
@@ -37,9 +37,7 @@ import BNFC.Backend.Common.NamedVariables
 
 
 -- | The result is two files (.H file, .C file)
-cf2CAbs
-  :: RecordPositions
-  -> String -- ^ Ignored.
-  -> CF     -- ^ Grammar.
-  -> (String, String) -- ^ @.H@ file, @.C@ file.
-cf2CAbs rp _ cf = ["ScalaAbsFile"]
+cf2ScalaAbs
+  :: CF     -- ^ Grammar.
+  -> Doc    -- ^ @.H@ file, @.C@ file.
+cf2ScalaAbs cf = vcat [ "ScalaAbsFile"]
