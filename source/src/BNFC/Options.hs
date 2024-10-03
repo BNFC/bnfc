@@ -532,7 +532,7 @@ instance Maintained Target where
     TargetJava        -> True
     TargetOCaml       -> True
     TargetPygments    -> True
-    TargetScala    -> True
+    TargetScala       -> True
     TargetTreeSitter  -> True
     TargetCheck       -> True
 
@@ -649,6 +649,7 @@ translateOldOptions = mapM $ \ o -> do
     , ("-csharp"       , "--csharp")
     , ("-ocaml"        , "--ocaml")
     , ("-haskell"      , "--haskell")
+    , ("-scala"         , "--scala")
     , ("-prof"         , "--profile")
     , ("-gadt"         , "--haskell-gadt")
     , ("-alex1"        , "--alex1")
