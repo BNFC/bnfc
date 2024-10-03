@@ -274,6 +274,7 @@ library
 
     -- Scala backend
     BNFC.Backend.Scala
+    BNFC.Backend.Scala.CFtoScalaAbs
 
     -- Agda backend
     BNFC.Backend.Agda
