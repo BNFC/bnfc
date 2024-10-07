@@ -12,7 +12,7 @@ import BNFC.Backend.Scala.CFtoScalaAbs (cf2ScalaAbs)
 
 makeScala :: SharedOptions -> CF -> Backend
 makeScala opts cf = do 
-    mkfile (name ++ ".lx") comment (cf2ScalaAbs cf)
+    mkfile (name ++ ".lx") comment (cf2ScalaAbs opts cf)
     where name = lang opts
 
 comment :: String -> String
