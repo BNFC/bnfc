@@ -174,3 +174,5 @@ cabal.sandbox.config
 /testing/regression-tests/comments/ocaml/
 
 ignore-dir/
+
+.DS_Store
