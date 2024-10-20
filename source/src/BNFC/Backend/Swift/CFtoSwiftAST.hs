@@ -35,10 +35,10 @@ cf2SwiftAST langName cf =  unlines
     -- | valueType is a string which represents Swift basic type.
     mkTokenDecl :: String -> String
     mkTokenDecl tokenName = unlines
-        [ "struct" +++ catToSwiftType (TokenCat tokenName) +++ "{"
+        [ "public struct" +++ catToSwiftType (TokenCat tokenName) +++ "{"
         , indentStr 2 $ "let value: " ++ value
         , ""
-        , indentStr 2 $ "init(_ value:" +++ value ++ ") {"
+        , indentStr 2 $ "public init(_ value:" +++ value ++ ") {"
         , indentStr 4 $ "self.value = value" 
         , indentStr 2 $ "}" 
         , "}"
@@ -62,7 +62,7 @@ cf2SwiftAST langName cf =  unlines
             let name = catToSwiftType cat
             -- let name = cat2SwiftClassName' cat // TODO: refactor, merge functions
             in 
-              [ "indirect enum" +++ wrapIfNeeded name +++ "{"
+              [ "public indirect enum" +++ wrapIfNeeded name +++ "{"
               ] ++ indent_ 1 cases ++ ["}\n"]
 
 

@@ -12,7 +12,7 @@ import Data.Char (toLower)
 import BNFC.Backend.Base (MkFiles, mkfile,liftIO)
 import BNFC.CF (CF, getAbstractSyntax, firstEntry, catToStr, identCat, normCat )
 import BNFC.Options (SharedOptions (Options, inPackage, lang, optMake, dLanguage, antlrOpts, outDir), AntlrTarget (Swift))
-import BNFC.Utils (mkName, NameStyle (SnakeCase), replace, (+.+), (+++))
+import BNFC.Utils (mkName, NameStyle (SnakeCase, CamelCase), replace, (+.+), (+++))
 import BNFC.Backend.Common.Makefile as MakeFile 
 import BNFC.Backend.Common.NamedVariables (firstUpperCase, firstLowerCase) 
 import BNFC.Backend.Antlr (makeAntlr, makeAntlr', DirectoryOptions (DirectoryOptions, baseDirectory, nameStyle))
@@ -23,20 +23,23 @@ import BNFC.Backend.Swift.Common ( indent, buildVariableTypeFromSwiftType, cat2S
 makeSwift :: SharedOptions -> CF -> MkFiles ()
 makeSwift opts@Options{..} cf = do
     let dirBase = replace '.' pathSeparator $ packageName
+        sourcesDir = dirBase </> "Sources"
+        targetDir = sourcesDir </> langNameUpperCased
+        directoryOptions = DirectoryOptions{baseDirectory = Just targetDir, nameStyle = Just CamelCase}
 
-    makeAntlr (opts {dLanguage = Swift, optMake = Nothing}) cf
+    makeAntlr' (opts {dLanguage = Swift, optMake = Nothing}) cf directoryOptions
 
-    MakeFile.mkMakefile optMake $ makefileContent dirBase
+    MakeFile.mkMakefile optMake $ makefileContent targetDir
 
-    mkfile (dirBase </> "ast.swift") makeSwiftComment astContent
-    mkfile (dirBase </> "builder.swift") makeSwiftComment builderContent
-
+    mkfile (targetDir </> "ast.swift") makeSwiftComment astContent
+    mkfile (targetDir </> "builder.swift") makeSwiftComment builderContent
+    mkfile (dirBase </> "Package.swift") makePackageHeader (packageFileContent langNameUpperCased)
   where
     astContent = cf2SwiftAST (firstUpperCase langName) cf
     builderContent = cf2SwiftBuilder cf opts
 
-    packageName = maybe id (+.+) inPackage $ mkName [] SnakeCase lang
-    langName = firstLowerCase $ mkName [] SnakeCase lang
+    packageName = maybe id (+.+) inPackage $ mkName [] CamelCase lang
+    langName = firstLowerCase $ mkName [] CamelCase lang
     langNameUpperCased = firstUpperCase langName
 
     makeVars x = [MakeFile.mkVar n v | (n,v) <- x]
@@ -80,6 +83,39 @@ makeSwift opts@Options{..} cf = do
         ]
 
     makefileContent dirBase _ = vcat [makefileVars, "", makefileRules $ refVarInSrc dirBase, ""]
-
+    
+    -- Content of Package.swift, uses to declare swift package
+    packageFileContent langName = vcat
+      [ "import PackageDescription"
+      , ""
+      , "let package = Package("
+      , nest 2 $ vcat
+        [ text $ "name: \"" ++ langName ++ "\","
+        , "products: ["
+        , nest 2 $ vcat 
+          [ ".library("
+          , text $ "  name: \"" ++ langName ++ "\","
+          , text $ "  targets: [\"" ++ langName ++ "\"]"
+          , ")"
+          ]
+        , "],"
+        ]
+      , nest 2 $ vcat
+        [ "dependencies: ["
+        , "  .package(name: \"Antlr4\", url: \"https://github.com/antlr/antlr4\", from: \"4.12.0\")"
+        , "],"
+        ]
+      , nest 2 $ vcat
+        [ "targets: ["
+        , text $ "  .target(name: \"" ++ langName ++ "\", dependencies: [\"Antlr4\"])"
+        , "]"
+        ]
+      , ")"
+      ]
 makeSwiftComment :: String -> String
 makeSwiftComment = ("// Swift " ++)
+
+makePackageHeader :: String -> String
+makePackageHeader str = toolingVersion ++ "\n" ++ (makeSwiftComment str)
+  where
+    toolingVersion = "// swift-tools-version: 5.9"
