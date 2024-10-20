@@ -313,3 +313,12 @@ catToSwiftType :: Cat -> String
 catToSwiftType (ListCat c) = "[" ++ catToSwiftType c ++ "]"
 catToSwiftType (TokenCat c) = toMixedCase (c ++ "Token")
 catToSwiftType cat = toMixedCase (catToStr cat)
+
+-- | generate name for function which will build node for some cat.
+mkBuildFnName :: Cat -> String
+mkBuildFnName cat = "build" ++ firstUpperCase (restName cat)
+  where
+    restName cat = case cat of
+      ListCat cat  -> restName cat ++ "List"
+      TokenCat cat -> cat ++ "Token"
+      otherCat     -> catToStr otherCat

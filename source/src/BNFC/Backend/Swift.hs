@@ -18,7 +18,7 @@ import BNFC.Backend.Common.NamedVariables (firstUpperCase, firstLowerCase)
 import BNFC.Backend.Antlr (makeAntlr, makeAntlr', DirectoryOptions (DirectoryOptions, baseDirectory, nameStyle))
 import BNFC.Backend.Swift.CFtoSwiftAST ( cf2SwiftAST )
 import BNFC.Backend.Swift.CFtoSwiftBuilder ( cf2SwiftBuilder )
-import BNFC.Backend.Swift.Common ( indent, buildVariableTypeFromSwiftType, cat2SwiftType, cat2SwiftClassName )
+import BNFC.Backend.Swift.Common ( indent, buildVariableTypeFromSwiftType, cat2SwiftType, cat2SwiftClassName, mkBuildFnName )
 
 makeSwift :: SharedOptions -> CF -> MkFiles ()
 makeSwift opts@Options{..} cf = do
@@ -33,6 +33,7 @@ makeSwift opts@Options{..} cf = do
 
     mkfile (targetDir </> "ast.swift") makeSwiftComment astContent
     mkfile (targetDir </> "builder.swift") makeSwiftComment builderContent
+    mkfile (targetDir </> langNameUpperCased ++ ".swift") makeSwiftComment (publicApiContent langNameUpperCased)
     mkfile (dirBase </> "Package.swift") makePackageHeader (packageFileContent langNameUpperCased)
   where
     astContent = cf2SwiftAST (firstUpperCase langName) cf
@@ -112,6 +113,32 @@ makeSwift opts@Options{..} cf = do
         ]
       , ")"
       ]
+    
+    publicApiContent langName = vcat
+      [ "import Antlr4"
+      , ""
+      , text $ "public func getAst(from text: String) -> Result<" ++ catToStr firstCat ++", Error> {"
+      , nest 2 $ vcat
+        [ "let input = ANTLRInputStream(text)"
+        , text $ "let lexer =" +++ langName ++ "Lexer(input)"
+        , "let tokens = CommonTokenStream(lexer)"
+        , "do {"
+        , nest 2 $ vcat
+          [ text $ "let parser = try" +++ langName ++ "Parser(tokens)"
+          , text $ "let ctx = try parser." ++ (firstLowerCase $ identCat $ normCat firstCat) ++ "()"
+          , text $ "let program = try" +++ mkBuildFnName firstCat ++ "(ctx)"
+          , "return .success(program)"
+          ]
+        , "} catch {"
+        , "  return .failure(error)"
+        , "}"
+        ]
+      , "}"
+      ]
+      where 
+        firstCat = firstEntry cf
+
+
 makeSwiftComment :: String -> String
 makeSwiftComment = ("// Swift " ++)
 
