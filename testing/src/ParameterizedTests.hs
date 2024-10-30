@@ -421,6 +421,10 @@ parameters = concat
     , javaParams { tpName = "Java (with jflex and line numbers)"
                  , tpBnfcOptions = ["--java", "--jflex", "-l"] }
     ]
+    -- Python
+  , [ pythonParams { tpName = "Python"
+                 , tpBnfcOptions = ["--python"] }
+    ] 
   ]
   where
     base = baseParameters
@@ -443,6 +447,14 @@ parameters = concat
         , tpBuild       = tpMake ["OCAMLCFLAGS=-safe-string"]
         , tpBnfcOptions = ["--ocaml"]
         , tpRunTestProg = haskellRunTestProg
+        }
+    pythonParams = base
+        { tpBuild = do
+            return () -- nothing to make or compile
+        ,
+          tpRunTestProg = \ _lang args -> do
+            pyFile_ <- findFile "genTest.py"
+            cmd "python3" $ pyFile_ : args
         }
 
 -- | Helper function that runs bnfc with the context's options and an

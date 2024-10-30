@@ -64,6 +64,7 @@ data Target = TargetC | TargetCpp | TargetCppNoStl
             | TargetHaskell | TargetHaskellGadt | TargetLatex
             | TargetJava | TargetOCaml | TargetPygments
             | TargetTreeSitter
+            | TargetPython
             | TargetCheck
   deriving (Eq, Bounded, Enum, Ord)
 
@@ -83,6 +84,7 @@ instance Show Target where
   show TargetPygments     = "Pygments"
   show TargetTreeSitter   = "Tree-sitter"
   show TargetCheck        = "Check LBNF file"
+  show TargetPython       = "Python"
 
 -- | Which version of Alex is targeted?
 data AlexVersion = Alex3
@@ -261,6 +263,7 @@ printTargetOption = ("--" ++) . \case
   TargetOCaml       -> "ocaml"
   TargetPygments    -> "pygments"
   TargetTreeSitter  -> "tree-sitter"
+  TargetPython      -> "python"
   TargetCheck       -> "check"
 
 printAlexOption :: AlexVersion -> String
@@ -314,6 +317,8 @@ targetOptions =
     "Output a Python lexer for Pygments"
   , Option "" ["tree-sitter"]   (NoArg (\o -> o {target = TargetTreeSitter}))
     "Output grammar.js file for use with tree-sitter"
+  , Option "" ["python"]         (NoArg (\ o -> o{target = TargetPython }))
+    "Output Python code for use with PLY"    
   , Option "" ["check"]         (NoArg (\ o -> o{target = TargetCheck }))
     "No output. Just check input LBNF file"
   ]
@@ -530,6 +535,7 @@ instance Maintained Target where
     TargetOCaml       -> True
     TargetPygments    -> True
     TargetTreeSitter  -> True
+    TargetPython      -> True
     TargetCheck       -> True
 
 instance Maintained AlexVersion where
@@ -661,4 +667,5 @@ translateOldOptions = mapM $ \ o -> do
     , ("--ghc"                , "--generic")
     , ("--deriveGeneric"      , "--generic")
     , ("--deriveDataTypeable" , "--generic")
+    , ("-python" , "--python")
     ]
