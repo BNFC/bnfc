@@ -21,6 +21,7 @@ import Prelude hiding ((<>))
 import BNFC.CF
 import BNFC.PrettyPrint
 import BNFC.Options
+import Data.List
 
 -- | The result is two files (.H file, .C file)
 cf2ScalaAbs
@@ -34,14 +35,22 @@ cf2ScalaAbs Options{ lang } cf = vsep . concat $
     , [hang classSign 4 $ functions]
     , defaultFunction lang
     , ["}"]
+    , [text $ concat $ map dataToString datas]
   ]
   where
     datas     = cf2data cf
     functions = vcat (map prData datas)
 
 
--- dataToString :: (Cat, [(String, [Cat])]) -> String
--- dataToString (cat, _) = catToStr cat
+dataToString :: (Cat, [(String, [Cat])]) -> String
+dataToString (cat, []) = catToStr cat
+dataToString (cat, cats) = "Main Cat:" ++ catToStr cat ++ " List of [(String, [Cat])]: " ++ strCatToString cats
+
+
+strCatToString :: [(String, [Cat])] -> String
+strCatToString ([]) = ""
+strCatToString (ncat:[]) = " \n Sub Cat: " ++ fst ncat ++ " Is compose of: " ++ intercalate " " (map catToStr (snd ncat))
+strCatToString (ncat:cats) = " \n  Sub Cat: " ++ fst ncat ++ " Is compose of: " ++ intercalate " " (map catToStr (snd ncat)) ++  strCatToString cats
 
 classSign :: Doc
 classSign = "abstract class AbstractVisitor[R, A] extends AllVisitor[R, A]{"
