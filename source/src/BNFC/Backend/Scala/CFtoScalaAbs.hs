@@ -35,7 +35,7 @@ cf2ScalaAbs Options{ lang } cf = vsep . concat $
     , [hang classSign 4 $ functions]
     , defaultFunction lang
     , ["}"]
-    , [text $ concat $ map dataToString datas]
+    -- , [text $ concat $ map dataToString datas]
   ]
   where
     datas     = cf2data cf
