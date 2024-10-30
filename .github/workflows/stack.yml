@@ -23,7 +23,8 @@ jobs:
       fail-fast: false
       matrix:
         # Note: check release logic below when changing the matrix!
-        ghc: ['9.8', '9.6', '9.4', '9.2', '9.0', '8.10', '8.8', '8.6', '8.4', '8.2']
+        # Stack 3.1.1 only supports GHC 8.4 and up.
+        ghc: ['9.10', '9.8', '9.6', '9.4', '9.2', '9.0', '8.10', '8.8', '8.6', '8.4']
         os: [ubuntu-latest]
         include:
           - os: macOS-latest
