@@ -289,10 +289,9 @@ Python Backend
 ===============
 
 The BNF Converter's Python Backend generates a Python frontend, that uses 
-`PLY <https://www.dabeaz.com/ply/ply.html>`_ (Python Lex Yacc), to parse
-input into an abstract syntax tree.
+Lark, to parse input into an AST (abstract syntax tree).
 
-Python 3.10 or higher is needed.
+Lark and Python 3.10 or higher is needed.
 
 Example usage: ::
 
@@ -307,10 +306,8 @@ Example usage: ::
      - Description
    * - bnfcPyGenCalc/Absyn.py
      - Provides the classes for the abstract syntax.
-   * - bnfcPyGenCalc/LexTokens.py
-     - Provides PLY with the information needed to build the lexer.
    * - bnfcPyGenCalc/ParserDefs.py
-     - Provides PLY with the information needed to build the parser.
+     - Provides Lark with the information needed to build the lexer and parser.
    * - bnfcPyGenCalc/PrettyPrinter.py
      - Provides printing for both the AST and the linearized tree.
    * - genTest.py
@@ -318,7 +315,7 @@ Example usage: ::
    * - skele.py
      - Provides skeleton code to deconstruct an AST, using structural pattern matching.
 
-Optionally one may with ``-m`` also create a makefile that contains the target
+Optionally one may with ``-m``` also create a makefile that contains the target
 "distclean" to remove the generated files.
 
 Testing the frontend
@@ -340,34 +337,28 @@ and it's possible to just use an argument::
 Caveats
 .......
 
-Presentation of conflicts in a grammar:
-
-  A symbol-to-unicode transformation is made for the terminals in the grammar,
-  for example from "++" to "S_43_43". This however obfuscates PLYs generated
-  information of the grammar in the "parser.out" file. Users are hence
-  encouraged to use the Haskell backend to debug grammars and identify
-  conflicts.
-
 Several entrypoints:
-
-  At the top of the ParserDefs.py file an additional rule is added, that has
-  every defined entrypoint as a possible production. This may create warnings 
-  for conflicts, as it may introduce ambiguity. Therefore the added
-  parsing rule is by default removed beneath the function, with the statement
-  "del p__Start", and included if the user comments out the removal of
-  "p__Start".
-
-Special cases for special characters:
-
-  Using non-special characters, instead of say parentheses when defining rules,
-  may not yield the expected behaviour. Using the below rule, an expression
-  such as "a1+2a" can not be parsed since the a's are classified as reserved
-  keywords, like "int", instead of symbols like "+"::
-
-    _. Exp1 ::= "a" Exp "a" ;
+  The testfile genTest.py only uses the first entrypoint used by default. To
+  use all entrypoints, set the start parameter to "start_". If the 
+  entrypoints cause reduce/reduce conflicts, a lark GrammarError will be
+  produced.
 
 Results from the parameterized tests:
-
   While the Python backend generates working frontends for the example
-  grammars, four "failures" and six "errors" among the regression
+  grammars, five "failures" and six "errors" among the regression
   tests are reported.
+
+Skeleton code for using lists as entrypoints:
+  Matchers for using lists, such as [Exp], are not generated in the
+  skeleton code as it may confuse users if the grammar uses several different 
+  list categories, as a user may then try to pattern match lists without 
+  checking what type the elements have. Users are instead encouraged to use
+  non-list entrypoints. 
+
+Using multiple separators
+  Using multiple separators for the same category, such as below, generates
+  Python functions with overlapping names, causing runtime errors.::
+
+    separator Exp1 "," ;
+    separator Exp1 ";" ;
+

@@ -18,6 +18,7 @@ import BNFC.Backend.Python.CFtoPyPrettyPrinter (cf2PyPretty)
 import BNFC.Backend.Python.CFtoPySkele (cf2PySkele)
 import BNFC.Backend.Python.PyHelpers
 import BNFC.PrettyPrint
+import Data.Char  (toLower)
 import qualified BNFC.Backend.Common.Makefile as Makefile
 
 
@@ -87,44 +88,50 @@ comment x = "# " ++ x
 -- Produces the content for the testing file, genTest.py.
 pyTest :: String -> CF -> String
 pyTest pkgName cf = unlines 
-  [
-    "import sys",
-    "from " ++ pkgName ++ ".ParsingDefs import *",
-    "from " ++ pkgName ++ ".PrettyPrinter import *",
-    "",
-    "",
-    "# Suggested input options:",
-    "# python3 genTest.py < sourcefile",
-    "# python3 genTest.py sourcefile inputfile (i.e. for interpreters).",
-    "inputFile = None",
-    "if len(sys.argv) > 1:",
-    "\tf = open(sys.argv[1], 'r')",
-    "\tinp = f.read()",
-    "\tf.close()",
-    "\tif len(sys.argv) > 2:",
-    "\t\tinputFile = sys.argv[2]",
-    "else:",
-    "\tinp = ''",
-    "\tfor line in sys.stdin:",
-    "\t\tinp += line",
-    "",
-    "def onError(e):",
-    "  print(e)",
-    "  print('Parse failed')",
-    "  quit(1)",
-    "",
-    "# By default the first entrypoint is used. See ParsingDefs.py for alternatives.",
-    "ast = parser.parse(inp, on_error=onError)",
-    "if ast: # and not lexer.syntaxError:",
-      "\tprint('Parse Successful!\\n')",
-      "\tprint('[Abstract Syntax]')",
-      "\tprint(printAST(ast))",
-      "\tprint('\\n[Linearized Tree]')",
-      "\tlinTree = lin(ast)",
-      "\tprint(renderC(linTree))",
-      "\tprint()",
-    "else:",
-      "\tprint('Parse failed')",
-      "\tquit(1)"
+  [ "import sys"
+  , "from " ++ pkgName ++ ".ParsingDefs import *"
+  , "from " ++ pkgName ++ ".PrettyPrinter import *"
+  , ""
+  , "# Suggested input options:"
+  , "# python3 genTest.py < sourcefile"
+  , "# python3 genTest.py sourcefile inputfile (i.e. for interpreters)."
+  , "inputFile = None"
+  , "if len(sys.argv) > 1:"
+  , "\tf = open(sys.argv[1], 'r')"
+  , "\tinp = f.read()"
+  , "\tf.close()"
+  , "\tif len(sys.argv) > 2:"
+  , "\t\tinputFile = sys.argv[2]"
+  , "else:"
+  , "\tinp = ''"
+  , "\tfor line in sys.stdin:"
+  , "\t\tinp += line"
+  , ""
+  , "def onError(e):"
+  , "  print(e)"
+  , "  print('Parse failed')"
+  , "  quit(1)"
+  , ""
+  , "# Creates the Lark parser with the given grammar. By default to the first"
+  , "# entrypoint. Other entrypoints exist in ParsingDefs.py."
+  , "parser = Lark(grammar, start='" ++ defaultEntrypoint ++ "', parser='lalr', lexer='basic', transformer=TreeTransformer())"
+  , ""
+  , "# By default the first entrypoint is used. See ParsingDefs.py for alternatives."
+  , "ast = parser.parse(inp, on_error=onError)"
+  , "if ast: # and not lexer.syntaxError:"
+  , "\tprint('Parse Successful!\\n')"
+  , "\tprint('[Abstract Syntax]')"
+  , "\tprint(printAST(ast))"
+  , "\tprint('\\n[Linearized Tree]')"
+  , "\tlinTree = lin(ast)"
+  , "\tprint(renderC(linTree))"
+  , "\tprint()"
+  , "else:"
+  , "\tprint('Parse failed')"
+  , "\tquit(1)"
   ]
+  where
+    defaultEntrypoint = map toLower 
+      ((translateToList . show . firstEntry) cf)
+
 

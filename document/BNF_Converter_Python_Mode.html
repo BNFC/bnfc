@@ -27,15 +27,15 @@
 <h3>2024</h3>
 <p>
   The BNF Converter's Python Backend generates a Python frontend, that uses 
-  PLY (Python Lex Yacc), to parse input into an AST (abstract syntax tree).
+  Lark, to parse input into an AST (abstract syntax tree).
 </p>
 <p>
   BNFC on Github:<br>
   <a href="https://github.com/BNFC/bnfc">https://github.com/BNFC/bnfc</a>
 </p>
 <p>
-  PLY homepage:<br>
-  <a href="https://www.dabeaz.com/ply/ply.html">https://www.dabeaz.com/ply/ply.html</a>
+  Lark github:<br>
+  <a href="https://github.com/lark-parser/lark">https://github.com/lark-parser/lark</a>
 </p>
 <p>
   Python 3.10 or higher is needed.
@@ -52,13 +52,10 @@ The result is a set of files:
     <th>Filename:</th><th>Description:</th>
   </tr>
   <tr>
-    <td>bnfcGenNAME/LexTokens.py</td><td>Provides PLY with the information needed to build the lexer.</td>
-  </tr>
-  <tr>
     <td>bnfcGenNAME/Absyn.py</td><td>Provides the classes for the abstract syntax.</td>
   </tr>
   <tr>
-    <td>bnfcGenNAME/ParserDefs.py</td><td>Provides PLY with the information needed to build the parser.</td>
+    <td>bnfcGenNAME/ParserDefs.py</td><td>Provides Lark with the information needed to build the lexer and parser.</td>
   </tr>
   <tr>
     <td>bnfcGenNAME/PrettyPrinter.py</td><td>Provides printing for both the AST and the linearized tree.</td>
@@ -79,7 +76,6 @@ The result is a set of files:
   $ python3 genTest.py < hello.c
 </p>
 <p style="font-family: monospace;">
-  Generating LALR tables<br>
   Parse Successful!<br>
   <br>
   [Abstract Syntax]<br>
@@ -91,9 +87,6 @@ The result is a set of files:
     &nbsp;printString ("Hello world");<br>
     &nbsp;return 0;<br>
   }<br>
-</p>
-<p>
-  The LALR tables are cached in a file called "parsetab.py", and a description by PLY of the grammar is stored in a file called "parser.out".
 </p>
 <h3>The Abstract Syntax Tree</h3>
 <p>
@@ -151,33 +144,14 @@ def matcherExp(exp_: Exp):<br>
   
 <h3>Known issues</h3>
 <h4>
-  Presentation of conflicts in a grammar:
-</h4>
-<p>
-  A symbol-to-unicode transformation is made for the terminals in the grammar,
-  for example from "++" to "S_43_43". This however obfuscates PLYs generated
-  information of the grammar, inside the "parser.out" file. Users are hence
-  encouraged to use say the Haskell backend to debug their
-  grammars and identify conflicts.
-</p>
-<h4>
-  Several entrypoints:
-</h4>
-<p>
-  At the top of the ParserDefs.py file an additional rule is added, that has
-  every defined entrypoint as a possible production. This may create warnings 
-  for conflicts if it introduces ambiguity, and warnings for unused rules if 
-  the "_Start" category is not used as the entrypoint. Therefore the added
-  parsing rule is by default removed beneath the function, "del p__Start",
-  and included if the user comments out the removal:
-</p>
-<h4>
   Skeleton code for using lists as entrypoints:
 </h4>
 <p>
   Matchers for using lists, such as [Exp], are not generated in the
   skeleton code as it may confuse users if the grammar uses several different 
-  list categories. Users are instead encouraged to use a non-list entrypoint. 
+  list categories, as a user may then try to pattern match lists without 
+  checking what type the elements have. Users are instead encouraged to use
+  non-list entrypoints. 
 </p>
 <p>
   The improper way to iterate over lists, as the value category is unknown:
@@ -196,16 +170,6 @@ def matcherExp(exp_: Exp):<br>
   &nbsp;&nbsp;&nbsp;...
 </p>
 <h4>
-  Special cases for special characters
-</h4>
-<p>
-  Using non-special characters instead of say parentheses when defining rules, may not yield the expected
-  behaviour. Using the below rule, an expression such as "a1+2a" can not be parsed.
-</p>
-<p style="font-family: monospace;">
-  _. Exp1 ::= "a" Exp "a" ;
-</p>
-<h4>
   Using multiple separators
 </h4>
 <p>
@@ -216,3 +180,19 @@ def matcherExp(exp_: Exp):<br>
   separator Exp1 "," ;<br>
   separator Exp1 ";" ;
 </p>
+<h4>Several entrypoints:</h4>
+<p>
+  The testfile genTest.py only uses the first entrypoint used by default. To
+  use all entrypoints, set the start parameter to "start_". If the 
+  entrypoints cause reduce/reduce conflicts, a lark GrammarError will be
+  produced.
+</p>
+<h4>
+Results from the parameterized tests:
+</h4>
+<p>
+  While the Python backend generates working frontends for the example
+  grammars, five "failures" and six "errors" among the regression
+  tests are reported.
+</p>
+

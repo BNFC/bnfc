@@ -30,10 +30,6 @@ cf2PyAbs pkgName cf = ( unlines
   , createGrammar cf
   , createTransformer cf
   , ""
-  , "# Create Lark parser with the given grammar"
-  , "parser = Lark(grammar, start='start', parser='lalr', lexer='basic', " ++
-    "transformer=TreeTransformer())"
-  , ""
   ]
   , unlines 
   ["from typing import List as _List"
@@ -78,7 +74,7 @@ cf2PyAbs pkgName cf = ( unlines
 createGrammar :: CF -> String
 createGrammar cf = unlines 
   [ "grammar = r\"\"\""
-  , "  ?start: " ++ map toLower ((translateToList .show . firstEntry) cf)
+  , "  ?start_: " ++ entryOrClause
   , ""
   , unlines orClauses
   , larkLiterals cf
@@ -99,6 +95,10 @@ createGrammar cf = unlines
     (multiMatchers, singleMatchers) = comments cf
     singleComments = map createLineCommentMatcher singleMatchers
     multiComments = map createMultiLineCommentMatcher multiMatchers
+
+    strListEntryPoints = map ((map toLower) .  translateToList . show) 
+      ((List1.toList . allEntryPoints) cf)
+    entryOrClause = intercalate "\n  | " strListEntryPoints
 
 
 -- Enumerates all (only defined relevant) rules to prevent naming overlap.
