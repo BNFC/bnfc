@@ -283,7 +283,6 @@ library
     -- Python backend
     BNFC.Backend.Python
     BNFC.Backend.Python.CFtoPyAbs
-    BNFC.Backend.Python.CFtoPyLex
     BNFC.Backend.Python.CFtoPyPrettyPrinter
     BNFC.Backend.Python.RegToFlex
     BNFC.Backend.Python.PyHelpers

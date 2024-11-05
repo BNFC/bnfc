@@ -9,45 +9,47 @@ module BNFC.Backend.Python.CFtoPyAbs (cf2PyAbs) where
 import Data.List     ( nub, intercalate )
 import BNFC.CF
 import BNFC.Backend.Python.PyHelpers
+import BNFC.Backend.Python.RegToFlex (printRegFlex, escapeChar)
 import BNFC.Backend.Common.NamedVariables
 import Text.PrettyPrint (Doc, render)
 import Data.Either   (lefts)
-import Data.Char                    (toLower)
+import Data.Char                    (toLower, toUpper)
 import qualified Data.List.NonEmpty as List1
+
 
 -- | The result is ParsingDefs.py & Absyn.py
 cf2PyAbs
   :: String
   -> CF     -- ^ Grammar.
-  -> [(String, String)] -- Tokens to unicode mapping
   -> (String, String) -- ParsingDefs.py, Absyn.py.
-cf2PyAbs pkgName cf tokensPly = ( unlines 
-  [ "from " ++ pkgName ++ ".Absyn import *"
-  , "\n\n" ++ createCommonEntrypointDef cf
-  , "\n\n" ++ (unlines parsingDefs)
-  , if length definesParsingDefs > 0 
-    then "\n\n# Parsing rules from defines"
-    else ""
-  , "\n\n" ++ unlines definesParsingDefs
+cf2PyAbs pkgName cf = ( unlines 
+  [ "from lark import Lark, Transformer, v_args"
+  , "from dataclasses import dataclass"
+  , "from " ++ pkgName ++ ".Absyn import *"
+  , ""
+  , createGrammar cf
+  , createTransformer cf
+  , ""
+  , "# Create Lark parser with the given grammar"
+  , "parser = Lark(grammar, start='start', parser='lalr', lexer='basic', " ++
+    "transformer=TreeTransformer())"
+  , ""
   ]
-  , "from typing import List as _List" ++ 
-    "\n\n# Value categories (no coercsions):" ++
-    "\n\n" ++ unlines valueCatsClasses ++ 
-    "\n\n" ++ placeholderVariableClass ++ 
-    "\n\n# Rules:" ++
-    "\n" ++ "from dataclasses import dataclass, field" ++
-    "\n\n" ++ (unlines dataClasses)
+  , unlines 
+  ["from typing import List as _List"
+  ,"# Value categories (no coercsions):"
+  , unlines valueCatsClasses 
+  , ""
+  , placeholderVariableClass
+  , ""
+  ,"# Rules:"
+  ,"from dataclasses import dataclass, field"
+  ,"\n" ++ (unlines dataClasses)
+  ]
   )
   where
     rules = cfgRules cf
-
-    -- To create ParsingDefs.py 
-    parsingDefs :: [String]
-    parsingDefs = map (ruleToParsingDef cf tokensPly)
-      [r | r <- rules, isParsable r, not (isDefinedRule r)]
     
-    definesParsingDefs = makeDefineParsingDefs cf tokensPly
-
     -- To create Absyn.py
     dataClasses :: [String]
     dataClasses = map makePythonClass
@@ -69,10 +71,289 @@ cf2PyAbs pkgName cf tokensPly = ( unlines
       , "Integer(int)"
       , "Double(float)"
       ]
-
     valueCatsClasses = map createValueCatClass valueCatNames
-    
 
+
+-- Creates a grammar for Lark. Not that it is a real string (r"...").
+createGrammar :: CF -> String
+createGrammar cf = unlines 
+  [ "grammar = r\"\"\""
+  , "  ?start: " ++ map toLower ((translateToList .show . firstEntry) cf)
+  , ""
+  , unlines orClauses
+  , larkLiterals cf
+  , unlines singleComments
+  , unlines multiComments
+  , "  %import common.WS"
+  , "  %ignore WS"
+  , "\"\"\""
+  ]
+  where
+    aCats = reallyAllCats cf
+    rs = cfgRules cf
+
+    enumeratedRules :: [(Int, Rul RFun)]
+    enumeratedRules = enumerateAllDefinedRules rs 1 []
+    orClauses = map (createOrClause cf enumeratedRules) aCats
+
+    (multiMatchers, singleMatchers) = comments cf
+    singleComments = map createLineCommentMatcher singleMatchers
+    multiComments = map createMultiLineCommentMatcher multiMatchers
+
+
+-- Enumerates all (only defined relevant) rules to prevent naming overlap.
+enumerateAllDefinedRules :: [Rul RFun] -> Int -> [(Int, Rul RFun)]
+  -> [(Int, Rul RFun)]
+enumerateAllDefinedRules [] _ irs = irs
+enumerateAllDefinedRules (r:rs) n irs
+  | isDefinedRule r = enumerateAllDefinedRules rs (n+1) (irs ++ [(n, r)])
+  | otherwise = enumerateAllDefinedRules rs n (irs ++ [(0, r)]) 
+
+
+-- Creates an or clause with all rules for a given category.
+createOrClause :: CF -> [(Int, Rul RFun)] -> Cat -> String
+createOrClause cf irs c = unlines
+  [ "  ?" ++ map toLower (translateToList (show c)) ++ ": " ++ 
+    intercalate "\n  | " 
+      (map createProdAndNameForRule catsIrs)
+  ]
+  where
+    catsIrs = [(n, removeWhiteSpaceSeparators r) | (n, r) <- irs, 
+      valCat r == c, isParsable r]
+
+
+-- Creates an entry for an or clause.
+createProdAndNameForRule :: (Int, Rul RFun) -> String
+createProdAndNameForRule (n, r) =  prodToDocStr (rhsRule r) ++ 
+  if (not (isCoercion r)) then " -> " ++ map toLower name else ""
+  where
+    name
+      | isNilFun r = "nil" ++ (identCat . valCat) r
+      | isOneFun r = "one" ++ (identCat . valCat) r
+      | isConsFun r = "cons" ++ (identCat . valCat) r
+      | isDefinedRule r = "d" ++ show n ++ "_r_" ++ funName r
+      | otherwise = "r_" ++ funName r 
+
+
+-- Creates the literals for a grammar for Lark.
+larkLiterals :: CF -> String
+larkLiterals cf = unlines $ concat
+  [ 
+  ifC catString  [createLiteral "String.2" "\"(\\\\.|[^\"])*\""]
+  , ifC catChar  [createLiteral "Char.2" "\\'(\\\\x[0-9a-f][0-9a-f]|\\\\?[\\S\\s])\\'"]
+  , ifC catDouble  [createLiteral "Double.2" "\\d+\\.\\d+(e-?\\d+)?"]
+  , ifC catInteger [createLiteral "Integer.2" "\\d+"]
+  -- Prolog requires user defined tokens to have priority over Ident; C 
+  -- requires Double to have priority over user defined tokens, as C has
+  -- "CDouble" matching "3." in 3.14. The lexer definitions rely on the order
+  -- for priority, not the length.
+  , userDefTokens 
+  , ifC catIdent   [createLiteral "Ident" "[A-Za-z]\\w*"]
+  ]
+  where
+    ifC :: TokenCat -> [String] -> [String]
+    ifC cat s = if isUsedCat cf (TokenCat cat) then s else []
+
+    userDefTokens :: [String] 
+    userDefTokens = [
+      createLiteral (name) (printRegFlex exp) | (name, exp) <- tokenPragmas cf
+      ]
+
+    createLiteral :: String -> String -> String
+    createLiteral name regex = 
+      "  " ++ map toUpper name ++ ": /" ++ regex ++ "/"
+
+
+-- Creates the class transformer, where each member method tells Lark how
+-- to transform some parsed node in the tree. 
+createTransformer :: CF -> String
+createTransformer cf = unlines 
+  [ "#transformer"
+  , "class TreeTransformer(Transformer):"
+  , unlines (map createRuleTransform rs)
+  , unlines (map (makeDefineTransform cf) enumeratedRDs)
+  , unlines (map createListTransform listRules)
+  , createTokenTransformers cf
+  ]
+  where
+    enumeratedRules :: [(Int, Rul RFun)]
+    enumeratedRules = enumerateAllDefinedRules (cfgRules cf) 1 []
+
+    rs = [r | r <- cfgRules cf
+      , not (isCoercion r)
+      , not (isNilCons r)
+      , not (isDefinedRule r)]
+    listRules = [r | r <- cfgRules cf, isNilCons r]
+
+    enumeratedRDs = [(n, r, d) | (n, r) <- enumeratedRules, d <- definitions cf
+      , not (isCoercion r)
+      , not (isNilCons r)
+      , isDefinedRule r
+      , nameCorresponds ((wpThing . defName) d) (funName r)]
+
+
+-- Creates a transform for a rule
+createRuleTransform :: Rul RFun -> String
+createRuleTransform r = unlines
+  [ "  @v_args(inline=True)"
+  , "  def r_" ++ map toLower (funName r) ++ "(self" ++ 
+    concat (map (", " ++) enumeratedVars) ++ "):"
+  , "    return " ++ funName r ++ "(" ++ intercalate ", " enumeratedVars ++ ")"
+  ] 
+  where
+    sentForm = rhsRule r
+    nvCats = numVars sentForm :: [Either (Cat, Doc) String]
+    enumeratedVars = [render d | (c, d) <- lefts nvCats]
+
+
+-- Creates a transform for a list rule.
+createListTransform :: Rul RFun -> String
+createListTransform r = unlines
+  [ "  @v_args(inline=True)"
+  , "  def " ++ map toLower name ++ "(self" ++ 
+    concat (map (", " ++) enumeratedVars) ++ "):"
+  , "    return " ++ args
+  ] 
+  where
+    name
+      | isNilFun r = "nil" ++ (identCat . valCat) r
+      | isOneFun r = "one" ++ (identCat . valCat) r
+      | isConsFun r = "cons" ++ (identCat . valCat) r
+      | otherwise = funName r
+
+    sentForm = rhsRule r
+    nvCats = numVars sentForm :: [Either (Cat, Doc) String]
+    enumeratedVars = [render d | (c, d) <- lefts nvCats]
+
+    args :: String
+      | isNilFun r = "[]"
+      | isOneFun r = "[" ++ head enumeratedVars ++ "]"
+      | isConsFun r = "[" ++ head enumeratedVars ++ "] + " ++ 
+        last enumeratedVars
+      | otherwise = error "Should be a list function"
+
+
+-- Creates the transformer functions for the tokens.
+createTokenTransformers :: CF -> String
+createTokenTransformers cf = unlines $ concat
+  [ 
+  ifC catString  [createTokenTransform "String"]
+  , ifC catChar  [createTokenTransform "Char"]
+  , ifC catDouble  [createTokenTransform "Double"]
+  , ifC catInteger [createTokenTransform "Integer"]
+  -- Prolog requires user defined tokens to have priority over Ident; C 
+  -- requires Double to have priority over user defined tokens, as C has
+  -- "CDouble" matching "3." in 3.14. The lexer definitions rely on the order
+  -- for priority, not the length.
+  , userDefTokens 
+  , ifC catIdent   [createTokenTransform "Ident"]
+  ]
+  where
+  ifC :: TokenCat -> [String] -> [String]
+  ifC cat s = if isUsedCat cf (TokenCat cat) then s else []
+
+  userDefTokens :: [String] 
+  userDefTokens = [
+    createTokenTransform name | (name, exp) <- tokenPragmas cf
+    ]
+
+
+-- Creates a transform for a token.
+createTokenTransform :: String -> String
+createTokenTransform name = unlines
+  [ "  @v_args(inline=True)"
+  , "  def " ++ map toUpper name ++ "(self, token):"
+  , "    return " ++ name ++ "(token.value)"
+  ] 
+
+
+-- | Produces the production in the docstring for the parsing definitions.
+prodToDocStr ::[Either Cat String] -> String
+prodToDocStr [] = ""
+prodToDocStr (ec:[]) = ecsToDocStr ec
+prodToDocStr (ec:ecs) = 
+  ecsToDocStr ec ++ " " ++ prodToDocStr ecs
+
+
+-- Converts a single element in the production.
+ecsToDocStr :: Either Cat String -> String
+ecsToDocStr (Left (TokenCat t))       = map toUpper t 
+ecsToDocStr (Left c)       = map toLower (translateToList (show c))
+ecsToDocStr (Right strOp)  = "\"" ++ concat (map escapeBackslash strOp) ++ "\""
+
+
+-- | For single-line comments
+createLineCommentMatcher :: String -> String
+createLineCommentMatcher r = unlines
+  [ "  C" ++ toOrd r ++ ": /" ++ concat (map escapeChar r) ++ "[^\\n]*/"
+  , "  %ignore C" ++ toOrd r
+  ]
+
+
+-- | For multi-line comments
+createMultiLineCommentMatcher :: (String, String) -> String
+createMultiLineCommentMatcher (s, e) = unlines
+  [ "  C" ++ toOrd (s ++ e) ++ ": /" ++ escaped s ++ "([\\s\\S]*?)" ++ 
+    escaped e ++ "/"
+  , "  %ignore C" ++ toOrd (s ++ e)
+  ]
+  where
+    escaped s = concat $ map escapeChar s
+
+
+-- Since we're using a real string for the grammar,  r""" ... """ it seems 
+-- we can't escape everything in strOp from regflex. Only backslashes.
+escapeBackslash :: Char -> String
+escapeBackslash '\\' = "\\\\"
+escapeBackslash c = [c]
+
+
+-- | To compare names for defines. The first letter needs to be lowered, so
+--   "while" == "While".
+nameCorresponds :: String -> String -> Bool
+nameCorresponds (x:xs) (y:ys) = (toLower x == toLower y) && (xs == ys)
+nameCorresponds _ _ = error "Names can't be empty"
+
+
+-- Creates a transformer for a rule with its corresponding define.
+makeDefineTransform :: 
+  CF -> (Int, Rul RFun, Define) -> String
+makeDefineTransform cf (n, defRule, defi)  = unlines
+  [ "  @v_args(inline=True)"
+  , "  def d" ++ show n ++ "_r_" ++ map toLower name ++ "(self" ++ 
+    concat (map (", " ++) enumeratedVars) ++ "):"
+  , "    return " ++ expToDef env2 (defBody defi)
+  , ""
+  ]
+  where
+    name = (wpThing . defName) defi
+    sentForm = rhsRule defRule
+    args = map fst (defArgs defi)
+    nvCats = numVars sentForm :: [Either (Cat, Doc) String]
+    enumeratedVars = [render d | (c, d) <- lefts nvCats]
+    env2 = zip args enumeratedVars
+
+
+-- | Converts the production of a define, called an expression, to a
+--   production for the parsing definition.
+expToDef :: [(String, String)] -> Exp -> String
+expToDef env (App "(:)" _ (e:[App "[]" _ _])) = expToDef env e ++ "]"
+expToDef env (App "(:)" _ (e:[recList])) = "[" ++ expToDef env e ++ ", " ++
+  expToDef env recList
+expToDef _ (App "[]" _ _) = "[]"
+expToDef env (App fName _ exps) = 
+  fName ++ "(" ++ addCommas (map (expToDef env) exps) ++ ")"
+expToDef env (Var s) = case lookup s env of
+  Just p -> p
+  Nothing -> error "Missing variable in define enviroment"
+expToDef _ (LitInt i) = "Integer(" ++ show i ++ ")"
+expToDef _ (LitDouble d) = "Double(" ++ show d ++ ")"
+expToDef _ (LitChar s) = "Char(\"" ++ show s ++ "\")"
+expToDef _ (LitString s) = "String('" ++ show s ++ "')"
+
+
+-- A placeholder variable to store additional information, for say type
+-- annotation.
 placeholderVariableClass :: String
 placeholderVariableClass = unlines 
   [ "# Placeholder to add additional information to a node in the AST," ++
@@ -97,6 +378,7 @@ placeholderVariableClass = unlines
   , "  def __repr__(self):"
   , "    return str(self.__v.__class__)"
   ]     
+
 
 -- | Creates a parsing definition that points to all entrypoints.
 createCommonEntrypointDef :: CF -> String
@@ -126,37 +408,6 @@ createValueCatClass :: String -> String
 createValueCatClass s = "class " ++ s ++ ":\n\tpass\n"
 
 
--- | Creates a parsing definition, by checking what type of rule it is and
---   calling the corresponding make function.
-ruleToParsingDef :: CF -> [(String, String)] -> Rul RFun -> String
-ruleToParsingDef cf tokensPly rule 
-  | isCoercion funcRStr = 
-    makeParseCoercion cf tokensPly funcCat (fName, sentForm)
-  | isNilFun funcRStr = 
-    makeParseNil tokensPly funcCat (fNameTranslated, sentForm)
-  | isOneFun funcRStr = 
-    makeParseOne cf tokensPly funcCat (fNameTranslated, sentForm)
-  | isConsFun funcRStr = 
-    makeParseCons cf tokensPly funcCat (fNameTranslated, sentForm)
-  | isDefinedRule rule = 
-    error "Should not generate define rules in this step"
-  | otherwise = 
-    makeParseFunc cf tokensPly funcCat (fName, sentForm)
-  where
-    funcRStr = funRule rule :: RString
-    fName = wpThing funcRStr :: String
-
-    funcCat = valCat rule :: Cat
-    catStr = show (valCat rule) :: String
-
-    fNameTranslated :: String
-    fNameTranslated
-      | isNilFun funcRStr = catStr
-      | otherwise = fName
-
-    sentForm = rhsRule rule :: [Either Cat String]
-
-
 -- | Make a Python class from a rule's name and production.
 makePythonClass :: Rul RFun -> String
 makePythonClass rule = 
@@ -176,207 +427,9 @@ makePythonClass rule =
       ["_ann_type: _AnnType = field(default_factory=_AnnType)"])
 
 
-
 -- | Creates the corresponding type hinting for some member variable.
 strCatToPyTyping :: String -> String
 strCatToPyTyping s = 
   if strIsList s then "_List['" ++ (tail . init) s ++ "']" else s
-
-
--- | It could be this is only guarding against list categories.
-literalsToPytypeMaybe :: CF -> String -> Maybe String
-literalsToPytypeMaybe cf s = case s of
-  "Integer" -> Just "Integer"
-  "Double" -> Just "Double"
-  "Char"   -> Just "Char"
-  "String" -> Just "String"
-  "Ident" -> Just "Ident"
-  _ -> if s `elem` (tokenNames cf) then Just s else Nothing
-
-
--- | The following makeParse functions create their corresponding parsing 
---   definitions for some rule.
-makeParseFunc :: CF -> [(String, String)] -> Cat -> (String, SentForm)
-  -> String
-makeParseFunc cf tokensPly dataCat (name, sentForm) = unlines 
-  [ "def " ++ "p_" ++ name ++ "(p):\n" ++ "\t" ++ "\"\"\""
-  , "\t" ++ (show dataCat) ++ " : " ++ (prodToDocStr tokensPly sentForm)
-  , "\t" ++ "\"\"\""
-  , "\t" ++ "p[0] = " ++ rhs ++ "\n"
-  ]
-  where
-    rhs =  name ++ "(" ++ (addCommas (getLeftIndexes cf 1 sentForm)) ++  ")"
-
-
-makeParseCoercion :: CF -> [(String, String)] -> Cat -> (String, SentForm)
-  -> String
-makeParseCoercion cf tokensPly dataCat (_, sentForm) = unlines
-  [ "def " ++ "p_" ++ (show sourceCat) ++ "(p):\n" ++ "\t" ++ "\"\"\""
-  , "\t" ++ (show dataCat) ++ " : " ++ (prodToDocStr tokensPly sentForm)
-  , "\t" ++ "\"\"\""
-  , "\t" ++ "p[0] = " ++ strP ++ "\n"
-  ]
-  where
-    strP = head (getLeftIndexes cf 1 sentForm)
-    sourceCat = (head . lefts) sentForm
-
-
-makeParseNil :: [(String, String)] -> Cat -> (String, SentForm) -> String
-makeParseNil tokensPly dataCat (_, sentForm) = unlines
-  [ "def " ++ "p_" ++ "Nil" ++ translatedCat ++ "(p):\n" ++ "\t" ++ "\"\"\""
-  , "\t" ++ translatedCat ++ " : " ++ (prodToDocStr tokensPly sentForm)
-  , "\t" ++ "\"\"\""
-  , "\t" ++ "p[0] = []\n"
-  ]
-  where
-    translatedCat = translateToList $ show dataCat
-
-
-makeParseOne :: CF -> [(String, String)] -> Cat -> (String, SentForm) -> String
-makeParseOne cf tokensPly dataCat (_, sentForm) = unlines
-  [ "def " ++ "p_" ++ "One" ++ translatedCat ++ "(p):\n" ++ "\t" ++ "\"\"\""
-  , "\t" ++ translatedCat ++ " : " ++ (prodToDocStr tokensPly sentForm)
-  , "\t" ++ "\"\"\""
-  , "\t" ++ "p[0] = " ++ rhs ++ "\n"
-  ]
-  where
-    translatedCat = translateToList $ show dataCat
-    rhs = intercalate " + " (getLeftIndexesLists tokensPly cf 1 sentForm)
-
-
-makeParseCons :: CF -> [(String, String)] -> Cat -> (String, SentForm)
-  -> String
-makeParseCons cf tokensPly dataCat (_, sentForm) = unlines
-  [ "def " ++ "p_" ++ "Cons" ++ translatedCat ++ "(p):\n" ++ "\t" ++ "\"\"\""
-  , "\t" ++ translatedCat ++ " : " ++ (prodToDocStr tokensPly sentForm)
-  , "\t" ++ "\"\"\"" ++ "\n"
-  , "\t" ++ "p[0] = " ++ rhs ++ "\n"
-  ]
-  where
-    translatedCat = translateToList $ show dataCat
-    rhs = intercalate " + " (getLeftIndexesLists tokensPly cf 1 sentForm)
-
-
--- | Produces a list of the elements in the code production, where the indices
---   match the argument categories.
-getLeftIndexesLists :: [(String, String)] -> CF -> Int -> [Either Cat String]
-  -> [String]
-getLeftIndexesLists _ _ _ [] = []
-getLeftIndexesLists tokensPly cf n (Left c:ecs)
-  | isList c = [typedPTerm] ++ (getLeftIndexesLists tokensPly cf (n+1) ecs)
-  | otherwise = ["[" ++ typedPTerm ++ "]"] ++ 
-    (getLeftIndexesLists tokensPly cf (n+1) ecs)
-  where
-    pTerm = "p[" ++ (show n) ++ "]"
-    typedPTerm = case literalsToPytypeMaybe cf (show c) of
-      Just s -> s ++ "(" ++ pTerm ++ ")"
-      Nothing -> pTerm
-getLeftIndexesLists tokensPly cf n (Right strOp:ecs)
-  | separatorIsEmpty tokensPly strOp = getLeftIndexesLists tokensPly cf n ecs
-  | otherwise = getLeftIndexesLists tokensPly cf (n+1) ecs
-
-
--- | In case the deliminator is "" or is not defined for the lexer, like
---   ignored characters.
-separatorIsEmpty :: [(String, String)] -> String -> Bool
-separatorIsEmpty tokensPly strOp
-  | length strOp > 0 = case lookup strOp tokensPly of
-    Just _ -> False
-    Nothing -> True
-  | otherwise = True
-
-
--- | Produces a list of the elements in the code production, where the indices
---   match the argument categories.
-getLeftIndexes :: CF -> Int -> [Either Cat String] -> [String]
-getLeftIndexes _ _ [] = []
-getLeftIndexes cf n (Left c:ecs) = [typedPTerm] ++ 
-  (getLeftIndexes cf (n+1) ecs)
-  where
-    pTerm = "p[" ++ (show n) ++ "]"
-    typedPTerm = case literalsToPytypeMaybe cf (show c) of
-      Just s -> s ++ "(" ++ pTerm ++ ")"
-      Nothing -> pTerm
-getLeftIndexes cf n (Right _:ecs) = getLeftIndexes cf (n+1) ecs
-
-
--- | Produces the production in the docstring for the parsing definitions.
-prodToDocStr :: [(String, String)] -> [Either Cat String] -> String
-prodToDocStr _ [] = ""
-prodToDocStr tokensPly (ec:[]) = ecsToDocStr tokensPly ec
-prodToDocStr tokensPly (ec:ecs) = 
-  ecsToDocStr tokensPly ec ++ " " ++ prodToDocStr tokensPly ecs
-
-
--- Converts a single element in the production.
-ecsToDocStr :: [(String, String)] -> Either Cat String -> String
-ecsToDocStr _ (Left c)       = translateToList $ show c
-ecsToDocStr tokensPly (Right strOp)  = case lookup strOp tokensPly of
-  (Just s) -> s
-  Nothing -> ("") -- We assume it is no token, this affects getLeftIndexes
-
-
--- | Creating the parsing definitions for the defines.
-makeDefineParsingDefs :: CF ->  [(String, String)] -> [String]
-makeDefineParsingDefs cf tokensPly = defFuncsPy
-  where
-    rules = cfgRules cf
-    
-    definedRules :: [Rul RFun]
-    definedRules = [r | r <- rules, isDefinedRule r]
-  
-    pairs :: [(Rul RFun, Define)]
-    pairs = [(dr, d) | dr <- definedRules, d <- definitions cf, 
-      nameCorresponds ((wpThing . defName) d) (funName dr)]
-    
-    -- Adds a number to the name to make each define separate.
-    numberedPairs = zip [1..] pairs
-    defFuncsPy = map (makeDefineParsingDef cf tokensPly) numberedPairs 
-
-
--- | To compare names for defines. The first letter needs to be lowered, so
---   "while" == "While".
-nameCorresponds :: String -> String -> Bool
-nameCorresponds (x:xs) (y:ys) = (toLower x == toLower y) && (xs == ys)
-nameCorresponds _ _ = error "Names can't be empty"
-
-
--- | Creates a define parsing definition.
-makeDefineParsingDef :: 
-  CF -> [(String, String)] -> (Int, (Rul RFun, Define)) -> String
-makeDefineParsingDef cf tokensPly (n, (defRule, defi))  = unlines
-  [ "def p_D" ++ (show n) ++ name ++ "(p):"
-  , "\t\"\"\""
-  , "\t" ++ translatedCat ++ " : " ++ (prodToDocStr tokensPly sentForm)
-  , "\t\"\"\""
-  , "\t# " ++ show env
-  , "\tp[0] = " ++ expToDef env (defBody defi)
-  , ""
-  ]
-  where
-    name = (wpThing . defName) defi
-    translatedCat = translateToList $ (catToStr . valCat) defRule
-    sentForm = rhsRule defRule
-    indexes = getLeftIndexes cf 1 sentForm
-    args = map fst (defArgs defi)
-    env = zip args indexes
-
-
--- | Converts the production of a define, called an expression, to a
---   production for the parsing definition.
-expToDef :: [(String, String)] -> Exp -> String
-expToDef env (App "(:)" _ (e:[App "[]" _ _])) = expToDef env e ++ "]"
-expToDef env (App "(:)" _ (e:[recList])) = "[" ++ expToDef env e ++ ", " ++
-  expToDef env recList
-expToDef _ (App "[]" _ _) = "[]"
-expToDef env (App fName _ exps) = 
-  fName ++ "(" ++ addCommas (map (expToDef env) exps) ++ ")"
-expToDef env (Var s) = case lookup s env of
-  Just p -> p
-  Nothing -> error "Missing variable in define enviroment"
-expToDef _ (LitInt i) = "Integer(" ++ show i ++ ")"
-expToDef _ (LitDouble d) = "Double(" ++ show d ++ ")"
-expToDef _ (LitChar s) = "Char(\"" ++ show s ++ "\")"
-expToDef _ (LitString s) = "String('" ++ show s ++ "')"
 
 
