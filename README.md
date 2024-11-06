@@ -43,6 +43,16 @@ enter at the command line:
   bnfc --help
 ```
 
+BNFC versions in major Stackage LTS snapshots:
+
+|  GHC   |  LTS  |  BNFC   |
+|--------|-------|---------|
+| 8.8.4  | 16.31 | 2.8.4   |
+| 8.10.7 | 18.28 | 2.9.4   |
+| 9.0.2  | 19.33 | 2.9.4   |
+| 9.2.8  | 20.26 | 2.9.4.1 |
+| 9.4.8  | 21.25 | 2.9.5   |
+
 ### Installation via cabal
 
 You need a running installation of a recent version of
