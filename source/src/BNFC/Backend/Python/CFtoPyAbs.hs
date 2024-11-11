@@ -13,7 +13,7 @@ import BNFC.Backend.Python.RegToFlex (printRegFlex, escapeChar)
 import BNFC.Backend.Common.NamedVariables
 import Text.PrettyPrint (Doc, render)
 import Data.Either   (lefts)
-import Data.Char                    (toLower, toUpper)
+import Data.Char                    (toLower, toUpper, isLower)
 import qualified Data.List.NonEmpty as List1
 
 
@@ -29,6 +29,7 @@ cf2PyAbs pkgName cf = ( unlines
   , ""
   , createGrammar cf
   , createTransformer cf
+  , createDefineFunctions cf
   , ""
   ]
   , unlines 
@@ -59,8 +60,8 @@ cf2PyAbs pkgName cf = ( unlines
     
     -- Note: Custom tokens are set to inherit "str".
     valueCatNames = nub $ 
-      (map (show . normCat . valCat) rulesNoListConstructors) ++ 
-      (map (++"(str)") (tokenNames cf)) ++ 
+      (map (unkw . show . normCat . valCat) rulesNoListConstructors) ++ 
+      (map ((++ "(str)") . unkw) (tokenNames cf)) ++ 
       [ "String(str)"
       , "Char(str)"
       , "Ident(str)"
@@ -90,7 +91,7 @@ createGrammar cf = unlines
 
     enumeratedRules :: [(Int, Rul RFun)]
     enumeratedRules = enumerateAllDefinedRules rs 1 []
-    orClauses = map (createOrClause cf enumeratedRules) aCats
+    orClauses = map (createOrClause enumeratedRules) aCats
 
     (multiMatchers, singleMatchers) = comments cf
     singleComments = map createLineCommentMatcher singleMatchers
@@ -111,8 +112,8 @@ enumerateAllDefinedRules (r:rs) n irs
 
 
 -- Creates an or clause with all rules for a given category.
-createOrClause :: CF -> [(Int, Rul RFun)] -> Cat -> String
-createOrClause cf irs c = unlines
+createOrClause :: [(Int, Rul RFun)] -> Cat -> String
+createOrClause irs c = unlines
   [ "  ?" ++ map toLower (translateToList (show c)) ++ ": " ++ 
     intercalate "\n  | " 
       (map createProdAndNameForRule catsIrs)
@@ -132,23 +133,25 @@ createProdAndNameForRule (n, r) =  prodToDocStr (rhsRule r) ++
       | isOneFun r = "one" ++ (identCat . valCat) r
       | isConsFun r = "cons" ++ (identCat . valCat) r
       | isDefinedRule r = "d" ++ show n ++ "_r_" ++ funName r
-      | otherwise = "r_" ++ funName r 
+      | otherwise = "r_" ++ map toLower (funName r) ++ toOrd (funName r) 
 
 
--- Creates the literals for a grammar for Lark.
+-- Creates the literals for a grammar for Lark.Priority is set after the 
+-- dot, such as "Name.PRIO". For literals with the same priority, it appears
+-- that Lark (with basic mode) prioritizes the longest regular 
+-- expression, not the longest matched literal.
 larkLiterals :: CF -> String
 larkLiterals cf = unlines $ concat
   [ 
-  ifC catString  [createLiteral "String.2" "\"(\\\\.|[^\"])*\""]
-  , ifC catChar  [createLiteral "Char.2" "\\'(\\\\x[0-9a-f][0-9a-f]|\\\\?[\\S\\s])\\'"]
-  , ifC catDouble  [createLiteral "Double.2" "\\d+\\.\\d+(e-?\\d+)?"]
-  , ifC catInteger [createLiteral "Integer.2" "\\d+"]
+  ifC catString  [createLiteral "String.1" "\"(\\\\.|[^\"])*\""]
+  , ifC catChar  [createLiteral "Char.1" "\\'(\\\\x[0-9a-f][0-9a-f]|\\\\?[\\S\\s])\\'"]
+  , ifC catDouble  [createLiteral "Double.1" "\\d+\\.\\d+(e-?\\d+)?"]
+  , ifC catInteger [createLiteral "Integer.1" "\\d+"]
   -- Prolog requires user defined tokens to have priority over Ident; C 
   -- requires Double to have priority over user defined tokens, as C has
-  -- "CDouble" matching "3." in 3.14. The lexer definitions rely on the order
-  -- for priority, not the length.
+  -- "CDouble" matching "3." in 3.14.
   , userDefTokens 
-  , ifC catIdent   [createLiteral "Ident" "[A-Za-z]\\w*"]
+  , ifC catIdent   [createLiteral "Ident" "[A-Za-z_]\\w*"]
   ]
   where
     ifC :: TokenCat -> [String] -> [String]
@@ -156,7 +159,7 @@ larkLiterals cf = unlines $ concat
 
     userDefTokens :: [String] 
     userDefTokens = [
-      createLiteral (name) (printRegFlex exp) | (name, exp) <- tokenPragmas cf
+      createLiteral name (printRegFlex exp) | (name, exp) <- tokenPragmas cf
       ]
 
     createLiteral :: String -> String -> String
@@ -171,7 +174,7 @@ createTransformer cf = unlines
   [ "#transformer"
   , "class TreeTransformer(Transformer):"
   , unlines (map createRuleTransform rs)
-  , unlines (map (makeDefineTransform cf) enumeratedRDs)
+  , unlines (map makeDefineTransform enumeratedRDs)
   , unlines (map createListTransform listRules)
   , createTokenTransformers cf
   ]
@@ -196,14 +199,16 @@ createTransformer cf = unlines
 createRuleTransform :: Rul RFun -> String
 createRuleTransform r = unlines
   [ "  @v_args(inline=True)"
-  , "  def r_" ++ map toLower (funName r) ++ "(self" ++ 
+  , "  def r_" ++ nameWithUnicode ++ "(self" ++ 
     concat (map (", " ++) enumeratedVars) ++ "):"
-  , "    return " ++ funName r ++ "(" ++ intercalate ", " enumeratedVars ++ ")"
+  , "    return " ++ className ++ "(" ++ intercalate ", " enumeratedVars ++ ")"
   ] 
   where
+    nameWithUnicode = map toLower (funName r) ++ toOrd (funName r)
+    className = unkw (funName r)
     sentForm = rhsRule r
     nvCats = numVars sentForm :: [Either (Cat, Doc) String]
-    enumeratedVars = [render d | (c, d) <- lefts nvCats]
+    enumeratedVars = [render d | (_, d) <- lefts nvCats]
 
 
 -- Creates a transform for a list rule.
@@ -223,7 +228,7 @@ createListTransform r = unlines
 
     sentForm = rhsRule r
     nvCats = numVars sentForm :: [Either (Cat, Doc) String]
-    enumeratedVars = [render d | (c, d) <- lefts nvCats]
+    enumeratedVars = [render d | (_, d) <- lefts nvCats]
 
     args :: String
       | isNilFun r = "[]"
@@ -241,10 +246,6 @@ createTokenTransformers cf = unlines $ concat
   , ifC catChar  [createTokenTransform "Char"]
   , ifC catDouble  [createTokenTransform "Double"]
   , ifC catInteger [createTokenTransform "Integer"]
-  -- Prolog requires user defined tokens to have priority over Ident; C 
-  -- requires Double to have priority over user defined tokens, as C has
-  -- "CDouble" matching "3." in 3.14. The lexer definitions rely on the order
-  -- for priority, not the length.
   , userDefTokens 
   , ifC catIdent   [createTokenTransform "Ident"]
   ]
@@ -254,7 +255,7 @@ createTokenTransformers cf = unlines $ concat
 
   userDefTokens :: [String] 
   userDefTokens = [
-    createTokenTransform name | (name, exp) <- tokenPragmas cf
+    createTokenTransform name | (name, _) <- tokenPragmas cf
     ]
 
 
@@ -263,7 +264,7 @@ createTokenTransform :: String -> String
 createTokenTransform name = unlines
   [ "  @v_args(inline=True)"
   , "  def " ++ map toUpper name ++ "(self, token):"
-  , "    return " ++ name ++ "(token.value)"
+  , "    return " ++ unkw name ++ "(token.value)"
   ] 
 
 
@@ -316,40 +317,38 @@ nameCorresponds _ _ = error "Names can't be empty"
 
 
 -- Creates a transformer for a rule with its corresponding define.
-makeDefineTransform :: 
-  CF -> (Int, Rul RFun, Define) -> String
-makeDefineTransform cf (n, defRule, defi)  = unlines
+makeDefineTransform :: (Int, Rul RFun, Define) -> String
+makeDefineTransform (n, defRule, defi)  = unlines
   [ "  @v_args(inline=True)"
   , "  def d" ++ show n ++ "_r_" ++ map toLower name ++ "(self" ++ 
     concat (map (", " ++) enumeratedVars) ++ "):"
-  , "    return " ++ expToDef env2 (defBody defi)
+  , "    return d_" ++ name ++ "(" ++ intercalate ", " enumeratedVars ++ ")"
   , ""
   ]
   where
     name = (wpThing . defName) defi
     sentForm = rhsRule defRule
-    args = map fst (defArgs defi)
     nvCats = numVars sentForm :: [Either (Cat, Doc) String]
-    enumeratedVars = [render d | (c, d) <- lefts nvCats]
-    env2 = zip args enumeratedVars
+    enumeratedVars = [render d | (_, d) <- lefts nvCats]
 
 
 -- | Converts the production of a define, called an expression, to a
 --   production for the parsing definition.
-expToDef :: [(String, String)] -> Exp -> String
-expToDef env (App "(:)" _ (e:[App "[]" _ _])) = expToDef env e ++ "]"
-expToDef env (App "(:)" _ (e:[recList])) = "[" ++ expToDef env e ++ ", " ++
-  expToDef env recList
+expToDef :: CF -> Exp -> String
+expToDef cf (App "(:)" _ (e:[App "[]" _ _])) = expToDef cf e ++ "]"
+expToDef cf (App "(:)" _ (e:[recList])) = "[" ++ expToDef cf e ++ ", " ++
+  expToDef cf recList
 expToDef _ (App "[]" _ _) = "[]"
-expToDef env (App fName _ exps) = 
-  fName ++ "(" ++ addCommas (map (expToDef env) exps) ++ ")"
-expToDef env (Var s) = case lookup s env of
-  Just p -> p
-  Nothing -> error "Missing variable in define enviroment"
+expToDef cf (App fName _ exps)
+  | isLower (head fName) = 
+    "d_" ++ fName  ++ "(" ++ addCommas (map (expToDef cf) exps) ++ ")"
+  | otherwise = 
+    unkw fName ++ "(" ++ addCommas (map (expToDef cf) exps) ++ ")"
+expToDef _ (Var s) = unkw s
 expToDef _ (LitInt i) = "Integer(" ++ show i ++ ")"
 expToDef _ (LitDouble d) = "Double(" ++ show d ++ ")"
 expToDef _ (LitChar s) = "Char(\"" ++ show s ++ "\")"
-expToDef _ (LitString s) = "String('" ++ show s ++ "')"
+expToDef _ (LitString s) = "String('" ++ s ++ "')"
 
 
 -- A placeholder variable to store additional information, for say type
@@ -380,29 +379,6 @@ placeholderVariableClass = unlines
   ]     
 
 
--- | Creates a parsing definition that points to all entrypoints.
-createCommonEntrypointDef :: CF -> String
-createCommonEntrypointDef cf = unlines 
-  [ "def p__Start(p):"
-  , "  '''"
-  , "  _Start : " ++ (translateToList . show . head) cats ++
-    concat (map createCase (tail cats))
-  , "  '''"
-  , "  p[0] = p[1]"
-  , ""
-  , ""
-  , "# Comment the below line to enable the '_Start' entrypoint (may yield"
-    ++ " conflict warnings)."
-  , "del p__Start"
-  , ""
-  ]
-  where
-    cats = (List1.toList . allEntryPoints) cf
-
-    createCase :: Cat -> String
-    createCase c = "\n         | " ++ translateToList (show c)
-
-
 -- | The value categories become abstract classes, for type hinting.
 createValueCatClass :: String -> String
 createValueCatClass s = "class " ++ s ++ ":\n\tpass\n"
@@ -412,10 +388,10 @@ createValueCatClass s = "class " ++ s ++ ":\n\tpass\n"
 makePythonClass :: Rul RFun -> String
 makePythonClass rule = 
   "@dataclass\n" ++
-  "class " ++ name ++ ":\n" ++
+  "class " ++ className ++ ":\n" ++
     if length cats == 0 then "\tpass\n" else classBody
   where
-    name = funName rule
+    className = unkw (funName rule)
     sentForm = rhsRule rule
     cats = lefts sentForm
     nvCats = numVars sentForm :: [Either (Cat, Doc) String]
@@ -429,7 +405,22 @@ makePythonClass rule =
 
 -- | Creates the corresponding type hinting for some member variable.
 strCatToPyTyping :: String -> String
-strCatToPyTyping s = 
-  if strIsList s then "_List['" ++ (tail . init) s ++ "']" else s
+strCatToPyTyping s = if strIsList s 
+  then "_List['" ++ (unkw . tail . init) s ++ "']" 
+  else unkw s
 
+
+-- | Creates functions for the defines.
+createDefineFunctions :: CF -> String
+createDefineFunctions cf = unlines 
+  (map (createDefineFunction cf) (definitions cf))
+
+
+createDefineFunction :: CF -> Define -> String
+createDefineFunction cf d = unlines
+  [ "def d_" ++ (wpThing . defName) d ++ "(" ++ addCommas args ++  "):"
+  , "  return " ++ expToDef cf (defBody d)
+  ]
+  where
+    args = map (unkw . fst) (defArgs d)
 

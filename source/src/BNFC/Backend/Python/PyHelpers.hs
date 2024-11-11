@@ -10,6 +10,12 @@ import Data.Char
 import BNFC.CF
 
 
+-- Indents by four spaces
+ind :: Int -> String -> String
+ind 0 s = s
+ind n s = ind (n-1) ("    " ++ s)
+
+
 addCommas :: [String] -> String
 addCommas ss = intercalate ", " ss
 
@@ -77,4 +83,54 @@ showEcss :: [Either Cat String] -> String
 showEcss [] = ""
 showEcss (Left c:ecss) = show c ++ " " ++ (showEcss ecss)
 showEcss (Right strOp:ecss) = "\"" ++ strOp ++ "\" " ++ (showEcss ecss)
+
+
+-- | Adds an underscore if the string overlaps with a keyword.
+unkw :: String -> String
+unkw s = if s `elem` kwListWithSoftKeywords then s ++ "_" else s
+
+
+-- To add an extra underscore if something overlaps with a keyword.
+kwListWithSoftKeywords :: [String]
+kwListWithSoftKeywords =
+  [ "False"
+  , "None"
+  , "True"
+  , "and"
+  , "as"
+  , "assert"
+  , "async"
+  , "await"
+  , "break"
+  , "class"
+  , "continue"
+  , "def"
+  , "del"
+  , "elif"
+  , "else"
+  , "except"
+  , "finally"
+  , "for"
+  , "from"
+  , "global"
+  , "if"
+  , "import"
+  , "in"
+  , "is"
+  , "lambda"
+  , "nonlocal"
+  , "not"
+  , "or"
+  , "pass"
+  , "raise"
+  , "return"
+  , "try"
+  , "while"
+  , "with"
+  , "yield"
+  , "_"
+  , "case"
+  , "match"
+  , "type"
+  ]
 

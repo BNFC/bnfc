@@ -18,14 +18,14 @@ import BNFC.Backend.Python.CFtoPyPrettyPrinter (cf2PyPretty)
 import BNFC.Backend.Python.CFtoPySkele (cf2PySkele)
 import BNFC.Backend.Python.PyHelpers
 import BNFC.PrettyPrint
-import Data.Char  (toLower)
+import Data.Char  (toLower, isLetter)
 import qualified BNFC.Backend.Common.Makefile as Makefile
 
 
 -- | Entrypoint for BNFC to use the Python backend.
 makePython :: SharedOptions -> CF -> MkFiles ()
 makePython opts cf = do
-    let pkgName =  "bnfcPyGen" ++ name
+    let pkgName =  "bnfcPyGen" ++ filter isLetter name
     let (parsingDefs, abstractClasses) = cf2PyAbs pkgName cf
     let prettyPrinter = cf2PyPretty pkgName cf
     let skeletonCode = cf2PySkele pkgName cf
@@ -47,7 +47,7 @@ makefile :: String -> Maybe String -> String -> Doc
 makefile pkgName optMakefileName basename = vcat
   [
     Makefile.mkRule "all" []
-      [ " " ]
+      [ "@echo \"Doing nothing: No compilation of the parser needed.\"" ]
   ,  Makefile.mkRule "clean" []
       [ "rm -f parser.out parsetab.py" ]
   , Makefile.mkRule "distclean" [ "vclean" ] []
@@ -90,27 +90,27 @@ pyTest :: String -> CF -> String
 pyTest pkgName cf = unlines 
   [ "import sys"
   , "from " ++ pkgName ++ ".ParsingDefs import *"
-  , "from " ++ pkgName ++ ".PrettyPrinter import *"
+  , "from " ++ pkgName ++ ".PrettyPrinter import printAST, lin, renderC"
   , ""
   , "# Suggested input options:"
   , "# python3 genTest.py < sourcefile"
   , "# python3 genTest.py sourcefile inputfile (i.e. for interpreters)."
   , "inputFile = None"
   , "if len(sys.argv) > 1:"
-  , "\tf = open(sys.argv[1], 'r')"
-  , "\tinp = f.read()"
-  , "\tf.close()"
-  , "\tif len(sys.argv) > 2:"
-  , "\t\tinputFile = sys.argv[2]"
+  , "    f = open(sys.argv[1], 'r')"
+  , "    inp = f.read()"
+  , "    f.close()"
+  , "    if len(sys.argv) > 2:"
+  , "        inputFile = sys.argv[2]"
   , "else:"
-  , "\tinp = ''"
-  , "\tfor line in sys.stdin:"
-  , "\t\tinp += line"
+  , "    inp = ''"
+  , "    for line in sys.stdin:"
+  , "        inp += line"
   , ""
   , "def onError(e):"
-  , "  print(e)"
-  , "  print('Parse failed')"
-  , "  quit(1)"
+  , "    print(e)"
+  , "    print('Parse failed')"
+  , "    quit(1)"
   , ""
   , "# Creates the Lark parser with the given grammar. By default to the first"
   , "# entrypoint. Other entrypoints exist in ParsingDefs.py."
@@ -118,17 +118,17 @@ pyTest pkgName cf = unlines
   , ""
   , "# By default the first entrypoint is used. See ParsingDefs.py for alternatives."
   , "ast = parser.parse(inp, on_error=onError)"
-  , "if ast: # and not lexer.syntaxError:"
-  , "\tprint('Parse Successful!\\n')"
-  , "\tprint('[Abstract Syntax]')"
-  , "\tprint(printAST(ast))"
-  , "\tprint('\\n[Linearized Tree]')"
-  , "\tlinTree = lin(ast)"
-  , "\tprint(renderC(linTree))"
-  , "\tprint()"
+  , "if ast:"
+  , "    print('Parse Successful!\\n')"
+  , "    print('[Abstract Syntax]')"
+  , "    print(printAST(ast))"
+  , "    print('\\n[Linearized Tree]')"
+  , "    linTree = lin(ast)"
+  , "    print(renderC(linTree))"
+  , "    print()"
   , "else:"
-  , "\tprint('Parse failed')"
-  , "\tquit(1)"
+  , "    print('Parse failed')"
+  , "    quit(1)"
   ]
   where
     defaultEntrypoint = map toLower 

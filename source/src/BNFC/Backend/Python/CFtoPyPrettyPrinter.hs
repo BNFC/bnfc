@@ -67,8 +67,8 @@ makePrintAST cf = concat
     ]
   , if length (tokenNames cf) > 0
     then unlines 
-      [ "    case (" ++ intercalate " | " (map (++"()") (tokenNames cf)) 
-        ++ "):"
+      [ "    case (" ++ intercalate " | " 
+        (map ((++ "()") . unkw) (tokenNames cf)) ++ "):"
       , "      return '\"' + str(ast) + '\"'"
       ]
     else ""
@@ -76,7 +76,8 @@ makePrintAST cf = concat
   , "      return '[' + ', '.join([printAST(a) for a in ast]) + ']'\n"
   , "\n"
   , "  if len(vars(ast)) > 0:\n"
-  , "    return '(' + ast.__class__.__name__ + ' ' + ' '.join([printAST(vars(ast)[k]) for k in vars(ast) if k != '_ann_type']) + ')'\n"
+  , "    return '(' + ast.__class__.__name__ + ' ' + ' '.join(" ++ 
+    "[printAST(vars(ast)[k]) for k in vars(ast) if k != '_ann_type']) + ')'\n"
   , "  else:\n"
   , "    return ast.__class__.__name__\n"
   ]
@@ -107,7 +108,7 @@ makeListDecon cf c = concat
   ]
   where
     name = show $ catOfList c
-    listRulesForCat = rulesForCat cf c
+    listRulesForCat = [ r | r <- cfgRules cf, isParsable r, valCat r == c]
 
     nilRule = case [r | r <- listRulesForCat, isNilFun r] of
       [] -> Nothing
@@ -122,14 +123,14 @@ makeListDecon cf c = concat
     -- List rules are of the form:
     -- [C] ::= symbols.. C symbols.. [C]
     -- The production, in Python, is concatenated recursively:
-    -- symbols.. + lin(xs[0]) + symbols.. + listCDecon(xs[1:]) + symbols..
+    -- symbols.. + c(xs[0], 'C1') + symbols.. + listCDecon(xs[1:]) + symbols..
     sentFormToArgs :: Int -> [Either Cat String] -> String
     sentFormToArgs _ [] = "[]"
     sentFormToArgs v (Right strOp:ecss) =
       "['" ++ escapeChars strOp ++ "'] + " ++ 
       sentFormToArgs v ecss
     sentFormToArgs v (Left _:ecss)
-      | v == 0 = "lin(xs[0]) + " ++ sentFormToArgs (v+1) ecss
+      | v == 0 = "c(xs[0], '" ++ name ++ "') + " ++ sentFormToArgs (v+1) ecss
       | v == 1 = "list" ++ name ++ "Decon(xs[1:]) + " ++ 
       sentFormToArgs (v+1) ecss
       | otherwise = error "A list production can max have C and [C]."
@@ -164,14 +165,6 @@ makeRenderC = unlines
   , ""
   , "  def ident(i):"
   , "    return '  ' * iLevel"
-  , ""
-  , "  def removeTrailingWhitespace(tot):"
-  , "    i = len(tot)"
-  , "    while i > 0:"
-  , "      if tot[i] == ' ':"
-  , "        i -= 1"
-  , "      else:"
-  , "        break"
   , ""
   , "    return tot[:i]"
   , ""
@@ -211,7 +204,11 @@ makeRenderC = unlines
   , "      case ' ':"
   , "        tot += s"
   , "      case _:"
-  , "        tot += s + ' '"
+  , "        if s[-1] == ' ':" -- To not extend separators of spaces.
+  , "          tot = tot.rstrip()"
+  , "          tot += s"
+  , "        else:"
+  , "          tot += s + ' '"
   , ""
   , "  return tot"
   ]
@@ -221,7 +218,7 @@ makeRenderC = unlines
 makeCoercCompare :: CF -> String
 makeCoercCompare cf = concat 
   [ "cdict = {\n"
-  , unlines (map (\(fs, cs) -> "  " ++ fs ++ " : '" ++ cs ++ "',") scs)
+  , unlines (map (\(fs, cs) -> "  " ++ unkw fs ++ " : '" ++ cs ++ "',") scs)
   , "}"
   ]
   where
@@ -278,7 +275,7 @@ makeLinFunc cf = unlines
       ]
     , ifUsedThen catString 
       [ "    case String():"
-      , "      return [ast, ' ']"
+      , "      return [ast]"
       ]
     , ifUsedThen catIdent 
       [ "    case Ident():"
@@ -350,8 +347,8 @@ makeListEntrypointCase cf c = concat
   ]
   where
     constructors = if isTokenCat c 
-      then [show c ++ "()"]
-      else map ((++ "()") . funName) 
+      then [unkw (show c) ++ "()"]
+      else map ((++ "()") . unkw . funName) 
         [ 
           r | r <- rulesForNormalizedCat cf (normCat c), 
           not (isCoercion r), 
@@ -362,7 +359,7 @@ makeListEntrypointCase cf c = concat
 -- Creates a case for a user defined literal, which inherits str.
 makeSkeleTokenCase :: String -> String
 makeSkeleTokenCase tokenName = concat
-  [ "    case " ++ tokenName ++ "():\n"
+  [ "    case " ++ unkw tokenName ++ "():\n"
   , "      return [ast]"
   ]
 
@@ -371,7 +368,7 @@ makeSkeleTokenCase tokenName = concat
 --   separator- and terminator-delimiters there are. 
 makeSkeleRuleCase :: Rul RFun -> String
 makeSkeleRuleCase rule = concat
-  [ "    case " ++ fName ++ "(" ++ varNamesCommad ++ "):\n"
+  [ "    case " ++ unkw fName ++ "(" ++ varNamesCommad ++ "):\n"
   , "      # " ++ (showEcss sentForm) ++ "\n"
   , "      return " ++ if (length args > 0)
     then (intercalate " + " args) 
@@ -382,8 +379,7 @@ makeSkeleRuleCase rule = concat
     sentForm = rhsRule rule
 
     nvCats = numVars sentForm :: [Either (Cat, Doc) String]
-
-    enumeratedVarNames = [render d | (c, d) <- lefts nvCats]
+    enumeratedVarNames = [render d | (_, d) <- lefts nvCats]
 
     varNamesCommad = if length enumeratedVarNames > 0 
       then addCommas (enumeratedVarNames ++ ["_ann_type"])
@@ -406,4 +402,5 @@ ecssAndVarsToList (Left c:ecss) (s:ss)
     name = show $ catOfList c
 ecssAndVarsToList (Right strOp:ecss) ss = 
   ["['" ++ escapeChars strOp ++ "']"] ++ ecssAndVarsToList ecss ss
+ecssAndVarsToList ((Left _):_) [] = error "Missing variable name"
 
