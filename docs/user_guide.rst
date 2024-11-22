@@ -57,6 +57,31 @@ since 2.8.2 CUP version v11b.
    entry point for the grammar.
    If you need multiple entrypoints, use ANTLRv4.
 
+Prerequisites
+^^^^^^^^^^^^^
+
+For the Java/CUP backend you need:
+
+- Parser generator: `CUP <http://www2.cs.tum.edu/projects/cup/>`_ libraries version 0.11b.
+- Lexer generator `JFLex <https://jflex.de/>`_ or the `JLex <https://www.cs.princeton.edu/~appel/modern/java/JLex/>`_ libraries.
+
+To set up CUP and JLex, follow these instructions:
+
+1. Download the JAVA archives for
+   `CUP v11b <https://github.com/BNFC/bnfc/raw/master/testing/data/java-cup-11b.jar>`_,
+   `CUP v11b runtime <https://github.com/BNFC/bnfc/raw/master/testing/data/java-cup-11b-runtime.jar>`_,
+   and
+   `JLex <https://github.com/BNFC/bnfc/raw/master/testing/data/JLex-1.2.6.jar>`_.
+
+2. Make sure they are placed in your ``CLASSPATH``.
+
+   For example, in Linux or macOS, store these jars in ``${HOME}/java-lib/`` and add the following line to your shell initialization file::
+
+        export CLASSPATH=${CLASSPATH}\
+          :${HOME}/java-lib/java-cup-11b.jar\
+          :${HOME}/java-lib/java-cup-11b-runtime.jar\
+          :${HOME}/java-lib/JLex-1.2.6.jar
+
 ANTLRv4
 .......
 
