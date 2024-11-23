@@ -309,3 +309,81 @@ BNFC adds the grammar name as a file extension. So if the grammar file is
 named ``Calc.cf``, the lexer will be associated to the file extension
 ``.calc``. To associate other file extensions to a generated lexer, you need to
 modify (or subclass) the lexer.
+
+Python Backend
+===============
+
+The BNF Converter's Python Backend generates a Python frontend, that uses 
+Lark, to parse input into an AST (abstract syntax tree).
+
+Lark and Python 3.10 or higher is needed.
+
+Example usage: ::
+
+    bnfc --python Calc.cf
+
+
+.. list-table:: The result is a set of files:
+   :widths: 25 25
+   :header-rows: 1
+
+   * - Filename
+     - Description
+   * - bnfcPyGenCalc/Absyn.py
+     - Provides the classes for the abstract syntax.
+   * - bnfcPyGenCalc/ParserDefs.py
+     - Provides Lark with the information needed to build the lexer and parser.
+   * - bnfcPyGenCalc/PrettyPrinter.py
+     - Provides printing for both the AST and the linearized tree.
+   * - genTest.py
+     - A ready test-file, that uses the generated frontend to convert input into an AST.
+   * - skele.py
+     - Provides skeleton code to deconstruct an AST, using structural pattern matching.
+
+Optionally one may with ``-m``` also create a makefile that contains the target
+"distclean" to remove the generated files.
+
+Testing the frontend
+....................
+
+It's possible to pipe input, like::
+
+    echo "(1 + 2) * 3" | python3 genTest.py
+
+or::
+
+    python3 genTest.py < file.txt
+
+and it's possible to just use an argument::
+
+    python3 genTest.py file.txt
+
+
+Caveats
+.......
+
+Several entrypoints:
+  The testfile genTest.py only uses the first entrypoint used by default. To
+  use all entrypoints, set the start parameter to "start_". If the 
+  entrypoints cause reduce/reduce conflicts, a lark GrammarError will be
+  produced.
+
+Results from the parameterized tests:
+  While the Python backend generates working frontends for the example
+  grammars, five "failures" and six "errors" among the regression
+  tests are reported.
+
+Skeleton code for using lists as entrypoints:
+  Matchers for using lists, such as [Exp], are not generated in the
+  skeleton code as it may confuse users if the grammar uses several different 
+  list categories, as a user may then try to pattern match lists without 
+  checking what type the elements have. Users are instead encouraged to use
+  non-list entrypoints. 
+
+Using multiple separators
+  Using multiple separators for the same category, such as below, generates
+  Python functions with overlapping names, causing runtime errors.::
+
+    separator Exp1 "," ;
+    separator Exp1 ";" ;
+

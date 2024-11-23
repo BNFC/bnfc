@@ -280,6 +280,14 @@ library
     BNFC.Backend.TreeSitter.CFtoTreeSitter
     BNFC.Backend.TreeSitter.RegToJSReg
 
+    -- Python backend
+    BNFC.Backend.Python
+    BNFC.Backend.Python.CFtoPyAbs
+    BNFC.Backend.Python.CFtoPyPrettyPrinter
+    BNFC.Backend.Python.RegToFlex
+    BNFC.Backend.Python.PyHelpers
+    BNFC.Backend.Python.CFtoPySkele
+    
 ----- Testing --------------------------------------------------------------
 
 test-suite unit-tests
