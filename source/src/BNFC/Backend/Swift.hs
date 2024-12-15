@@ -18,6 +18,7 @@ import BNFC.Backend.Common.NamedVariables (firstUpperCase, firstLowerCase)
 import BNFC.Backend.Antlr (makeAntlr, makeAntlr', DirectoryOptions (DirectoryOptions, baseDirectory, nameStyle))
 import BNFC.Backend.Swift.CFtoSwiftAST ( cf2SwiftAST )
 import BNFC.Backend.Swift.CFtoSwiftBuilder ( cf2SwiftBuilder )
+import BNFC.Backend.Swift.CFtoSwiftSkeleton ( cf2SwiftSkeleton )
 import BNFC.Backend.Swift.Common ( indent, buildVariableTypeFromSwiftType, cat2SwiftType, cat2SwiftClassName, mkBuildFnName )
 
 makeSwift :: SharedOptions -> CF -> MkFiles ()
@@ -35,13 +36,15 @@ makeSwift opts@Options{..} cf = do
     mkfile (targetDir </> "builder.swift") makeSwiftComment builderContent
     mkfile (targetDir </> langNameUpperCased ++ ".swift") makeSwiftComment (publicApiContent langNameUpperCased)
     mkfile (dirBase </> "Package.swift") makePackageHeader (packageFileContent langNameUpperCased)
+    mkfile (dirBase </> "Skeleton.swift") makeSwiftComment skeletonContent
   where
-    astContent = cf2SwiftAST (firstUpperCase langName) cf
-    builderContent = cf2SwiftBuilder cf opts
-
     packageName = maybe id (+.+) inPackage $ mkName [] CamelCase lang
     langName = firstLowerCase $ mkName [] CamelCase lang
     langNameUpperCased = firstUpperCase langName
+
+    astContent = cf2SwiftAST langNameUpperCased cf
+    builderContent = cf2SwiftBuilder cf opts
+    skeletonContent = cf2SwiftSkeleton langNameUpperCased cf opts
 
     makeVars x = [MakeFile.mkVar n v | (n,v) <- x]
     makeRules x = [MakeFile.mkRule tar dep recipe  | (tar, dep, recipe) <- x]

@@ -278,7 +278,7 @@ library
     BNFC.Backend.Swift.CFtoSwiftBuilder
     BNFC.Backend.Swift.Common
     -- BNFC.Backend.Swift.CFtoSwiftPrinter
-    -- BNFC.Backend.Swift.CFtoSwiftSkeleton
+    BNFC.Backend.Swift.CFtoSwiftSkeleton
 
     -- Antlr4 backend
     BNFC.Backend.Antlr
