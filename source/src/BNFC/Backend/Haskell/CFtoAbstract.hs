@@ -92,15 +92,34 @@ cf2Abstract Options{ lang, tokenText, generic, functor } name cf = vsep . concat
       -- regardless whether it is used in the abstract syntax.
       -- It may be used in the parser.
     , [ vcat
-        [ "-- | Start position (line, column) of something."
+        [ "-- | Position range ((startLine, startColumn), (endLine, endColumn)) of something."
         , ""
-        , "type" <+> posType <+> "=" <+> "C.Maybe (C.Int, C.Int)"
+        , "type" <+> posType <+> "=" <+> "C.Maybe ((C.Int, C.Int), (C.Int, C.Int))"
         , ""
         , "pattern" <+> noPosConstr <+> "::" <+> posType
         , "pattern" <+> noPosConstr <+> "=" <+> "C.Nothing"
         , ""
-        , "pattern" <+> posConstr <+> ":: C.Int -> C.Int ->" <+> posType
-        , "pattern" <+> posConstr <+> "line col =" <+> "C.Just (line, col)"
+        , "pattern" <+> posConstr <+> ":: (C.Int, C.Int) -> (C.Int, C.Int) ->" <+> posType
+        , "pattern" <+> posConstr <+> "start end =" <+> "C.Just (start, end)"
+        , ""
+        , "{-# COMPLETE" <+> posConstr <> "," <+> noPosConstr <+> "#-}"
+        , ""
+        , "startLineCol" <> posConstr <+> "::" <+> posType <+> "-> C.Maybe (C.Int, C.Int)"
+        , "startLineCol" <> posConstr <+> "= C.fmap C.fst"
+        , ""
+        , "endLineCol" <> posConstr <+> "::" <+> posType <+> "-> C.Maybe (C.Int, C.Int)"
+        , "endLineCol" <> posConstr <+> "= C.fmap C.snd"
+        , ""
+        , "span" <> posConstr <+> "::" <+> posType <+> "->" <+> posType <+> "->" <+> posType
+        , "span" <> posConstr
+            <+> "(" <+> posConstr <+> "start _end" <+> ")"
+            <+> "(" <+> posConstr <+> "_start end" <+> ") =" <+> posConstr <+> "start end"
+        , "span" <> posConstr
+            <+> "(" <+> posConstr <+> "start end" <+> ") _ =" <+> posConstr <+> "start end"
+        , "span" <> posConstr
+            <+> "_ (" <+> posConstr <+> "start end" <+> ") =" <+> posConstr <+> "start end"
+        , "span" <> posConstr
+            <+> noPosConstr <+> noPosConstr <+> "=" <+> noPosConstr
         ]
       | defPosition
       ]
@@ -159,6 +178,7 @@ cf2Abstract Options{ lang, tokenText, generic, functor } name cf = vsep . concat
       [ [ text $ List.intercalate ", " stdClasses | hasTextualToks || hasData ]
       , [ text $ List.intercalate ", " funClasses | fun ]
       , [ text $ "Int, Maybe(..)" | defPosition ]
+      , [ text $ "fmap, fst, snd"]
       ]
 
 -- |
