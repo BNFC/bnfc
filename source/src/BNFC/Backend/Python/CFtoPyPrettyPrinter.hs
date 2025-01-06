@@ -6,20 +6,22 @@
 -}
 
 module BNFC.Backend.Python.CFtoPyPrettyPrinter ( cf2PyPretty ) where
-import Data.List     ( intercalate, nub )
+import Data.List     ( intercalate, nub, findIndices )
 import BNFC.CF 
 import BNFC.Backend.Python.PyHelpers
 import BNFC.Backend.Common.NamedVariables
 import Text.PrettyPrint (Doc, render)
-import Data.Either   (lefts)
+import Data.Either   (rights, lefts, isLeft)
 import BNFC.Backend.Common.StrUtils
 import qualified Data.List.NonEmpty as List1
+
 
 -- | Used to create PrettyPrinter.py, that contains the functionality
 --   to print the AST and the linearized tree.
 cf2PyPretty :: String -> CF -> String
 cf2PyPretty pkgName cf = unlines
   [ "from " ++ pkgName ++ ".Absyn import *"
+  , "import itertools"
   , ""
   , makePrintAST cf
   , ""
@@ -88,7 +90,7 @@ makePrintAST cf = concat
       | otherwise = ""
 
 
--- Creates deconstructors for all list categories.
+-- | Creates deconstructors for all list categories.
 makeListDecons :: CF -> String
 makeListDecons cf = unlines $ map (makeListDecon cf) listCats
     where
@@ -97,7 +99,7 @@ makeListDecons cf = unlines $ map (makeListDecon cf) listCats
         listCats = [c | c <- valCats, isList c]
 
 
--- Creates a deconstructor for some list category.
+-- | Creates a deconstructor for some list category.
 makeListDecon :: CF -> Cat -> String
 makeListDecon cf c = concat 
   [ "def list" ++ name ++ "Decon(xs):\n"
@@ -120,10 +122,11 @@ makeListDecon cf c = concat
       [] -> Nothing
       rs -> Just (head rs)
 
-    -- List rules are of the form:
-    -- [C] ::= symbols.. C symbols.. [C]
-    -- The production, in Python, is concatenated recursively:
-    -- symbols.. + c(xs[0], 'C1') + symbols.. + listCDecon(xs[1:]) + symbols..
+    noOneFun = case oneRule of
+      Nothing -> True
+      _       -> False
+
+    -- Builds the production recursively
     sentFormToArgs :: Int -> [Either Cat String] -> String
     sentFormToArgs _ [] = "[]"
     sentFormToArgs v (Right strOp:ecss) =
@@ -131,7 +134,7 @@ makeListDecon cf c = concat
       sentFormToArgs v ecss
     sentFormToArgs v (Left _:ecss)
       | v == 0 = "c(xs[0], '" ++ name ++ "') + " ++ sentFormToArgs (v+1) ecss
-      | v == 1 = "list" ++ name ++ "Decon(xs[1:]) + " ++ 
+      | v == 1 = error "Python backend error - should use iterative approach for cons" --"list" ++ name ++ "Decon(xs[1:]) + " ++ 
       sentFormToArgs (v+1) ecss
       | otherwise = error "A list production can max have C and [C]."
 
@@ -149,9 +152,37 @@ makeListDecon cf c = concat
         , "    return " ++ sentFormToArgs 0 (rhsRule r)
         ]
 
+    -- Adds each element with delims iteratively
     consRuleStr = case consRule of
       Nothing -> ""
-      Just r -> "  return " ++ sentFormToArgs 0 (rhsRule r) ++ "\n"
+      Just r -> unlines 
+        [ "  " ++ start
+        , "  for x in xs[:" ++ endIndice ++ "][::-1]:"
+        , "    tot += " ++ add endlims ++ "[]"
+        , "    tot = " ++ add delims ++ "tot"
+        , "    tot = c(x, '" ++ name ++ "') + tot"
+        , "    tot = " ++ add prelims ++ "tot"
+        , "  return tot"
+        ]
+        where
+          ecss = rhsRule r
+          indices = findIndices isLeft ecss
+          i1 = head indices
+          i2 = last indices
+          prelims = rights $ take i1 ecss
+          endlims = rights $ drop i2 ecss
+          delims  = rights $ drop i1 $ take i2 ecss
+  
+          start
+            | not noOneFun = "tot = list" ++ name ++ "Decon(xs[-1:])"
+            | otherwise = "tot = list" ++ name ++ "Decon([])"
+
+          add :: [String] -> String 
+          add ss = concat $ map (\s-> "['" ++ escapeChars s ++ "'] + ") ss
+
+          endIndice
+            | not noOneFun = "-1"
+            | otherwise    = ""
 
 
 -- | Creates the renderC function, which creates a string of a list of
@@ -286,12 +317,12 @@ makeLinFunc cf = unlines
       , "      return [ast]"
       ]
     ]
-  , "    # skeleTokenCases:"
-  , unlines skeleTokenCases
-  , "    # skeleRuleCases:"
-  , unlines skeleRuleCases
-  , -- Deals with cases where the entrypoint is say [Stm] or [Exp], 
-    -- with pattern matching on the first object in the list.
+  , "    # Token cases:"
+  , unlines tokenCases
+  , "    # Rule cases:"
+  , unlines ruleCases
+  , -- Deals with cases where the entrypoint is say [Stm] or
+    -- [Exp] with pattern matching on the first object in the list.
     "    case " ++ "list():"
   , "      if len(ast) == 0:"
   , "        return []"
@@ -305,7 +336,7 @@ makeLinFunc cf = unlines
   , "      raise Exception(str(ast.__class__) + ' unmatched')"
   ]
   where
-    -- Used to include standard literals, if needed.
+    -- To include standard literals, if needed.
     ifUsedThen :: TokenCat -> [String] -> String
     ifUsedThen cat ss
       | isUsedCat cf (TokenCat cat) = unlines ss
@@ -319,8 +350,8 @@ makeLinFunc cf = unlines
       , not (isNilCons r)
       ]
 
-    skeleTokenCases = map makeSkeleTokenCase (tokenNames cf)
-    skeleRuleCases = map makeSkeleRuleCase rules
+    tokenCases = map makeTokenCase (tokenNames cf)
+    ruleCases = map makeRuleCase rules
 
     catEntrypointsForLists = 
       [catOfList c | c <- (List1.toList . allEntryPoints) cf, isList c]
@@ -356,9 +387,9 @@ makeListEntrypointCase cf c = concat
         ]
 
 
--- Creates a case for a user defined literal, which inherits str.
-makeSkeleTokenCase :: String -> String
-makeSkeleTokenCase tokenName = concat
+-- | Creates a case for a user defined literal, which inherits str.
+makeTokenCase :: String -> String
+makeTokenCase tokenName = concat
   [ "    case " ++ unkw tokenName ++ "():\n"
   , "      return [ast]"
   ]
@@ -366,12 +397,11 @@ makeSkeleTokenCase tokenName = concat
 
 -- | Creates a case for some rule, with the additional information of what
 --   separator- and terminator-delimiters there are. 
-makeSkeleRuleCase :: Rul RFun -> String
-makeSkeleRuleCase rule = concat
+makeRuleCase :: Rul RFun -> String
+makeRuleCase rule = concat
   [ "    case " ++ unkw fName ++ "(" ++ varNamesCommad ++ "):\n"
   , "      # " ++ (showEcss sentForm) ++ "\n"
-  , "      return " ++ if (length args > 0)
-    then (intercalate " + " args) 
+  , "      return " ++ if (length args > 0) then (intercalate " + " args) 
     else "[]"
   ]
   where

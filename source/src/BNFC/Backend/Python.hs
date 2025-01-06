@@ -1,10 +1,10 @@
-{-# LANGUAGE NoImplicitPrelude #-}
-{-# LANGUAGE OverloadedStrings #-}
-
 {-
     BNF Converter: Python main file
     Copyright (C) 2004  Author:  Bjorn Werner
 -}
+
+{-# LANGUAGE NoImplicitPrelude #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 module BNFC.Backend.Python (makePython) where
 
@@ -21,45 +21,54 @@ import BNFC.PrettyPrint
 import Data.Char  (toLower, isLetter)
 import qualified BNFC.Backend.Common.Makefile as Makefile
 
+import BNFC.Backend.Python.CFtoAntlr4Lexer (cf2AntlrLex)
+import BNFC.Backend.Python.CFtoAntlr4Parser (cf2AntlrParse)
+
 
 -- | Entrypoint for BNFC to use the Python backend.
 makePython :: SharedOptions -> CF -> MkFiles ()
 makePython opts cf = do
-    let pkgName =  "bnfcPyGen" ++ filter isLetter name
-    let (parsingDefs, abstractClasses) = cf2PyAbs pkgName cf
+    let pkgName =  "bnfcPyGen" ++ filteredName
+    let abstractClasses = cf2PyAbs cf
     let prettyPrinter = cf2PyPretty pkgName cf
     let skeletonCode = cf2PySkele pkgName cf
-    mkPyFile (pkgName ++ "/ParsingDefs.py") parsingDefs
     mkPyFile (pkgName ++ "/Absyn.py") abstractClasses
     mkPyFile (pkgName ++ "/PrettyPrinter.py") prettyPrinter
     mkPyFile "skele.py" skeletonCode
-    mkPyFile "genTest.py" (pyTest pkgName cf)
-    Makefile.mkMakefile (optMake opts) $ makefile pkgName (optMake opts)
+    mkPyFile "genTest.py" (pyTest pkgName filteredName cf)
+    Makefile.mkMakefile (optMake opts) $ makefile pkgName filteredName (optMake opts)
+
+    let (d, kwenv) = cf2AntlrLex filteredName cf
+    mkAntlrFile (pkgName ++ "/" ++ filteredName ++ "Lexer.g4") d
+    --cf2AntlrParse :: String -> String -> CF -> KeywordEnv -> String
+    let p = cf2AntlrParse filteredName (pkgName ++ ".Absyn") cf kwenv
+    mkAntlrFile (pkgName ++ "/" ++ filteredName ++ "Parser.g4") p
   where
     name :: String
     name = lang opts
+    filteredName = filter isLetter name
     mkPyFile x = mkfile x comment
-
+    mkAntlrFile x = mkfile x ("//" ++) -- "//" for comments
 
 -- | A makefile with distclean and clean specifically for the testsuite. No
 --   "all" is needed as bnfc has already generated the necessary Python files.
-makefile :: String -> Maybe String -> String -> Doc
-makefile pkgName optMakefileName basename = vcat
+makefile :: String -> String -> Maybe String -> String -> Doc
+makefile pkgName filteredName optMakefileName basename = vcat
   [
     Makefile.mkRule "all" []
-      [ "@echo \"Doing nothing: No compilation of the parser needed.\"" ]
+      [ "java -jar $(ANTLR) -Dlanguage=Python3 " ++ pkgName ++ "/" ++ filteredName ++ "Lexer.g4"
+      , "java -jar $(ANTLR) -Dlanguage=Python3 " ++ pkgName ++ "/" ++ filteredName ++ "Parser.g4" ]
   ,  Makefile.mkRule "clean" []
       [ "rm -f parser.out parsetab.py" ]
   , Makefile.mkRule "distclean" [ "vclean" ] []
   , Makefile.mkRule "vclean" []
       [ "rm -f " ++ unwords
         [ 
-          pkgName ++ "/ParsingDefs.py",
           pkgName ++ "/Absyn.py",
           pkgName ++ "/PrettyPrinter.py",
-          pkgName ++ "/ParsingDefs.py.bak",
           pkgName ++ "/Absyn.py.bak",
           pkgName ++ "/PrettyPrinter.py.bak",
+          pkgName ++ "/" ++ filteredName ++ "*",
           "skele.py",
           "genTest.py",
           "skele.py.bak",
@@ -86,11 +95,14 @@ comment x = "# " ++ x
 
 
 -- Produces the content for the testing file, genTest.py.
-pyTest :: String -> CF -> String
-pyTest pkgName cf = unlines 
+pyTest :: String -> String -> CF -> String
+pyTest pkgName filteredName cf = unlines 
   [ "import sys"
-  , "from " ++ pkgName ++ ".ParsingDefs import *"
   , "from " ++ pkgName ++ ".PrettyPrinter import printAST, lin, renderC"
+  , "from antlr4 import *"
+  , "from " ++ pkgName ++ "." ++ lexerName ++ " import " ++ lexerName
+  , "from " ++ pkgName ++ "." ++ parserName ++ " import " ++ parserName
+  , "from antlr4.error.ErrorListener import ErrorListener"
   , ""
   , "# Suggested input options:"
   , "# python3 genTest.py < sourcefile"
@@ -107,18 +119,28 @@ pyTest pkgName cf = unlines
   , "    for line in sys.stdin:"
   , "        inp += line"
   , ""
-  , "def onError(e):"
+  , "class ThrowingErrorListener(ErrorListener):"
+  , "    def syntaxError(self, recognizer, offendingSymbol, line, column, msg, e):"
+  , "        raise Exception(f'Syntax error at line {line}, column {column}: {msg}')"
+  , ""
+  , "try:"
+  , "    lexer = " ++ lexerName ++ "(InputStream(inp))"
+  , "    lexer.removeErrorListeners()"
+  , "    lexer.addErrorListener(ThrowingErrorListener())"
+  , ""
+  , "    stream = CommonTokenStream(lexer)"
+  , "    parser = " ++ parserName ++ "(stream)"
+  , "    parser.removeErrorListeners()"
+  , "    parser.addErrorListener(ThrowingErrorListener())"
+  , ""
+  , "    tree = parser.start_" ++ defaultEntrypoint ++ "()"
+  , "    ast = tree.result"
+  , "    error = False"
+  , "except Exception as e:"
   , "    print(e)"
-  , "    print('Parse failed')"
-  , "    quit(1)"
+  , "    error = True"
   , ""
-  , "# Creates the Lark parser with the given grammar. By default to the first"
-  , "# entrypoint. Other entrypoints exist in ParsingDefs.py."
-  , "parser = Lark(grammar, start='" ++ defaultEntrypoint ++ "', parser='lalr', lexer='basic', transformer=TreeTransformer())"
-  , ""
-  , "# By default the first entrypoint is used. See ParsingDefs.py for alternatives."
-  , "ast = parser.parse(inp, on_error=onError)"
-  , "if ast:"
+  , "if not error and ast:"
   , "    print('Parse Successful!\\n')"
   , "    print('[Abstract Syntax]')"
   , "    print(printAST(ast))"
@@ -131,7 +153,8 @@ pyTest pkgName cf = unlines
   , "    quit(1)"
   ]
   where
-    defaultEntrypoint = map toLower 
-      ((translateToList . show . firstEntry) cf)
+    lexerName = filteredName ++ "Lexer"
+    parserName = filteredName ++ "Parser"
+    defaultEntrypoint = (translateToList . show . firstEntry) cf
 
 

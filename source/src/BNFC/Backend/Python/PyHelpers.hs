@@ -87,21 +87,19 @@ showEcss (Right strOp:ecss) = "\"" ++ strOp ++ "\" " ++ (showEcss ecss)
 
 -- | Adds an underscore if the string overlaps with a keyword.
 unkw :: String -> String
-unkw s = if s `elem` kwListWithSoftKeywords then s ++ "_" else s
+unkw s = if s `elem` pythonReserved then s ++ "_" else s
 
 
--- To add an extra underscore if something overlaps with a keyword.
-kwListWithSoftKeywords :: [String]
-kwListWithSoftKeywords =
-  [ "False"
-  , "None"
-  , "True"
-  , "and"
+-- | Python keyword list plus soft keywords
+pythonReserved :: [String]
+pythonReserved =
+  [ "and"
   , "as"
   , "assert"
   , "async"
   , "await"
   , "break"
+  , "case"
   , "class"
   , "continue"
   , "def"
@@ -109,6 +107,7 @@ kwListWithSoftKeywords =
   , "elif"
   , "else"
   , "except"
+  , "False"
   , "finally"
   , "for"
   , "from"
@@ -118,19 +117,19 @@ kwListWithSoftKeywords =
   , "in"
   , "is"
   , "lambda"
+  , "match"
+  , "None"
   , "nonlocal"
   , "not"
   , "or"
   , "pass"
   , "raise"
   , "return"
+  , "True"
   , "try"
+  , "type"
   , "while"
   , "with"
   , "yield"
   , "_"
-  , "case"
-  , "match"
-  , "type"
   ]
-

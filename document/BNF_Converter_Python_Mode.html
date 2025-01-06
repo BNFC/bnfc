@@ -27,38 +27,42 @@
 <h3>2024</h3>
 <p>
   The BNF Converter's Python Backend generates a Python frontend, that uses 
-  Lark, to parse input into an AST (abstract syntax tree).
+  Antlr4, to parse input into an AST (abstract syntax tree).
 </p>
 <p>
   BNFC on Github:<br>
   <a href="https://github.com/BNFC/bnfc">https://github.com/BNFC/bnfc</a>
 </p>
 <p>
-  Lark github:<br>
-  <a href="https://github.com/lark-parser/lark">https://github.com/lark-parser/lark</a>
+  Antlr on Github:<br>
+  <a href="https://github.com/antlr/antlr4">https://github.com/antlr/antlr4</a>
 </p>
 <p>
-  Python 3.10 or higher is needed.
+  Requirements are: the jar file for ANTLRv4, the Python package antlr4, and
+  Python 3.10 or higher.
 </p>
 <h3>Usage</h3>
 <div style="margin-left: 40px; "><big><span style="font-family: monospace; ">
-    bnfc --python NAME.cf</span></big><br style="font-family: monospace; ">
+    bnfc --python -m NAME.cf</span></big><br style="font-family: monospace; ">
 </div>
 <p>
-The result is a set of files:
+There should now exist the following files:
 </p>
 <table style="padding: 1cm;">
   <tr>
     <th>Filename:</th><th>Description:</th>
   </tr>
   <tr>
-    <td>bnfcGenNAME/Absyn.py</td><td>Provides the classes for the abstract syntax.</td>
+    <td>bnfcPyGenNAME/NAMELexer.g4</td><td>Provides the grammar for the lexer.</td>
   </tr>
   <tr>
-    <td>bnfcGenNAME/ParserDefs.py</td><td>Provides Lark with the information needed to build the lexer and parser.</td>
+    <td>bnfcPyGenNAME/NAMEParser.g4</td><td>Provides the grammar for the parser.</td>
   </tr>
   <tr>
-    <td>bnfcGenNAME/PrettyPrinter.py</td><td>Provides printing for both the AST and the linearized tree.</td>
+    <td>bnfcPyGenNAME/Absyn.py</td><td>Provides the classes for the abstract syntax.</td>
+  </tr>
+  <tr>
+    <td>bnfcPyGenNAME/PrettyPrinter.py</td><td>Provides printing for both the AST and the linearized tree.</td>
   </tr>
   <tr>
     <td>genTest.py</td><td>A ready test-file, that uses the generated frontend to convert input into an AST.</td>
@@ -67,7 +71,21 @@ The result is a set of files:
     <td>skele.py</td><td>Provides skeleton code to deconstruct an AST, using structural pattern matching.</td>
   </tr>
 </table>
-
+<p>
+Make sure the jar for Antlr is accessible from the generated makefile and run the makefile. The generated lexer and parser is placed inside the folder used above.
+</p>
+<p>
+  For example, on linux, export the following variable from .profile:
+</p>
+<div style="margin-left: 40px; "><big><span style="font-family: monospace; "> 
+export ANTLR="$HOME/Downloads/antlr/antlr-4.13.2-complete.jar"</span></big><br style="font-family: monospace; ">
+</div>
+<p>
+  After that it should be possible to run the makefile:
+</p>
+<div style="margin-left: 40px; "><big><span style="font-family: monospace; ">
+    make</span></big><br style="font-family: monospace; ">
+</div>
 <h3>Testing the frontend</h3>
 <p>
   The following example uses a frontend that is generated from a C-like grammar.
@@ -144,12 +162,26 @@ def matcherExp(exp_: Exp):<br>
   
 <h3>Known issues</h3>
 <h4>
+  Maximum elements for hand-made list rules:
+</h4>
+<p>
+  If one defines custom rules for lists, such as:
+</p>
+<p style="font-family: monospace;"> 
+ (:) [C] ::= 'a' C 'b' [C] 'c'
+</p>
+<p>
+  the Python backend can not simplify the rule for an iterative approach
+  for the parser, meaning at most 1000 elements can be parsed - or a maximum
+  recursion depth will be thrown. Using the terminal or separator pragmas should work fine.
+</p>
+<h4>
   Skeleton code for using lists as entrypoints:
 </h4>
 <p>
   Matchers for using lists, such as [Exp], are not generated in the
   skeleton code as it may confuse users if the grammar uses several different 
-  list categories, as a user may then try to pattern match lists without 
+  list categories - as a user may then try to pattern match lists without 
   checking what type the elements have. Users are instead encouraged to use
   non-list entrypoints. 
 </p>
@@ -169,8 +201,12 @@ def matcherExp(exp_: Exp):<br>
   &nbsp;&nbsp;for exp in listexp_:<br>
   &nbsp;&nbsp;&nbsp;...
 </p>
+<h4>Several entrypoints:</h4>
+<p>
+  The testfile genTest.py only uses the first entrypoint by default.
+</p>
 <h4>
-  Using multiple separators
+  Using multiple separators:
 </h4>
 <p>
   Using multiple separators for the same category, such as below, generates
@@ -180,19 +216,15 @@ def matcherExp(exp_: Exp):<br>
   separator Exp1 "," ;<br>
   separator Exp1 ";" ;
 </p>
-<h4>Several entrypoints:</h4>
-<p>
-  The testfile genTest.py only uses the first entrypoint used by default. To
-  use all entrypoints, set the start parameter to "start_". If the 
-  entrypoints cause reduce/reduce conflicts, a lark GrammarError will be
-  produced.
-</p>
 <h4>
 Results from the parameterized tests:
 </h4>
 <p>
-  While the Python backend generates working frontends for the example
-  grammars, five "failures" and six "errors" among the regression
-  tests are reported.
+  One error among the regression tests are reported: the Java BNFC example grammar contains mutually left recursive rules.
 </p>
-
+<h4>
+  Example for grammar haskell-hcr:
+</h4>
+<p>
+  Attempting to parse ParCore.hcr from the haskell-hcr example BNFC grammar yields an error for escaped characters.
+</p>

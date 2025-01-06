@@ -450,7 +450,7 @@ parameters = concat
         }
     pythonParams = base
         { tpBuild = do
-            return () -- nothing to make or compile
+          tpMake
         ,
           tpRunTestProg = \ _lang args -> do
             pyFile_ <- findFile "genTest.py"

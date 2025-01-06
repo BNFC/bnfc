@@ -289,13 +289,13 @@ Python Backend
 ===============
 
 The BNF Converter's Python Backend generates a Python frontend, that uses 
-Lark, to parse input into an AST (abstract syntax tree).
+Antlr4, to parse input into an AST (abstract syntax tree).
 
-Lark and Python 3.10 or higher is needed.
+The python package Antlr4, the jar for Antlr4 and Python 3.10 or higher is needed.
 
 Example usage: ::
 
-    bnfc --python Calc.cf
+    bnfc --python -m Calc.cf
 
 
 .. list-table:: The result is a set of files:
@@ -304,19 +304,29 @@ Example usage: ::
 
    * - Filename
      - Description
+   * - bnfcPyGenCalc/CalcLexer.g4
+     - Provides the grammar for the lexer.
+   * - bnfcPyGenCalc/CalcParser.g4
+     - Provides the grammar for the parser.
    * - bnfcPyGenCalc/Absyn.py
      - Provides the classes for the abstract syntax.
-   * - bnfcPyGenCalc/ParserDefs.py
-     - Provides Lark with the information needed to build the lexer and parser.
    * - bnfcPyGenCalc/PrettyPrinter.py
      - Provides printing for both the AST and the linearized tree.
    * - genTest.py
      - A ready test-file, that uses the generated frontend to convert input into an AST.
    * - skele.py
      - Provides skeleton code to deconstruct an AST, using structural pattern matching.
+   * - Makefile
+     - The makefile, which uses an Antlr jar file to produce the lexer and parser for Python.
 
-Optionally one may with ``-m``` also create a makefile that contains the target
-"distclean" to remove the generated files.
+Make sure the jar for Antlr is accessible from the generated makefile and
+run the makefile. For example, on linux, one can export the following
+variable from ``.profile``:
+
+``export ANTLR="$HOME/Downloads/antlr/antlr-4.13.2-complete.jar"``
+
+Subsequently run ``make``. The generated lexer and parser is placed inside the
+folder used above.
 
 Testing the frontend
 ....................
@@ -337,16 +347,15 @@ and it's possible to just use an argument::
 Caveats
 .......
 
-Several entrypoints:
-  The testfile genTest.py only uses the first entrypoint used by default. To
-  use all entrypoints, set the start parameter to "start_". If the 
-  entrypoints cause reduce/reduce conflicts, a lark GrammarError will be
-  produced.
+Maximum elements for hand-made lists:
+  If one defines custom rules for lists, such as::
+    
+    (:) [C] ::= 'a' C 'b' [C] 'c'
 
-Results from the parameterized tests:
-  While the Python backend generates working frontends for the example
-  grammars, five "failures" and six "errors" among the regression
-  tests are reported.
+  the Python backend can not simplify the rule for an iterative approach
+  for the parser, meaning at most 1000 elements can be parsed - or a maximum
+  recursion depth will be thrown. Using the terminal or separator pragmas
+  should work fine.
 
 Skeleton code for using lists as entrypoints:
   Matchers for using lists, such as [Exp], are not generated in the
@@ -355,10 +364,21 @@ Skeleton code for using lists as entrypoints:
   checking what type the elements have. Users are instead encouraged to use
   non-list entrypoints. 
 
-Using multiple separators
+Several entrypoints:
+  The testfile genTest.py only uses the first entrypoint used by default.
+
+Using multiple separators:
   Using multiple separators for the same category, such as below, generates
   Python functions with overlapping names, causing runtime errors.::
 
     separator Exp1 "," ;
     separator Exp1 ";" ;
+
+Results from the parameterized tests:
+  One error among the regression tests are reported: the Java BNFC example
+  grammar contains mutually left recursive rules.
+
+Escaped characters in haskell-hcr:
+  Attempting to parse ParCore.hcr from the BNFC example grammar 
+  haskell-hcr yield errors for escaped characters.
 
