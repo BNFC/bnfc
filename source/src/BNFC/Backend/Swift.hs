@@ -44,7 +44,7 @@ makeSwift opts@Options{..} cf = do
 
     astContent = cf2SwiftAST langNameUpperCased cf
     builderContent = cf2SwiftBuilder cf opts
-    skeletonContent = cf2SwiftSkeleton langNameUpperCased cf opts
+    skeletonContent = cf2SwiftSkeleton langNameUpperCased cf
 
     makeVars x = [MakeFile.mkVar n v | (n,v) <- x]
     makeRules x = [MakeFile.mkRule tar dep recipe  | (tar, dep, recipe) <- x]

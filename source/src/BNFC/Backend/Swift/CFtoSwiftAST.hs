@@ -15,7 +15,7 @@ import Data.List (intercalate)
 
 -- Produces abstract data types in Swift
 cf2SwiftAST :: String -> CF -> String
-cf2SwiftAST langName cf =  unlines
+cf2SwiftAST langName cf = unlines
     $ imports ++ [""]-- import some libraries if needed
     -- ++ characterTypedef
     ++ map mkTokenDecl allTokenNames
