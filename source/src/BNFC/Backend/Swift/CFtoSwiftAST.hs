@@ -1,85 +1,72 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE TupleSections #-}
 
 module BNFC.Backend.Swift.CFtoSwiftAST (cf2SwiftAST) where
 
-import Data.Maybe      ( mapMaybe )
+import Data.Maybe (mapMaybe)
+import Data.List (intercalate, intersperse)
+import Text.PrettyPrint.HughesPJClass (Doc, text, vcat, nest, ($$))
 
 import BNFC.CF
-import BNFC.Utils       ( (+++) )
+import BNFC.Utils ((+++))
+import BNFC.Backend.Swift.Common
+import BNFC.Backend.Common.NamedVariables (UserDef)
 
-import BNFC.Backend.Common.NamedVariables ( UserDef )
-import BNFC.Backend.Swift.Common 
-import Data.List (intercalate)
-
--- Produces abstract data types in Swift
-cf2SwiftAST :: String -> CF -> String
-cf2SwiftAST langName cf = unlines
-    $ imports ++ [""]-- import some libraries if needed
-    -- ++ characterTypedef
-    ++ map mkTokenDecl allTokenNames
-    ++ concatMap prData rules  -- generate user-defined types
+-- | Produces abstract data types in Swift
+cf2SwiftAST :: String -> CF -> Doc
+cf2SwiftAST langName cf = vcat
+    [ imports
+    , empty
+    , vcat (intersperse empty (map mkTokenDecl allTokenNames))
+    , empty
+    , vcat (intersperse empty (concatMap prData rules))
+    ]
   where
-    rules  = getAbstractSyntax cf
-    imports = [ 
-      "import Foundation"
-      ]
-    censorName' = censorName langName
-    str2SwiftClassName' = str2SwiftClassName langName
-    str2SwiftCaseName' = str2SwiftCaseName langName
-    cat2SwiftClassName' = cat2SwiftClassName langName
-    getVars' = getVars_ langName
+    empty = text ""
+    rules = getAbstractSyntax cf
+    imports = vcat [text "import Foundation"]
     allTokenNames = literals cf
-    
-    -- | valueType is a string which represents Swift basic type.
-    mkTokenDecl :: String -> String
-    mkTokenDecl tokenName = unlines
-        [ "public struct" +++ catToSwiftType (TokenCat tokenName) +++ "{"
-        , indentStr 2 $ "let value: " ++ value
-        , ""
-        , indentStr 2 $ "public init(_ value:" +++ value ++ ") {"
-        , indentStr 4 $ "self.value = value" 
-        , indentStr 2 $ "}" 
-        , "}"
+
+    -- | Generates a Swift struct for a token.
+    mkTokenDecl :: String -> Doc
+    mkTokenDecl tokenName = vcat
+        [ text $ "public struct" +++ catToSwiftType (TokenCat tokenName) +++ "{"
+        , nest 2 $ text $ "public let value: " ++ value
+        , empty
+        , nest 2 $ text $ "public init(_ value:" +++ value ++ ") {"
+        , nest 4 $ text "self.value = value"
+        , nest 2 $ text "}"
+        , text "}"
         ]
       where
         value
           | tokenName == catInteger = "Int"
           | tokenName == catDouble  = "Double"
           | otherwise = "String"
-          
 
-    -- | Generates a category class, and classes for all its rules.
-    prData :: Data -> [String]
+    -- | Generates enums and cases for a given data type.
+    prData :: Data -> [Doc]
     prData (cat, rules) = categoryClass
-        where
+      where
         funs = map fst rules
         cases = mapMaybe (prRule cat) rules
         categoryClass
-          | catToStr cat `elem` funs || isList cat = [] -- the category is also a function or a list
+          | catToStr cat `elem` funs || isList cat = []
           | otherwise =
-            let name = catToSwiftType cat
-            -- let name = cat2SwiftClassName' cat // TODO: refactor, merge functions
-            in 
-              [ "public indirect enum" +++ wrapIfNeeded name +++ "{"
-              ] ++ indent_ 1 cases ++ ["}\n"]
+              let name = catToSwiftType cat
+              in [ vcat $ text ("public indirect enum" +++ wrapIfNeeded name +++ "{")
+                    : nest 2 (vcat cases)
+                    : [text "}"]
+                ]
 
-
-    -- | Generates classes for a rule, depending on what type of rule it is.
-    prRule :: Cat -> (Fun, [Cat]) -> Maybe (String)
+    -- | Generates individual cases for enum definitions.
+    prRule :: Cat -> (Fun, [Cat]) -> Maybe Doc
     prRule cat (fun, cats)
-      | isNilFun fun || 
-        isOneFun fun || 
-        isConsFun fun = Nothing  -- these are not represented in the Absyn
-      | otherwise = -- a standard rule
-         Just result
+      | isNilFun fun || isOneFun fun || isConsFun fun = Nothing
+      | otherwise = Just $ text $ "case" +++ caseName ++ resultAssociatedValuesConcatenated
       where
-        caseName = str2SwiftClassName' fun
-        vars = getVars' cats
-        -- caseAssociatedValues = map (\var -> buildVariableName var ++ ": " ++ buildVariableType var) vars
-        caseAssociatedValues = map (\var -> wrapIfNeeded $ catToSwiftType var) cats
+        caseName = str2SwiftClassName langName fun
+        caseAssociatedValues = map (wrapIfNeeded . catToSwiftType) cats
         resultAssociatedValuesConcatenated
-          | null vars = ""
-          | otherwise = "(" ++ (intercalate ", " caseAssociatedValues) ++ ")"
-        result = unwords $ ["case", caseName ++ resultAssociatedValuesConcatenated]
+          | null cats = ""
+          | otherwise = "(" ++ intercalate ", " caseAssociatedValues ++ ")"
