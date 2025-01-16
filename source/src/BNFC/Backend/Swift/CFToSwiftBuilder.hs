@@ -106,7 +106,7 @@ mkBuildFunction lang (cat, rulesWithLabels)  = vcat
                 [ zipWith
               (\ (cat, idx) varName
                   -> indentStr 6
-                      $ "let" +++ varName
+                      $ "let" +++ wrapIfNeeded varName
                           +++ "= try" +++ mkBuildFnName cat ++ "(ctx." ++ mkPattern idx ++ ")")
                             rhsRuleWithIdx varNames
                 , [ indentStr 6 returnStatement]
@@ -116,8 +116,8 @@ mkBuildFunction lang (cat, rulesWithLabels)  = vcat
               rhsCats = map fst rhsRuleWithIdx
               returnStatementBase = "return" +++ "." ++ ruleLabel
               returnStatement
-                | null varNames = returnStatementBase 
-                | otherwise     = returnStatementBase ++ "(" ++ intercalate ", " varNames ++ ")"
+                | null varNames = returnStatementBase
+                | otherwise     = returnStatementBase ++ "(" ++ intercalate ", " (map wrapIfNeeded varNames) ++ ")"
 
         emptyListBody = [indentStr 6 "return []"]
         oneListBody = map (\(cat, idx) -> indentStr 6 $ "let data = try" +++ mkBuildFnName cat ++ "(ctx." ++ mkPattern idx ++ ")") rhsRuleWithIdx ++ [ indentStr 4 "return [data]"]

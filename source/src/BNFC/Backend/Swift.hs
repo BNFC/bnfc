@@ -19,6 +19,7 @@ import BNFC.Backend.Antlr (makeAntlr, makeAntlr', DirectoryOptions (DirectoryOpt
 import BNFC.Backend.Swift.CFtoSwiftAST ( cf2SwiftAST )
 import BNFC.Backend.Swift.CFtoSwiftBuilder ( cf2SwiftBuilder )
 import BNFC.Backend.Swift.CFtoSwiftSkeleton ( cf2SwiftSkeleton )
+import BNFC.Backend.Swift.CFtoSwiftPrinter ( cf2SwiftPrinter )
 import BNFC.Backend.Swift.Common ( indent, buildVariableTypeFromSwiftType, cat2SwiftType, cat2SwiftClassName, mkBuildFnName )
 
 makeSwift :: SharedOptions -> CF -> MkFiles ()
@@ -34,6 +35,7 @@ makeSwift opts@Options{..} cf = do
 
     mkfile (targetDir </> "ast.swift") makeSwiftComment astContent
     mkfile (targetDir </> "builder.swift") makeSwiftComment builderContent
+    mkfile (targetDir </> "Printer.swift") makeSwiftComment printerContent
     mkfile (targetDir </> langNameUpperCased ++ ".swift") makeSwiftComment (publicApiContent langNameUpperCased)
     mkfile (dirBase </> "Package.swift") makePackageHeader (packageFileContent langNameUpperCased)
     mkfile (dirBase </> "Skeleton.swift") makeSwiftComment skeletonContent
@@ -45,6 +47,7 @@ makeSwift opts@Options{..} cf = do
     astContent = cf2SwiftAST langNameUpperCased cf
     builderContent = cf2SwiftBuilder cf opts
     skeletonContent = cf2SwiftSkeleton langNameUpperCased cf
+    printerContent = cf2SwiftPrinter cf
 
     makeVars x = [MakeFile.mkVar n v | (n,v) <- x]
     makeRules x = [MakeFile.mkRule tar dep recipe  | (tar, dep, recipe) <- x]

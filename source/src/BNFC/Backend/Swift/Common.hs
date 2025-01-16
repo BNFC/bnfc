@@ -273,7 +273,7 @@ toMixedCase = firstUpperCase . mkName reservedKeywords MixedCase
 
 -- | wrap string into single quotes.
 wrapSQ :: String -> String
-wrapSQ str = "'" ++ str ++ "'"
+wrapSQ str = "\"" ++ str ++ "\""
 
 -- | indent string with N spaces.
 indentStr :: Int -> String -> String
@@ -322,3 +322,21 @@ mkBuildFnName cat = "build" ++ firstUpperCase (restName cat)
       ListCat cat  -> restName cat ++ "List"
       TokenCat cat -> cat ++ "Token"
       otherCat     -> catToStr otherCat
+
+-- | we don't need to declare nodes, which will represent list
+-- because they will be referenced directly with TS type Array<SomeType>.
+getAbsynWithoutLists :: CF -> [Data]
+getAbsynWithoutLists = filter (not . isList . fst) . getAbstractSyntax
+
+-- | produces a type name for rule label
+mkTypeName :: String -> String
+mkTypeName = mkName reservedKeywords OrigCase
+
+-- -- | generate name for function which will interpret node for some cat.
+-- mkInterpretFnName :: Cat -> String
+-- mkInterpretFnName cat = "interpret" ++ firstUpperCase (restName cat)
+--   where
+--     restName cat = case cat of
+--       ListCat cat  -> restName cat ++ "List"
+--       TokenCat cat -> cat ++ "Token"
+--       otherCat     -> catToStr otherCat
