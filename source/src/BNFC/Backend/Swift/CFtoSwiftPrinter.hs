@@ -11,9 +11,6 @@ import BNFC.Backend.Swift.Common (catToSwiftType, indent, wrapSQ, getVarsFromCat
 import BNFC.Backend.Common.NamedVariables (firstUpperCase)
 import Data.Maybe (isJust, isNothing, fromMaybe)
 
-prettyPrintProtocolName :: String
-prettyPrintProtocolName = "PrettyPrintable"
-
 prettyPrintPropertyName :: String
 prettyPrintPropertyName = "printed"
 
@@ -26,8 +23,7 @@ prettyPrintRenderCall = prettyPrintRenderClassName ++ ".shared.render"
 -- | generate pretty-printers for nodes of an AST
 cf2SwiftPrinter :: CF -> Doc
 cf2SwiftPrinter cf = vcat
-    [ protocolDeclaration
-    , rendererDeclaration
+    [ rendererDeclaration
     , tokenPrinterDecl
     , nodesPrintersDecls
     , ""
@@ -48,14 +44,6 @@ cf2SwiftPrinter cf = vcat
               concatMap
               (filter (not . isCoercion) . rulesForNormalizedCat cf)
               (filter (not . isList) cats)
-
-protocolDeclaration :: Doc
-protocolDeclaration = vcat
-  [ text $ "public protocol" +++ prettyPrintProtocolName +++ "{"
-  , nest 2 $ text $ "var" +++ prettyPrintPropertyName +++ ": String { get }"
-  , "}"
-  , ""
-  ]
 
 rendererDeclaration :: Doc
 rendererDeclaration = vcat
@@ -152,7 +140,7 @@ rendererDeclaration = vcat
           ,  indent 4 "dropTrailingNewlines(from: &result)"
           , indent 2 "}"
           , indent 2 "result.append(.text(value: token))"
-          , indent 2 "if token != \".\" {"
+          , indent 2 "if token != \".\" && token != \"(\" {"
           , indent 4 "result.append(.space)"
           , indent 2 "}"
           , "case \";\":"
@@ -223,7 +211,7 @@ mkTokenPrinter cf = vcat
 
     tokenPrinters = vcat $ map mkTokenPrinter (getAllTokenCats cf)
     mkTokenPrinter tokenCat = vcat
-      [ text $ "extension" +++ catToSwiftType tokenCat ++ ":" +++ prettyPrintProtocolName ++ "{" 
+      [ text $ "extension" +++ catToSwiftType tokenCat +++ "{" 
       , nest 2 $ text $ "public var" +++ prettyPrintPropertyName ++ ": String {"
       , indent 4 "String(value)"
       , indent 2 "}"
@@ -233,8 +221,8 @@ mkTokenPrinter cf = vcat
 
 mkNodePrinter :: Cat -> Doc
 mkNodePrinter cat@(Cat _) = vcat
-    [ text $ "extension" +++ catToSwiftType cat ++ ":" +++ prettyPrintProtocolName ++ "{"
-    , nest 2 $ text $ "public var" +++ prettyPrintPropertyName ++ ": String {"
+    [ text $ "extension" +++ catToSwiftType cat +++ "{"
+    , nest 2 $ text $ "public var" +++ printFnName ++ ": String {"
     , indent 4 $ prettyPrintRenderCall ++ "(" ++ prettifyFnName ++ "(self))"
     , indent 2 "}"
     , "}"
@@ -244,8 +232,8 @@ mkNodePrinter cat@(Cat _) = vcat
     prettifyFnName = mkPrettifyFnName cat
 
 mkNodePrinter listCat@(ListCat _) = vcat
-    [ text $ "extension" +++ catToSwiftType listCat ++ ":" +++ prettyPrintProtocolName ++ "{"
-    , nest 2 $ text $ "public var" +++ prettyPrintPropertyName ++ ": String {"
+    [ text $ "extension" +++ catToSwiftType listCat +++ "{"
+    , nest 2 $ text $ "public var" +++ printFnName ++ ": String {"
     , indent 4 $ prettyPrintRenderCall ++ "(" ++ prettifyFnName ++ "(self))"
     , indent 2 "}"
     , "}"
@@ -283,7 +271,9 @@ mkNodePrettifier cf cat@(Cat _) = vcat $ concat
     
     mkCaseStmt rule@(ruleLabel, sentForm) = vcat
         [ indent 4 $ caseDeclaration ++ ruleLabel ++ (associatedValues varNames) ++ ":"
-        , nest 6 $ hcat [ text "return ", (mkRulePrettifier rule)]
+        , indent 6 "var result = [String]()"
+        , nest 6 $ mkRulePrettifier rule
+        , indent 6 $ "return result"
         ]
       where
         varNames = map wrapIfNeeded $ getVarsFromCats (lefts sentForm)
@@ -330,20 +320,19 @@ mkNodePrettifier cf listCat@(ListCat _) = vcat
       || (isNothing nilRule && isJust oneRule && isJust oneSeparator && isJust consRule && isJust consSeparator)
 
     itemCat = catOfList listCat
-    printItemFn tokenCat@(TokenCat _) = mkPrintFnName tokenCat
-    printItemFn cat                  = mkPrettifyFnName cat
+    printItemCall tokenCat@(TokenCat _) = "item.printed"
+    printItemCall cat                  = mkPrettifyFnName cat ++ "(item)"
 
     returnStmt = text listTokens
       where
-        listMapping = "list.flatMap { item in " ++ printItemFn itemCat ++ "(item) + " ++ "[" ++ wrapSQ separator ++ "] }"
-        listTokens = listMapping
-        --   listMapping ++ if isTerminator then "" else ".dropLast()" -- TODO: check
+        listMapping = "list.flatMap { item in " ++ printItemCall itemCat ++ " + " ++ "[" ++ wrapSQ separator ++ "] }"
+        -- listTokens = listMapping -- it depends on target language, but we do not have this knowledge in advance
+        listTokens = listMapping ++ if isTerminator then "" else ".dropLast()"
 
 mkNodePrettifier _ otherCat = error $ "Unknown category for making node prettifier" +++ catToStr otherCat
 
 mkRulePrettifier :: (String, SentForm) -> Doc
-mkRulePrettifier (ruleLabel, sentForm) = vcat
-    [ text prettifyBody ]
+mkRulePrettifier (ruleLabel, sentForm) = vcat $ map text prettifyBody 
   where
     varNames = map wrapIfNeeded $ getVarsFromCats (lefts sentForm)
 
@@ -355,14 +344,14 @@ mkRulePrettifier (ruleLabel, sentForm) = vcat
       (Left cat)        -> Left (cat, var) : addVarNames xs vars
     
     sentFormWithVarNames = addVarNames sentForm varNames
-    prettifiedRule = intercalate " + " $ map (either getPrettifierForCat (\x -> "[" ++ (wrapSQ x) ++ "]")) sentFormWithVarNames
+    prettifiedRule = map (("result +=" +++) . (either getPrettifierForCat (\x -> "[" ++ (wrapSQ x) ++ "]"))) sentFormWithVarNames
       where
         getPrettifierForCat :: (Cat, String) -> String
         getPrettifierForCat (tokenCat@(TokenCat _), varName) = "[" ++ varName ++ "." ++ prettyPrintPropertyName ++ "]"
         getPrettifierForCat (cat, varName)                   = mkPrettifyFnName cat ++ "(" ++ varName ++ ")"
 
     prettifyBody
-      | null sentFormWithVarNames = "[]"
+      | null sentFormWithVarNames = [""]
       | otherwise                 = prettifiedRule
 
 mkPrettifyFnName :: Cat -> String
