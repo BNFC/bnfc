@@ -114,6 +114,7 @@ rendererDeclaration = vcat
       where
         body = vcat 
           [ "var result: [Token] = []"
+          , "var insideBrackets = false"
           , "for token in tokens {"
           , indent 2 "switch token {"
           , nest 4 casesDeclaration
@@ -125,7 +126,9 @@ rendererDeclaration = vcat
           ]
         casesDeclaration = vcat
           [ "case \"\", \" \":"
-          , indent 2  "continue"
+          , indent 2 "if insideBrackets {"
+          , indent 4 "continue"
+          , indent 2 "}"
           , "case \"{\":"
           , indent 2 "result.append(.text(value: token))"
           , indent 2 "result.append(.newline(indentShift: 1))"
@@ -134,13 +137,23 @@ rendererDeclaration = vcat
           , indent 2 "result.append(.newline(indentShift: -1))"
           , indent 2 "result.append(.text(value: token))"
           , indent 2 "result.append(.newline(indentShift: 0))"
-          , "case \"(\", \")\", \"[\", \"]\", \"<\", \">\", \",\", \".\":"
+          , "case \"[\":"
+          , indent 2 "dropTrailingSpaces(from: &result)"
+          , indent 2 "result.append(.space)"
+          , indent 2 "result.append(.text(value: token))"
+          , indent 2 "insideBrackets = true"
+          , "case \"]\":"
+          , indent 2 "dropTrailingSpaces(from: &result)"
+          , indent 2 "result.append(.text(value: token))"
+          , indent 2 "insideBrackets = false"
+          , indent 2 "result.append(.space)"
+          , "case \"(\", \")\", \"<\", \">\", \",\", \".\":"
           , indent 2 "dropTrailingSpaces(from: &result)"
           , indent 2 "if token == \")\" || token == \"]\" || token == \"}\" {"
-          ,  indent 4 "dropTrailingNewlines(from: &result)"
+          , indent 4 "dropTrailingNewlines(from: &result)"
           , indent 2 "}"
           , indent 2 "result.append(.text(value: token))"
-          , indent 2 "if token != \".\" && token != \"(\" {"
+          , indent 2 "if token != \".\" && token != \"(\" && !insideBrackets {"
           , indent 4 "result.append(.space)"
           , indent 2 "}"
           , "case \";\":"
@@ -148,10 +161,16 @@ rendererDeclaration = vcat
           , indent 2 "dropTrailingNewlines(from: &result)"
           , indent 2 "result.append(.text(value: token))"
           , indent 2 "result.append(.newline(indentShift: 0))"
+          , "case \"return\":"
+          , indent 2 "result.append(.text(value: token))"
+          , indent 2 "result.append(.space)"
           , "default:"
           , indent 2 "result.append(.text(value: token))"
-          , indent 2 "result.append(.space)" 
+          , indent 2 "if !insideBrackets {"
+          , indent 4 "result.append(.space)"
+          , indent 2 "}"
           ]
+
     
     groupTokensFunctionDeclaration = vcat 
         [ "private func groupTokens(_ tokens: [Token]) -> [(indentationLevel: Int, tokens: [Token])] {"
@@ -320,7 +339,7 @@ mkNodePrettifier cf listCat@(ListCat _) = vcat
       || (isNothing nilRule && isJust oneRule && isJust oneSeparator && isJust consRule && isJust consSeparator)
 
     itemCat = catOfList listCat
-    printItemCall tokenCat@(TokenCat _) = "item.printed"
+    printItemCall tokenCat@(TokenCat _) = "[item.printed]"
     printItemCall cat                  = mkPrettifyFnName cat ++ "(item)"
 
     returnStmt = text listTokens
