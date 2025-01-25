@@ -154,6 +154,6 @@ antlrRuleLabel cat fnc int
   | isOneFun fnc   = catid ++ "_AppendLast"
   | isConsFun fnc  = catid ++ "_PrependFirst"
   | isCoercion fnc = "Coercion_" ++ catid ++ maybe "" (("_" ++) . show) int
-  | otherwise      = getLabelName fnc
+  | otherwise      = funName fnc
   where
     catid = identCat cat

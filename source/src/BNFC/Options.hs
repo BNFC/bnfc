@@ -68,6 +68,7 @@ data Target = TargetC | TargetCpp | TargetCppNoStl
             | TargetTreeSitter
             | TargetCheck
             | TargetDart
+            | TargetSwift
   deriving (Eq, Bounded, Enum, Ord)
 
 -- | List of Haskell target.
@@ -86,6 +87,7 @@ instance Show Target where
   show TargetPygments     = "Pygments"
   show TargetTreeSitter   = "Tree-sitter"
   show TargetDart         = "Dart"
+  show TargetSwift        = "Swift"
   show TargetCheck        = "Check LBNF file"
   show TargetAntlr        = "ANTLRv4"
 
@@ -304,6 +306,7 @@ printTargetOption = ("--" ++) . \case
   TargetPygments    -> "pygments"
   TargetTreeSitter  -> "tree-sitter"
   TargetDart        -> "dart"
+  TargetSwift       -> "swift"
   TargetCheck       -> "check"
   TargetAntlr       -> "antlr4"
 
@@ -359,9 +362,11 @@ targetOptions =
   , Option "" ["tree-sitter"]   (NoArg (\o -> o {target = TargetTreeSitter}))
     "Output grammar.js file for use with tree-sitter"
   , Option "" ["check"]         (NoArg (\o -> o{target = TargetCheck }))
-  , Option "" ["dart"]         (NoArg (\ o -> o{target = TargetDart }))
-    "Output Dart code for use with ANTLR"
     "No output. Just check input LBNF file"
+  , Option "" ["dart"]          (NoArg (\ o -> o{target = TargetDart }))
+    "Output Dart code for use with ANTLR"
+  , Option "" ["swift"]         (NoArg (\o -> o{target = TargetSwift}))
+     "Output Swift code for use with ANTLR"
   , Option "" ["antlr"]         (NoArg (\o -> o {target = TargetAntlr}))
     "Output lexer and parser grammars for ANTLRv4"
   ]
@@ -619,6 +624,7 @@ instance Maintained Target where
     TargetPygments    -> True
     TargetTreeSitter  -> True
     TargetDart        -> True
+    TargetSwift       -> True
     TargetCheck       -> True
     TargetAntlr       -> True
 
@@ -728,6 +734,7 @@ translateOldOptions = mapM $ \ o -> do
     [ ("-agda"         , "--agda")
     , ("-java"         , "--java")
     , ("-java1.5"      , "--java")
+    , ("-swift"        , "--swift")
     , ("-c"            , "--c")
     , ("-cpp"          , "--cpp")
     , ("-cpp_stl"      , "--cpp")
