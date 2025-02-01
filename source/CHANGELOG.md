@@ -2,6 +2,7 @@
 
 * C: preserve case in constructors (union): e.g. label `EInt` now is union member `eInt_` rather than `eint_`
   [[#479](https://github.com/BNFC/bnfc/issues/479)]
+* C++: repair broken `parse_error` exception throw [[#493](https://github.com/BNFC/bnfc/issues/493)]
 
 # 2.9.5
 
