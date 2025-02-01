@@ -1,5 +1,7 @@
 # Unreleased
 
+* C++: repair broken `parse_error` exception throw [[#493](https://github.com/BNFC/bnfc/issues/493)]
+
 # 2.9.6.1
 
 Andreas Abel <andreas.abel@gu.se>,  August 2025
