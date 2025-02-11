@@ -23,6 +23,7 @@ import BNFC.CF
 import BNFC.PrettyPrint
 import BNFC.Options
 import BNFC.Backend.Common (unicodeAndSymbols)
+import BNFC.Utils (symbolToName)
 
 cf2ScalaLexToken
   :: SharedOptions     
@@ -30,21 +31,36 @@ cf2ScalaLexToken
   -> Doc
 cf2ScalaLexToken Options{ lang } cf = vsep . concat $
   [ 
-      []
-    , headers
+    headers lang
     , [text $ concat $ map generateSymbClass symbs]
+    , [generateStringClasses liters]
   ]
   where
-    datas     = cf2data cf
+    liters = literals cf
     symbs = unicodeAndSymbols cf
 
 
 generateSymbClass :: String -> String
-generateSymbClass symb = "case class " ++ symb ++ "() extends WorkflowToken \n"
+generateSymbClass symb = case symbolToName symb of 
+  Just s -> "case class " ++ s ++ "() extends WorkflowToken \n"
+  Nothing -> ""
 
-headers :: [Doc]
-headers  = [
-   "package co.enear.parsercombinators.lexer"
+
+generateIntegerClasses :: [String] -> Doc
+generateIntegerClasses params = text $ concat $ map generateIntegerClass params
+
+generateIntegerClass :: String -> String
+generateIntegerClass param = "case class " ++ param ++ "(i: Int) extends WorkflowToken \n"
+
+generateStringClasses :: [String] -> Doc
+generateStringClasses params = text $ concat $ map generateStringClass params
+
+generateStringClass :: String -> String
+generateStringClass param = "case class " ++ param ++ "(str: String) extends WorkflowToken \n"
+
+headers :: String -> [Doc]
+headers name = [
+  text $ "package " ++ name ++ ".workflowtoken." ++ name ++ "Lex"
   , "import scala.util.parsing.input.Positional"
   , "sealed trait WorkflowToken extends Positional"
   ]

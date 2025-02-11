@@ -176,3 +176,5 @@ cabal.sandbox.config
 ignore-dir/
 
 .DS_Store
+.vscode
+.metals
