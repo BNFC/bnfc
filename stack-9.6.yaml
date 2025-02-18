@@ -1,4 +1,4 @@
-resolver: lts-22.39
+resolver: lts-22.43
 compiler: ghc-9.6.6
 compiler-check: newer-minor
 

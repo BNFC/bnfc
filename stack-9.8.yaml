@@ -1,5 +1,5 @@
-resolver: nightly-2024-10-21
-compiler: ghc-9.8.2
+resolver: lts-23.9
+compiler: ghc-9.8.4
 compiler-check: newer-minor
 
 packages:
