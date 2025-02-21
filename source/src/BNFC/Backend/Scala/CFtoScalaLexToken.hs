@@ -24,6 +24,7 @@ import BNFC.PrettyPrint
 import BNFC.Options
 import BNFC.Backend.Common (unicodeAndSymbols)
 import BNFC.Utils (symbolToName)
+import Data.Char (toUpper)
 
 cf2ScalaLexToken
   :: SharedOptions     
@@ -56,7 +57,7 @@ generateStringClasses :: [String] -> Doc
 generateStringClasses params = text $ concat $ map generateStringClass params
 
 generateStringClass :: String -> String
-generateStringClass param = "case class " ++ param ++ "(str: String) extends WorkflowToken \n"
+generateStringClass param = "case class " ++ (map toUpper param) ++ "(str: String) extends WorkflowToken \n"
 
 headers :: String -> [Doc]
 headers name = [
@@ -64,3 +65,5 @@ headers name = [
   , "import scala.util.parsing.input.Positional"
   , "sealed trait WorkflowToken extends Positional"
   ]
+
+

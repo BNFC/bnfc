@@ -66,7 +66,10 @@ addParserFunctions liters = map addParserFunction liters
 addParserFunction :: String -> Doc
 addParserFunction liter 
         | liter == catInteger = getIntegerFunction
+        | liter == catDouble  = getDoubleFunction
         | liter == catIdent   = getIdentifiersFunction
+        | liter == catString  = getLiteralsFunction
+        | liter == catChar    = getLiteralFunction
         | otherwise = ""
 
 imports :: String -> [Doc]
@@ -89,9 +92,10 @@ addExtraClasses = [
 initWorkflowClass :: [Doc]
 initWorkflowClass = [
       "object WorkflowLexer extends RegexParsers {"
-    , nest 4 "override def skipWhitespace = true"
+    -- TODO: I REMOVED THIS LINE TO MAKE IT WORK, BUT WILL FAIL WITH GRAMMARS WHICH USE TABS/SPACES AS BLOCKS DEFINITION, SHOULD WE WORK ON THIS?
+    -- , nest 4 "override def skipWhitespace = true"
     -- In case the lenguage use indentation for block creation, we should remove \n from the list of whiteSpace.
-    , nest 4 $ text $ "override val whiteSpace = " ++ "\"" ++ "[\\t\\r\\f\\n]+\".r"
+    -- , nest 4 $ text $ "override val whiteSpace = " ++ "\"" ++ "[\\t\\r\\f\\n]+\".r"
   ]
 
 endWorkflowClass :: [Doc]
@@ -112,27 +116,47 @@ getApplyFunction = [
 
 getIdentifiersFunction :: Doc
 getIdentifiersFunction = vcat [
-      "def identifier: Parser[IDENTIFIER] = {"
-    , nest 4 "\"[a-zA-Z_][a-zA-Z0-9_]*\".r ^^ { str => IDENTIFIER(str) }"
+      "def ident: Parser[IDENT] = {"
+    , nest 4 "\"[a-zA-Z_][a-zA-Z0-9_]*\".r ^^ { str => IDENT(str) }"
     , "}"
   ]
 
 getIntegerFunction :: Doc
 getIntegerFunction = vcat [
-      "def integer: Parser[Integer] = {"
-    , nest 4 "\"[0-9]+\".r ^^ {i => Integer(i)}"
+      "def integer: Parser[INTEGER] = {"
+    , nest 4 "\"[0-9]+\".r ^^ {i => INTEGER(i)}"
     , "}"
   ]
 
-getLiteralsFunction :: [Doc]
-getLiteralsFunction = [
-      "def literal: Parser[LITERAL] = {"
-    , nest 4 "\"\"\"\"[^\"]*\"\"\"\".r ^^ { str =>"
+
+getDoubleFunction :: Doc
+getDoubleFunction = vcat [
+      "def double: Parser[Double] = {"
+    , nest 4 "\"[0-9]+.[0-9]+\".r ^^ {i => Double(i)}"
+    , "}"
+  ]
+
+
+getLiteralsFunction :: Doc
+getLiteralsFunction = vcat [
+      "def string: Parser[STRING] = {"
+    , nest 4 "\"\\\"[^\\\"]*\\\"\".r ^^ { str =>"
     , nest 6 "val content = str.substring(1, str.length - 1)"
-    , nest 6 "LITERAL(content)"
+    , nest 6 "STRING(content)"
     , nest 4 "}"
     , "}"
   ]
+
+getLiteralFunction :: Doc
+getLiteralFunction = vcat [
+      "def char: Parser[CHAR] = {"
+    , nest 4 "\"\\\'[^\\\']*\\\'\".r ^^ { str =>"
+    , nest 6 "val content = str.substring(1, str.length - 1)"
+    , nest 6 "CHAR(content)"
+    , nest 4 "}"
+    , "}"
+  ]
+
 
 getIndentationsFunction :: [Doc]
 getIndentationsFunction = [
@@ -155,9 +179,7 @@ getSymbFromName s =
 
 getTokensFunction :: [String] -> [Doc]
 getTokensFunction symbs = [
-     "def tokens: Parser[List[WorkflowToken]] = {"
-    -- TODO: Are the symbs enough for the token lexing? Check if we need to add any other data
-    -- At the end of this list of symbs, should be identifiers (if the lenguage accept identifiers), 
+     "def tokens: Parser[List[WorkflowToken]] = {" 
     , nest 4 $ text $ "phrase(rep1( " ++ intercalate " | " (getListSymNames symbs) ++ "))"
     -- next line is needed in case of indentation use
     -- , nest 4 $ text $ "phrase(rep1(" ++ intercalate " | " (map (\s -> "\"" ++ s ++ "\"") symbs) ++ ")) ^^ { rawTokens =>"
