@@ -1,0 +1,3 @@
+resolver: nightly-2025-03-15
+compiler: ghc-9.12.2
+compiler-check: newer-minor

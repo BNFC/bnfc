@@ -50,7 +50,7 @@ build-type:          Simple
 cabal-version:       >=1.10
 
 tested-with:
-    GHC == 9.12.1
+    GHC == 9.12.2
     GHC == 9.10.1
     GHC == 9.8.4
     GHC == 9.6.6

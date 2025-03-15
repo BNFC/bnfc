@@ -32,7 +32,7 @@ Description:
 
 -- Support range when build with cabal
 tested-with:
-  GHC == 9.12.1
+  GHC == 9.12.2
   GHC == 9.10.1
   GHC == 9.8.4
   GHC == 9.6.6
@@ -56,6 +56,8 @@ extra-source-files:
   src/BNFC.cf
   src/Makefile
   -- Support range when build with stack
+  stack-9.12.yaml
+  stack-9.10.yaml
   stack-9.8.yaml
   stack-9.6.yaml
   stack-9.4.yaml
