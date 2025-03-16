@@ -7,9 +7,7 @@
     Copyright (Scala) 2024  Author:  Juan Pablo Poittevin
 
     Description   : This module generates the Scala Lextract Syntax
-                    tree classes. It generates both a Header file
-                    and an Implementation file
-
+                    tree classes. Using Scala Parser Combinator
     Author        : Juan Pablo Poittevin
     Created       : 30 September, 2024
 -}
@@ -29,11 +27,10 @@ import Data.Char (toLower)
 toLowerString :: String -> String
 toLowerString s = map toLower s
 
--- | The result is two files (.H file, .C file)
 cf2ScalaLex
   :: SharedOptions     
-  -> CF     -- ^ Grammar.
-  -> Doc    -- ^ @.H@ file, @.C@ file.
+  -> CF     -- Grammar.
+  -> Doc    
 cf2ScalaLex Options{ lang } cf = vsep . concat $
   [ 
       []

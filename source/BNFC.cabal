@@ -277,6 +277,8 @@ library
     BNFC.Backend.Scala.CFtoScalaAbs
     BNFC.Backend.Scala.CFtoScalaLex
     BNFC.Backend.Scala.CFtoScalaLexToken
+    BNFC.Backend.Scala.CFtoScalaParser
+    BNFC.Backend.Scala.CFtoScalaParserAST
 
     -- Agda backend
     BNFC.Backend.Agda
