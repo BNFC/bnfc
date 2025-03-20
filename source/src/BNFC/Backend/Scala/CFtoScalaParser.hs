@@ -29,6 +29,7 @@ import BNFC.Backend.Common.NamedVariables (firstLowerCase, numVars)
 import BNFC.Backend.Common.StrUtils (renderCharOrString)
 import BNFC.Backend.Haskell.Utils (catToType)
 import Data.Maybe (isNothing)
+import Data.Char (toLower)
 
 cf2ScalaParser
   :: SharedOptions     
@@ -42,11 +43,12 @@ cf2ScalaParser Options{ lang } cf = vsep . concat $
     , map (nest 4) addExtraClasses
     , map (nest 4) getApplyFunction
     , map (nest 4) (getProgramFunction cf)
-    , map (nest 4) getBlockFunction
+    -- , map (nest 4) getBlockFunction
     -- , map (nest 4) (addParserFunctions liters)
     -- , map (nest 4) (getKeywordParsers symbs)
-    , strRules
+    , map (nest 4) strRules
     , endWorkflowClass
+    , addWorkflowCompiler
   ]
   where
     -- absc         = absclasses cabs
@@ -61,48 +63,6 @@ cf2ScalaParser Options{ lang } cf = vsep . concat $
     -- parserCats   = allParserCats cf 
     strRules     = ruleGroupsCFToString (ruleGroups cf)
 
--- Función para convertir Signature en String sin position
--- signatureToString :: Map String (WithPosition Type) -> String
--- signatureToString sig =
---     intercalate "\n" [key ++ " -> " ++ show (wpThing wp) | (key, wp) <- toList sig]
-
--- dataToString :: Data -> String
--- dataToString (cat, []) = catToStr cat
--- dataToString (cat, cats) = "Main Cat: " ++ catToStr cat ++ " : " ++ strCatToString cats
-
--- strCatToString :: [(String, [Cat])] -> String
--- strCatToString ([]) = ""
--- strCatToString (ncat:[]) = " \n Sub Cat: " ++ fst ncat ++ " Is compose of: " ++ intercalate " " (map catToStr (snd ncat))
--- strCatToString (ncat:cats) = " \n  Sub Cat: " ++ fst ncat ++ " Is compose of: " ++ intercalate " " (map catToStr (snd ncat)) ++  strCatToString cats
-
--- getDatas :: [Data] -> [Doc]
--- getDatas datas = map (text . dataToString) datas
-
--- ruleToString :: Rule fun -> String
--- ruleToString (funRule) = ""
--- ruleToString (valRCat) = ""
--- ruleToString (rhsRule) = ""
--- ruleToString (internal) = ""
-
--- renderX :: String -> Doc
--- renderX sep' = "render" <> char sc <> parens (text sep)
---   where (sc, sep) = renderCharOrString sep'
-
--- basicFunName :: TokenCat -> String
--- basicFunName k
---   | k `elem` baseTokenCatNames = k
---   | otherwise                  = "Ident"
-
--- prPrintItem :: String -> Either (Cat, Doc) String -> String
--- prPrintItem pre = \case
---   Right t -> getSymbFromName t
---   Left (cat, nt) -> concat
---     [ "case "
---     -- Esta linea obtiene el TokenCat, y le aplica basicFunName, si no es un TokenCat, le aplica el dentCat $ normCat, es decir que lo maneja como un ListCat
---     -- esta obviando el CoercCat (Exp1, Exp2, etc)  
---     , maybe (identCat $ normCat cat) basicFunName $ maybeTokenCat cat
---     , "(", pre, render nt, ", ", show (precCat cat), ");"
---     ]
 
 
 catToStrings :: [Either Cat String] -> [String]
@@ -117,8 +77,8 @@ getSymbFromName s =
     Just s -> s ++ "()"
     _ -> s
 
-prPrintRule_ :: IsFun a => String -> Rul a -> [String]
-prPrintRule_ _ (Rule _ _ items _) = map getSymbFromName $ catToStrings items
+prPrintRule_ :: Rule -> [String]
+prPrintRule_ (Rule _ _ items _) = map getSymbFromName $ catToStrings items
 
 
 prCoerciveRule :: Rule -> [String]
@@ -128,34 +88,25 @@ prCoerciveRule r@(Rule _ _ _ _)  = concat [
   where 
     type' = catToType id empty $ valCat r
 
+safeTail :: [a] -> [a]
+safeTail []     = []  -- Si la lista está vacía, devuelve una lista vacía
+safeTail (_:xs) = xs 
+
+filterSymbs = filter (not . isSuffixOf "()")
+onlySymbs = filter (isSuffixOf "()")
 
 prSubRule :: Rule -> [String]
-prSubRule r@(Rule fun cat _ _) 
-  -- | isCoercion fun = prCoerciveRule r
-  | isCoercion fun = [""]
-  | otherwise =
-  [ 
-    "case (" ++ intercalate " ~ "  vars ++  ") => "
-    ++ fnm ++ "(" ++ intercalate " , " varsNoSymbs ++ ")"
-
-  ]
+prSubRule r@(Rule fun _ _ _) 
+  | isCoercion fun = []
+  | otherwise = 
+      ["case (" ++ head vars ++ ", " ++ intercalate " ~ " (safeTail vars) ++ ") => " 
+      ++ fnm ++ "(" ++ intercalate ", " (filterSymbs vars) ++ ")"]
   where
-    varsNoSymbs = filter (\x -> isNothing (symbolToName x)) vars
-    -- varsNoSymbs = [pa | Nothing <-  map symbolToName vars]
-    vars = prPrintRule_ pre r
+    vars = disambiguateNames $ map modifyVars (prPrintRule_ r)
     fnm = funName fun
-    pre = firstLowerCase fnm
+    modifyVars str = if "()" `isSuffixOf` str then str else [toLower (head str)]
 
 
--- def exp: Parser[WorkflowAST] = positioned {
---         exp1 ~ rep((PLUS() | MINUS()) ~ exp1) ^^ {
---             case exp1 ~ list => list.foldLeft(exp1) {
---                 case (e1, PLUS() ~ e2) => EAdd(e1, e2)
---                 case (e1, MINUS() ~ e2) => ESub(e1, e2)
---             }
---         }
---     }
-  
 coerCatDefSign :: Cat -> Doc
 coerCatDefSign cat = 
       text $ "def " ++ pre ++ ": Parser[WorkflowAST] = positioned {"
@@ -166,33 +117,43 @@ coerCatDefSign cat =
 prSubRuleDoc :: Rule -> [Doc]
 prSubRuleDoc r =  map text (prSubRule r)
 
+
+filterNotEqual :: Eq a => a -> [a] -> [a]
+filterNotEqual element list = filter (/= element) list
+ 
+
 rulesToString :: [Rule] -> [Doc]
-rulesToString ([])   = [""]
-rulesToString (r:[]) = prSubRuleDoc r
-rulesToString (r:rs) = prSubRuleDoc r ++ rulesToString rs 
+rulesToString [] = [""]
+rulesToString rules@(Rule fun cat _ _ : _) =
+    let 
+        -- Filtramos las reglas que pertenecen a la misma categoría `cat`
+        (sameCat, rest) = span (\(Rule _ c _ _) -> c == cat) rules
+        
+        -- Obtenemos los símbolos de las reglas filtradas
+        vars = concatMap prPrintRule_ sameCat
+        fnm = funName fun
+        exitCatName = firstLowerCase $ head $ filterNotEqual (show (wpThing cat)) $ filterSymbs vars
 
+        -- Generamos la cabecera única con todas las alternativas dentro de `rep(...)`
+        header = text $ exitCatName ++ " ~ rep((" ++ intercalate " | " (onlySymbs (safeTail vars)) ++ ") ~ " ++ exitCatName ++ ") ^^ {"
+        subHeader = text $ "case " ++ exitCatName ++ " ~ list => list.foldLeft(" ++ exitCatName ++ ") {"
 
--- generateDefCat :: (Cat,[Rule]) -> [Doc]
--- generateDefCat (c, rs) = [coerCatDefSign c] ++ (
---   [
-    
---   ]
--- )
--- where
-
+        -- Generamos los `case` correspondientes a las reglas de `sameCat`
+        rulesDocs = concatMap prSubRuleDoc sameCat
+    in [header] ++ map (nest 4) [subHeader] ++ map (nest 8) rulesDocs ++ [nest 4 "}"] ++ ["}"] ++ rulesToString rest
 
 
 ruleGroupsCFToString :: [(Cat,[Rule])] -> [Doc]
-ruleGroupsCFToString  ([])        =  [""]
-ruleGroupsCFToString ((c, r):[] ) = [coerCatDefSign c] ++ [codeblock 4 (rulesToString r)]
-ruleGroupsCFToString ((c, r):crs) = [coerCatDefSign c] ++ [codeblock 4 (rulesToString r)] ++ (ruleGroupsCFToString crs)
+ruleGroupsCFToString [] = [""]
+ruleGroupsCFToString ((c, r):crs) = 
+    [coerCatDefSign c] ++ map (nest 4) (rulesToString r) ++ ["}"] ++ ruleGroupsCFToString crs
+
 
 
 imports :: String -> [Doc]
 imports name  = [
    text $ "package " ++ name ++ ".workflowtoken." ++ name ++ "Parser"
-   , "import co.enear.parsercombinators.compiler.{Location, WorkflowParserError}"
-   , "import co.enear.parsercombinators.lexer._"
+   , text $ "import " ++ name ++ ".workflowtoken." ++ name ++ "Lex._"
    , "import scala.util.parsing.combinator.Parsers"
    , "import scala.util.parsing.input.{NoPosition, Position, Reader}"
   ]
@@ -208,6 +169,17 @@ addExtraClasses = [
     , "}"
   ]
 
+addWorkflowCompiler :: [Doc]
+addWorkflowCompiler = [
+    "object WorkflowCompiler {"
+    , nest 4 "def apply(code: String): Either[WorkflowCompilationError, WorkflowAST] = {"
+    , nest 8  "for {"
+    , nest 12  "tokens <- WorkflowLexer(code).right"
+    , nest 12  "ast <- WorkflowParser(tokens).right"
+    , nest 8 "} yield ast"
+    , nest 4 "}"
+    , "}"
+  ]
 
 initWorkflowClass :: [Doc]
 initWorkflowClass = [
@@ -295,68 +267,11 @@ getIndentationsFunction = [
   ]
 
 
--- getSymbFromName :: String -> String
--- getSymbFromName s = 
---   case symbolToName s of
---   Just s -> s
---   _ -> s
-
-
-
--- getTokensFunction :: [String] -> [Doc]
--- getTokensFunction symbs = [
---      "def tokens: Parser[List[WorkflowToken]] = {" 
---     , nest 4 $ text $ "phrase(rep1( " ++ intercalate " | " (getListSymNames symbs) ++ "))"
---     -- next line is needed in case of indentation use
---     -- , nest 4 $ text $ "phrase(rep1(" ++ intercalate " | " (map (\s -> "\"" ++ s ++ "\"") symbs) ++ ")) ^^ { rawTokens =>"
---     -- , nest 8 "processIndent(rawTokens)"
---     , "}"
---   ]
-
-
--- getSymName :: String -> String
--- getSymName = toLowerString.getSymbFromName
-
--- getListSymNames :: [String] -> [String]
--- getListSymNames symbs = map getSymName symbs
-
--- getKeywordParsers :: [String] -> [Doc]
--- getKeywordParsers symbs = map getKeywordParser symbs
-
-
--- def plus          = positioned { "+"      ^^ (_ => PLUS())  }
--- getKeywordParser :: String -> Doc
--- getKeywordParser symb = text $ "def " ++ getSymName symb ++ " = positioned { \"" ++ toLowerString symb ++ "\" ^^ (_ =>"++ getSymbFromName symb ++"()) }"
--- def+= +^^ (_ =>+())
-
--- following functino must be added only in case of acepting indentation as block separetion
--- getProcessIndentFunction :: [Doc]
--- getProcessIndentFunction = [
---   "private def processIndent(tokens: List[WorkflowToken], indents: List[Int] = List(0)): List[WorkflowToken] = {"
---    nest 4 "tokens.headOption match {"
-
---       case Some(INDENTATION(spaces)) if spaces > indents.head =>
---         INDENT() :: processIndentations(tokens.tail, spaces :: indents)
-
---       // if there is a decrease, we pop from the stack until we have matched the new level and
---       // we produce a DEDENT for each pop
---       case Some(INDENTATION(spaces)) if spaces < indents.head =>
---         val (dropped, kept) = indents.partition(_ > spaces)
---         (dropped map (_ => DEDENT())) ::: processIndentations(tokens.tail, kept)
-
---       // if the indentation level stays unchanged, no tokens are produced
---       case Some(INDENTATION(spaces)) if spaces == indents.head =>
---         processIndentations(tokens.tail, indents)
-
---       // other tokens are ignored
---       case Some(token) =>
---         token :: processIndentations(tokens.tail, indents)
-
---       // the final step is to produce a DEDENT for each indentation level still remaining, thus
---       // "closing" the remaining open INDENTS
---       case None =>
---         indents.filter(_ > 0).map(_ => DEDENT())
-
---     }
---   }
---   ]
+disambiguateNames :: [String] -> [String]
+disambiguateNames = disamb []
+  where
+    disamb ns1 (n:ns2)
+      | n `elem` (ns1 ++ ns2) = let i = length (filter (==n) ns1) + 1
+                                in (n ++ show i) : disamb (n:ns1) ns2
+      | otherwise = n : disamb (n:ns1) ns2
+    disamb _ [] = []
