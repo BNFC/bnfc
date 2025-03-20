@@ -121,10 +121,10 @@ prSubRuleDoc r =  map text (prSubRule r)
 filterNotEqual :: Eq a => a -> [a] -> [a]
 filterNotEqual element list = filter (/= element) list
  
-
+ -- Función para generar una regla simple cuando la RHS es "integer"
 rulesToString :: [Rule] -> [Doc]
 rulesToString [] = [""]
-rulesToString rules@(Rule fun cat _ _ : _) =
+rulesToString rules@(Rule fun cat rhs internal : _) =
     let 
         -- Filtramos las reglas que pertenecen a la misma categoría `cat`
         (sameCat, rest) = span (\(Rule _ c _ _) -> c == cat) rules
@@ -134,19 +134,42 @@ rulesToString rules@(Rule fun cat _ _ : _) =
         fnm = funName fun
         exitCatName = firstLowerCase $ head $ filterNotEqual (show (wpThing cat)) $ filterSymbs vars
 
-        -- Generamos la cabecera única con todas las alternativas dentro de `rep(...)`
+        -- Verificamos si la RHS es "integer"
+        intRule = case rhs of
+          (Left a : _) -> show a
+          _ -> ""
+
+        isIntegerRule = isTokenCat $ strToCat intRule  -- Verificamos si es "integer"
+        
+        -- Si es una regla "integer", generamos una definición simple
+        simpleRule = if isIntegerRule 
+                     then [text $ "def " ++ exitCatName ++ ": Parser[EInt] = positioned {\n" ++
+                            "accept(\"integer\", { case INTEGER(i) => EInt(i.toInt) })\n" ++
+                            "}"]
+                     else []
+        
+        -- Si no es "integer", generamos la cabecera única con las alternativas en `rep(...)`
         header = text $ exitCatName ++ " ~ rep((" ++ intercalate " | " (onlySymbs (safeTail vars)) ++ ") ~ " ++ exitCatName ++ ") ^^ {"
         subHeader = text $ "case " ++ exitCatName ++ " ~ list => list.foldLeft(" ++ exitCatName ++ ") {"
 
         -- Generamos los `case` correspondientes a las reglas de `sameCat`
         rulesDocs = concatMap prSubRuleDoc sameCat
-    in [header] ++ map (nest 4) [subHeader] ++ map (nest 8) rulesDocs ++ [nest 4 "}"] ++ ["}"] ++ rulesToString rest
+    in if isIntegerRule
+       then simpleRule  -- Solo generamos la regla simple para "integer"
+       else [header] ++ map (nest 4) [subHeader] ++ map (nest 8) rulesDocs ++ [nest 4 "}"] ++ ["}"] ++ rulesToString rest
 
 
 ruleGroupsCFToString :: [(Cat,[Rule])] -> [Doc]
 ruleGroupsCFToString [] = [""]
-ruleGroupsCFToString ((c, r):crs) = 
-    [coerCatDefSign c] ++ map (nest 4) (rulesToString r) ++ ["}"] ++ ruleGroupsCFToString crs
+ruleGroupsCFToString ((c, r):crs) =  [coerCatDefSign c] ++ map (nest 4) (rulesToString r) ++ ["}"] ++ ruleGroupsCFToString crs
+
+
+-- ruleGroupsCFToString :: [(Cat,[Rule])] -> [Doc]
+-- ruleGroupsCFToString [] = [""]
+-- ruleGroupsCFToString ((c, r):crs)
+--   | shw (rhsRule r) `elem` baseTokenCatNames = ["estoy en built in"]
+--   | otherwise = [coerCatDefSign c] ++ map (nest 4) (rulesToString r) ++ ["}"] ++ ruleGroupsCFToString crs
+
 
 
 
