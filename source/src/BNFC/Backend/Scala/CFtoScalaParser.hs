@@ -234,6 +234,13 @@ getDoubleFunction = vcat [
     , "}"
   ]
 
+getIntegerFunction :: Doc
+getIntegerFunction = vcat [
+    "def integer: Parser[EInt] = positioned {"
+    , nest 4    "accept(\"integer\", { case INTEGER(i) => EInt(i.toInt) })"
+    ,"}"
+  ]
+
 
 getLiteralsFunction :: Doc
 getLiteralsFunction = vcat [
@@ -256,15 +263,6 @@ getLiteralFunction = vcat [
   ]
 
 
-getIndentationsFunction :: [Doc]
-getIndentationsFunction = [
-    "def indentation: Parser[INDENTATION] = {"
-  , nest 4 "\"\\n[ ]*\".r ^^ { whitespace =>"
-  , nest 6 "val nSpaces = whitespace.length - 1"
-  , nest 6 "INDENTATION(nSpaces)"
-  , nest 4 "}"
-  , "}"
-  ]
 
 
 disambiguateNames :: [String] -> [String]
