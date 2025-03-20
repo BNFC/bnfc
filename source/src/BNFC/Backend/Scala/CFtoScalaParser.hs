@@ -17,7 +17,7 @@ module BNFC.Backend.Scala.CFtoScalaParser (cf2ScalaParser) where
 import Prelude hiding ((<>))
 
 import qualified Data.Foldable as DF (toList)
-import BNFC.Utils (symbolToName, unless)
+import BNFC.Utils (symbolToName, mkNames, NameStyle (..))
 import BNFC.CF
 import BNFC.PrettyPrint
 import BNFC.Options
@@ -28,6 +28,7 @@ import Data.Map (Map, toList)
 import BNFC.Backend.Common.NamedVariables (firstLowerCase, numVars)
 import BNFC.Backend.Common.StrUtils (renderCharOrString)
 import BNFC.Backend.Haskell.Utils (catToType)
+import Data.Maybe (isNothing)
 
 cf2ScalaParser
   :: SharedOptions     
@@ -83,12 +84,6 @@ cf2ScalaParser Options{ lang } cf = vsep . concat $
 -- ruleToString (rhsRule) = ""
 -- ruleToString (internal) = ""
 
-getSymbFromName :: String -> String
-getSymbFromName s = 
-  case symbolToName s of
-  Just s -> s
-  _ -> s
-
 -- renderX :: String -> Doc
 -- renderX sep' = "render" <> char sc <> parens (text sep)
 --   where (sc, sep) = renderCharOrString sep'
@@ -116,9 +111,14 @@ catToStrings = map (\case
                   Right s -> s
                 )
 
+getSymbFromName :: String -> String
+getSymbFromName s = 
+  case symbolToName s of
+    Just s -> s ++ "()"
+    _ -> s
 
 prPrintRule_ :: IsFun a => String -> Rul a -> [String]
-prPrintRule_ _ (Rule _ _ items _) = map ((++ "()") . getSymbFromName) $ catToStrings items
+prPrintRule_ _ (Rule _ _ items _) = map getSymbFromName $ catToStrings items
 
 
 prCoerciveRule :: Rule -> [String]
@@ -135,42 +135,33 @@ prSubRule r@(Rule fun cat _ _)
   | isCoercion fun = [""]
   | otherwise =
   [ 
-    -- [ "def " ++ pre ++ ": Parser[" ++ fnm ++ "] = {"]
-    "case " ++ intercalate " ~ " (prPrintRule_ pre r) ++  " => "
-    ++ fnm ++ "(" ++ intercalate " , " (prPrintRule_ pre r) ++ ")"
-  -- , [ "case " ++ show p ++ ") renderC(_R_PAREN);"
-  --     , "}"
-  --   ]
-  -- , ["}"]
+    "case (" ++ intercalate " ~ "  vars ++  ") => "
+    ++ fnm ++ "(" ++ intercalate " , " varsNoSymbs ++ ")"
+
   ]
   where
+    varsNoSymbs = filter (\x -> isNothing (symbolToName x)) vars
+    -- varsNoSymbs = [pa | Nothing <-  map symbolToName vars]
+    vars = prPrintRule_ pre r
     fnm = funName fun
     pre = firstLowerCase fnm
 
 
--- prRules :: Bool -> Rul a -> Doc
--- prRules functor = vsep . map prOne
---   where
---     prOne (_ , []      ) = empty -- nt has only internal use
---     prOne (nt, (p,a):ls) = vcat
---         [ hsep [ nt', "::", "{", if functor then functorType' nt else type' nt, "}" ]
---         , hang nt' 2 $ sep (pr ":" (p, a) : map (pr "|") ls)
---         ]
---       where
---         nt'          = text (identCat nt)
---         pr pre (p,a) = hsep [pre, text p, "{", text a , "}"]
---     type'            = catToType qualify empty
---     functorType' nt  = hcat ["(", qualify posType, ", ", type' nt, ")"]
---     qualify
---       | null absM = id
---       | otherwise = ((text absM <> ".") <>)
+-- def exp: Parser[WorkflowAST] = positioned {
+--         exp1 ~ rep((PLUS() | MINUS()) ~ exp1) ^^ {
+--             case exp1 ~ list => list.foldLeft(exp1) {
+--                 case (e1, PLUS() ~ e2) => EAdd(e1, e2)
+--                 case (e1, MINUS() ~ e2) => ESub(e1, e2)
+--             }
+--         }
+--     }
   
 coerCatDefSign :: Cat -> Doc
 coerCatDefSign cat = 
-    text $ "def " ++ pre ++ ": Parser[" ++ sCat ++ "]"
+      text $ "def " ++ pre ++ ": Parser[WorkflowAST] = positioned {"
   where
     sCat = render $ catToType id empty cat
-    pre = firstLowerCase sCat
+    pre = firstLowerCase $ show cat
 
 prSubRuleDoc :: Rule -> [Doc]
 prSubRuleDoc r =  map text (prSubRule r)
@@ -179,6 +170,17 @@ rulesToString :: [Rule] -> [Doc]
 rulesToString ([])   = [""]
 rulesToString (r:[]) = prSubRuleDoc r
 rulesToString (r:rs) = prSubRuleDoc r ++ rulesToString rs 
+
+
+-- generateDefCat :: (Cat,[Rule]) -> [Doc]
+-- generateDefCat (c, rs) = [coerCatDefSign c] ++ (
+--   [
+    
+--   ]
+-- )
+-- where
+
+
 
 ruleGroupsCFToString :: [(Cat,[Rule])] -> [Doc]
 ruleGroupsCFToString  ([])        =  [""]
@@ -238,12 +240,11 @@ getApplyFunction = [
 getProgramFunction :: CF -> [Doc]
 getProgramFunction cf = [
     "def program: Parser[WorkflowAST] = positioned {"
-    , nest 4 $ text $ "phrase(" ++ (intercalate " | " epsStr) ++ ")"
+    , nest 4 $ text $ "phrase(" ++ eps ++ ")"
     ,"}"
   ]
   where
-    epsStr = map show eps
-    eps = DF.toList (allEntryPoints cf)
+    eps = firstLowerCase $ show $ head $ map normCat $ DF.toList $ allEntryPoints cf
 
 
 getBlockFunction :: [Doc]

@@ -26,6 +26,9 @@ import BNFC.Backend.Common (unicodeAndSymbols)
 import BNFC.Utils (symbolToName)
 import Data.Char (toUpper)
 
+import BNFC.Backend.Common.NamedVariables (firstLowerCase)
+import Data.List (intercalate)
+
 cf2ScalaParserAST
   :: SharedOptions     
   -> CF
@@ -33,12 +36,18 @@ cf2ScalaParserAST
 cf2ScalaParserAST Options{ lang } cf = vsep . concat $
   [ 
     headers lang
-    , [text $ concat $ map generateSymbClass symbs]
-    , [generateStringClasses liters]
+    -- , [text $ concat $ map generateSymbClass symbs]
+    -- , [generateStringClasses liters]
+    -- , map (text.show) parserCats
+    , strRules
   ]
   where
-    liters = literals cf
-    symbs = unicodeAndSymbols cf
+    liters       = literals cf
+    symbs        = unicodeAndSymbols cf
+    parserCats   = allParserCats cf
+    strRules     = prRulesNames rules
+    rules        = ruleGroups cf
+    
 
 
 generateSymbClass :: String -> String
@@ -59,9 +68,45 @@ generateStringClasses params = text $ concat $ map generateStringClass params
 generateStringClass :: String -> String
 generateStringClass param = "case class " ++ (map toUpper param) ++ "(str: String) extends WorkflowAST \n"
 
+
+-- case class EAdd(exp: WorkflowAST, exp1: WorkflowAST) extends WorkflowAST
+
+catFilterToStrings :: [Either Cat String] -> [String]
+catFilterToStrings = map (\case
+                  Left c -> show c
+                  Right s -> ""
+                )
+
+
+prRuleName :: Rule -> [Doc]
+prRuleName r@(Rule fun cat rhs _) 
+  -- | isCoercion fun = prCoerciveRule r
+  | isCoercion fun = [""]
+  | otherwise = [
+      text $ "case class " ++ fnm ++ "("
+    , text $ intercalate ", " $ map (++ ": WorkflowAST") parsNames
+    -- , intersperse (text ", ") (filter (not . null) [text (param ++ ": WorkflowAST") | param <- parsNames, not (null param)])
+    , " ) extends WorkflowAST"
+    ]
+  where
+    fnm = funName fun
+    parsNames = filter (not . null) $ map firstLowerCase (catFilterToStrings rhs)
+
+ruleIterPr :: [Rule] -> [Doc]
+ruleIterPr  []     = [""]
+ruleIterPr (r:[])  = prRuleName r
+ruleIterPr (r:rs)  = prRuleName r ++ ruleIterPr rs
+
+
+prRulesNames :: [(Cat,[Rule])] -> [Doc]
+prRulesNames ( [] )         = [""]
+prRulesNames ((_, r):[] )   = ruleIterPr r
+prRulesNames ((_, r):crs )  = ruleIterPr r ++ prRulesNames crs
+
+
 headers :: String -> [Doc]
 headers name = [
-  text $ "package " ++ name ++ ".WorkflowAST." ++ name ++ "ParserAST"
+  text $ "package " ++ name ++ ".workflowtoken." ++ name ++ "Parser"
   , "import scala.util.parsing.input.Positional"
   , "sealed trait WorkflowAST extends Positional"
   ]
