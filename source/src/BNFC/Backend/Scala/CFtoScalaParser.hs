@@ -30,6 +30,7 @@ import BNFC.Backend.Common.StrUtils (renderCharOrString)
 import BNFC.Backend.Haskell.Utils (catToType)
 import Data.Maybe (isNothing)
 import Data.Char (toLower)
+import qualified Data.Map as Map
 
 cf2ScalaParser
   :: SharedOptions     
@@ -51,8 +52,6 @@ cf2ScalaParser Options{ lang } cf = vsep . concat $
     , addWorkflowCompiler
   ]
   where
-    -- absc         = absclasses cabs
-    -- cabs         = cf2cabs cf
     -- symbs        = unicodeAndSymbols cf
     -- rules        = ruleGroupsInternals cf
     -- cfKeywords   = reservedWords cf
@@ -115,16 +114,17 @@ coerCatDefSign cat =
     pre = firstLowerCase $ show cat
 
 prSubRuleDoc :: Rule -> [Doc]
-prSubRuleDoc r =  map text (prSubRule r)
+prSubRuleDoc r = map text (prSubRule r)
 
 
 filterNotEqual :: Eq a => a -> [a] -> [a]
 filterNotEqual element list = filter (/= element) list
  
+
  -- Función para generar una regla simple cuando la RHS es "integer"
 rulesToString :: [Rule] -> [Doc]
 rulesToString [] = [""]
-rulesToString rules@(Rule fun cat rhs internal : _) =
+rulesToString rules@(Rule fun cat rhs _ : _) =
     let 
         -- Filtramos las reglas que pertenecen a la misma categoría `cat`
         (sameCat, rest) = span (\(Rule _ c _ _) -> c == cat) rules
@@ -134,42 +134,75 @@ rulesToString rules@(Rule fun cat rhs internal : _) =
         fnm = funName fun
         exitCatName = firstLowerCase $ head $ filterNotEqual (show (wpThing cat)) $ filterSymbs vars
 
-        -- Verificamos si la RHS es "integer"
-        intRule = case rhs of
+        -- Obtenemos el nombre de la regla [Left Exp] -> Exp
+        ruleName = case rhs of
           (Left a : _) -> show a
           _ -> ""
-
-        isIntegerRule = isTokenCat $ strToCat intRule  -- Verificamos si es "integer"
-        
-        -- Si es una regla "integer", generamos una definición simple
-        simpleRule = if isIntegerRule 
-                     then [text $ "def " ++ exitCatName ++ ": Parser[EInt] = positioned {\n" ++
-                            "accept(\"integer\", { case INTEGER(i) => EInt(i.toInt) })\n" ++
-                            "}"]
-                     else []
         
         -- Si no es "integer", generamos la cabecera única con las alternativas en `rep(...)`
-        header = text $ exitCatName ++ " ~ rep((" ++ intercalate " | " (onlySymbs (safeTail vars)) ++ ") ~ " ++ exitCatName ++ ") ^^ {"
-        subHeader = text $ "case " ++ exitCatName ++ " ~ list => list.foldLeft(" ++ exitCatName ++ ") {"
+        header = [text $ exitCatName ++ " ~ rep((" ++ intercalate " | " (onlySymbs (safeTail vars)) ++ ") ~ " ++ exitCatName ++ ") ^^ {"]
+        subHeader = [nest 4 $ text $ "case " ++ exitCatName ++ " ~ list => list.foldLeft(" ++ exitCatName ++ ") {"]
 
         -- Generamos los `case` correspondientes a las reglas de `sameCat`
-        rulesDocs = concatMap prSubRuleDoc sameCat
-    in if isIntegerRule
-       then simpleRule  -- Solo generamos la regla simple para "integer"
-       else [header] ++ map (nest 4) [subHeader] ++ map (nest 8) rulesDocs ++ [nest 4 "}"] ++ ["}"] ++ rulesToString rest
+        rulesDocs = map (nest 8) $ concatMap prSubRuleDoc sameCat
+        
+    in header ++ subHeader ++ rulesDocs ++ [nest 4 "}", "}"] ++ rulesToString rest ++ ["}"]
 
 
-ruleGroupsCFToString :: [(Cat,[Rule])] -> [Doc]
-ruleGroupsCFToString [] = [""]
-ruleGroupsCFToString ((c, r):crs) =  [coerCatDefSign c] ++ map (nest 4) (rulesToString r) ++ ["}"] ++ ruleGroupsCFToString crs
+extractCategories :: Rule -> [Cat]
+extractCategories (Rule _ _ rhs _) = [c | Left c <- rhs]
+
+filterBaseTokenCats :: [Rule] -> [Cat]
+filterBaseTokenCats rules =
+    (nub (concatMap extractCategories rules)) `intersect` (map TokenCat specialCatsP)
 
 
--- ruleGroupsCFToString :: [(Cat,[Rule])] -> [Doc]
--- ruleGroupsCFToString [] = [""]
--- ruleGroupsCFToString ((c, r):crs)
---   | shw (rhsRule r) `elem` baseTokenCatNames = ["estoy en built in"]
---   | otherwise = [coerCatDefSign c] ++ map (nest 4) (rulesToString r) ++ ["}"] ++ ruleGroupsCFToString crs
+ruleGroupsCFToString :: [(Cat, [Rule])] -> [Doc]
+ruleGroupsCFToString catsAndRules = 
+  let
+      -- Process each group to generate its rules
+      processGroup (c, r) = [coerCatDefSign c] ++ map (nest 4) (rulesToString r)
 
+      -- Function to extract the function name from a rule
+      getFunName :: Rule -> String
+      getFunName (Rule fun _ _ _) = (wpThing fun)
+
+      -- Helper to check if a rule contains a TokenCat in RHS
+      hasTokenCat :: TokenCat -> Rule -> Bool
+      hasTokenCat token (Rule _ _ rhs _) = TokenCat token `elem` [c | Left c <- rhs]
+
+      -- Find the first rule where `TokenCat catInteger` appears
+      integerRuleData = find (\(_, rules) -> any (hasTokenCat catInteger) rules) catsAndRules
+      stringRuleData  = find (\(_, rules) -> any (hasTokenCat catString) rules) catsAndRules
+
+      -- Generate the integer rule only if needed
+      integerRule = case integerRuleData of
+                      Just (_, rules) -> case find (hasTokenCat catInteger) rules of
+                        Just rule -> 
+                          let funName = getFunName rule in
+                          [ text $ "def integer: Parser[" ++ funName ++ "] = positioned {"
+                          , nest 4 $ text $ "accept(\"integer\", { case INTEGER(i) => " ++ funName ++ "(i.toInt) })"
+                          , "}"
+                          ]
+                        Nothing -> []
+                      Nothing -> []
+
+      -- Generate the string rule only if needed
+      stringRule = case stringRuleData of
+                      Just (_, rules) -> case find (hasTokenCat catString) rules of
+                        Just rule -> 
+                          let funName = getFunName rule in
+                          [ text $ "def string: Parser[" ++ funName ++ "] = positioned {"
+                          , nest 4 $ text $ "accept(\"string\", { case STRING(s) => " ++ funName ++ "(s) })"
+                          , "}"
+                          ]
+                        Nothing -> []
+                      Nothing -> []
+
+      -- Generate all main rules
+      mainGeneratedRules = concatMap processGroup catsAndRules
+
+  in mainGeneratedRules ++ integerRule ++ stringRule
 
 
 
@@ -296,3 +329,22 @@ disambiguateNames = disamb []
                                 in (n ++ show i) : disamb (n:ns1) ns2
       | otherwise = n : disamb (n:ns1) ns2
     disamb _ [] = []
+
+
+
+
+
+baseTypeToScalaType :: String -> Maybe String
+baseTypeToScalaType = (`Map.lookup` baseTypeMap)
+
+-- | Map from base LBNF Type to scala Type.
+
+baseTypeMap :: Map String String
+baseTypeMap = Map.fromList scalaTypesMap
+
+scalaTypesMap :: [(String, String)]
+scalaTypesMap =
+  [ ("Integer"  , "Int")
+  , ("String"   , "String")
+  , ("Double"   , "Double")
+  ]
