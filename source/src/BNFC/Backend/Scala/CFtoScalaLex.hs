@@ -21,7 +21,7 @@ import BNFC.CF
 import BNFC.PrettyPrint
 import BNFC.Options
 import BNFC.Backend.Common (unicodeAndSymbols)
-import Data.List
+import Data.List ( intercalate )
 import Data.Char (toLower)
 
 toLowerString :: String -> String
@@ -155,17 +155,6 @@ getLiteralFunction = vcat [
   ]
 
 
-getIndentationsFunction :: [Doc]
-getIndentationsFunction = [
-    "def indentation: Parser[INDENTATION] = {"
-  , nest 4 "\"\\n[ ]*\".r ^^ { whitespace =>"
-  , nest 6 "val nSpaces = whitespace.length - 1"
-  , nest 6 "INDENTATION(nSpaces)"
-  , nest 4 "}"
-  , "}"
-  ]
-
-
 getSymbFromName :: String -> String
 getSymbFromName s = 
   case symbolToName s of
@@ -173,14 +162,10 @@ getSymbFromName s =
   _ -> s
 
 
-
 getTokensFunction :: [String] -> [Doc]
 getTokensFunction symbs = [
      "def tokens: Parser[List[WorkflowToken]] = {" 
     , nest 4 $ text $ "phrase(rep1( " ++ intercalate " | " (getListSymNames symbs) ++ "))"
-    -- next line is needed in case of indentation use
-    -- , nest 4 $ text $ "phrase(rep1(" ++ intercalate " | " (map (\s -> "\"" ++ s ++ "\"") symbs) ++ ")) ^^ { rawTokens =>"
-    -- , nest 8 "processIndent(rawTokens)"
     , "}"
   ]
 
@@ -195,39 +180,5 @@ getKeywordParsers :: [String] -> [Doc]
 getKeywordParsers symbs = map getKeywordParser symbs
 
 
--- def plus          = positioned { "+"      ^^ (_ => PLUS())  }
 getKeywordParser :: String -> Doc
 getKeywordParser symb = text $ "def " ++ getSymName symb ++ " = positioned { \"" ++ toLowerString symb ++ "\" ^^ (_ =>"++ getSymbFromName symb ++"()) }"
--- def+= +^^ (_ =>+())
-
--- following functino must be added only in case of acepting indentation as block separetion
--- getProcessIndentFunction :: [Doc]
--- getProcessIndentFunction = [
---   "private def processIndent(tokens: List[WorkflowToken], indents: List[Int] = List(0)): List[WorkflowToken] = {"
---    nest 4 "tokens.headOption match {"
-
---       case Some(INDENTATION(spaces)) if spaces > indents.head =>
---         INDENT() :: processIndentations(tokens.tail, spaces :: indents)
-
---       // if there is a decrease, we pop from the stack until we have matched the new level and
---       // we produce a DEDENT for each pop
---       case Some(INDENTATION(spaces)) if spaces < indents.head =>
---         val (dropped, kept) = indents.partition(_ > spaces)
---         (dropped map (_ => DEDENT())) ::: processIndentations(tokens.tail, kept)
-
---       // if the indentation level stays unchanged, no tokens are produced
---       case Some(INDENTATION(spaces)) if spaces == indents.head =>
---         processIndentations(tokens.tail, indents)
-
---       // other tokens are ignored
---       case Some(token) =>
---         token :: processIndentations(tokens.tail, indents)
-
---       // the final step is to produce a DEDENT for each indentation level still remaining, thus
---       // "closing" the remaining open INDENTS
---       case None =>
---         indents.filter(_ > 0).map(_ => DEDENT())
-
---     }
---   }
---   ]

@@ -47,12 +47,6 @@ generateSymbClass symb = case symbolToName symb of
   Nothing -> ""
 
 
-generateIntegerClasses :: [String] -> Doc
-generateIntegerClasses params = text $ concat $ map generateIntegerClass params
-
-generateIntegerClass :: String -> String
-generateIntegerClass param = "case class " ++ param ++ "(i: Int) extends WorkflowToken \n"
-
 generateStringClasses :: [String] -> Doc
 generateStringClasses params = text $ concat $ map generateStringClass params
 

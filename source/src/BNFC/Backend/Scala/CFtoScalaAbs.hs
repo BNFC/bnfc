@@ -21,7 +21,6 @@ import Prelude hiding ((<>))
 import BNFC.CF
 import BNFC.PrettyPrint
 import BNFC.Options
-import Data.List
 
 -- | The result is two files (.H file, .C file)
 cf2ScalaAbs
