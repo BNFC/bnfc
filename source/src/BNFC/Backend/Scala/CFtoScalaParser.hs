@@ -17,7 +17,7 @@ module BNFC.Backend.Scala.CFtoScalaParser (cf2ScalaParser) where
 import Prelude hiding ((<>))
 
 import qualified Data.Foldable as DF (toList)
-import BNFC.Utils (symbolToName, mkNames, NameStyle (..))
+import BNFC.Utils (symbolToName, mkNames, NameStyle (..), lowerCase)
 import BNFC.CF
 import BNFC.PrettyPrint
 import BNFC.Options
@@ -79,6 +79,13 @@ getSymbFromName s =
 prPrintRule_ :: Rule -> [String]
 prPrintRule_ (Rule _ _ items _) = map getSymbFromName $ catToStrings items
 
+-- Function to extract the function name from a rule
+getFunName :: Rule -> String
+getFunName (Rule fun _ _ _) = (wpThing fun)
+
+-- Helper to check if a rule contains a TokenCat in RHS
+hasTokenCat :: TokenCat -> Rule -> Bool
+hasTokenCat token (Rule _ _ rhs _) = TokenCat token `elem` [c | Left c <- rhs]
 
 prCoerciveRule :: Rule -> [String]
 prCoerciveRule r@(Rule _ _ _ _)  = concat [
@@ -119,9 +126,9 @@ prSubRuleDoc r = map text (prSubRule r)
 
 filterNotEqual :: Eq a => a -> [a] -> [a]
 filterNotEqual element list = filter (/= element) list
- 
 
- -- Función para generar una regla simple cuando la RHS es "integer"
+
+
 rulesToString :: [Rule] -> [Doc]
 rulesToString [] = [""]
 rulesToString rules@(Rule fun cat rhs _ : _) =
@@ -131,14 +138,12 @@ rulesToString rules@(Rule fun cat rhs _ : _) =
         
         -- Obtenemos los símbolos de las reglas filtradas
         vars = concatMap prPrintRule_ sameCat
-        fnm = funName fun
         exitCatName = firstLowerCase $ head $ filterNotEqual (show (wpThing cat)) $ filterSymbs vars
-
-        -- Obtenemos el nombre de la regla [Left Exp] -> Exp
-        ruleName = case rhs of
-          (Left a : _) -> show a
-          _ -> ""
         
+        integerRuleData = case sameCat of 
+                            (fRule:_) -> hasTokenCat catInteger fRule
+                            [] -> False
+
         -- Si no es "integer", generamos la cabecera única con las alternativas en `rep(...)`
         header = [text $ exitCatName ++ " ~ rep((" ++ intercalate " | " (onlySymbs (safeTail vars)) ++ ") ~ " ++ exitCatName ++ ") ^^ {"]
         subHeader = [nest 4 $ text $ "case " ++ exitCatName ++ " ~ list => list.foldLeft(" ++ exitCatName ++ ") {"]
@@ -146,7 +151,38 @@ rulesToString rules@(Rule fun cat rhs _ : _) =
         -- Generamos los `case` correspondientes a las reglas de `sameCat`
         rulesDocs = map (nest 8) $ concatMap prSubRuleDoc sameCat
         
-    in header ++ subHeader ++ rulesDocs ++ [nest 4 "}", "}"] ++ rulesToString rest ++ ["}"]
+        -- Si integerRuleData es True, evitamos agregar header y subHeader
+        mainBlock = if integerRuleData 
+                      then [text $ firstLowerCase catInteger ]  -- TODO: change this to a map between cat and function name example (CatInteger -> integer)
+                      else header ++ subHeader ++ rulesDocs ++ [nest 4 "}", "}"]
+
+    in mainBlock  ++ rulesToString rest
+  
+
+-- Función para generar una regla simple cuando la RHS es "integer"
+-- rulesToString :: [Rule] -> [Doc]
+-- rulesToString [] = [""]
+-- rulesToString rules@(Rule fun cat rhs _ : _) =
+--     let 
+--         -- Filtramos las reglas que pertenecen a la misma categoría `cat`
+--         (sameCat, rest) = span (\(Rule _ c _ _) -> c == cat) rules
+        
+--         -- Obtenemos los símbolos de las reglas filtradas
+--         vars = concatMap prPrintRule_ sameCat
+--         exitCatName = firstLowerCase $ head $ filterNotEqual (show (wpThing cat)) $ filterSymbs vars
+        
+--         integerRuleData = case sameCat of 
+--                             (fRule:_) -> hasTokenCat catInteger fRule
+--                             [] -> False
+
+--         -- Si no es "integer", generamos la cabecera única con las alternativas en `rep(...)`
+--         header = [text $ exitCatName ++ " ~ rep((" ++ intercalate " | " (onlySymbs (safeTail vars)) ++ ") ~ " ++ exitCatName ++ ") ^^ {"]
+--         subHeader = [nest 4 $ text $ "case " ++ exitCatName ++ " ~ list => list.foldLeft(" ++ exitCatName ++ ") {"]
+
+--         -- Generamos los `case` correspondientes a las reglas de `sameCat`
+--         rulesDocs = map (nest 8) $ concatMap prSubRuleDoc sameCat
+        
+--     in header ++ subHeader ++ rulesDocs ++ [nest 4 "}", "}"] ++ rulesToString rest ++ ["}"]
 
 
 extractCategories :: Rule -> [Cat]
@@ -161,15 +197,7 @@ ruleGroupsCFToString :: [(Cat, [Rule])] -> [Doc]
 ruleGroupsCFToString catsAndRules = 
   let
       -- Process each group to generate its rules
-      processGroup (c, r) = [coerCatDefSign c] ++ map (nest 4) (rulesToString r)
-
-      -- Function to extract the function name from a rule
-      getFunName :: Rule -> String
-      getFunName (Rule fun _ _ _) = (wpThing fun)
-
-      -- Helper to check if a rule contains a TokenCat in RHS
-      hasTokenCat :: TokenCat -> Rule -> Bool
-      hasTokenCat token (Rule _ _ rhs _) = TokenCat token `elem` [c | Left c <- rhs]
+      processGroup (c, r) = [coerCatDefSign c] ++ map (nest 4) (rulesToString r) ++ ["}"]
 
       -- Find the first rule where `TokenCat catInteger` appears
       integerRuleData = find (\(_, rules) -> any (hasTokenCat catInteger) rules) catsAndRules
@@ -319,8 +347,6 @@ getLiteralFunction = vcat [
   ]
 
 
-
-
 disambiguateNames :: [String] -> [String]
 disambiguateNames = disamb []
   where
@@ -329,9 +355,6 @@ disambiguateNames = disamb []
                                 in (n ++ show i) : disamb (n:ns1) ns2
       | otherwise = n : disamb (n:ns1) ns2
     disamb _ [] = []
-
-
-
 
 
 baseTypeToScalaType :: String -> Maybe String
