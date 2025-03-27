@@ -21,11 +21,6 @@ import Prelude hiding ((<>))
 import BNFC.CF
 import BNFC.PrettyPrint
 import BNFC.Options
-import BNFC.Backend.Common (unicodeAndSymbols)
-import BNFC.Utils (symbolToName, camelCase)
-import Data.Char (toUpper)
-
-import BNFC.Backend.Common.NamedVariables (firstLowerCase)
 import Data.List (intercalate)
 import Data.Map (Map, fromList, lookup)
 
@@ -60,22 +55,45 @@ createCaseClass (Rule fun _ rhs _) =
   text $ "case class " ++ className ++ "(" ++ params ++ ") extends WorkflowAST"
   where
     className = funName fun
-    paramNames = filter (not . null) $ map firstLowerCase (catFilterToStrings rhs)
-    params = intercalate ", " $ map formatParam paramNames
+
+    -- Función para formatear parámetros según sean Cat o String
+    catParams :: Either Cat String -> String
+    catParams (Left c)  = formatParam c
+    catParams (Right s) = s
+
+    -- Aplicamos `catParams` a cada elemento de `rhs`
+    params = intercalate ", " $ map catParams rhs
+
+
+unwrapListCat :: Cat -> TokenCat
+unwrapListCat (TokenCat c)    = c
+unwrapListCat (ListCat lc)    = unwrapListCat lc
+unwrapListCat (CoercCat cc _) = cc
+unwrapListCat (Cat s)         = s
+
 
 -- | Format a parameter with its type
-formatParam :: String -> String
-formatParam param
-  | (show (camelCase param)) `elem` BNFC.CF.baseTokenCatNames = 
-      param ++ ": " ++ case baseTypeToScalaType param of
-                         Just s -> s
-                         _ -> "Int"  -- Default to Int
-  | otherwise = param ++ ": WorkflowAST"
+formatParam :: Cat -> String
+formatParam cat =
+  let baseCat = unwrapListCat cat  -- Extraemos el TokenCat base
+      baseCatStr = show baseCat
+  in if baseCat `elem` BNFC.CF.baseTokenCatNames
+       then case baseTypeToScalaType baseCatStr of
+              Just s  -> wrapList s
+              Nothing -> wrapList ": Int"  -- Default a "Int"
+       else wrapList "WorkflowAST"  -- Si no es baseTokenCat, usar WorkflowAST
+
+  where
+    -- Si es una lista, lo envolvemos en brackets
+    wrapList s = case cat of
+                   ListCat _ -> "[" ++ s ++ "]"
+                   _         -> ":" ++ s
+
 
 -- | Extract category strings from rule RHS
 catFilterToStrings :: [Either Cat String] -> [String]
 catFilterToStrings = map (\case
-                  Left c -> show c
+                  Left c -> show $ catOfList c
                   Right _ -> ""
                 )
 
