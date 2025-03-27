@@ -1,17 +1,16 @@
-
 {-# LANGUAGE LambdaCase        #-}
 {-# LANGUAGE PatternGuards     #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 {-
     BNF Converter: Scala Lextract syntax
-    Copyright (Scala) 2024  Author:  Juan Pablo Poittevin
+    Copyright (Scala) 2024  Author:  Juan Pablo Poittevin, Guillermo Poladura
 
     Description   : This module generates the Scala Lextract Syntax
                     tree classes. It generates both a Header file
                     and an Implementation file
 
-    Author        : Juan Pablo Poittevin
+    Author        : Juan Pablo Poittevin, Guillermo Poladura
     Created       : 30 September, 2024
 -}
 
@@ -30,91 +29,75 @@ import BNFC.Backend.Common.NamedVariables (firstLowerCase)
 import Data.List (intercalate)
 import Data.Map (Map, fromList, lookup)
 
-cf2ScalaParserAST
-  :: SharedOptions     
-  -> CF
-  -> Doc
-cf2ScalaParserAST Options{ lang } cf = vsep . concat $
-  [ 
-    headers lang
-    , strRules
-  ]
+-- | Main function that generates the AST code
+cf2ScalaParserAST :: SharedOptions -> CF -> Doc
+cf2ScalaParserAST Options{ lang } cf = vcat $
+  -- Generate headers
+  headers lang ++
+  -- Add an empty line after the trait definition
+  [text ""] ++
+  -- Generate case class definitions
+  generateRuleDefs rules
   where
-    strRules     = prRulesNames rules
-    rules        = ruleGroups cf
+    rules = ruleGroups cf
 
+-- | Generate all case class definitions
+generateRuleDefs :: [(Cat, [Rule])] -> [Doc]
+generateRuleDefs [] = []
+generateRuleDefs rules = concatMap processRuleGroup rules
 
--- case class EAdd(exp: WorkflowAST, exp1: WorkflowAST) extends WorkflowAST
+-- | Process a single rule group and generate case classes
+processRuleGroup :: (Cat, [Rule]) -> [Doc]
+processRuleGroup (_, rules) = map createCaseClass (filter (not . isCoercionRule) rules)
 
+-- | Check if a rule is a coercion rule
+isCoercionRule :: Rule -> Bool
+isCoercionRule (Rule fun _ _ _) = isCoercion fun
+
+-- | Create a single case class definition
+createCaseClass :: Rule -> Doc
+createCaseClass (Rule fun _ rhs _) = 
+  text $ "case class " ++ className ++ "(" ++ params ++ ") extends WorkflowAST"
+  where
+    className = funName fun
+    paramNames = filter (not . null) $ map firstLowerCase (catFilterToStrings rhs)
+    params = intercalate ", " $ map formatParam paramNames
+
+-- | Format a parameter with its type
+formatParam :: String -> String
+formatParam param
+  | (show (camelCase param)) `elem` BNFC.CF.baseTokenCatNames = 
+      param ++ ": " ++ case baseTypeToScalaType param of
+                         Just s -> s
+                         _ -> "Int"  -- Default to Int
+  | otherwise = param ++ ": WorkflowAST"
+
+-- | Extract category strings from rule RHS
 catFilterToStrings :: [Either Cat String] -> [String]
 catFilterToStrings = map (\case
                   Left c -> show c
                   Right _ -> ""
                 )
 
-
-prRuleName :: Rule -> [Doc]
-prRuleName (Rule fun _ rhs _) 
-  | isCoercion fun = [""]
-  | otherwise = [
-      text $ "case class " ++ fnm ++ "("
-    , text $ intercalate ", " $ map formatParam parsNames
-    , " ) extends WorkflowAST"
-    ]
-  where
-    fnm = funName fun
-    parsNames = filter (not . null) $ map firstLowerCase (catFilterToStrings rhs)
-
-    -- Si el parámetro es "integer", lo tipamos como Int; si no, como WorkflowAST
-    formatParam param
-      | (show (camelCase param)) `elem` baseTokenCatNames = param ++ ": " ++  case baseTypeToScalaType param of -- convertir a camelCase el param, seguramente no sea le mejor forma de detemrinar el tipo, otra?
-                                                Just s -> s
-                                                _ -> "Int"  -- TODO: Int no deberia ser el default, deberia fallar, creo
-      | otherwise          = param ++ ": WorkflowAST"
-
-
--- prRuleName :: Rule -> [Doc]
--- prRuleName r@(Rule fun _ rhs _) 
---   -- | isCoercion fun = prCoerciveRule r
---   | isCoercion fun = [""]
---   | otherwise = [
---       text $ "case class " ++ fnm ++ "("
---     , text $ intercalate ", " $ map (++ ": WorkflowAST") parsNames
---     -- , intersperse (text ", ") (filter (not . null) [text (param ++ ": WorkflowAST") | param <- parsNames, not (null param)])
---     , " ) extends WorkflowAST"
---     ]
---   where
---     fnm = funName fun
---     parsNames = filter (not . null) $ map firstLowerCase (catFilterToStrings rhs)
-
-ruleIterPr :: [Rule] -> [Doc]
-ruleIterPr  []     = [""]
-ruleIterPr (r:[])  = prRuleName r
-ruleIterPr (r:rs)  = prRuleName r ++ ruleIterPr rs
-
-
-prRulesNames :: [(Cat,[Rule])] -> [Doc]
-prRulesNames ( [] )         = [""]
-prRulesNames ((_, r):[] )   = ruleIterPr r
-prRulesNames ((_, r):crs )  = ruleIterPr r ++ prRulesNames crs
-
-
+-- | Generate the header part of the file
 headers :: String -> [Doc]
 headers name = [
-  text $ "package " ++ name ++ ".workflowtoken." ++ name ++ "Parser"
-  , "import scala.util.parsing.input.Positional"
-  , "sealed trait WorkflowAST extends Positional"
+  text $ "package " ++ name ++ ".workflowtoken." ++ name ++ "Parser",
+  text "",
+  text "import scala.util.parsing.input.Positional",
+  text "",
+  text "sealed trait WorkflowAST extends Positional"
   ]
 
-
+-- | Convert base LBNF type to Scala type
 baseTypeToScalaType :: String -> Maybe String
 baseTypeToScalaType = (`Data.Map.lookup` baseTypeMap)
 
--- | Map from base LBNF Type to scala Type.
-
+-- | Map from base LBNF Type to scala Type
 baseTypeMap :: Map String String
 baseTypeMap = fromList scalaTypesMap
 
+-- | Scala types mapping
 scalaTypesMap :: [(String, String)]
 scalaTypesMap =
   [ ("Integer"  , "Int")
