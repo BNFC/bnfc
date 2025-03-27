@@ -4,11 +4,12 @@
 
 {-
     BNF Converter: Scala Lextract syntax
-    Copyright (Scala) 2024  Author:  Juan Pablo Poittevin
+    Copyright (Scala) 2024  Author:  Juan Pablo Poittevin, Guillermo Poladura
 
     Description   : This module generates the Scala Lextract Syntax
                     tree classes. Using Scala Parser Combinator
-    Author        : Juan Pablo Poittevin
+                    
+    Author        : Juan Pablo Poittevin, Guillermo Poladura
     Created       : 30 September, 2024
 -}
 
@@ -21,164 +22,171 @@ import BNFC.CF
 import BNFC.PrettyPrint
 import BNFC.Options
 import BNFC.Backend.Common (unicodeAndSymbols)
-import Data.List ( intercalate )
+import Data.List (intercalate)
 import Data.Char (toLower)
 
+-- | Converts a string to lowercase
 toLowerString :: String -> String
 toLowerString s = map toLower s
 
-cf2ScalaLex
-  :: SharedOptions     
-  -> CF     -- Grammar.
-  -> Doc    
-cf2ScalaLex Options{ lang } cf = vsep . concat $
-  [ 
-      []
-    , imports lang
-    , addExtraClasses
-    , initWorkflowClass
-    , map (nest 4) getApplyFunction
-    , map (nest 4) (getTokensFunction (symbs ++ liters))
-    -- , map (nest 4) getIdentifiersFunction -- This should be called only in case of having identifiers in the lenguage, which anyway will be the case in most of the lenguages.
-    , map (nest 4) (addParserFunctions liters)
-    -- , map (nest 4) getLiteralsFunction
-    -- , getIndentationsFunction
-    , map (nest 4) (getKeywordParsers symbs)
-    , endWorkflowClass
-  ]
+-- | Main function that generates the Scala lexer code
+cf2ScalaLex :: SharedOptions -> CF -> Doc
+cf2ScalaLex Options{ lang } cf = vcat $
+  -- Generate header and imports
+  imports lang ++
+  -- Generate error and location classes
+  addExtraClasses ++
+  -- Start the WorkflowLexer object
+  initWorkflowClass ++
+  -- Indent the class contents
+  [nest 4 $ vcat $ 
+    -- Add apply function
+    getApplyFunction ++
+    -- Add tokens function
+    getTokensFunction (symbs ++ liters) ++
+    -- Add parser functions for literals
+    map addParserFunction liters ++
+    -- Add keyword parsers
+    map getKeywordParser symbs
+  ] ++
+  -- End the WorkflowLexer object
+  endWorkflowClass
   where
-    symbs     = unicodeAndSymbols cf
-    liters    = literals cf
+    symbs  = unicodeAndSymbols cf
+    liters = literals cf
 
--- catString, catInteger, catDouble, catChar, catIdent :: TokenCat
--- catString  = "String"
--- catInteger = "Integer"
--- catDouble  = "Double"
--- catChar    = "Char"
--- catIdent   = "Ident"
-
-addParserFunctions :: [String] -> [Doc]
-addParserFunctions liters = map addParserFunction liters
-
+-- | Generate a parser function for a specific literal type
 addParserFunction :: String -> Doc
 addParserFunction liter 
-        | liter == catInteger = getIntegerFunction
-        | liter == catDouble  = getDoubleFunction
-        | liter == catIdent   = getIdentifiersFunction
-        | liter == catString  = getLiteralsFunction
-        | liter == catChar    = getLiteralFunction
-        | otherwise = ""
+  | liter == catInteger = getIntegerFunction
+  | liter == catDouble  = getDoubleFunction
+  | liter == catIdent   = getIdentifiersFunction
+  | liter == catString  = getLiteralsFunction
+  | liter == catChar    = getLiteralFunction
+  | otherwise = empty
 
+-- | Generate the imports section
 imports :: String -> [Doc]
-imports name  = [
-   text $ "package " ++ name ++ ".workflowtoken." ++ name ++ "Lex"
-  , "import scala.util.parsing.combinator.RegexParsers"
+imports name = [
+  text $ "package " ++ name ++ ".workflowtoken." ++ name ++ "Lex",
+  text "",
+  text "import scala.util.parsing.combinator.RegexParsers"
   ]
 
+-- | Generate error and location classes
 addExtraClasses :: [Doc]
 addExtraClasses = [
-  "sealed trait WorkflowCompilationError"
-  ,"case class WorkflowLexerError(location: Location, msg: String) extends WorkflowCompilationError"
-  ,"case class WorkflowParserError(location: Location, msg: String) extends WorkflowCompilationError"
-  ,"case class Location(line: Int, column: Int) {"
-  ,nest 4 "override def toString = s\"$line:$column\""
-  ,"}"
+  text "",
+  text "sealed trait WorkflowCompilationError",
+  text "case class WorkflowLexerError(location: Location, msg: String) extends WorkflowCompilationError",
+  text "case class WorkflowParserError(location: Location, msg: String) extends WorkflowCompilationError",
+  text "",
+  text "case class Location(line: Int, column: Int) {",
+  nest 4 $ text "override def toString = s\"$line:$column\"",
+  text "}"
   ]
 
-
+-- | Start the WorkflowLexer object
 initWorkflowClass :: [Doc]
 initWorkflowClass = [
-      "object WorkflowLexer extends RegexParsers {"
-    -- TODO: I REMOVED THIS LINE TO MAKE IT WORK, BUT WILL FAIL WITH GRAMMARS WHICH USE TABS/SPACES AS BLOCKS DEFINITION, SHOULD WE WORK ON THIS?
-    -- , nest 4 "override def skipWhitespace = true"
-    -- In case the lenguage use indentation for block creation, we should remove \n from the list of whiteSpace.
-    -- , nest 4 $ text $ "override val whiteSpace = " ++ "\"" ++ "[\\t\\r\\f\\n]+\".r"
+  text "",
+  text "object WorkflowLexer extends RegexParsers {"
   ]
 
+-- | End the WorkflowLexer object
 endWorkflowClass :: [Doc]
 endWorkflowClass = [
-    "}"
+  text "}"
   ]
 
+-- | Generate the apply function
 getApplyFunction :: [Doc]
 getApplyFunction = [
-      "def apply(code: String): Either[WorkflowLexerError, List[WorkflowToken]] = {"
-    , nest 4 "parse(tokens, code) match {"
-    , nest 6 "case NoSuccess(msg, next) => Left(WorkflowLexerError(Location(next.pos.line, next.pos.column), msg))"
-    , nest 6 "case Success(result, next) => Right(result)"
-    , nest 4"}"
-    , "}"
+  text "def apply(code: String): Either[WorkflowLexerError, List[WorkflowToken]] = {",
+  nest 4 $ text "parse(tokens, code) match {",
+  nest 8 $ text "case NoSuccess(msg, next) => Left(WorkflowLexerError(Location(next.pos.line, next.pos.column), msg))",
+  nest 8 $ text "case Success(result, next) => Right(result)",
+  nest 4 $ text "}",
+  text "}"
   ]
 
-
+-- | Generate the function for parsing identifiers
 getIdentifiersFunction :: Doc
 getIdentifiersFunction = vcat [
-      "def ident: Parser[IDENT] = {"
-    , nest 4 "\"[a-zA-Z_][a-zA-Z0-9_]*\".r ^^ { str => IDENT(str) }"
-    , "}"
+  text "",
+  text "def ident: Parser[IDENT] = {",
+  nest 4 $ text "\"[a-zA-Z_][a-zA-Z0-9_]*\".r ^^ { str => IDENT(str) }",
+  text "}"
   ]
 
+-- | Generate the function for parsing integers
 getIntegerFunction :: Doc
 getIntegerFunction = vcat [
-      "def integer: Parser[INTEGER] = {"
-    , nest 4 "\"[0-9]+\".r ^^ {i => INTEGER(i)}"
-    , "}"
+  text "",
+  text "def integer: Parser[INTEGER] = {",
+  nest 4 $ text "\"[0-9]+\".r ^^ {i => INTEGER(i)}",
+  text "}"
   ]
 
-
+-- | Generate the function for parsing double values
 getDoubleFunction :: Doc
 getDoubleFunction = vcat [
-      "def double: Parser[Double] = {"
-    , nest 4 "\"[0-9]+.[0-9]+\".r ^^ {i => Double(i)}"
-    , "}"
+  text "",
+  text "def double: Parser[Double] = {",
+  nest 4 $ text "\"[0-9]+.[0-9]+\".r ^^ {i => Double(i)}",
+  text "}"
   ]
 
-
+-- | Generate the function for parsing string literals
 getLiteralsFunction :: Doc
 getLiteralsFunction = vcat [
-      "def string: Parser[STRING] = {"
-    , nest 4 "\"\\\"[^\\\"]*\\\"\".r ^^ { str =>"
-    , nest 6 "val content = str.substring(1, str.length - 1)"
-    , nest 6 "STRING(content)"
-    , nest 4 "}"
-    , "}"
+  text "",
+  text "def string: Parser[STRING] = {",
+  nest 4 $ text "\"\\\"[^\\\"]*\\\"\".r ^^ { str =>",
+  nest 8 $ text "val content = str.substring(1, str.length - 1)",
+  nest 8 $ text "STRING(content)",
+  nest 4 $ text "}",
+  text "}"
   ]
 
+-- | Generate the function for parsing character literals
 getLiteralFunction :: Doc
 getLiteralFunction = vcat [
-      "def char: Parser[CHAR] = {"
-    , nest 4 "\"\\\'[^\\\']*\\\'\".r ^^ { str =>"
-    , nest 6 "val content = str.substring(1, str.length - 1)"
-    , nest 6 "CHAR(content)"
-    , nest 4 "}"
-    , "}"
+  text "",
+  text "def char: Parser[CHAR] = {",
+  nest 4 $ text "\"\\\'[^\\\']*\\\'\".r ^^ { str =>",
+  nest 8 $ text "val content = str.substring(1, str.length - 1)",
+  nest 8 $ text "CHAR(content)",
+  nest 4 $ text "}",
+  text "}"
   ]
 
-
+-- | Get a symbol name from a string
 getSymbFromName :: String -> String
 getSymbFromName s = 
   case symbolToName s of
-  Just s -> s
-  _ -> s
+    Just s -> s
+    _ -> s
 
-
+-- | Generate the tokens function
 getTokensFunction :: [String] -> [Doc]
 getTokensFunction symbs = [
-     "def tokens: Parser[List[WorkflowToken]] = {" 
-    , nest 4 $ text $ "phrase(rep1( " ++ intercalate " | " (getListSymNames symbs) ++ "))"
-    , "}"
+  text "",
+  text "def tokens: Parser[List[WorkflowToken]] = {",
+  nest 4 $ text $ "phrase(rep1( " ++ intercalate " | " (getListSymNames symbs) ++ "))",
+  text "}"
   ]
 
-
+-- | Get the lowercase symbol name
 getSymName :: String -> String
-getSymName = toLowerString.getSymbFromName
+getSymName = toLowerString . getSymbFromName
 
+-- | Get a list of symbol names
 getListSymNames :: [String] -> [String]
-getListSymNames symbs = map getSymName symbs
+getListSymNames = map getSymName
 
-getKeywordParsers :: [String] -> [Doc]
-getKeywordParsers symbs = map getKeywordParser symbs
-
-
+-- | Generate a keyword parser for a symbol
 getKeywordParser :: String -> Doc
-getKeywordParser symb = text $ "def " ++ getSymName symb ++ " = positioned { \"" ++ toLowerString symb ++ "\" ^^ (_ =>"++ getSymbFromName symb ++"()) }"
+getKeywordParser symb = 
+  text "" $+$
+  text ("def " ++ getSymName symb ++ " = positioned { \"" ++ toLowerString symb ++ "\" ^^ (_ => " ++ getSymbFromName symb ++ "()) }")
