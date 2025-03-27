@@ -4,11 +4,12 @@
 
 {-
     BNF Converter: Scala Parser syntax
-    Copyright (Scala) 2024  Author:  Juan Pablo Poittevin
+    Copyright (Scala) 2024  Author:  Juan Pablo Poittevin, Guillermo Poladura
 
     Description   : This module generates the Scala Parser Syntax
                     Using Scala Parser Combinator
-    Author        : Juan Pablo Poittevin
+
+    Author        : Juan Pablo Poittevin, Guillermo Poladura
     Created       : 30 September, 2024
 -}
 
@@ -21,230 +22,232 @@ import BNFC.Utils (symbolToName)
 import BNFC.CF
 import BNFC.PrettyPrint
 import BNFC.Options
-import Data.List (find, intercalate, isSuffixOf )
+import Data.List (find, intercalate, isSuffixOf)
 import BNFC.Backend.Common.NamedVariables (firstLowerCase)
 import Data.Char (toLower)
 
-cf2ScalaParser
-  :: SharedOptions     
-  -> CF     -- Grammar.
-  -> Doc 
-cf2ScalaParser Options{ lang } cf = vsep . concat $
-  [ 
-      []
-    , imports lang
-    , initWorkflowClass
-    , map (nest 4) addExtraClasses
-    , map (nest 4) getApplyFunction
-    , map (nest 4) (getProgramFunction cf)
-    , map (nest 4) strRules
-    , endWorkflowClass
-    , addWorkflowCompiler
-  ]
-  where
-    strRules     = ruleGroupsCFToString (ruleGroups cf)
+-- | Main function that generates the Scala parser code
+cf2ScalaParser :: SharedOptions -> CF -> Doc
+cf2ScalaParser Options{ lang } cf = vcat $
+  -- Generate header and imports
+  imports lang ++
+  -- Start the WorkflowParser object
+  initWorkflowClass ++
+  -- Indent the class contents
+  [nest 4 $ vcat $ 
+    -- Add extra classes
+    addExtraClasses ++
+    -- Add apply function
+    getApplyFunction ++
+    -- Add program function
+    getProgramFunction cf ++
+    -- Add parser rules
+    generateAllRules (ruleGroups cf)
+  ] ++
+  -- End the WorkflowParser object
+  endWorkflowClass ++
+  -- Add the WorkflowCompiler object
+  addWorkflowCompiler
 
+-- | Generate all parser rules from rule groups
+generateAllRules :: [(Cat, [Rule])] -> [Doc]
+generateAllRules catsAndRules =
+  let
+    -- Generate regular rules
+    mainRules = concatMap generateRuleGroup catsAndRules
+    
+    -- Generate special rules for integer and string if needed
+    integerRule = generateSpecialRule catInteger "integer" "INTEGER" "toInt" catsAndRules
+    stringRule = generateSpecialRule catString "string" "STRING" "" catsAndRules
+    
+  in mainRules ++ integerRule ++ stringRule
+
+-- | Generate a rule group (definition for a single category)
+generateRuleGroup :: (Cat, [Rule]) -> [Doc]
+generateRuleGroup (cat, rules) = 
+  [text $ "def " ++ catName ++ ": Parser[WorkflowAST] = positioned {"] ++
+  [nest 4 $ generateRuleBody rules] ++
+  [text "}"]
+  where
+    catName = firstLowerCase $ show cat
+
+-- | Generate the body of a rule
+generateRuleBody :: [Rule] -> Doc
+generateRuleBody rules@(Rule _ cat _ _ : _) =
+  if any (hasTokenCat catInteger) rules
+  then text $ firstLowerCase catInteger
+  else 
+    let
+      vars = concatMap prPrintRule_ rules
+      exitCatName = firstLowerCase $ head $ filterNotEqual (show (wpThing cat)) $ filterSymbs vars
+      
+      headerText = exitCatName ++ " ~ rep((" ++ intercalate " | " (onlySymbs (safeTail vars)) ++ ") ~ " ++ exitCatName ++ ") ^^ {"
+      subHeaderText = "case " ++ exitCatName ++ " ~ list => list.foldLeft(" ++ exitCatName ++ ") {"
+      
+      caseStatements = map generateCaseStatement rules
+      caseText = intercalate "\n" $ filter (not . null) caseStatements
+    in
+      text headerText $+$
+      nest 4 (text subHeaderText) $+$
+      nest 8 (vcat $ map text $ filter (not . null) caseStatements) $+$
+      nest 4 (text "}") $+$
+      text "}"
+generateRuleBody [] = empty
+
+-- | Generate a case statement for a rule
+generateCaseStatement :: Rule -> String
+generateCaseStatement r@(Rule fun _ _ _)
+  | isCoercion fun = ""
+  | otherwise = 
+      "case (" ++ head vars ++ ", " ++ intercalate " ~ " (safeTail vars) ++ ") => " 
+      ++ fnm ++ "(" ++ intercalate ", " (filterSymbs vars) ++ ")"
+  where
+    vars = disambiguateNames $ map modifyVars (prPrintRule_ r)
+    fnm = funName fun
+    modifyVars str = if "()" `isSuffixOf` str then str else [toLower (head str)]
+
+-- | Generate a special rule for tokens like Integer or String
+generateSpecialRule :: TokenCat -> String -> String -> String -> [(Cat, [Rule])] -> [Doc]
+generateSpecialRule tokenCat ruleName tokenName conversion catsAndRules =
+  case find (\(_, rules) -> any (hasTokenCat tokenCat) rules) catsAndRules of
+    Just (_, rules) -> case find (hasTokenCat tokenCat) rules of
+      Just rule -> 
+        let 
+          funName = getFunName rule
+          conversionPart = if null conversion then "" else "." ++ conversion
+        in
+          [ text $ "def " ++ ruleName ++ ": Parser[" ++ funName ++ "] = positioned {"
+          , nest 4 $ text $ "accept(\"" ++ ruleName ++ "\", { case " ++ tokenName ++ "(i) => " ++ funName ++ "(i" ++ conversionPart ++ ") })"
+          , text "}"
+          ]
+      Nothing -> []
+    Nothing -> []
+
+-- | Extract terminal and non-terminal symbols from a rule
+prPrintRule_ :: Rule -> [String]
+prPrintRule_ (Rule _ _ items _) = map getSymbFromName $ catToStrings items
+
+-- | Convert a category or string to its string representation
 catToStrings :: [Either Cat String] -> [String]
 catToStrings = map (\case
-                  Left c -> show c
-                  Right s -> s
-                )
+              Left c -> show c
+              Right s -> s
+            )
 
+-- | Get a symbol name from a string
 getSymbFromName :: String -> String
 getSymbFromName s = 
   case symbolToName s of
     Just s -> s ++ "()"
     _ -> s
 
-prPrintRule_ :: Rule -> [String]
-prPrintRule_ (Rule _ _ items _) = map getSymbFromName $ catToStrings items
-
--- Function to extract the function name from a rule
+-- | Get the function name for a rule
 getFunName :: Rule -> String
-getFunName (Rule fun _ _ _) = (wpThing fun)
+getFunName (Rule fun _ _ _) = wpThing fun
 
--- Helper to check if a rule contains a TokenCat in RHS
+-- | Check if a rule contains a specific token category
 hasTokenCat :: TokenCat -> Rule -> Bool
 hasTokenCat token (Rule _ _ rhs _) = TokenCat token `elem` [c | Left c <- rhs]
 
+-- | Safe version of tail that returns an empty list for an empty list
 safeTail :: [a] -> [a]
-safeTail []     = []  -- Si la lista está vacía, devuelve una lista vacía
+safeTail []     = []
 safeTail (_:xs) = xs 
 
-filterSymbs :: [[Char]] -> [[Char]]
+-- | Filter out strings ending with "()"
+filterSymbs :: [String] -> [String]
 filterSymbs = filter (not . isSuffixOf "()")
 
-onlySymbs :: [[Char]] -> [[Char]]
+-- | Keep only strings ending with "()"
+onlySymbs :: [String] -> [String]
 onlySymbs = filter (isSuffixOf "()")
 
-prSubRule :: Rule -> [String]
-prSubRule r@(Rule fun _ _ _) 
-  | isCoercion fun = []
-  | otherwise = 
-      ["case (" ++ head vars ++ ", " ++ intercalate " ~ " (safeTail vars) ++ ") => " 
-      ++ fnm ++ "(" ++ intercalate ", " (filterSymbs vars) ++ ")"]
-  where
-    vars = disambiguateNames $ map modifyVars (prPrintRule_ r)
-    fnm = funName fun
-    modifyVars str = if "()" `isSuffixOf` str then str else [toLower (head str)]
-
-
-coerCatDefSign :: Cat -> Doc
-coerCatDefSign cat = 
-      text $ "def " ++ pre ++ ": Parser[WorkflowAST] = positioned {"
-  where
-    pre = firstLowerCase $ show cat
-
-prSubRuleDoc :: Rule -> [Doc]
-prSubRuleDoc r = map text (prSubRule r)
-
+-- | Remove an element from a list
 filterNotEqual :: Eq a => a -> [a] -> [a]
 filterNotEqual element list = filter (/= element) list
 
-rulesToString :: [Rule] -> [Doc]
-rulesToString [] = [""]
-rulesToString rules@(Rule _ cat _ _ : _) =
-    let 
-        -- Filtramos las reglas que pertenecen a la misma categoría `cat`
-        (sameCat, rest) = span (\(Rule _ c _ _) -> c == cat) rules
-        
-        -- Obtenemos los símbolos de las reglas filtradas
-        vars = concatMap prPrintRule_ sameCat
-        exitCatName = firstLowerCase $ head $ filterNotEqual (show (wpThing cat)) $ filterSymbs vars
-        
-        integerRuleData = case sameCat of 
-                            (fRule:_) -> hasTokenCat catInteger fRule
-                            [] -> False
-
-        -- Si no es "integer", generamos la cabecera única con las alternativas en `rep(...)`
-        header = [text $ exitCatName ++ " ~ rep((" ++ intercalate " | " (onlySymbs (safeTail vars)) ++ ") ~ " ++ exitCatName ++ ") ^^ {"]
-        subHeader = [nest 4 $ text $ "case " ++ exitCatName ++ " ~ list => list.foldLeft(" ++ exitCatName ++ ") {"]
-
-        -- Generamos los `case` correspondientes a las reglas de `sameCat`
-        rulesDocs = map (nest 8) $ concatMap prSubRuleDoc sameCat
-        
-        -- Si integerRuleData es True, evitamos agregar header y subHeader
-        mainBlock = if integerRuleData 
-                      then [text $ firstLowerCase catInteger ]  -- TODO: change this to a map between cat and function name example (CatInteger -> integer)
-                      else header ++ subHeader ++ rulesDocs ++ [nest 4 "}", "}"]
-
-    in mainBlock  ++ rulesToString rest
-  
-
-ruleGroupsCFToString :: [(Cat, [Rule])] -> [Doc]
-ruleGroupsCFToString catsAndRules = 
-  let
-      -- Process each group to generate its rules
-      processGroup (c, r) = [coerCatDefSign c] ++ map (nest 4) (rulesToString r) ++ ["}"]
-
-      -- Find the first rule where `TokenCat catInteger` appears
-      integerRuleData = find (\(_, rules) -> any (hasTokenCat catInteger) rules) catsAndRules
-      stringRuleData  = find (\(_, rules) -> any (hasTokenCat catString) rules) catsAndRules
-
-      -- Generate the integer rule only if needed
-      integerRule = case integerRuleData of
-                      Just (_, rules) -> case find (hasTokenCat catInteger) rules of
-                        Just rule -> 
-                          let funName = getFunName rule in
-                          [ text $ "def integer: Parser[" ++ funName ++ "] = positioned {"
-                          , nest 4 $ text $ "accept(\"integer\", { case INTEGER(i) => " ++ funName ++ "(i.toInt) })"
-                          , "}"
-                          ]
-                        Nothing -> []
-                      Nothing -> []
-
-      -- Generate the string rule only if needed
-      stringRule = case stringRuleData of
-                      Just (_, rules) -> case find (hasTokenCat catString) rules of
-                        Just rule -> 
-                          let funName = getFunName rule in
-                          [ text $ "def string: Parser[" ++ funName ++ "] = positioned {"
-                          , nest 4 $ text $ "accept(\"string\", { case STRING(s) => " ++ funName ++ "(s) })"
-                          , "}"
-                          ]
-                        Nothing -> []
-                      Nothing -> []
-
-      -- Generate all main rules
-      mainGeneratedRules = concatMap processGroup catsAndRules
-
-  in mainGeneratedRules ++ integerRule ++ stringRule
-
-
-imports :: String -> [Doc]
-imports name  = [
-   text $ "package " ++ name ++ ".workflowtoken." ++ name ++ "Parser"
-   , text $ "import " ++ name ++ ".workflowtoken." ++ name ++ "Lex._"
-   , "import scala.util.parsing.combinator.Parsers"
-   , "import scala.util.parsing.input.{NoPosition, Position, Reader}"
-  ]
-
-
-addExtraClasses :: [Doc]
-addExtraClasses = [
-    "class WorkflowTokenReader(tokens: Seq[WorkflowToken]) extends Reader[WorkflowToken] {"
-    , nest 4 "override def first: WorkflowToken = tokens.head"
-    , nest 4  "override def atEnd: Boolean = tokens.isEmpty"
-    , nest 4  "override def pos: Position = tokens.headOption.map(_.pos).getOrElse(NoPosition)"
-    , nest 4  "override def rest: Reader[WorkflowToken] = new WorkflowTokenReader(tokens.tail)"
-    , "}"
-  ]
-
-addWorkflowCompiler :: [Doc]
-addWorkflowCompiler = [
-    "object WorkflowCompiler {"
-    , nest 4 "def apply(code: String): Either[WorkflowCompilationError, WorkflowAST] = {"
-    , nest 8  "for {"
-    , nest 12  "tokens <- WorkflowLexer(code).right"
-    , nest 12  "ast <- WorkflowParser(tokens).right"
-    , nest 8 "} yield ast"
-    , nest 4 "}"
-    , "}"
-  ]
-
-initWorkflowClass :: [Doc]
-initWorkflowClass = [
-      "object WorkflowParser extends Parsers {"
-    , nest 4 "override type Elem = WorkflowToken"
-    -- TODO: I REMOVED THIS LINE TO MAKE IT WORK, BUT WILL FAIL WITH GRAMMARS WHICH USE TABS/SPACES AS BLOCKS DEFINITION, SHOULD WE WORK ON THIS?
-    -- , nest 4 "override def skipWhitespace = true"
-    -- In case the lenguage use indentation for block creation, we should remove \n from the list of whiteSpace.
-    -- , nest 4 $ text $ "override val whiteSpace = " ++ "\"" ++ "[\\t\\r\\f\\n]+\".r"
-  ]
-
-endWorkflowClass :: [Doc]
-endWorkflowClass = [
-    "}"
-  ]
-
-getApplyFunction :: [Doc]
-getApplyFunction = [
-     "def apply(tokens: Seq[WorkflowToken]): Either[WorkflowParserError, WorkflowAST] = {"
-    , nest 4  "val reader = new WorkflowTokenReader(tokens)"
-    , nest 4  "program(reader) match {"
-    , nest 4    "case NoSuccess(msg, next) => Left(WorkflowParserError(Location(next.pos.line, next.pos.column), msg))"
-    , nest 4    "case Success(result, next) => Right(result)"
-    , nest 4  "}"
-    ,  "}"
-  ]
-
-
-
-getProgramFunction :: CF -> [Doc]
-getProgramFunction cf = [
-    "def program: Parser[WorkflowAST] = positioned {"
-    , nest 4 $ text $ "phrase(" ++ eps ++ ")"
-    ,"}"
-  ]
-  where
-    eps = firstLowerCase $ show $ head $ map normCat $ DF.toList $ allEntryPoints cf
-
-
+-- | Make variable names unique by adding numbers to duplicates
 disambiguateNames :: [String] -> [String]
 disambiguateNames = disamb []
   where
     disamb ns1 (n:ns2)
       | n `elem` (ns1 ++ ns2) = let i = length (filter (==n) ns1) + 1
-                                in (n ++ show i) : disamb (n:ns1) ns2
+                               in (n ++ show i) : disamb (n:ns1) ns2
       | otherwise = n : disamb (n:ns1) ns2
     disamb _ [] = []
+
+-- | Generate the imports section
+imports :: String -> [Doc]
+imports name = [
+  text $ "package " ++ name ++ ".workflowtoken." ++ name ++ "Parser",
+  text "",
+  text $ "import " ++ name ++ ".workflowtoken." ++ name ++ "Lex._",
+  text "",
+  text "import scala.util.parsing.combinator.Parsers",
+  text "",
+  text "import scala.util.parsing.input.{NoPosition, Position, Reader}"
+  ]
+
+-- | Generate the extra classes section
+addExtraClasses :: [Doc]
+addExtraClasses = [
+  text "override type Elem = WorkflowToken",
+  text "",
+  text "class WorkflowTokenReader(tokens: Seq[WorkflowToken]) extends Reader[WorkflowToken] {",
+  nest 4 $ text "override def first: WorkflowToken = tokens.head",
+  nest 4 $ text "override def atEnd: Boolean = tokens.isEmpty",
+  nest 4 $ text "override def pos: Position = tokens.headOption.map(_.pos).getOrElse(NoPosition)",
+  nest 4 $ text "override def rest: Reader[WorkflowToken] = new WorkflowTokenReader(tokens.tail)",
+  text "}"
+  ]
+
+-- | Generate the WorkflowCompiler object
+addWorkflowCompiler :: [Doc]
+addWorkflowCompiler = [
+  text "",
+  text "object WorkflowCompiler {",
+  nest 4 $ text "def apply(code: String): Either[WorkflowCompilationError, WorkflowAST] = {",
+  nest 8 $ text "for {",
+  nest 12 $ text "tokens <- WorkflowLexer(code).right",
+  nest 12 $ text "ast <- WorkflowParser(tokens).right",
+  nest 8 $ text "} yield ast",
+  nest 4 $ text "}",
+  text "}"
+  ]
+
+-- | Start the WorkflowParser object
+initWorkflowClass :: [Doc]
+initWorkflowClass = [
+  text "",
+  text "object WorkflowParser extends Parsers {"
+  ]
+
+-- | End the WorkflowParser object
+endWorkflowClass :: [Doc]
+endWorkflowClass = [
+  text "}"
+  ]
+
+-- | Generate the apply function
+getApplyFunction :: [Doc]
+getApplyFunction = [
+  text "",
+  text "def apply(tokens: Seq[WorkflowToken]): Either[WorkflowParserError, WorkflowAST] = {",
+  nest 4 $ text "val reader = new WorkflowTokenReader(tokens)",
+  nest 4 $ text "program(reader) match {",
+  nest 8 $ text "case NoSuccess(msg, next) => Left(WorkflowParserError(Location(next.pos.line, next.pos.column), msg))",
+  nest 8 $ text "case Success(result, next) => Right(result)",
+  nest 4 $ text "}",
+  text "}"
+  ]
+
+-- | Generate the program function
+getProgramFunction :: CF -> [Doc]
+getProgramFunction cf = [
+  text "",
+  text "def program: Parser[WorkflowAST] = positioned {",
+  nest 4 $ text $ "phrase(" ++ entryPoint ++ ")",
+  text "}"
+  ]
+  where
+    entryPoint = firstLowerCase $ show $ head $ map normCat $ DF.toList $ allEntryPoints cf
