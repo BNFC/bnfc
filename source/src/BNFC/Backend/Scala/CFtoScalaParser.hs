@@ -25,6 +25,9 @@ import BNFC.Options
 import Data.List (find, intercalate, isSuffixOf)
 import BNFC.Backend.Common.NamedVariables (firstLowerCase)
 import Data.Char (toLower)
+import Data.Maybe (listToMaybe)
+import System.Directory.Internal.Prelude (fromMaybe)
+import GHC.Unicode (isAlphaNum)
 
 -- | Main function that generates the Scala parser code
 cf2ScalaParser :: SharedOptions -> CF -> Doc
@@ -79,13 +82,12 @@ generateRuleBody rules@(Rule _ cat _ _ : _) =
   else 
     let
       vars = concatMap prPrintRule_ rules
-      exitCatName = firstLowerCase $ head $ filterNotEqual (show (wpThing cat)) $ filterSymbs vars
+      exitCatName = firstLowerCase $ fromMaybe (error "Empty list encountered") $ listToMaybe $ filterNotEqual (show (wpThing cat)) $ filterSymbs vars
       
       headerText = exitCatName ++ " ~ rep((" ++ intercalate " | " (onlySymbs (safeTail vars)) ++ ") ~ " ++ exitCatName ++ ") ^^ {"
       subHeaderText = "case " ++ exitCatName ++ " ~ list => list.foldLeft(" ++ exitCatName ++ ") {"
       
       caseStatements = map generateCaseStatement rules
-      caseText = intercalate "\n" $ filter (not . null) caseStatements
     in
       text headerText $+$
       nest 4 (text subHeaderText) $+$
@@ -94,17 +96,49 @@ generateRuleBody rules@(Rule _ cat _ _ : _) =
       text "}"
 generateRuleBody [] = empty
 
--- | Generate a case statement for a rule
+
+
+-- generateCaseStatement :: Rule -> String
+-- generateCaseStatement r@(Rule fun _ _ _)
+--   | isCoercion fun = ""
+--   | null vars = fnm ++ "()"  -- Special case for an empty list
+--   | otherwise = 
+--       "case (" ++ head vars ++ concatMap (" ~ " ++) (safeTail vars) ++ ") => " 
+--       ++ fnm ++ "(" ++ intercalate ", " (filterSymbs vars) ++ ")"
+--   where
+--     vars = disambiguateNames $ map modifyVars (prPrintRule_ r)
+--     fnm = funName fun
+--     modifyVars str
+--       | "()" `isSuffixOf` str = str
+--       | all isAlphaNum str = case str of
+--                                (x:_) -> [toLower x]
+--                                []    -> error "Empty string encountered in modifyVars"
+--       | otherwise = "sym" ++ show (length str)  -- Replace invalid symbols with placeholders
+
+
+-- -- | Generate a case statement for a rule
 generateCaseStatement :: Rule -> String
 generateCaseStatement r@(Rule fun _ _ _)
   | isCoercion fun = ""
+  | null vars = fnm ++ "()"  -- Caso especial para lista vacía
   | otherwise = 
-      "case (" ++ head vars ++ ", " ++ intercalate " ~ " (safeTail vars) ++ ") => " 
+      "case (" ++ head vars ++ concatMap (" ~ " ++) (safeTail vars) ++ ") => " 
       ++ fnm ++ "(" ++ intercalate ", " (filterSymbs vars) ++ ")"
   where
     vars = disambiguateNames $ map modifyVars (prPrintRule_ r)
     fnm = funName fun
-    modifyVars str = if "()" `isSuffixOf` str then str else [toLower (head str)]
+    -- modifyVars str = if "()" `isSuffixOf` str 
+    --                  then getSymbFromName str 
+    --                  else case str of
+    --                         (x:_) -> [toLower x]
+    --                         []    -> error "Empty string encountered in modifyVars"
+    modifyVars str
+      | "()" `isSuffixOf` str = str
+      | all isAlphaNum str = case str of
+                               (x:_) -> [toLower x]
+                               []    -> error "Empty string encountered in modifyVars"
+      | otherwise = getSymbFromName str  -- Replace invalid symbols with placeho
+
 
 -- | Generate a special rule for tokens like Integer or String
 generateSpecialRule :: TokenCat -> String -> String -> String -> [(Cat, [Rule])] -> [Doc]
@@ -250,4 +284,6 @@ getProgramFunction cf = [
   text "}"
   ]
   where
-    entryPoint = firstLowerCase $ show $ head $ map normCat $ DF.toList $ allEntryPoints cf
+    entryPoint = case listToMaybe (map normCat $ DF.toList $ allEntryPoints cf) of
+      Just ep -> firstLowerCase $ show ep
+      Nothing -> error "No entry points found in the context-free grammar."

@@ -23,6 +23,8 @@ import BNFC.PrettyPrint
 import BNFC.Options
 import Data.List (intercalate)
 import Data.Map (Map, fromList, lookup)
+import BNFC.Utils ((+++))
+import Debug.Trace (trace)
 
 -- | Main function that generates the AST code
 cf2ScalaParserAST :: SharedOptions -> CF -> Doc
@@ -58,11 +60,14 @@ createCaseClass (Rule fun _ rhs _) =
 
     -- Función para formatear parámetros según sean Cat o String
     catParams :: Either Cat String -> String
-    catParams (Left c)  = formatParam c
-    catParams (Right s) = s
+    catParams (Left c)  = formatParamType c
+    catParams (Right _) = "WorflowAST"
 
     -- Aplicamos `catParams` a cada elemento de `rhs`
-    params = intercalate ", " $ map catParams rhs
+    params = intercalate ", " $ zipWith (\x y -> x ++ ":" +++ y) (generateStringList rhs) (map catParams rhs)
+
+generateStringList :: [a] -> [String]
+generateStringList xs = zipWith (\_ i -> "var" ++ show i) xs [1..]
 
 
 unwrapListCat :: Cat -> TokenCat
@@ -73,29 +78,21 @@ unwrapListCat (Cat s)         = s
 
 
 -- | Format a parameter with its type
-formatParam :: Cat -> String
-formatParam cat =
+formatParamType :: Cat -> String
+formatParamType cat =
   let baseCat = unwrapListCat cat  -- Extraemos el TokenCat base
-      baseCatStr = show baseCat
   in if baseCat `elem` BNFC.CF.baseTokenCatNames
-       then case baseTypeToScalaType baseCatStr of
+       then case baseTypeToScalaType baseCat of
               Just s  -> wrapList s
-              Nothing -> wrapList ": Int"  -- Default a "Int"
+              Nothing -> "String"  -- Default a "String"
        else wrapList "WorkflowAST"  -- Si no es baseTokenCat, usar WorkflowAST
+    
 
   where
     -- Si es una lista, lo envolvemos en brackets
     wrapList s = case cat of
-                   ListCat _ -> "[" ++ s ++ "]"
-                   _         -> ":" ++ s
-
-
--- | Extract category strings from rule RHS
-catFilterToStrings :: [Either Cat String] -> [String]
-catFilterToStrings = map (\case
-                  Left c -> show $ catOfList c
-                  Right _ -> ""
-                )
+                   ListCat _ -> "List[" ++ s ++ "]"
+                   _         -> s
 
 -- | Generate the header part of the file
 headers :: String -> [Doc]
