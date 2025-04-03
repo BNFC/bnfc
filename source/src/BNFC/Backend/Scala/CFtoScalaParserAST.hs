@@ -19,12 +19,19 @@ module BNFC.Backend.Scala.CFtoScalaParserAST (cf2ScalaParserAST) where
 import Prelude hiding ((<>))
 
 import BNFC.CF
-import BNFC.PrettyPrint
-import BNFC.Options
+    ( baseTokenCatNames,
+      ruleGroups,
+      CF,
+      Cat(ListCat),
+      IsFun(funName, isCoercion),
+      Rul(Rule),
+      Rule,
+      WithPosition(wpThing) )
+import BNFC.PrettyPrint ( text, vcat, Doc )
+import BNFC.Options ( SharedOptions(lang, Options) )
+import BNFC.Backend.Scala.Utils (generateVarsList, unwrapListCat, baseTypeToScalaType, wrapList, isLeft)
 import Data.List (intercalate)
-import Data.Map (Map, fromList, lookup)
 import BNFC.Utils ((+++))
-import Debug.Trace (trace)
 
 -- | Main function that generates the AST code
 cf2ScalaParserAST :: SharedOptions -> CF -> Doc
@@ -53,29 +60,20 @@ isCoercionRule (Rule fun _ _ _) = isCoercion fun
 
 -- | Create a single case class definition
 createCaseClass :: Rule -> Doc
-createCaseClass (Rule fun _ rhs _) = 
-  text $ "case class " ++ className ++ "(" ++ params ++ ") extends WorkflowAST"
+createCaseClass (Rule fun cat rhs _)
+  | ListCat _ <- (wpThing cat) = "" -- TODO: here we should process the lsit
+  | otherwise        = text $ "case class " ++ className ++ "(" ++ params ++ ") extends WorkflowAST"
   where
     className = funName fun
 
     -- Función para formatear parámetros según sean Cat o String
     catParams :: Either Cat String -> String
     catParams (Left c)  = formatParamType c
-    catParams (Right _) = "WorflowAST"
+    catParams (Right _) = "WorkflowAST"
 
     -- Aplicamos `catParams` a cada elemento de `rhs`
-    params = intercalate ", " $ zipWith (\x y -> x ++ ":" +++ y) (generateStringList rhs) (map catParams rhs)
-
-generateStringList :: [a] -> [String]
-generateStringList xs = zipWith (\_ i -> "var" ++ show i) xs [1..]
-
-
-unwrapListCat :: Cat -> TokenCat
-unwrapListCat (TokenCat c)    = c
-unwrapListCat (ListCat lc)    = unwrapListCat lc
-unwrapListCat (CoercCat cc _) = cc
-unwrapListCat (Cat s)         = s
-
+    params = intercalate ", " $ zipWith (\x y -> x ++ ":" +++ y) (generateVarsList filteredRhs) (map catParams filteredRhs)
+    filteredRhs = filter isLeft rhs
 
 -- | Format a parameter with its type
 formatParamType :: Cat -> String
@@ -83,16 +81,10 @@ formatParamType cat =
   let baseCat = unwrapListCat cat  -- Extraemos el TokenCat base
   in if baseCat `elem` BNFC.CF.baseTokenCatNames
        then case baseTypeToScalaType baseCat of
-              Just s  -> wrapList s
+              Just s  -> wrapList cat s
               Nothing -> "String"  -- Default a "String"
-       else wrapList "WorkflowAST"  -- Si no es baseTokenCat, usar WorkflowAST
-    
+       else wrapList cat "WorkflowAST"  -- Si no es baseTokenCat, usar WorkflowAST
 
-  where
-    -- Si es una lista, lo envolvemos en brackets
-    wrapList s = case cat of
-                   ListCat _ -> "List[" ++ s ++ "]"
-                   _         -> s
 
 -- | Generate the header part of the file
 headers :: String -> [Doc]
@@ -102,20 +94,4 @@ headers name = [
   text "import scala.util.parsing.input.Positional",
   text "",
   text "sealed trait WorkflowAST extends Positional"
-  ]
-
--- | Convert base LBNF type to Scala type
-baseTypeToScalaType :: String -> Maybe String
-baseTypeToScalaType = (`Data.Map.lookup` baseTypeMap)
-
--- | Map from base LBNF Type to scala Type
-baseTypeMap :: Map String String
-baseTypeMap = fromList scalaTypesMap
-
--- | Scala types mapping
-scalaTypesMap :: [(String, String)]
-scalaTypesMap =
-  [ ("Integer"  , "Int")
-  , ("String"   , "String")
-  , ("Double"   , "Double")
   ]

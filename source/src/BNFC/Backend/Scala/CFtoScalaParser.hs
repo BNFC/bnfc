@@ -15,19 +15,20 @@
 
 module BNFC.Backend.Scala.CFtoScalaParser (cf2ScalaParser) where
 
-import Prelude hiding ((<>))
-
 import qualified Data.Foldable as DF (toList)
-import BNFC.Utils (symbolToName)
+import Prelude hiding ((<>))
+import GHC.Unicode (isAlphaNum)
+
+import BNFC.Backend.Scala.Utils (safeTail, safeCatName, getSymbFromName, hasTokenCat, catToStrings, getFunName, inspectListRulesByCategory)
 import BNFC.CF
 import BNFC.PrettyPrint
-import BNFC.Options
-import Data.List (find, intercalate, isSuffixOf)
+import BNFC.Options ( SharedOptions(lang, Options) )
 import BNFC.Backend.Common.NamedVariables (firstLowerCase)
+
+import Data.List (find, intercalate, isSuffixOf)
 import Data.Char (toLower)
 import Data.Maybe (listToMaybe)
 import System.Directory.Internal.Prelude (fromMaybe)
-import GHC.Unicode (isAlphaNum)
 
 -- | Main function that generates the Scala parser code
 cf2ScalaParser :: SharedOptions -> CF -> Doc
@@ -46,6 +47,8 @@ cf2ScalaParser Options{ lang } cf = vcat $
     getProgramFunction cf ++
     -- Add parser rules
     generateAllRules (ruleGroups cf)
+    -- inspect rules, only for debugging
+    -- ++ inspectListRulesByCategory (ruleGroups cf)
   ] ++
   -- End the WorkflowParser object
   endWorkflowClass ++
@@ -72,7 +75,7 @@ generateRuleGroup (cat, rules) =
   [nest 4 $ generateRuleBody rules] ++
   [text "}"]
   where
-    catName = firstLowerCase $ show cat
+    catName = safeCatName cat
 
 -- | Generate the body of a rule
 generateRuleBody :: [Rule] -> Doc
@@ -122,7 +125,7 @@ generateCaseStatement r@(Rule fun _ _ _)
   | isCoercion fun = ""
   | null vars = fnm ++ "()"  -- Caso especial para lista vacía
   | otherwise = 
-      "case (" ++ head vars ++ concatMap (" ~ " ++) (safeTail vars) ++ ") => " 
+      "case (" ++ head vars ++ ", " ++ intercalate " ~ " (safeTail vars) ++ ") => "
       ++ fnm ++ "(" ++ intercalate ", " (filterSymbs vars) ++ ")"
   where
     vars = disambiguateNames $ map modifyVars (prPrintRule_ r)
@@ -161,32 +164,6 @@ generateSpecialRule tokenCat ruleName tokenName conversion catsAndRules =
 prPrintRule_ :: Rule -> [String]
 prPrintRule_ (Rule _ _ items _) = map getSymbFromName $ catToStrings items
 
--- | Convert a category or string to its string representation
-catToStrings :: [Either Cat String] -> [String]
-catToStrings = map (\case
-              Left c -> show c
-              Right s -> s
-            )
-
--- | Get a symbol name from a string
-getSymbFromName :: String -> String
-getSymbFromName s = 
-  case symbolToName s of
-    Just s -> s ++ "()"
-    _ -> s
-
--- | Get the function name for a rule
-getFunName :: Rule -> String
-getFunName (Rule fun _ _ _) = wpThing fun
-
--- | Check if a rule contains a specific token category
-hasTokenCat :: TokenCat -> Rule -> Bool
-hasTokenCat token (Rule _ _ rhs _) = TokenCat token `elem` [c | Left c <- rhs]
-
--- | Safe version of tail that returns an empty list for an empty list
-safeTail :: [a] -> [a]
-safeTail []     = []
-safeTail (_:xs) = xs 
 
 -- | Filter out strings ending with "()"
 filterSymbs :: [String] -> [String]
