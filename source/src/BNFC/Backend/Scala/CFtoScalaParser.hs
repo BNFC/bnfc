@@ -19,16 +19,17 @@ import qualified Data.Foldable as DF (toList)
 import Prelude hiding ((<>))
 import GHC.Unicode (isAlphaNum)
 
-import BNFC.Backend.Scala.Utils (safeTail, safeCatName, getSymbFromName, hasTokenCat, catToStrings, getFunName, inspectListRulesByCategory)
+import BNFC.Backend.Scala.Utils (safeTail, safeCatName, getSymbFromName, hasTokenCat, catToStrings, getFunName, inspectListRulesByCategory, getRulesFunsName, rhsToSafeStrings, disambiguateNames, getRHSCats)
 import BNFC.CF
 import BNFC.PrettyPrint
 import BNFC.Options ( SharedOptions(lang, Options) )
-import BNFC.Backend.Common.NamedVariables (firstLowerCase)
+import BNFC.Backend.Common.NamedVariables (firstLowerCase, fixCoercions)
 
 import Data.List (find, intercalate, isSuffixOf)
 import Data.Char (toLower)
 import Data.Maybe (listToMaybe)
 import System.Directory.Internal.Prelude (fromMaybe)
+import BNFC.Utils ((+++))
 
 -- | Main function that generates the Scala parser code
 cf2ScalaParser :: SharedOptions -> CF -> Doc
@@ -48,7 +49,7 @@ cf2ScalaParser Options{ lang } cf = vcat $
     -- Add parser rules
     generateAllRules (ruleGroups cf)
     -- inspect rules, only for debugging
-    -- ++ inspectListRulesByCategory (ruleGroups cf)
+    ++ inspectListRulesByCategory (ruleGroups cf)
   ] ++
   -- End the WorkflowParser object
   endWorkflowClass ++
@@ -60,7 +61,7 @@ generateAllRules :: [(Cat, [Rule])] -> [Doc]
 generateAllRules catsAndRules =
   let
     -- Generate regular rules
-    mainRules = concatMap generateRuleGroup catsAndRules
+    mainRules = map text $ concatMap generateRuleGroup (fixCoercions catsAndRules)
     
     -- Generate special rules for integer and string if needed
     integerRule = generateSpecialRule catInteger "integer" "INTEGER" "toInt" catsAndRules
@@ -69,35 +70,56 @@ generateAllRules catsAndRules =
   in mainRules ++ integerRule ++ stringRule
 
 -- | Generate a rule group (definition for a single category)
-generateRuleGroup :: (Cat, [Rule]) -> [Doc]
+generateRuleGroup :: (Cat, [Rule]) -> [String]
 generateRuleGroup (cat, rules) = 
-  [text $ "def " ++ catName ++ ": Parser[WorkflowAST] = positioned {"] ++
-  [nest 4 $ generateRuleBody rules] ++
-  [text "}"]
+  ["def " ++ catName ++ ": Parser[WorkflowAST] = positioned {"] ++
+  [replicate 4 ' ' ++ intercalate " | " (getRulesFunsName $ filter (not.isCoercion) rules)] ++
+  ["}"] ++
+  (generateRuleBody $ filter (not.isCoercion) rules)
   where
     catName = safeCatName cat
 
--- | Generate the body of a rule
-generateRuleBody :: [Rule] -> Doc
-generateRuleBody rules@(Rule _ cat _ _ : _) =
-  if any (hasTokenCat catInteger) rules
-  then text $ firstLowerCase catInteger
-  else 
-    let
-      vars = concatMap prPrintRule_ rules
-      exitCatName = firstLowerCase $ fromMaybe (error "Empty list encountered") $ listToMaybe $ filterNotEqual (show (wpThing cat)) $ filterSymbs vars
+-- | Based on a list of rules, generate the functions for the parser
+generateRuleBody :: [Rule] -> [String]
+generateRuleBody rules =
+  concatMap generateSingleRuleBody rules
+  where
+    generateSingleRuleBody :: Rule -> [String]
+    generateSingleRuleBody rule@(Rule fnam cat rhs _) =
+      let
+        isRecursiveRule = any (sameCat (wpThing cat)) (getRHSCats rhs)
+        ruleForm = if isRecursiveRule
+                     then case rhsToSafeStrings rhs of
+                            (_ : rest) -> "integer" : rest --TODO: we should get the "base" of the coercion recursion, in the calc is integer
+                            [] -> [] -- Handle empty rhs case
+                     else rhsToSafeStrings rhs
+        mainDef = [
+          "def " ++ firstLowerCase (funName fnam) ++ ": Parser[WorkflowAST] ="
+          +++ intercalate " ~ " ruleForm ++ " ^^ { " ++ generateCaseStatement rule ++ " }"
+          ]
+      in mainDef
+
+
+-- -- | Generate the body of a rule
+-- generateRuleBody :: [Rule] -> Doc
+-- generateRuleBody rules@(Rule _ cat _ _ : _) =
+--     let
+--       vars = concatMap prPrintRule_ rules
+--       exitCatName = firstLowerCase $ fromMaybe (error "Empty list encountered") $ listToMaybe $ filterNotEqual (show (wpThing cat)) $ filterSymbs vars
       
-      headerText = exitCatName ++ " ~ rep((" ++ intercalate " | " (onlySymbs (safeTail vars)) ++ ") ~ " ++ exitCatName ++ ") ^^ {"
-      subHeaderText = "case " ++ exitCatName ++ " ~ list => list.foldLeft(" ++ exitCatName ++ ") {"
+--       headerText = exitCatName ++ " ~ rep((" ++ intercalate " | " (onlySymbs (safeTail vars)) ++ ") ~ " ++ exitCatName ++ ") ^^ {"
+--       subHeaderText = "case " ++ exitCatName ++ " ~ list => list.foldLeft(" ++ exitCatName ++ ") {"
       
-      caseStatements = map generateCaseStatement rules
-    in
-      text headerText $+$
-      nest 4 (text subHeaderText) $+$
-      nest 8 (vcat $ map text $ filter (not . null) caseStatements) $+$
-      nest 4 (text "}") $+$
-      text "}"
-generateRuleBody [] = empty
+--       caseStatements = map generateCaseStatement rules
+--     in
+--       text headerText $+$
+--       nest 4 (text subHeaderText) $+$
+--       nest 8 (vcat $ map text $ filter (not . null) caseStatements) $+$
+--       nest 4 (text "}") $+$
+--       text "}"
+--     where
+--       isListCat = isList $ wpThing cat
+-- generateRuleBody [] = empty
 
 
 
@@ -125,22 +147,17 @@ generateCaseStatement r@(Rule fun _ _ _)
   | isCoercion fun = ""
   | null vars = fnm ++ "()"  -- Caso especial para lista vacía
   | otherwise = 
-      "case (" ++ head vars ++ ", " ++ intercalate " ~ " (safeTail vars) ++ ") => "
+      "case (" ++ intercalate " ~ "  vars ++ ") => "
       ++ fnm ++ "(" ++ intercalate ", " (filterSymbs vars) ++ ")"
   where
     vars = disambiguateNames $ map modifyVars (prPrintRule_ r)
     fnm = funName fun
-    -- modifyVars str = if "()" `isSuffixOf` str 
-    --                  then getSymbFromName str 
-    --                  else case str of
-    --                         (x:_) -> [toLower x]
-    --                         []    -> error "Empty string encountered in modifyVars"
     modifyVars str
       | "()" `isSuffixOf` str = str
       | all isAlphaNum str = case str of
                                (x:_) -> [toLower x]
                                []    -> error "Empty string encountered in modifyVars"
-      | otherwise = getSymbFromName str  -- Replace invalid symbols with placeho
+      | otherwise = getSymbFromName str  -- Replace invalid symbols with placeholder
 
 
 -- | Generate a special rule for tokens like Integer or String
@@ -177,15 +194,6 @@ onlySymbs = filter (isSuffixOf "()")
 filterNotEqual :: Eq a => a -> [a] -> [a]
 filterNotEqual element list = filter (/= element) list
 
--- | Make variable names unique by adding numbers to duplicates
-disambiguateNames :: [String] -> [String]
-disambiguateNames = disamb []
-  where
-    disamb ns1 (n:ns2)
-      | n `elem` (ns1 ++ ns2) = let i = length (filter (==n) ns1) + 1
-                               in (n ++ show i) : disamb (n:ns1) ns2
-      | otherwise = n : disamb (n:ns1) ns2
-    disamb _ [] = []
 
 -- | Generate the imports section
 imports :: String -> [Doc]

@@ -12,8 +12,8 @@
 -}
 
 module BNFC.Backend.Scala.Utils (
-    generateVarsList, unwrapListCat, baseTypeToScalaType, safeTail, 
-    wrapList, safeHeadString, scalaReserverWords, safeCatName, isLeft,
+    generateVarsList, unwrapListCat, baseTypeToScalaType, safeTail, rhsToSafeStrings, disambiguateNames,
+    wrapList, safeHeadString, scalaReserverWords, safeCatName, isLeft, getRulesFunsName, getRHSCats,
     getSymbFromName, catToStrings, getFunName, hasTokenCat, safeRefCatName, inspectListRulesByCategory
 ) where
 import BNFC.CF
@@ -24,6 +24,7 @@ import BNFC.Utils (symbolToName)
 import Data.Char (toUpper)
 import Text.PrettyPrint
 import BNFC.PrettyPrint
+import qualified Data.List
 
 
 generateVarsList :: [a] -> [String]
@@ -122,6 +123,14 @@ safeRefCatName cat = fromMaybe notSafeScalaCatName (scalaReserverWords notSafeSc
       ListCat innerCat -> firstUpperCase (safeCatName innerCat) -- Handle ListCat explicitly
       _                -> firstLowerCase $ show cat 
 
+getRulesFunsName :: [Rule] -> [String]
+getRulesFunsName rules = 
+  let
+    catNames = [firstLowerCase $ wpThing fnam | Rule fnam _ _ _ <- rules]
+    uniqueCatNames = Data.List.nub catNames
+  in
+    uniqueCatNames
+
 firstUpperCase :: String -> String
 firstUpperCase []     = []
 firstUpperCase (x:xs) = toUpper x : xs
@@ -136,12 +145,24 @@ getSymbFromName s =
 
 
 -- | Convert a category or string to its string representation
--- | Convert a category or string to its string representation
 catToStrings :: [Either Cat String] -> [String]
 catToStrings = Prelude.map (\case
               Left c -> show c
               Right s -> s
             )
+
+-- | Gived a list of rhs, return the list vars in safe strings
+-- | so for the EAdd it will return: ["exp", "PLUS()", "exp"]
+rhsToSafeStrings :: [Either Cat String] -> [String]
+rhsToSafeStrings = Prelude.map (\case
+              Left c -> firstLowerCase $ show $ normCat c
+              Right s -> case symbolToName s of
+                          Just s' -> s' ++ "()"
+                          Nothing -> s
+            )
+-- | Get all the Left Cat of the rhs of a rule
+getRHSCats :: [Either Cat String] -> [Cat]
+getRHSCats rhs = [c | Left c <- rhs]
 
 -- | Get the function name for a rule
 getFunName :: Rule -> String
@@ -176,3 +197,13 @@ inspectListRulesByCategory rulesByCat = concatMap inspectRulesByCategory rulesBy
 isLeft :: Either a b -> Bool
 isLeft (Left _) = True
 isLeft _        = False
+
+-- | Make variable names unique by adding numbers to duplicates
+disambiguateNames :: [String] -> [String]
+disambiguateNames = disamb []
+  where
+    disamb ns1 (n:ns2)
+      | n `elem` (ns1 ++ ns2) = let i = length (Prelude.filter (==n) ns1) + 1
+                               in (n ++ show i) : disamb (n:ns1) ns2
+      | otherwise = n : disamb (n:ns1) ns2
+    disamb _ [] = []
