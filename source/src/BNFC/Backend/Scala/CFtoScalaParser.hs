@@ -19,7 +19,7 @@ import qualified Data.Foldable as DF (toList)
 import Prelude hiding ((<>))
 import GHC.Unicode (isAlphaNum)
 
-import BNFC.Backend.Scala.Utils (safeTail, safeCatName, getSymbFromName, hasTokenCat, catToStrings, getFunName, inspectListRulesByCategory, getRulesFunsName, rhsToSafeStrings, disambiguateNames, getRHSCats)
+import BNFC.Backend.Scala.Utils (safeCatName, getSymbFromName, hasTokenCat, getFunName, getRulesFunsName, rhsToSafeStrings, disambiguateNames, getRHSCats, isSpecialCat, safeCatToStrings)
 import BNFC.CF
 import BNFC.PrettyPrint
 import BNFC.Options ( SharedOptions(lang, Options) )
@@ -28,7 +28,6 @@ import BNFC.Backend.Common.NamedVariables (firstLowerCase, fixCoercions)
 import Data.List (find, intercalate, isSuffixOf)
 import Data.Char (toLower)
 import Data.Maybe (listToMaybe)
-import System.Directory.Internal.Prelude (fromMaybe)
 import BNFC.Utils ((+++))
 
 -- | Main function that generates the Scala parser code
@@ -49,7 +48,7 @@ cf2ScalaParser Options{ lang } cf = vcat $
     -- Add parser rules
     generateAllRules (ruleGroups cf)
     -- inspect rules, only for debugging
-    ++ inspectListRulesByCategory (ruleGroups cf)
+    -- ++ inspectListRulesByCategory (ruleGroups cf)
   ] ++
   -- End the WorkflowParser object
   endWorkflowClass ++
@@ -95,51 +94,14 @@ generateRuleBody rules =
                      else rhsToSafeStrings rhs
         mainDef = [
           "def " ++ firstLowerCase (funName fnam) ++ ": Parser[WorkflowAST] ="
-          +++ intercalate " ~ " ruleForm ++ " ^^ { " ++ generateCaseStatement rule ++ " }"
+          +++ intercalate " ~ " ruleForm ++ 
+          if isRuleOnlySpecials
+            then ""
+            else " ^^ { " ++ generateCaseStatement rule ++ " }"
           ]
       in mainDef
-
-
--- -- | Generate the body of a rule
--- generateRuleBody :: [Rule] -> Doc
--- generateRuleBody rules@(Rule _ cat _ _ : _) =
---     let
---       vars = concatMap prPrintRule_ rules
---       exitCatName = firstLowerCase $ fromMaybe (error "Empty list encountered") $ listToMaybe $ filterNotEqual (show (wpThing cat)) $ filterSymbs vars
-      
---       headerText = exitCatName ++ " ~ rep((" ++ intercalate " | " (onlySymbs (safeTail vars)) ++ ") ~ " ++ exitCatName ++ ") ^^ {"
---       subHeaderText = "case " ++ exitCatName ++ " ~ list => list.foldLeft(" ++ exitCatName ++ ") {"
-      
---       caseStatements = map generateCaseStatement rules
---     in
---       text headerText $+$
---       nest 4 (text subHeaderText) $+$
---       nest 8 (vcat $ map text $ filter (not . null) caseStatements) $+$
---       nest 4 (text "}") $+$
---       text "}"
---     where
---       isListCat = isList $ wpThing cat
--- generateRuleBody [] = empty
-
-
-
--- generateCaseStatement :: Rule -> String
--- generateCaseStatement r@(Rule fun _ _ _)
---   | isCoercion fun = ""
---   | null vars = fnm ++ "()"  -- Special case for an empty list
---   | otherwise = 
---       "case (" ++ head vars ++ concatMap (" ~ " ++) (safeTail vars) ++ ") => " 
---       ++ fnm ++ "(" ++ intercalate ", " (filterSymbs vars) ++ ")"
---   where
---     vars = disambiguateNames $ map modifyVars (prPrintRule_ r)
---     fnm = funName fun
---     modifyVars str
---       | "()" `isSuffixOf` str = str
---       | all isAlphaNum str = case str of
---                                (x:_) -> [toLower x]
---                                []    -> error "Empty string encountered in modifyVars"
---       | otherwise = "sym" ++ show (length str)  -- Replace invalid symbols with placeholders
-
+      where     
+        isRuleOnlySpecials = all isSpecialCat (getRHSCats rhs)
 
 -- -- | Generate a case statement for a rule
 generateCaseStatement :: Rule -> String
@@ -179,20 +141,12 @@ generateSpecialRule tokenCat ruleName tokenName conversion catsAndRules =
 
 -- | Extract terminal and non-terminal symbols from a rule
 prPrintRule_ :: Rule -> [String]
-prPrintRule_ (Rule _ _ items _) = map getSymbFromName $ catToStrings items
+prPrintRule_ (Rule _ _ items _) = map getSymbFromName $ safeCatToStrings items
 
 
 -- | Filter out strings ending with "()"
 filterSymbs :: [String] -> [String]
 filterSymbs = filter (not . isSuffixOf "()")
-
--- | Keep only strings ending with "()"
-onlySymbs :: [String] -> [String]
-onlySymbs = filter (isSuffixOf "()")
-
--- | Remove an element from a list
-filterNotEqual :: Eq a => a -> [a] -> [a]
-filterNotEqual element list = filter (/= element) list
 
 
 -- | Generate the imports section

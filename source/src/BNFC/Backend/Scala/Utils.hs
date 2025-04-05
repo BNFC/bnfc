@@ -12,8 +12,8 @@
 -}
 
 module BNFC.Backend.Scala.Utils (
-    generateVarsList, unwrapListCat, baseTypeToScalaType, safeTail, rhsToSafeStrings, disambiguateNames,
-    wrapList, safeHeadString, scalaReserverWords, safeCatName, isLeft, getRulesFunsName, getRHSCats,
+    generateVarsList, unwrapListCat, baseTypeToScalaType, safeTail, rhsToSafeStrings, disambiguateNames, safeCatToStrings,
+    wrapList, safeHeadString, scalaReserverWords, safeCatName, isLeft, getRulesFunsName, getRHSCats, isSpecialCat,
     getSymbFromName, catToStrings, getFunName, hasTokenCat, safeRefCatName, inspectListRulesByCategory
 ) where
 import BNFC.CF
@@ -142,6 +142,12 @@ getSymbFromName s =
     Just s -> s ++ "()"
     _ -> s
 
+-- | Convert a category or string to its string representation
+safeCatToStrings :: [Either Cat String] -> [String]
+safeCatToStrings = Prelude.map (\case
+              Left c -> safeCatName c
+              Right s -> s
+            )
 
 
 -- | Convert a category or string to its string representation
@@ -155,7 +161,7 @@ catToStrings = Prelude.map (\case
 -- | so for the EAdd it will return: ["exp", "PLUS()", "exp"]
 rhsToSafeStrings :: [Either Cat String] -> [String]
 rhsToSafeStrings = Prelude.map (\case
-              Left c -> firstLowerCase $ show $ normCat c
+              Left c -> safeCatName $ normCat c
               Right s -> case symbolToName s of
                           Just s' -> s' ++ "()"
                           Nothing -> s
@@ -171,6 +177,11 @@ getFunName (Rule fun _ _ _) = wpThing fun
 -- | Check if a rule contains a specific token category
 hasTokenCat :: TokenCat -> Rule -> Bool
 hasTokenCat token (Rule _ _ rhs _) = TokenCat token `elem` [c | Left c <- rhs]
+
+isSpecialCat :: Cat -> Bool
+isSpecialCat (TokenCat cat) = cat `elem` baseTokenCatNames
+isSpecialCat _ = False
+
 
 -- Function to generate a list of Doc from a (Cat, [Rule])
 inspectRulesByCategory :: (Cat, [Rule]) -> [Doc]
