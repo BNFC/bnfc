@@ -19,13 +19,16 @@ import qualified Data.Foldable as DF (toList)
 import Prelude hiding ((<>))
 import GHC.Unicode (isAlphaNum)
 
-import BNFC.Backend.Scala.Utils (safeCatName, getSymbFromName, hasTokenCat, getFunName, getRulesFunsName, rhsToSafeStrings, disambiguateNames, getRHSCats, isSpecialCat, safeCatToStrings)
+import BNFC.Backend.Scala.Utils (
+  safeCatName, getSymbFromName, hasTokenCat, getFunName, rhsToSafeStrings, disambiguateNames, getRHSCats, isSpecialCat,
+  safeCatToStrings, inspectListRulesByCategory, isListCat, isLeft, generateClassSignature
+  )
 import BNFC.CF
 import BNFC.PrettyPrint
 import BNFC.Options ( SharedOptions(lang, Options) )
 import BNFC.Backend.Common.NamedVariables (firstLowerCase, fixCoercions)
 
-import Data.List (find, intercalate, isSuffixOf)
+import Data.List (find, intercalate, isSuffixOf, nub)
 import Data.Char (toLower)
 import Data.Maybe (listToMaybe)
 import BNFC.Utils ((+++))
@@ -48,7 +51,7 @@ cf2ScalaParser Options{ lang } cf = vcat $
     -- Add parser rules
     generateAllRules (ruleGroups cf)
     -- inspect rules, only for debugging
-    -- ++ inspectListRulesByCategory (ruleGroups cf)
+    ++ inspectListRulesByCategory (ruleGroups cf)
   ] ++
   -- End the WorkflowParser object
   endWorkflowClass ++
@@ -68,15 +71,26 @@ generateAllRules catsAndRules =
     
   in mainRules ++ integerRule ++ stringRule
 
+getRuleFunName :: Rule -> String
+getRuleFunName (Rule fnam _ _ _) = firstLowerCase $ funName fnam
+
+getRulesFunsName :: [Rule] -> [String]
+getRulesFunsName rules = nub $ map getRuleFunName rules
+  
 -- | Generate a rule group (definition for a single category)
 generateRuleGroup :: (Cat, [Rule]) -> [String]
 generateRuleGroup (cat, rules) = 
   ["def " ++ catName ++ ": Parser[WorkflowAST] = positioned {"] ++
-  [replicate 4 ' ' ++ intercalate " | " (getRulesFunsName $ filter (not.isCoercion) rules)] ++
+  [replicate 4 ' ' ++ intercalate " | " (getRulesFunsName nonCoercionRules)] ++
   ["}"] ++
-  (generateRuleBody $ filter (not.isCoercion) rules)
+  concatMap generateRuleFor nonCoercionRules
   where
     catName = safeCatName cat
+    nonCoercionRules = filter (not . isCoercion) rules
+    -- rulesToProcess = filter (\rule -> not (isListCat (wpThing $ valRCat rule))) nonCoercionRules
+
+    generateRuleFor :: Rule -> [String]
+    generateRuleFor rule = generateRuleBody [rule]
 
 -- | Based on a list of rules, generate the functions for the parser
 generateRuleBody :: [Rule] -> [String]
@@ -84,24 +98,30 @@ generateRuleBody rules =
   concatMap generateSingleRuleBody rules
   where
     generateSingleRuleBody :: Rule -> [String]
-    generateSingleRuleBody rule@(Rule fnam cat rhs _) =
+    generateSingleRuleBody rule@(Rule _ cat rhs _) =
       let
         isRecursiveRule = any (sameCat (wpThing cat)) (getRHSCats rhs)
         ruleForm = if isRecursiveRule
-                     then case rhsToSafeStrings rhs of
-                            (_ : rest) -> "integer" : rest --TODO: we should get the "base" of the coercion recursion, in the calc is integer
-                            [] -> [] -- Handle empty rhs case
-                     else rhsToSafeStrings rhs
+               then case rhsToSafeStrings rule of
+                (_ : rest) -> "integer" : rest --TODO: we should get the "base" of the coercion recursion, in the calc is integer
+                [] -> [] -- Handle empty rhs case
+               else case rhs of
+                [Right _] -> [generateClassSignature rule False]
+                _ -> map addRuleForListCat (rhsToSafeStrings rule)
         mainDef = [
-          "def " ++ firstLowerCase (funName fnam) ++ ": Parser[WorkflowAST] ="
-          +++ intercalate " ~ " ruleForm ++ 
+          "def " ++ getRuleFunName rule ++ ": Parser[WorkflowAST] ="
+            +++ intercalate " ~ " ruleForm ++ 
           if isRuleOnlySpecials
             then ""
             else " ^^ { " ++ generateCaseStatement rule ++ " }"
           ]
       in mainDef
-      where     
-        isRuleOnlySpecials = all isSpecialCat (getRHSCats rhs)
+      where
+        addRuleForListCat s = 
+          case find (\cat -> isListCat cat && safeCatName cat == s) (getRHSCats rhs) of
+            Just _ -> "rep(" ++ firstLowerCase s ++ ")"
+            Nothing -> s
+        isRuleOnlySpecials = all isSpecialCat (getRHSCats rhs) && all isLeft rhs
 
 -- -- | Generate a case statement for a rule
 generateCaseStatement :: Rule -> String
@@ -114,12 +134,15 @@ generateCaseStatement r@(Rule fun _ _ _)
   where
     vars = disambiguateNames $ map modifyVars (prPrintRule_ r)
     fnm = funName fun
-    modifyVars str
-      | "()" `isSuffixOf` str = str
-      | all isAlphaNum str = case str of
-                               (x:_) -> [toLower x]
+    cleanStrUnderscore str = case str of
+                               (x:xs) -> case xs of
+                                           (y:_) -> if x == '_' then [toLower y] else [toLower x]
+                                           []    -> [toLower x]
                                []    -> error "Empty string encountered in modifyVars"
-      | otherwise = getSymbFromName str  -- Replace invalid symbols with placeholder
+    modifyVars str 
+      | "()" `isSuffixOf` str = str
+      | all isAlphaNum str = cleanStrUnderscore str
+      | otherwise = cleanStrUnderscore $ getSymbFromName str  -- Replace invalid symbols with placeholder
 
 
 -- | Generate a special rule for tokens like Integer or String
@@ -143,11 +166,9 @@ generateSpecialRule tokenCat ruleName tokenName conversion catsAndRules =
 prPrintRule_ :: Rule -> [String]
 prPrintRule_ (Rule _ _ items _) = map getSymbFromName $ safeCatToStrings items
 
-
 -- | Filter out strings ending with "()"
 filterSymbs :: [String] -> [String]
 filterSymbs = filter (not . isSuffixOf "()")
-
 
 -- | Generate the imports section
 imports :: String -> [Doc]

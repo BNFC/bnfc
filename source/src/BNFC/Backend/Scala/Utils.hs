@@ -13,18 +13,20 @@
 
 module BNFC.Backend.Scala.Utils (
     generateVarsList, unwrapListCat, baseTypeToScalaType, safeTail, rhsToSafeStrings, disambiguateNames, safeCatToStrings,
-    wrapList, safeHeadString, scalaReserverWords, safeCatName, isLeft, getRulesFunsName, getRHSCats, isSpecialCat,
-    getSymbFromName, catToStrings, getFunName, hasTokenCat, safeRefCatName, inspectListRulesByCategory
+    wrapList, safeHeadString, scalaReserverWords, safeCatName, isLeft, getRHSCats, isSpecialCat, generateClassSignature,
+    getSymbFromName, catToStrings, getFunName, hasTokenCat, safeRefCatName, inspectListRulesByCategory, isListCat
 ) where
 import BNFC.CF
-import Data.Map
+import Data.Map hiding (map, filter)
 import BNFC.Backend.Common.NamedVariables (firstLowerCase)
 import System.Directory.Internal.Prelude (fromMaybe)
 import BNFC.Utils (symbolToName)
 import Data.Char (toUpper)
 import Text.PrettyPrint
 import BNFC.PrettyPrint
-import qualified Data.List
+import Data.List (isSuffixOf)
+import GHC.OldList (intercalate)
+import BNFC.Utils ((+++))
 
 
 generateVarsList :: [a] -> [String]
@@ -107,12 +109,11 @@ safeHeadString :: [String] -> String
 safeHeadString []     = ""
 safeHeadString (x:_) = x
 
-
 safeCatName :: Cat -> String
 safeCatName cat = fromMaybe notSafeScalaCatName (scalaReserverWords notSafeScalaCatName)
   where
     notSafeScalaCatName = case cat of
-      ListCat innerCat -> "list" ++ firstUpperCase (safeCatName innerCat) -- Handle ListCat explicitly
+      ListCat innerCat -> firstUpperCase (safeCatName innerCat) 
       _                -> firstLowerCase $ show cat
 
 
@@ -120,16 +121,10 @@ safeRefCatName :: Cat -> String
 safeRefCatName cat = fromMaybe notSafeScalaCatName (scalaReserverWords notSafeScalaCatName)
   where
     notSafeScalaCatName = case cat of
-      ListCat innerCat -> firstUpperCase (safeCatName innerCat) -- Handle ListCat explicitly
+      ListCat innerCat -> firstUpperCase (safeCatName innerCat) 
       _                -> firstLowerCase $ show cat 
 
-getRulesFunsName :: [Rule] -> [String]
-getRulesFunsName rules = 
-  let
-    catNames = [firstLowerCase $ wpThing fnam | Rule fnam _ _ _ <- rules]
-    uniqueCatNames = Data.List.nub catNames
-  in
-    uniqueCatNames
+
 
 firstUpperCase :: String -> String
 firstUpperCase []     = []
@@ -157,15 +152,41 @@ catToStrings = Prelude.map (\case
               Right s -> s
             )
 
+-- | Generate the class signature
+generateClassSignature :: Rule -> Bool-> String
+generateClassSignature (Rule fun _ rhs _) withParams = className ++ "(" ++ params ++ ")"
+  where
+    -- Function to format parameters based on whether they are Cat or String
+    catParams :: Either Cat String -> String
+    catParams (Left c)  = formatParamType c
+    catParams (Right _) = "WorkflowAST"
+
+    className = funName fun
+    params = if withParams then intercalate ", " $ zipWith (\x y -> x ++ ":" +++ y) (generateVarsList filteredRhs) (map catParams filteredRhs) else []
+    filteredRhs = filter isLeft rhs
+
+
+-- | Format a parameter with its type
+formatParamType :: Cat -> String
+formatParamType cat =
+  let baseCat = unwrapListCat cat  -- Extraemos el TokenCat base
+  in if baseCat `elem` BNFC.CF.baseTokenCatNames
+       then case baseTypeToScalaType baseCat of
+              Just s  -> wrapList cat s
+              Nothing -> "String"  -- Default a "String"
+       else wrapList cat "WorkflowAST"  -- Si no es baseTokenCat, usar WorkflowAST
+
+
 -- | Gived a list of rhs, return the list vars in safe strings
 -- | so for the EAdd it will return: ["exp", "PLUS()", "exp"]
-rhsToSafeStrings :: [Either Cat String] -> [String]
-rhsToSafeStrings = Prelude.map (\case
-              Left c -> safeCatName $ normCat c
-              Right s -> case symbolToName s of
-                          Just s' -> s' ++ "()"
-                          Nothing -> s
-            )
+rhsToSafeStrings :: Rule -> [String]
+rhsToSafeStrings rule@(Rule _ _ rhs _) = Prelude.map (\case
+        Left c -> safeCatName $ normCat c
+        Right s -> case symbolToName s of
+              Just s' -> s' ++ "()"
+              Nothing -> generateClassSignature rule False
+      ) rhs
+
 -- | Get all the Left Cat of the rhs of a rule
 getRHSCats :: [Either Cat String] -> [Cat]
 getRHSCats rhs = [c | Left c <- rhs]
@@ -209,11 +230,16 @@ isLeft :: Either a b -> Bool
 isLeft (Left _) = True
 isLeft _        = False
 
+isListCat :: Cat -> Bool
+isListCat (ListCat _) = True
+isListCat _ = False
+
 -- | Make variable names unique by adding numbers to duplicates
 disambiguateNames :: [String] -> [String]
 disambiguateNames = disamb []
   where
     disamb ns1 (n:ns2)
+      | "()" `isSuffixOf` n = n : disamb (n:ns1) ns2
       | n `elem` (ns1 ++ ns2) = let i = length (Prelude.filter (==n) ns1) + 1
                                in (n ++ show i) : disamb (n:ns1) ns2
       | otherwise = n : disamb (n:ns1) ns2
