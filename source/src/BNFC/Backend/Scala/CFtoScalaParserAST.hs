@@ -19,16 +19,19 @@ module BNFC.Backend.Scala.CFtoScalaParserAST (cf2ScalaParserAST) where
 import Prelude hiding ((<>))
 
 import BNFC.CF
-    ( ruleGroups,
+    ( baseTokenCatNames,
+      ruleGroups,
       CF,
       Cat(ListCat),
-      IsFun(isCoercion),
+      IsFun(funName, isCoercion),
       Rul(Rule),
       Rule,
       WithPosition(wpThing) )
 import BNFC.PrettyPrint ( text, vcat, Doc )
 import BNFC.Options ( SharedOptions(lang, Options) )
-import BNFC.Backend.Scala.Utils (generateClassSignature)
+import BNFC.Backend.Scala.Utils (generateVarsList, unwrapListCat, baseTypeToScalaType, wrapList, isLeft)
+import Data.List (intercalate)
+import BNFC.Utils ((+++))
 
 -- | Main function that generates the AST code
 cf2ScalaParserAST :: SharedOptions -> CF -> Doc
@@ -57,9 +60,30 @@ isCoercionRule (Rule fun _ _ _) = isCoercion fun
 
 -- | Create a single case class definition
 createCaseClass :: Rule -> Doc
-createCaseClass rule@(Rule _ cat _ _)
-  | ListCat _ <- (wpThing cat) = "" -- TODO: here we should process the list
-  | otherwise        = text $ "case class " ++ generateClassSignature rule True ++ " extends WorkflowAST"
+createCaseClass (Rule fun cat rhs _)
+  | ListCat _ <- (wpThing cat) = "" -- TODO: here we should process the lsit
+  | otherwise        = text $ "case class " ++ className ++ "(" ++ params ++ ") extends WorkflowAST"
+  where
+    className = funName fun
+
+    -- Función para formatear parámetros según sean Cat o String
+    catParams :: Either Cat String -> String
+    catParams (Left c)  = formatParamType c
+    catParams (Right _) = "WorkflowAST"
+
+    -- Aplicamos `catParams` a cada elemento de `rhs`
+    params = intercalate ", " $ zipWith (\x y -> x ++ ":" +++ y) (generateVarsList filteredRhs) (map catParams filteredRhs)
+    filteredRhs = filter isLeft rhs
+
+-- | Format a parameter with its type
+formatParamType :: Cat -> String
+formatParamType cat =
+  let baseCat = unwrapListCat cat  -- Extraemos el TokenCat base
+  in if baseCat `elem` BNFC.CF.baseTokenCatNames
+       then case baseTypeToScalaType baseCat of
+              Just s  -> wrapList cat s
+              Nothing -> "String"  -- Default a "String"
+       else wrapList cat "WorkflowAST"  -- Si no es baseTokenCat, usar WorkflowAST
 
 
 -- | Generate the header part of the file

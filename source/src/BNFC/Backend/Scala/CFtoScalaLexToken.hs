@@ -35,16 +35,25 @@ cf2ScalaLexToken Options{ lang } cf = vsep . concat $
     headers lang
     , [text $ concat $ map generateSymbClass symbs]
     , [generateStringClasses liters]
+    , [generateKeyWordClasses keyWords]
   ]
   where
     liters = literals cf
     symbs = unicodeAndSymbols cf
+    keyWords = reservedWords cf
 
 
 generateSymbClass :: String -> String
 generateSymbClass symb = case symbolToName symb of 
   Just s -> "case class " ++ s ++ "() extends WorkflowToken \n"
   Nothing -> ""
+
+
+generateKeyWordClasses :: [String] -> Doc
+generateKeyWordClasses params = text $ concat $ map generateKeyWordClass params
+
+generateKeyWordClass :: String -> String
+generateKeyWordClass param = "case class " ++ (map toUpper param) ++ "() extends WorkflowToken \n"
 
 
 generateStringClasses :: [String] -> Doc

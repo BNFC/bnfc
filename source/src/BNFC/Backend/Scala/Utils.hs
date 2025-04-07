@@ -13,11 +13,11 @@
 
 module BNFC.Backend.Scala.Utils (
     generateVarsList, unwrapListCat, baseTypeToScalaType, safeTail, rhsToSafeStrings, disambiguateNames, safeCatToStrings,
-    wrapList, safeHeadString, scalaReserverWords, safeCatName, isLeft, getRHSCats, isSpecialCat, generateClassSignature,
+    wrapList, safeHeadString, scalaReserverWords, safeCatName, isLeft, getRHSCats, isSpecialCat, firstUpperCase, safeHeadChar,
     getSymbFromName, catToStrings, getFunName, hasTokenCat, safeRefCatName, inspectListRulesByCategory, isListCat
 ) where
 import BNFC.CF
-import Data.Map hiding (map, filter)
+import Data.Map
 import BNFC.Backend.Common.NamedVariables (firstLowerCase)
 import System.Directory.Internal.Prelude (fromMaybe)
 import BNFC.Utils (symbolToName)
@@ -25,8 +25,6 @@ import Data.Char (toUpper)
 import Text.PrettyPrint
 import BNFC.PrettyPrint
 import Data.List (isSuffixOf)
-import GHC.OldList (intercalate)
-import BNFC.Utils ((+++))
 
 
 generateVarsList :: [a] -> [String]
@@ -70,33 +68,33 @@ reserverWordsMap = fromList wordsMap
 wordsMap :: [(String, String)]
 wordsMap =
   [ 
-      ("def"  , "_def")
-    , ("val"  , "_val")
-    , ("var"  , "_var")
-    , ("class", "_class")
-    , ("object", "_object")
-    , ("trait", "_trait")
-    , ("extends", "_extends")
-    , ("with", "_with")
-    , ("case", "_case")
-    , ("sealed", "_sealed")
-    , ("abstract", "_abstract")
-    , ("final", "_final")
-    , ("override", "_override")
-    , ("implicit", "_implicit")
-    , ("lazy", "_lazy")
-    , ("private", "_private")
-    , ("protected", "_protected")
-    , ("public", "_public")
-    , ("import", "_import")
-    , ("package", "_package")
-    , ("return", "_return")
-    , ("if", "_if")
-    , ("else", "_else")
-    , ("while", "_while")
-    , ("for", "_for")
-    , ("do", "_do")
-    , ("match", "_match")
+      ("def"  , "pdef")
+    , ("val"  , "pval")
+    , ("var"  , "pvar")
+    , ("class", "pclass")
+    , ("object", "pobject")
+    , ("trait", "ptrait")
+    , ("extends", "pextends")
+    , ("with", "pwith")
+    , ("case", "pcase")
+    , ("sealed", "psealed")
+    , ("abstract", "pabstract")
+    , ("final", "pfinal")
+    , ("override", "poverride")
+    , ("implicit", "pimplicit")
+    , ("lazy", "plazy")
+    , ("private", "pprivate")
+    , ("protected", "pprotected")
+    , ("public", "ppublic")
+    , ("import", "pimport")
+    , ("package", "ppackage")
+    , ("return", "preturn")
+    , ("if", "pif")
+    , ("else", "pelse")
+    , ("while", "pwhile")
+    , ("for", "pfor")
+    , ("do", "pdo")
+    , ("match", "pmatch")
   ]
 
 -- | Safe version of tail that returns an empty list for an empty list
@@ -108,6 +106,11 @@ safeTail (_:xs) = xs
 safeHeadString :: [String] -> String
 safeHeadString []     = ""
 safeHeadString (x:_) = x
+
+-- | Safe version of head that returns an empty list for an empty list
+safeHeadChar :: [Char] -> Char
+safeHeadChar []     = ' '
+safeHeadChar (x:_) = x
 
 safeCatName :: Cat -> String
 safeCatName cat = fromMaybe notSafeScalaCatName (scalaReserverWords notSafeScalaCatName)
@@ -152,41 +155,15 @@ catToStrings = Prelude.map (\case
               Right s -> s
             )
 
--- | Generate the class signature
-generateClassSignature :: Rule -> Bool-> String
-generateClassSignature (Rule fun _ rhs _) withParams = className ++ "(" ++ params ++ ")"
-  where
-    -- Function to format parameters based on whether they are Cat or String
-    catParams :: Either Cat String -> String
-    catParams (Left c)  = formatParamType c
-    catParams (Right _) = "WorkflowAST"
-
-    className = funName fun
-    params = if withParams then intercalate ", " $ zipWith (\x y -> x ++ ":" +++ y) (generateVarsList filteredRhs) (map catParams filteredRhs) else []
-    filteredRhs = filter isLeft rhs
-
-
--- | Format a parameter with its type
-formatParamType :: Cat -> String
-formatParamType cat =
-  let baseCat = unwrapListCat cat  -- Extraemos el TokenCat base
-  in if baseCat `elem` BNFC.CF.baseTokenCatNames
-       then case baseTypeToScalaType baseCat of
-              Just s  -> wrapList cat s
-              Nothing -> "String"  -- Default a "String"
-       else wrapList cat "WorkflowAST"  -- Si no es baseTokenCat, usar WorkflowAST
-
-
 -- | Gived a list of rhs, return the list vars in safe strings
 -- | so for the EAdd it will return: ["exp", "PLUS()", "exp"]
-rhsToSafeStrings :: Rule -> [String]
-rhsToSafeStrings rule@(Rule _ _ rhs _) = Prelude.map (\case
-        Left c -> safeCatName $ normCat c
-        Right s -> case symbolToName s of
-              Just s' -> s' ++ "()"
-              Nothing -> generateClassSignature rule False
-      ) rhs
-
+rhsToSafeStrings :: [Either Cat String] -> [String]
+rhsToSafeStrings = Prelude.map (\case
+              Left c -> safeCatName $ normCat c
+              Right s -> case symbolToName s of
+                          Just s' -> s' ++ "()"
+                          Nothing -> (Prelude.map toUpper s) ++ "()"
+            )
 -- | Get all the Left Cat of the rhs of a rule
 getRHSCats :: [Either Cat String] -> [Cat]
 getRHSCats rhs = [c | Left c <- rhs]
@@ -239,6 +216,7 @@ disambiguateNames :: [String] -> [String]
 disambiguateNames = disamb []
   where
     disamb ns1 (n:ns2)
+      | n == "_" = n : disamb (n:ns1) ns2
       | "()" `isSuffixOf` n = n : disamb (n:ns1) ns2
       | n `elem` (ns1 ++ ns2) = let i = length (Prelude.filter (==n) ns1) + 1
                                in (n ++ show i) : disamb (n:ns1) ns2
