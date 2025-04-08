@@ -19,17 +19,16 @@ import qualified Data.Foldable as DF (toList)
 import Prelude hiding ((<>))
 import GHC.Unicode (isAlphaNum)
 
-import BNFC.Backend.Scala.Utils (safeCatName, getSymbFromName, hasTokenCat, rhsToSafeStrings, disambiguateNames, getRHSCats, isSpecialCat, safeCatToStrings, inspectListRulesByCategory, isListCat, isLeft, safeHeadChar)
+import BNFC.Backend.Scala.Utils (safeCatName, getSymbFromName, hasTokenCat, rhsToSafeStrings, disambiguateNames, getRHSCats, isSpecialCat, safeCatToStrings, inspectListRulesByCategory, isListCat, isLeft, safeHeadChar, disambiguateTuples, baseTypeToScalaType)
 import BNFC.CF
 import BNFC.PrettyPrint
 import BNFC.Options ( SharedOptions(lang, Options) )
 import BNFC.Backend.Common.NamedVariables (firstLowerCase, fixCoercions)
 
 import Data.List (find, intercalate, isSuffixOf, nub)
-import Data.Char (toLower)
+import Data.Char (toLower, toUpper)
 import Data.Maybe (listToMaybe)
 import BNFC.Utils ((+++))
-import Data.Char (toUpper)
 
 -- | Main function that generates the Scala parser code
 cf2ScalaParser :: SharedOptions -> CF -> Doc
@@ -67,10 +66,12 @@ generateAllRules catsAndRules =
     mainRules = map text $ concatMap generateRuleGroup (fixCoercions rulesToProcess)
     
     -- Generate special rules for integer and string if needed
-    integerRule = generateSpecialRule catInteger "integer" "INTEGER" "toInt" "Integer" catsAndRules
-    stringRule = generateSpecialRule catString "string" "STRING" "toString" "String" catsAndRules
+    integerRule = generateSpecialRule catInteger "integer" "INTEGER" "toInt" "pInteger" catsAndRules
+    stringRule = generateSpecialRule catString "string" "STRING" "toString" "pString" catsAndRules
+    charRule = generateSpecialRule catChar "char" "CHAR" "charAt(0)" "pChar" catsAndRules
+    identRule = generateSpecialRule catIdent "ident" "IDENT" "toString" "pString" catsAndRules
     
-  in mainRules ++ integerRule ++ stringRule
+  in mainRules ++ integerRule ++ stringRule ++ charRule ++ identRule
 
 getRuleFunName :: Rule -> String
 getRuleFunName (Rule fnam _ _ _) = firstLowerCase $ funName fnam
@@ -95,74 +96,98 @@ generateRuleGroup (cat, rules) =
 
 -- | Based on a list of rules, generate the functions for the parser
 generateRuleBody :: [Rule] -> [String]
-generateRuleBody rules =
-  concatMap generateSingleRuleBody rules
-  where
-    generateSingleRuleBody :: Rule -> [String]
-    generateSingleRuleBody rule@(Rule _ cat rhs _) =
-      let
-        isRecursiveRule = any (sameCat (wpThing cat)) (getRHSCats rhs)
-        ruleForm = if isRecursiveRule
-               then case rhsToSafeStrings rhs of
-                (_ : rest) -> "integer" : rest -- TODO: we should get the "base" of the coercion recursion, in the calc is integer
-                [] -> [] -- Handle empty rhs case
-               else case rhs of
-                [Right s] -> [map toUpper s ++ "()"]
-                _ -> map addRuleForListCat (rhsToSafeStrings rhs)
-        mainDef = [
-          "def " ++ getRuleFunName rule ++ ": Parser[WorkflowAST] ="
-            +++ intercalate " ~ " ruleForm ++ 
-          if isRuleOnlySpecials
-            then ""
-            else " ^^ { " ++ generateCaseStatement rule ++ " }"
-          ]
-      in if (not.isNilCons) rule then mainDef else [""]
-      where
-        addRuleForListCat s = 
-          case find (\cat -> isListCat cat && safeCatName cat == s) (getRHSCats rhs) of
-            Just _ -> "rep(" ++ firstLowerCase s ++ ")"
-            Nothing -> s
-        isRuleOnlySpecials = all isSpecialCat (getRHSCats rhs) && all isLeft rhs
+generateRuleBody rules = concatMap generateSingleRuleBody rules
+
+generateSingleRuleBody :: Rule -> [String]
+generateSingleRuleBody rule@(Rule _ _ _ _) = [generateRuleDefinition rule ++ generateRuleTransformation rule]
+
+generateRuleDefinition :: Rule -> String
+generateRuleDefinition rule =
+  "def " ++ getRuleFunName rule ++ ": Parser[WorkflowAST] ="
+    +++ intercalate " ~ " (generateRuleForm rule)
+
+generateRuleForm :: Rule -> [String]
+generateRuleForm rule@(Rule _ _ rhs _) =
+  if isRecursiveRule rule
+    then case rhsToSafeStrings rhs of
+      (_ : rest) -> "integer" : rest
+      [] -> [""] -- Handle empty rhs case
+    else case rhs of
+      [Right s] -> [map toUpper s ++ "()"]
+      _ -> map (addRuleForListCat rhs) (rhsToSafeStrings rhs)
+
+generateRuleTransformation :: Rule -> String
+generateRuleTransformation rule =
+  if isRuleOnlySpecials rule
+    then case rhsRule rule of
+      [] -> "EMPTY() ^^ {" ++ generateCaseStatement rule ++ "}"
+      _ -> ""
+    else " ^^ { " ++ generateCaseStatement rule ++ " }"
+
+isRecursiveRule :: Rule -> Bool
+isRecursiveRule (Rule _ cat rhs _) =
+  any (sameCat (wpThing cat)) (getRHSCats rhs)
+
+addRuleForListCat :: [Either Cat String] -> String -> String
+addRuleForListCat rhs s =
+  case find (\cat -> isListCat cat && safeCatName cat == s) (getRHSCats rhs) of
+    Just _ -> "rep(" ++ firstLowerCase s ++ ")"
+    Nothing -> s
+
+isRuleOnlySpecials :: Rule -> Bool
+isRuleOnlySpecials (Rule _ _ rhs _) =
+  all isSpecialCat (getRHSCats rhs) && all isLeft rhs
 
 -- -- | Generate a case statement for a rule
 generateCaseStatement :: Rule -> String
 generateCaseStatement rule@(Rule fun _ _ _)
   | isCoercion fun = ""
-  | null vars = fnm ++ "()"
+  | null vars = "_ => " ++ fnm ++ "()"
   | otherwise = 
       "case (" ++ intercalate " ~ "  params ++ ") => "
       ++ fnm ++ "(" ++ intercalate ", " vars ++ ")"
   where
     getRHSParamsFromRule :: Rule -> [String]
-    getRHSParamsFromRule (Rule _ _ items _) = map getSymbFromName $ safeCatToStrings items
+    getRHSParamsFromRule (Rule _ _ items _) = 
+      disambiguateNames $ map modifyParams $ map getSymbFromName $ safeCatToStrings items
 
-    getFunVarsFromRule :: Rule -> [String]
-    getFunVarsFromRule (Rule _ _ items _) = map getSymbFromName $ safeCatToStrings $ filter isLeft items
+    getFunVarsWithTypeFromRule :: Rule -> [(String, String)]
+    getFunVarsWithTypeFromRule (Rule _ _ items _) = 
+      disambiguateTuples $ map (\(c, s) -> (modifyVars (getSymbFromName (safeCatName c)), s)) $ map addTypesToVars $ getRHSCats items
 
-    addCastToVar :: String -> String
-    addCastToVar str = str ++ ".asInstanceOf[WorkflowAST]"
+    getBaseType :: Cat -> String
+    getBaseType cat
+      | isListCat cat = "List[WorkflowAST]"
+      | otherwise = "WorkflowAST"
 
-    params = disambiguateNames $ map modifyVars $ concatMap getRHSParamsFromRule [rule]
-    vars = map addCastToVar $ disambiguateNames $ map modifyVars (getFunVarsFromRule rule)
+    addTypesToVars :: Cat -> (Cat, String)
+    addTypesToVars cat = (cat, ".asInstanceOf[" ++ getBaseType cat ++ "]")
+
+    params = concatMap getRHSParamsFromRule [rule]
+    vars = map (\(var, typ) -> var ++ typ) $ getFunVarsWithTypeFromRule rule
     fnm = funName fun
 
     modifyVars str 
+      | all isAlphaNum str = [toLower $ safeHeadChar str]
+      | otherwise = [toLower $ safeHeadChar $ getSymbFromName str] 
+
+    modifyParams str 
       | "()" `isSuffixOf` str = "_"
       | all isAlphaNum str = [toLower $ safeHeadChar str]
-      | otherwise = [toLower $ safeHeadChar $ getSymbFromName str]  -- Replace invalid symbols with placeholder, this should be already done but is being manage here for safety
+      | otherwise = [toLower $ safeHeadChar $ getSymbFromName str] 
 
 
 -- | Generate a special rule for tokens like Integer or String
 generateSpecialRule :: TokenCat -> String -> String -> String -> String -> [(Cat, [Rule])] -> [Doc]
-generateSpecialRule tokenCat ruleName tokenName conversion scalaType catsAndRules =
+generateSpecialRule tokenCat ruleName tokenName conversion pTypeName catsAndRules =
   case find (\(_, rules) -> any (hasTokenCat tokenCat) rules) catsAndRules of
     Just (_, rules) -> case find (hasTokenCat tokenCat) rules of
       Just _ -> 
         let 
           conversionPart = if null conversion then "" else "." ++ conversion
         in
-          [ text $ "def " ++ ruleName ++ ": Parser[" ++ scalaType ++ "] = {"
-          , nest 4 $ text $ "accept(\"" ++ ruleName ++ "\", { case " ++ tokenName ++ "(i) => i" ++ conversionPart ++ " })"
+          [ text $ "def " ++ ruleName ++ ": Parser[" ++ pTypeName ++ "] = {"
+          , nest 4 $ text $ "accept(\"" ++ ruleName ++ "\", { case " ++ tokenName ++ "(i) => " ++ pTypeName ++ "(i" ++ conversionPart ++ ") })"
           , text "}"
           ]
       Nothing -> []

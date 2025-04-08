@@ -14,7 +14,7 @@
 module BNFC.Backend.Scala.Utils (
     generateVarsList, unwrapListCat, baseTypeToScalaType, safeTail, rhsToSafeStrings, disambiguateNames, safeCatToStrings,
     wrapList, safeHeadString, scalaReserverWords, safeCatName, isLeft, getRHSCats, isSpecialCat, firstUpperCase, safeHeadChar,
-    getSymbFromName, catToStrings, getFunName, hasTokenCat, safeRefCatName, inspectListRulesByCategory, isListCat
+    getSymbFromName, catToStrings, getFunName, hasTokenCat, safeRefCatName, inspectListRulesByCategory, isListCat, disambiguateTuples
 ) where
 import BNFC.CF
 import Data.Map
@@ -222,3 +222,9 @@ disambiguateNames = disamb []
                                in (n ++ show i) : disamb (n:ns1) ns2
       | otherwise = n : disamb (n:ns1) ns2
     disamb _ [] = []
+
+disambiguateTuples :: [(String, String)] -> [(String, String)]
+disambiguateTuples tuples =
+  let (names, values) = unzip tuples
+      newNames = disambiguateNames names
+  in zip newNames values
