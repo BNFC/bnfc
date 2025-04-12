@@ -14,7 +14,8 @@
 module BNFC.Backend.Scala.Utils (
     generateVarsList, unwrapListCat, baseTypeToScalaType, safeTail, rhsToSafeStrings, disambiguateNames, safeCatToStrings,
     wrapList, safeHeadString, scalaReserverWords, safeCatName, isLeft, getRHSCats, isSpecialCat, firstUpperCase, safeHeadChar,
-    getSymbFromName, catToStrings, getFunName, hasTokenCat, safeRefCatName, inspectListRulesByCategory, isListCat, disambiguateTuples
+    getSymbFromName, catToStrings, getFunName, hasTokenCat, safeRefCatName, inspectListRulesByCategory, isListCat, disambiguateTuples,
+    wildCardSymbs
 ) where
 import BNFC.CF
 import Data.Map
@@ -55,6 +56,7 @@ scalaTypesMap =
   [ ("Integer"  , "Int")
   , ("String"   , "String")
   , ("Double"   , "Double")
+  , ("Ident"   , "String")
   ]
 
 scalaReserverWords :: String -> Maybe String
@@ -72,6 +74,7 @@ wordsMap =
     , ("val"  , "pval")
     , ("var"  , "pvar")
     , ("class", "pclass")
+    , ("type", "ptype")
     , ("object", "pobject")
     , ("trait", "ptrait")
     , ("extends", "pextends")
@@ -95,6 +98,12 @@ wordsMap =
     , ("for", "pfor")
     , ("do", "pdo")
     , ("match", "pmatch")
+    , ("try", "pttry")
+    , ("catch", "pcatch")
+    , ("finally", "pfinally")
+    , ("throw", "pthrow")
+    , ("apply", "papply")
+    , ("program", "pprogram")
   ]
 
 -- | Safe version of tail that returns an empty list for an empty list
@@ -138,6 +147,12 @@ getSymbFromName :: String -> String
 getSymbFromName s = 
   case symbolToName s of
     Just s -> s ++ "()"
+    _ -> s
+
+wildCardSymbs :: String -> String
+wildCardSymbs s = 
+  case symbolToName s of
+    Just _ -> "_"
     _ -> s
 
 -- | Convert a category or string to its string representation

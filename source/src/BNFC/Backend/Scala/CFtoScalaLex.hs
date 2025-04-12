@@ -24,6 +24,8 @@ import BNFC.Options
 import BNFC.Backend.Common (unicodeAndSymbols)
 import Data.List (intercalate)
 import Data.Char (toLower)
+import GHC.OldList (nub)
+import GHC.Unicode (toUpper)
 
 -- | Converts a string to lowercase
 toLowerString :: String -> String
@@ -43,17 +45,18 @@ cf2ScalaLex Options{ lang } cf = vcat $
     -- Add apply function
     getApplyFunction ++
     -- Add tokens function
-    getTokensFunction (symbs ++ liters) ++
+    getTokensFunction (symbs ++ keyWords ++ liters) ++
     -- Add parser functions for literals
     map addParserFunction liters ++
     -- Add keyword parsers
-    map getKeywordParser symbs
+    map getBaseLexs (keyWords ++ symbs)
   ] ++
   -- End the WorkflowLexer object
   endWorkflowClass
   where
+    keyWords = reservedWords cf
     symbs  = unicodeAndSymbols cf
-    liters = literals cf
+    liters = nub $ literals cf
 
 -- | Generate a parser function for a specific literal type
 addParserFunction :: String -> Doc
@@ -166,7 +169,7 @@ getSymbFromName :: String -> String
 getSymbFromName s = 
   case symbolToName s of
     Just s -> s
-    _ -> s
+    _ -> map toUpper s
 
 -- | Generate the tokens function
 getTokensFunction :: [String] -> [Doc]
@@ -186,7 +189,7 @@ getListSymNames :: [String] -> [String]
 getListSymNames = map getSymName
 
 -- | Generate a keyword parser for a symbol
-getKeywordParser :: String -> Doc
-getKeywordParser symb = 
+getBaseLexs :: String -> Doc
+getBaseLexs symb = 
   text "" $+$
   text ("def " ++ getSymName symb ++ " = positioned { \"" ++ toLowerString symb ++ "\" ^^ (_ => " ++ getSymbFromName symb ++ "()) }")

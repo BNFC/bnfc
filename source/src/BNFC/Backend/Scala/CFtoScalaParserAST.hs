@@ -14,7 +14,7 @@
     Created       : 30 September, 2024
 -}
 
-module BNFC.Backend.Scala.CFtoScalaParserAST (cf2ScalaParserAST) where
+module BNFC.Backend.Scala.CFtoScalaParserAST (cf2ScalaParserAST, getASTNames) where
 
 import Prelude hiding ((<>))
 
@@ -24,14 +24,14 @@ import BNFC.CF
       Cat(ListCat),
       IsFun(funName, isCoercion),
       Rul(Rule),
-      Rule,
-      WithPosition(wpThing), TokenCat, literals )
+      Rule, TokenCat, literals, wpThing )
 import BNFC.PrettyPrint ( text, vcat, Doc )
 import BNFC.Options ( SharedOptions(lang, Options) )
 import BNFC.Backend.Scala.Utils (generateVarsList, isLeft, baseTypeToScalaType, wrapList)
 import Data.List (intercalate)
 import BNFC.Utils ((+++))
 import Data.Maybe (fromMaybe)
+import GHC.OldList (nub)
 
 -- | Main function that generates the AST code
 cf2ScalaParserAST :: SharedOptions -> CF -> Doc
@@ -45,7 +45,14 @@ cf2ScalaParserAST Options{ lang } cf = vcat $
   generateLiteralsDefs allLiterals
   where
     rules = ruleGroups cf
-    allLiterals = literals cf
+    allLiterals = nub $ literals cf
+
+getASTNames :: [Rule] -> [String]
+getASTNames rules = rulesNames
+  where
+    rulesNames = map (\(Rule fun _ _ _) -> funName fun) $
+           filter (\(Rule _ cat _ _) -> not $ case wpThing cat of ListCat _ -> True; _ -> False) filteredRules
+    filteredRules = filter (not . isCoercionRule) $ rules
 
 -- | Generate all case class definitions
 generateRuleDefs :: [(Cat, [Rule])] -> [Doc]
@@ -72,19 +79,17 @@ generateClassParams (Rule _ _ rhs _) =
 
     filteredRhs = filter isLeft rhs
 
-
 -- | Format a parameter with its type
 formatParamType :: Cat -> String
-formatParamType cat = wrapList cat "WorkflowAST"  -- Si no es baseTokenCat, usar WorkflowAST
+formatParamType cat = wrapList cat "WorkflowAST"
 
 -- | Create a single case class definition
 createCaseClass :: Rule -> Doc
 createCaseClass rule@(Rule fun cat _ _)
-  | ListCat _ <- (wpThing cat) = "" -- TODO: here we should process the list
+  | ListCat _ <- (wpThing cat) = mempty 
   | otherwise = text $ formatCaseClass className params
   where
     className = funName fun
-    -- Apply `catParams` to each element of `rhs`
     params = generateClassParams rule
 
 -- | Helper function to format the case class definition
@@ -93,7 +98,9 @@ formatCaseClass className params = "case class " ++ className ++ "(" ++ params +
 
 -- | Generate the Scala types for basic LBNF types
 generateLiteralsDefs :: [TokenCat] -> [Doc]
-generateLiteralsDefs tokens = map (\token -> text $ formatCaseClass ("p" ++ token) ("var1: " ++ fromMaybe token (baseTypeToScalaType token))) tokens
+generateLiteralsDefs tokens = map (
+    \token -> text $ formatCaseClass ("p" ++ token) ("var1: " ++ fromMaybe "String" (baseTypeToScalaType token))
+  ) tokens
 
 -- | Generate the header part of the file
 headers :: String -> [Doc]

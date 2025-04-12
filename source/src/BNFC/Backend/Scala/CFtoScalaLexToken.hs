@@ -25,6 +25,8 @@ import BNFC.Options
 import BNFC.Backend.Common (unicodeAndSymbols)
 import BNFC.Utils (symbolToName)
 import Data.Char (toUpper)
+import System.Directory.Internal.Prelude (toLower)
+import Data.List (nub)
 
 cf2ScalaLexToken
   :: SharedOptions     
@@ -33,12 +35,15 @@ cf2ScalaLexToken
 cf2ScalaLexToken Options{ lang } cf = vsep . concat $
   [ 
     headers lang
-    , [text $ concat $ map generateSymbClass symbs]
-    , [generateStringClasses liters]
-    , [generateKeyWordClasses keyWords]
+    , [text $ concat $ map generateSymbClass (symbs)]
+    , [generateStringClasses (filter (\x -> map toLower x `notElem` map (map toLower) symbs) liters)]
+    , [generateKeyWordClasses (filter (\x -> map toLower x `notElem` map (map toLower) (symbs ++ liters)) (keyWords ++ ["empty"]))]
+    -- , [text $ "Symbols: " ++ show symbs]
+    -- , [text $ "Literals: " ++ show liters]
+    -- , [text $ "Keywords: " ++ show keyWords] 
   ]
   where
-    liters = literals cf
+    liters = nub $ literals cf
     symbs = unicodeAndSymbols cf
     keyWords = reservedWords cf
 
@@ -46,7 +51,7 @@ cf2ScalaLexToken Options{ lang } cf = vsep . concat $
 generateSymbClass :: String -> String
 generateSymbClass symb = case symbolToName symb of 
   Just s -> "case class " ++ s ++ "() extends WorkflowToken \n"
-  Nothing -> ""
+  Nothing -> mempty
 
 
 generateKeyWordClasses :: [String] -> Doc

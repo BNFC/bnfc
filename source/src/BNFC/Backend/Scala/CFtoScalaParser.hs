@@ -17,18 +17,19 @@ module BNFC.Backend.Scala.CFtoScalaParser (cf2ScalaParser) where
 
 import qualified Data.Foldable as DF (toList)
 import Prelude hiding ((<>))
-import GHC.Unicode (isAlphaNum)
 
-import BNFC.Backend.Scala.Utils (safeCatName, getSymbFromName, hasTokenCat, rhsToSafeStrings, disambiguateNames, getRHSCats, isSpecialCat, safeCatToStrings, inspectListRulesByCategory, isListCat, isLeft, safeHeadChar, disambiguateTuples, baseTypeToScalaType)
+import BNFC.Backend.Scala.Utils (safeCatName, hasTokenCat, rhsToSafeStrings, disambiguateNames, getRHSCats, isSpecialCat, inspectListRulesByCategory, isListCat, isLeft, safeHeadChar, wildCardSymbs, scalaReserverWords)
 import BNFC.CF
 import BNFC.PrettyPrint
 import BNFC.Options ( SharedOptions(lang, Options) )
 import BNFC.Backend.Common.NamedVariables (firstLowerCase, fixCoercions)
 
-import Data.List (find, intercalate, isSuffixOf, nub)
-import Data.Char (toLower, toUpper)
-import Data.Maybe (listToMaybe)
-import BNFC.Utils ((+++))
+import Data.List (find, intercalate, nub)
+import Data.Char (toLower)
+import Data.Maybe (listToMaybe, fromMaybe, isJust)
+import BNFC.Utils ((+++), symbolToName)
+import BNFC.Backend.Scala.CFtoScalaParserAST (getASTNames)
+import GHC.Unicode (toUpper)
 
 -- | Main function that generates the Scala parser code
 cf2ScalaParser :: SharedOptions -> CF -> Doc
@@ -41,14 +42,18 @@ cf2ScalaParser Options{ lang } cf = vcat $
   [nest 4 $ vcat $ 
     -- Add extra classes
     addExtraClasses ++
+    [text ""] ++
     -- Add apply function
     getApplyFunction ++
+    [text ""] ++
     -- Add program function
     getProgramFunction cf ++
+    [text ""] ++
     -- Add parser rules
-    generateAllRules (ruleGroups cf)
+    generateAllRules (ruleGroups cf) ++
+    [text ""] 
     -- inspect rules, only for debugging
-    ++ inspectListRulesByCategory (ruleGroups cf)
+    -- ++ inspectListRulesByCategory (ruleGroups cf)
   ] ++
   -- End the WorkflowParser object
   endWorkflowClass ++
@@ -60,60 +65,63 @@ generateAllRules :: [(Cat, [Rule])] -> [Doc]
 generateAllRules catsAndRules =
   let
     -- filter categories with all the rules isNilCons
-    -- TODO: check if this is correct, I'm assuming all the lists are processed using the rep and the scala List
     rulesToProcess = filter (not . all isNilCons . snd) catsAndRules 
     -- Generate regular rules
     mainRules = map text $ concatMap generateRuleGroup (fixCoercions rulesToProcess)
     
+    -- existe isUsedCat seguramente nos simplifique esto
+    -- existe specialCats seguramente nos simplifique esto
+    -- existe sigLookup wtf con esto
     -- Generate special rules for integer and string if needed
     integerRule = generateSpecialRule catInteger "integer" "INTEGER" "toInt" "pInteger" catsAndRules
     stringRule = generateSpecialRule catString "string" "STRING" "toString" "pString" catsAndRules
     charRule = generateSpecialRule catChar "char" "CHAR" "charAt(0)" "pChar" catsAndRules
-    identRule = generateSpecialRule catIdent "ident" "IDENT" "toString" "pString" catsAndRules
+    identRule = generateSpecialRule catIdent "ident" "IDENT" "toString" "pIdent" catsAndRules
     
   in mainRules ++ integerRule ++ stringRule ++ charRule ++ identRule
 
-getRuleFunName :: Rule -> String
-getRuleFunName (Rule fnam _ _ _) = firstLowerCase $ funName fnam
 
-getRulesFunsName :: [Rule] -> [String]
-getRulesFunsName rules = nub $ map getRuleFunName rules
+getRuleFunName :: Cat -> Rule -> String
+getRuleFunName cat (Rule fnam _ _ _) = firstLowerCase $ prefixIfNeeded $ funName fnam
+  where
+    prefixIfNeeded name
+      | map toLower name == map toLower (safeCatName cat) || isJust (scalaReserverWords (map toLower name))  = "internal_" ++ map toLower name
+      | otherwise = name
+
+getRulesFunsName :: [Rule] -> Cat -> [String]
+getRulesFunsName rules cat = nub $ map (getRuleFunName cat) rules
   
 -- | Generate a rule group (definition for a single category)
 generateRuleGroup :: (Cat, [Rule]) -> [String]
 generateRuleGroup (cat, rules) = 
   ["def " ++ catName ++ ": Parser[WorkflowAST] = positioned {"] ++
-  [replicate 4 ' ' ++ intercalate " | " (getRulesFunsName nonCoercionRules)] ++
+  [replicate 4 ' ' ++ intercalate " | " subFuns] ++
   ["}"] ++
-  concatMap generateRuleFor nonCoercionRules
+  concatMap (generateSingleRuleBody cat) nonCoercionRules
   where
+    subFuns = getRulesFunsName nonCoercionRules cat
     catName = safeCatName cat
     nonCoercionRules = filter (not . isCoercion) rules
     -- rulesToProcess = filter (\rule -> not (isListCat (wpThing $ valRCat rule))) nonCoercionRules
 
-    generateRuleFor :: Rule -> [String]
-    generateRuleFor rule = generateRuleBody [rule]
+generateSingleRuleBody :: Cat -> Rule -> [String]
+generateSingleRuleBody cat rule = [generateRuleDefinition cat rule ++ generateRuleTransformation rule]
 
--- | Based on a list of rules, generate the functions for the parser
-generateRuleBody :: [Rule] -> [String]
-generateRuleBody rules = concatMap generateSingleRuleBody rules
-
-generateSingleRuleBody :: Rule -> [String]
-generateSingleRuleBody rule@(Rule _ _ _ _) = [generateRuleDefinition rule ++ generateRuleTransformation rule]
-
-generateRuleDefinition :: Rule -> String
-generateRuleDefinition rule =
-  "def " ++ getRuleFunName rule ++ ": Parser[WorkflowAST] ="
+generateRuleDefinition :: Cat -> Rule -> String
+generateRuleDefinition cat rule =
+  "def " ++ getRuleFunName cat rule ++ ": Parser[WorkflowAST] ="
     +++ intercalate " ~ " (generateRuleForm rule)
 
 generateRuleForm :: Rule -> [String]
 generateRuleForm rule@(Rule _ _ rhs _) =
   if isRecursiveRule rule
     then case rhsToSafeStrings rhs of
-      (_ : rest) -> "integer" : rest
+      (_ : rest) -> "string" : rest
       [] -> [""] -- Handle empty rhs case
     else case rhs of
-      [Right s] -> [map toUpper s ++ "()"]
+      [Right s] -> case s of 
+        "_" -> ["UNDERSCORE()"] -- why only this is not being process correctly, should this be wildcard instead ?
+        _ -> [fromMaybe (map toUpper s) (symbolToName s) ++ "()"]
       _ -> map (addRuleForListCat rhs) (rhsToSafeStrings rhs)
 
 generateRuleTransformation :: Rule -> String
@@ -140,41 +148,33 @@ isRuleOnlySpecials (Rule _ _ rhs _) =
 
 -- -- | Generate a case statement for a rule
 generateCaseStatement :: Rule -> String
-generateCaseStatement rule@(Rule fun _ _ _)
+generateCaseStatement rule@(Rule fun _ rhs _)
   | isCoercion fun = ""
   | null vars = "_ => " ++ fnm ++ "()"
   | otherwise = 
       "case (" ++ intercalate " ~ "  params ++ ") => "
       ++ fnm ++ "(" ++ intercalate ", " vars ++ ")"
   where
-    getRHSParamsFromRule :: Rule -> [String]
-    getRHSParamsFromRule (Rule _ _ items _) = 
-      disambiguateNames $ map modifyParams $ map getSymbFromName $ safeCatToStrings items
-
-    getFunVarsWithTypeFromRule :: Rule -> [(String, String)]
-    getFunVarsWithTypeFromRule (Rule _ _ items _) = 
-      disambiguateTuples $ map (\(c, s) -> (modifyVars (getSymbFromName (safeCatName c)), s)) $ map addTypesToVars $ getRHSCats items
-
     getBaseType :: Cat -> String
     getBaseType cat
       | isListCat cat = "List[WorkflowAST]"
       | otherwise = "WorkflowAST"
 
-    addTypesToVars :: Cat -> (Cat, String)
-    addTypesToVars cat = (cat, ".asInstanceOf[" ++ getBaseType cat ++ "]")
+    fnm = fromMaybe (funName fun) $ listToMaybe $ getASTNames [rule]
 
-    params = concatMap getRHSParamsFromRule [rule]
-    vars = map (\(var, typ) -> var ++ typ) $ getFunVarsWithTypeFromRule rule
-    fnm = funName fun
+    -- generate a list of with (rule, finalName)
+    zipped = zip rhs (disambiguateNames $ map getSymb rhs)
 
-    modifyVars str 
-      | all isAlphaNum str = [toLower $ safeHeadChar str]
-      | otherwise = [toLower $ safeHeadChar $ getSymbFromName str] 
+    getSymb (Left cat) = [toLower $ safeHeadChar $ safeCatName cat]
+    getSymb (Right str) = [toLower $ safeHeadChar $ fromMaybe "_" $ symbolToName str]
 
-    modifyParams str 
-      | "()" `isSuffixOf` str = "_"
-      | all isAlphaNum str = [toLower $ safeHeadChar str]
-      | otherwise = [toLower $ safeHeadChar $ getSymbFromName str] 
+    params = map (wildCardSymbs.snd) zipped
+
+    -- For Left cat we assign types, for Right str (tokens), we ignore (or use "_")
+    vars = [ p ++ ".asInstanceOf[" ++ getBaseType cat ++ "]"
+           | (Left cat, p) <- zipped
+           ]
+
 
 
 -- | Generate a special rule for tokens like Integer or String
@@ -263,7 +263,7 @@ getProgramFunction :: CF -> [Doc]
 getProgramFunction cf = [
   text "",
   text "def program: Parser[WorkflowAST] = positioned {",
-  nest 4 $ text $ "phrase(" ++ entryPoint ++ ")",
+  nest 4 $ text $ "phrase(" ++ fromMaybe entryPoint (scalaReserverWords entryPoint) ++ ")",
   text "}"
   ]
   where
