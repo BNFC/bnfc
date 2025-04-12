@@ -26,6 +26,8 @@ import Data.List (intercalate)
 import Data.Char (toLower)
 import GHC.OldList (nub)
 import GHC.Unicode (toUpper)
+import BNFC.Backend.Scala.Utils (scalaReserverWords, mapManualTypeMap, scalaBNFCReserverWords, applyToRepeated)
+import Data.Maybe (fromMaybe)
 
 -- | Converts a string to lowercase
 toLowerString :: String -> String
@@ -176,13 +178,15 @@ getTokensFunction :: [String] -> [Doc]
 getTokensFunction symbs = [
   text "",
   text "def tokens: Parser[List[WorkflowToken]] = {",
-  nest 4 $ text $ "phrase(rep1( " ++ intercalate " | " (getListSymNames symbs) ++ "))",
+  nest 4 $ text $ "phrase(rep1( " ++ intercalate " | " proccesedRepetedSymbs ++ "))",
   text "}"
   ]
+  where 
+    proccesedRepetedSymbs = applyToRepeated ("p" ++) $ getListSymNames symbs
 
 -- | Get the lowercase symbol name
 getSymName :: String -> String
-getSymName = toLowerString . getSymbFromName
+getSymName s = fromMaybe (toLowerString $ getSymbFromName s) $ scalaReserverWords $ toLowerString $ getSymbFromName s
 
 -- | Get a list of symbol names
 getListSymNames :: [String] -> [String]
@@ -192,4 +196,9 @@ getListSymNames = map getSymName
 getBaseLexs :: String -> Doc
 getBaseLexs symb = 
   text "" $+$
-  text ("def " ++ getSymName symb ++ " = positioned { \"" ++ toLowerString symb ++ "\" ^^ (_ => " ++ getSymbFromName symb ++ "()) }")
+  text ("def " ++ defName ++ " = positioned { \"" ++ toLowerString symb ++ "\" ^^ (_ => " ++ param' ++ "()) }")
+    where
+        param = map toUpper $ getSymbFromName symb 
+        param' = fromMaybe param $ mapManualTypeMap param
+        defName = fromMaybe (getSymName symb) $ scalaBNFCReserverWords $ getSymName symb
+        

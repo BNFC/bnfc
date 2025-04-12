@@ -27,7 +27,7 @@ import BNFC.CF
       Rule, TokenCat, literals, wpThing )
 import BNFC.PrettyPrint ( text, vcat, Doc )
 import BNFC.Options ( SharedOptions(lang, Options) )
-import BNFC.Backend.Scala.Utils (generateVarsList, isLeft, baseTypeToScalaType, wrapList)
+import BNFC.Backend.Scala.Utils (generateVarsList, isLeft, baseTypeToScalaType, wrapList, scalaReserverWords)
 import Data.List (intercalate)
 import BNFC.Utils ((+++))
 import Data.Maybe (fromMaybe)
@@ -50,7 +50,7 @@ cf2ScalaParserAST Options{ lang } cf = vcat $
 getASTNames :: [Rule] -> [String]
 getASTNames rules = rulesNames
   where
-    rulesNames = map (\(Rule fun _ _ _) -> funName fun) $
+    rulesNames = map (\(Rule fun _ _ _) -> fromMaybe (funName fun) $ scalaReserverWords $ funName fun) $
            filter (\(Rule _ cat _ _) -> not $ case wpThing cat of ListCat _ -> True; _ -> False) filteredRules
     filteredRules = filter (not . isCoercionRule) $ rules
 
@@ -89,7 +89,7 @@ createCaseClass rule@(Rule fun cat _ _)
   | ListCat _ <- (wpThing cat) = mempty 
   | otherwise = text $ formatCaseClass className params
   where
-    className = funName fun
+    className = fromMaybe (funName fun) $ scalaReserverWords $ funName fun
     params = generateClassParams rule
 
 -- | Helper function to format the case class definition

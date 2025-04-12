@@ -27,6 +27,9 @@ import BNFC.Utils (symbolToName)
 import Data.Char (toUpper)
 import System.Directory.Internal.Prelude (toLower)
 import Data.List (nub)
+import BNFC.Backend.Scala.Utils (scalaReserverWords, baseTypeToScalaType, mapManualTypeMap)
+import Data.Maybe (fromMaybe)
+import Debug.Trace (trace)
 
 cf2ScalaLexToken
   :: SharedOptions     
@@ -36,8 +39,8 @@ cf2ScalaLexToken Options{ lang } cf = vsep . concat $
   [ 
     headers lang
     , [text $ concat $ map generateSymbClass (symbs)]
-    , [generateStringClasses (filter (\x -> map toLower x `notElem` map (map toLower) symbs) liters)]
-    , [generateKeyWordClasses (filter (\x -> map toLower x `notElem` map (map toLower) (symbs ++ liters)) (keyWords ++ ["empty"]))]
+    , [generateStringClasses liters]
+    , [generateKeyWordClasses (keyWords ++ ["empty"])]
     -- , [text $ "Symbols: " ++ show symbs]
     -- , [text $ "Literals: " ++ show liters]
     -- , [text $ "Keywords: " ++ show keyWords] 
@@ -50,7 +53,7 @@ cf2ScalaLexToken Options{ lang } cf = vsep . concat $
 
 generateSymbClass :: String -> String
 generateSymbClass symb = case symbolToName symb of 
-  Just s -> "case class " ++ s ++ "() extends WorkflowToken \n"
+  Just s -> "case class " ++ fromMaybe s (scalaReserverWords s) ++ "() extends WorkflowToken \n"
   Nothing -> mempty
 
 
@@ -58,7 +61,10 @@ generateKeyWordClasses :: [String] -> Doc
 generateKeyWordClasses params = text $ concat $ map generateKeyWordClass params
 
 generateKeyWordClass :: String -> String
-generateKeyWordClass param = "case class " ++ (map toUpper param) ++ "() extends WorkflowToken \n"
+generateKeyWordClass key = "case class " ++ param' ++ "() extends WorkflowToken \n"
+        where
+          param = map toUpper key
+          param' = fromMaybe param $ mapManualTypeMap param
 
 
 generateStringClasses :: [String] -> Doc

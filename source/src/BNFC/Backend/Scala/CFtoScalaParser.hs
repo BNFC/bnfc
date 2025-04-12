@@ -18,7 +18,7 @@ module BNFC.Backend.Scala.CFtoScalaParser (cf2ScalaParser) where
 import qualified Data.Foldable as DF (toList)
 import Prelude hiding ((<>))
 
-import BNFC.Backend.Scala.Utils (safeCatName, hasTokenCat, rhsToSafeStrings, disambiguateNames, getRHSCats, isSpecialCat, inspectListRulesByCategory, isListCat, isLeft, safeHeadChar, wildCardSymbs, scalaReserverWords)
+import BNFC.Backend.Scala.Utils (safeCatName, hasTokenCat, rhsToSafeStrings, disambiguateNames, getRHSCats, isSpecialCat, inspectListRulesByCategory, isListCat, isLeft, safeHeadChar, wildCardSymbs, scalaReserverWords, mapManualTypeMap)
 import BNFC.CF
 import BNFC.PrettyPrint
 import BNFC.Options ( SharedOptions(lang, Options) )
@@ -121,8 +121,10 @@ generateRuleForm rule@(Rule _ _ rhs _) =
     else case rhs of
       [Right s] -> case s of 
         "_" -> ["UNDERSCORE()"] -- why only this is not being process correctly, should this be wildcard instead ?
-        _ -> [fromMaybe (map toUpper s) (symbolToName s) ++ "()"]
+        _ -> [fromMaybe (paramS s) (mapManualTypeMap (paramS s)) ++ "()"]
       _ -> map (addRuleForListCat rhs) (rhsToSafeStrings rhs)
+  where
+    paramS s = fromMaybe (map toUpper s) (symbolToName s)
 
 generateRuleTransformation :: Rule -> String
 generateRuleTransformation rule =
