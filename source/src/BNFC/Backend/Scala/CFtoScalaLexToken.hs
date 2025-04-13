@@ -25,11 +25,9 @@ import BNFC.Options
 import BNFC.Backend.Common (unicodeAndSymbols)
 import BNFC.Utils (symbolToName)
 import Data.Char (toUpper)
-import System.Directory.Internal.Prelude (toLower)
 import Data.List (nub)
-import BNFC.Backend.Scala.Utils (scalaReserverWords, baseTypeToScalaType, mapManualTypeMap)
+import BNFC.Backend.Scala.Utils (scalaReserverWords, mapManualTypeMap)
 import Data.Maybe (fromMaybe)
-import Debug.Trace (trace)
 
 cf2ScalaLexToken
   :: SharedOptions     

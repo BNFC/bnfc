@@ -15,7 +15,7 @@ module BNFC.Backend.Scala.Utils (
     generateVarsList, unwrapListCat, baseTypeToScalaType, safeTail, rhsToSafeStrings, disambiguateNames, safeCatToStrings,
     wrapList, safeHeadString, scalaReserverWords, safeCatName, isLeft, getRHSCats, isSpecialCat, firstUpperCase, safeHeadChar,
     getSymbFromName, catToStrings, getFunName, hasTokenCat, safeRefCatName, inspectListRulesByCategory, isListCat, disambiguateTuples,
-    wildCardSymbs, mapManualTypeMap, scalaBNFCReserverWords, applyToRepeated
+    wildCardSymbs, mapManualTypeMap, scalaBNFCReserverWords, applyToRepeated, prettyRule
 ) where
 import BNFC.CF
 import Data.Map
@@ -196,7 +196,7 @@ hasTokenCat :: TokenCat -> Rule -> Bool
 hasTokenCat token (Rule _ _ rhs _) = TokenCat token `elem` [c | Left c <- rhs]
 
 isSpecialCat :: Cat -> Bool
-isSpecialCat (TokenCat cat) = cat `elem` baseTokenCatNames
+isSpecialCat (TokenCat cat) = cat `elem` specialCatsP
 isSpecialCat _ = False
 
 
@@ -204,14 +204,16 @@ isSpecialCat _ = False
 inspectRulesByCategory :: (Cat, [Rule]) -> [Doc]
 inspectRulesByCategory (cat, rules) =
   [text "Category:" <+> pretty cat] ++
-  [text "Rules:" $$ nest 2 (vcat (Prelude.map prettyRule rules))]
-  where
-    -- Pretty-print a single Rule
-    prettyRule (Rule fun valCat rhs internal) =
-      text "Function:" <+> pretty fun $$
-      text "Value Category:" <+> pretty valCat $$
-      text "RHS:" <+> text (show rhs) $$
-      text "Internal:" <+> text (internalRuleToStrings internal)
+  [text "Rules:" $$ nest 2 (vcat (Prelude.map (vcat . Prelude.map text . prettyRule) rules))]
+
+-- Pretty-print a single Rule
+prettyRule :: Rule -> [String]
+prettyRule (Rule fun valCat rhs internal) =
+  [ "Function: " ++ (show $ wpThing fun)
+  , "Value Category: " ++ (show $ wpThing valCat)
+  , "RHS: " ++ show rhs
+  , "Internal: " ++ internalRuleToStrings internal
+  ]
 
 internalRuleToStrings :: InternalRule -> String
 internalRuleToStrings Internal = "Internal"
@@ -261,6 +263,7 @@ manualTypesMap :: [(String, String)]
 manualTypesMap =
   [ ("INTEGER"  , "PINTEGER")
   , ("STRING"   , "PSTRING")
+  , ("CHAR"   , "PCHAR")
   , ("IDENT"   , "PIDENT")
   ]
 

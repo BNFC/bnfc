@@ -18,7 +18,7 @@ module BNFC.Backend.Scala.CFtoScalaParser (cf2ScalaParser) where
 import qualified Data.Foldable as DF (toList)
 import Prelude hiding ((<>))
 
-import BNFC.Backend.Scala.Utils (safeCatName, hasTokenCat, rhsToSafeStrings, disambiguateNames, getRHSCats, isSpecialCat, inspectListRulesByCategory, isListCat, isLeft, safeHeadChar, wildCardSymbs, scalaReserverWords, mapManualTypeMap)
+import BNFC.Backend.Scala.Utils (safeCatName, hasTokenCat, rhsToSafeStrings, disambiguateNames, getRHSCats, isSpecialCat, inspectListRulesByCategory, isListCat, isLeft, safeHeadChar, wildCardSymbs, scalaReserverWords, mapManualTypeMap, prettyRule)
 import BNFC.CF
 import BNFC.PrettyPrint
 import BNFC.Options ( SharedOptions(lang, Options) )
@@ -50,7 +50,7 @@ cf2ScalaParser Options{ lang } cf = vcat $
     getProgramFunction cf ++
     [text ""] ++
     -- Add parser rules
-    generateAllRules (ruleGroups cf) ++
+    generateAllRules cf (ruleGroups cf) ++
     [text ""] 
     -- inspect rules, only for debugging
     -- ++ inspectListRulesByCategory (ruleGroups cf)
@@ -61,13 +61,13 @@ cf2ScalaParser Options{ lang } cf = vcat $
   addWorkflowCompiler
 
 -- | Generate all parser rules from rule groups
-generateAllRules :: [(Cat, [Rule])] -> [Doc]
-generateAllRules catsAndRules =
+generateAllRules :: CF -> [(Cat, [Rule])] -> [Doc]
+generateAllRules cf catsAndRules =
   let
     -- filter categories with all the rules isNilCons
     rulesToProcess = filter (not . all isNilCons . snd) catsAndRules 
     -- Generate regular rules
-    mainRules = map text $ concatMap generateRuleGroup (fixCoercions rulesToProcess)
+    mainRules = map text $ concatMap (generateRuleGroup cf) (fixCoercions rulesToProcess)
     
     -- existe isUsedCat seguramente nos simplifique esto
     -- existe specialCats seguramente nos simplifique esto
@@ -92,36 +92,63 @@ getRulesFunsName :: [Rule] -> Cat -> [String]
 getRulesFunsName rules cat = nub $ map (getRuleFunName cat) rules
   
 -- | Generate a rule group (definition for a single category)
-generateRuleGroup :: (Cat, [Rule]) -> [String]
-generateRuleGroup (cat, rules) = 
+generateRuleGroup :: CF -> (Cat, [Rule]) -> [String]
+generateRuleGroup cf (cat, rules) = 
   ["def " ++ catName ++ ": Parser[WorkflowAST] = positioned {"] ++
   [replicate 4 ' ' ++ intercalate " | " subFuns] ++
   ["}"] ++
-  concatMap (generateSingleRuleBody cat) nonCoercionRules
+  concatMap (generateSingleRuleBody cf cat) nonCoercionRules
   where
     subFuns = getRulesFunsName nonCoercionRules cat
     catName = safeCatName cat
-    nonCoercionRules = filter (not . isCoercion) rules
+    nonCoercionRules = reverse $ map snd $ sortRulesByPrecedence $ filter (not . isCoercion) rules
     -- rulesToProcess = filter (\rule -> not (isListCat (wpThing $ valRCat rule))) nonCoercionRules
 
-generateSingleRuleBody :: Cat -> Rule -> [String]
-generateSingleRuleBody cat rule = [generateRuleDefinition cat rule ++ generateRuleTransformation rule]
+generateSingleRuleBody :: CF -> Cat -> Rule -> [String]
+generateSingleRuleBody cf cat rule = [generateRuleDefinition cf cat rule ++ generateRuleTransformation rule]
 
-generateRuleDefinition :: Cat -> Rule -> String
-generateRuleDefinition cat rule =
+generateRuleDefinition :: CF -> Cat -> Rule -> String
+generateRuleDefinition cf cat rule =
   "def " ++ getRuleFunName cat rule ++ ": Parser[WorkflowAST] ="
-    +++ intercalate " ~ " (generateRuleForm rule)
+    +++ intercalate " ~ " (generateRuleForm cf rule)
 
-generateRuleForm :: Rule -> [String]
-generateRuleForm rule@(Rule _ _ rhs _) =
+
+getBaseCatOfRecursiveRule :: Rule -> [Cat]
+getBaseCatOfRecursiveRule (Rule _ _ rhs _) =
+  nub $ concatMap extractBaseCat rhs
+  where
+    -- Extrae las categorías base de un elemento del RHS
+    extractBaseCat :: Either Cat String -> [Cat]
+    extractBaseCat (Left cat)
+      | isBaseCat cat = [cat]
+      | otherwise = []
+    extractBaseCat (Right _) = []
+
+    isBaseCat :: Cat -> Bool
+    isBaseCat cat = isSpecialCat $ normCat cat
+
+
+
+getBasesOfRecursiveRule :: CF -> Rule -> String
+getBasesOfRecursiveRule cf rule =
+  let
+    allRulesForCat = rulesForNormalizedCat cf (normCat $ wpThing $ valRCat rule)
+    baseTypes = nub $ map safeCatName $ concatMap getBaseCatOfRecursiveRule allRulesForCat
+  in
+    case baseTypes of
+      [] -> ""
+      x:[] -> x
+      x:xs -> "(" ++ intercalate " | " (x:xs) ++ ")"
+
+
+generateRuleForm :: CF -> Rule -> [String]
+generateRuleForm cf rule@(Rule _ _ rhs _) =
   if isRecursiveRule rule
     then case rhsToSafeStrings rhs of
-      (_ : rest) -> "string" : rest
-      [] -> [""] -- Handle empty rhs case
+      (_ : rest) -> getBasesOfRecursiveRule cf rule : rest
+      [] -> [""]
     else case rhs of
-      [Right s] -> case s of 
-        "_" -> ["UNDERSCORE()"] -- why only this is not being process correctly, should this be wildcard instead ?
-        _ -> [fromMaybe (paramS s) (mapManualTypeMap (paramS s)) ++ "()"]
+      [Right s] -> [fromMaybe (paramS s) (mapManualTypeMap (paramS s)) ++ "()"]
       _ -> map (addRuleForListCat rhs) (rhsToSafeStrings rhs)
   where
     paramS s = fromMaybe (map toUpper s) (symbolToName s)
