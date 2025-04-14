@@ -47,7 +47,7 @@ cf2ScalaLex Options{ lang } cf = vcat $
     -- Add apply function
     getApplyFunction ++
     -- Add tokens function
-    getTokensFunction (symbs ++ keyWords ++ liters) ++
+    getTokensFunction (keyWords ++ symbs ++ liters) ++
     -- Add parser functions for literals
     map addParserFunction liters ++
     -- Add keyword parsers
@@ -137,8 +137,8 @@ getIntegerFunction = vcat [
 getDoubleFunction :: Doc
 getDoubleFunction = vcat [
   text "",
-  text "def double: Parser[Double] = {",
-  nest 4 $ text "\"[0-9]+.[0-9]+\".r ^^ {i => Double(i)}",
+  text "def double: Parser[DOUBLE] = {",
+  nest 4 $ text "\"[0-9]+.[0-9]+\".r ^^ {i => DOUBLE(i)}",
   text "}"
   ]
 
@@ -175,22 +175,22 @@ getSymbFromName s =
 
 -- | Generate the tokens function
 getTokensFunction :: [String] -> [Doc]
-getTokensFunction symbs = [
+getTokensFunction tokens = [
   text "",
   text "def tokens: Parser[List[WorkflowToken]] = {",
   nest 4 $ text $ "phrase(rep1( " ++ intercalate " | " proccesedRepetedSymbs ++ "))",
   text "}"
   ]
   where 
-    proccesedRepetedSymbs = applyToRepeated ("p" ++) $ getListSymNames symbs
+    proccesedRepetedSymbs = reverse $ applyToRepeated ("p" ++) $ reverse $ getListTokensNames tokens
 
 -- | Get the lowercase symbol name
-getSymName :: String -> String
-getSymName s = fromMaybe (toLowerString $ getSymbFromName s) $ scalaReserverWords $ toLowerString $ getSymbFromName s
+getTokenName :: String -> String
+getTokenName s = fromMaybe (toLowerString $ getSymbFromName s) $ scalaReserverWords $ toLowerString $ getSymbFromName s
 
 -- | Get a list of symbol names
-getListSymNames :: [String] -> [String]
-getListSymNames = map getSymName
+getListTokensNames :: [String] -> [String]
+getListTokensNames = map getTokenName
 
 -- | Generate a keyword parser for a symbol
 getBaseLexs :: String -> Doc
@@ -200,5 +200,5 @@ getBaseLexs symb =
     where
         param = map toUpper $ getSymbFromName symb 
         param' = fromMaybe param $ mapManualTypeMap param
-        defName = fromMaybe (getSymName symb) $ scalaBNFCReserverWords $ getSymName symb
+        defName = fromMaybe (getTokenName symb) $ scalaBNFCReserverWords $ getTokenName symb
         
