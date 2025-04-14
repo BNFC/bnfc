@@ -27,7 +27,7 @@ import BNFC.CF
       Rule, TokenCat, literals, wpThing )
 import BNFC.PrettyPrint ( text, vcat, Doc )
 import BNFC.Options ( SharedOptions(lang, Options) )
-import BNFC.Backend.Scala.Utils (generateVarsList, isLeft, baseTypeToScalaType, wrapList, scalaReserverWords)
+import BNFC.Backend.Scala.Utils (generateVarsList, isLeft, baseTypeToScalaType, wrapList, scalaReserverWords, isCoercionRule)
 import Data.List (intercalate)
 import BNFC.Utils ((+++))
 import Data.Maybe (fromMaybe)
@@ -63,9 +63,6 @@ generateRuleDefs rules = concatMap processRuleGroup rules
 processRuleGroup :: (Cat, [Rule]) -> [Doc]
 processRuleGroup (_, rules) = map createCaseClass (filter (not . isCoercionRule) rules)
 
--- | Check if a rule is a coercion rule
-isCoercionRule :: Rule -> Bool
-isCoercionRule (Rule fun _ _ _) = isCoercion fun
 
 -- | Generate the class params
 generateClassParams :: Rule -> String

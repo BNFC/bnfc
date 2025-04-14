@@ -15,17 +15,18 @@ module BNFC.Backend.Scala.Utils (
     generateVarsList, unwrapListCat, baseTypeToScalaType, safeTail, rhsToSafeStrings, disambiguateNames, safeCatToStrings,
     wrapList, safeHeadString, scalaReserverWords, safeCatName, isLeft, getRHSCats, isSpecialCat, firstUpperCase, safeHeadChar,
     getSymbFromName, catToStrings, getFunName, hasTokenCat, safeRefCatName, inspectListRulesByCategory, isListCat, disambiguateTuples,
-    wildCardSymbs, mapManualTypeMap, scalaBNFCReserverWords, applyToRepeated, prettyRule
+    wildCardSymbs, mapManualTypeMap, scalaBNFCReserverWords, applyToRepeated, prettyRule, isCoercionRule, getBiggerCoercion, isCoercionCategory
 ) where
 import BNFC.CF
 import Data.Map
 import BNFC.Backend.Common.NamedVariables (firstLowerCase)
 import System.Directory.Internal.Prelude (fromMaybe)
 import BNFC.Utils (symbolToName)
-import Data.Char (toUpper)
+import Data.Char (toUpper, isDigit)
 import Text.PrettyPrint
 import BNFC.PrettyPrint
-import Data.List (isSuffixOf)
+import Data.List (isSuffixOf, sortOn)
+import Debug.Trace (trace)
 
 
 generateVarsList :: [a] -> [String]
@@ -297,3 +298,46 @@ applyToRepeated f xs = apply [] xs
     apply seen (y:ys)
       | y `elem` seen = f y : ys 
       | otherwise     = y : apply (y:seen) ys
+
+-- | Check if a rule is a coercion rule
+isCoercionRule :: Rule -> Bool
+isCoercionRule (Rule fun _ _ _) = isCoercion fun
+
+isCoercionCategory :: Cat -> Bool
+isCoercionCategory (CoercCat _ _) = True
+isCoercionCategory _ = False
+-- | Get the bigger coercion rule of a category
+-- getBiggerCoercion :: Cat -> CF -> Cat
+-- getBiggerCoercion cat cf = 
+--   let 
+--     allCategories = reallyAllCats cf
+--   in if length allCategories == 0
+--      then error "grammar without categories"
+--      else head allCategories
+
+--  import Data.Char (isDigit)
+-- import Data.List (isPrefixOf, sortOn)
+
+getBiggerCoercion :: Cat -> CF -> Maybe Cat
+getBiggerCoercion targetCat cf =
+  let
+    -- Extrae el prefijo (no numérico) y el número final (si hay)
+    (prefix, levelStr) = span (not . isDigit) $ show targetCat
+    level = if length levelStr > 0 then read levelStr  :: Int else 0
+
+    -- Filtra los que tengan el mismo prefijo y número >= al actual
+    matching = [ (cat, read digits :: Int)
+               | cat <- allCats
+               , let (p, digits) = span (not . isDigit) (show cat)
+               , p == prefix
+               , not (Prelude.null digits)
+               , all isDigit digits
+               , read digits >= level
+               ]
+
+    -- Ordenamos por nivel y tomamos el más grande
+  in case matching of
+      [] -> trace ("targetCat: " ++ show targetCat) Nothing 
+      _  -> trace ("encontraos al mas grande: " ++  show (fst $ last $ sortOn snd matching)) Just $ fst $ last $ sortOn snd matching
+  where 
+    allCats = reallyAllCats cf

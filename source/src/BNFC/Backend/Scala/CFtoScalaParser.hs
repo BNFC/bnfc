@@ -18,8 +18,26 @@ module BNFC.Backend.Scala.CFtoScalaParser (cf2ScalaParser) where
 import qualified Data.Foldable as DF (toList)
 import Prelude hiding ((<>))
 
-import BNFC.Backend.Scala.Utils (safeCatName, hasTokenCat, rhsToSafeStrings, disambiguateNames, getRHSCats, isSpecialCat, inspectListRulesByCategory, isListCat, isLeft, safeHeadChar, wildCardSymbs, scalaReserverWords, mapManualTypeMap, prettyRule)
+import BNFC.Backend.Scala.Utils (safeCatName, hasTokenCat, rhsToSafeStrings, disambiguateNames, getRHSCats, isSpecialCat, inspectListRulesByCategory, isListCat, isLeft, safeHeadChar, wildCardSymbs, scalaReserverWords, mapManualTypeMap, prettyRule, getBiggerCoercion, isCoercionCategory)
 import BNFC.CF
+    ( allEntryPoints,
+      catChar,
+      catIdent,
+      catInteger,
+      catString,
+      isNilCons,
+      normCat,
+      ruleGroups,
+      rulesForNormalizedCat,
+      sameCat,
+      sortRulesByPrecedence,
+      CF,
+      Cat,
+      IsFun(isCoercion, funName),
+      Rul(Rule, valRCat, rhsRule),
+      Rule,
+      TokenCat,
+      WithPosition(wpThing) )
 import BNFC.PrettyPrint
 import BNFC.Options ( SharedOptions(lang, Options) )
 import BNFC.Backend.Common.NamedVariables (firstLowerCase, fixCoercions)
@@ -30,6 +48,7 @@ import Data.Maybe (listToMaybe, fromMaybe, isJust)
 import BNFC.Utils ((+++), symbolToName)
 import BNFC.Backend.Scala.CFtoScalaParserAST (getASTNames)
 import GHC.Unicode (toUpper)
+import Debug.Trace (trace)
 
 -- | Main function that generates the Scala parser code
 cf2ScalaParser :: SharedOptions -> CF -> Doc
@@ -141,16 +160,27 @@ getBasesOfRecursiveRule cf rule =
       x:xs -> "(" ++ intercalate " | " (x:xs) ++ ")"
 
 
-generateRuleForm :: CF -> Rule -> [String]
-generateRuleForm cf rule@(Rule _ _ rhs _) =
-  if isRecursiveRule rule
-    then case rhsToSafeStrings rhs of
-      (_ : rest) -> getBasesOfRecursiveRule cf rule : rest
-      [] -> [""]
+generateRuleForm :: CF -> Rule  -> [String]
+generateRuleForm cf rule@(Rule _ c rhs _) =
+  if isRecursiveRule rule 
+    then generateRecursiveRuleForm rhs
     else case rhs of
       [Right s] -> [fromMaybe (paramS s) (mapManualTypeMap (paramS s)) ++ "()"]
       _ -> map (addRuleForListCat rhs) (rhsToSafeStrings rhs)
   where
+    generateRecursiveRuleForm :: [Either Cat String] -> [String]
+    generateRecursiveRuleForm ([]) = mempty
+    generateRecursiveRuleForm (r:[]) = case r of
+        Left cat -> if isCoercionCategory cat then [getBasesOfRecursiveRule cf rule] else rhsToSafeStrings [r]
+        Right _  -> rhsToSafeStrings [r]
+    generateRecursiveRuleForm (r:rest) = generateRecursiveRuleForm [r] ++ generateRecursiveRuleForm rest
+
+    -- isCoercion cat =  isCoercion (noPosition $ catToStr cat)
+    isBiggerCat cat = case maxCoerCat of
+      Just cat' -> cat' == cat
+      Nothing -> False
+
+    maxCoerCat = getBiggerCoercion (wpThing c) cf
     paramS s = fromMaybe (map toUpper s) (symbolToName s)
 
 generateRuleTransformation :: Rule -> String
