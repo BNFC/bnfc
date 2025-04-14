@@ -146,7 +146,6 @@ getBaseCatOfRecursiveRule (Rule _ _ rhs _) =
     isBaseCat cat = isSpecialCat $ normCat cat
 
 
-
 getBasesOfRecursiveRule :: CF -> Rule -> String
 getBasesOfRecursiveRule cf rule =
   let
@@ -162,17 +161,26 @@ getBasesOfRecursiveRule cf rule =
 generateRuleForm :: CF -> Rule  -> [String]
 generateRuleForm cf rule@(Rule _ _ rhs _) =
   if isRecursiveRule rule 
-    then generateRecursiveRuleForm rhs
+    then snd $ generateRecursiveRuleForm rhs False
     else case rhs of
       [Right s] -> [fromMaybe (paramS s) (mapManualTypeMap (paramS s)) ++ "()"]
       _ -> map (addRuleForListCat rhs) (rhsToSafeStrings rhs)
   where
-    generateRecursiveRuleForm :: [Either Cat String] -> [String]
-    generateRecursiveRuleForm ([]) = mempty
-    generateRecursiveRuleForm (r:[]) = case r of
-        Left cat -> if isCoercionCategory cat then [getBasesOfRecursiveRule cf rule] else rhsToSafeStrings [r]
-        Right _  -> rhsToSafeStrings [r]
-    generateRecursiveRuleForm (r:rest) = generateRecursiveRuleForm [r] ++ generateRecursiveRuleForm rest
+    generateRecursiveRuleForm :: [Either Cat String] -> Bool -> (Bool, [String])
+    generateRecursiveRuleForm [] added = (added, [])
+    generateRecursiveRuleForm (r:rest) added =
+      case r of
+        Left cat ->
+          if isCoercionCategory cat && not added
+            then
+              let (_, strsRest) = generateRecursiveRuleForm rest True
+              in (True, getBasesOfRecursiveRule cf rule : strsRest)
+            else
+              let (addedRest, strsRest) = generateRecursiveRuleForm rest added
+              in (addedRest, rhsToSafeStrings [r] ++ strsRest)
+        Right _ ->
+          let (addedRest, strsRest) = generateRecursiveRuleForm rest added
+          in (addedRest, rhsToSafeStrings [r] ++ strsRest)
 
     paramS s = fromMaybe (map toUpper s) (symbolToName s)
 
