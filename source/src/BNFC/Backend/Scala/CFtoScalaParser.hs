@@ -18,7 +18,7 @@ module BNFC.Backend.Scala.CFtoScalaParser (cf2ScalaParser) where
 import qualified Data.Foldable as DF (toList)
 import Prelude hiding ((<>))
 
-import BNFC.Backend.Scala.Utils (safeCatName, hasTokenCat, rhsToSafeStrings, disambiguateNames, getRHSCats, isSpecialCat, inspectListRulesByCategory, isListCat, isLeft, safeHeadChar, wildCardSymbs, scalaReserverWords, mapManualTypeMap, prettyRule, getBiggerCoercion, isCoercionCategory)
+import BNFC.Backend.Scala.Utils (safeCatName, hasTokenCat, rhsToSafeStrings, disambiguateNames, getRHSCats, isSpecialCat, isListCat, isLeft, safeHeadChar, wildCardSymbs, scalaReserverWords, mapManualTypeMap, isCoercionCategory)
 import BNFC.CF
     ( allEntryPoints,
       catChar,
@@ -48,7 +48,6 @@ import Data.Maybe (listToMaybe, fromMaybe, isJust)
 import BNFC.Utils ((+++), symbolToName)
 import BNFC.Backend.Scala.CFtoScalaParserAST (getASTNames)
 import GHC.Unicode (toUpper)
-import Debug.Trace (trace)
 
 -- | Main function that generates the Scala parser code
 cf2ScalaParser :: SharedOptions -> CF -> Doc
@@ -161,7 +160,7 @@ getBasesOfRecursiveRule cf rule =
 
 
 generateRuleForm :: CF -> Rule  -> [String]
-generateRuleForm cf rule@(Rule _ c rhs _) =
+generateRuleForm cf rule@(Rule _ _ rhs _) =
   if isRecursiveRule rule 
     then generateRecursiveRuleForm rhs
     else case rhs of
@@ -175,12 +174,6 @@ generateRuleForm cf rule@(Rule _ c rhs _) =
         Right _  -> rhsToSafeStrings [r]
     generateRecursiveRuleForm (r:rest) = generateRecursiveRuleForm [r] ++ generateRecursiveRuleForm rest
 
-    -- isCoercion cat =  isCoercion (noPosition $ catToStr cat)
-    isBiggerCat cat = case maxCoerCat of
-      Just cat' -> cat' == cat
-      Nothing -> False
-
-    maxCoerCat = getBiggerCoercion (wpThing c) cf
     paramS s = fromMaybe (map toUpper s) (symbolToName s)
 
 generateRuleTransformation :: Rule -> String

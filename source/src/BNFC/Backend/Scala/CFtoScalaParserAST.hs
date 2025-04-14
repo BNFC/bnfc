@@ -22,7 +22,7 @@ import BNFC.CF
     ( ruleGroups,
       CF,
       Cat(ListCat),
-      IsFun(funName, isCoercion),
+      IsFun(funName),
       Rul(Rule),
       Rule, TokenCat, literals, wpThing )
 import BNFC.PrettyPrint ( text, vcat, Doc )
