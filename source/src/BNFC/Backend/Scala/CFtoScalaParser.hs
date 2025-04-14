@@ -37,7 +37,7 @@ import BNFC.CF
       Rul(Rule, valRCat, rhsRule),
       Rule,
       TokenCat,
-      WithPosition(wpThing) )
+      WithPosition(wpThing), strToCat )
 import BNFC.PrettyPrint
 import BNFC.Options ( SharedOptions(lang, Options) )
 import BNFC.Backend.Common.NamedVariables (firstLowerCase, fixCoercions)
@@ -48,6 +48,8 @@ import Data.Maybe (listToMaybe, fromMaybe, isJust)
 import BNFC.Utils ((+++), symbolToName)
 import BNFC.Backend.Scala.CFtoScalaParserAST (getASTNames)
 import GHC.Unicode (toUpper)
+import BNFC.Backend.Scala.Utils (isSymbol)
+import Debug.Trace (trace)
 
 -- | Main function that generates the Scala parser code
 cf2ScalaParser :: SharedOptions -> CF -> Doc
@@ -120,7 +122,6 @@ generateRuleGroup cf (cat, rules) =
     subFuns = getRulesFunsName nonCoercionRules cat
     catName = safeCatName cat
     nonCoercionRules = reverse $ map snd $ sortRulesByPrecedence $ filter (not . isCoercion) rules
-    -- rulesToProcess = filter (\rule -> not (isListCat (wpThing $ valRCat rule))) nonCoercionRules
 
 generateSingleRuleBody :: CF -> Cat -> Rule -> [String]
 generateSingleRuleBody cf cat rule = [generateRuleDefinition cf cat rule ++ generateRuleTransformation rule]
@@ -131,16 +132,16 @@ generateRuleDefinition cf cat rule =
     +++ intercalate " ~ " (generateRuleForm cf rule)
 
 
-getBaseCatOfRecursiveRule :: Rule -> [Cat]
-getBaseCatOfRecursiveRule (Rule _ _ rhs _) =
+getBaseCatOfRecursiveRule :: Rule -> [String]
+getBaseCatOfRecursiveRule rule@(Rule _ _ rhs _) =
   nub $ concatMap extractBaseCat rhs
   where
     -- Extrae las categorías base de un elemento del RHS
-    extractBaseCat :: Either Cat String -> [Cat]
+    extractBaseCat :: Either Cat String -> [String]
     extractBaseCat (Left cat)
-      | isBaseCat cat = [cat]
+      | isBaseCat cat = [getRuleFunName cat rule]
       | otherwise = []
-    extractBaseCat (Right _) = []
+    extractBaseCat (Right s) = if isSymbol s then [] else [getRuleFunName (strToCat s) rule]
 
     isBaseCat :: Cat -> Bool
     isBaseCat cat = isSpecialCat $ normCat cat
@@ -150,7 +151,7 @@ getBasesOfRecursiveRule :: CF -> Rule -> String
 getBasesOfRecursiveRule cf rule =
   let
     allRulesForCat = rulesForNormalizedCat cf (normCat $ wpThing $ valRCat rule)
-    baseTypes = nub $ map safeCatName $ concatMap getBaseCatOfRecursiveRule allRulesForCat
+    baseTypes = nub $ concatMap getBaseCatOfRecursiveRule allRulesForCat
   in
     case baseTypes of
       [] -> ""
@@ -208,7 +209,7 @@ isRuleOnlySpecials (Rule _ _ rhs _) =
 
 -- -- | Generate a case statement for a rule
 generateCaseStatement :: Rule -> String
-generateCaseStatement rule@(Rule fun _ rhs _)
+generateCaseStatement rule@(Rule fun c rhs _)
   | isCoercion fun = ""
   | null vars = "_ => " ++ fnm ++ "()"
   | otherwise = 
@@ -220,7 +221,7 @@ generateCaseStatement rule@(Rule fun _ rhs _)
       | isListCat cat = "List[WorkflowAST]"
       | otherwise = "WorkflowAST"
 
-    fnm = fromMaybe (funName fun) $ listToMaybe $ getASTNames [rule]
+    fnm = fromMaybe (getRuleFunName (wpThing c) rule) $ listToMaybe $ getASTNames [rule]
 
     -- generate a list of with (rule, finalName)
     zipped = zip rhs (disambiguateNames $ map getSymb rhs)
@@ -234,8 +235,6 @@ generateCaseStatement rule@(Rule fun _ rhs _)
     vars = [ p ++ ".asInstanceOf[" ++ getBaseType cat ++ "]"
            | (Left cat, p) <- zipped
            ]
-
-
 
 -- | Generate a special rule for tokens like Integer or String
 generateSpecialRule :: TokenCat -> String -> String -> String -> String -> [(Cat, [Rule])] -> [Doc]

@@ -14,8 +14,8 @@
 module BNFC.Backend.Scala.Utils (
     generateVarsList, unwrapListCat, baseTypeToScalaType, safeTail, rhsToSafeStrings, disambiguateNames, safeCatToStrings,
     wrapList, safeHeadString, scalaReserverWords, safeCatName, isLeft, getRHSCats, isSpecialCat, firstUpperCase, safeHeadChar,
-    getSymbFromName, catToStrings, getFunName, hasTokenCat, safeRefCatName, inspectListRulesByCategory, isListCat, disambiguateTuples,
-    wildCardSymbs, mapManualTypeMap, scalaBNFCReserverWords, applyToRepeated, prettyRule, isCoercionRule, isCoercionCategory
+    getSymbFromName, catToStrings, getFunName, hasTokenCat, inspectListRulesByCategory, isListCat, disambiguateTuples,
+    wildCardSymbs, mapManualTypeMap, scalaBNFCReserverWords, applyToRepeated, prettyRule, isCoercionRule, isCoercionCategory, isSymbol
 ) where
 import BNFC.CF
 import Data.Map
@@ -26,6 +26,7 @@ import Data.Char (toUpper)
 import Text.PrettyPrint
 import BNFC.PrettyPrint
 import Data.List (isSuffixOf)
+import Data.Maybe (isJust)
 
 
 generateVarsList :: [a] -> [String]
@@ -133,15 +134,6 @@ safeCatName cat = fromMaybe notSafeScalaCatName (scalaReserverWords notSafeScala
       _                -> firstLowerCase $ show cat
 
 
-safeRefCatName :: Cat -> String
-safeRefCatName cat = fromMaybe notSafeScalaCatName (scalaReserverWords notSafeScalaCatName)
-  where
-    notSafeScalaCatName = case cat of
-      ListCat innerCat -> firstUpperCase (safeCatName innerCat) 
-      _                -> firstLowerCase $ show cat 
-
-
-
 firstUpperCase :: String -> String
 firstUpperCase []     = []
 firstUpperCase (x:xs) = toUpper x : xs
@@ -199,6 +191,8 @@ isSpecialCat :: Cat -> Bool
 isSpecialCat (TokenCat cat) = cat `elem` specialCatsP
 isSpecialCat _ = False
 
+isSymbol :: String -> Bool
+isSymbol = isJust . symbolToName
 
 -- Function to generate a list of Doc from a (Cat, [Rule])
 inspectRulesByCategory :: (Cat, [Rule]) -> [Doc]
