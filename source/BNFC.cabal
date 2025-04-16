@@ -275,7 +275,6 @@ library
     -- Scala backend
     BNFC.Backend.Scala
     BNFC.Backend.Scala.Utils
-    BNFC.Backend.Scala.CFtoScalaAbs
     BNFC.Backend.Scala.CFtoScalaLex
     BNFC.Backend.Scala.CFtoScalaLexToken
     BNFC.Backend.Scala.CFtoScalaParser
