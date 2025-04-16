@@ -18,7 +18,7 @@ module BNFC.Backend.Scala.CFtoScalaParser (cf2ScalaParser) where
 import qualified Data.Foldable as DF (toList)
 import Prelude hiding ((<>))
 
-import BNFC.Backend.Scala.Utils (safeCatName, hasTokenCat, rhsToSafeStrings, disambiguateNames, getRHSCats, isSpecialCat, isListCat, isLeft, safeHeadChar, wildCardSymbs, scalaReserverWords, mapManualTypeMap, isCoercionCategory)
+import BNFC.Backend.Scala.Utils (safeCatName, hasTokenCat, rhsToSafeStrings, disambiguateNames, getRHSCats, isSpecialCat, isListCat, isLeft, safeHeadChar, wildCardSymbs, scalaReserverWords, mapManualTypeMap, isCoercionCategory, getTerminalFromListRules, isSymbol)
 import BNFC.CF
     ( allEntryPoints,
       catChar,
@@ -37,7 +37,7 @@ import BNFC.CF
       Rul(Rule, valRCat, rhsRule),
       Rule,
       TokenCat,
-      WithPosition(wpThing), strToCat )
+      WithPosition(wpThing), strToCat, catDouble, rulesForCat )
 import BNFC.PrettyPrint
 import BNFC.Options ( SharedOptions(lang, Options) )
 import BNFC.Backend.Common.NamedVariables (firstLowerCase, fixCoercions)
@@ -48,8 +48,6 @@ import Data.Maybe (listToMaybe, fromMaybe, isJust)
 import BNFC.Utils ((+++), symbolToName)
 import BNFC.Backend.Scala.CFtoScalaParserAST (getASTNames)
 import GHC.Unicode (toUpper)
-import BNFC.Backend.Scala.Utils (isSymbol)
-import Debug.Trace (trace)
 
 -- | Main function that generates the Scala parser code
 cf2ScalaParser :: SharedOptions -> CF -> Doc
@@ -94,11 +92,12 @@ generateAllRules cf catsAndRules =
     -- existe sigLookup wtf con esto
     -- Generate special rules for integer and string if needed
     integerRule = generateSpecialRule catInteger "integer" "INTEGER" "toInt" "pInteger" catsAndRules
+    doubleRule = generateSpecialRule catDouble "double" "DOUBLE" "toInt" "pDouble" catsAndRules
     stringRule = generateSpecialRule catString "string" "STRING" "toString" "pString" catsAndRules
-    charRule = generateSpecialRule catChar "char" "CHAR" "charAt(0)" "pChar" catsAndRules
+    charRule = generateSpecialRule catChar "char" "CHAR" "toString" "pChar" catsAndRules
     identRule = generateSpecialRule catIdent "ident" "IDENT" "toString" "pIdent" catsAndRules
     
-  in mainRules ++ integerRule ++ stringRule ++ charRule ++ identRule
+  in mainRules ++ integerRule ++ stringRule ++ charRule ++ identRule ++ doubleRule
 
 
 getRuleFunName :: Cat -> Rule -> String
@@ -165,7 +164,7 @@ generateRuleForm cf rule@(Rule _ _ rhs _) =
     then snd $ generateRecursiveRuleForm rhs False
     else case rhs of
       [Right s] -> [fromMaybe (paramS s) (mapManualTypeMap (paramS s)) ++ "()"]
-      _ -> map (addRuleForListCat rhs) (rhsToSafeStrings rhs)
+      _ -> map (addRuleForListCat cf rhs) (rhsToSafeStrings rhs)
   where
     generateRecursiveRuleForm :: [Either Cat String] -> Bool -> (Bool, [String])
     generateRecursiveRuleForm [] added = (added, [])
@@ -197,10 +196,12 @@ isRecursiveRule :: Rule -> Bool
 isRecursiveRule (Rule _ cat rhs _) =
   any (sameCat (wpThing cat)) (getRHSCats rhs)
 
-addRuleForListCat :: [Either Cat String] -> String -> String
-addRuleForListCat rhs s =
+addRuleForListCat :: CF -> [Either Cat String] -> String -> String
+addRuleForListCat cf rhs s =
   case find (\cat -> isListCat cat && safeCatName cat == s) (getRHSCats rhs) of
-    Just _ -> "rep(" ++ firstLowerCase s ++ ")"
+    Just c -> case (getTerminalFromListRules $ rulesForCat cf c) of
+      Just term -> "repsep(" ++ firstLowerCase s ++ ", " ++ term ++ "())"
+      _         -> "rep(" ++ firstLowerCase s ++ ")"
     Nothing -> s
 
 isRuleOnlySpecials :: Rule -> Bool
