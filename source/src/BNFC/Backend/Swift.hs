@@ -38,7 +38,7 @@ makeSwift opts@Options{..} cf = do
     mkfile (targetDir </> "Printer.swift") makeSwiftComment printerContent
     mkfile (targetDir </> langNameUpperCased ++ ".swift") makeSwiftComment (publicApiContent langNameUpperCased)
     mkfile (dirBase </> "Package.swift") makePackageHeader (packageFileContent langNameUpperCased)
-    mkfile (dirBase </> "Skeleton.swift") makeSwiftComment skeletonContent
+    mkfile "Skeleton.swift" makeSwiftComment skeletonContent
   where
     packageName = maybe id (+.+) inPackage $ mkName [] CamelCase lang
     langName = firstLowerCase $ mkName [] CamelCase lang
