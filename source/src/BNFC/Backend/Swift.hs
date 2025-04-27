@@ -33,8 +33,8 @@ makeSwift opts@Options{..} cf = do
 
     MakeFile.mkMakefile optMake $ makefileContent targetDir
 
-    mkfile (targetDir </> "ast.swift") makeSwiftComment astContent
-    mkfile (targetDir </> "builder.swift") makeSwiftComment builderContent
+    mkfile (targetDir </> "AbstractSyntaxTree.swift") makeSwiftComment astContent
+    mkfile (targetDir </> "Builder.swift") makeSwiftComment builderContent
     mkfile (targetDir </> "Printer.swift") makeSwiftComment printerContent
     mkfile (targetDir </> langNameUpperCased ++ ".swift") makeSwiftComment (publicApiContent langNameUpperCased)
     mkfile (dirBase </> "Package.swift") makePackageHeader (packageFileContent langNameUpperCased)
