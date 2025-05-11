@@ -32,7 +32,7 @@ cf2SwiftSkeleton langName cf =
     cat2SwiftType' = cat2SwiftType langName
     buildUserToken :: UserDef -> String
     buildUserToken token = 
-      "String interpret" ++ (censorName' token) ++ "(x) => x;" 
+      "func interpret" ++ (censorName' token) ++ "(_ x: " ++ (censorName' token) ++ "Token) -> String { x.value }" 
 
     genData :: Data -> [String]
     genData (cat, rules)
@@ -65,7 +65,7 @@ cf2SwiftSkeleton langName cf =
           ++ ")\""
       where
         associatedValues [] = []
-        associatedValues (x: vars) = [buildVariableName x] ++ (associatedValues vars)
+        associatedValues (x: vars) = [wrapIfNeeded $ buildVariableName x] ++ (associatedValues vars)
 
         arguments _ [] = []
         arguments generator (x:vars) = 
@@ -78,7 +78,7 @@ cf2SwiftSkeleton langName cf =
         if n > 0 then 
           varCall ++ ".map(" ++ (unpack interp (n - 1))  ++ ")" -- TODO: check this
         else 
-          interp ++ "(" ++ varCall ++ ")"
+          interp ++ "(" ++ wrapIfNeeded varCall ++ ")"
       where 
         unpack funName n 
           | n <= 0 = funName
