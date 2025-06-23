@@ -9,7 +9,7 @@ import Data.Maybe      ( mapMaybe )
 import BNFC.CF
 import BNFC.Utils       ( (+++) )
 
-import BNFC.Backend.Common.NamedVariables ( UserDef )
+import BNFC.Backend.Common.NamedVariables ( UserDef, firstUpperCase )
 import BNFC.Backend.Swift.Common 
 import Data.List (intercalate)
 
@@ -28,7 +28,6 @@ cf2SwiftSkeleton langName cf =
     censorName' = censorName langName
     str2SwiftClassName' = str2SwiftClassName langName
     getVars' = getVars_ langName
-    cat2SwiftClassName' = cat2SwiftClassName langName
     cat2SwiftType' = cat2SwiftType langName
     buildUserToken :: UserDef -> String
     buildUserToken token = 
@@ -38,9 +37,9 @@ cf2SwiftSkeleton langName cf =
     genData (cat, rules)
       | (catToStr cat) `elem` (map fst rules) = []
       | otherwise = 
-        let name = cat2SwiftClassName' cat
+        let name = identCat $ normCat cat
             varType = buildVariableTypeFromSwiftType $ cat2SwiftType' cat
-        in [ "func interpret" ++ name ++ "(_ e:" +++ varType ++ ") -> String {" ]
+        in [ "func interpret" ++ (firstUpperCase name) ++ "(_ e:" +++ varType ++ ") -> String {" ]
           ++ (indent_ 1 $ if isList cat 
               then [ "\"\\(e)\"" ] 
               else [ "switch (e) {" ]
@@ -60,12 +59,15 @@ cf2SwiftSkeleton langName cf =
           varName = lowerFirst $ censorName' className
           vars = getVars' rhs
         in Just $ 
-          "case let ." ++ className ++ "(" ++ (intercalate ", " (associatedValues vars)) ++ "): \"" ++ className ++ "("
+          caseDecl className vars ++ " \"" ++ className ++ "("
           ++ (concat $ (drop 1) $ arguments (genVarRepr varName) vars)
           ++ ")\""
       where
         associatedValues [] = []
         associatedValues (x: vars) = [wrapIfNeeded $ buildVariableName x] ++ (associatedValues vars)
+
+        caseDecl className [] =  "case ." ++ className ++ ":"
+        caseDecl className vars =  "case let ." ++ className ++ "(" ++ (intercalate ", " (associatedValues vars)) ++ "):"
 
         arguments _ [] = []
         arguments generator (x:vars) = 

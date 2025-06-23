@@ -15,7 +15,7 @@ import BNFC.CF
 import BNFC.Backend.Swift.Common
 import BNFC.Options (SharedOptions (lang))
 import BNFC.Backend.Antlr.CFtoAntlr4Parser (antlrRuleLabel, makeLeftRecRule)
-import BNFC.Backend.Common.NamedVariables (firstUpperCase)
+import BNFC.Backend.Common.NamedVariables (firstUpperCase, firstLowerCase)
 
 type RuleData = (Cat, [(String, SentForm)])
 
@@ -114,7 +114,7 @@ mkBuildFunction lang (cat, rulesWithLabels)  = vcat
             where
               varNames = getVarsFromCats rhsCats
               rhsCats = map fst rhsRuleWithIdx
-              returnStatementBase = "return" +++ "." ++ ruleLabel
+              returnStatementBase = "return" +++ "." ++ (firstLowerCase ruleLabel)
               returnStatement
                 | null varNames = returnStatementBase
                 | otherwise     = returnStatementBase ++ "(" ++ intercalate ", " (map wrapIfNeeded varNames) ++ ")"

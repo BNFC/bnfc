@@ -10,21 +10,20 @@ import BNFC.CF
 import qualified Data.Char as Char
 import Data.Char (toLower)
 import BNFC.Utils (mkName, NameStyle (OrigCase, MixedCase), mkNames)
-import BNFC.Backend.Common.NamedVariables (getVars, firstUpperCase)
+import BNFC.Backend.Common.NamedVariables (getVars, firstUpperCase, firstLowerCase)
 
 
 cat2SwiftClassName :: String -> Cat -> String
 cat2SwiftClassName langName cat = str2SwiftClassName langName $ identCat $ normCat cat
 
-
 -- Pick a class name that is appropriate for the Swift
 str2SwiftClassName :: String -> String -> String
 -- str2SwiftClassName langName str = upperFirst $ censorName langName str
-str2SwiftClassName langName str = wrapIfNeeded $ upperFirst str
+str2SwiftClassName langName str = wrapIfNeeded $ firstLowerCase str
 
 -- Pick a case name that is appropriate for the Swift
 str2SwiftCaseName :: String -> String -> String
-str2SwiftCaseName langName str = lowerFirst $ censorName langName str
+str2SwiftCaseName langName str = firstLowerCase $ censorName langName str
 
 -- Pick a class name that is appropriate for the Antlr
 str2AntlrClassName :: String -> String

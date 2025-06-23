@@ -8,7 +8,7 @@ import Text.PrettyPrint.HughesPJClass (Doc, text, vcat, hcat, nest)
 import BNFC.CF (CF, ruleGroups, Rul (rhsRule, funRule), Cat (Cat, ListCat, TokenCat, CoercCat), WithPosition (wpThing), IsFun (isCoercion, isConsFun, isOneFun, isNilFun), catToStr, SentForm, rulesForNormalizedCat, normCat, normCatOfList, catOfList, isList, allParserCats, rulesForCat)
 import BNFC.Utils ((+++))
 import BNFC.Backend.Swift.Common (catToSwiftType, indent, wrapSQ, getVarsFromCats, getAbsynWithoutLists, getAllTokenTypenames, getAllTokenCats, mkTypeName, wrapIfNeeded)
-import BNFC.Backend.Common.NamedVariables (firstUpperCase)
+import BNFC.Backend.Common.NamedVariables (firstUpperCase, firstLowerCase)
 import Data.Maybe (isJust, isNothing, fromMaybe)
 
 prettyPrintPropertyName :: String
@@ -289,7 +289,7 @@ mkNodePrettifier cf cat@(Cat _) = vcat $ concat
               rulesForNormalizedCat cf cat
     
     mkCaseStmt rule@(ruleLabel, sentForm) = vcat
-        [ indent 4 $ caseDeclaration ++ ruleLabel ++ (associatedValues varNames) ++ ":"
+        [ indent 4 $ caseDeclaration ++ (firstLowerCase ruleLabel) ++ (associatedValues varNames) ++ ":"
         , indent 6 "var result = [String]()"
         , nest 6 $ mkRulePrettifier rule
         , indent 6 $ "return result"
