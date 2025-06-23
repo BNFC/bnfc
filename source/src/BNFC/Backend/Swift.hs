@@ -123,7 +123,7 @@ makeSwift opts@Options{..} cf = do
     publicApiContent langName = vcat
       [ "import Antlr4"
       , ""
-      , text $ "public func getAst(from text: String) -> Result<" ++ catToStr firstCat ++", Error> {"
+      , text $ "public func ast(from text: String) -> Result<" ++ catToStr firstCat ++ ", Error> {"
       , nest 2 $ vcat
         [ "let input = ANTLRInputStream(text)"
         , text $ "let lexer =" +++ langName ++ "Lexer(input)"
