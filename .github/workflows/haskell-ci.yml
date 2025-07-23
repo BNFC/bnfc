@@ -245,11 +245,13 @@ jobs:
         run: |
           $CABAL v2-build $ARG_COMPILER $ARG_TESTS $ARG_BENCH all --write-ghc-environment-files=always
       - name: install doctest
-        if: env.HEADHACKAGE != 'true'
+        # Andreas, 2025-07-23: https://github.com/sol/doctest/issues/460
+        if: env.HEADHACKAGE != 'true' && matrix.compiler != 'ghc-8.8.4' && matrix.compiler != 'ghc-8.6.5'
         run: |
           $CABAL v2-install --ignore-project $ARG_COMPILER doctest --ghc-options=-rtsopts --overwrite-policy=always
       - name: doctests
-        if: env.HEADHACKAGE != 'true'
+        # Andreas, 2025-07-23: https://github.com/sol/doctest/issues/460
+        if: env.HEADHACKAGE != 'true' && matrix.compiler != 'ghc-8.8.4' && matrix.compiler != 'ghc-8.6.5'
         run: |
           $CABAL v2-repl BNFC --with-ghc-pkg=$HCPKG -w doctest --repl-options=-w
       - name: tests
