@@ -22,10 +22,12 @@
           ghc902 = "stack-9.0.yaml";
           ghc928 = "stack-9.2.yaml";
           ghc948 = "stack-9.4.yaml";
-          ghc965 = "stack-9.6.yaml";
-          ghc982 = "stack-9.8.yaml";
+          ghc967 = "stack-9.6.yaml";
+          ghc984 = "stack-9.8.yaml";
+          ghc9102 = "stack-9.10.yaml";
+          ghc9122 = "stack-9.12.yaml";
         };
-        defaultVersion = "ghc982";
+        defaultVersion = "ghc984";
 
         overlays = [ haskellNix.overlay
           (final: _prev: lib.attrsets.mapAttrs' (
@@ -45,8 +47,10 @@
                     ghc902 = "3.5";
                     ghc928 = "3.6.1";
                     ghc948 = "3.8";
-                    ghc965 = "3.8";
-                    ghc982 = "3.8";
+                    ghc967 = "3.8";
+                    ghc984 = "3.8";
+                    ghc9102 = "3.10";
+                    ghc9122 = "3.10";
                   }.${ghcVersion};
                   haskell-language-server = if ghcVersion == "ghc8107" then "2.2.0.0"
                     else if ghcVersion == "ghc902" then "2.4.0.0"
