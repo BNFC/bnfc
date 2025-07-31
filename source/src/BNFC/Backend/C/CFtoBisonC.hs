@@ -118,6 +118,7 @@ header mode cf = unlines $ concat
     -- Fixing regression introduced in 2.9.2.
   , when (stlParser mode)
     [ "#include <algorithm> /* for std::reverse */"  -- mandatory e.g. with GNU C++ 11
+    , "#include \"" ++ ("ParserError" <.> h) ++ "\""  -- for throwing parser_error in C++
     ]
   , [ "#include <stdio.h>"
     , "#include <stdlib.h>"
@@ -160,23 +161,42 @@ header mode cf = unlines $ concat
 unionDependentCode :: ParserMode -> String
 unionDependentCode mode = unlines
   [ "%{"
-  , errorHandler name
+  , errorHandler mode
   , "int yyparse(yyscan_t scanner, YYSTYPE *result);"
   , ""
   , "extern int yylex(YYSTYPE *lvalp, YYLTYPE *llocp, yyscan_t scanner);"
   , "%}"
   ]
-  where
-  name = parserName mode
 
-errorHandler :: String -> String
-errorHandler name = unlines
-  [ "void yyerror(YYLTYPE *loc, yyscan_t scanner, YYSTYPE *result, const char *msg)"
-  , "{"
-  , "  fprintf(stderr, \"error: %d,%d: %s at %s\\n\","
-  , "    loc->first_line, loc->first_column, msg, " ++ name ++ "get_text(scanner));"
-  , "}"
-  ]
+errorHandler :: ParserMode -> String
+errorHandler mode = case mode of
+  CParser _ _ ->
+    -- This generates error handler for C with fprintf
+    unlines
+      [ "void yyerror(YYLTYPE *loc, yyscan_t scanner, YYSTYPE *result, const char *msg)"
+      , "{"
+      , "  fprintf(stderr, \"error: %d,%d: %s at %s\\n\","
+      , "    loc->first_line, loc->first_column, msg, " ++ name ++ "get_text(scanner));"
+      , "}"
+      ]
+  CppParser _ _ ->
+    --  This generates error handler for C++ with throw parse_error
+    unlines
+      [ "void yyerror(YYLTYPE *loc, yyscan_t scanner, YYSTYPE *result, const char *msg)"
+      , "{"
+      , "  std::string error_msg = msg;"
+      , "  if (loc) {"
+      , "    error_msg += \" at line \" + std::to_string(loc->first_line) +"
+      , "                 \", column \" + std::to_string(loc->first_column);"
+      , "  }"
+      , "  if (scanner) {"
+      , "    error_msg += \": '\" + std::string(" ++ name ++ "get_text(scanner)) + \"'\";"
+      , "  }"
+      , "  throw " ++ name ++ "::parse_error(loc ? loc->first_line : -1, error_msg);"
+      , "}"
+      ]
+  where
+    name = parserName mode
 
 -- | Parser entry point code.
 --
