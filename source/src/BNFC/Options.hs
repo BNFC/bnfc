@@ -134,7 +134,7 @@ data SharedOptions = Options
   --- Haskell specific:
   , inDir         :: Bool        -- ^ Option @-d@.
   , functor       :: Bool        -- ^ Option @--functor@.  Make AST functorial?
-  , generic       :: Bool        -- ^ Option @--generic@.  Derive Data, Generic, Typeable?
+  , generic       :: Bool        -- ^ Option @--generic@.  Derive Data and Generic?
   , alexMode      :: AlexVersion -- ^ Options @--alex@.
   , tokenText     :: TokenText   -- ^ Options @--bytestrings@, @--string-token@, and @--text-token@.
   , glr           :: HappyMode   -- ^ Happy option @--glr@.
@@ -378,7 +378,7 @@ specificOptions =
           "Make the AST a functor and use it to store the position of the nodes"
     , haskellTargets )
   , ( Option []    ["generic"] (NoArg (\o -> o {generic = True}))
-          "Derive Data, Generic, and Typeable instances for AST types"
+          "Derive Data and Generic instances for AST types"
     , haskellTargets )
   , ( Option []    ["xml"] (NoArg (\o -> o {xml = 1}))
           "Also generate a DTD and an XML printer"
@@ -660,5 +660,4 @@ translateOldOptions = mapM $ \ o -> do
     , ("-generic"             , "--generic")
     , ("--ghc"                , "--generic")
     , ("--deriveGeneric"      , "--generic")
-    , ("--deriveDataTypeable" , "--generic")
     ]

@@ -39,15 +39,14 @@ cf2Abstract
   -> CF        -- ^ Grammar.
   -> Doc
 -- tokenText :: TokenText -- ^ Use @ByteString@ or @Text@ instead of @String@?
--- generic   :: Bool      -- ^ Derive @Data@, Generic@, @Typeable@?
+-- generic   :: Bool      -- ^ Derive @Data@ and Generic@?
 -- functor   :: Bool      -- ^ Make the tree a functor?
 cf2Abstract Options{ lang, tokenText, generic, functor } name cf = vsep . concat $
     [ []
 
     -- Modules header
     , [ vcat . concat $
-        [ [ "{-# LANGUAGE DeriveDataTypeable #-}"         | gen ]
-        , [ "{-# LANGUAGE DeriveGeneric #-}"              | gen ]
+        [ [ "{-# LANGUAGE DeriveGeneric #-}"              | gen ]
         , [ "{-# LANGUAGE DeriveTraversable #-}"          | fun ]
         , [ "{-# LANGUAGE FlexibleInstances #-}"          | fun ]
         , [ "{-# LANGUAGE GeneralizedNewtypeDeriving #-}" | hasIdentLikeNoPos ] -- for IsString
@@ -71,8 +70,8 @@ cf2Abstract Options{ lang, tokenText, generic, functor } name cf = vsep . concat
       ]
     , [ vcat . concat $
         [ when hasTextualToks $ map text $ tokenTextImport tokenText
-        , [ "import qualified Data.Data    as C (Data, Typeable)" | gen ]
-        , [ "import qualified GHC.Generics as C (Generic)"        | gen ]
+        , [ "import qualified Data.Data    as C (Data)"    | gen ]
+        , [ "import qualified GHC.Generics as C (Generic)" | gen ]
         ]
       ]
 
@@ -140,7 +139,7 @@ cf2Abstract Options{ lang, tokenText, generic, functor } name cf = vsep . concat
 
     stdClasses = [ "Eq", "Ord", "Show", "Read" ]
     funClasses = [ "Functor", "Foldable", "Traversable" ]
-    genClasses = [ "Data", "Typeable", "Generic" ]
+    genClasses = [ "Data", "Generic" ]
     derivingClasses functor = map ("C." ++) $ concat
       [ stdClasses
       , when functor funClasses
