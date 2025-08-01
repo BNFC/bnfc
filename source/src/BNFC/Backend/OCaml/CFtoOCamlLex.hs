@@ -98,9 +98,9 @@ hashtables cf =
 cMacros :: [String]
 cMacros =
   [ "(* BNFC character classes *)"
-  , "let _letter = ['a'-'z' 'A'-'Z' '\\192' - '\\255'] # ['\\215' '\\247']    (*  isolatin1 letter FIXME *)"
-  , "let _upper  = ['A'-'Z' '\\192'-'\\221'] # '\\215'      (*  capital isolatin1 letter FIXME *)"
-  , "let _lower  = ['a'-'z' '\\222'-'\\255'] # '\\247'      (*  small isolatin1 letter FIXME *)"
+  , "let _letter = ['A'-'Z' 'a'-'z' '\\181' '\\192' - '\\255'] # ['\\215' '\\247']    (*  isolatin1 letter *)"
+  , "let _upper  = ['A'-'Z' '\\192'-'\\222'] # '\\215'      (*  capital isolatin1 letter *)"
+  , "let _lower  = ['a'-'z' '\\181' '\\223'-'\\255'] # '\\247'      (*  small isolatin1 letter *)"
   , "let _digit  = ['0'-'9']                             (*  _digit *)"
   , "let _idchar = _letter | _digit | ['_' '\\'']         (*  identifier character *)"
   , "let _universal = _                                  (* universal: any character *)"

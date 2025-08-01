@@ -2,6 +2,8 @@
 
 * C: preserve case in constructors (union): e.g. label `EInt` now is union member `eInt_` rather than `eint_`
   [[#479](https://github.com/BNFC/bnfc/issues/479)]
+* Haskell: lex ASCII 222 as upper rather than lower case letter
+  [[#497](https://github.com/BNFC/bnfc/issues/497)]
 * Haskell: no longer derive `Typeable` (obsolete since GHC 7.10)
   [[#503](https://github.com/BNFC/bnfc/issues/503)]
 
