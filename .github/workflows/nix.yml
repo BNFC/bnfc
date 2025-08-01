@@ -13,7 +13,8 @@ jobs:
       matrix:
         os:
         - ubuntu-latest
-        - macos-latest
+        # Andreas, 2025-08-01: Takes too long on macOS (~ 1 hour), disabled
+        # - macos-latest
     name: Nix on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     steps:
@@ -32,7 +33,7 @@ jobs:
     # Let's not do that in the actions for now
     # - name: "Test Nix flakes development shell"
     #   run: nix develop --check
-    
+
     - name: "Test Nix flake-compact build"
       run: nix-build
 
