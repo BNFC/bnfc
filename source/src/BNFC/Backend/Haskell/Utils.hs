@@ -38,10 +38,7 @@ commentWithEmacsModeHint = comment . ("-*- haskell -*- " ++)
 -- * GHC pragmas
 
 noWarnUnusedMatches :: IsString a => a
-noWarnUnusedMatches =
-  "{-# OPTIONS_GHC -fno-warn-unused-matches #-}"
-  -- ALT: only from GHC 8
-  -- "{-# OPTIONS_GHC -Wno-unused-matches #-}"
+noWarnUnusedMatches = "{-# OPTIONS_GHC -Wno-unused-matches #-}"
 
 -- * Names for position data type.
 

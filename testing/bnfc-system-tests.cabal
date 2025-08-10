@@ -101,5 +101,10 @@ executable bnfc-system-tests
 
   -- Base language which the package is written in.
   default-language:    Haskell2010
-  default-extensions:  OverloadedStrings ExtendedDefaultRules ScopedTypeVariables
-  ghc-options:         -W -fno-warn-type-defaults
+  default-extensions:
+    ExtendedDefaultRules
+    OverloadedStrings
+    ScopedTypeVariables
+  ghc-options:
+    -W
+    -Wno-type-defaults

@@ -63,13 +63,9 @@ prologue tokenText useGadt name absMod cf = map text $ concat
     , "{-# LANGUAGE LambdaCase #-}"
     ]
   , [ "{-# LANGUAGE GADTs #-}"                | useGadt ]
-  , [ "#if __GLASGOW_HASKELL__ <= 708"
-    , "{-# LANGUAGE OverlappingInstances #-}"
-    , "#endif"
-    ]
   , [ ""
     -- -- WAS: Needed for precedence category lists, e.g. @[Exp2]@:
-    -- , "{-# OPTIONS_GHC -fno-warn-incomplete-patterns #-}"
+    -- , "{-# OPTIONS_GHC -Wno-incomplete-patterns #-}"
     -- , ""
     , "-- | Pretty-printer for " ++ takeWhile ('.' /=) name ++ "."
     , ""

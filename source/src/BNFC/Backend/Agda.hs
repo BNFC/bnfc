@@ -5,9 +5,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TupleSections #-}
 
--- #if __GLASGOW_HASKELL__ >= 800
--- {-# OPTIONS_GHC -fno-warn-unused-top-binds #-}
--- #endif
+-- {-# OPTIONS_GHC -Wno-unused-top-binds #-}
 
 -- | Agda backend.
 --

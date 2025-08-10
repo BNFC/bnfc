@@ -27,14 +27,14 @@ cf2Abstract tokenText name cf composOpMod = unlines $ concat $
   , [ "{-# LANGUAGE EmptyCase #-}" | emptyTree ]
   , [ "{-# LANGUAGE LambdaCase #-}"
     , ""
-    , "{-# OPTIONS_GHC -fno-warn-unused-binds #-}"
+    , "{-# OPTIONS_GHC -Wno-unused-binds #-}"
       -- unused-local-binds would be sufficient, but parses only from GHC 8.0
-    , "{-# OPTIONS_GHC -fno-warn-unused-imports #-}"
-    , "{-# OPTIONS_GHC -fno-warn-unused-matches #-}"
-    , "{-# OPTIONS_GHC -fno-warn-incomplete-patterns #-}"
+    , "{-# OPTIONS_GHC -Wno-unused-imports #-}"
+    , "{-# OPTIONS_GHC -Wno-unused-matches #-}"
+    , "{-# OPTIONS_GHC -Wno-incomplete-patterns #-}"
       -- defects of coverage checker, e.g. in 8.2.2, may lead to warning
       -- about exceeded iterations for pattern match checker
-    , "{-# OPTIONS_GHC -fno-warn-overlapping-patterns #-}"
+    , "{-# OPTIONS_GHC -Wno-overlapping-patterns #-}"
     , ""
     , "module" +++ name +++ "(" ++ List.intercalate ", " exports ++ ")" +++ "where"
     , ""

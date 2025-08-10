@@ -62,7 +62,7 @@ header :: ModuleName -> ModuleName -> ModuleName -> TokenText -> [Cat] -> String
 header modName absName lexName tokenText eps = unlines $ concat
   [ [ "-- Parser definition for use with Happy"
     , "{"
-    , "{-# OPTIONS_GHC -fno-warn-incomplete-patterns -fno-warn-overlapping-patterns #-}"
+    , "{-# OPTIONS_GHC -Wno-incomplete-patterns -Wno-overlapping-patterns #-}"
     , "{-# LANGUAGE PatternSynonyms #-}"
     , ""
     , "module " ++ modName

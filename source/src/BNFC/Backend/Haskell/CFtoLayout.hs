@@ -23,7 +23,7 @@ data LayoutDelimiters = LayoutDelimiters TokSymbol (Maybe TokSymbol) (Maybe TokS
 
 cf2Layout :: String -> String -> CF -> String
 cf2Layout layName lexName cf = unlines $ concat
-  [ [ "{-# OPTIONS_GHC -fno-warn-incomplete-patterns #-}"
+  [ [ "{-# OPTIONS_GHC -Wno-incomplete-patterns #-}"
     , ""
     , "{-# LANGUAGE LambdaCase #-}"
     , "{-# LANGUAGE PatternGuards #-}"

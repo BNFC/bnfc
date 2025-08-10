@@ -1,4 +1,6 @@
-# Unreleased
+# 2.9.6
+
+Andreas Abel <andreas.abel@gu.se>,  August 2025
 
 * C: preserve case in constructors (union): e.g. label `EInt` now is union member `eInt_` rather than `eint_`
   [[#479](https://github.com/BNFC/bnfc/issues/479)]
@@ -6,6 +8,11 @@
   [[#497](https://github.com/BNFC/bnfc/issues/497)]
 * Haskell: no longer derive `Typeable` (obsolete since GHC 7.10)
   [[#503](https://github.com/BNFC/bnfc/issues/503)]
+* Haskell: drop support for GHC 7, generated code needs at least GHC 8.0
+
+Builds with GHC versions:
+* with `cabal`, GHC 8.0 - 9.12
+* with `stack`, GHC 8.4 - 9.12
 
 # 2.9.5
 

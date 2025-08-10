@@ -3,8 +3,6 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE PatternSynonyms #-}
 
-{-# OPTIONS_GHC -fno-warn-orphans #-}  -- ghc 7.10
-
 module BNFC.Utils
     ( ModuleName
     , when, unless, unlessNull, unlessNull'
@@ -56,18 +54,6 @@ type List1 = List1.NonEmpty
 type ModuleName = String
 
 -- * Control flow.
-
--- ghc 7.10 misses the instance Monoid a => Monoid (IO a)
-
-#if __GLASGOW_HASKELL__ <= 710
-instance {-# OVERLAPPING #-} Semigroup (IO ()) where
-  (<>) = (>>)
-
-instance {-# OVERLAPPING #-} Monoid (IO ()) where
-  mempty  = return ()
-  mappend = (<>)
-  mconcat = sequence_
-#endif
 
 -- | Generalization of 'Control.Monad.when'.
 when :: Monoid m => Bool -> m -> m

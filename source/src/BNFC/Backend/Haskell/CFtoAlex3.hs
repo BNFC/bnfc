@@ -37,7 +37,7 @@ prelude :: String -> TokenText -> [String]
 prelude name tokenText = concat
   [ [ "-- Lexer definition for use with Alex 3"
     , "{"
-    , "{-# OPTIONS -fno-warn-incomplete-patterns #-}"
+    , "{-# OPTIONS -Wno-incomplete-patterns #-}"
     , "{-# OPTIONS_GHC -w #-}"
     , ""
     , "{-# LANGUAGE PatternSynonyms #-}"
