@@ -52,6 +52,9 @@ BNFC versions in major Stackage LTS snapshots:
 | 9.0.2  | 19.33 | 2.9.4   |
 | 9.2.8  | 20.26 | 2.9.4.1 |
 | 9.4.8  | 21.25 | 2.9.5   |
+| 9.6.7  | 22.44 | 2.9.5   |
+| 9.8.4  | 23.27 | 2.9.5   |
+| 9.10.2 | 24.3  | 2.9.5   |
 
 ### Installation via cabal
 
@@ -81,9 +84,9 @@ and then either
 ```
 or
 ```
-  stack install --stack-yaml stack-9.4.yaml
+  stack install --stack-yaml stack-9.12.yaml
 ```
-(replace `9.4` with your GHC major version, and if you want to build with
+(replace `9.12` with your GHC major version, and if you want to build with
 your installed GHC then add flag `--system-ghc`).
 
 Mini tutorial
