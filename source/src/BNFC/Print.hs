@@ -4,8 +4,6 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE LambdaCase #-}
 
-{-# OPTIONS_GHC -Wno-incomplete-patterns #-}
-
 -- | Pretty-printer for BNFC.
 
 module BNFC.Print where
@@ -75,13 +73,12 @@ render d = rend 0 False (map ($ "") $ d []) ""
   -- Separate given string from following text by a space (if needed).
   space :: String -> ShowS
   space t s =
-    case (all isSpace t', null spc, null rest) of
-      (True , _   , True ) -> []              -- remove trailing space
-      (False, _   , True ) -> t'              -- remove trailing space
-      (False, True, False) -> t' ++ ' ' : s   -- add space if none
-      _                    -> t' ++ s
+    case (all isSpace t, null spc, null rest) of
+      (True , _   , True ) -> []             -- remove trailing space
+      (False, _   , True ) -> t              -- remove trailing space
+      (False, True, False) -> t ++ ' ' : s   -- add space if none
+      _                    -> t ++ s
     where
-      t'          = showString t []
       (spc, rest) = span isSpace s
 
   closingOrPunctuation :: String -> Bool
@@ -209,6 +206,7 @@ instance Print BNFC.Abs.Separation where
     BNFC.Abs.SepSepar str -> prPrec i 0 (concatD [doc (showString "separator"), printString str])
 
 instance Print [String] where
+  prt _ [] = concatD []
   prt _ [x] = concatD [printString x]
   prt _ (x:xs) = concatD [printString x, doc (showString ","), prt 0 xs]
 
@@ -235,6 +233,7 @@ instance Print BNFC.Abs.RHS where
     BNFC.Abs.RHS items -> prPrec i 0 (concatD [prt 0 items])
 
 instance Print [BNFC.Abs.RHS] where
+  prt _ [] = concatD []
   prt _ [x] = concatD [prt 0 x]
   prt _ (x:xs) = concatD [prt 0 x, doc (showString "|"), prt 0 xs]
 
