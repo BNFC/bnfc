@@ -46,7 +46,8 @@ cf2Abstract Options{ lang, tokenText, generic, functor } name cf = vsep . concat
 
     -- Modules header
     , [ vcat . concat $
-        [ [ "{-# LANGUAGE DeriveGeneric #-}"              | gen ]
+        [ [ "{-# LANGUAGE DeriveDataTypeable #-}"         | gen ]
+        , [ "{-# LANGUAGE DeriveGeneric #-}"              | gen ]
         , [ "{-# LANGUAGE DeriveTraversable #-}"          | fun ]
         , [ "{-# LANGUAGE FlexibleInstances #-}"          | fun ]
         , [ "{-# LANGUAGE GeneralizedNewtypeDeriving #-}" | hasIdentLikeNoPos ] -- for IsString
