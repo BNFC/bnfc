@@ -1,5 +1,17 @@
 # Unreleased
 
+# 2.9.6.1
+
+Andreas Abel <andreas.abel@gu.se>,  August 2025
+
+* Haskell: restore `LANGUAGE DeriveDataTypeable` in generated `Abs.hs`;
+  fixes regression in 2.9.6 [[#507](https://github.com/BNFC/bnfc/issues/507)]
+
+Builds with GHC versions:
+* with `cabal`, GHC 8.0 - 9.12
+* with `stack`, GHC 8.4 - 9.12
+
+
 # 2.9.6
 
 Andreas Abel <andreas.abel@gu.se>,  August 2025
