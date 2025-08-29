@@ -75,7 +75,7 @@ stringLit = unlines . \case
              ""
             ]
   "String" -> ["String literals //String// have the form",
-             "``\"``//x//``\"``}, where //x// is any sequence of any characters",
+             "``\"``//x//``\"``, where //x// is any sequence of any characters",
              "except ``\"`` unless preceded by ``\\``.",
              ""]
   "Integer" -> ["Integer literals //Integer// are nonempty sequences of digits.",
@@ -104,9 +104,9 @@ prtComments (xs,ys) = concat
                    else
                     "Single-line comments begin with " ++ sing ++".",
                    if null xs then
-                    "There are no multiple-line comments in the grammar."
+                    " There are no multiple-line comments in the grammar."
                    else
-                   "Multiple-line comments are  enclosed with " ++ mult ++"."
+                   " Multiple-line comments are enclosed with " ++ mult ++"."
                    ]
  where
  sing = List.intercalate ", " $ map (symbol.prt) ys
