@@ -137,7 +137,7 @@ header mode cf = unlines $ concat
     , "extern YY_BUFFER_STATE " ++ name ++ "_scan_string(const char *str, yyscan_t scanner);"
     , "extern void " ++ name ++ "_delete_buffer(YY_BUFFER_STATE buf, yyscan_t scanner);"
     , ""
-    , "extern void " ++ name ++ "lex_destroy(yyscan_t scanner);"
+    , "extern int " ++ name ++ "lex_destroy(yyscan_t scanner);"
     , "extern char* " ++ name ++ "get_text(yyscan_t scanner);"
     , ""
     , "extern yyscan_t " ++ name ++ "_initialize_lexer(FILE * inp);"
