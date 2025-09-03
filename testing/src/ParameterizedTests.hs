@@ -421,6 +421,7 @@ parameters = concat
     , javaParams { tpName = "Java (with jflex and line numbers)"
                  , tpBnfcOptions = ["--java", "--jflex", "-l"] }
     ]
+  , [ treeSitter ]
   ]
   where
     base = baseParameters
@@ -443,6 +444,14 @@ parameters = concat
         , tpBuild       = tpMake ["OCAMLCFLAGS=-safe-string"]
         , tpBnfcOptions = ["--ocaml"]
         , tpRunTestProg = haskellRunTestProg
+        }
+    treeSitter = TP
+        { tpName        = "tree-sitter"
+        , tpBuild       = do
+            cmd "tree-sitter" "generate" . (:[]) =<< findFile "grammar.js"
+        , tpBnfcOptions = ["--tree-sitter"]
+        , tpRunTestProg = \ _lang args -> do
+            cmd "tree-sitter" "parse" args
         }
 
 -- | Helper function that runs bnfc with the context's options and an

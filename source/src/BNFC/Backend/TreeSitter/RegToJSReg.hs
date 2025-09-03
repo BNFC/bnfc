@@ -1,7 +1,5 @@
 {-
     BNF Converter: TreeSitter Grammar Generator
-    Copyright (C) 2004  Author:  Markus Forsberg, Michael Pellauer,
-                                 Bjorn Bringert
 
     Description   : This module converts BNFC Reg to Javascript regular
                     expressions that is used in
@@ -12,7 +10,7 @@
 -}
 {-# LANGUAGE LambdaCase #-}
 
-module BNFC.Backend.TreeSitter.RegToJSReg (printRegJSReg) where
+module BNFC.Backend.TreeSitter.RegToJSReg (printRegJSReg, escapeCharFrom) where
 
 import BNFC.Abs
 

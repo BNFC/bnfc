@@ -1,7 +1,5 @@
 {-
     BNF Converter: TreeSitter Grammar Generator
-    Copyright (C) 2004  Author:  Markus Forsberg, Michael Pellauer,
-                                 Bjorn Bringert
 
     Description   : This module generates the grammar.js input file for
                     tree-sitter.
@@ -22,11 +20,13 @@ import BNFC.PrettyPrint
 -- | Entry point: create grammar.js file
 makeTreeSitter :: SharedOptions -> CF -> Backend
 makeTreeSitter opts cf = do
-  mkfile "grammar.js" comment (render $ cfToTreeSitter name cf)
+  -- Always remove zero width match for now, if needed, can be changed
+  -- to remove on flag in the future
+  mkfile "grammar.js" comment (render $ cfToTreeSitter name cf True)
   where
     name = lang opts
 
 comment :: String -> String
 comment = ("// " ++)
 
--- | TODO: Add Makefile generation for tree-sitter
+-- TODO: Add Makefile generation for tree-sitter
