@@ -51,7 +51,7 @@ cabal-version:       >=1.10
 
 tested-with:
     GHC == 9.12.2
-    GHC == 9.10.2
+    GHC == 9.10.3
     GHC == 9.8.4
     GHC == 9.6.7
     GHC == 9.4.8
@@ -93,7 +93,6 @@ executable bnfc-system-tests
     , text
     , HTF         >= 0.15.0.0
       -- API change in HTF-0.15 (issue #416)
-    , random
     , string-qq
 
   -- Directories containing source files.

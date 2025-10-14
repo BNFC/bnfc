@@ -1,5 +1,5 @@
-resolver: lts-24.3
-compiler: ghc-9.10.2
+resolver: lts-24.15
+compiler: ghc-9.10.3
 compiler-check: newer-minor
 
 packages:

@@ -33,7 +33,7 @@ Description:
 -- Support range when build with cabal
 tested-with:
   GHC == 9.12.2
-  GHC == 9.10.2
+  GHC == 9.10.3
   GHC == 9.8.4
   GHC == 9.6.7
   GHC == 9.4.8
@@ -108,11 +108,8 @@ library
     , filepath
     , mtl         >= 2.2.1
     , pretty      >= 1.1   && < 1.2
-    , process
     , string-qq
     , time
-    , transformers
-        -- for Control.Monad.IO.Class, which is in base >= 4.9 but not below
   build-tool-depends:
     alex:alex,
     happy:happy
@@ -290,18 +287,12 @@ test-suite unit-tests
     base,
     mtl,
     directory,
-    array,
-    process,
     filepath,
     pretty,
     hspec,
     QuickCheck >= 2.5,
     HUnit,
-    temporary,
-    containers,
-    deepseq,
-    string-qq,
-    time
+    temporary
   build-tool-depends:
     alex:alex,
     happy:happy,

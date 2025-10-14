@@ -15,6 +15,7 @@ import BNFC.Options
 -- Expectation that a particular option has a particular value
 shouldSet :: (Eq a, Show a) => Mode -> (SharedOptions -> a, a) -> Expectation
 shouldSet (Target opts _) (option, value) = option opts `shouldBe` value
+shouldSet _ _ = return ()
 
 spec :: Spec
 spec = do
