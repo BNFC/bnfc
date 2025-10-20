@@ -179,7 +179,7 @@ errorHandler mode = case mode of
       , "    loc->first_line, loc->first_column, msg, " ++ name ++ "get_text(scanner));"
       , "}"
       ]
-  CppParser _ _ ->
+  CppParser ns _ ->
     --  This generates error handler for C++ with throw parse_error
     unlines
       [ "void yyerror(YYLTYPE *loc, yyscan_t scanner, YYSTYPE *result, const char *msg)"
@@ -192,7 +192,7 @@ errorHandler mode = case mode of
       , "  if (scanner) {"
       , "    error_msg += \": '\" + std::string(" ++ name ++ "get_text(scanner)) + \"'\";"
       , "  }"
-      , "  throw " ++ name ++ "::parse_error(loc ? loc->first_line : -1, error_msg);"
+      , "  throw " ++ maybe "" (++ "::") ns ++ "parse_error(loc ? loc->first_line : -1, error_msg);"
       , "}"
       ]
   where
