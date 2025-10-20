@@ -53,7 +53,7 @@ This is what this module does.
 module BNFC.Backend.Common.NamedVariables where
 
 import Control.Arrow (left, (&&&))
-import Data.Char     (toLower)
+import Data.Char     (toLower, toUpper)
 import Data.Either   (lefts)
 import Data.List     (nub)
 import Data.Map      (Map)
@@ -157,3 +157,7 @@ showNum n = if n == 0 then "" else show n
 firstLowerCase :: String -> String
 firstLowerCase "" = ""
 firstLowerCase (a:b) = toLower a:b
+
+firstUpperCase :: String -> String
+firstUpperCase "" = ""
+firstUpperCase (a:b) = toUpper a:b
