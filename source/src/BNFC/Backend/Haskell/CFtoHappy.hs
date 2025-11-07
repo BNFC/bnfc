@@ -124,7 +124,7 @@ tokens cf functor
   | otherwise = "%token" $$ (nest 2 $ vcat $ map text $ table " " ts)
   where
     ts            = map prToken (cfTokens cf) ++ specialToks cf functor
-    prToken (t,k) = [ render (convert t), "{ PT _ (TS _ " ++ show k ++ ")", "}" ]
+    prToken (t,k) = [ render (convert t), "{ PT _ _ (TS _ " ++ show k ++ ")", "}" ]
 
 -- Happy doesn't allow characters such as åäö to occur in the happy file. This
 -- is however not a restriction, just a naming paradigm in the happy source file.
@@ -141,10 +141,10 @@ rulesForHappy absM functor cf = for (ruleGroups cf) $ \ (cat, rules) ->
 -- >>> constructRule "Foo" False (npRule "EPlus" (Cat "Exp") [Left (Cat "Exp"), Right "+", Left (Cat "Exp")] Parsable)
 -- ("Exp '+' Exp","Foo.EPlus $1 $3")
 --
--- If we're using functors, it adds position value:
+-- If we're using functors, it adds position range value:
 --
 -- >>> constructRule "Foo" True (npRule "EPlus" (Cat "Exp") [Left (Cat "Exp"), Right "+", Left (Cat "Exp")] Parsable)
--- ("Exp '+' Exp","(fst $1, Foo.EPlus (fst $1) (snd $1) (snd $3))")
+-- ("Exp '+' Exp","(Foo.spanBNFC'Position (fst $1) (fst $3), Foo.EPlus (Foo.spanBNFC'Position (fst $1) (fst $3)) (snd $1) (snd $3))")
 --
 -- List constructors should not be prefixed by the abstract module name:
 --
@@ -157,7 +157,7 @@ rulesForHappy absM functor cf = for (ruleGroups cf) $ \ (cat, rules) ->
 -- Coercion are much simpler:
 --
 -- >>> constructRule "Foo" True (npRule "_" (Cat "Exp") [Right "(", Left (Cat "Exp"), Right ")"] Parsable)
--- ("'(' Exp ')'","(uncurry Foo.BNFC'Position (tokenLineCol $1), (snd $2))")
+-- ("'(' Exp ')'","(Foo.spanBNFC'Position (uncurry Foo.BNFC'Position (tokenSpan $1)) (uncurry Foo.BNFC'Position (tokenSpan $3)), (snd $2))")
 --
 constructRule :: IsFun f => String -> Bool -> Rul f -> (Pattern, Action)
 constructRule absName functor (Rule fun0 _cat rhs Parsable) = (pat, action)
@@ -167,10 +167,26 @@ constructRule absName functor (Rule fun0 _cat rhs Parsable) = (pat, action)
     action
       | functor   = "(" ++ actionPos id ++ ", " ++ actionValue ++ ")"
       | otherwise = actionValue
-    actionPos paren = case rhs of
-      []          -> qualify noPosConstr
-      (Left _:_)  -> paren "fst $1"
-      (Right _:_) -> paren $ unwords [ "uncurry", qualify posConstr , "(tokenLineCol $1)" ]
+    actionPos paren = case headAndLast rhs of
+      Nothing                 -> qualify noPosConstr
+      Just (startTok, endTok) -> paren $ unwords
+        [ qualify ("span" ++ posConstr)
+        , startOf startTok
+        , endOf endTok
+        ]
+      where
+        startOf :: Either a b -> String
+        startOf Left{} = "(fst $1)"
+        startOf Right{} = unwords [ "(uncurry", qualify posConstr , "(tokenSpan $1))" ]
+        endOf :: Either a b -> String
+        endOf Left{} = "(fst $" ++ show (length rhs) ++ ")"
+        endOf Right{} = unwords [ "(uncurry", qualify posConstr , "(tokenSpan $" ++ show (length rhs) ++"))" ]
+
+        headAndLast :: [a] -> Maybe (a, a)
+        headAndLast xs =
+          case (xs, reverse xs) of
+            (x:_, z:_) -> Just (x, z)
+            _          -> Nothing
     actionValue
       | isCoercion fun = unwords metavars
       | isNilCons  fun = unwords (qualify fun : metavars)
@@ -297,12 +313,12 @@ footer absName tokenText functor eps _cf = unlines $ concat
 -- | GF literals.
 specialToks :: CF -> Bool -> [[String]]  -- ^ A table with three columns (last is "}").
 specialToks cf functor = (`map` literals cf) $ \t -> case t of
-  "Ident"   -> [ "L_Ident" , "{ PT _ (TV " ++ posn t ++ ")", "}" ]
-  "String"  -> [ "L_quoted", "{ PT _ (TL " ++ posn t ++ ")", "}" ]
-  "Integer" -> [ "L_integ ", "{ PT _ (TI " ++ posn t ++ ")", "}" ]
-  "Double"  -> [ "L_doubl ", "{ PT _ (TD " ++ posn t ++ ")", "}" ]
-  "Char"    -> [ "L_charac", "{ PT _ (TC " ++ posn t ++ ")", "}" ]
-  own       -> [ "L_" ++ own,"{ PT _ (T_" ++ own ++ " " ++ posn own ++ ")", "}" ]
+  "Ident"   -> [ "L_Ident" , "{ PT _ _ (TV " ++ posn t ++ ")", "}" ]
+  "String"  -> [ "L_quoted", "{ PT _ _ (TL " ++ posn t ++ ")", "}" ]
+  "Integer" -> [ "L_integ ", "{ PT _ _ (TI " ++ posn t ++ ")", "}" ]
+  "Double"  -> [ "L_doubl ", "{ PT _ _ (TD " ++ posn t ++ ")", "}" ]
+  "Char"    -> [ "L_charac", "{ PT _ _ (TC " ++ posn t ++ ")", "}" ]
+  own       -> [ "L_" ++ own,"{ PT _ _ (T_" ++ own ++ " " ++ posn own ++ ")", "}" ]
   where
     posn tokenCat = if isPositionCat cf tokenCat || functor then "_" else "$$"
 
@@ -323,11 +339,11 @@ specialRules absName functor tokenText cf = unlines . intersperse "" . (`map` li
   where
     mkTypePart tokenCat = if functor then concat [ "(", qualify posType, ", ", tokenCat, ")" ] else tokenCat
     mkBodyPart tokenCat
-      | functor   = "(" ++ unwords ["uncurry", qualify posConstr, "(tokenLineCol $1)"] ++ ", " ++ mkValPart tokenCat ++ ")"
+      | functor   = "(" ++ unwords ["uncurry", qualify posConstr, "(tokenSpan $1)"] ++ ", " ++ mkValPart tokenCat ++ ")"
       | otherwise = mkValPart tokenCat
     mkValPart tokenCat =
       case tokenCat of
-        "String"  -> if functor then stringUnpack "((\\(PT _ (TL s)) -> s) $1)"
+        "String"  -> if functor then stringUnpack "((\\(PT _ _ (TL s)) -> s) $1)"
                                 else stringUnpack "$1"                                 -- String never has pos
         "Integer" -> if functor then "(read " ++ stringUnpack "(tokenText $1)" ++ ") :: Integer"
                                 else "(read " ++ stringUnpack "$1" ++ ") :: Integer" -- Integer never has pos
