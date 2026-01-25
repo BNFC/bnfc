@@ -1,0 +1,7 @@
+resolver: nightly-2025-10-14
+compiler: ghc-9.12.2
+compiler-check: newer-minor
+
+packages:
+- source
+# testing

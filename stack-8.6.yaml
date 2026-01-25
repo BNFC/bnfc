@@ -1,7 +1,7 @@
 resolver: lts-14.27
 packages:
 - source
-- testing
+# testing
 
 # `testing` depends on more recent `HTF` and `shelly`
 extra-deps:

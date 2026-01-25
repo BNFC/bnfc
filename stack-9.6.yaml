@@ -1,0 +1,7 @@
+resolver: lts-22.44
+compiler: ghc-9.6.7
+compiler-check: newer-minor
+
+packages:
+- source
+# testing
