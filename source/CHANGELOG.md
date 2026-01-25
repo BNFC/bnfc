@@ -1,3 +1,10 @@
+# 2.9.5.1
+
+Andreas Abel <andreas.abel@gu.se>  Jan 2026
+
+* Cabal 3.12 compatibility: remove generated `Lex.hs` and `Par.hs` from source tarball
+* Build tested with GHC 8.0 - 9.12.2
+
 # 2.9.5
 
 Andreas Abel <andreas.abel@gu.se>,  July 2023
