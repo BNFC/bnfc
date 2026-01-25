@@ -1,7 +1,0 @@
-resolver: lts-17.13
-compiler: ghc-8.10.4
-compiler-check: match-exact
-
-packages:
-- source
-- testing

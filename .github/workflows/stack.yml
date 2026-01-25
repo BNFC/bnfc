@@ -4,10 +4,16 @@ name: Stack build
 
 on:
   push:
-    branches: [ master, 'ci-*' ]
+    branches: [ master ]
     tags:     [ 'v*' ]
   pull_request:
-    types: [ opened, synchronize]
+    types: [ opened, synchronize ]
+  workflow_dispatch:
+
+# For making a release, we need write permissions.
+# TODO: if we split out a release job from the build job, we could make permissions more fine-grained.
+permissions:
+  contents: write
 
 jobs:
   build:
@@ -17,13 +23,14 @@ jobs:
       fail-fast: false
       matrix:
         # Note: check release logic below when changing the matrix!
-        ghc: [9.0.1, 8.10.7, 8.8.4, 8.6.5, 8.4.4, 8.2.2, 8.0.2]
+        # Stack 3.3.1 only supports GHC 8.4 and up.
+        ghc: ['9.12', '9.10', '9.8', '9.6', '9.4', '9.2', '9.0', '8.10', '8.8', '8.6', '8.4']
         os: [ubuntu-latest]
         include:
           - os: macOS-latest
-            ghc: 9.0.1
+            ghc: '9.12'
           - os: windows-latest
-            ghc: 9.0.1
+            ghc: '9.12'
 
 
     # Needed for Windows to make piping (... >> ...) and evaluation ( $(...) ) work.
@@ -32,17 +39,15 @@ jobs:
         shell: bash
 
     steps:
-      - uses: actions/checkout@v2                   # latest (2020-12-21): v2.3.4
+      - uses: actions/checkout@v5
 
       - name: Setup Haskell
-        uses: haskell/actions/setup@v1
-                                                    # latest (2020-12-21): v1.1.5
-                                                    # latest (2021-08-19): v1.2.3
+        uses: haskell-actions/setup@v2
         id:   haskell-setup  # <-- self-chosen identifier
         with:
-          ghc-version: ${{ matrix.ghc }}
-          enable-stack: true
-          # stack-version: latest
+          ghc-version:   ${{ matrix.ghc }}
+          enable-stack:  true
+          cabal-update:  false
 
       - name: Environment settings based on the Haskell setup
         shell: bash
@@ -56,31 +61,36 @@ jobs:
           echo "cabal-exe   = ${{ steps.haskell-setup.outputs.cabal-exe   }}"
           echo "stack-exe   = ${{ steps.haskell-setup.outputs.stack-exe   }}"
           echo "stack-root  = ${{ steps.haskell-setup.outputs.stack-root  }}"
-          export GHC_VER=$(ghc --numeric-version)
-          export CABAL_VER=$(cabal --numeric-version)
-          export STACK_VER=$(stack --numeric-version)
-          export STACK_FLAGS="--stack-yaml stack-${GHC_VER}.yaml --system-ghc --no-terminal --color always"
-          export TARGET=$(if [ "${{ runner.os }}" == "Windows" ]; then echo ":bnfc"; fi)
+          GHC_VER=$(ghc --numeric-version)
+          CABAL_VER=$(cabal --numeric-version)
+          STACK_VER=$(stack --numeric-version)
+          STACK_FLAGS="--stack-yaml stack-${{ matrix.ghc }}.yaml --system-ghc --no-terminal --color always"
+          TARGET=$(if [ "${{ runner.os }}" == "Windows" ]; then echo ":bnfc"; fi)
           echo "GHC_VER     = ${GHC_VER}"
           echo "CABAL_VER   = ${CABAL_VER}"
           echo "STACK_VER   = ${STACK_VER}"
           echo "STACK_FLAGS = ${STACK_FLAGS}"
           echo "TARGET      = ${TARGET}"
-          echo "GHC_VER=${GHC_VER}"          >> ${GITHUB_ENV}
-          echo "CABAL_VER=${CABAL_VER}"      >> ${GITHUB_ENV}
-          echo "STACK_VER=${STACK_VER}"      >> ${GITHUB_ENV}
-          echo "STACK_FLAGS=${STACK_FLAGS}"  >> ${GITHUB_ENV}
-          echo "TARGET=${TARGET}"            >> ${GITHUB_ENV}
+          echo "GHC_VER=${GHC_VER}"          >> "${GITHUB_ENV}"
+          echo "CABAL_VER=${CABAL_VER}"      >> "${GITHUB_ENV}"
+          echo "STACK_VER=${STACK_VER}"      >> "${GITHUB_ENV}"
+          echo "STACK_FLAGS=${STACK_FLAGS}"  >> "${GITHUB_ENV}"
+          echo "TARGET=${TARGET}"            >> "${GITHUB_ENV}"
         # Stack build TARGET restriction on Windows as it cannot build the 'testing' package.
         # From now on, use env.{GHC|CABAL}_VER rather than matrix.{ghc|cabal}-ver!
 
       - name: Cache dependencies
-        # if:   runner.os == 'Linux'
-        uses: actions/cache@v2                      # latest (2020-12-21): v2.1.3
+        uses: actions/cache@v4
+        env:
+          key: ${{ runner.os }}-stack-${{ env.STACK_VER }}-ghc-${{ env.GHC_VER }}
+          ## Just stack.yaml is actually not correct, better would be stack.yaml.lock,
+          ## but we do not commit this file.  As a workaround, one could include the .cabal file,
+          ## which tracks the dependencies (albeit in our case not precisely).
+          # key: ${{ runner.os }}-${{ env.STACK_VER }}-${{ hashFiles('source/BNFC.cabal', format('stack-{0}.yaml', env.GHC_VER)) }}
         with:
           path: ${{ steps.haskell-setup.outputs.stack-root }}
-          # A unique cache is used for each stack.yaml.
-          key: ${{ runner.os }}-${{ env.STACK_VER }}-${{ hashFiles(format('stack-{0}.yaml', env.GHC_VER)) }}
+          key:          ${{ env.key }}-resolver-${{ hashFiles(format('stack-{0}.yaml', matrix.ghc)) }}
+          restore-keys: ${{ env.key }}-
 
       - name: Build dependencies.
         run: stack build ${{ env.TARGET }} ${{ env.STACK_FLAGS }} --only-dependencies
@@ -92,18 +102,17 @@ jobs:
         run: stack build ${{ env.TARGET }} ${{ env.STACK_FLAGS }} --test
         # # matrix.ghc != '8.4.4' &&
         # if: >-
-        #   matrix.ghc != '8.2.2' &&
-        #   matrix.ghc != '8.0.2'
+        #   matrix.ghc != '8.2.2'
         # Fall back to string comparison as version-comparison does not seem to work.
         # Exclude the versions that do not support bnfc-system-tests
 
       - name: Run bnfc.
         run: |
-          export BNFC_EXE=$(stack path --local-install-root ${{ env.STACK_FLAGS }})/bin/bnfc
-          export BNFC_VERSION=$(${BNFC_EXE} --numeric-version)
+          BNFC_EXE=$(stack path --local-install-root ${{ env.STACK_FLAGS }})/bin/bnfc
+          BNFC_VERSION=$("${BNFC_EXE}" --numeric-version)
           # Save env variables for the next steps
-          echo "BNFC_EXE=${BNFC_EXE}"         >> ${GITHUB_ENV}
-          echo "BNFC_VERSION=${BNFC_VERSION}" >> ${GITHUB_ENV}
+          echo "BNFC_EXE=${BNFC_EXE}"         >> "${GITHUB_ENV}"
+          echo "BNFC_VERSION=${BNFC_VERSION}" >> "${GITHUB_ENV}"
 
       ## Release
       ########################################################################
@@ -112,16 +121,16 @@ jobs:
         # Conditional to ensure this deployment is only run once per action.
         if: >-
           startsWith(github.ref, 'refs/tags/v')
-          && matrix.ghc == '9.0.1'
+          && matrix.ghc == '9.12'
         run: |
-          export DIST_TGZ=$(cabal sdist source | tail -1)
-          echo "DIST_TGZ=${DIST_TGZ}" >> ${GITHUB_ENV}
+          DIST_TGZ=$(cabal sdist source | tail -1)
+          echo "DIST_TGZ=${DIST_TGZ}" >> "${GITHUB_ENV}"
 
       - name: Source tarball release.
         if: >-
           startsWith(github.ref, 'refs/tags/v')
-          && matrix.ghc == '9.0.1'
-        uses: softprops/action-gh-release@v1
+          && matrix.ghc == '9.12'
+        uses: softprops/action-gh-release@v2
         with:
           draft: true
           prerelease: true
@@ -132,17 +141,19 @@ jobs:
         if: >-
           startsWith(github.ref, 'refs/tags/v')
           && runner.os == 'Linux'
+          && matrix.ghc == '9.12'
         run: |
-          export BNFC_BIN=bnfc-${BNFC_VERSION}-linux.binary
-          cp -p ${BNFC_EXE} ${BNFC_BIN}
+          BNFC_BIN=bnfc-${BNFC_VERSION}-linux.binary
+          cp -p "${BNFC_EXE}" "${BNFC_BIN}"
           # Save env variables for the next step
-          echo "BNFC_BIN=${BNFC_BIN}" >> ${GITHUB_ENV}
+          echo "BNFC_BIN=${BNFC_BIN}" >> "${GITHUB_ENV}"
 
       - name: Linux release.
         if: >-
           startsWith(github.ref, 'refs/tags/v')
           && runner.os == 'Linux'
-        uses: softprops/action-gh-release@v1
+          && matrix.ghc == '9.12'
+        uses: softprops/action-gh-release@v2
         with:
           draft: true
           prerelease: true
@@ -154,29 +165,29 @@ jobs:
           startsWith(github.ref, 'refs/tags/v')
           && runner.os == 'macOS'
         run: |
-          export BNFC_BIN=bnfc-${BNFC_VERSION}-mac.binary
-          export BNFC_PKG=bnfc-${BNFC_VERSION}-mac.pkg
+          BNFC_BIN=bnfc-${BNFC_VERSION}-mac.binary
+          BNFC_PKG=bnfc-${BNFC_VERSION}-mac.pkg
           # Raw Mac binary
-          cp -p ${BNFC_EXE} ${BNFC_BIN}
+          cp -p "${BNFC_EXE}" "${BNFC_BIN}"
           # Build Mac package
           mkdir -p tmp/usr/local/bin
-          cp -p ${BNFC_EXE} tmp/usr/local/bin/bnfc
+          cp -p "${BNFC_EXE}" tmp/usr/local/bin/bnfc
           pkgbuild \
             --root tmp \
             --identifier com.digitalgrammars.bnfc.pkg \
-            --version ${BNFC_VERSION} \
+            --version "${BNFC_VERSION}" \
             --install-location / \
             --ownership recommended \
-            ${BNFC_PKG}
+            "${BNFC_PKG}"
           # Save env variables for the next step
-          echo "BNFC_BIN=${BNFC_BIN}" >> ${GITHUB_ENV}
-          echo "BNFC_PKG=${BNFC_PKG}" >> ${GITHUB_ENV}
+          echo "BNFC_BIN=${BNFC_BIN}" >> "${GITHUB_ENV}"
+          echo "BNFC_PKG=${BNFC_PKG}" >> "${GITHUB_ENV}"
 
       - name: Mac release.
         if: >-
           startsWith(github.ref, 'refs/tags/v')
           && runner.os == 'macOS'
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           draft: true
           prerelease: true
@@ -191,16 +202,16 @@ jobs:
           && runner.os == 'Windows'
         shell: bash
         run: |
-          export BNFC_VER_EXE=bnfc-${BNFC_VERSION}.exe
-          cp -p ${BNFC_EXE}.exe ${BNFC_VER_EXE}
+          BNFC_VER_EXE=bnfc-${BNFC_VERSION}.exe
+          cp -p "${BNFC_EXE}.exe" "${BNFC_VER_EXE}"
           # Save env variables for the next step
-          echo "BNFC_VER_EXE=${BNFC_VER_EXE}" >> ${GITHUB_ENV}
+          echo "BNFC_VER_EXE=${BNFC_VER_EXE}" >> "${GITHUB_ENV}"
 
       - name: Windows release.
         if: >-
           startsWith(github.ref, 'refs/tags/v')
           && runner.os == 'Windows'
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           draft: true
           prerelease: true
