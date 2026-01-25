@@ -1,3 +1,10 @@
+# 2.9.3.1
+
+Andreas Abel <andreas.abel@gu.se>  Jan 2026
+
+* Cabal 3.12 compatibility: remove generated `Lex.hs` and `Par.hs` from source tarball
+* Build tested with GHC 8.0 - 9.12.2
+
 # 2.9.3
 
 Andreas Abel <andreas.abel@gu.se>  September 2021
@@ -38,7 +45,6 @@ Andreas Abel <andreas.abel@gu.se>  June 2021
 ## Cosmetical changes
 
 * C/C++: instead of `_SYMB_nnn`, more readable token names in lexer & parser
-
 
 # 2.9.1
 
