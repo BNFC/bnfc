@@ -27,15 +27,20 @@ Description:
   a LaTeX file containing a readable specification of the language.
 
 tested-with:
-  GHC == 7.10.3
-  GHC == 8.0.2
-  GHC == 8.2.2
-  GHC == 8.4.4
-  GHC == 8.6.5
-  GHC == 8.8.4
+  GHC == 9.12.2
+  GHC == 9.10.3
+  GHC == 9.8.4
+  GHC == 9.6.7
+  GHC == 9.4.8
+  GHC == 9.2.8
+  GHC == 9.0.2
   GHC == 8.10.7
-  GHC == 9.0.1
-  GHC == 9.2.0.20210821
+  GHC == 8.8.4
+  GHC == 8.6.5
+  GHC == 8.4.4
+  GHC == 8.2.2
+  GHC == 8.0.2
+  -- GHC == 7.10.3
 
 Extra-source-files:
   README.md
