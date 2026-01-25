@@ -1,7 +1,7 @@
 resolver: lts-9.21
 packages:
 - source
-# - testing
+# # testing
 
 extra-deps:
   - Cabal-2.0.0.2
