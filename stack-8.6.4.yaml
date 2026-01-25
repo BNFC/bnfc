@@ -1,4 +1,0 @@
-resolver: lts-13.19
-packages:
-- source
-- testing

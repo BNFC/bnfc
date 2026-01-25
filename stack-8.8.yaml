@@ -1,11 +1,11 @@
 resolver: lts-16.31
 compiler: ghc-8.8.4
-compiler-check: match-exact
+compiler-check: newer-minor
 
 packages:
 - source
-- testing
+# testing
 
 # `testing` depends on more recent `HTF`
 extra-deps:
-- HTF-0.14.0.5
+- HTF-0.15.0.0
