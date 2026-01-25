@@ -1,4 +1,0 @@
-resolver: lts-15.8
-packages:
-- source
-- testing

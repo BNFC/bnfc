@@ -1,0 +1,7 @@
+resolver: lts-19.33
+compiler: ghc-9.0.2
+compiler-check: newer-minor
+
+packages:
+- source
+# testing
