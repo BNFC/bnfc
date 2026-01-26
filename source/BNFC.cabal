@@ -141,9 +141,9 @@ library
   if impl(ghc < 8)
     build-depends:
       semigroups
-  build-tools:
-    alex,
-    happy
+  build-tool-depends:
+    alex:alex,
+    happy:happy
   hs-source-dirs:
     src
   default-extensions:
@@ -301,10 +301,10 @@ test-suite unit-tests
   if impl(ghc < 8)
     build-depends:
       semigroups
-  build-tools:
-    alex,
-    happy,
-    hspec-discover
+  build-tool-depends:
+    alex:alex,
+    happy:happy,
+    hspec-discover:hspec-discover
   main-is:
     unit-tests.hs
   hs-source-dirs:
