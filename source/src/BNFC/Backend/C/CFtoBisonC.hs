@@ -214,7 +214,10 @@ parseMethod mode cf cat = unlines $ concat
   , body False
   , [ ""
     , unwords [ "/* Entrypoint: parse", dat, "from string. */" ]
-    , dat ++ " ps" ++ parser ++ "(const char *str)"
+    , dat ++ " p" ++ (if cParser mode then "s" else "") ++ parser ++ "(const char *str)"
+        -- Andreas, 2026-01-26, issue #524
+        -- In C++, functions can be overloaded, but not in C.
+        -- So we need to give a different name to the string parser than to the file parser.
     ]
   , body True
   ]
