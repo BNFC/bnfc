@@ -17,6 +17,7 @@ import BNFC.Backend.C.CFtoFlexC  ( cf2flex, ParserMode(..) )
 import BNFC.Backend.CPP.Common   ( commentWithEmacsModeHint )
 import BNFC.Backend.CPP.Makefile
 import BNFC.Backend.CPP.NoSTL.CFtoCPPAbs
+import BNFC.Backend.CPP.STL      ( mkEntryFuncs )
 import BNFC.Backend.CPP.STL.CFtoCVisitSkelSTL
 import BNFC.Backend.CPP.PrettyPrinter
 import qualified BNFC.Backend.Common.Makefile as Makefile
@@ -135,10 +136,8 @@ mkHeaderFile eps = unlines $ concat
     , "#include \"Absyn.H\""
     , ""
     ]
-  , map mkFunc eps
+  , concatMap mkEntryFuncs eps
   , [ ""
     , "#endif"
     ]
   ]
-  where
-  mkFunc s = identCat (normCat s) ++ "*" +++ "p" ++ identCat s ++ "(FILE *inp);"

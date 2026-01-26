@@ -7,7 +7,7 @@
 
 -}
 
-module BNFC.Backend.CPP.STL (makeCppStl,) where
+module BNFC.Backend.CPP.STL (makeCppStl, mkEntryFuncs) where
 
 import Data.Foldable (toList)
 
@@ -176,7 +176,7 @@ mkHeaderFile inPackage eps = unlines $ concat
     , ""
     , nsStart inPackage
     ]
-  , concatMap mkFuncs eps
+  , concatMap mkEntryFuncs eps
   , [ nsEnd inPackage
     , ""
     , "#endif"
@@ -184,7 +184,9 @@ mkHeaderFile inPackage eps = unlines $ concat
   ]
   where
   hdef = nsDefine inPackage "PARSER_HEADER_FILE"
-  mkFuncs s =
+
+mkEntryFuncs :: Cat -> [String]
+mkEntryFuncs s =
     [ identCat (normCat s) ++ "*" +++ "p" ++ identCat s ++ "(FILE *inp);"
     , identCat (normCat s) ++ "*" +++ "p" ++ identCat s ++ "(const char *str);"
     ]
