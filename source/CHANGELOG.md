@@ -1,6 +1,20 @@
-# Unreleased
+# 2.9.6.2
 
-* C++: repair broken `parse_error` exception throw [[#493](https://github.com/BNFC/bnfc/issues/493)]
+Andreas Abel <andreas.abel@gu.se>,  January 2026
+
+* C: fix type of `lex_destroy`
+  [[#513](https://github.com/BNFC/bnfc/issues/513)]
+* C++: fixing 2 regressions introduced in 2.9.2
+  - `parse_error` exception not thrown
+    [[#493](https://github.com/BNFC/bnfc/issues/493)]
+  - entrypoint for file and string parsing should have same name (overloaded function)
+    [[#524](https://github.com/BNFC/bnfc/issues/524)]
+* txt2tags: remove extra closing bracket in `String` literal description in `Doc.txt`
+  [[#511](https://github.com/BNFC/bnfc/issues/511)]
+
+Builds with GHC versions:
+* with `cabal`, GHC 8.0 - 9.12
+* with `stack`, GHC 8.4 - 9.12
 
 # 2.9.6.1
 
