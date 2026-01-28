@@ -16,6 +16,7 @@ module BNFC.Backend.Base
   ) where
 
 import Control.Arrow    ( (&&&) )
+import Control.Monad
 import Control.Monad.Writer
 
 import Data.Char        ( isSpace )
