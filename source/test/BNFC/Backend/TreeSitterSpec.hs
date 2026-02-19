@@ -1,9 +1,15 @@
 module BNFC.Backend.TreeSitterSpec where
 
+import qualified Paths_BNFC
+
+import System.FilePath
+import System.Directory(listDirectory)
+
 import BNFC.Options
 import BNFC.GetCF
 
 import Test.Hspec
+import Test.HUnit ((@?))
 import BNFC.Hspec
 
 import BNFC.Backend.TreeSitter -- SUT
@@ -17,9 +23,38 @@ getCalc = parseCF  calcOptions TargetTreeSitter $
           , "EInt. Exp2  ::= Integer ;"
           , "coercions Exp 2 ;" ]
 
+listDataFiles = do
+  dataDir <- Paths_BNFC.getDataDir
+  let dir = dataDir </> "test/BNFC/Backend/TreeSitter"
+
+  files <- listDirectory dir
+  pure $ map (dir </>) $ filter ("cf" `isExtensionOf`) files
+
+runFileTest filename = do
+  let opts = (defaultOptions { lang = takeBaseName filename})
+
+  bnfc <- readFile (filename -<.> "cf")
+  expected <- readFile (filename -<.> "expected.js")
+
+  cf <- parseCF opts TargetTreeSitter bnfc
+  let backend = makeTreeSitter opts cf
+
+  backend `shouldGenerateText` ("grammar.js", expected)
+
+makeFileTest filename =
+  it ("tree-sitter expect test: " <> filename) $
+    runFileTest filename
+
 spec = do
 
   describe "Tree-Sitter backend" $ do
     it "creates the grammar.js file" $ do
       calc <- getCalc
       makeTreeSitter calcOptions calc `shouldGenerate` "grammar.js"
+
+    cfFiles <- runIO listDataFiles
+
+    it "should find at least one expect test" $ do
+      not (null cfFiles) @? "no .cf files found"
+
+    mapM_ makeFileTest cfFiles

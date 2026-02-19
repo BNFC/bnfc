@@ -1,0 +1,38 @@
+{
+  "$schema": "https://tree-sitter.github.io/tree-sitter/assets/schemas/config.schema.json",
+  "grammars": [
+    {
+      "name": "test",
+      "camelcase": "Test",
+      "title": "Test",
+      "scope": "source.test",
+      "file-types": [
+        "test"
+      ],
+      "injection-regex": "^test$",
+      "class-name": "TreeSitterTest"
+    }
+  ],
+  "metadata": {
+    "version": "0.1.0",
+    "license": "",
+    "description": "Test grammar for tree-sitter",
+    "authors": [
+      {
+        "name": "BNFC Test"
+      }
+    ],
+    "links": {
+      "repository": "https://test.invalid"
+    }
+  },
+  "bindings": {
+    "c": false,
+    "go": false,
+    "node": false,
+    "python": false,
+    "rust": false,
+    "swift": false,
+    "zig": false
+  }
+}

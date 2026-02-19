@@ -1,0 +1,6 @@
+rules Start ::= "1" [A];
+
+rules Opt ::= "X" | ;
+
+rules A ::= Opt;
+separator A ",";
