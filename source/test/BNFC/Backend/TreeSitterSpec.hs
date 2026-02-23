@@ -5,6 +5,9 @@ import qualified Paths_BNFC
 import System.FilePath
 import System.Directory(listDirectory)
 
+import qualified Data.List as List
+
+import BNFC.Backend.Base(fileName, execBackend)
 import BNFC.Options
 import BNFC.GetCF
 
@@ -39,7 +42,11 @@ runFileTest filename = do
   cf <- parseCF opts TargetTreeSitter bnfc
   let backend = makeTreeSitter opts cf
 
-  backend `shouldGenerateText` ("grammar.js", expected)
+  -- get the name of the grammar.js file within a subfolder
+  fileNames <- map fileName <$> execBackend backend
+  let (Just grammarJs) = List.find ((== "grammar.js") . takeFileName) fileNames
+
+  backend `shouldGenerateText` (grammarJs, expected)
 
 makeFileTest filename =
   it ("tree-sitter expect test: " <> filename) $
@@ -50,7 +57,7 @@ spec = do
   describe "Tree-Sitter backend" $ do
     it "creates the grammar.js file" $ do
       calc <- getCalc
-      makeTreeSitter calcOptions calc `shouldGenerate` "grammar.js"
+      makeTreeSitter calcOptions calc `shouldGenerate` ("tree-sitter-calc" </> "grammar.js")
 
     cfFiles <- runIO listDataFiles
 

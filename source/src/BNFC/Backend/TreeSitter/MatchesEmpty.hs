@@ -8,6 +8,7 @@
 
 -}
 
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE LambdaCase #-}
 
 {-|
@@ -70,6 +71,9 @@ import BNFC.CF(SentForm, Cat, Rule, rhsRule)
 import qualified Data.Maybe as Maybe
 import qualified Data.List as List
 import qualified Data.Set as Set
+#if !MIN_VERSION_base(4,11,0)
+import Data.Semigroup (Semigroup(..))
+#endif
 
 -- * Basic types
 
