@@ -31,7 +31,7 @@ listDataFiles = do
   let dir = dataDir </> "test/BNFC/Backend/TreeSitter"
 
   files <- listDirectory dir
-  pure $ map (dir </>) $ filter ("cf" `isExtensionOf`) files
+  pure $ map (dir </>) $ filter ((== ".cf") . takeExtension) files
 
 runFileTest filename = do
   let opts = (defaultOptions { lang = takeBaseName filename})
@@ -49,7 +49,7 @@ runFileTest filename = do
   backend `shouldGenerateText` (grammarJs, expected)
 
 makeFileTest filename =
-  it ("tree-sitter expect test: " <> filename) $
+  it ("tree-sitter expect test: " ++ filename) $
     runFileTest filename
 
 spec = do
