@@ -17,15 +17,14 @@ import BNFC.Abs (Reg)
 import BNFC.Backend.TreeSitter.RegToJSReg
 import BNFC.Backend.TreeSitter.MatchesEmpty(fixPointKnownEmpty, transformEmptyMatches, KnownEmpty, OptSym(..), OptSentForm, isKnownEmpty)
 import BNFC.CF
-import BNFC.Utils(when, applyWhen, cstring)
-import BNFC.Lexing (mkLexer, LexType(..))
+import BNFC.Utils(when, applyWhen, cstring, mkNames, NameStyle(..))
+import BNFC.Lexing (mkLexer, LexType(..), mkRegMultilineComment, mkRegSingleLineComment)
 import BNFC.PrettyPrint
 
 import Prelude hiding ((<>))
 
 import qualified Data.List as List
 import qualified Data.Maybe as Maybe
-import qualified Data.Either as Either
 import qualified Data.List.NonEmpty as List1
 
 -- * Main entry point
@@ -43,37 +42,40 @@ cfToTreeSitter name wordCat cf =
       )
     $+$ text "});"
   where
-    (commentTokens, lexTokens) =
-      Either.partitionEithers $ Maybe.mapMaybe tokenFilter $ mkLexer cf
+    lexTokens = Maybe.mapMaybe keepToken (mkLexer cf)
+    keepToken (r, LexToken nm) | not (isUnusedBuiltin nm) = Just (r, nm)
+    keepToken _ = Nothing
+    isUnusedBuiltin x = x `elem` specialCatsP && not (isUsedCat cf (TokenCat x))
 
-    tokenFilter (r, LexComment) = Just (Left r)
-    tokenFilter (r, LexToken name) = Just (Right (r, name))
-    tokenFilter (_, LexSymbols) = Nothing -- LexSymbols appear as literals within rule RHS
+    -- generate rules for comment tokens so they can be used in highlighting
+    (mlComments, slComments) = comments cf
+    commentTokens =
+      disambig "CommentSingle" (map mkRegSingleLineComment slComments)
+      ++ disambig "CommentMulti" (map (uncurry mkRegMultilineComment) mlComments)
+    disambig base regs = zip regs names
+      where names = mkNames (map snd lexTokens) CamelCase (base <$ regs)
 
-    extrasSection = prExtras commentTokens
+    extrasSection = prExtras (map snd commentTokens)
     wordSection = prWord wordCat cf
     rulesSection =
       text "rules: {"
         $+$ indent
           ( prRules cf
-              $+$ prTokenRules cf lexTokens
-          )
+              $+$ prTokenRules (lexTokens ++ commentTokens) )
         $+$ text "},"
 
 -- * Functions to build parts of grammar.js
 
 -- | Print rules for comments
-prExtras :: [Reg] -> Doc
-prExtras commentRegs =
+prExtras :: [TokenCat] -> Doc
+prExtras commentTokens =
   defineSymbol "extras" <> "["
     $+$ indent
       ( -- default rule for white spaces
         text "/\\s/,"
-          $+$ vcat' commentDocs
+          $+$ vcat' (map (appendComma . text . refName . formatTokenName) commentTokens)
       )
     $+$ text "],"
-  where
-    commentDocs = map (appendComma . text . printRegJSReg) commentRegs
 
 -- | Print word section, this section is needed for tree-sitter
 --   to do keyword extraction before any parsing/lexing, see
@@ -117,15 +119,13 @@ prRules cf =
 
     knownEmpty = fixPointKnownEmpty ((virtEntryCat, virtEntryRhsRules) : groups)
 
-prTokenRules :: CF -> [(Reg, TokenCat)] -> Doc
-prTokenRules cf lexTokens = vcat' (map prOneToken usedTokens)
-  where
-    usedTokens = filter (isUsedCat cf . TokenCat . snd) lexTokens
+prTokenRules :: [(Reg, TokenCat)] -> Doc
+prTokenRules = vcat' . map prOneToken
 
 -- | Generate one tree-sitter rule for one terminal token.
 prOneToken :: (Reg, TokenCat) -> Doc
 prOneToken (reg, name) =
-  defineSymbol (formatCatName False $ TokenCat name)
+  defineSymbol (formatTokenName name)
     $+$ indent (text $ printRegJSReg reg) <> ","
 
 -- | Generates one tree-sitter rule for one non-terminal from CF.
@@ -162,6 +162,9 @@ formatSent = wrapSeq . map fmtOpt
 
     fmt (Left c) = text $ refName $ formatCatName False c
     fmt (Right term) = cstring term
+
+formatTokenName :: TokenCat -> String
+formatTokenName = formatCatName False . TokenCat
 
 -- | Format string for cat name, prefix "_" if the name is for internal rules
 formatCatName :: Bool -> Cat -> String

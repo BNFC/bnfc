@@ -3,8 +3,8 @@ module.exports = grammar({
   name: "basic",
   extras: $ =>[
     /\s/,
-    /\/\/.*\n/,
-    /\/\*[^*]*\*([^\*\/][^*]*\*|\*)*\//,
+    $.token_CommentSingle,
+    $.token_CommentMulti,
   ],
   rules: {
     BNFCStart: $ =>
@@ -21,5 +21,9 @@ module.exports = grammar({
       ),
     token_MyIdent: $ =>
       /a+/,
+    token_CommentSingle: $ =>
+      /\/\/.*\n/,
+    token_CommentMulti: $ =>
+      /\/\*[^*]*\*([^\*\/][^*]*\*|\*)*\//,
   },
 });
