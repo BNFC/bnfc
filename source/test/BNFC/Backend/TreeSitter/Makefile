@@ -2,7 +2,7 @@
 
 all:
 	bash -ec 'for f in *.cf; do js="$${f%.cf}".expected.js && rm -rfv $$js && $(MAKE) $$js; done'
-	$(MAKE) test-generate
+	$(MAKE) generate-all
 	git diff --exit-code --stat './*.js'
 
 %.expected.js: %.cf

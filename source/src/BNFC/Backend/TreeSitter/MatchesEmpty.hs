@@ -177,7 +177,13 @@ possiblyEmptySym knownEmpty sym =
 -- the returned list has empty matches removed. If the rule previously matched
 -- empty, this is encoded as the v'MatchesEmpty' variant.
 --
--- __Implementation Detail__: blah
+-- __Implementation Detail:__ A sentential form is a sequence of symbols, and a
+-- sequence will match empty if and only if all of its parts can match empty.
+-- Therefore, to eliminate the empty match from a sequence, we have to make at
+-- least one of the terms non-empty. For a nullable sequence like @A? B? C?@,
+-- this is done by transforming it to @A B? C? | B C? | C@. This should accept
+-- an equivalent language modulo empty string, and it should preserve
+-- unambiguity.
 possiblyEmptyRule :: KnownEmpty -> SentForm -> MatchesEmpty [OptSentForm]
 possiblyEmptyRule knownEmpty =
   map (possiblyEmptySym knownEmpty)
