@@ -139,7 +139,13 @@ seqMatchesEmpty               x                y  = NonEmpty (unMatchesEmpty x <
 -- | Combines the list of values /in sequence/ (i.e., @seq(x1, ..., xn)@), returning
 -- v'MatchesEmpty' if all are v'MatchesEmpty', otherwise v'NonEmpty'. Inner values
 -- are joined using the semigroup operation.
-seqListMatchesEmpty :: Monoid a => [MatchesEmpty a] -> MatchesEmpty a
+seqListMatchesEmpty
+  :: Monoid a
+#if !MIN_VERSION_base(4,11,0)
+  => Semigroup a
+#endif
+  => [MatchesEmpty a]
+  -> MatchesEmpty a
 seqListMatchesEmpty = foldr seqMatchesEmpty (MatchesEmpty mempty)
 
 
@@ -155,7 +161,13 @@ choiceMatchesEmpty           x            y  = MatchesEmpty (unMatchesEmpty x <>
 -- | Combines the list of values /in choice/ (i.e., @choice(x1, ..., xn)@), returning
 -- v'NonEmpty' if all are v'NonEmpty', otherwise v'MatchesEmpty'. Inner values
 -- are joined using the semigroup operation.
-choiceListMatchesEmpty :: Monoid a => [MatchesEmpty a] -> MatchesEmpty a
+choiceListMatchesEmpty
+  :: Monoid a
+#if !MIN_VERSION_base(4,11,0)
+  => Semigroup a
+#endif
+  => [MatchesEmpty a]
+  -> MatchesEmpty a
 choiceListMatchesEmpty = foldr choiceMatchesEmpty (NonEmpty mempty)
 
 -- * Analysis of non-terminals
