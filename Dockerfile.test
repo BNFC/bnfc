@@ -1,0 +1,61 @@
+FROM haskell:9.12.2-bookworm
+
+# Note: Do NOT hard-code package versions. They may get upgraded sometimes.
+RUN apt-get update && \
+    apt-get -y install --no-install-recommends \
+      locales \
+      flex \
+      bison \
+      openjdk-17-jdk \
+      jflex \
+      antlr4 \
+      build-essential \
+      ocaml \
+      menhir \
+      doctest \
+      python3-pygments \
+      python3-setuptools \
+      virtualenv \
+      python3-venv && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+RUN locale-gen C.UTF-8
+ENV LANG=C.UTF-8
+
+RUN cabal update
+RUN cabal install alex-3.5.4.0 happy-2.2
+
+RUN curl -OL https://github.com/agda/agda/releases/download/v2.8.0/Agda-v2.8.0-linux.tar.xz && \
+    tar xf Agda-v2.8.0-linux.tar.xz && \
+    mv agda /usr/bin/agda && \
+    rm -rf Agda-v2.8.0-linux.tar.xz
+
+RUN curl -OL https://github.com/ndmitchell/hlint/releases/download/v3.10/hlint-3.10-x86_64-linux.tar.gz && \
+    tar xf hlint-3.10-x86_64-linux.tar.gz && \
+    mv hlint-3.10/hlint /usr/bin/hlint && \
+    rm -rf hlint-3.10 && \
+    rm -rf hlint-3.10-x86_64-linux.tar.gz
+
+ENV CLASSPATH /bnfc/testing/data/JLex-1.2.6.jar:$CLASSPATH
+ENV CLASSPATH /bnfc/testing/data/java-cup-11b.jar:$CLASSPATH
+ENV CLASSPATH /bnfc/testing/data/java-cup-11b-runtime.jar:$CLASSPATH
+ENV CLASSPATH /usr/share/java/jflex.jar:$CLASSPATH
+ENV CLASSPATH /usr/share/java/stringtemplate4.jar:/usr/share/java/antlr4.jar:/usr/share/java/antlr4-runtime.jar:/usr/share/java/antlr3-runtime.jar/:/usr/share/java/treelayout.jar:$CLASSPATH
+
+RUN mkdir -p /bnfc
+WORKDIR /bnfc
+
+COPY cabal.project /bnfc/cabal.project
+COPY examples      /bnfc/examples
+COPY source        /bnfc/source
+COPY testing       /bnfc/testing
+
+WORKDIR /bnfc/source
+RUN make test && \
+    make install
+
+WORKDIR /bnfc/testing
+RUN make build
+
+CMD make test
