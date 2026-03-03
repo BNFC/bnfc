@@ -298,6 +298,14 @@ haskellParameters = TP
         "-i" "Use camelCase"
         "-i" "Use newtype instead of data"
         "-i" "Use fmap"
+
+        -- Note: Newer hlint warns on the following code in ErrM.hs:
+        --   import Control.Monad       (MonadPlus(..))
+        --   #if __GLASGOW_HASKELL__ >= 808
+        --   import Control.Monad       (MonadFail(..))
+        --   #endif
+        "-i" "Use fewer imports"
+
         -- "-i" "Unused LANGUAGE pragma"
         "."
       -- cmd "ghc" "-XNoImplicitPrelude" "-Wall" "-Werror" . (:[]) =<< findFileRegex "Abs.*\\.hs$"
