@@ -19,6 +19,28 @@ See https://github.com/skogsbaer/HTF/issues/69
 Instructions
 ------------
 
+### Run with Docker
+
+The easiest way to run `bnfc-system-tests` is using Docker, see [Install Docker Engine](https://docs.docker.com/engine/install/).
+
+1. Build the bnfc test image:
+   ```
+   ../scripts/build-image.sh
+   ```
+2. Run the test:
+   ```
+   docker run -it bnfc/bnfc-test:9.12.2
+   ```
+
+You may would like to run the test again after making some changes to the source code. This can be done by entering the development environment:
+```
+../scripts/devenv.sh
+make -C source install # do not forget to rebuild and install the new bnfc
+make -C testing test
+```
+
+### Run on the host
+
 In this directory (the `testing` directory), run:
 ```
   cabal install
