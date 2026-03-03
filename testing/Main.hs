@@ -5,7 +5,7 @@ module Main (main) where
 
 import Data.String.QQ     (s)
 import System.Environment (getArgs)
-import Test.Framework     (htfMain)
+import Test.Framework     (htfMainWithArgs)
 
 import License
 import qualified SucceedLBNFTests
@@ -18,9 +18,15 @@ import qualified OutputParser
 main = do
   args <- getArgs
   if | "--license" `elem` args -> greet license
-     | "--help"    `elem` args -> greet usage
-     | "-h"        `elem` args -> greet usage
-     | otherwise -> runAllTests
+     | "--help"    `elem` args -> showHelp
+     | "-h"        `elem` args -> showHelp
+     | otherwise -> runAllTests args
+  where
+    showHelp = do
+      greet usage
+      putStrLn ""
+      putStrLn "Other options for the HTF framework:"
+      runAllTests ["--help"]
 
 greet :: String -> IO ()
 greet msg = do
@@ -37,10 +43,10 @@ Options:
 --help, -h  Print this help text.
 |]
 
-runAllTests = do
+runAllTests args = do
   succeedLBNFTests <- SucceedLBNFTests.all
   failLBNFTests    <- FailLBNFTests.all
-  htfMain $
+  htfMainWithArgs args $
     -- Use : and [] for this list such that lines can be swapped swiftly
     -- (avoids the usual problems when trying to switch the first line
     -- with a later line).
