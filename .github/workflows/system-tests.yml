@@ -2,7 +2,7 @@ name: Run bnfc-system-tests
 
 env:
   BNFC_TEST_IMAGE: bnfc/bnfc-test:9.12.2
-  PARALLEL_TESTS: 2
+  PARALLEL_TESTS: 4
 
 on:
   push:
