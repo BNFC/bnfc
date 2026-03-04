@@ -61,11 +61,7 @@ runAllTests args = do
     -- ParameterizedTests.current :  -- Uncomment for prioritized test case.
 
     -- RegressionTests.current :
-
-    -- Note: Disabled on 2026-03-04. Re-enable it after
-    --       https://github.com/BNFC/bnfc/issues/280 is resolved.
-    --
-    -- ParameterizedTests.all :
+    ParameterizedTests.all :
 
     RegressionTests.all    :
     ParameterizedTests.layoutTest :
