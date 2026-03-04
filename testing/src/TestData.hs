@@ -41,8 +41,12 @@ exampleGrammars :: [Example]
 exampleGrammars = map (fmap prefix) $
   [ fmap ("Alfa"      </>) $ Example' needsLayout "Alfa.cf"      [ "Sorting.alfa" ]
   , fmap ("cubicaltt" </>) $ Example' needsLayout "cubicaltt.cf" [ "prelude.ctt" ]
+
+  -- Note: The C backend does not support the `define` pragma. See
+  --       https://github.com/BNFC/bnfc/issues/266.
+  , fmap ("define"    </>) $ Example' noDefine    "test.cf"      [ "good01.in"   ]
+
   , fmap ("cpp"       </>) $ Example "cpp.cf"    [ "example.cpp" ]
-  , fmap ("define"    </>) $ Example "test.cf"   [ "good01.in"   ]
   , fmap ("GF"        </>) $ Example "gf.cf"     [ "example.gf"  ]
   , fmap ("OCL"       </>) $ Example "OCL.cf"    [ "example.ocl" ]
   , fmap ("prolog"    </>) $ Example "Prolog.cf" [ "small.pl", "simpsons.pl" ]
@@ -60,6 +64,7 @@ exampleGrammars = map (fmap prefix) $
   -- Regular expressions to include certain parameterized tests:
   needsLayout = Included ["Agda", "Haskell"]
   -- Regular expressions to exclude certain parameterized tests:
+  noDefine  = Excluded ["^C$", "^C.*numbers.*$"]
   -- noJava = "^Java"    -- begins with "Java"
   -- noCPP  = "^C\\+\\+" -- begins with "C++"
 

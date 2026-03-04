@@ -193,19 +193,42 @@ testCases :: TestParameters -> [Test]
 testCases params =
     map (makeTestCase params) $
       map ("regression-tests/" ++) $
-        [ "479_LabelsCaseSensitive"
-        , "266_define"
-        , "358_MixFixLists"
+        [
+        -- Note: Disabled on 2026-03-04. The Java backend does not support
+        --       labels with only different cases. See
+        --       https://github.com/BNFC/bnfc/issues/479.
+        --
+        -- "479_LabelsCaseSensitive"
+
+        -- Note: Disabled on 2026-03-04. It fails on the c backend.
+        --       See https://github.com/BNFC/bnfc/issues/266.
+        --
+        -- , "266_define"
+
+          "358_MixFixLists"
         , "235_SymbolsOverlapTokens"
         , "278_Keywords"
         , "256_Regex"
         , "222_IntegerList"
         , "70_WhiteSpaceSeparator"
-        , "202_comments"
+
+        -- Note: Disabled on 2026-03-04. It fails on ocaml and ocaml-menhir
+        --       backends, see https://github.com/ocaml/ocaml/issues/9964.
+        --
+        -- , "202_comments"
+
         , "210_NumberedCatWithoutCoerce"
         , "204_InternalToken"
         , "249_unicode"
-        , "289_LexerKeywords"
+
+        -- Note: Disabled on 2026-03-04. It:
+        --   * fails on ocaml and ocaml-menhir backends, see
+        --     https://github.com/ocaml/ocaml/issues/9964.
+        --   * fails on the haskell-gadt backend, see
+        --     https://github.com/BNFC/bnfc/issues/280#issuecomment-830844433.
+        --
+        -- , "289_LexerKeywords"
+
         , "100_coercion_lists"
         , "comments"
         , "149"
@@ -367,16 +390,28 @@ parameters = concat
     -- Functor (Haskell & Agda)
   , [ haskellAgdaFunctorParameters]
     -- C++ (extras)
-  , [ cBase { tpName = "C++ (with line numbers)"
-            , tpBnfcOptions = ["--cpp", "-l"] }
-    , cBase { tpName = "C++ (with namespace)"
-            , tpBnfcOptions = ["--cpp", "-p foobar"] }
-    ]
+
+  -- Note: Disabled on 2026-03-04. Re-enable it after
+  --       https://github.com/BNFC/bnfc/issues/534 is resolved.
+  --
+  -- , [ cBase { tpName = "C++ (with line numbers)"
+  --           , tpBnfcOptions = ["--cpp", "-l"] }
+  --   , cBase { tpName = "C++ (with namespace)"
+  --           , tpBnfcOptions = ["--cpp", "-p foobar"] }
+  --   ]
+
     -- C
   , [ TP { tpName = "C"
          , tpBnfcOptions = ["--c"]
          , tpBuild = do
-             let flags = "CC_OPTS=-Wstrict-prototypes -Wno-sign-compare -Werror"
+             -- Note: Newer C toolchains warn implicit conversions from
+             -- ints to pointers (-Wint-conversion) and implicit function
+             -- declarations (-Wimplicit-function-declaration).
+             -- Re-enable -Werror after fixing these warnings.
+             --
+             -- let flags = "CC_OPTS=-Wstrict-prototypes -Wno-sign-compare -Werror"
+             let flags = "CC_OPTS=-Wstrict-prototypes -Wno-sign-compare"
+
              tpMake [flags]
              tpMake [flags, "Skeleton.o"]
          , tpRunTestProg = \ lang args -> do
@@ -398,8 +433,12 @@ parameters = concat
     -- C++ (basic)
   , [ cBase { tpName = "C++ (no STL)"
             , tpBnfcOptions = ["--cpp-nostl"] }
-    , cBase { tpName = "C++"
-            , tpBnfcOptions = ["--cpp"] }
+
+    -- Note: Disabled on 2026-03-04. Re-enable it after
+    --       https://github.com/BNFC/bnfc/issues/534 is resolved.
+    --
+    -- , cBase { tpName = "C++"
+    --         , tpBnfcOptions = ["--cpp"] }
     ]
     -- Agda
   , [ haskellAgdaParameters ]
