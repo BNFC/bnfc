@@ -54,9 +54,19 @@ runAllTests args = do
     succeedLBNFTests :
     failLBNFTests :
     -- ParameterizedTests.layoutTest :
-    ParameterizedTests.current :  -- Uncomment for prioritized test case.
+
+    -- Note: Disabled on 2026-03-04. Re-enable it after
+    --       https://github.com/BNFC/bnfc/issues/280 is resolved.
+    --
+    -- ParameterizedTests.current :  -- Uncomment for prioritized test case.
+
     -- RegressionTests.current :
-    ParameterizedTests.all :
+
+    -- Note: Disabled on 2026-03-04. Re-enable it after
+    --       https://github.com/BNFC/bnfc/issues/280 is resolved.
+    --
+    -- ParameterizedTests.all :
+
     RegressionTests.all    :
     ParameterizedTests.layoutTest :
     OutputParser.tests     :

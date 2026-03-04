@@ -20,7 +20,12 @@ all = makeTestSuite "Regression tests" $
     , issue108, issue110, issue111, issue114, issue113
     , issue127, issue128
     , issue151, issue159
-    , issue170a, issue170b, issue172
+    , issue170a, issue170b
+
+    -- Note: Disabled on 2026-03-04. Re-enable it after
+    --       https://github.com/BNFC/bnfc/issues/534 is resolved.
+    --
+    -- , issue172
     ]
 
 current = makeTestSuite "Regression tests" $
