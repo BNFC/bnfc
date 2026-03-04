@@ -1,0 +1,63 @@
+name: Run bnfc-system-tests
+
+env:
+  BNFC_TEST_IMAGE: bnfc/bnfc-test:9.12.2
+  PARALLEL_TESTS: 2
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+  merge_group:
+    branches:
+      - master
+jobs:
+  linux:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - name: check disk space
+        run: |
+          df -h
+
+      - name: check Docker installation
+        run: |
+          docker --version
+
+      - name: env
+        run: |
+          env
+
+      - name: checkout
+        uses: actions/checkout@v6
+
+      - name: build test image
+        run: |
+          ./scripts/build-image.sh
+
+      - name: run tests
+        run: |
+          docker run -t --rm                 \
+            -v /tmp:/tmp                     \
+            "$BNFC_TEST_IMAGE"               \
+            cabal run -- bnfc-system-tests   \
+              -j"$PARALLEL_TESTS"            \
+              --xml=/tmp/result.xml          \
+              --history=/tmp/result.history  \
+
+      - name: generate report
+        run: |
+          pipx run junit2html /tmp/result.xml /tmp/result.html
+
+      - name: upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: bnfc-system-tests-report
+          path: |
+            /tmp/result.xml
+            /tmp/result.html
+            /tmp/result.history
+          retention-days: 30
