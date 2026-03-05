@@ -119,6 +119,10 @@ header mode cf = unlines $ concat
   , when (stlParser mode)
     [ "#include <algorithm> /* for std::reverse */"  -- mandatory e.g. with GNU C++ 11
     , "#include \"" ++ ("ParserError" <.> h) ++ "\""  -- for throwing parser_error in C++
+
+    -- Commelina, 2026-03-05, issue #534: @std::to_string@ is invalid with @--ansi@
+    -- TODO: Choose to use @std::to_string@ or not according to the @--ansi@ flag
+    , "#include <sstream>"
     ]
   , [ "#include <stdio.h>"
     , "#include <stdlib.h>"
@@ -186,9 +190,15 @@ errorHandler mode = case mode of
       , "{"
       , "  std::string error_msg = msg;"
       , "  if (loc) {"
-      , "    error_msg += \" at line \" + std::to_string(loc->first_line) +"
-      , "                 \", column \" + std::to_string(loc->first_column);"
+
+      -- Commelina, 2026-03-05, issue #534: @std::to_string@ is invalid with @--ansi@
+      -- TODO: Choose to use @std::to_string@ or not according to the @--ansi@ flag
+      , "    std::ostringstream oss;"
+      , "    oss << \" at line \" << loc->first_line"
+      , "        << \", column \" << loc->first_column;"
+      , "    error_msg += oss.str();"
       , "  }"
+
       , "  if (scanner) {"
       , "    error_msg += \": '\" + std::string(" ++ name ++ "get_text(scanner)) + \"'\";"
       , "  }"
