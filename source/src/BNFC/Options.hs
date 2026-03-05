@@ -8,7 +8,7 @@
 
 module BNFC.Options
   ( Mode(..), Target(..), Backend
-  , parseMode, usage, help, versionString
+  , parseMode, usage, help, title, versionString
   , SharedOptions(..)
   , defaultOptions, isDefault, printOptions
   , AlexVersion(..), HappyMode(..), OCamlParser(..), JavaLexerParser(..)
@@ -52,7 +52,7 @@ data Mode
     -- e.g. invalid argument/combination of arguments
     = UsageError String
     -- Basic modes: print some info and exits
-    | Help | License | Version
+    | Help | License | Version | NumericVersion
     -- Normal mode, specifying the back end to use,
     -- the option record to be passed to the backend
     -- and the path of the input grammar file
@@ -281,10 +281,12 @@ printOCamlParserOption = ("--" ++) . \case
 -- ~~~ Option definition ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 -- This defines bnfc's "global" options, like --help
 globalOptions :: [ OptDescr Mode ]
-globalOptions = [
-  Option [] ["help"]                      (NoArg Help)         "show help",
-  Option [] ["license"]                   (NoArg License)      "show license",
-  Option [] ["version","numeric-version"] (NoArg Version)      "show version number"]
+globalOptions =
+  [ Option []    ["help"]               (NoArg Help)           "show help"
+  , Option []    ["license", "licence"] (NoArg License)        "show license"
+  , Option ['V'] ["version"]            (NoArg Version)        "show version information"
+  , Option []    ["numeric-version"]    (NoArg NumericVersion) "show just version number"
+  ]
 
 -- | Options for the target languages
 -- targetOptions :: [ OptDescr Target ]
@@ -439,8 +441,8 @@ title =
 usage :: String
 usage = unlines
   [ "usage: bnfc [--TARGET] [OPTIONS] LANG.cf"
-  , "   or: bnfc --[numeric-]version"
-  , "   or: bnfc [--license]"
+  , "   or: bnfc [-V|--version|--numeric-version]"
+  , "   or: bnfc --license"
   , "   or: bnfc [--help]"
   ]
 
