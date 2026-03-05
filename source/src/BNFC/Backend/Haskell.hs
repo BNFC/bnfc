@@ -279,7 +279,7 @@ makefile opts cf makeFile = vcat
 
   -- | Rule to build Agda parser.
   agdaRule :: Doc
-  agdaRule = Makefile.mkRule "Main" deps [ "${AGDA} --no-libraries --ghc --ghc-flag=-Wwarn $<" ]
+  agdaRule = Makefile.mkRule "Main" deps [ "${AGDA} --no-libraries --ghc --ghc-flag=-Wwarn ${AGDA_OPTS} $<" ]
     where
     deps = map ($ opts) $ concat
       [ [ agdaMainFile  -- must be first!
