@@ -409,16 +409,11 @@ parameters = concat
     -- Functor (Haskell & Agda)
   , [ haskellAgdaFunctorParameters]
     -- C++ (extras)
-
-  -- Note: Disabled on 2026-03-04. Re-enable it after
-  --       https://github.com/BNFC/bnfc/issues/534 is resolved.
-  --
-  -- , [ cBase { tpName = "C++ (with line numbers)"
-  --           , tpBnfcOptions = ["--cpp", "-l"] }
-  --   , cBase { tpName = "C++ (with namespace)"
-  --           , tpBnfcOptions = ["--cpp", "-p foobar"] }
-  --   ]
-
+  , [ cBase { tpName = "C++ (with line numbers)"
+            , tpBnfcOptions = ["--cpp", "-l"] }
+    , cBase { tpName = "C++ (with namespace)"
+            , tpBnfcOptions = ["--cpp", "-p foobar"] }
+    ]
     -- C
   , [ TP { tpName = "C"
          , tpBnfcOptions = ["--c"]
@@ -452,12 +447,8 @@ parameters = concat
     -- C++ (basic)
   , [ cBase { tpName = "C++ (no STL)"
             , tpBnfcOptions = ["--cpp-nostl"] }
-
-    -- Note: Disabled on 2026-03-04. Re-enable it after
-    --       https://github.com/BNFC/bnfc/issues/534 is resolved.
-    --
-    -- , cBase { tpName = "C++"
-    --         , tpBnfcOptions = ["--cpp"] }
+    , cBase { tpName = "C++"
+            , tpBnfcOptions = ["--cpp"] }
     ]
     -- Agda
   , [ haskellAgdaParameters ]
