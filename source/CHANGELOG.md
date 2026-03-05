@@ -1,3 +1,9 @@
+# Unreleased
+
+* C++: fixing a regression introduced in 2.9.6.2
+  - `std::to_string` is not compatible to `--ansi` standard
+    [[#534](https://github.com/BNFC/bnfc/issues/534)]
+
 # 2.9.6.2
 
 Andreas Abel <andreas.abel@gu.se>,  January 2026
