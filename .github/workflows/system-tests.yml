@@ -49,10 +49,12 @@ jobs:
               --history=/tmp/result.history  \
 
       - name: generate report
+        if: always()
         run: |
           pipx run junit2html /tmp/result.xml /tmp/result.html
 
       - name: upload artifacts
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: bnfc-system-tests-report
