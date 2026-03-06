@@ -61,7 +61,8 @@ allWithParams params = makeTestSuite (tpName params) $ concat $
 --   Use it while working in connection with a certain test case. (For quicker response.)
 current :: Test
 -- current = currentExampleTest
-current = currentRegressionTest
+-- current = currentRegressionTest
+current = makeTestSuite "TS" [allWithParams p | p <- parameters ]
 -- current = layoutTest
 
 currentExampleTest :: Test
@@ -468,6 +469,8 @@ parameters = concat
     , javaParams { tpName = "Java (with jflex and line numbers)"
                  , tpBnfcOptions = ["--java", "--jflex", "-l"] }
     ]
+    -- Tree-sitter
+  , [ treeSitter ]
   ]
   where
     base = baseParameters
@@ -490,6 +493,14 @@ parameters = concat
         , tpBuild       = tpMake ["OCAMLCFLAGS=-safe-string"]
         , tpBnfcOptions = ["--ocaml"]
         , tpRunTestProg = haskellRunTestProg
+        }
+    treeSitter = TP
+        { tpName        = "tree-sitter"
+        , tpBuild       = do
+            cmd "tree-sitter" "generate" . (:[]) =<< findFile "grammar.js"
+        , tpBnfcOptions = ["--tree-sitter"]
+        , tpRunTestProg = \ _lang args -> do
+            cmd "tree-sitter" "parse" args
         }
 
 -- | Helper function that runs bnfc with the context's options and an
