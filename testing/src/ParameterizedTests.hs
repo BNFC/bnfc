@@ -311,26 +311,7 @@ haskellParameters = TP
   , tpBnfcOptions = ["--haskell"]
 
   , tpBuild = do
-      cmd "hlint"
-        "-i" "Avoid lambda"
-        "-i" "Avoid lambda using `infix`"
-        "-i" "Eta reduce"
-        "-i" "Redundant bracket"
-        "-i" "Redundant lambda"
-        "-i" "Redundant $"
-        "-i" "Use camelCase"
-        "-i" "Use newtype instead of data"
-        "-i" "Use fmap"
-
-        -- Note: Newer hlint warns on the following code in ErrM.hs:
-        --   import Control.Monad       (MonadPlus(..))
-        --   #if __GLASGOW_HASKELL__ >= 808
-        --   import Control.Monad       (MonadFail(..))
-        --   #endif
-        "-i" "Use fewer imports"
-
-        -- "-i" "Unused LANGUAGE pragma"
-        "."
+      hlintCheck
       -- cmd "ghc" "-XNoImplicitPrelude" "-Wall" "-Werror" . (:[]) =<< findFileRegex "Abs.*\\.hs$"
       haskellBuild
       -- cmd "ghc" "-XNoImplicitPrelude" "-Wall" "-Werror" . (:[]) =<< findFileRegex "Skel.*\\.hs$"
@@ -353,20 +334,58 @@ haskellGADTParameters = TP
   }
 
 haskellAgdaParameters :: TestParameters
-haskellAgdaParameters = haskellGADTParameters  -- TODO: use haskellParameters
+haskellAgdaParameters = haskellParameters
   { tpName = "Haskell & Agda"
-  , tpBnfcOptions = ["--haskell", "--agda", "--functor"]
+  , tpBnfcOptions = ["--haskell", "--agda"]
+  , tpBuild       = hlintCheck >> agdaBuild
   }
 
 haskellAgdaFunctorParameters :: TestParameters
-haskellAgdaFunctorParameters = haskellGADTParameters  -- TODO: use haskellParameters
+haskellAgdaFunctorParameters = haskellAgdaParameters
   { tpName = "Haskell & Agda (with --functor)"
   , tpBnfcOptions = ["--haskell", "--agda", "--functor"]
   }
 
+-- | Run 'hlint' at current directory with certain hints ignored.
+hlintCheck :: Sh ()
+hlintCheck = cmd "hlint"
+  "-i" "Avoid lambda"
+  "-i" "Avoid lambda using `infix`"
+  "-i" "Eta reduce"
+  "-i" "Redundant bracket"
+  "-i" "Redundant lambda"
+  "-i" "Redundant $"
+  "-i" "Use camelCase"
+  "-i" "Use newtype instead of data"
+  "-i" "Use fmap"
+
+  -- Note: Newer hlint warns on the following code in ErrM.hs:
+  --   import Control.Monad       (MonadPlus(..))
+  --   #if __GLASGOW_HASKELL__ >= 808
+  --   import Control.Monad       (MonadFail(..))
+  --   #endif
+  "-i" "Use fewer imports"
+
+  "-i" "Unused LANGUAGE pragma"
+  "."
+
 -- | Invoke the Makefile with GHC-specific options.
 haskellBuild :: Sh ()
 haskellBuild = tpMake [ "GHC_OPTS=-XNoImplicitPrelude -Wall -Werror" ]
+
+-- Note (Commelina, 2026-03-06):
+--   Agda calls GHC with @-O@ flag (at least on 2026-03-06, v2.8.0),
+--   and requires the implicit @Prelude@ for compiling @MAlonzo\/\*@.
+--   To avoid slow re-compilation of @AbsXXX.hs@, we slightly altered
+--   the flags here.
+--
+--   If there is any further problem (for example, false negative
+--   without @-XNoImplicitPrelude@), please change the following flags.
+-- | Invoke the Makefile with GHC- and Agda- specific options.
+agdaBuild :: Sh ()
+agdaBuild = tpMake [ "GHC_OPTS=-Wall -Werror"
+                   , "AGDA_OPTS=--ghc-flag=-O0"
+                   ]
 
 -- | Haskell backend: default command for running the test executable with the given arguments.
 haskellRunTestProg :: FilePath -> [FilePath] -> Sh Text
