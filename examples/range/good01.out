@@ -1,0 +1,10 @@
+
+Parse Successful!
+
+[Abstract Syntax]
+
+EPlus (Just ((1,1),(1,11))) (EPlus (Just ((1,1),(1,6))) (EInt (Just ((1,1),(1,2))) 1) (EInt (Just ((1,5),(1,6))) 2)) (EInt (Just ((1,9),(1,11))) 34)
+
+[Linearized tree]
+
+1 + 2 + 34
