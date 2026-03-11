@@ -1,0 +1,11 @@
+
+Parse Successful!
+
+[Abstract Syntax]
+
+EMStr (Just ((1,1),(2,6))) (MStr "hello\nworld")
+
+[Linearized tree]
+
+hello
+world
