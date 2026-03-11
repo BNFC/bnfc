@@ -26,6 +26,7 @@ import BNFC.Backend.Latex
 import BNFC.Backend.OCaml
 import BNFC.Backend.Pygments
 import BNFC.Backend.TreeSitter
+import BNFC.Backend.Scala
 import BNFC.CF (CF)
 import BNFC.GetCF
 import BNFC.Options hiding (make, Backend)
@@ -83,3 +84,4 @@ maketarget = \case
     TargetPygments     -> makePygments
     TargetCheck        -> error "impossible"
     TargetTreeSitter   -> makeTreeSitter
+    TargetScala        -> makeScala
