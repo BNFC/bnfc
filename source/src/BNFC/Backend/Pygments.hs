@@ -136,6 +136,8 @@ lexer name cf = vcat
 -- (.)(?<!\d)
 -- >>> pyRegex (RSeq (RAlt (RChar 'a') RAny) (RAlt (RChar 'b') (RChar 'c')))
 -- (a|.)(b|c)
+-- >>> pyRegex (RSeq (RChar '^') (RChar '$'))
+-- \^\$
 pyRegex :: Reg -> Doc
 pyRegex reg = case reg of
     RSeqs s       -> text (concatMap escape s)
@@ -157,7 +159,7 @@ pyRegex reg = case reg of
   where
     escape '\n' = "\\n"
     escape '\t' = "\\t"
-    escape c | c `elem` (".'[]()|*+?{}\\" :: String) = ['\\',c]
+    escape c | c `elem` (".'[]()|*+?{}\\^$" :: String) = ['\\',c]
     escape c = [c]
     pyRegex' r@(RAlt{}) = parens (pyRegex r)
     pyRegex' r = pyRegex r
