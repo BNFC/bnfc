@@ -11,7 +11,10 @@ module BNFC.Backend.Haskell.CFtoLayout where
 
 import Data.Maybe                 ( fromMaybe, mapMaybe )
 
+import BNFC.Backend.Haskell.Utils ( hasRangePos, ptPattern )
+
 import BNFC.CF
+import BNFC.Options               ( Positions(..) )
 import BNFC.PrettyPrint
 import BNFC.Utils                 ( caseMaybe, for, whenJust )
 
@@ -21,8 +24,8 @@ data TokSymbol = TokSymbol String Int
 data LayoutDelimiters = LayoutDelimiters TokSymbol (Maybe TokSymbol) (Maybe TokSymbol)
   deriving Show
 
-cf2Layout :: String -> String -> CF -> String
-cf2Layout layName lexName cf = unlines $ concat
+cf2Layout :: String -> String -> Positions -> CF -> String
+cf2Layout layName lexName positions cf = unlines $ concat
   [ [ "{-# OPTIONS_GHC -Wno-incomplete-patterns #-}"
     , ""
     , "{-# LANGUAGE LambdaCase #-}"
@@ -317,7 +320,7 @@ cf2Layout layName lexName cf = unlines $ concat
     , ""
     , "-- | Create a position symbol token."
     , "sToken :: Position -> TokSymbol -> Token"
-    , "sToken p t@(TokSymbol s _) = PT p (length s) $ TK t"
+    , "sToken p t = " ++ (if hasRangePos positions then "PT p p" else "PT p") ++ " $ TK t"
     , ""
     , "-- | Get the line number of a token."
     , "line :: Token -> Line"
@@ -334,13 +337,13 @@ cf2Layout layName lexName cf = unlines $ concat
     , "-- | Check if a word is a layout start token."
     , "isLayout :: Token -> Maybe LayoutDelimiters"
     , "isLayout = \\case"
-    , "  PT _ _ (TK t) -> lookup t layoutWords"
+    , "  " ++ ptPattern positions "TK t" ++ " -> lookup t layoutWords"
     , "  _ -> Nothing"
     , ""
     , "-- | Check if a token is one of the given symbols."
     , "isTokenIn :: [TokSymbol] -> Token -> Bool"
     , "isTokenIn ts = \\case"
-    , "  PT _ _ (TK t) -> t `elem` ts"
+    , "  " ++ ptPattern positions "TK t" ++ " -> t `elem` ts"
     , "  _ -> False"
     , ""
     , "-- | Check if a token is a layout stop token."

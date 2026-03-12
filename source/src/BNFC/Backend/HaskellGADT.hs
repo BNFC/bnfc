@@ -40,15 +40,15 @@ makeHaskellGadt opts cf = do
   do
     mkHsFile (absFile opts) $ cf2Abstract (tokenText opts) absMod cf composOpMod
     mkHsFile (composOpFile opts) $ composOp composOpMod
-    mkHsFileHint (alexFile opts) $ cf2alex3 lexMod (tokenText opts) cf
+    mkHsFileHint (alexFile opts) $ cf2alex3 lexMod (tokenText opts) (positions opts) cf
     liftIO $ putStrLn "   (Use Alex 3 to compile.)"
     mkHsFileHint (happyFile opts) $
-      cf2Happy parMod absMod lexMod (glr opts) (tokenText opts) False cf
+      cf2Happy parMod absMod lexMod (glr opts) (tokenText opts) None cf
     liftIO $ putStrLn "   (Tested with Happy 1.15 - 1.20)"
     mkHsFile (templateFile opts) $ cf2Template (templateFileM opts) absMod cf
     mkHsFile (printerFile opts)  $ cf2Printer StringToken False True prMod absMod cf
     when (hasLayout cf) $ mkHsFile (layoutFile opts) $
-      cf2Layout layMod lexMod cf
+      cf2Layout layMod lexMod (positions opts) cf
     mkHsFile (tFile opts)        $ Haskell.testfile opts cf
     mkHsFile (errFile opts) $ mkErrM errMod
     Makefile.mkMakefile (optMake opts) $ Haskell.makefile opts cf

@@ -3,6 +3,8 @@
 * C++: fixing a regression introduced in 2.9.6.2
   - `std::to_string` is not compatible to `--ansi` standard
     [[#534](https://github.com/BNFC/bnfc/issues/534)]
+* Haskell: add `--positions=range` option to include both start and end position
+  [[#461](https://github.com/BNFC/bnfc/issues/461)]
 
 # 2.9.6.2
 
