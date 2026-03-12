@@ -38,6 +38,11 @@ Agda syntax trees (affects generated ``AST.agda``).  Relies on the
 primitive module ``Agda.Builtin.Maybe`` which is available from
 Agda 2.6.2.
 
+*Since 2.9.7:* Option ``--positions=range`` puts both the start
+and end position information into the Agda syntax trees
+(affects generated ``AST.agda``).  Relies on the primitive
+module ``Agda.Builtin.Maybe`` which is available from Agda 2.6.2.
+
 Java Backend
 ============
 
@@ -158,6 +163,12 @@ This will leave the following files (and some more) in directory ``Calc``:
        class HasPosition a where
          hasPosition :: a -> Maybe (Int, Int)
 
+   *Since 2.9.7:* With ``--positions=range`` option, the generated
+   abstract syntax contains both the start and end position. Method ``hasPosition`` also returns both of them::
+
+       class HasPosition a where
+         hasPosition :: a -> Maybe ((Int, Int), (Int, Int))
+
 2. ``Print.hs``
 
    The generated pretty printer in form of an overloaded function ``printTree``.
@@ -236,6 +247,7 @@ Position Information
 With the ``--functor`` option, the generated abstract syntax will
 consist of data types with one parameter.  The first field of each
 constructor holds a value typed by this parameter.
+
 *Since 2.9.1:*
 E.g. for ``Calc`` the generated type is ``Exp' a`` with e.g. constructor
 :code:`ETimes a (Exp' a) (Exp' a)`.
@@ -249,6 +261,17 @@ generated parser.  The extra values then hold line and column number
 of the starting position of the syntax tree node in the parsed file.
 If no position is available, e.g., for an empty list, the value is
 ``Nothing``.
+
+*Since 2.9.7:*
+With the ``--positions=range`` option, the extra values hold both the starting
+and ending position of the syntax tree node in the parsed file, e.g.::
+
+    type Exp = Exp' (Maybe ((Int, Int), (Int, Int)))
+
+However, this option is not supported for layout grammars: the end position
+is always the same as the start one.
+
+*Since 2.9.7:* Option ``--functor`` is an alias to ``--positions=start`` now. If a string other than ``start`` and ``range`` is passed to ``--positions``, it will not carry any position information.
 
 In general, however, the extra values can be made to hold any kind of
 extra information attached to the abstract syntax.  E.g. one could
@@ -309,3 +332,10 @@ BNFC adds the grammar name as a file extension. So if the grammar file is
 named ``Calc.cf``, the lexer will be associated to the file extension
 ``.calc``. To associate other file extensions to a generated lexer, you need to
 modify (or subclass) the lexer.
+
+For conflicting command line options, BNFC will always take the first (leftmost)
+effective one. For example, in the following command::
+
+    bnfc --haskell --positions=start --positions=range Calc.cf
+
+the generated files will follow flag ``--positions=start``.
