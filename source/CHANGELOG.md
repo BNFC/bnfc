@@ -1,8 +1,18 @@
-# Unreleased
+# 2.9.6.3
+
+Commelina <maosics@gmail.com>,  March 2026
 
 * C++: fixing a regression introduced in 2.9.6.2
   - `std::to_string` is not compatible to `--ansi` standard
     [[#534](https://github.com/BNFC/bnfc/issues/534)]
+* Pygments: fix escaping of non-alphanumeric characters in python regexes
+  [[#547](https://github.com/BNFC/bnfc/pull/547)]
+* Agda: the generated `Makefile` now accepts variable `AGDA_OPTS`
+  [[#544](https://github.com/BNFC/bnfc/pull/544)]
+
+Builds with GHC versions:
+* with `cabal`, GHC 8.0 - 9.12
+* with `stack`, GHC 8.4 - 9.12
 
 # 2.9.6.2
 
