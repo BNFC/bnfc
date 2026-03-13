@@ -1,0 +1,8 @@
+EAdd.      Exp  ::= Exp  "+" Exp1 ;
+ESub.      Exp  ::= Exp  "-" Exp1 ;
+EMul.      Exp1 ::= Exp1 "*" Exp2 ;
+EDiv.      Exp1 ::= Exp1 "/" Exp2 ;
+EPow.      Exp2 ::= Exp2 "^" Exp3 ;
+EDol.      Exp3 ::= Exp3 "$" Exp4 ;
+EInt.      Exp4 ::= Integer       ;
+coercions  Exp  4                 ;
