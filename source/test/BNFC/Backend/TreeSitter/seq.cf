@@ -1,0 +1,10 @@
+rules Start ::= TransitivelyOptional | NonOptional;
+entrypoints Start;
+
+rules TransitivelyOptional ::= A B C;
+
+rules A ::= "a" | ;
+rules B ::= "b" | ;
+rules C ::= "c" | ;
+
+rules NonOptional ::= "x" A B C;

@@ -1,0 +1,36 @@
+rules Start ::=
+  "1" [NonEmptySeparator]
+  | "2" [MaybeEmptySeparator]
+
+  | "3" [NonEmptyTerminator]
+  | "4" [MaybeEmptyTerminator]
+
+  | "5" [MaybeEmptySeparatorEmptySep]
+  | "6" [MaybeEmptyTerminatorEmptySep]
+
+  | "7" [NonEmptySeparatorEmptySep]
+  | "8" [NonEmptyTerminatorEmptySep];
+
+rules NonEmptySeparator ::= "a";
+separator nonempty NonEmptySeparator ",";
+
+rules MaybeEmptySeparator ::= "a";
+separator MaybeEmptySeparator ",";
+
+rules NonEmptyTerminator ::= "a";
+terminator nonempty NonEmptyTerminator ",";
+
+rules MaybeEmptyTerminator ::= "a";
+terminator MaybeEmptyTerminator ",";
+
+rules MaybeEmptySeparatorEmptySep ::= "a";
+separator MaybeEmptySeparatorEmptySep "";
+
+rules MaybeEmptyTerminatorEmptySep ::= "a";
+terminator MaybeEmptyTerminatorEmptySep "";
+
+rules NonEmptySeparatorEmptySep ::= "a";
+separator nonempty NonEmptySeparatorEmptySep "";
+
+rules NonEmptyTerminatorEmptySep ::= "a";
+terminator nonempty NonEmptyTerminatorEmptySep "";
