@@ -92,7 +92,7 @@ currentRegressionTest = makeTestSuite "Current parameterized test" $
 layoutTest :: Test
 layoutTest = makeTestSuite "Layout parsing test" $ concat
   [ map (`makeTestCase` ("regression-tests" </> "399_TopLayoutStop")) $
-    [ haskellFunctorParameters
+    [ haskellStartPosParameters
     ]
   , map (`makeTestCase` ("regression-tests" </> "356_LayoutSnocList")) $
     [ haskellParameters
@@ -104,7 +104,7 @@ layoutTest = makeTestSuite "Layout parsing test" $ concat
   , map (`makeTestCase` ("regression-tests" </> "352_TopLayoutOnly")) $
     [ haskellParameters
     ]
-  , let p = haskellFunctorParameters
+  , let p = haskellStartPosParameters
     in  [ makeTestSuite (tpName p) $ mapMaybe (exampleTest p) layoutExamples ]
   ]
 
@@ -319,10 +319,16 @@ haskellParameters = TP
   , tpRunTestProg = haskellRunTestProg
   }
 
-haskellFunctorParameters :: TestParameters
-haskellFunctorParameters = haskellParameters
-  { tpName        = "Haskell (with functor)"
-  , tpBnfcOptions = ["--haskell", "--functor"]
+haskellStartPosParameters :: TestParameters
+haskellStartPosParameters = haskellParameters
+  { tpName        = "Haskell (with --positions=start)"
+  , tpBnfcOptions = ["--haskell", "--positions=start"]
+  }
+
+haskellRangePosParameters :: TestParameters
+haskellRangePosParameters = haskellParameters
+  { tpName        = "Haskell (with --positions=range)"
+  , tpBnfcOptions = ["--haskell", "--positions=range"]
   }
 
 haskellGADTParameters :: TestParameters
@@ -340,10 +346,16 @@ haskellAgdaParameters = haskellParameters
   , tpBuild       = hlintCheck >> agdaBuild
   }
 
-haskellAgdaFunctorParameters :: TestParameters
-haskellAgdaFunctorParameters = haskellAgdaParameters
-  { tpName = "Haskell & Agda (with --functor)"
-  , tpBnfcOptions = ["--haskell", "--agda", "--functor"]
+haskellAgdaStartPosParameters :: TestParameters
+haskellAgdaStartPosParameters = haskellAgdaParameters
+  { tpName = "Haskell & Agda (with --positions=start)"
+  , tpBnfcOptions = ["--haskell", "--agda", "--positions=start"]
+  }
+
+haskellAgdaRangePosParameters :: TestParameters
+haskellAgdaRangePosParameters = haskellAgdaParameters
+  { tpName = "Haskell & Agda (with --positions=range)"
+  , tpBnfcOptions = ["--haskell", "--agda", "--positions=range"]
   }
 
 -- | Run 'hlint' at current directory with certain hints ignored.
@@ -407,7 +419,9 @@ parameters = concat
     -- OCaml
   , [ ocaml ]
     -- Functor (Haskell & Agda)
-  , [ haskellAgdaFunctorParameters]
+  , [ haskellAgdaStartPosParameters
+    , haskellAgdaRangePosParameters
+    ]
     -- C++ (extras)
   , [ cBase { tpName = "C++ (with line numbers)"
             , tpBnfcOptions = ["--cpp", "-l"] }
@@ -461,6 +475,8 @@ parameters = concat
                , tpBnfcOptions = ["--haskell", "--generic"] }
     , hsParams { tpName = "Haskell (with namespace)"
                , tpBnfcOptions = ["--haskell", "-p", "Language", "-d"] }
+    , haskellStartPosParameters
+    , haskellRangePosParameters
     ]
     -- Haskell/GADT
   , [ haskellGADTParameters ]

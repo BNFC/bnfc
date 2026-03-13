@@ -1,0 +1,9 @@
+-- Test grammar for --haskell --positions=range
+
+EPlus. Exp1 ::= Exp1 "+" Exp2 ;
+EInt.  Exp2 ::= Integer ;
+EMStr. Exp2 ::= MStr ;
+
+token MStr (letter (letter | digit | '\n' | ' ')* letter) ;
+
+coercions Exp 2 ;

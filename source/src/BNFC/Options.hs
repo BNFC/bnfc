@@ -12,7 +12,7 @@ module BNFC.Options
   , SharedOptions(..)
   , defaultOptions, isDefault, printOptions
   , AlexVersion(..), HappyMode(..), OCamlParser(..), JavaLexerParser(..)
-  , RecordPositions(..), TokenText(..)
+  , RecordPositions(..), TokenText(..), Positions(..)
   , Ansi(..)
   , InPackage
   , removedIn290
@@ -119,6 +119,32 @@ data TokenText
   | TextToken        -- ^ Represent strings as @Data.Text@.
   deriving (Eq, Ord, Show)
 
+-- TODO: Unify this option (currently Haskell-specific) with other
+--       backends (e.g. @--line-numbers@ of C/C++/Java).
+-- | Make AST functorial or not in the Haskell backend? What is included?
+data Positions
+  = None  -- ^ Do not make AST functorial.
+  | Start -- ^ Option @--positions=start@ (or legacy @--functor@). Include the start position in AST.
+  | Range -- ^ Option @--positions=range@. Include the start and end position in AST.
+  | Line  -- ^ Option @--positions=line@. Currently not supported.
+  deriving (Eq, Ord)
+
+-- Used in 'printOptions'
+instance Show Positions where
+  show = \case
+    None  -> "none"
+    Start -> "start"
+    Range -> "range"
+    Line  -> "line"
+
+-- No need to write a full @Read@ instance
+-- Note: @line@ is currently not supported
+parsePositions :: String -> Maybe Positions
+parsePositions s
+  | s == "start" = Just Start
+  | s == "range" = Just Range
+  | otherwise    = Nothing
+
 -- | This is the option record that is passed to the different backends.
 data SharedOptions = Options
   --- Option shared by at least 2 backends
@@ -133,7 +159,7 @@ data SharedOptions = Options
   , ansi        :: Ansi            -- ^ Restrict to the ANSI language standard (C/C++)?
   --- Haskell specific:
   , inDir         :: Bool        -- ^ Option @-d@.
-  , functor       :: Bool        -- ^ Option @--functor@.  Make AST functorial?
+  , positions     :: Positions   -- ^ Options @--positions@ (or legacy @--functor@). Make AST functorial? What to include?
   , generic       :: Bool        -- ^ Option @--generic@.  Derive Data and Generic?
   , alexMode      :: AlexVersion -- ^ Options @--alex@.
   , tokenText     :: TokenText   -- ^ Options @--bytestrings@, @--string-token@, and @--text-token@.
@@ -167,7 +193,7 @@ defaultOptions = Options
   , ansi            = BeyondAnsi
   -- Haskell specific
   , inDir           = False
-  , functor         = False
+  , positions       = None
   , generic         = False
   , alexMode        = Alex3
   , tokenText       = StringToken
@@ -224,7 +250,11 @@ printOptions opts = unwords . concat $
   , unlessDefault ansi opts $ const [ "--ansi" ]
   -- Haskell options:
   , [ "-d"                | inDir opts                          ]
-  , [ "--functor"         | functor opts                        ]
+
+    -- Note: For backwards compatibility.
+  , [ "--functor"         | positions opts == Start             ]
+
+  , [ "--positions=range" | positions opts == Range             ]
   , [ "--generic"         | generic opts                        ]
   , unlessDefault alexMode opts $ \ o -> [ printAlexOption o ]
   , [ "--bytestrings"     | tokenText opts == ByteStringToken   ]
@@ -374,8 +404,11 @@ specificOptions =
   , ( Option []    ["glr"] (NoArg (\o -> o {glr = GLR}))
           "Output Happy GLR parser [deprecated]"
     , haskellTargets )
-  , ( Option []    ["functor"] (NoArg (\o -> o {functor = True}))
-          "Make the AST a functor and use it to store the position of the nodes"
+  , ( Option []    ["functor"] (NoArg (\o -> o {positions = Start}))
+          "Make the AST a functor and use it to store the start position of the nodes (alias to --positions=start)"
+    , haskellTargets )
+  , ( Option []    ["positions"] (ReqArg (\s o -> o {positions = fromMaybe None (parsePositions s)}) "start|range")
+          "Make the AST a functor and set what to include in the nodes"
     , haskellTargets )
   , ( Option []    ["generic"] (NoArg (\o -> o {generic = True}))
           "Derive Data and Generic instances for AST types"
