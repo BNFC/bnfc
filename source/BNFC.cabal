@@ -266,6 +266,14 @@ library
     -- Pygments backend
     BNFC.Backend.Pygments
 
+    -- Scala backend
+    BNFC.Backend.Scala
+    BNFC.Backend.Scala.Utils
+    BNFC.Backend.Scala.CFtoScalaLex
+    BNFC.Backend.Scala.CFtoScalaLexToken
+    BNFC.Backend.Scala.CFtoScalaParser
+    BNFC.Backend.Scala.CFtoScalaParserAST
+
     -- Agda backend
     BNFC.Backend.Agda
 

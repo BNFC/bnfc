@@ -64,7 +64,7 @@ data Target = TargetC | TargetCpp | TargetCppNoStl
             | TargetHaskell | TargetHaskellGadt | TargetLatex
             | TargetJava | TargetOCaml | TargetPygments
             | TargetTreeSitter
-            | TargetCheck
+            | TargetCheck | TargetScala
   deriving (Eq, Bounded, Enum, Ord)
 
 -- | List of Haskell target.
@@ -83,6 +83,7 @@ instance Show Target where
   show TargetPygments     = "Pygments"
   show TargetTreeSitter   = "Tree-sitter"
   show TargetCheck        = "Check LBNF file"
+  show TargetScala        = "Scala"
 
 -- | Which version of Alex is targeted?
 data AlexVersion = Alex3
@@ -312,6 +313,8 @@ targetOptions =
     "Output OCaml code for use with ocamllex and menhir (short for --ocaml --menhir)"
   , Option "" ["pygments"]      (NoArg (\o -> o {target = TargetPygments}))
     "Output a Python lexer for Pygments"
+  , Option "" ["scala"]      (NoArg (\o -> o {target = TargetScala}))
+    "Output a Scala lexer"
   , Option "" ["tree-sitter"]   (NoArg (\o -> o {target = TargetTreeSitter}))
     "Output grammar.js file for use with tree-sitter"
   , Option "" ["check"]         (NoArg (\ o -> o{target = TargetCheck }))
@@ -529,6 +532,7 @@ instance Maintained Target where
     TargetJava        -> True
     TargetOCaml       -> True
     TargetPygments    -> True
+    TargetScala       -> True
     TargetTreeSitter  -> True
     TargetCheck       -> True
 
@@ -645,6 +649,7 @@ translateOldOptions = mapM $ \ o -> do
     , ("-csharp"       , "--csharp")
     , ("-ocaml"        , "--ocaml")
     , ("-haskell"      , "--haskell")
+    , ("-scala"         , "--scala")
     , ("-prof"         , "--profile")
     , ("-gadt"         , "--haskell-gadt")
     , ("-alex1"        , "--alex1")
