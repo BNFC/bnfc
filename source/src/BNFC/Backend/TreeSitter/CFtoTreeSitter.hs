@@ -1,7 +1,5 @@
 {-
     BNF Converter: TreeSitter Grammar Generator
-    Copyright (C) 2004  Author:  Markus Forsberg, Michael Pellauer,
-                                 Bjorn Bringert
 
     Description   : This module converts BNFC grammar to the contents of a
                     tree-sitter grammar.js file
@@ -10,23 +8,32 @@
     Created       : 08 Nov, 2023
 
 -}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE FlexibleInstances #-}
 
 module BNFC.Backend.TreeSitter.CFtoTreeSitter where
 
 import BNFC.Abs (Reg (RSeq, RSeqs, RStar, RAny))
 import BNFC.Backend.TreeSitter.RegToJSReg
+    ( escapeCharFrom, printRegJSReg )
 import BNFC.CF
 import BNFC.Lexing (mkRegMultilineComment)
 import BNFC.PrettyPrint
+
 import Prelude hiding ((<>))
+import qualified Data.Map as Map
+import Data.Map ()
 
 -- | Indent one level of 2 spaces
 indent :: Doc -> Doc
 indent = nest 2
 
 -- | Create content of grammar.js file
-cfToTreeSitter :: String -> CF -> Doc
-cfToTreeSitter name cf =
+cfToTreeSitter :: String -- ^ Name of the language
+                -> CF    -- ^ Context-Free grammar of the language
+                -> Bool  -- ^ Flags to enable zero-width match elimination
+                -> Doc   -- ^ grammar.js file generated
+cfToTreeSitter name cf removeZero =
   -- Overall structure of grammar.js
   text "module.exports = grammar({"
     $+$ indent
@@ -42,7 +49,7 @@ cfToTreeSitter name cf =
     rulesSection =
       text "rules: {"
         $+$ indent
-          ( prRules cf
+          ( prRules cf removeZero
               $+$ prUsrTokenRules cf
               $+$ prBuiltinTokenRules cf
           )
@@ -96,7 +103,7 @@ prWord cf =
     identUsed = isUsedCat cf (TokenCat catIdent)
     usrTokens = tokenPragmas cf
     usrTokensFormatted =
-      map (text . refName . formatCatName False . TokenCat . fst) $ usrTokens
+      map (text . refName . formatCatName False . TokenCat . fst) usrTokens
 
 -- | Print builtin token rules according to their usage
 prBuiltinTokenRules :: CF -> Doc
@@ -120,15 +127,129 @@ stringRule =
 identRule =
   defineSymbol "token_Ident" <+> text "/[a-zA-Z][a-zA-Z\\d_']*/" <> ","
 
+-- Tree Sitter does not support empty strings well enough
+-- (Ref: https://github.com/tree-sitter/tree-sitter/issues/98), thus we need to
+-- handle empty strings differently using the optional keyword
+-- Crucially, any named symbols in Tree Sitter cannot have a zero width match,
+-- unless it is the start symbol
+-- Thus, we look for all categories that match zero width, tag them as "optional"
+-- And when that cat is referred to, we use `optional($.cat_name)` in place of
+-- `$.cat_name` to circumvent this issue
+
+-- | Cat with a tag indicating if it is optional
+data CatOpt' a = Always a | Optional a
+type CatOpt = CatOpt' Cat
+
+-- | type class for OCat or Cat
+class UnwrapCat a where
+  -- | unwrap to original Cat
+  unwrap:: a -> Cat
+
+instance UnwrapCat Cat where
+  unwrap = id
+
+instance UnwrapCat CatOpt where
+  unwrap (Always c) = c
+  unwrap (Optional c) = c
+
+-- | Rule with RHS tagged
+data RuleOpt = Rule' {srcRule::Rule, taggedRhs::SentFormOpt}
+type SentFormOpt = [Either CatOpt String]
+
+-- | type class for a rule data type that can be formatted
+class FormatRule a where
+  -- | get the original rule
+  getRule:: a -> Rule
+  -- | format the RHS of the rule
+  formatRuleRhs:: a -> [Doc]
+
+instance FormatRule Rule where
+  getRule = id
+
+  formatRuleRhs r = 
+    map (\case
+      Left c -> text $ refName $ formatCatName False c
+      Right term -> quoted term) $ rhsRule r
+
+
+instance FormatRule RuleOpt where
+  getRule = srcRule
+
+  formatRuleRhs r = 
+    map (\case
+      Left (Always c) -> text $ refName $ formatCatName False c
+      Left (Optional c) -> wrapFun "optional" False $
+        text (refName $ formatCatName False c)
+      Right term -> quoted term) $ taggedRhs r
+
+-- | Analyzes the grammar with the entrance symbol.
+-- This function finds all rules for the entrance symbol, and groups
+-- all remaining categories with their rules, including internal rules.
+analyzeCF :: CF -- ^ Context-free grammar of the language
+  -> Cat -- ^ Category object for the entrance symbol
+  -> ([(Cat, [Rule])], [Rule]) -- ^ (groups of remaining categories and rules, entrance rules)
+analyzeCF cf entryCat = ([(c, rulesForCat' cf c)| c <- allCats, c /= entryCat],
+  rulesForCat' cf entryCat)
+  where allCats = reallyAllCats cf
+
+-- | Analyzes the grammar with the entrance symbol.
+-- This version of analyze function performs zero-width match analysis on all symbols and
+-- returns with optional flags determined and tagged for all returning Cats and rules.
+-- Returns (list of remaining tagged categories and tagged rules, tagged entrance rules)
+analyzeCFOptional :: CF  -- ^ Context-free grammar of the language
+  -> Cat -- ^ Category object of the entrance symbol
+  -> ([(CatOpt, [RuleOpt])], [RuleOpt]) -- ^ (groups of tagged remaining categories and tagged rules, tagged entrance rules)
+analyzeCFOptional cf entryCat =
+  (
+    -- Empty rules are excluded from normal categories since they are handled by
+    -- "optional()" keywords in tree-sitter
+    [(wrapCat c, 
+      map wrapRule $ filter (not . ruleIsEmpty) $ rulesForCat' cf c)
+      | c <- allCats, c /= entryCat],
+    -- Tree-sitter should support zero-width matches with root (i.e. entrance) symbol
+    -- thus no need to filter them out
+    map wrapRule $ rulesForCat' cf entryCat
+  )
+  where
+    allCats = reallyAllCats cf
+    -- Stores mapping from Cat to optional flag
+    -- Currently we only recognize optional rules if any RHS of the rules is empty
+    -- list, and ignore more complex cases.
+    -- Complex optional cases may trigger tree-sitter to fail or bug out.
+    catOptMap = Map.fromList $
+      map (\c -> (c, any ruleIsEmpty (rulesForCat' cf c)))
+      -- Always format entrance symbols as non-optional since
+      -- tree-sitter should support zero-width matches on them 
+      $ filter (/= entryCat) allCats
+    -- Tags Cat to Cat' using catOptMap
+    wrapCat:: Cat -> CatOpt
+    wrapCat c = if Map.findWithDefault False c catOptMap
+      then Optional c
+      else Always c
+    wrapRule r = Rule' {srcRule = r, 
+      taggedRhs = map wrapSentFormItem $ rhsRule r
+    }
+    wrapSentFormItem :: Either Cat String -> Either CatOpt String
+    wrapSentFormItem (Left c) = Left $ wrapCat c
+    wrapSentFormItem (Right s) = Right s
+    ruleIsEmpty = null . rhsRule . getRule
+
 -- | First print the entrypoint rule, tree-sitter always use the
 --   first rule as entrypoint and does not support multi-entrypoint.
 --   Then print rest of the rules
-prRules :: CF -> Doc
-prRules cf =
+prRules :: CF -> Bool -> Doc
+prRules cf removeZero =
   if onlyOneEntry
     then
-      prOneCat entryRules entryCat
-        $+$ prOtherRules entryCat cf
+      -- entry rules are formatted without optional
+      -- tree-sitter should support zero-width (a.k.a empty) matches for top level symbols
+      if removeZero
+        then
+          prOneCat entryRulesOpt entryCat
+            $+$ prOtherRules otherCatRulesOpt
+        else
+          prOneCat entryRules entryCat
+            $+$ prOtherRules otherCatRules
     else error "Tree-sitter only supports one entrypoint"
   where
     --If entrypoint is defined, there must be only one entrypoint
@@ -136,14 +257,14 @@ prRules cf =
     onlyOneEntry = not (hasEntryPoint cf) || onlyOneEntryDefined
     onlyOneEntryDefined = length (allEntryPoints cf) == 1
     entryCat = firstEntry cf
-    entryRules = rulesForCat' cf entryCat
+    (otherCatRulesOpt, entryRulesOpt) = analyzeCFOptional cf entryCat
+    (otherCatRules, entryRules) = analyzeCF cf entryCat
 
 -- | Print all other rules except the entrypoint
-prOtherRules :: Cat -> CF -> Doc
-prOtherRules entryCat cf = vcat' $ map mkOne rules
+prOtherRules :: (UnwrapCat a, FormatRule b) => [(a, [b])] -> Doc
+prOtherRules otherRules = vcat' $ map mkOne otherRules
   where
-    rules = [(c, r) | (c, r) <- ruleGroupsInternals cf, c /= entryCat]
-    mkOne (cat, rules) = prOneCat rules cat
+    mkOne (cat, rules) = prOneCat rules $ unwrap cat
 
 prUsrTokenRules :: CF -> Doc
 prUsrTokenRules cf = vcat' $ map prOneToken tokens
@@ -151,17 +272,17 @@ prUsrTokenRules cf = vcat' $ map prOneToken tokens
     tokens = tokenPragmas cf
 
 -- | Check if a set of rules contains internal rules
-hasInternal :: [Rule] -> Bool
-hasInternal = not . all isParsable
+hasInternal :: (FormatRule a) => [a] -> Bool
+hasInternal = not . all (isParsable . getRule)
 
 -- | Generates one or two tree-sitter rule(s) for one non-terminal from CF.
 -- Uses choice function from tree-sitter to combine rules for the non-terminal
 -- If the non-terminal has internal rules, an internal version of the non-terminal
 -- will be created (prefixed with "_" in tree-sitter), and all internal rules will
 -- be sectioned as such.
-prOneCat :: [Rule] -> NonTerminal -> Doc
+prOneCat :: FormatRule a => [a] -> NonTerminal -> Doc
 prOneCat rules nt =
-  defineSymbol (formatCatName False nt)
+  defineSymbol (formatCatName False $ nt)
     $+$ indent (appendComma parRhs)
     $+$ internalRules
   where
@@ -170,10 +291,10 @@ prOneCat rules nt =
       if int
         then defineSymbol (formatCatName True nt) $+$ indent (appendComma intRhs)
         else empty
-    parRhs = wrapChoice $ transChoice ++ genChoice (filter isParsable rules)
+    parRhs = wrapChoice $ transChoice ++ genChoice (filter (isParsable . getRule) rules)
     transChoice = [text $ refName $ formatCatName True nt | int]
-    intRhs = wrapChoice $ genChoice (filter (not . isParsable) rules)
-    genChoice = map (wrapSeq . formatRhs . rhsRule)
+    intRhs = wrapChoice $ genChoice (filter (not . isParsable. getRule) rules)
+    genChoice = map (wrapSeq . formatRuleRhs)
 
 -- | Generate one tree-sitter rule for one defined token
 prOneToken :: (TokenCat, Reg) -> Doc
@@ -220,15 +341,14 @@ wrapFun fun newline arg = joinOp [text fun <> text "(", indent arg, text ")"]
 refName :: String -> String
 refName = ("$." ++)
 
--- | Format right hand side into list of strings
-formatRhs :: SentForm -> [Doc]
-formatRhs =
-  map (\case
-    Left c -> text $ refName $ formatCatName False c
-    Right term -> quoted term)
+stringLiteralReserved:: String
+stringLiteralReserved = "\"\\"
+
+escapeStringLiteral:: String -> String
+escapeStringLiteral = concatMap $ escapeCharFrom stringLiteralReserved
 
 quoted :: String -> Doc
-quoted s = text "\"" <> text s <> text "\""
+quoted s = text "\"" <> text (escapeStringLiteral s) <> text "\""
 
 -- | Format string for cat name, prefix "_" if the name is for internal rules
 formatCatName :: Bool -> Cat -> String
