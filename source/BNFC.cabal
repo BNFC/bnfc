@@ -29,6 +29,9 @@ Description:
   a pretty-printer as a Haskell, Agda, C, C++, Java, or Ocaml module,
   an XML representation,
   a LaTeX file containing a readable specification of the language.
+data-files:
+  test/BNFC/Backend/TreeSitter/*.cf
+  test/BNFC/Backend/TreeSitter/*.expected.js
 
 -- Support range when build with cabal
 tested-with:
@@ -272,6 +275,7 @@ library
     -- Tree-sitter backend
     BNFC.Backend.TreeSitter
     BNFC.Backend.TreeSitter.CFtoTreeSitter
+    BNFC.Backend.TreeSitter.MatchesEmpty
     BNFC.Backend.TreeSitter.RegToJSReg
 
 ----- Testing --------------------------------------------------------------

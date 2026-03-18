@@ -49,6 +49,10 @@ emptyPat = " [^\\u0000-\\uFFFF]?"
 
 -- | escape character according to Javascript regex format
 escapeCharFrom :: String -> Char -> String
+escapeCharFrom _ '\n' = "\\n"
+escapeCharFrom _ '\r' = "\\r"
+escapeCharFrom _ '\t' = "\\t"
+escapeCharFrom _ '\f' = "\\f"
 escapeCharFrom reservedChars x
   | x `elem` reservedChars = '\\' : [x]
   | otherwise = [x]
