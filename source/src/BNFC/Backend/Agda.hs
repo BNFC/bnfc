@@ -138,8 +138,8 @@ import BNFC.CF
 import BNFC.Backend.Base                 (Backend, mkfile)
 import BNFC.Backend.Haskell.HsOpts
 import BNFC.Backend.Haskell.CFtoAbstract (DefCfg(..), definedRules')
-import BNFC.Backend.Haskell.Utils        (parserName, catToType, comment)
-import BNFC.Options                      (SharedOptions, TokenText(..), tokenText, functor)
+import BNFC.Backend.Haskell.Utils        (parserName, catToType, comment, hasNotNonePos, hasRangePos)
+import BNFC.Options                      (SharedOptions, TokenText(..), Positions(..), tokenText, positions)
 import BNFC.PrettyPrint
 import BNFC.Utils                        (ModuleName, replace, when, table)
 
@@ -166,7 +166,7 @@ makeAgda
 makeAgda time opts cf = do
   -- Generate AST bindings.
   mkfile (agdaASTFile opts) comment $
-    cf2AgdaAST time (functor opts) (tokenText opts) (agdaASTFileM opts) (absFileM opts) (printerFileM opts) cf
+    cf2AgdaAST time (positions opts) (tokenText opts) (agdaASTFileM opts) (absFileM opts) (printerFileM opts) cf
   -- Generate parser bindings.
   mkfile (agdaParserFile opts) comment $
     cf2AgdaParser time (tokenText opts) (agdaParserFileM opts) (agdaASTFileM opts) (errFileM opts) (happyFileM opts)
@@ -192,28 +192,28 @@ makeAgda time opts cf = do
 -- | Generate AST bindings for Agda.
 --
 cf2AgdaAST
-  :: String  -- ^ Current time.
-  -> Bool    -- ^ Include positions information in the AST? (`--functor`)
+  :: String      -- ^ Current time.
+  -> Positions   -- ^ Include positions information in the AST? What to include? (`--positions`)
   -> TokenText
-  -> String  -- ^ Module name.
-  -> String  -- ^ Haskell Abs module name.
-  -> String  -- ^ Haskell Print module name.
-  -> CF      -- ^ Grammar.
+  -> String      -- ^ Module name.
+  -> String      -- ^ Haskell Abs module name.
+  -> String      -- ^ Haskell Print module name.
+  -> CF          -- ^ Grammar.
   -> Doc
-cf2AgdaAST time havePos tokenText mod amod pmod cf = vsep $
+cf2AgdaAST time positions tokenText mod amod pmod cf = vsep $
   [ preamble time "abstract syntax data types"
   , hsep [ "module", text mod, "where" ]
-  , imports YesImportNumeric False usesPos havePos
+  , imports YesImportNumeric False usesPos functor
   , when usesString $ hsep [ "String", equals, listT, charT ]
   , importPragmas tokenText usesPos
       [ unwords [ "qualified", amod ]
       , unwords [ pmod, "(printTree)" ]
       ]
   , when usesPos defineIntAndPair
-  , when havePos defineBNFCPosition
-  , vsep $ map (uncurry $ prToken amod tokenText) tcats
-  , absyn amod havePos NamedArg dats
-  , definedRules havePos cf
+  , when functor defineBNFCPosition
+  , vsep $ map (uncurry $ prToken amod tokenText functorV2) tcats
+  , absyn amod functor NamedArg dats
+  , definedRules functor cf
   -- , allTokenCats printToken tcats  -- seem to be included in printerCats
   , printers amod printerCats
   , empty -- Make sure we terminate the file with a new line.
@@ -233,8 +233,10 @@ cf2AgdaAST time havePos tokenText mod amod pmod cf = vsep $
     [ map fst (getAbstractSyntax cf)
     , map TokenCat $ List.nub $ cfgLiterals cf ++ map fst tcats
     ]
+  functor    = hasNotNonePos positions
+  functorV2  = hasRangePos   positions
   usesString = "String" `elem` cfgLiterals cf
-  usesPos    = havePos || hasPositionTokens cf
+  usesPos    = functor || hasPositionTokens cf
   defineIntAndPair = vsep
     [ vcat $ concat
       [ [ "postulate" ]
@@ -256,8 +258,9 @@ cf2AgdaAST time havePos tokenText mod amod pmod cf = vsep $
       ]
     , "{-# COMPILE GHC #Pair = data (,) ((,)) #-}"
     ]
-  defineBNFCPosition =
-    hsep [ posT, equals, maybeT, parens intPairT ]
+  defineBNFCPosition
+    | functorV2 = hsep [ posT, equals, maybeT, parens (hsep [ pairT, parens intPairT, parens intPairT ]) ]
+    | otherwise = hsep [ posT, equals, maybeT, parens intPairT ]
 
 -- | Generate parser bindings for Agda.
 --
@@ -420,8 +423,8 @@ importPragmas tokenText pos mods = vcat $ map imp $ base ++ mods
 
 -- | Pretty-print types for token types similar to @Ident@.
 
-prToken :: ModuleName -> TokenText -> String -> Bool -> Doc
-prToken amod tokenText t pos = vsep
+prToken :: ModuleName -> TokenText -> Bool -> String -> Bool -> Doc
+prToken amod tokenText functorV2 t pos = vsep
   [ if pos then vcat
       -- can't use prettyData as it excepts a Cat for the type
       [ hsep [ "data", text t, ":", "Set", "where" ]
@@ -429,7 +432,9 @@ prToken amod tokenText t pos = vsep
           [ text $ agdaLower t
           , ":"
           , pairT
-          , parens intPairT
+          , if functorV2
+            then parens (hsep [pairT, parens intPairT, parens intPairT])
+            else parens intPairT
           , prettyCat typ
           , uArrow, text t
           ]

@@ -17,7 +17,7 @@ import Data.List (intersperse)
 import BNFC.CF
 import BNFC.Backend.Common.StrUtils (escapeChars)
 import BNFC.Backend.Haskell.Utils
-import BNFC.Options (HappyMode(..), TokenText(..))
+import BNFC.Options (HappyMode(..), TokenText(..), Positions(..) )
 import BNFC.PrettyPrint
 import BNFC.Utils
 
@@ -36,23 +36,23 @@ tokenName = "Token"
 -- | Generate a happy parser file from a grammar.
 
 cf2Happy
-  :: ModuleName -- ^ This module's name.
-  -> ModuleName -- ^ Abstract syntax module name.
-  -> ModuleName -- ^ Lexer module name.
-  -> HappyMode  -- ^ Happy mode.
-  -> TokenText  -- ^ Use @ByteString@ or @Text@?
-  -> Bool       -- ^ AST is a functor?
-  -> CF         -- ^ Grammar.
-  -> String     -- ^ Generated code.
-cf2Happy name absName lexName mode tokenText functor cf = unlines
+  :: ModuleName  -- ^ This module's name.
+  -> ModuleName  -- ^ Abstract syntax module name.
+  -> ModuleName  -- ^ Lexer module name.
+  -> HappyMode   -- ^ Happy mode.
+  -> TokenText   -- ^ Use @ByteString@ or @Text@?
+  -> Positions   -- ^ AST is a functor? What is included?
+  -> CF          -- ^ Grammar.
+  -> String      -- ^ Generated code.
+cf2Happy name absName lexName mode tokenText positions cf = unlines
   [ header name absName lexName tokenText eps
-  , render $ declarations mode functor eps
-  , render $ tokens cf functor
+  , render $ declarations mode (hasNotNonePos positions) eps
+  , render $ tokens cf positions
   , delimiter
-  , specialRules absName functor tokenText cf
-  , render $ prRules absName functor (rulesForHappy absName functor cf)
+  , specialRules absName positions tokenText cf
+  , render $ prRules absName (hasNotNonePos positions) (rulesForHappy absName positions cf)
   , ""
-  , footer absName tokenText functor eps cf
+  , footer absName tokenText (hasNotNonePos positions) eps cf
   ]
   where
   eps = toList $ allEntryPoints cf
@@ -116,61 +116,82 @@ delimiter :: String
 delimiter = "\n%%\n"
 
 -- | Generate the list of tokens and their identifiers.
-tokens :: CF -> Bool -> Doc
-tokens cf functor
+tokens :: CF -> Positions -> Doc
+tokens cf positions
   -- Andreas, 2019-01-02: "%token" followed by nothing is a Happy parse error.
   -- Thus, if we have no tokens, do not output anything.
   | null ts   = empty
   | otherwise = "%token" $$ (nest 2 $ vcat $ map text $ table " " ts)
   where
-    ts            = map prToken (cfTokens cf) ++ specialToks cf functor
-    prToken (t,k) = [ render (convert t), "{ PT _ (TS _ " ++ show k ++ ")", "}" ]
+    ts            = map prToken (cfTokens cf) ++ specialToks cf positions
+    prToken (t,k) = [ render (convert t)
+                    , "{ " ++ ptPattern positions ("TS _ " ++ show k)
+                    , "}"
+                    ]
 
 -- Happy doesn't allow characters such as åäö to occur in the happy file. This
 -- is however not a restriction, just a naming paradigm in the happy source file.
 convert :: String -> Doc
 convert = quotes . text . escapeChars
 
-rulesForHappy :: ModuleName -> Bool -> CF -> Rules
-rulesForHappy absM functor cf = for (ruleGroups cf) $ \ (cat, rules) ->
-  (cat, map (constructRule absM functor) rules)
+rulesForHappy :: ModuleName -> Positions -> CF -> Rules
+rulesForHappy absM positions cf = for (ruleGroups cf) $ \ (cat, rules) ->
+  (cat, map (constructRule absM positions) rules)
 
 -- | For every non-terminal, we construct a set of rules. A rule is a sequence
 -- of terminals and non-terminals, and an action to be performed.
 --
--- >>> constructRule "Foo" False (npRule "EPlus" (Cat "Exp") [Left (Cat "Exp"), Right "+", Left (Cat "Exp")] Parsable)
+-- >>> constructRule "Foo" None (npRule "EPlus" (Cat "Exp") [Left (Cat "Exp"), Right "+", Left (Cat "Exp")] Parsable)
 -- ("Exp '+' Exp","Foo.EPlus $1 $3")
 --
--- If we're using functors, it adds position value:
+-- If we're using positions=start, it adds position value:
 --
--- >>> constructRule "Foo" True (npRule "EPlus" (Cat "Exp") [Left (Cat "Exp"), Right "+", Left (Cat "Exp")] Parsable)
+-- >>> constructRule "Foo" Start (npRule "EPlus" (Cat "Exp") [Left (Cat "Exp"), Right "+", Left (Cat "Exp")] Parsable)
 -- ("Exp '+' Exp","(fst $1, Foo.EPlus (fst $1) (snd $1) (snd $3))")
+--
+-- When using positions=range, it adds also an end position:
+--
+-- >>> constructRule "Foo" Range (npRule "EPlus" (Cat "Exp") [Left (Cat "Exp"), Right "+", Left (Cat "Exp")] Parsable)
+-- ("Exp '+' Exp","(Foo.spanBNFC'Position (fst $1) (fst $3), Foo.EPlus (Foo.spanBNFC'Position (fst $1) (fst $3)) (snd $1) (snd $3))")
 --
 -- List constructors should not be prefixed by the abstract module name:
 --
--- >>> constructRule "Foo" False (npRule "(:)" (ListCat (Cat "A")) [Left (Cat "A"), Right",", Left (ListCat (Cat "A"))] Parsable)
+-- >>> constructRule "Foo" None (npRule "(:)" (ListCat (Cat "A")) [Left (Cat "A"), Right",", Left (ListCat (Cat "A"))] Parsable)
 -- ("A ',' ListA","(:) $1 $3")
 --
--- >>> constructRule "Foo" False (npRule "(:[])" (ListCat (Cat "A")) [Left (Cat "A")] Parsable)
+-- >>> constructRule "Foo" None (npRule "(:[])" (ListCat (Cat "A")) [Left (Cat "A")] Parsable)
 -- ("A","(:[]) $1")
 --
 -- Coercion are much simpler:
 --
--- >>> constructRule "Foo" True (npRule "_" (Cat "Exp") [Right "(", Left (Cat "Exp"), Right ")"] Parsable)
+-- >>> constructRule "Foo" Start (npRule "_" (Cat "Exp") [Right "(", Left (Cat "Exp"), Right ")"] Parsable)
 -- ("'(' Exp ')'","(uncurry Foo.BNFC'Position (tokenLineCol $1), (snd $2))")
 --
-constructRule :: IsFun f => String -> Bool -> Rul f -> (Pattern, Action)
-constructRule absName functor (Rule fun0 _cat rhs Parsable) = (pat, action)
+constructRule :: IsFun f => String -> Positions -> Rul f -> (Pattern, Action)
+constructRule absName positions (Rule fun0 _cat rhs Parsable) = (pat, action)
   where
+    functor   = hasNotNonePos positions
+    functorV2 = hasRangePos   positions
     fun = funName fun0
     (pat, metavars) = generatePatterns functor rhs
     action
       | functor   = "(" ++ actionPos id ++ ", " ++ actionValue ++ ")"
       | otherwise = actionValue
+
     actionPos paren = case rhs of
-      []          -> qualify noPosConstr
-      (Left _:_)  -> paren "fst $1"
-      (Right _:_) -> paren $ unwords [ "uncurry", qualify posConstr , "(tokenLineCol $1)" ]
+      [] -> qualify noPosConstr
+      _ | functorV2 -> paren $ unwords
+            [ qualify ("span" ++ posConstr)
+            , "(" ++ getPosOnIndex (head rhs) 1            ++ ")"
+            , "(" ++ getPosOnIndex (last rhs) (length rhs) ++ ")"
+            ]
+        | otherwise -> paren $ getPosOnIndex (head rhs) 1
+      where
+        getPosOnIndex (Left  _) i = "fst $" ++ show (i :: Int)
+        getPosOnIndex (Right _) i
+          | functorV2 = qualify posConstr ++ " (tokenLineCol $" ++ show i ++ ") (tokenLineColEnd $" ++ show i ++ ")"
+          | otherwise = "uncurry " ++ qualify posConstr ++ " (tokenLineCol $" ++ show i ++ ")"
+
     actionValue
       | isCoercion fun = unwords metavars
       | isNilCons  fun = unwords (qualify fun : metavars)
@@ -295,19 +316,19 @@ footer absName tokenText functor eps _cf = unlines $ concat
       | otherwise    = ((text absName <> ".") <>)
 
 -- | GF literals.
-specialToks :: CF -> Bool -> [[String]]  -- ^ A table with three columns (last is "}").
-specialToks cf functor = (`map` literals cf) $ \t -> case t of
-  "Ident"   -> [ "L_Ident" , "{ PT _ (TV " ++ posn t ++ ")", "}" ]
-  "String"  -> [ "L_quoted", "{ PT _ (TL " ++ posn t ++ ")", "}" ]
-  "Integer" -> [ "L_integ ", "{ PT _ (TI " ++ posn t ++ ")", "}" ]
-  "Double"  -> [ "L_doubl ", "{ PT _ (TD " ++ posn t ++ ")", "}" ]
-  "Char"    -> [ "L_charac", "{ PT _ (TC " ++ posn t ++ ")", "}" ]
-  own       -> [ "L_" ++ own,"{ PT _ (T_" ++ own ++ " " ++ posn own ++ ")", "}" ]
+specialToks :: CF -> Positions -> [[String]]  -- ^ A table with three columns (last is "}").
+specialToks cf positions = (`map` literals cf) $ \t -> case t of
+  "Ident"   -> [ "L_Ident" , "{ " ++ ptPattern positions ("TV " ++ posn t), "}" ]
+  "String"  -> [ "L_quoted", "{ " ++ ptPattern positions ("TL " ++ posn t), "}" ]
+  "Integer" -> [ "L_integ ", "{ " ++ ptPattern positions ("TI " ++ posn t), "}" ]
+  "Double"  -> [ "L_doubl ", "{ " ++ ptPattern positions ("TD " ++ posn t), "}" ]
+  "Char"    -> [ "L_charac", "{ " ++ ptPattern positions ("TC " ++ posn t), "}" ]
+  own       -> [ "L_" ++ own,"{ " ++ ptPattern positions ("T_" ++ own ++ " " ++ posn own), "}" ]
   where
-    posn tokenCat = if isPositionCat cf tokenCat || functor then "_" else "$$"
+    posn tokenCat = if isPositionCat cf tokenCat || hasNotNonePos positions then "_" else "$$"
 
-specialRules :: ModuleName -> Bool -> TokenText -> CF -> String
-specialRules absName functor tokenText cf = unlines . intersperse "" . (`map` literals cf) $ \t -> case t of
+specialRules :: ModuleName -> Positions -> TokenText -> CF -> String
+specialRules absName positions tokenText cf = unlines . intersperse "" . (`map` literals cf) $ \t -> case t of
     -- "Ident"   -> "Ident   :: { Ident }"
     --         ++++ "Ident    : L_ident  { Ident $1 }"
     "String"  -> "String  :: { " ++ mkTypePart t ++ " }"
@@ -321,13 +342,16 @@ specialRules absName functor tokenText cf = unlines . intersperse "" . (`map` li
     own       -> own ++ " :: { " ++ mkTypePart (qualify own) ++ " }"
             ++++ own ++ "  : L_" ++ own ++ " { " ++ mkBodyPart t ++ " }"
   where
+    functor   = hasNotNonePos positions
+    functorV2 = hasRangePos   positions
     mkTypePart tokenCat = if functor then concat [ "(", qualify posType, ", ", tokenCat, ")" ] else tokenCat
     mkBodyPart tokenCat
-      | functor   = "(" ++ unwords ["uncurry", qualify posConstr, "(tokenLineCol $1)"] ++ ", " ++ mkValPart tokenCat ++ ")"
+      | functorV2 = "(" ++ unwords [           qualify posConstr, "(tokenLineCol $1) (tokenLineColEnd $1)"] ++ ", " ++ mkValPart tokenCat ++ ")"
+      | functor   = "(" ++ unwords ["uncurry", qualify posConstr, "(tokenLineCol $1)"]                     ++ ", " ++ mkValPart tokenCat ++ ")"
       | otherwise = mkValPart tokenCat
     mkValPart tokenCat =
       case tokenCat of
-        "String"  -> if functor then stringUnpack "((\\(PT _ (TL s)) -> s) $1)"
+        "String"  -> if functor then stringUnpack ("((\\(" ++ ptPattern positions "TL s" ++ ") -> s) $1)")
                                 else stringUnpack "$1"                                 -- String never has pos
         "Integer" -> if functor then "(read " ++ stringUnpack "(tokenText $1)" ++ ") :: Integer"
                                 else "(read " ++ stringUnpack "$1" ++ ") :: Integer" -- Integer never has pos

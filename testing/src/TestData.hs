@@ -42,6 +42,11 @@ exampleGrammars = map (fmap prefix) $
   [ fmap ("Alfa"      </>) $ Example' needsLayout "Alfa.cf"      [ "Sorting.alfa" ]
   , fmap ("cubicaltt" </>) $ Example' needsLayout "cubicaltt.cf" [ "prelude.ctt" ]
 
+    -- FIXME: Actually, it does not compare the abstract syntax...
+    -- FIXME: Looks weird to put it at example/...
+    -- Test --positions=range option of haskell backend
+  , fmap ("range" </>) $ Example' (Included ["range"]) "range.cf" [ "good01.in", "good02.in" ]
+
   -- Note: The C backend does not support the `define` pragma. See
   --       https://github.com/BNFC/bnfc/issues/266.
   , fmap ("define"    </>) $ Example' noDefine    "test.cf"      [ "good01.in"   ]

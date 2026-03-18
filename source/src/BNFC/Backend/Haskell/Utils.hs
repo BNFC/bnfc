@@ -13,6 +13,7 @@ module BNFC.Backend.Haskell.Utils
   , catToVar, catvars
   , tokenTextImport, tokenTextType
   , tokenTextPack, tokenTextPackParens, tokenTextUnpack
+  , hasNotNonePos, hasRangePos, ptPattern
   ) where
 
 import Data.Char
@@ -22,7 +23,7 @@ import BNFC.PrettyPrint
 import qualified BNFC.PrettyPrint as P
 
 import BNFC.CF      (Cat(..), catToStr, identCat, baseTokenCatNames, Base, Type(FunT), IsFun(..))
-import BNFC.Options (TokenText(..))
+import BNFC.Options (TokenText(..), Positions(..))
 import BNFC.Utils   (mkNames, NameStyle(..))
 
 -- | Haskell line comments.
@@ -256,3 +257,39 @@ catvars rs = map text . mkNames (rs ++ hsReservedWords) LowerCase . map var
   where
     var (ListCat c) = var c ++ "s"
     var c           = catToStr c
+
+-- | Check if @--positions@ is set to @start@, @range@ or @line@ is set.
+-- Note that the Haskell backend does not support @line@, so it is only
+-- for consistency here.
+hasNotNonePos :: Positions -> Bool
+hasNotNonePos = \case
+  None  -> False
+  Start -> True
+  Range -> True
+  Line  -> True
+
+-- | Check if @--positions=range@ is set.
+hasRangePos :: Positions -> Bool
+hasRangePos = \case
+  None  -> False
+  Start -> False
+  Range -> True
+  Line  -> False
+
+-- | Render a @PT@ token with given string in brackets. Two underscores
+-- will be used for start and end position if @--positions=range@ is set.
+-- Otherwise, leave only one underscore.
+--
+-- >>> ptPattern None "TL s"
+-- "PT _ (TL s)"
+--
+-- >>> ptPattern Start "TS s _"
+-- "PT _ (TS s _)"
+--
+-- >>> ptPattern Range "TS _ 2"
+-- "PT _ _ (TS _ 2)"
+--
+ptPattern :: Positions -> String -> String
+ptPattern pos s
+  | hasRangePos pos = "PT _ _ (" ++ s ++ ")"
+  | otherwise       = "PT _ ("   ++ s ++ ")"

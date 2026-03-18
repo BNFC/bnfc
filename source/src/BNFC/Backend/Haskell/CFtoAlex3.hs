@@ -17,20 +17,20 @@ import qualified Data.List as List
 import BNFC.Abs
 import BNFC.CF
 import BNFC.Lexing         ( mkRegMultilineComment )
-import BNFC.Options        ( TokenText(..) )
+import BNFC.Options        ( TokenText(..), Positions(..) )
 import BNFC.PrettyPrint
 import BNFC.Utils          ( table, when, unless )
 
 import BNFC.Backend.Common ( unicodeAndSymbols )
 import BNFC.Backend.Haskell.Utils
 
-cf2alex3 :: String -> TokenText -> CF -> String
-cf2alex3 name tokenText cf =
+cf2alex3 :: String -> TokenText -> Positions -> CF -> String
+cf2alex3 name tokenText positions cf =
   unlines $ List.intercalate [""] $   -- equivalent to vsep: intersperse empty lines
   [ prelude name tokenText
   , cMacros
   , rMacros cf
-  , restOfAlex tokenText cf
+  , restOfAlex tokenText positions cf
   ]
 
 prelude :: String -> TokenText -> [String]
@@ -88,8 +88,8 @@ rMacros cf = unless (null symbs)
       []     -> []
       c : xs -> (if isPrint c then ['\\',c] else '\\' : show (ord c)) : esc xs
 
-restOfAlex :: TokenText -> CF -> [String]
-restOfAlex tokenText cf = concat
+restOfAlex :: TokenText -> Positions -> CF -> [String]
+restOfAlex tokenText positions cf = concat
   [ [ ":-"
     , ""
     ]
@@ -136,9 +136,15 @@ restOfAlex tokenText cf = concat
     ]
   , [ "{"
     , "-- | Create a token with position."
-    , "tok :: (" ++ stringType ++ " -> Tok) -> (Posn -> " ++ stringType ++ " -> Token)"
-    , "tok f p = PT p . f"
-    , ""
+    ]
+  , if withEndPos
+    then [ "tok :: (" ++ stringType ++ " -> Tok) -> (Posn -> Posn -> " ++ stringType ++ " -> Token)"
+         , "tok f ps pe = PT ps pe . f"
+         ]
+    else [ "tok :: (" ++ stringType ++ " -> Tok) -> (Posn -> " ++ stringType ++ " -> Token)"
+         , "tok f p = PT p . f"
+         ]
+  , [""
     , "-- | Token without position."
     , "data Tok"
     ]
@@ -173,7 +179,7 @@ restOfAlex tokenText cf = concat
     , ""
     , "-- | Token with position."
     , "data Token"
-    , "  = PT  Posn Tok"
+    , if withEndPos then "  = PT  Posn Posn Tok" else "  = PT  Posn Tok"
     , "  | Err Posn"
     , "  deriving (Eq, Show, Ord)"
     , ""
@@ -188,33 +194,50 @@ restOfAlex tokenText cf = concat
     , ""
     , "-- | Get the position of a token."
     , "tokenPosn :: Token -> Posn"
-    , "tokenPosn (PT p _) = p"
+    , if withEndPos then "tokenPosn (PT p _ _) = p" else "tokenPosn (PT p _) = p"
     , "tokenPosn (Err p)  = p"
     , ""
     , "-- | Get line and column of a token."
     , "tokenLineCol :: Token -> (Int, Int)"
     , "tokenLineCol = posLineCol . tokenPosn"
     , ""
-    , "-- | Get line and column of a position."
+    ]
+  , when withEndPos
+    [ "-- | Get end line and column of a token."
+    , "tokenLineColEnd :: Token -> (Int, Int)"
+    , "tokenLineColEnd (PT _ p _) = posLineCol p"
+    , "tokenLineColEnd (Err p)    = posLineCol p"
+    , ""
+    ]
+  , [ "-- | Get line and column of a position."
     , "posLineCol :: Posn -> (Int, Int)"
     , "posLineCol (Pn _ l c) = (l,c)"
     , ""
     , "-- | Convert a token into \"position token\" form."
-    , "mkPosToken :: Token -> ((Int, Int), " ++ stringType ++ ")"
-    , "mkPosToken t = (tokenLineCol t, tokenText t)"
-    , ""
+    ]
+  , if withEndPos
+    then [ "mkPosToken :: Token -> (((Int, Int), (Int, Int)), " ++ stringType ++ ")"
+         , "mkPosToken t = ((tokenLineCol t, tokenLineColEnd t), tokenText t)"
+         ]
+    else [ "mkPosToken :: Token -> ((Int, Int), " ++ stringType ++ ")"
+         , "mkPosToken t = (tokenLineCol t, tokenText t)"
+         ]
+  , [ ""
     , "-- | Convert a token to its text."
     , "tokenText :: Token -> " ++ stringType
     , "tokenText t = case t of"
-    , "  PT _ (TS s _) -> s"
-    , "  PT _ (TL s)   -> " ++ applyP stringPack "show s"
-    , "  PT _ (TI s)   -> s"
-    , "  PT _ (TV s)   -> s"
-    , "  PT _ (TD s)   -> s"
-    , "  PT _ (TC s)   -> s"
-    , "  Err _         -> " ++ apply stringPack "\"#error\""
     ]
-  , [ "  PT _ (T_" ++ name ++ " s) -> s" | name <- tokenNames cf ]
+  , [ "  " ++ ptPattern positions "TS s _" ++ " -> s"
+    , "  " ++ ptPattern positions "TL s" ++ "   -> " ++ applyP stringPack "show s"
+    , "  " ++ ptPattern positions "TI s" ++ "   -> s"
+    , "  " ++ ptPattern positions "TV s" ++ "   -> s"
+    , "  " ++ ptPattern positions "TD s" ++ "   -> s"
+    , "  " ++ ptPattern positions "TC s" ++ "   -> s"
+    ]
+  , [ "  Err _         -> " ++ apply stringPack "\"#error\"" ]
+  , [ "  " ++ ptPattern positions ("T_" ++ name ++ " s") ++ " -> s"
+    | name <- tokenNames cf
+    ]
   , [ ""
     , "-- | Convert a token to a string."
     , "prToken :: Token -> String"
@@ -295,7 +318,9 @@ restOfAlex tokenText cf = concat
     , "                AlexEOF                   -> []"
     , "                AlexError (pos, _, _, _)  -> [Err pos]"
     , "                AlexSkip  inp' len        -> go inp'"
-    , "                AlexToken inp' len act    -> act pos (" ++ stringTake ++ " len str) : (go inp')"
+    , if withEndPos
+      then "                AlexToken inp'@(pos', _, _, _) len act -> act pos pos' (" ++ stringTake ++ " len str) : (go inp')"
+      else "                AlexToken inp' len act    -> act pos (" ++ stringTake ++ " len str) : (go inp')"
     , ""
     , "alexGetByte :: AlexInput -> Maybe (Byte,AlexInput)"
     , "alexGetByte (p, c, (b:bs), s) = Just (b, (p, c, bs, s))"
@@ -334,6 +359,9 @@ restOfAlex tokenText cf = concat
     ]
   ]
   where
+  withEndPos :: Bool
+  withEndPos = hasRangePos positions
+
   (stringType, stringTake, stringUncons, stringPack, stringUnpack, stringNilP, stringConsP) =
     case tokenText of
       StringToken     -> ("String",        "take",    "",          "id",      "id",        "[]",      "(c:s)"     )

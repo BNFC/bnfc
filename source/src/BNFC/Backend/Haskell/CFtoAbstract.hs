@@ -20,7 +20,9 @@ import Data.Maybe
 import qualified Data.List as List
 
 import BNFC.CF
-import BNFC.Options               ( SharedOptions(..), TokenText(..) )
+import BNFC.Options               ( SharedOptions(..), TokenText(..)
+                                  , Positions(..)
+                                  )
 import BNFC.PrettyPrint
 import BNFC.Utils                 ( when, applyWhen )
 
@@ -29,6 +31,7 @@ import BNFC.Backend.Haskell.Utils
   , tokenTextImport, tokenTextType, typeToHaskell'
   , posType, posConstr, noPosConstr
   , hasPositionClass, hasPositionMethod
+  , hasNotNonePos, hasRangePos
   )
 
 -- | Create a Haskell module containing data type definitions for the abstract syntax.
@@ -38,10 +41,10 @@ cf2Abstract
   -> String    -- ^ Module name.
   -> CF        -- ^ Grammar.
   -> Doc
--- tokenText :: TokenText -- ^ Use @ByteString@ or @Text@ instead of @String@?
--- generic   :: Bool      -- ^ Derive @Data@ and Generic@?
--- functor   :: Bool      -- ^ Make the tree a functor?
-cf2Abstract Options{ lang, tokenText, generic, functor } name cf = vsep . concat $
+-- tokenText :: TokenText   -- ^ Use @ByteString@ or @Text@ instead of @String@?
+-- generic   :: Bool        -- ^ Derive @Data@ and Generic@?
+-- positions :: Positions   -- ^ Make the tree a functor? What to include?
+cf2Abstract Options{ lang, tokenText, generic, positions } name cf = vsep . concat $
     [ []
 
     -- Modules header
@@ -77,7 +80,7 @@ cf2Abstract Options{ lang, tokenText, generic, functor } name cf = vsep . concat
       ]
 
     -- AST types
-    , map (prData functor (derivingClasses functor)) datas
+    , map (prData hasFunctorOption (derivingClasses hasFunctorOption)) datas
 
     -- Smart constructors
     , definitions
@@ -85,22 +88,55 @@ cf2Abstract Options{ lang, tokenText, generic, functor } name cf = vsep . concat
     -- Token definition types
     , (`map` specialCats cf) $ \ c ->
         let hasPos = isPositionCat cf c
-        in  prSpecialData tokenText hasPos (derivingClassesTokenType hasPos) c
+        in  prSpecialData tokenText hasPos positions (derivingClassesTokenType hasPos) c
 
     -- BNFC'Position type
-      -- We generate these synonyms for position info when --functor,
+      -- We generate these synonyms for position info when --positions=start or --positions=range,
       -- regardless whether it is used in the abstract syntax.
       -- It may be used in the parser.
-    , [ vcat
-        [ "-- | Start position (line, column) of something."
-        , ""
-        , "type" <+> posType <+> "=" <+> "C.Maybe (C.Int, C.Int)"
-        , ""
-        , "pattern" <+> noPosConstr <+> "::" <+> posType
-        , "pattern" <+> noPosConstr <+> "=" <+> "C.Nothing"
-        , ""
-        , "pattern" <+> posConstr <+> ":: C.Int -> C.Int ->" <+> posType
-        , "pattern" <+> posConstr <+> "line col =" <+> "C.Just (line, col)"
+    , [ vcat . concat $
+        [ [ if hasRangePos positions
+            then "-- | Start and end position ((line, column), (line, column)) of something."
+            else "-- | Start position (line, column) of something."
+          ]
+        , [ ""
+          , "type" <+> posType <+> "=" <+>
+              (if hasRangePos positions
+               then "C.Maybe ((C.Int, C.Int), (C.Int, C.Int))"
+               else "C.Maybe (C.Int, C.Int)"
+              )
+          , ""
+          , "pattern" <+> noPosConstr <+> "::" <+> posType
+          , "pattern" <+> noPosConstr <+> "=" <+> "C.Nothing"
+          , ""
+          ]
+
+        , if hasRangePos positions
+          then [ "pattern" <+> posConstr <+> ":: (C.Int, C.Int) -> (C.Int, C.Int) ->" <+> posType
+               , "pattern" <+> posConstr <+> "start end =" <+> "C.Just (start, end)"
+
+               -- Note: This is necessary to avoid a warning. See
+               -- https://ghc.gitlab.haskell.org/ghc/doc/users_guide/exts/pragmas.html#complete-pragma
+               , ""
+               , "{-# COMPLETE" <+> posConstr <> "," <+> noPosConstr <+> "#-}"
+               ]
+          else [ "pattern" <+> posConstr <+> ":: C.Int -> C.Int ->" <+> posType
+               , "pattern" <+> posConstr <+> "line col =" <+> "C.Just (line, col)"
+               ]
+
+        , when (hasRangePos positions)
+          [ ""
+          , "span" <> posConstr <+> "::" <+> posType <+> "->" <+> posType <+> "->" <+> posType
+          , "span" <> posConstr
+              <+> "("   <> posConstr <+> "start _end)"
+              <+> "("   <> posConstr <+> "_start end) ="  <+> posConstr <+> "start end"
+          , "span" <> posConstr
+              <+> "("   <> posConstr <+> "start end) _ =" <+> posConstr <+> "start end"
+          , "span" <> posConstr
+              <+> "_ (" <> posConstr <+> "start end) ="   <+> posConstr <+> "start end"
+          , "span" <> posConstr
+              <+> noPosConstr <+> noPosConstr <+> "=" <+> noPosConstr
+          ]
         ]
       | defPosition
       ]
@@ -115,36 +151,38 @@ cf2Abstract Options{ lang, tokenText, generic, functor } name cf = vsep . concat
       | hasPosition
       ]
 
-    , when functor $ map instanceHasPositionData datas
+    , when hasFunctorOption $ map instanceHasPositionData datas
 
     , map instanceHasPositionTokenType positionCats
 
     , [ "" ] -- ensure final newline
     ]
   where
-    definitions  = definedRules functor cf
+    definitions  = definedRules hasFunctorOption cf
 
     datas        = cf2data cf
     positionCats = filter (isPositionCat cf) $ specialCats cf
 
+    -- @hasFunctorOption@: is @--positions=start@ or @--positions=range@ set?
+    hasFunctorOption  = hasNotNonePos positions
     hasIdentLikeNoPos = hasIdentLikeTokens cf
     hasTextualToks    = hasTextualTokens cf
     hasPosToks   = hasPositionTokens cf
     hasData      = not (null datas)
     -- @defPosition@: should the @BNCF'Position@ type be defined?
-    defPosition  = hasPosToks || functor
+    defPosition  = hasPosToks || hasFunctorOption
     -- @hasPosition@: should the @HasPosition@ class be defined?
     hasPosition  = hasPosToks || fun
-    gen   = generic && hasData
-    fun   = functor && hasData
+    gen   = generic          && hasData
+    fun   = hasFunctorOption && hasData
 
     stdClasses = [ "Eq", "Ord", "Show", "Read" ]
     funClasses = [ "Functor", "Foldable", "Traversable" ]
     genClasses = [ "Data", "Generic" ]
-    derivingClasses functor = map ("C." ++) $ concat
+    derivingClasses isFunctor = map ("C." ++) $ concat
       [ stdClasses
-      , when functor funClasses
-      , when generic genClasses
+      , when isFunctor funClasses
+      , when generic   genClasses
       ]
     derivingClassesTokenType hasPos = concat
       [ derivingClasses False
@@ -233,41 +271,53 @@ instanceHasPositionData (cat, rules) = vcat . concat $
   dat = text $ catToStr cat
   pos = "p"
 
--- | Generate a newtype declaration for Ident types
+-- | Generate a newtype declaration for Ident types.
 --
--- >>> prSpecialData StringToken False ["Show","Data.String.IsString"] catIdent
+-- For backwards compatibility, the end position is NOT stored unless
+-- a @--positions=range@ flag is given. For example, only the start position
+-- will be stored for a @position token@ if no @--positions=start@ or
+-- @--positions=range@ is given.
+--
+-- >>> prSpecialData StringToken False None ["Show","Data.String.IsString"] catIdent
 -- newtype Ident = Ident String
 --   deriving (Show, Data.String.IsString)
 --
--- >>> prSpecialData StringToken True ["Show"] catIdent
+-- >>> prSpecialData StringToken True Start ["Show"] catIdent
 -- newtype Ident = Ident ((C.Int, C.Int), String)
 --   deriving (Show)
 --
--- >>> prSpecialData TextToken False ["Show"] catIdent
+-- >>> prSpecialData StringToken True Range ["Show"] catIdent
+-- newtype Ident = Ident (((C.Int, C.Int), (C.Int, C.Int)), String)
+--   deriving (Show)
+--
+-- >>> prSpecialData TextToken False Start ["Show"] catIdent
 -- newtype Ident = Ident Data.Text.Text
 --   deriving (Show)
 --
--- >>> prSpecialData ByteStringToken False ["Show"] catIdent
+-- >>> prSpecialData ByteStringToken False None ["Show"] catIdent
 -- newtype Ident = Ident BS.ByteString
 --   deriving (Show)
 --
--- >>> prSpecialData ByteStringToken True ["Show"] catIdent
+-- >>> prSpecialData ByteStringToken True Start ["Show"] catIdent
 -- newtype Ident = Ident ((C.Int, C.Int), BS.ByteString)
 --   deriving (Show)
 --
 prSpecialData
-  :: TokenText  -- ^ Format of token content.
-  -> Bool       -- ^ If @True@, store the token position.
-  -> [String]   -- ^ Derived classes.
-  -> TokenCat   -- ^ Token category name.
+  :: TokenText   -- ^ Format of token content.
+  -> Bool        -- ^ If @True@, store the token position.
+  -> Positions   -- ^ What to store if there should be position included.
+  -> [String]    -- ^ Derived classes.
+  -> TokenCat    -- ^ Token category name.
   -> Doc
-prSpecialData tokenText position classes cat = vcat
+prSpecialData tokenText position positionsMode classes cat = vcat
     [ hsep [ "newtype", text cat, "=", text cat, contentSpec ]
     , nest 2 $ deriving_ classes
     ]
   where
-    contentSpec | position    = parens ( "(C.Int, C.Int), " <> stringType)
-                | otherwise   = stringType
+    positionData | hasRangePos positionsMode = "((C.Int, C.Int), (C.Int, C.Int)), "
+                 | otherwise                 = "(C.Int, C.Int), "
+    contentSpec  | position    = parens ( positionData <> stringType)
+                 | otherwise   = stringType
     stringType = text $ tokenTextType tokenText
 
 -- | Generate 'deriving' clause
