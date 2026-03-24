@@ -1,3 +1,16 @@
+FROM rust:bookworm AS rust
+
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+      clang && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+# FIXME: Do not hard-code the version.
+RUN cargo install --locked tree-sitter-cli@0.26.7
+
+# -----------------------------------------------------------------------------
+
 FROM haskell:9.12.2-bookworm
 
 # Note: Do NOT hard-code package versions. They may get upgraded sometimes.
@@ -16,13 +29,15 @@ RUN apt-get update && \
       python3-pygments \
       python3-setuptools \
       virtualenv \
-      python3-venv && \
+      python3-venv \
+      nodejs && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
 RUN locale-gen C.UTF-8
 ENV LANG=C.UTF-8
 
+# FIXME: Do not hard-code the version for the following tools.
 RUN cabal update
 RUN cabal install alex-3.5.4.0 happy-2.2
 
@@ -36,6 +51,24 @@ RUN curl -OL https://github.com/ndmitchell/hlint/releases/download/v3.10/hlint-3
     mv hlint-3.10/hlint /usr/bin/hlint && \
     rm -rf hlint-3.10 && \
     rm -rf hlint-3.10-x86_64-linux.tar.gz
+
+# Note: Recent `tree-sitter-cli` requires libc6>=2.39, while
+#       this image is based on 2.36, see https://hub.docker.com/_/haskell/.
+#       v0.24.7 seems to be the newest version supporting libc6-2.36.
+#       And we rely on some recent features of `tree-sitter-cli` (like `--cst` and
+#       parsing from stdin), that is why we build from source.
+#
+#       If a newer `haskell` image with higher `libc6` version is published
+#       in the future, this may be replaced by directly downloading the pre-built
+#       binary like the commented following snippet (and remove the `rust` builder).
+
+# RUN curl -OL https://github.com/tree-sitter/tree-sitter/releases/download/v0.24.7/tree-sitter-linux-x64.gz  && \
+#     gzip -d tree-sitter-linux-x64.gz && \
+#     chmod +x tree-sitter-linux-x64 && \
+#     mv tree-sitter-linux-x64 /usr/bin/tree-sitter && \
+#     rm -rf tree-sitter-linux-x64.gz
+
+COPY --from=rust /usr/local/cargo/bin/tree-sitter /usr/bin/tree-sitter
 
 ENV CLASSPATH /bnfc/testing/data/JLex-1.2.6.jar:$CLASSPATH
 ENV CLASSPATH /bnfc/testing/data/java-cup-11b.jar:$CLASSPATH
