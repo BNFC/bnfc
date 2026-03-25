@@ -201,40 +201,44 @@ exampleTestsWith params =
 -- together with valid and invalid inputs.
 regressionTests :: [Test]
 regressionTests = concat
-  [ -- Note: Disabled on 2026-03-04. The Java backend does not support
+  [ -- Note: Disabled on 2026-03-04 (Java). The Java backend does not support
     --       labels with only different cases. See
     --       https://github.com/BNFC/bnfc/issues/479.
     --
-    -- "479_LabelsCaseSensitive"
+    withParams "479_LabelsCaseSensitive"      (parameters `excludeParameterWithRegex` "Java")
 
-    -- Note: Disabled on 2026-03-04. It fails on the c backend.
+    -- Note: Disabled on 2026-03-04 (C). It fails on the c backend.
     --       See https://github.com/BNFC/bnfc/issues/266.
     --
-    -- , "266_define"
+  , withParams "266_define"                   (parameters `excludeParameter`          cParameters
+                                                          `excludeParameterWithRegex` "C \\(with line numbers\\)"
+                                              )
 
-    withParams "358_MixFixLists"              parameters
+  , withParams "358_MixFixLists"              parameters
   , withParams "235_SymbolsOverlapTokens"     parameters
   , withParams "278_Keywords"                 parameters
   , withParams "256_Regex"                    parameters
   , withParams "222_IntegerList"              parameters
   , withParams "70_WhiteSpaceSeparator"       parameters
 
-    -- Note: Disabled on 2026-03-04. It fails on ocaml and ocaml-menhir
+    -- Note: Disabled on 2026-03-04 (ocaml). It fails on ocaml and ocaml-menhir
     --       backends, see https://github.com/ocaml/ocaml/issues/9964.
     --
-  , withParams "202_comments"                 (parameters `excludeParameter` ocamlParameters `excludeParameter` ocamlMenhirParameters)
+  , withParams "202_comments"                 (parameters `excludeParameterWithRegex` "OCaml")
 
   , withParams "210_NumberedCatWithoutCoerce" parameters
   , withParams "204_InternalToken"            parameters
   , withParams "249_unicode"                  parameters
 
-    -- Note: Disabled on 2026-03-04. It:
+    -- Note: Disabled on 2026-03-04 (ocaml and haskell-gadt). It:
     --   * fails on ocaml and ocaml-menhir backends, see
     --     https://github.com/ocaml/ocaml/issues/9964.
     --   * fails on the haskell-gadt backend, see
     --     https://github.com/BNFC/bnfc/issues/280#issuecomment-830844433.
     --
-    -- , "289_LexerKeywords"
+  , withParams "289_LexerKeywords"            (parameters `excludeParameter`          haskellGADTParameters
+                                                          `excludeParameterWithRegex` "OCaml"
+                                              )
 
   , withParams "100_coercion_lists"           parameters
   , withParams "comments"                     parameters
@@ -323,10 +327,20 @@ data TestParameters = TP
     tpShouldGoldenCheckLin :: Bool
   }
 
+-- FIXME: Similar implementation is present at 'TestData' ('Excluded'
+--        and 'Included').
+--        Unify them with a single solution.
+
 -- | Exclude certain @TestParameters@ from a list by @tpName@.
 excludeParameter :: [TestParameters] -> TestParameters -> [TestParameters]
 excludeParameter params param =
   filter ((/= tpName param) . tpName) params
+
+-- | Exclude zero or many @TestParameters@ whose @tpName@ matches the
+-- given regexp from a list.
+excludeParameterWithRegex :: [TestParameters] -> String -> [TestParameters]
+excludeParameterWithRegex params regex =
+  filter (not . (=~ regex) . tpName) params
 
 baseParameters :: TestParameters
 baseParameters =  TP
@@ -398,6 +412,35 @@ haskellAgdaRangePosParameters = haskellAgdaParameters
   , tpBnfcOptions = ["--haskell", "--agda", "--positions=range"]
   }
 
+cParameters :: TestParameters
+cParameters = TP
+  { tpName = "C"
+  , tpBnfcOptions = ["--c"]
+  , tpBuild = do
+      -- Note: Newer C toolchains warn implicit conversions from
+      -- ints to pointers (-Wint-conversion) and implicit function
+      -- declarations (-Wimplicit-function-declaration).
+      -- Re-enable -Werror after fixing these warnings.
+      --
+      -- let flags = "CC_OPTS=-Wstrict-prototypes -Wno-sign-compare -Werror"
+      let flags = "CC_OPTS=-Wstrict-prototypes -Wno-sign-compare"
+
+      tpMake [flags]
+      tpMake [flags, "Skeleton.o"]
+  , tpRunTestProg = \ lang args -> do
+      bin <- baseTestProg lang
+      cmd bin args
+      -- Facility to check for memory leaks
+      -- cmd "valgrind" $
+      --     "--leak-check=full"  :
+      --     "--error-exitcode=1" :
+      --     "--errors-for-leak-kinds=definite" :
+      --     "--show-leak-kinds=definite" :
+      --     bin :
+      --     args
+  , tpShouldGoldenCheckLin = True
+  }
+
 ocamlParameters :: TestParameters
 ocamlParameters =  TP
   { tpName        = "OCaml"
@@ -443,33 +486,7 @@ parameters = concat
             , tpBnfcOptions = ["--cpp", "-p foobar"] }
     ]
     -- C
-  , [ TP { tpName = "C"
-         , tpBnfcOptions = ["--c"]
-         , tpBuild = do
-             -- Note: Newer C toolchains warn implicit conversions from
-             -- ints to pointers (-Wint-conversion) and implicit function
-             -- declarations (-Wimplicit-function-declaration).
-             -- Re-enable -Werror after fixing these warnings.
-             --
-             -- let flags = "CC_OPTS=-Wstrict-prototypes -Wno-sign-compare -Werror"
-             let flags = "CC_OPTS=-Wstrict-prototypes -Wno-sign-compare"
-
-             tpMake [flags]
-             tpMake [flags, "Skeleton.o"]
-         , tpRunTestProg = \ lang args -> do
-             bin <- baseTestProg lang
-             cmd bin args
-             -- Facility to check for memory leaks
-             -- cmd "valgrind" $
-             --     "--leak-check=full"  :
-             --     "--error-exitcode=1" :
-             --     "--errors-for-leak-kinds=definite" :
-             --     "--show-leak-kinds=definite" :
-             --     bin :
-             --     args
-         , tpShouldGoldenCheckLin = True
-         }
-    , cBase { tpName = "C (with line numbers)"
+  , [ cBase { tpName = "C (with line numbers)"
             , tpBnfcOptions = ["--c", "--line-numbers"] }
 
     ]
