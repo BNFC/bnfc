@@ -230,12 +230,12 @@ jsString = doubleQuotes . text . concatMap jsChar
 
 -- | Javascript character fragment (to be contained within a string).
 jsChar :: Char -> String
-jsChar '"' = "\\\""
-jsChar '\\' = "\\\\"
-jsChar '\n' = "\n"
-jsChar '\r' = "\r"
-jsChar '\t' = "\t"
-jsChar '\f' = "\f"
+jsChar '"'  = ['\\', '"']
+jsChar '\\' = ['\\', '\\']
+jsChar '\n' = ['\\', 'n']
+jsChar '\r' = ['\\', 'r']
+jsChar '\t' = ['\\', 't']
+jsChar '\f' = ['\\', 'f']
 jsChar c = case Char.ord c of
   code | 0x20 <= code && code <= 0x7e -> [c]
   code | code <= 0xffff -> Printf.printf "\\u%04x" code
