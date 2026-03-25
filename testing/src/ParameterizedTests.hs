@@ -222,7 +222,6 @@ regressionTests = concat
     -- Note: Disabled on 2026-03-04. It fails on ocaml and ocaml-menhir
     --       backends, see https://github.com/ocaml/ocaml/issues/9964.
     --
-    -- , "202_comments"
 
   , withParams "210_NumberedCatWithoutCoerce" parameters
   , withParams "204_InternalToken"            parameters
@@ -231,6 +230,7 @@ regressionTests = concat
     --       It seems that the current tree-sitter backend does not
     --       support unicode symbols very well.
   , withParams "249_unicode"                  parameters
+  , withParams "202_comments"                 parameters
 
     -- Note: Disabled on 2026-03-04. It:
     --   * fails on ocaml and ocaml-menhir backends, see
