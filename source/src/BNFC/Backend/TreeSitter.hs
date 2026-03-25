@@ -29,30 +29,34 @@ import BNFC.PrettyPrint
 makeTreeSitter :: SharedOptions -> CF -> Backend
 makeTreeSitter opts cf = do
 
-  mkfile (dir </> "grammar.js") comment $
+  mkfile "grammar.js" comment $
     render (cfToTreeSitter name wordCat cf)
 
-  mkfile (dir </> "tree-sitter.json") (const "") $
+  mkfile "tree-sitter.json" (const "") $
     render (treeSitterJson name)
 
-  mkMakefile (fmap (dir </>) (optMake opts)) $
-    const treeSitterMakefile
+  mkMakefile (optMake opts) $
+    treeSitterMakefile
 
   where
     name = snakeCase_ (lang opts)
-    dir = "tree-sitter-" ++ kebabCase_ (lang opts)
     wordCat = fixTokenCats (tokenNames cf) (strToCat (treeSitterWord opts))
 
 comment :: String -> String
 comment = ("// " ++)
 
-treeSitterMakefile :: Doc
-treeSitterMakefile = vcat'
+treeSitterMakefile :: String -> Doc
+treeSitterMakefile makefileName = vcat'
   [ mkVar "TREE_SITTER" "tree-sitter"
   , ".PHONY: parse clean"
   , mkRule "src/parser.c" ["grammar.js"] ["$(TREE_SITTER) generate"]
   , mkRule "parse" ["src/parser.c"] ["$(TREE_SITTER) parse --cst"]
-  , mkRule "clean" [] ["rm -rfv src"]
+
+  , mkRule "clean" [] ["rm -rfv src/grammar.json src/node-types.json src/parser.c src/tree_sitter"]
+  , mkRule "distclean" ["clean"] $
+      [ "rm -rfv grammar.js tree-sitter.json " ++ makefileName
+      , "rm -rv src  # no -f, so only removes src if it was emptied by clean"
+      ]
   ]
 
 treeSitterJson :: String -> Doc
