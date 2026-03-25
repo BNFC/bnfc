@@ -13,12 +13,12 @@
 
 module BNFC.Backend.TreeSitter.CFtoTreeSitter where
 
-import BNFC.Abs (Reg)
+import BNFC.Abs (Reg(..))
 import BNFC.Backend.TreeSitter.RegToJSReg
 import BNFC.Backend.TreeSitter.MatchesEmpty(fixPointKnownEmpty, transformEmptyMatches, KnownEmpty, OptSym(..), OptSentForm, isKnownEmpty)
 import BNFC.CF
 import BNFC.Utils(when, applyWhen, mkNames, NameStyle(..))
-import BNFC.Lexing (mkLexer, LexType(..), mkRegMultilineComment, mkRegSingleLineComment)
+import BNFC.Lexing (mkLexer, LexType(..), mkRegMultilineComment)
 import BNFC.PrettyPrint
 
 import Prelude hiding ((<>))
@@ -52,7 +52,7 @@ cfToTreeSitter name wordCat cf =
     -- generate rules for comment tokens so they can be used in highlighting
     (mlComments, slComments) = comments cf
     commentTokens =
-      disambig "CommentSingle" (map mkRegSingleLineComment slComments)
+      disambig "CommentSingle" (map treeSitterSingleLineComment slComments)
       ++ disambig "CommentMulti" (map (uncurry mkRegMultilineComment) mlComments)
     disambig base regs = zip regs names
       where names = mkNames (map snd lexTokens) CamelCase (base <$ regs)
@@ -240,6 +240,11 @@ jsChar c = case Char.ord c of
   code | 0x20 <= code && code <= 0x7e -> [c]
   code | code <= 0xffff -> Printf.printf "\\u%04x" code
   code -> Printf.printf "\\U%08x" code
+
+-- | Tree-sitter needs the single-line comment to go up to but /not including/
+-- the line terminator, in order to handle files without a final line terminator.
+treeSitterSingleLineComment :: String -> Reg
+treeSitterSingleLineComment s = RSeqs s `RSeq` RStar (RAny `RMinus` RAlts "\n\r")
 
 -- | Indent one level of 2 spaces
 indent :: Doc -> Doc

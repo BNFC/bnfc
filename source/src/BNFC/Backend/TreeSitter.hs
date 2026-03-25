@@ -14,13 +14,12 @@
 module BNFC.Backend.TreeSitter where
 
 import Prelude hiding ((<>))
-import System.FilePath
 
 import BNFC.Backend.Base
 import BNFC.Backend.TreeSitter.CFtoTreeSitter (cfToTreeSitter)
 import BNFC.Backend.Common.Makefile(mkMakefile, mkRule, mkVar)
 import BNFC.GetCF(fixTokenCats)
-import BNFC.Utils(cstring, kebabCase_, snakeCase_, camelCase_)
+import BNFC.Utils(cstring, snakeCase_, camelCase_)
 import BNFC.CF
 import BNFC.Options hiding (Backend)
 import BNFC.PrettyPrint

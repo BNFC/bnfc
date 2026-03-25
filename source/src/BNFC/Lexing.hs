@@ -93,7 +93,7 @@ regDouble = RPlus RDigit <&> RChar '.' <&> RPlus RDigit
 -- >>> debugPrint $ mkRegSingleLineComment "--"
 -- {"--"}char*'\n'
 mkRegSingleLineComment :: String -> Reg
-mkRegSingleLineComment s = RSeqs s <&> RStar (RAny `RMinus` RAlts "\r\n")
+mkRegSingleLineComment s = RSeqs s <&> RStar RAny <&> RChar '\n'
 
 
 -- -- | Create regex for multiline comments.
