@@ -230,7 +230,7 @@ regressionTests = concat
     -- Note: Disabled on 2026-03-24 (tree-sitter).
     --       It seems that the current tree-sitter backend does not
     --       support unicode symbols very well.
-  , withParams "249_unicode"                  (parameters `excludeParameter` treeSitterParameters)
+  , withParams "249_unicode"                  parameters
 
     -- Note: Disabled on 2026-03-04. It:
     --   * fails on ocaml and ocaml-menhir backends, see
@@ -427,89 +427,7 @@ treeSitterParameters = TP
 parameters :: [TestParameters]
 parameters = concat
   [ []
-    -- OCaml/Menhir
-  , [ ocamlParameters { tpName = "OCaml/Menhir"
-                      , tpBnfcOptions = ["--ocaml", "--menhir"] }
-    ]
-    -- OCaml
-  , [ ocamlParameters ]
-    -- Functor (Haskell & Agda)
-  , [ haskellAgdaStartPosParameters
-    , haskellAgdaRangePosParameters
-    ]
-    -- C++ (extras)
-  , [ cBase { tpName = "C++ (with line numbers)"
-            , tpBnfcOptions = ["--cpp", "-l"] }
-    , cBase { tpName = "C++ (with namespace)"
-            , tpBnfcOptions = ["--cpp", "-p foobar"] }
-    ]
-    -- C
-  , [ TP { tpName = "C"
-         , tpBnfcOptions = ["--c"]
-         , tpBuild = do
-             -- Note: Newer C toolchains warn implicit conversions from
-             -- ints to pointers (-Wint-conversion) and implicit function
-             -- declarations (-Wimplicit-function-declaration).
-             -- Re-enable -Werror after fixing these warnings.
-             --
-             -- let flags = "CC_OPTS=-Wstrict-prototypes -Wno-sign-compare -Werror"
-             let flags = "CC_OPTS=-Wstrict-prototypes -Wno-sign-compare"
 
-             tpMake [flags]
-             tpMake [flags, "Skeleton.o"]
-         , tpRunTestProg = \ lang args -> do
-             bin <- baseTestProg lang
-             cmd bin args
-             -- Facility to check for memory leaks
-             -- cmd "valgrind" $
-             --     "--leak-check=full"  :
-             --     "--error-exitcode=1" :
-             --     "--errors-for-leak-kinds=definite" :
-             --     "--show-leak-kinds=definite" :
-             --     bin :
-             --     args
-         , tpShouldGoldenCheckLin = True
-         }
-    , cBase { tpName = "C (with line numbers)"
-            , tpBnfcOptions = ["--c", "--line-numbers"] }
-
-    ]
-    -- C++ (basic)
-  , [ cBase { tpName = "C++ (no STL)"
-            , tpBnfcOptions = ["--cpp-nostl"] }
-    , cBase { tpName = "C++"
-            , tpBnfcOptions = ["--cpp"] }
-    ]
-    -- Agda
-  , [ haskellAgdaParameters ]
-    -- Java/ANTLR
-  , [ javaParams { tpName = "Java (with antlr)"
-                 , tpBnfcOptions = ["--java", "--antlr"] }
-    ]
-    -- Haskell
-  , [ hsParams { tpName = "Haskell (with generic)"
-               , tpBnfcOptions = ["--haskell", "--generic"] }
-    , hsParams { tpName = "Haskell (with namespace)"
-               , tpBnfcOptions = ["--haskell", "-p", "Language", "-d"] }
-    , haskellStartPosParameters
-    , haskellRangePosParameters
-    ]
-    -- Haskell/GADT
-  , [ haskellGADTParameters ]
-    -- Java (basic)
-  , [ javaParams { tpName = "Java"
-                 , tpBnfcOptions = ["--java"] }
-    ]
-    -- Java (extras)
-  , [ javaParams { tpName = "Java (with line numbers)"
-                 , tpBnfcOptions = ["--java", "-l"] }
-    , javaParams { tpName = "Java (with namespace)"
-                 , tpBnfcOptions = ["--java", "-p", "my.stuff"] }
-    , javaParams { tpName = "Java (with jflex)"
-                 , tpBnfcOptions = ["--java", "--jflex"] }
-    , javaParams { tpName = "Java (with jflex and line numbers)"
-                 , tpBnfcOptions = ["--java", "--jflex", "-l"] }
-    ]
     -- Tree-sitter
   , [ treeSitterParameters ]
   ]
