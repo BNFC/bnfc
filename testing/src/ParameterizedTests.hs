@@ -57,7 +57,7 @@ import OutputParser
 ----------------------------------------------------------------------
 all :: Test
 all = makeTestSuite "Parameterized tests" $ concat
-  [ map distcleanTestWith  (parameters `excludeParameter` treeSitterParameters)
+  [ map distcleanTestWith  parameters
   , regressionTests
   , map exitCodeTestWith   parameters
   , map entrypointTestWith parameters
@@ -222,15 +222,11 @@ regressionTests = concat
     -- Note: Disabled on 2026-03-04. It fails on ocaml and ocaml-menhir
     --       backends, see https://github.com/ocaml/ocaml/issues/9964.
     --
-    -- , "202_comments"
+  , withParams "202_comments"                 (parameters `excludeParameter` ocamlParameters `excludeParameter` ocamlMenhirParameters)
 
   , withParams "210_NumberedCatWithoutCoerce" parameters
   , withParams "204_InternalToken"            parameters
-
-    -- Note: Disabled on 2026-03-24 (tree-sitter).
-    --       It seems that the current tree-sitter backend does not
-    --       support unicode symbols very well.
-  , withParams "249_unicode"                  (parameters `excludeParameter` treeSitterParameters)
+  , withParams "249_unicode"                  parameters
 
     -- Note: Disabled on 2026-03-04. It:
     --   * fails on ocaml and ocaml-menhir backends, see
@@ -411,11 +407,16 @@ ocamlParameters =  TP
   , tpShouldGoldenCheckLin = True
   }
 
+ocamlMenhirParameters :: TestParameters
+ocamlMenhirParameters = ocamlParameters
+  { tpName = "OCaml/Menhir"
+  , tpBnfcOptions = ["--ocaml", "--menhir"]
+  }
+
 treeSitterParameters :: TestParameters
 treeSitterParameters = TP
   { tpName        = "tree-sitter"
-  , tpBuild       = do
-      cmd "tree-sitter" "generate" . (:[]) =<< findFile "grammar.js"
+  , tpBuild       = tpMake
   , tpBnfcOptions = ["--tree-sitter"]
   , tpRunTestProg = \ _lang args -> do
       cmd "tree-sitter" "parse" args
@@ -428,9 +429,7 @@ parameters :: [TestParameters]
 parameters = concat
   [ []
     -- OCaml/Menhir
-  , [ ocamlParameters { tpName = "OCaml/Menhir"
-                      , tpBnfcOptions = ["--ocaml", "--menhir"] }
-    ]
+  , [ ocamlMenhirParameters ]
     -- OCaml
   , [ ocamlParameters ]
     -- Functor (Haskell & Agda)
