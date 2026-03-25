@@ -17,15 +17,17 @@ import BNFC.Abs (Reg)
 import BNFC.Backend.TreeSitter.RegToJSReg
 import BNFC.Backend.TreeSitter.MatchesEmpty(fixPointKnownEmpty, transformEmptyMatches, KnownEmpty, OptSym(..), OptSentForm, isKnownEmpty)
 import BNFC.CF
-import BNFC.Utils(when, applyWhen, cstring, mkNames, NameStyle(..))
+import BNFC.Utils(when, applyWhen, mkNames, NameStyle(..))
 import BNFC.Lexing (mkLexer, LexType(..), mkRegMultilineComment, mkRegSingleLineComment)
 import BNFC.PrettyPrint
 
 import Prelude hiding ((<>))
 
+import qualified Data.Char as Char
 import qualified Data.List as List
 import qualified Data.Maybe as Maybe
 import qualified Data.List.NonEmpty as List1
+import qualified Text.Printf as Printf
 
 -- * Main entry point
 
@@ -35,7 +37,7 @@ cfToTreeSitter name wordCat cf =
   -- Overall structure of grammar.js
   text "module.exports = grammar({"
     $+$ indent
-      ( text "name:" <+> cstring name <> ","
+      ( text "name:" <+> jsString name <> ","
           $+$ extrasSection
           $+$ wordSection
           $+$ rulesSection
@@ -161,7 +163,7 @@ formatSent = wrapSeq . map fmtOpt
     fmtOpt (NonOptional x) = fmt x
 
     fmt (Left c) = text $ refName $ formatCatName False c
-    fmt (Right term) = cstring term
+    fmt (Right term) = jsString term
 
 formatTokenName :: TokenCat -> String
 formatTokenName = formatCatName False . TokenCat
@@ -216,6 +218,28 @@ refName :: String -> String
 refName = ("$." ++)
 
 -- * Generic formatting helpers
+
+-- | Javascript string, including double quotes.
+--
+-- This uses the following escapes: @\n@ @\r@ @\f@ @\t@, @\uXXXX@ for Unicode
+-- code-points 0xFFFF or less, and @\uXXXXXXXX@ for larger unicode code points.
+-- ASCII-printable characters are emitted verbatim aside from @"@ and @\@ which
+-- are escaped.
+jsString :: String -> Doc
+jsString = doubleQuotes . text . concatMap jsChar
+
+-- | Javascript character fragment (to be contained within a string).
+jsChar :: Char -> String
+jsChar '"' = "\\\""
+jsChar '\\' = "\\\\"
+jsChar '\n' = "\n"
+jsChar '\r' = "\r"
+jsChar '\t' = "\t"
+jsChar '\f' = "\f"
+jsChar c = case Char.ord c of
+  code | 0x20 <= code && code <= 0x7e -> [c]
+  code | code <= 0xffff -> Printf.printf "\\u%04x" code
+  code -> Printf.printf "\\U%08x" code
 
 -- | Indent one level of 2 spaces
 indent :: Doc -> Doc
