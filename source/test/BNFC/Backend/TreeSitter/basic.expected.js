@@ -22,7 +22,7 @@ module.exports = grammar({
     token_MyIdent: $ =>
       /a+/,
     token_CommentSingle: $ =>
-      /\/\/.*\n/,
+      /\/\/[^\n\r]*/,
     token_CommentMulti: $ =>
       /\/\*[^*]*\*([^\*\/][^*]*\*|\*)*\//,
   },

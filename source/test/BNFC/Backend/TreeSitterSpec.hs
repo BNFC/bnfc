@@ -57,7 +57,7 @@ spec = do
   describe "Tree-Sitter backend" $ do
     it "creates the grammar.js file" $ do
       calc <- getCalc
-      makeTreeSitter calcOptions calc `shouldGenerate` ("tree-sitter-calc" </> "grammar.js")
+      makeTreeSitter calcOptions calc `shouldGenerate` "grammar.js"
 
     cfFiles <- runIO listDataFiles
 
