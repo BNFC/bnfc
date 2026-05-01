@@ -1,6 +1,8 @@
 # 2.9.7 (Unreleased)
 * Haskell: add `--positions=range` option to include both start and end position
   [[#461](https://github.com/BNFC/bnfc/issues/461)]
+* Haskell: fix incorrect AST when `define`ing labels without argument
+  [[#560](https://github.com/BNFC/bnfc/issues/560)]
 
 # 2.9.6.3
 

@@ -380,9 +380,11 @@ definedRules' DefCfg{..} functor cf = map mkDef $ definitions cf
       | t <- maybeToList $ sigLookup f cf
       ]
     , [ hsep $ concat
-        [ map text [ fName, "=", lambda ]
+        [ map text [ fName, "=" ]
+        , [ text lambda | hasArg ] -- Do not add @\\@ if there is no arg, e.g. @define op1 = op2@.
         , map text $ addFunctorArg id $ map (sanitizeName . fst) args
-        , [ text arrow, pretty $ sanitize e ]
+        , [ text arrow | hasArg ]  -- Do not add @->@ if there is no arg, e.g. @define op1 = op2@.
+        , [ pretty $ sanitize e ]
         ]
       ]
     ]
@@ -410,3 +412,6 @@ definedRules' DefCfg{..} functor cf = map mkDef $ definitions cf
     -- Functor argument
     addFunctorArg :: (String -> a) -> [a] -> [a]
     addFunctorArg g = applyWhen functor (g "_a" :)
+    -- Is there any arg (including the position)?
+    hasArg :: Bool
+    hasArg = functor || (not . null $ args)

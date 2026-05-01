@@ -1,0 +1,14 @@
+entrypoints Exp ;
+
+EInt. Exp1 ::= Integer ;
+EEq.  Exp  ::= Exp1 EqOp Exp1 ;
+coercions Exp 1 ;
+
+OpEq.  EqOp ::= "==" ;
+OpNEq. EqOp ::= "/=" ;
+
+opEqUnicode. EqOp ::= "≡"  ;
+define opEqUnicode = OpEq  ;
+
+opNEqUnicode. EqOp ::= "≠"   ;
+define opNEqUnicode = OpNEq  ;

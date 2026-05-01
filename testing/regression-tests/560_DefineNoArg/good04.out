@@ -1,0 +1,10 @@
+
+Parse Successful!
+
+[Abstract Syntax]
+
+EEq (EInt 1) OpNEq (EInt 2)
+
+[Linearized tree]
+
+1 /= 2
