@@ -243,6 +243,7 @@ regressionTests = concat
   , withParams "100_coercion_lists"           parameters
   , withParams "comments"                     parameters
   , withParams "149"                          parameters
+  , withParams "560_DefineNoArg"              parameters
   ]
 
   where
