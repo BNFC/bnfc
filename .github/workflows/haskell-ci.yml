@@ -8,9 +8,9 @@
 #
 # For more information, see https://github.com/haskell-CI/haskell-ci
 #
-# version: 0.19.20260128
+# version: 0.19.20260331
 #
-# REGENDATA ("0.19.20260128",["github","cabal.project"])
+# REGENDATA ("0.19.20260331",["github","cabal.project"])
 #
 name: Haskell-CI
 on:
@@ -23,6 +23,8 @@ on:
   merge_group:
     branches:
       - master
+  workflow_dispatch:
+    {}
 jobs:
   linux:
     name: Haskell-CI - Linux - ${{ matrix.compiler }}
@@ -167,10 +169,6 @@ jobs:
           repository hackage.haskell.org
             url: http://hackage.haskell.org/
           EOF
-          cat >> $CABAL_CONFIG <<EOF
-          program-default-options
-            ghc-options: $GHCJOBS +RTS -M3G -RTS
-          EOF
           cat $CABAL_CONFIG
       - name: versions
         run: |
@@ -190,7 +188,7 @@ jobs:
           chmod a+x $HOME/.cabal/bin/cabal-plan
           cabal-plan --version
       - name: checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v5
         with:
           path: source
       - name: initial cabal.project for sdist
@@ -236,7 +234,7 @@ jobs:
           $CABAL v2-build $ARG_COMPILER $ARG_TESTS $ARG_BENCH --dry-run all
           cabal-plan
       - name: restore cache
-        uses: actions/cache/restore@v5
+        uses: actions/cache/restore@v4
         with:
           key: ${{ runner.os }}-${{ matrix.compiler }}-${{ github.sha }}
           path: ~/.cabal/store
@@ -252,15 +250,11 @@ jobs:
         run: |
           $CABAL v2-build $ARG_COMPILER $ARG_TESTS $ARG_BENCH all --write-ghc-environment-files=always
       - name: install doctest
-        # Andreas, 2025-07-23: https://github.com/sol/doctest/issues/460
-        if: env.HEADHACKAGE != 'true' && matrix.compiler != 'ghc-8.8.4' && matrix.compiler != 'ghc-8.6.5'
         run: |
-          $CABAL v2-install --ignore-project $ARG_COMPILER doctest --ghc-options=-rtsopts --overwrite-policy=always
+          $CABAL v2-install $ARG_COMPILER doctest --overwrite-policy=always
       - name: doctests
-        # Andreas, 2025-07-23: https://github.com/sol/doctest/issues/460
-        if: env.HEADHACKAGE != 'true' && matrix.compiler != 'ghc-8.8.4' && matrix.compiler != 'ghc-8.6.5'
         run: |
-          $CABAL v2-repl BNFC --with-ghc-pkg=$HCPKG -w doctest --repl-options=-w
+          $CABAL v2-repl BNFC --with-ghc-pkg=$HCPKG -w doctest --repl-options=-fno-warn-type-defaults
       - name: tests
         run: |
           $CABAL v2-test $ARG_COMPILER $ARG_TESTS $ARG_BENCH all --test-show-details=direct
@@ -279,7 +273,7 @@ jobs:
           $CABAL v2-build $ARG_COMPILER --disable-tests --disable-benchmarks all
       - name: save cache
         if: always()
-        uses: actions/cache/save@v5
+        uses: actions/cache/save@v4
         with:
           key: ${{ runner.os }}-${{ matrix.compiler }}-${{ github.sha }}
           path: ~/.cabal/store
