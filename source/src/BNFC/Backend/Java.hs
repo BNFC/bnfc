@@ -83,7 +83,7 @@ makeJava' pkg options@Options{..} cf = do
             cf
             cf2JavaPrinter
             cf2VisitSkel
-            cf2ComposVisitor
+            (cf2ComposVisitor rp)
             cf2AbstractVisitor
             cf2FoldVisitor
             cf2AllVisitor

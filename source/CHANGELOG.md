@@ -3,6 +3,7 @@
   [[#461](https://github.com/BNFC/bnfc/issues/461)]
 * Haskell: fix incorrect AST when `define`ing labels without argument
   [[#560](https://github.com/BNFC/bnfc/issues/560)]
+* Java: fix `ComposVisitor` losing position info (`line_num`, `col_num`, `offset`) when `-l` is used
 
 # 2.9.6.3
 

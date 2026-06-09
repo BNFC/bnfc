@@ -15,15 +15,17 @@ import Data.List   (intercalate)
 import Data.Either (lefts)
 
 import BNFC.CF
+import BNFC.Options (RecordPositions(..))
 import BNFC.Backend.Java.CFtoJavaAbs15 (typename)
 import BNFC.Utils ((+++))
 import BNFC.Backend.Common.NamedVariables
 import BNFC.PrettyPrint
 
-cf2ComposVisitor :: String -> String -> CF -> String
-cf2ComposVisitor packageBase packageAbsyn cf = concat
+cf2ComposVisitor :: RecordPositions -- ^ Copy position info in generated code.
+                 -> String -> String -> CF -> String
+cf2ComposVisitor rp packageBase packageAbsyn cf = concat
   [ header
-  , intercalate "\n" $ map (prData packageAbsyn user) groups
+  , intercalate "\n" $ map (prData packageAbsyn user rp) groups
   , "}"
   ]
   where
@@ -53,15 +55,15 @@ prInterface packageAbsyn (cat, _) =
 
 -- | Traverses a category based on its type.
 
-prData :: String -> [UserDef] -> (Cat, [Rule]) -> String
-prData packageAbsyn user (cat, rules) = unlines
+prData :: String -> [UserDef] -> RecordPositions -> (Cat, [Rule]) -> String
+prData packageAbsyn user rp (cat, rules) = unlines
     [ "    /* " ++ identCat cat ++ " */"
-    , render $ vcat $ map (prRule packageAbsyn user cat) rules
+    , render $ vcat $ map (prRule packageAbsyn user rp cat) rules
     ]
 
 -- | Traverses a standard rule.
 --
--- >>> prRule "lang.absyn" ["A"] (Cat "B") $ npRule "F" (Cat "B") [Left (Cat "A"), Right "+", Left (ListCat (Cat "B"))] Parsable
+-- >>> prRule "lang.absyn" ["A"] NoRecordPositions (Cat "B") $ npRule "F" (Cat "B") [Left (Cat "A"), Right "+", Left (ListCat (Cat "B"))] Parsable
 --     public lang.absyn.B visit(lang.absyn.F p, A arg)
 --     {
 --       String a_ = p.a_;
@@ -72,14 +74,39 @@ prData packageAbsyn user (cat, rules) = unlines
 --       }
 --       return new lang.absyn.F(a_, listb_);
 --     }
+--
+-- >>> prRule "lang.absyn" ["A"] RecordPositions (Cat "B") $ npRule "F" (Cat "B") [Left (Cat "A"), Right "+", Left (ListCat (Cat "B"))] Parsable
+--     public lang.absyn.B visit(lang.absyn.F p, A arg)
+--     {
+--       String a_ = p.a_;
+--       lang.absyn.ListB listb_ = new lang.absyn.ListB();
+--       for (lang.absyn.B x : p.listb_)
+--       {
+--         listb_.add(x.accept(this,arg));
+--       }
+--       lang.absyn.F _result = new lang.absyn.F(a_, listb_);
+--       _result.line_num = p.line_num;
+--       _result.col_num = p.col_num;
+--       _result.offset = p.offset;
+--       return _result;
+--     }
 
-prRule :: IsFun f => String -> [UserDef] -> Cat -> Rul f -> Doc
-prRule packageAbsyn user cat (Rule fun _ cats _)
+prRule :: IsFun f => String -> [UserDef] -> RecordPositions -> Cat -> Rul f -> Doc
+prRule packageAbsyn user rp cat (Rule fun _ cats _)
   | not (isCoercion fun || isDefinedRule fun) = nest 4 $ vcat
     [ "public " <> qual (identCat cat) <> " visit(" <> cls <> " p, A arg)"
     , codeblock 2
         [ vcat (map (prCat packageAbsyn user) cats')
-        , "return new" <+> cls <> parens (hsep (punctuate "," vnames)) <> ";"
+        , case rp of
+            RecordPositions -> vcat
+              [ cls <+> "_result = new" <+> cls <> parens (hsep (punctuate "," vnames)) <> ";"
+              , "_result.line_num = p.line_num;"
+              , "_result.col_num = p.col_num;"
+              , "_result.offset = p.offset;"
+              , "return _result;"
+              ]
+            NoRecordPositions ->
+              "return new" <+> cls <> parens (hsep (punctuate "," vnames)) <> ";"
         ]
     ]
   where
@@ -87,7 +114,7 @@ prRule packageAbsyn user cat (Rule fun _ cats _)
     cls    = qual $ funName fun
     qual s = text (packageAbsyn ++ "." ++ s)
     vnames = map snd cats'
-prRule  _ _ _ _ = empty
+prRule  _ _ _ _ _ = empty
 
 -- | Traverses a class's instance variables.
 --
