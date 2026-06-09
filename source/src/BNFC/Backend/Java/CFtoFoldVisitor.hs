@@ -27,6 +27,8 @@ cf2FoldVisitor packageBase packageAbsyn cf =
      "public abstract class FoldVisitor<R,A> implements AllVisitor<R,A> {",
      "    public abstract R leaf(A arg);",
      "    public abstract R combine(R x, R y, A arg);",
+     "    /** Initial fold value at a node. Override to access the node. */",
+     "    public R foldInit(Object p, A arg) { return leaf(arg); }",
      "",
      concatMap (prData packageAbsyn user) groups,
      "}"]
@@ -41,12 +43,16 @@ prData packageAbsyn user (cat, rules) = unlines
     , concatMap (prRule packageAbsyn user cat) rules
     ]
 
---traverses a standard rule.
+--Traverses a standard rule.
+--
+-- >>> prRule "lang.absyn" [] (Cat "B") $ npRule "F" (Cat "B") [Left (Cat "A"), Right "+", Left (ListCat (Cat "B"))] Parsable
+-- "    public R visit(lang.absyn.F p, A arg) {\n      R r = foldInit(p, arg);\n      r = combine(p.a_.accept(this, arg), r, arg);\n      for (lang.absyn.B x : p.listb_)\n      {\n        r = combine(x.accept(this, arg), r, arg);\n      }\n      return r;\n    }\n"
+
 prRule :: String -> [UserDef] -> Cat -> Rule -> String
 prRule packageAbsyn user _ (Rule fun _ cats _)
     | not (isCoercion fun || isDefinedRule fun) = unlines $
   ["    public R visit(" ++ cls ++ " p, A arg) {",
-   "      R r = leaf(arg);"]
+   "      R r = foldInit(p, arg);"]
   ++  map ("      "++) visitVars
   ++ ["      return r;",
       "    }"]

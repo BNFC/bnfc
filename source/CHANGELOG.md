@@ -3,6 +3,8 @@
   [[#461](https://github.com/BNFC/bnfc/issues/461)]
 * Haskell: fix incorrect AST when `define`ing labels without argument
   [[#560](https://github.com/BNFC/bnfc/issues/560)]
+* Java: `FoldVisitor` now has an overridable `foldInit` method that receives the
+  current node, generalizing the fold from a catamorphism to a paramorphism
 
 # 2.9.6.3
 
