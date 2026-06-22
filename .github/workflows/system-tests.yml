@@ -32,7 +32,7 @@ jobs:
           env
 
       - name: checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: build test image
         run: |
