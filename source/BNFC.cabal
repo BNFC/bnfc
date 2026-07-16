@@ -178,6 +178,7 @@ library
     BNFC.CF
     BNFC.Check.EmptyTypes
     BNFC.Regex
+    BNFC.RegexMinus
     BNFC.TypeChecker
     BNFC.GetCF
     BNFC.Lexing
@@ -318,6 +319,7 @@ test-suite unit-tests
     BNFC.CFSpec
     BNFC.GetCFSpec
     BNFC.OptionsSpec
+    BNFC.RegexMinusSpec
     BNFC.Hspec
     BNFC.Backend.BaseSpec
     BNFC.Backend.Common.MakefileSpec
