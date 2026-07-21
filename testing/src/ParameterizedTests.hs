@@ -497,6 +497,21 @@ parameters = concat
     , cBase { tpName = "C++"
             , tpBnfcOptions = ["--cpp"] }
     ]
+    -- C++ (std::variant)
+  , [ cppvarBase
+      { tpName = "C++ with std::variant"
+      , tpBnfcOptions = ["--cpp-var", "--store-list-items-by=value"]
+      }
+    , cppvarBase
+      { tpName = "C++ with std::variant (with namespace)"
+      , tpBnfcOptions =
+        [ "--cpp-var", "-p", "foobar", "--store-list-items-by=value"]
+      }
+    , cppvarBase
+      { tpName = "C++ with std::variant (with std::unique_ptr lists)"
+      , tpBnfcOptions = [ "--cpp-var", "--store-list-items-by=pointer"]
+      }
+    ]
     -- Agda
   , [ haskellAgdaParameters ]
     -- Java/ANTLR
@@ -537,6 +552,28 @@ parameters = concat
         { tpBuild = do
             tpMake
             tpMake "Skeleton.o"
+        }
+    cppvarBase = base
+        { tpBuild = do
+          -- Hack: since most grammars do not specify the real entrypoint AND
+          -- some of them do need all categories as entrypoints,
+          -- we first see if Bison complains about conflicts if we try to use
+          -- all categories as entrypoints.
+          -- If it does complain, we regenerate the parser, but with only one
+          -- entrypoint (the first defined category).
+            let makecmd = "make -f " ++ tpMakefile ++ " "
+            cmd "sh" ["-c",
+              makecmd ++ "bison BISONFLAGS=-Werror || "
+              ++ makecmd ++ "bnfc BNFCFLAGS="
+              ++ "'$(OLD_BNFCFLAGS) --bison-default-start-first'"]
+            cmd "make" ["-f", tpMakefile, "NO_PRETTY=1", "NO_TREE=1",
+              ("CXXFLAGS=-fsanitize=address -fsanitize=leak "
+                ++ "-Wall -Werror -Wextra"),
+              "LDFLAGS=-fsanitize=address -fsanitize=leak"]
+        , tpRunTestProg = \ lang args -> do
+            bin <- baseTestProg lang
+            cmd bin ("-s" : args)
+        , tpShouldGoldenCheckLin = True
         }
     javaParams = base
         { tpBuild = do

@@ -20,6 +20,7 @@ import BNFC.Backend.Base ( writeFiles, Backend )
 import BNFC.Backend.C ( makeC )
 import BNFC.Backend.CPP.NoSTL ( makeCppNoStl )
 import BNFC.Backend.CPP.STL ( makeCppStl )
+import BNFC.Backend.CPPVar ( makeCppVar )
 import BNFC.Backend.Haskell ( makeHaskell )
 import BNFC.Backend.HaskellGADT ( makeHaskellGadt )
 import BNFC.Backend.Java ( makeJava )
@@ -78,6 +79,7 @@ maketarget = \case
     TargetC            -> makeC
     TargetCpp          -> makeCppStl
     TargetCppNoStl     -> makeCppNoStl
+    TargetCppVariants  -> makeCppVar
     TargetHaskell      -> makeHaskell
     TargetHaskellGadt  -> makeHaskellGadt
     TargetLatex        -> makeLatex

@@ -13,6 +13,8 @@ module BNFC.Options
   , defaultOptions, isDefault, printOptions
   , AlexVersion(..), HappyMode(..), OCamlParser(..), JavaLexerParser(..)
   , RecordPositions(..), TokenText(..), Positions(..)
+  , ListItemStorageType(..)
+  , DefaultBisonEntrypoint(..)
   , Ansi(..)
   , InPackage
   , removedIn290
@@ -29,6 +31,7 @@ import Data.Either     (partitionEithers)
 import qualified Data.Map  as Map
 -- import qualified Data.List as List
 import Data.Maybe      (fromMaybe, maybeToList)
+import Data.List       (intercalate)
 #if !MIN_VERSION_base(4,11,0)
 import Data.Semigroup  (Semigroup(..))  -- for ghc 7.10 - 8.2
 #endif
@@ -60,7 +63,7 @@ data Mode
   deriving (Eq,Show,Ord)
 
 -- | Target languages
-data Target = TargetC | TargetCpp | TargetCppNoStl
+data Target = TargetC | TargetCpp | TargetCppNoStl | TargetCppVariants
             | TargetHaskell | TargetHaskellGadt | TargetLatex
             | TargetJava | TargetOCaml | TargetPygments
             | TargetTreeSitter
@@ -75,6 +78,7 @@ instance Show Target where
   show TargetC            = "C"
   show TargetCpp          = "C++"
   show TargetCppNoStl     = "C++ (without STL)"
+  show TargetCppVariants  = "C++ (with std::variant)"
   show TargetHaskell      = "Haskell"
   show TargetHaskellGadt  = "Haskell (with GADT)"
   show TargetLatex        = "Latex"
@@ -110,6 +114,41 @@ data Ansi = Ansi | BeyondAnsi
 
 -- | Package name (C++ and Java backends).
 type InPackage = Maybe String
+
+-- | How list items are stored (C++ with @std::variant@ backend).
+data ListItemStorageType
+  = ItemsStoredAlwaysByValue  -- ^ As-is (@std::deque<ItemClass>@).
+  | ItemsStoredAlwaysByPointer
+    -- ^ As a pointer (@std::deque<std::unique_ptr<ItemClass>>@).
+  | ItemsStoredByValueIfNoLoops
+    -- ^ Prefer by-value storage (@std::deque<ItemClass>@) if it is possible to
+    -- reorder class declarations to make all class-types complete. If it is
+    -- not (e.g. when the grammar defines @A. Expr ::= [Expr];@), use pointers
+    -- (@std::deque<std::unique_ptr<ItemClass>>@).
+  deriving (Eq, Ord, Enum, Bounded)
+
+instance Show ListItemStorageType where
+  show = \case
+    ItemsStoredAlwaysByValue    -> "value"
+    ItemsStoredAlwaysByPointer  -> "pointer"
+    ItemsStoredByValueIfNoLoops -> "prefer-value"
+
+-- | Interprets user-specified --store-list-items-by argument.
+parseListItemStorageType :: String -> ListItemStorageType
+parseListItemStorageType = \case
+  "value"        -> ItemsStoredAlwaysByValue
+  "pointer"      -> ItemsStoredAlwaysByPointer
+  "prefer-value" -> ItemsStoredByValueIfNoLoops
+  "preferValue"  -> ItemsStoredByValueIfNoLoops
+  "prefer_value" -> ItemsStoredByValueIfNoLoops
+  other          -> error $ "Unrecognized ListItemStorageType: " ++ other
+
+-- | (C++ with variants) What categories to generate entrypoints for if no
+-- entrypoint pragmas are given?
+data DefaultBisonEntrypoint
+  = BisonAllCategories  -- ^ For all defined categories.
+  | BisonFirstCategory  -- ^ For the first defined category.
+  deriving (Eq, Ord, Show, Bounded, Enum)
 
 -- | How to represent token content in the Haskell backend?
 
@@ -157,9 +196,12 @@ data SharedOptions = Options
   , inPackage   :: InPackage       -- ^ The hierarchical package to put the modules in, or Nothing.
   , linenumbers :: RecordPositions -- ^ Add and set line_number field for syntax classes
   , ansi        :: Ansi            -- ^ Restrict to the ANSI language standard (C/C++)?
+  , positions   :: Positions   -- ^ Options @--positions@ (or legacy @--functor@). Make AST functorial? What to include?
+  --- C++-with-variants specific:
+  , listItemStorage :: ListItemStorageType -- ^ What lists contain: values or pointers.
+  , defaultBisonEntrypoints :: DefaultBisonEntrypoint  -- ^ what to include if given no "entrypoint" pragmas.
   --- Haskell specific:
   , inDir         :: Bool        -- ^ Option @-d@.
-  , positions     :: Positions   -- ^ Options @--positions@ (or legacy @--functor@). Make AST functorial? What to include?
   , generic       :: Bool        -- ^ Option @--generic@.  Derive Data and Generic?
   , alexMode      :: AlexVersion -- ^ Options @--alex@.
   , tokenText     :: TokenText   -- ^ Options @--bytestrings@, @--string-token@, and @--text-token@.
@@ -193,9 +235,12 @@ defaultOptions = Options
   , inPackage       = Nothing
   , linenumbers     = NoRecordPositions
   , ansi            = BeyondAnsi
+  , positions       = None
+  -- C++-with-variants specific
+  , listItemStorage = ItemsStoredByValueIfNoLoops
+  , defaultBisonEntrypoints = BisonAllCategories
   -- Haskell specific
   , inDir           = False
-  , positions       = None
   , generic         = False
   , alexMode        = Alex3
   , tokenText       = StringToken
@@ -252,6 +297,12 @@ printOptions opts = unwords . concat $
   , [ "-p " ++ p          | p <- maybeToList $ inPackage opts   ]
   , unlessDefault linenumbers opts $ const [ "-l" ]
   , unlessDefault ansi opts $ const [ "--ansi" ]
+
+  -- C++ with variants options:
+  , unlessDefault listItemStorage opts
+    $ \ o -> ["--store-list-items-by=" ++ show o]
+  , unlessDefault defaultBisonEntrypoints opts
+    $ const ["--bison-default-start-first"]
   -- Haskell options:
   , [ "-d"                | inDir opts                          ]
 
@@ -288,6 +339,7 @@ printTargetOption = ("--" ++) . \case
   TargetC           -> "c"
   TargetCpp         -> "cpp"
   TargetCppNoStl    -> "cpp-nostl"
+  TargetCppVariants -> "cpp-var"
   TargetHaskell     -> "haskell"
   TargetHaskellGadt -> "haskell-gadt"
   TargetLatex       -> "latex"
@@ -342,6 +394,8 @@ targetOptions =
     "Output C++ code for use with FLex and Bison"
   , Option "" ["cpp-nostl"]     (NoArg (\o -> o {target = TargetCppNoStl}))
     "Output C++ code (without STL) for use with FLex and Bison"
+  , Option "" ["cpp-var"]       (NoArg (\o -> o {target = TargetCppVariants}))
+    "Output C++17 code (heavily using std::variant) for use with FLex and Bison"
   , Option "" ["ocaml"]         (NoArg (\o -> o {target = TargetOCaml}))
     "Output OCaml code for use with ocamllex and ocamlyacc"
   , Option "" ["ocaml-menhir"]  (NoArg (\ o -> o{ target = TargetOCaml, ocamlParser = Menhir }))
@@ -363,6 +417,9 @@ specificOptions =
         , "(Note: Java requires cup version 0.11b-2014-06-11 or greater.)"
         ]
     , [TargetC, TargetCpp, TargetJava] )
+  , ( Option [] ["positions"] (ReqArg (\s o -> o {positions = fromMaybe None (parsePositions s)}) "start|range")
+          "Make the AST a functor (C++: add a field) and set what to include in the nodes"
+    , TargetCppVariants : haskellTargets )
   , ( Option [] ["ansi"] (NoArg (\o -> o{ ansi = Ansi })) $ unlines
         [ "Restrict to ANSI language standard"
         ]
@@ -370,7 +427,24 @@ specificOptions =
   , ( Option ['p'] ["name-space"]
       (ReqArg (\n o -> o {inPackage = Just n}) "NAMESPACE")
           "Prepend NAMESPACE to the package/module name"
-    , [TargetCpp, TargetJava] ++ haskellTargets)
+    , [TargetCpp, TargetCppVariants, TargetJava] ++ haskellTargets)
+  , ( Option [] ["store-list-items-by"]
+      (ReqArg (\ n o -> o { listItemStorage = parseListItemStorageType n })
+        (intercalate "|" $ map show ([minBound..] :: [ListItemStorageType])))
+        $ unlines
+          [ "Specify if list items should be stored by value or as pointers."
+          , "For some C++ STL implementations, the \"value\" option will fail"
+          , "if the grammar has lists that indirectly contain themselves."
+          , "The default is \"prefer-value\"."
+          ]
+    , [TargetCppVariants])
+  , ( Option [] ["bison-default-start-first"]
+      (NoArg (\ o -> o { defaultBisonEntrypoints = BisonFirstCategory }))
+        $ unlines
+          [ "Use only the first defined category as the entrypoint if the"
+          , "grammar does not declare entrypoints explicitly."
+          ]
+    , [TargetCppVariants])
   -- Java backend:
   , ( Option [] ["jlex"  ] (NoArg (\o -> o {javaLexerParser = JLexCup}))
           "Lex with JLex, parse with CUP (default)"
@@ -412,10 +486,7 @@ specificOptions =
     , haskellTargets )
   , ( Option []    ["functor"] (NoArg (\o -> o {positions = Start}))
           "Make the AST a functor and use it to store the start position of the nodes (alias to --positions=start)"
-    , haskellTargets )
-  , ( Option []    ["positions"] (ReqArg (\s o -> o {positions = fromMaybe None (parsePositions s)}) "start|range")
-          "Make the AST a functor and set what to include in the nodes"
-    , haskellTargets )
+    , TargetCppVariants : haskellTargets )
   , ( Option []    ["generic"] (NoArg (\o -> o {generic = True}))
           "Derive Data and Generic instances for AST types"
     , haskellTargets )
@@ -495,7 +566,7 @@ help = unlines $ title ++
     , usageInfo "TARGET languages" targetOptions
     ] ++ map targetUsage helpTargets
   where
-  helpTargets = [ TargetHaskell, TargetJava, TargetC, TargetCpp, TargetTreeSitter ]
+  helpTargets = [ TargetHaskell, TargetJava, TargetC, TargetCpp, TargetCppVariants, TargetTreeSitter ]
   targetUsage t = usageInfo
     (printf "Special options for the %s backend" (show t))
     (specificOptions' t)
@@ -566,6 +637,7 @@ instance Maintained Target where
     TargetC           -> True
     TargetCpp         -> True
     TargetCppNoStl    -> True
+    TargetCppVariants -> True
     TargetHaskell     -> True
     TargetHaskellGadt -> True
     TargetLatex       -> True
@@ -685,6 +757,8 @@ translateOldOptions = mapM $ \ o -> do
     , ("-cpp"          , "--cpp")
     , ("-cpp_stl"      , "--cpp")
     , ("-cpp_no_stl"   , "--cpp-nostl")
+    , ("-cpp-var"      , "--cpp-var")
+    , ("-cpp_var"      , "--cpp-var")
     , ("-csharp"       , "--csharp")
     , ("-ocaml"        , "--ocaml")
     , ("-haskell"      , "--haskell")

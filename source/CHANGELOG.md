@@ -3,6 +3,7 @@
   [[#461](https://github.com/BNFC/bnfc/issues/461)]
 * Haskell: fix incorrect AST when `define`ing labels without argument
   [[#560](https://github.com/BNFC/bnfc/issues/560)]
+* all: implement general regex subtraction as a module (`BNFC.RegexMinus`)
 
 # 2.9.6.3
 

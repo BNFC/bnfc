@@ -55,6 +55,9 @@ spec = do
       parseMode_ ["-haskell", "-m", "-glr", "file.cf"]
         `shouldSet` (glr, GLR)
 
+  it "accept cpp-var as a target language" $
+    parseMode_ ["--cpp-var", "file.cf"] `shouldSet` (target, TargetCppVariants)
+
   it "accept latex as a target language" $
     parseMode_ ["--latex", "file.cf"] `shouldSet` (target, TargetLatex)
 
@@ -63,6 +66,14 @@ spec = do
       translateOldOptions ["-haskell"] `shouldBe`
         (WriterT $ Right (["--haskell"]
                          ,["Warning: unrecognized option -haskell treated as if --haskell was provided."]))
+    it "translate -cpp_var to --cpp-var" $
+      translateOldOptions ["-cpp_var"] `shouldBe`
+        (WriterT $ Right (["--cpp-var"]
+                         ,["Warning: unrecognized option -cpp_var treated as if --cpp-var was provided."]))
+    it "translate -cpp-var to --cpp-var" $
+      translateOldOptions ["-cpp-var"] `shouldBe`
+        (WriterT $ Right (["--cpp-var"]
+                         ,["Warning: unrecognized option -cpp-var treated as if --cpp-var was provided."]))
 
     describe "--makefile" $ do
 
