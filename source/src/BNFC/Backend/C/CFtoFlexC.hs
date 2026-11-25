@@ -78,7 +78,7 @@ cf2flex mode cf = (, env) $ unlines
     , cMacros cf
     , lexSymbols env1
     , restOfFlex (parserPackage mode) cf env
-    , footer -- mode
+    , footer mode
     ]
   where
     env  = Map.fromList env2
@@ -230,14 +230,25 @@ restOfFlex _inPackage cf env = unlines $ concat
     ]
     where sName n = fromMaybe n $ Map.lookup (Tokentype n) env
 
-footer :: String
-footer = unlines
+footer :: ParserMode -> String
+footer mode = unlines
     [ "yyscan_t initialize_lexer(FILE *inp)"
     , "{"
     , "  yyscan_t scanner;"
     , "  if (yylex_init_extra(NULL, &scanner)) return 0;"
     , "  if (inp) yyrestart(inp, scanner);"
     , "  return scanner;"
+    , "}"
+    , ""
+    , "/* Keep Flex's YY_BUFFER_STATE type private to the lexer. */"
+    , "void *" ++ parserName mode ++ "_bnfc_scan_string(const char *str, yyscan_t scanner)"
+    , "{"
+    , "  return yy_scan_string(str, scanner);"
+    , "}"
+    , ""
+    , "void " ++ parserName mode ++ "_bnfc_delete_buffer(void *buf, yyscan_t scanner)"
+    , "{"
+    , "  yy_delete_buffer((YY_BUFFER_STATE)buf, scanner);"
     , "}"
     ]
 
