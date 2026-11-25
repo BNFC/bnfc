@@ -36,7 +36,7 @@ makeC opts cf = do
     let (flex, env) = cf2flex parserMode cf
     mkfile (name ++ ".l") commentWithEmacsModeHint flex
     mkfile (name ++ ".y") commentWithEmacsModeHint $
-      cf2Bison (linenumbers opts) parserMode cf env
+      cf2Bison (linenumbers opts) (expectConflicts opts) parserMode cf env
     mkCFile "Parser.h" $ mkHeaderFile (linenumbers opts) cf (Map.elems env)
     let (skelH, skelC) = cf2CSkel cf
     mkCFile "Skeleton.h" skelH

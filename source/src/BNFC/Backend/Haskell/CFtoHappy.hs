@@ -40,13 +40,14 @@ cf2Happy
   -> ModuleName  -- ^ Abstract syntax module name.
   -> ModuleName  -- ^ Lexer module name.
   -> HappyMode   -- ^ Happy mode.
+  -> Maybe Int   -- ^ Expected number of shift/reduce conflicts (@%expect@).
   -> TokenText   -- ^ Use @ByteString@ or @Text@?
   -> Positions   -- ^ AST is a functor? What is included?
   -> CF          -- ^ Grammar.
   -> String      -- ^ Generated code.
-cf2Happy name absName lexName mode tokenText positions cf = unlines
+cf2Happy name absName lexName mode expect tokenText positions cf = unlines
   [ header name absName lexName tokenText eps
-  , render $ declarations mode (hasNotNonePos positions) eps
+  , render $ declarations mode expect (hasNotNonePos positions) eps
   , render $ tokens cf positions
   , delimiter
   , specialRules absName positions tokenText cf
@@ -84,7 +85,7 @@ header modName absName lexName tokenText eps = unlines $ concat
   ]
 
 -- | The declarations of a happy file.
--- >>> declarations Standard False [Cat "A", Cat "B", ListCat (Cat "B")]
+-- >>> declarations Standard Nothing False [Cat "A", Cat "B", ListCat (Cat "B")]
 -- %name pA A
 -- %name pB B
 -- %name pListB ListB
@@ -92,21 +93,23 @@ header modName absName lexName tokenText eps = unlines $ concat
 -- %monad { Err } { (>>=) } { return }
 -- %tokentype {Token}
 --
--- >>> declarations Standard True [Cat "A", Cat "B", ListCat (Cat "B")]
+-- >>> declarations Standard (Just 0) True [Cat "A", Cat "B", ListCat (Cat "B")]
 -- %name pA_internal A
 -- %name pB_internal B
 -- %name pListB_internal ListB
 -- -- no lexer declaration
 -- %monad { Err } { (>>=) } { return }
 -- %tokentype {Token}
-declarations :: HappyMode -> Bool -> [Cat] -> Doc
-declarations mode functor ns = vcat
+-- %expect 0
+declarations :: HappyMode -> Maybe Int -> Bool -> [Cat] -> Doc
+declarations mode expect functor ns = vcat
     [ vcat $ map generateP ns
     , case mode of
         Standard -> "-- no lexer declaration"
         GLR      -> "%lexer { myLexer } { Err _ }",
       "%monad { Err } { (>>=) } { return }",
       "%tokentype" <+> braces (text tokenName)
+    , maybe empty (("%expect" <+>) . int) expect
     ]
   where
   generateP n = "%name" <+> parserName n <> (if functor then "_internal" else "") <+> text (identCat n)

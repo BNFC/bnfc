@@ -13,6 +13,30 @@ Global Options
 
    the generated files will follow flag ``--positions=start``.
 
+Checking for parser conflicts
+-----------------------------
+
+*Since 2.9.7:* Option ``--expect=N`` makes generating the parser fail
+unless the grammar has the expected number of LR conflicts.  In particular,
+``--expect=0`` guarantees that the grammar is conflict-free, for example::
+
+    bnfc --haskell -m --expect=0 Calc.cf
+    make
+
+The check is done by the parser generator, so the exact meaning depends on the backend:
+
+- Haskell (Happy) and C/C++ (Bison): BNFC emits ``%expect N``.  Generation fails
+  unless there are *exactly* ``N`` shift/reduce conflicts and *no* reduce/reduce conflicts.
+- Java (CUP): BNFC passes ``-expect N`` to CUP.  Generation fails if there are
+  *more than* ``N`` conflicts, counting shift/reduce and reduce/reduce conflicts together.
+  (Without ``--expect``, BNFC passes ``-expect 100`` as before.)
+- Java (ANTLR): the option is accepted but ignored with a warning,
+  since ANTLR does not build LR parsers.
+- Other backends (e.g. OCaml) do not support this option.
+
+The number of conflicts may differ between backends for the same grammar,
+since BNFC generates slightly different grammars for different parser generators.
+
 Agda Backend
 ============
 

@@ -43,7 +43,7 @@ makeHaskellGadt opts cf = do
     mkHsFileHint (alexFile opts) $ cf2alex3 lexMod (tokenText opts) (positions opts) cf
     liftIO $ putStrLn "   (Use Alex 3 to compile.)"
     mkHsFileHint (happyFile opts) $
-      cf2Happy parMod absMod lexMod (glr opts) (tokenText opts) None cf
+      cf2Happy parMod absMod lexMod (glr opts) (expectConflicts opts) (tokenText opts) None cf
     liftIO $ putStrLn "   (Tested with Happy 1.15 - 1.20)"
     mkHsFile (templateFile opts) $ cf2Template (templateFileM opts) absMod cf
     mkHsFile (printerFile opts)  $ cf2Printer StringToken False True prMod absMod cf

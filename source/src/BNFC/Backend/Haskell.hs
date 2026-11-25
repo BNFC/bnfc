@@ -68,7 +68,7 @@ makeHaskell opts cf = do
     -- Generate Happy parser and matching test program.
     do
       mkfile (happyFile opts) commentWithEmacsModeHint $
-        cf2Happy parMod absMod lexMod (glr opts) (tokenText opts) (positions opts) cf
+        cf2Happy parMod absMod lexMod (glr opts) (expectConflicts opts) (tokenText opts) (positions opts) cf
       -- liftIO $ printf "%s Tested with Happy 1.15\n" (happyFile opts)
       mkfile (tFile opts) comment $ testfile opts cf
 
