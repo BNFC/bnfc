@@ -3,6 +3,8 @@
   [[#461](https://github.com/BNFC/bnfc/issues/461)]
 * Haskell: fix incorrect AST when `define`ing labels without argument
   [[#560](https://github.com/BNFC/bnfc/issues/560)]
+* C and C++: keep the Flex buffer type private to the generated scanner,
+  fixing C++ parser linking with Flex 2.7.8 and later.
 
 # 2.9.6.3
 

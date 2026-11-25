@@ -137,10 +137,8 @@ header mode cf = unlines $ concat
     , "typedef void* yyscan_t;"
     , "#endif"
     , ""
-    -- , "typedef struct " ++ name ++ "_buffer_state *YY_BUFFER_STATE;"
-    , "typedef struct yy_buffer_state *YY_BUFFER_STATE;"
-    , "extern YY_BUFFER_STATE " ++ name ++ "_scan_string(const char *str, yyscan_t scanner);"
-    , "extern void " ++ name ++ "_delete_buffer(YY_BUFFER_STATE buf, yyscan_t scanner);"
+    , "extern void *" ++ name ++ "_bnfc_scan_string(const char *str, yyscan_t scanner);"
+    , "extern void " ++ name ++ "_bnfc_delete_buffer(void *buf, yyscan_t scanner);"
     , ""
     , "extern int " ++ name ++ "lex_destroy(yyscan_t scanner);"
     , "extern char* " ++ name ++ "get_text(yyscan_t scanner);"
@@ -242,9 +240,9 @@ parseMethod mode cf cat = unlines $ concat
       , "    return 0;"
       , "  }"
       ]
-    , [ "  YY_BUFFER_STATE buf = " ++ name ++ "_scan_string(str, scanner);" | stringParser ]
+    , [ "  void *buf = " ++ name ++ "_bnfc_scan_string(str, scanner);" | stringParser ]
     , [ "  int error = yyparse(scanner, &result);" ]
-    , [ "  " ++ name ++ "_delete_buffer(buf, scanner);" | stringParser ]
+    , [ "  " ++ name ++ "_bnfc_delete_buffer(buf, scanner);" | stringParser ]
     , [ "  " ++ name ++ "lex_destroy(scanner);"
       , "  if (error)"
       , "  { /* Failure */"
