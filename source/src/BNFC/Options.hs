@@ -28,7 +28,7 @@ import Data.Bifunctor
 import Data.Either     (partitionEithers)
 import qualified Data.Map  as Map
 -- import qualified Data.List as List
-import Data.Maybe      (fromMaybe, maybeToList)
+import Data.Maybe      (fromMaybe, maybeToList, isJust)
 #if !MIN_VERSION_base(4,11,0)
 import Data.Semigroup  (Semigroup(..))  -- for ghc 7.10 - 8.2
 #endif
@@ -38,6 +38,7 @@ import System.Console.GetOpt
 import System.FilePath (takeBaseName)
 
 import Text.Printf     (printf)
+import Text.Read       (readMaybe)
 
 import Paths_BNFC      (version)
 import BNFC.CF         (CF, catIdent)
@@ -157,6 +158,8 @@ data SharedOptions = Options
   , inPackage   :: InPackage       -- ^ The hierarchical package to put the modules in, or Nothing.
   , linenumbers :: RecordPositions -- ^ Add and set line_number field for syntax classes
   , ansi        :: Ansi            -- ^ Restrict to the ANSI language standard (C/C++)?
+  , expectConflicts :: Maybe Int   -- ^ Option @--expect=N@: the number of shift/reduce conflicts
+                                   --   the LR parser generator should expect.
   --- Haskell specific:
   , inDir         :: Bool        -- ^ Option @-d@.
   , positions     :: Positions   -- ^ Options @--positions@ (or legacy @--functor@). Make AST functorial? What to include?
@@ -193,6 +196,7 @@ defaultOptions = Options
   , inPackage       = Nothing
   , linenumbers     = NoRecordPositions
   , ansi            = BeyondAnsi
+  , expectConflicts = Nothing
   -- Haskell specific
   , inDir           = False
   , positions       = None
@@ -252,6 +256,7 @@ printOptions opts = unwords . concat $
   , [ "-p " ++ p          | p <- maybeToList $ inPackage opts   ]
   , unlessDefault linenumbers opts $ const [ "-l" ]
   , unlessDefault ansi opts $ const [ "--ansi" ]
+  , [ "--expect=" ++ show n | Just n <- [expectConflicts opts] ]
   -- Haskell options:
   , [ "-d"                | inDir opts                          ]
 
@@ -371,6 +376,8 @@ specificOptions =
       (ReqArg (\n o -> o {inPackage = Just n}) "NAMESPACE")
           "Prepend NAMESPACE to the package/module name"
     , [TargetCpp, TargetJava] ++ haskellTargets)
+  , ( expectOption (\n o -> o { expectConflicts = readMaybe n })
+    , expectTargets )
   -- Java backend:
   , ( Option [] ["jlex"  ] (NoArg (\o -> o {javaLexerParser = JLexCup}))
           "Lex with JLex, parse with CUP (default)"
@@ -434,6 +441,32 @@ specificOptions =
           "Use the given BNFC symbol as tree-sitter's \"word\" token"
     , [TargetTreeSitter] )
   ]
+
+expectOption :: (String -> a) -> OptDescr a
+expectOption f = Option [] ["expect"] (ReqArg f "N") $ unlines
+  [ "Make parser generation fail unless the grammar has exactly N"
+  , "shift/reduce conflicts and no reduce/reduce conflicts"
+  , "(Java/CUP: at most N conflicts in total; ignored by ANTLR)"
+  ]
+
+-- | Targets whose parser generator can check the number of conflicts.
+expectTargets :: [Target]
+expectTargets = [ TargetC, TargetCpp, TargetCppNoStl, TargetJava ] ++ haskellTargets
+
+-- | Check that the arguments of @--expect@ are natural numbers.
+checkExpectOption :: [String] -> ParseOpt ()
+checkExpectOption args =
+  case getOpt' Permute [ expectOption id ] args of
+    (ns, _, _, _) -> Ctrl.forM_ ns $ \ n ->
+      case readMaybe n :: Maybe Int of
+        Just k | k >= 0 -> pure ()
+        _ -> throwError $ unwords
+          [ "Option --expect requires a natural number as argument, but got:", n ]
+
+warnIgnoredExpect :: SharedOptions -> ParseOpt ()
+warnIgnoredExpect opts =
+  Ctrl.when (target opts == TargetJava && javaLexerParser opts == Antlr4 && isJust (expectConflicts opts)) $
+    tell [ "Warning: option --expect is ignored by the ANTLR backend (ANTLR does not report LR conflicts)." ]
 
 -- | The list of specific options for a target.
 specificOptions' :: Target -> [OptDescr (SharedOptions -> SharedOptions)]
@@ -535,6 +568,7 @@ parseMode' args =
       -- Finally, parse options with known target.
       (optionUpdates,_,_,_) -> do
         let tgt = target (options optionUpdates)
+        checkExpectOption args
         case getOpt' Permute (allOptions' tgt) args of
           (_,  _, _,      e:_) -> usageError e
           (_,  _, [u],      _) -> usageError $ unwords $ [ "Backend", show tgt, "does not support option", u ]
@@ -547,6 +581,7 @@ parseMode' args =
                        }
             warnDeprecatedBackend tgt
             warnDeprecatedOptions opts
+            warnIgnoredExpect opts
             return $ Target opts grammarFile
           (_,  _, _,        _) -> usageError "Too many arguments"
   where

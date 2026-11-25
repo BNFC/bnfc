@@ -30,6 +30,7 @@ import Prelude hiding ((<>))
 import System.FilePath ((</>), (<.>), pathSeparator, isPathSeparator)
 import Data.Foldable (toList)
 import Data.List ( intersperse )
+import Data.Maybe ( fromMaybe )
 
 import BNFC.Utils
 import BNFC.CF
@@ -128,7 +129,7 @@ makeJava' pkg options@Options{..} cf = do
     pkgToDir :: String -> FilePath
     pkgToDir = replace '.' pathSeparator
 
-    parselexspec = parserLexerSelector lang javaLexerParser rp
+    parselexspec = parserLexerSelector lang javaLexerParser rp expectConflicts
     lexfun       = cf2lex $ lexer parselexspec
     parsefun     = cf2parse $ parser parselexspec
     parmake      = makeparserdetails (parser parselexspec)
@@ -324,16 +325,17 @@ antlrtest = javaTest $ JavaTestParams
 parserLexerSelector ::
        String
     -> JavaLexerParser
-    -> RecordPositions -- ^Pass line numbers to the symbols
+    -> RecordPositions -- ^ Pass line numbers to the symbols
+    -> Maybe Int       -- ^ Expected number of conflicts (CUP only).
     -> ParserLexerSpecification
-parserLexerSelector _ JLexCup rp = ParseLexSpec
+parserLexerSelector _ JLexCup rp expect = ParseLexSpec
     { lexer     = cf2JLex rp
-    , parser    = cf2cup rp
+    , parser    = cf2cup rp expect
     , testclass = cuptest
     }
-parserLexerSelector _ JFlexCup rp =
-    (parserLexerSelector "" JLexCup rp){lexer = cf2JFlex rp}
-parserLexerSelector l Antlr4 _ = ParseLexSpec
+parserLexerSelector _ JFlexCup rp expect =
+    (parserLexerSelector "" JLexCup rp expect){lexer = cf2JFlex rp}
+parserLexerSelector l Antlr4 _ _ = ParseLexSpec
     { lexer     = cf2AntlrLex' l
     , parser    = cf2AntlrParse' l
     , testclass = antlrtest
@@ -386,10 +388,10 @@ data CFToParser = CF2Parse
     }
 
 -- | Instances of cf-parsergen bridges
-cf2cup :: RecordPositions -> CFToParser
-cf2cup rp = CF2Parse
+cf2cup :: RecordPositions -> Maybe Int -> CFToParser
+cf2cup rp expect = CF2Parse
     { cf2parse          = cf2Cup
-    , makeparserdetails = cupmakedetails rp
+    , makeparserdetails = cupmakedetails rp expect
     }
 
 cf2AntlrParse' :: String -> CFToParser
@@ -463,10 +465,10 @@ jflexmakedetails = jlexmakedetails
     , toolversion = "1.4.3 - 1.9.1"
     }
 
-cupmakedetails :: RecordPositions -> MakeFileDetails
-cupmakedetails rp = MakeDetails
+cupmakedetails :: RecordPositions -> Maybe Int -> MakeFileDetails
+cupmakedetails rp expect = MakeDetails
     { executable          = runJava "java_cup.Main"
-    , flags               = const (lnFlags ++ " -expect 100")
+    , flags               = const (lnFlags ++ " -expect " ++ show (fromMaybe 100 expect))
     , filename            = "_cup"
     , fileextension       = "cup"
     , toolname            = "CUP"

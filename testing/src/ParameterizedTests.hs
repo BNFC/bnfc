@@ -61,6 +61,7 @@ all = makeTestSuite "Parameterized tests" $ concat
   , regressionTests
   , map exitCodeTestWith   parameters
   , map entrypointTestWith parameters
+  , map expectConflictsTestWith expectConflictsParameters
   , map exampleTestsWith   parameters
   ]
 
@@ -184,6 +185,42 @@ entrypointTestWith params =
         setStdin "bar"
         errExit False $ tpRunTestProg params "foobar" []
         lastExitCode >>= assertEqual 1
+
+-- | Option @--expect=N@: parser generation should fail unless the
+--   number of conflicts is as expected.
+expectConflictsTestWith :: TestParameters -> Test
+expectConflictsTestWith params =
+    makeShellyTest "Respects --expect option" $ withTmpDir $ \tmp -> do
+        cd tmp
+        -- Dangling else: exactly one shift/reduce conflict.
+        writefile "Dangle.cf" $ Text.unlines
+            [ "SIf.   Stm ::= \"if\" Ident \"then\" Stm ;"
+            , "SIfE.  Stm ::= \"if\" Ident \"then\" Stm \"else\" Stm ;"
+            , "SSkip. Stm ::= \"skip\" ;" ]
+        -- One reduce/reduce conflict.
+        writefile "RR.cf" $ Text.unlines
+            [ "SA. S ::= A ;"
+            , "SB. S ::= B ;"
+            , "AX. A ::= Ident ;"
+            , "BX. B ::= Ident ;" ]
+        build "Dangle.cf" "1" $ tpMake
+        build "Dangle.cf" "0" $ assertExitCode 2 tpMake
+        build "RR.cf"     "0" $ assertExitCode 2 tpMake
+  where
+    build grammar n check = do
+      tpBnfc params{ tpBnfcOptions = tpBnfcOptions params ++ ["--expect=" <> n] } grammar
+      check
+      tpDistclean
+
+-- | Backends whose parser generator can check the number of conflicts.
+--   One representative per parser generator suffices.
+expectConflictsParameters :: [TestParameters]
+expectConflictsParameters =
+  [ haskellParameters
+  , haskellGADTParameters
+  , cParameters
+  ] ++
+  filter ((`elem` [ "C++", "C++ (no STL)", "Java", "Java (with jflex)" ]) . tpName) parameters
 
 -- | Runs BNFC on the example grammars, build the generated code and, if
 -- example in the grammar's language are available, tries to parse the

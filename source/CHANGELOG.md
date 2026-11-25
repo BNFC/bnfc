@@ -3,6 +3,8 @@
   [[#461](https://github.com/BNFC/bnfc/issues/461)]
 * Haskell: fix incorrect AST when `define`ing labels without argument
   [[#560](https://github.com/BNFC/bnfc/issues/560)]
+* Haskell, C, C++, Java/CUP: add `--expect=N` option to make parser generation fail
+  unless the grammar has the expected number of conflicts (e.g. `--expect=0` for none)
 
 # 2.9.6.3
 

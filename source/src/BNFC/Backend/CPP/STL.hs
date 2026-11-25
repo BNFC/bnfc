@@ -35,7 +35,7 @@ makeCppStl opts cf = do
     mkCppFile "Buffer.C" $ bufferC "Buffer.H"
     let (flex, env) = cf2flex parserMode cf
     mkCppFileWithHint (name ++ ".l") flex
-    mkCppFileWithHint (name ++ ".y") $ cf2Bison (linenumbers opts) parserMode cf env
+    mkCppFileWithHint (name ++ ".y") $ cf2Bison (linenumbers opts) (expectConflicts opts) parserMode cf env
     mkCppFile "Parser.H" $
       mkHeaderFile (inPackage opts) (toList $ allEntryPoints cf)
     mkCppFile "ParserError.H" $ printParseErrHeader (inPackage opts)

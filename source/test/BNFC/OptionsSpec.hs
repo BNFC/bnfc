@@ -58,6 +58,28 @@ spec = do
   it "accept latex as a target language" $
     parseMode_ ["--latex", "file.cf"] `shouldSet` (target, TargetLatex)
 
+  describe "--expect" $ do
+
+    it "is off by default" $
+      parseMode_ ["--haskell", "foo.cf"] `shouldSet` (expectConflicts, Nothing)
+
+    it "sets the expected number of conflicts" $
+      parseMode_ ["--haskell", "--expect=3", "foo.cf"] `shouldSet` (expectConflicts, Just 3)
+
+    it "rejects a non-numeric argument" $
+      isUsageError (parseMode_ ["--haskell", "--expect=abc", "foo.cf"]) `shouldBe` True
+
+    it "rejects a negative argument" $
+      isUsageError (parseMode_ ["--haskell", "--expect=-1", "foo.cf"]) `shouldBe` True
+
+    it "is not supported by the OCaml backend" $
+      isUsageError (parseMode_ ["--ocaml", "--expect=0", "foo.cf"]) `shouldBe` True
+
+    it "is preserved by printOptions" $
+      case parseMode_ ["--c", "--expect=0", "foo.cf"] of
+        Target opts _ -> words (printOptions opts) `shouldContain` ["--expect=0"]
+        m -> expectationFailure $ "unexpected mode: " ++ show m
+
   describe "Old option translation" $ do
     it "translate -haskell to --haskell" $
       translateOldOptions ["-haskell"] `shouldBe`

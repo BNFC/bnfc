@@ -51,9 +51,9 @@ type Action      = String
 type MetaVar     = String
 
 --The environment comes from the CFtoFlex
-cf2Bison :: RecordPositions -> ParserMode -> CF -> SymMap -> String
-cf2Bison rp mode cf env = unlines
-    [ header mode cf
+cf2Bison :: RecordPositions -> Maybe Int -> ParserMode -> CF -> SymMap -> String
+cf2Bison rp expect mode cf env = unlines
+    [ header mode expect cf
     , render $ union mode $ posCats ++ allParserCatsNorm cf
     , ""
     , unionDependentCode mode
@@ -83,12 +83,17 @@ cf2Bison rp mode cf env = unlines
 positionCats :: CF -> [String]
 positionCats cf = [ wpThing name | TokenReg name True _ <- cfgPragmas cf ]
 
-header :: ParserMode -> CF -> String
-header mode cf = unlines $ concat
+header :: ParserMode -> Maybe Int -> CF -> String
+header mode expect cf = unlines $ concat
   [ [ "/* Parser definition to be used with Bison. */"
     , ""
     , "/* Generate header file for lexer. */"
     , "%defines \"" ++ ("Bison" <.> h) ++ "\""
+    ]
+  , whenJust expect $ \ n ->
+    [ ""
+    , "/* Fail unless there are exactly " ++ show n ++ " shift/reduce and no reduce/reduce conflicts. */"
+    , "%expect " ++ show n
     ]
   , whenJust (parserPackage mode) $ \ ns ->
     [ "%name-prefix = \"" ++ ns ++ "\""
